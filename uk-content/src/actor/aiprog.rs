@@ -2,7 +2,7 @@ use crate::{Result, UKError};
 use indexmap::IndexMap;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AIEntry {
@@ -21,8 +21,7 @@ pub enum ChildEntry {
 pub struct AIProgram {
     pub demos: IndexMap<u32, u32>,
     pub tree: IndexMap<String, AIEntry>,
-    pub behaviors: BTreeMap<usize, ParameterList>,
-    pub queries: BTreeMap<usize, ParameterList>,
+    pub queries: IndexMap<String, ParameterList>,
 }
 
 fn plist_to_ai(plist: &ParameterList, pio: &ParameterIO, action_offset: usize) -> Result<AIEntry> {
@@ -142,17 +141,6 @@ impl TryFrom<&ParameterIO> for AIProgram {
                     ));
                 }
             },
-            behaviors: pio
-                .list("Behavior")
-                .ok_or_else(|| {
-                    UKError::MissingAampKey("AI program missing Behaviors list".to_owned())
-                })?
-                .lists
-                .0
-                .values()
-                .cloned()
-                .enumerate()
-                .collect(),
             queries: pio
                 .list("Query")
                 .ok_or_else(|| {
@@ -162,8 +150,23 @@ impl TryFrom<&ParameterIO> for AIProgram {
                 .0
                 .values()
                 .cloned()
-                .enumerate()
-                .collect(),
+                .map(|query| -> Result<(String, ParameterList)> {
+                    Ok((
+                        query
+                            .object("Def")
+                            .ok_or_else(|| {
+                                UKError::MissingAampKey("Query missing Def object".to_owned())
+                            })?
+                            .param("ClassName")
+                            .ok_or_else(|| {
+                                UKError::MissingAampKey("AI def missing ClassName".to_owned())
+                            })?
+                            .as_string()?
+                            .to_owned(),
+                        query,
+                    ))
+                })
+                .collect::<Result<IndexMap<_, _>>>()?,
         })
     }
 }
