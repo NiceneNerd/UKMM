@@ -1,0 +1,15 @@
+[package]
+name = "uk-content"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+indexmap = "1.8.0"
+thiserror = "1.0.30"
+serde = { version = "1.0.136", features = ["derive"] }
+serde_json = "1.0.79"
+
+[dependencies.roead]
+git = "https://github.com/NiceneNerd/roead"
+features = ["with-serde"]
+rev = "c2cc9f7d5a7d9b46bab0bcb20d0af06b237ffa02"
