@@ -1,10 +1,10 @@
-use crate::{Result, UKError};
+use crate::{util, Result, UKError};
 use indexmap::IndexMap;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AIEntry {
     def: ParameterObject,
     params: Option<ParameterObject>,
@@ -19,6 +19,63 @@ impl AIEntry {
             .values()
             .filter_map(|p| p.as_string().ok())
             .collect()
+    }
+
+    #[must_use]
+    pub fn diff(&self, other: &AIEntry) -> Self {
+        let mut diff = AIEntry::default();
+        if self.def != other.def {
+            diff.def = self.def.clone();
+            diff.def.0.extend(other.def.0.iter().filter_map(|(k, v)| {
+                if !self.def.0.contains_key(k) || self.def.0[k] != *v {
+                    Some((*k, v.clone()))
+                } else {
+                    None
+                }
+            }));
+        } else {
+            diff.def = self.def.clone();
+        }
+        if self.params != other.params {
+            if let Some(self_params) = &self.params {
+                diff.params = other
+                    .params
+                    .as_ref()
+                    .map(|params| util::diff_pobj(self_params, params));
+            } else {
+                diff.params = other.params.clone();
+            }
+        }
+        if self.behaviors != other.behaviors {
+            if let Some(self_behaviors) = &self.behaviors {
+                diff.behaviors = other.behaviors.as_ref().map(|behaviors| {
+                    behaviors
+                        .iter()
+                        .filter_map(|(k, v)| {
+                            if !self_behaviors.contains_key(k) {
+                                Some((*k, v.clone()))
+                            } else if self_behaviors[k] != *v {
+                                Some((*k, util::diff_plist(&self_behaviors[k], v)))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
+                });
+            } else {
+                diff.behaviors = other.behaviors.clone();
+            }
+        }
+        diff.children = other.children.iter().filter_map(|(k, v)| {
+            if !self.children.contains_key(k) {
+                Some((*k, v.clone()))
+            } else if &self.children[k] != v {
+                
+            } else {
+                None
+            }
+        }).collect()
+        diff
     }
 }
 
@@ -52,24 +109,9 @@ pub struct AIProgram {
     pub queries: IndexMap<String, ParameterList>,
 }
 
-// impl AIProgram {
-//     pub fn diff(&self, other: &AIProgram) -> Self {
-//         Self {
-//             demos: other
-//                 .demos
-//                 .iter()
-//                 .filter(|(k, v)| !self.demos.contains_key(k) || self.demos.get(k).unwrap() != *v)
-//                 .map(|(k, v)| (*k, *v))
-//                 .collect(),
-//             ais: {
-//                 let mut new_ais: Vev<ParameterList> = vec![];
-//                 for index in other.ais.keys() {
-
-//                 }
-//             },
-//         }
-//     }
-// }
+impl AIProgram {
+    // pub fn diff(&self, other: &AIProgram) -> Self {}
+}
 
 mod parse {
     use super::*;

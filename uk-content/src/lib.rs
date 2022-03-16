@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 pub mod actor;
+pub mod util;
 
 #[derive(Debug, Error)]
 pub enum UKError {
