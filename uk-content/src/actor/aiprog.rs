@@ -91,6 +91,46 @@ impl AIEntry {
             .collect();
         diff
     }
+
+    #[must_use]
+    pub fn merge(base: &Self, diff: &Self) -> Self {
+        let mut new = base.clone();
+        new.def = diff.def.clone();
+        if let Some(diff_params) = &diff.params {
+            if let Some(new_params) = &new.params {
+                new.params = Some(util::merge_pobj(new_params, diff_params));
+            } else {
+                new.params = diff.params.clone();
+            }
+        }
+        if let Some(diff_behaviors) = &diff.behaviors {
+            if let Some(base_behaviors) = &base.behaviors {
+                new.behaviors = Some(
+                    base_behaviors
+                        .iter()
+                        .chain(diff_behaviors.iter())
+                        .map(|(k, v)| (*k, v.clone()))
+                        .collect(),
+                );
+            } else {
+                new.behaviors = diff.behaviors.clone();
+            }
+        }
+        for (k, v) in &diff.children {
+            if let Some(base_child) = base.children.get(k) {
+                match (base_child, v) {
+                    (ChildEntry::AI(_), ChildEntry::Action(_)) | (ChildEntry::Action(_), ChildEntry::AI(_)) => new.children.insert(*k, v.clone()),
+                    (ChildEntry::AI(&base_ai), ChildEntry::AI(&diff_ai)) => {
+                        new.children.insert(*k, AIEntry::merge(&base_ai, &diff_ai))
+                    },
+                    (ChildEntry::Action(&base_action), ChildEntry::Action(&diff_action)) => { },
+                }
+            } else {
+                new.children.insert(*k, v.clone());
+            }
+        }
+        new
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
