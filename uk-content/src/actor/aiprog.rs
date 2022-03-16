@@ -22,7 +22,7 @@ impl AIEntry {
     }
 
     #[must_use]
-    pub fn diff(&self, other: &AIEntry) -> Self {
+    pub fn diff(&self, other: &Self) -> Self {
         let mut diff = AIEntry::default();
         if self.def != other.def {
             diff.def = self.def.clone();
@@ -66,20 +66,34 @@ impl AIEntry {
                 diff.behaviors = other.behaviors.clone();
             }
         }
-        diff.children = other.children.iter().filter_map(|(k, v)| {
-            if !self.children.contains_key(k) {
-                Some((*k, v.clone()))
-            } else if &self.children[k] != v {
-                
-            } else {
-                None
-            }
-        }).collect()
+        diff.children = other
+            .children
+            .iter()
+            .filter_map(|(k, v)| {
+                if !self.children.contains_key(k) {
+                    Some((*k, v.clone()))
+                } else if &self.children[k] != v {
+                    let self_child = &self.children[k];
+                    match (self_child, v) {
+                        (ChildEntry::AI(_), ChildEntry::Action(_))
+                        | (ChildEntry::Action(_), ChildEntry::AI(_)) => Some((*k, v.clone())),
+                        (ChildEntry::AI(self_ai), ChildEntry::AI(other_ai)) => {
+                            Some((*k, ChildEntry::AI(self_ai.diff(other_ai))))
+                        }
+                        (ChildEntry::Action(self_action), ChildEntry::Action(other_action)) => {
+                            Some((*k, ChildEntry::Action(self_action.diff(other_action))))
+                        }
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect();
         diff
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ActionEntry {
     def: ParameterObject,
     params: Option<ParameterObject>,
@@ -93,6 +107,81 @@ impl ActionEntry {
             .values()
             .filter_map(|p| p.as_string().ok())
             .collect()
+    }
+
+    #[must_use]
+    pub fn diff(&self, other: &Self) -> Self {
+        let mut diff = ActionEntry::default();
+        if self.def != other.def {
+            diff.def = self.def.clone();
+            diff.def.0.extend(other.def.0.iter().filter_map(|(k, v)| {
+                if !self.def.0.contains_key(k) || self.def.0[k] != *v {
+                    Some((*k, v.clone()))
+                } else {
+                    None
+                }
+            }));
+        } else {
+            diff.def = self.def.clone();
+        }
+        if self.params != other.params {
+            if let Some(self_params) = &self.params {
+                diff.params = other
+                    .params
+                    .as_ref()
+                    .map(|params| util::diff_pobj(self_params, params));
+            } else {
+                diff.params = other.params.clone();
+            }
+        }
+        if self.behaviors != other.behaviors {
+            if let Some(self_behaviors) = &self.behaviors {
+                diff.behaviors = other.behaviors.as_ref().map(|behaviors| {
+                    behaviors
+                        .iter()
+                        .filter_map(|(k, v)| {
+                            if !self_behaviors.contains_key(k) {
+                                Some((*k, v.clone()))
+                            } else if self_behaviors[k] != *v {
+                                Some((*k, util::diff_plist(&self_behaviors[k], v)))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
+                });
+            } else {
+                diff.behaviors = other.behaviors.clone();
+            }
+        }
+        diff
+    }
+
+    #[must_use]
+    pub fn merge(base: &Self, diff: &Self) -> Self {
+        let mut new = base.clone();
+        new.def = diff.def.clone();
+        if let Some(diff_params) = &diff.params {
+            if let Some(new_params) = &new.params {
+                new.params = Some(util::merge_pobj(new_params, diff_params));
+            } else {
+                new.params = diff.params.clone();
+            }
+        }
+        if let Some(diff_behaviors) = &diff.behaviors {
+            if let Some(base_behaviors) = &base.behaviors {
+                new.behaviors = Some(
+                    base_behaviors
+                        .iter()
+                        .chain(diff_behaviors.iter())
+                        .map(|(k, v)| (*k, v.clone()))
+                        .collect(),
+                );
+            } else {
+                new.behaviors = diff.behaviors.clone();
+            }
+        }
+        new
     }
 }
 
@@ -110,7 +199,49 @@ pub struct AIProgram {
 }
 
 impl AIProgram {
-    // pub fn diff(&self, other: &AIProgram) -> Self {}
+    pub fn diff(&self, other: &AIProgram) -> Self {
+        Self {
+            demos: other
+                .demos
+                .iter()
+                .filter_map(|(k, v)| {
+                    if !self.demos.contains_key(k) {
+                        Some((*k, v.clone()))
+                    } else if &self.demos[k] != v {
+                        Some((*k, self.demos[k].diff(v)))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+            queries: other
+                .queries
+                .iter()
+                .filter_map(|(k, v)| {
+                    if !self.queries.contains_key(k) {
+                        Some((k.clone(), v.clone()))
+                    } else if &self.queries[k] != v {
+                        Some((k.clone(), util::diff_plist(&self.queries[k], v)))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+            tree: other
+                .tree
+                .iter()
+                .filter_map(|(k, v)| {
+                    if !self.tree.contains_key(k) {
+                        Some((k.clone(), v.clone()))
+                    } else if &self.tree[k] != v {
+                        Some((k.clone(), self.tree[k].diff(v)))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+        }
+    }
 }
 
 mod parse {
@@ -409,6 +540,7 @@ mod write {
             }
             let mut plist = ParameterList::new();
             let idx = self.ais.len();
+            self.ais.insert(idx, ParameterList::new());
             plist.set_object("Def", ai.def);
             if let Some(params) = ai.params {
                 plist.set_object("SInst", params);
@@ -445,7 +577,7 @@ mod write {
                 plist.set_object("BehaviorIdx", behavior_indexes);
             };
             self.done_ais.insert(name, idx);
-            self.ais.insert(idx, plist);
+            std::mem::swap(&mut plist, self.ais.get_mut(idx).unwrap());
             idx
         }
 
@@ -572,5 +704,47 @@ mod write {
         pub fn into_pio(self) -> ParameterIO {
             ParameterIOBuilder::new(self).build()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn serde() {
+        let actor = crate::tests::test_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
+                .unwrap(),
+        )
+        .unwrap();
+        let aiprog = super::AIProgram::try_from(&pio).unwrap();
+        let data = aiprog.clone().into_pio().to_binary();
+        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
+        assert_eq!(aiprog, aiprog2);
+    }
+
+    #[test]
+    fn diff() {
+        let actor = crate::tests::test_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
+                .unwrap(),
+        )
+        .unwrap();
+        let aiprog = crate::actor::aiprog::AIProgram::try_from(&pio).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/AIProgram/Guardian_A_Modified.baiprog")
+                .unwrap(),
+        )
+        .unwrap();
+        let aiprog2 = crate::actor::aiprog::AIProgram::try_from(&pio2).unwrap();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&aiprog.diff(&aiprog2)).unwrap()
+        );
     }
 }
