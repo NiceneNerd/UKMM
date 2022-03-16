@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-mod actor;
+pub mod actor;
 
 #[derive(Debug, Error)]
 pub enum UKError {
@@ -15,6 +15,7 @@ pub type Result<T> = std::result::Result<T, UKError>;
 #[cfg(test)]
 mod tests {
     fn test_actorpack() -> roead::sarc::Sarc<'static> {
+        println!("{}", std::env::current_dir().unwrap().display());
         roead::sarc::Sarc::read(
             roead::yaz0::decompress(std::fs::read("test/Enemy_Guardian_A.sbactorpack").unwrap())
                 .unwrap(),
@@ -32,7 +33,7 @@ mod tests {
         )
         .unwrap();
         let aiprog = crate::actor::aiprog::AIProgram::try_from(&pio).unwrap();
-        let string = serde_json::to_string(&aiprog).unwrap();
-        std::fs::write("../target/aiprog.json", string).unwrap();
+        serde_json::to_string(&aiprog).unwrap();
+        aiprog.into_pio().to_binary();
     }
 }
