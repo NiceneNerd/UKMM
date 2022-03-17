@@ -48,8 +48,6 @@ pub mod prelude {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::{prelude::Mergeable, UKError};
-
     pub fn test_base_actorpack() -> roead::sarc::Sarc<'static> {
         println!("{}", std::env::current_dir().unwrap().display());
         roead::sarc::Sarc::read(

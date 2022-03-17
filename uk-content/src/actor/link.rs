@@ -144,4 +144,67 @@ impl From<ActorLink> for ParameterIO {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::prelude::*;
+
+    #[test]
+    fn serde() {
+        let actor = crate::tests::test_base_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap(),
+        )
+        .unwrap();
+        let actorlink = super::ActorLink::try_from(&pio).unwrap();
+        let data = actorlink.clone().into_pio().to_binary();
+        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let actorlink2 = super::ActorLink::try_from(&pio2).unwrap();
+        assert_eq!(actorlink, actorlink2);
+    }
+
+    #[test]
+    fn diff() {
+        let actor = crate::tests::test_base_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap(),
+        )
+        .unwrap();
+        let actorlink = super::ActorLink::try_from(&pio).unwrap();
+        let actor2 = crate::tests::test_mod_actorpack();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap(),
+        )
+        .unwrap();
+        let actorlink2 = super::ActorLink::try_from(&pio2).unwrap();
+        let diff = actorlink.diff(&actorlink2);
+        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+    }
+
+    #[test]
+    fn merge() {
+        let actor = crate::tests::test_base_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap(),
+        )
+        .unwrap();
+        let actor2 = crate::tests::test_mod_actorpack();
+        let actorlink = super::ActorLink::try_from(&pio).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap(),
+        )
+        .unwrap();
+        let actorlink2 = super::ActorLink::try_from(&pio2).unwrap();
+        let diff = actorlink.diff(&actorlink2);
+        let merged = super::ActorLink::merge(&actorlink, &diff);
+        assert_eq!(actorlink2, merged);
+    }
+}
