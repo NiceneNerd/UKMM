@@ -18,21 +18,54 @@ pub mod prelude {
         fn into_pio(self) -> roead::aamp::ParameterIO;
     }
 
+    impl<T: Into<roead::aamp::ParameterIO>> IntoParameterIO for T {
+        fn into_pio(self) -> roead::aamp::ParameterIO {
+            self.into()
+        }
+    }
+
     pub trait Mergeable {
         #[must_use]
         fn diff(&self, other: &Self) -> Self;
         #[must_use]
         fn merge(base: &Self, diff: &Self) -> Self;
     }
+
+    pub trait SimpleMergeableAamp {
+        fn inner(&self) -> &roead::aamp::ParameterIO;
+    }
+
+    impl<'a, T: SimpleMergeableAamp + From<roead::aamp::ParameterIO>> Mergeable for T {
+        fn diff(&self, other: &Self) -> Self {
+            crate::util::diff_plist(self.inner(), other.inner()).into()
+        }
+
+        fn merge(base: &Self, diff: &Self) -> Self {
+            crate::util::merge_plist(base.inner(), diff.inner()).into()
+        }
+    }
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
-    pub fn test_actorpack() -> roead::sarc::Sarc<'static> {
+    use crate::{prelude::Mergeable, UKError};
+
+    pub fn test_base_actorpack() -> roead::sarc::Sarc<'static> {
         println!("{}", std::env::current_dir().unwrap().display());
         roead::sarc::Sarc::read(
             roead::yaz0::decompress(std::fs::read("test/Enemy_Guardian_A.sbactorpack").unwrap())
                 .unwrap(),
+        )
+        .unwrap()
+    }
+
+    pub fn test_mod_actorpack() -> roead::sarc::Sarc<'static> {
+        println!("{}", std::env::current_dir().unwrap().display());
+        roead::sarc::Sarc::read(
+            roead::yaz0::decompress(
+                std::fs::read("test/Enemy_Guardian_A_Mod.sbactorpack").unwrap(),
+            )
+            .unwrap(),
         )
         .unwrap()
     }

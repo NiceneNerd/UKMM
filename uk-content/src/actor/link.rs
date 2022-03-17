@@ -110,13 +110,13 @@ impl TryFrom<&ParameterIO> for ActorLink {
     }
 }
 
-impl IntoParameterIO for ActorLink {
-    fn into_pio(self) -> ParameterIO {
+impl From<ActorLink> for ParameterIO {
+    fn from(val: ActorLink) -> Self {
         ParameterIO {
             objects: {
                 let mut objects = ParameterObjectMap::default();
-                objects.0.insert(hash_name("LinkTarget"), self.targets);
-                if let Some(tags) = self.tags {
+                objects.0.insert(hash_name("LinkTarget"), val.targets);
+                if let Some(tags) = val.tags {
                     objects.0.insert(
                         hash_name("Tags"),
                         ParameterObject(

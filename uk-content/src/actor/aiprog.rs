@@ -584,9 +584,6 @@ mod parse {
 
 mod write {
     use std::collections::HashMap;
-
-    use crate::prelude::*;
-
     use super::*;
 
     fn count_ais(ai: &AIEntry) -> usize {
@@ -792,9 +789,9 @@ mod write {
         }
     }
 
-    impl IntoParameterIO for AIProgram {
-        fn into_pio(self) -> ParameterIO {
-            ParameterIOBuilder::new(self).build()
+    impl From<AIProgram> for ParameterIO {
+        fn from(val: AIProgram) -> Self {
+            ParameterIOBuilder::new(val).build()
         }
     }
 }
@@ -805,7 +802,7 @@ mod tests {
 
     #[test]
     fn serde() {
-        let actor = crate::tests::test_actorpack();
+        let actor = crate::tests::test_base_actorpack();
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
@@ -821,7 +818,7 @@ mod tests {
 
     #[test]
     fn diff() {
-        let actor = crate::tests::test_actorpack();
+        let actor = crate::tests::test_base_actorpack();
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
@@ -829,9 +826,10 @@ mod tests {
         )
         .unwrap();
         let aiprog = super::AIProgram::try_from(&pio).unwrap();
+        let actor2 = crate::tests::test_mod_actorpack();
         let pio2 = roead::aamp::ParameterIO::from_binary(
-            actor
-                .get_file_data("Actor/AIProgram/Guardian_A_Modified.baiprog")
+            actor2
+                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap(),
         )
         .unwrap();
@@ -842,17 +840,18 @@ mod tests {
 
     #[test]
     fn merge() {
-        let actor = crate::tests::test_actorpack();
+        let actor = crate::tests::test_base_actorpack();
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap(),
         )
         .unwrap();
+        let actor2 = crate::tests::test_mod_actorpack();
         let aiprog = super::AIProgram::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
-            actor
-                .get_file_data("Actor/AIProgram/Guardian_A_Modified.baiprog")
+            actor2
+                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap(),
         )
         .unwrap();

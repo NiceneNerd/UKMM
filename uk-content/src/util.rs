@@ -1,17 +1,17 @@
 use roead::aamp::*;
 
-pub fn diff_plist(base: &ParameterList, other: &ParameterList) -> ParameterList {
+pub fn diff_plist<P: ParamList + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
         lists: ParameterListMap(
             other
-                .lists
+                .lists()
                 .0
                 .iter()
                 .filter_map(|(k, v)| {
-                    if !base.lists.0.contains_key(k) {
+                    if !base.lists().0.contains_key(k) {
                         Some((*k, v.clone()))
-                    } else if base.lists.0[k] != *v {
-                        Some((*k, diff_plist(&base.lists.0[k], v)))
+                    } else if base.lists().0[k] != *v {
+                        Some((*k, diff_plist(&base.lists().0[k], v)))
                     } else {
                         None
                     }
@@ -20,21 +20,21 @@ pub fn diff_plist(base: &ParameterList, other: &ParameterList) -> ParameterList 
         ),
         objects: ParameterObjectMap(
             other
-                .objects
+                .objects()
                 .0
                 .iter()
                 .filter_map(|(k, v)| {
-                    if !base.objects.0.contains_key(k) {
+                    if !base.objects().0.contains_key(k) {
                         Some((*k, v.clone()))
-                    } else if base.objects.0[k] != *v {
-                        Some((*k, diff_pobj(&base.objects.0[k], v)))
+                    } else if base.objects().0[k] != *v {
+                        Some((*k, diff_pobj(&base.objects().0[k], v)))
                     } else {
                         None
                     }
                 })
                 .collect(),
         ),
-    }
+    }.into()
 }
 
 pub fn diff_pobj(base: &ParameterObject, other: &ParameterObject) -> ParameterObject {
@@ -53,11 +53,11 @@ pub fn diff_pobj(base: &ParameterObject, other: &ParameterObject) -> ParameterOb
     )
 }
 
-pub fn merge_plist(base: &ParameterList, diff: &ParameterList) -> ParameterList {
+pub fn merge_plist<P: ParamList + From<ParameterList>>(base: &P, diff: &P) -> P {
     ParameterList {
         objects: {
-            let mut new = base.objects.clone();
-            for (k, v) in &diff.objects.0 {
+            let mut new = base.objects().clone();
+            for (k, v) in &diff.objects().0 {
                 if !new.0.contains_key(k) {
                     new.0.insert(*k, v.clone());
                 } else {
@@ -67,8 +67,8 @@ pub fn merge_plist(base: &ParameterList, diff: &ParameterList) -> ParameterList 
             new
         },
         lists: {
-            let mut new = base.lists.clone();
-            for (k, v) in &diff.lists.0 {
+            let mut new = base.lists().clone();
+            for (k, v) in &diff.lists().0 {
                 if !new.0.contains_key(k) {
                     new.0.insert(*k, v.clone());
                 } else {
@@ -77,7 +77,7 @@ pub fn merge_plist(base: &ParameterList, diff: &ParameterList) -> ParameterList 
             }
             new
         }
-    }
+    }.into()
 }
 
 pub fn merge_pobj(base: &ParameterObject, diff: &ParameterObject) -> ParameterObject {

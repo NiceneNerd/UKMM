@@ -1,0 +1,96 @@
+use roead::aamp::*;
+use serde::{Serialize, Deserialize};
+use crate::prelude::*;
+
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Awareness(ParameterIO);
+
+impl From<&ParameterIO> for Awareness {
+    fn from(pio: &ParameterIO) -> Self {
+        Self(pio.clone())
+    }
+}
+
+impl From<ParameterIO> for Awareness {
+    fn from(pio: ParameterIO) -> Self {
+        Self(pio)
+    }
+}
+
+impl From<Awareness> for ParameterIO {
+    fn from(val: Awareness) -> Self {
+        val.0
+    }
+}
+
+impl SimpleMergeableAamp for Awareness {
+    fn inner(&self) -> &ParameterIO {
+        &self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+
+    #[test]
+    fn serde() {
+        let actor = crate::tests::test_base_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/Awareness/Guardian.bawareness")
+                .unwrap(),
+        )
+        .unwrap();
+        let awareness = super::Awareness::try_from(&pio).unwrap();
+        let data = awareness.clone().into_pio().to_binary();
+        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let awareness2 = super::Awareness::try_from(&pio2).unwrap();
+        assert_eq!(awareness, awareness2);
+    }
+
+    #[test]
+    fn diff() {
+        let actor = crate::tests::test_base_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/Awareness/Guardian.bawareness")
+                .unwrap(),
+        )
+        .unwrap();
+        let awareness = super::Awareness::try_from(&pio).unwrap();
+        let actor2 = crate::tests::test_mod_actorpack();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/Awareness/Guardian.bawareness")
+                .unwrap(),
+        )
+        .unwrap();
+        let awareness2 = super::Awareness::try_from(&pio2).unwrap();
+        let diff = awareness.diff(&awareness2);
+        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+    }
+
+    #[test]
+    fn merge() {
+        let actor = crate::tests::test_base_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/Awareness/Guardian.bawareness")
+                .unwrap(),
+        )
+        .unwrap();
+        let actor2 = crate::tests::test_mod_actorpack();
+        let awareness = super::Awareness::try_from(&pio).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/Awareness/Guardian.bawareness")
+                .unwrap(),
+        )
+        .unwrap();
+        let awareness2 = super::Awareness::try_from(&pio2).unwrap();
+        let diff = awareness.diff(&awareness2);
+        let merged = super::Awareness::merge(&awareness, &diff);
+        assert_eq!(awareness2, merged);
+    }
+}
