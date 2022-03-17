@@ -1,4 +1,4 @@
-use crate::{util, Result, UKError};
+use crate::{prelude::*, util, Result, UKError};
 use indexmap::IndexMap;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -6,10 +6,10 @@ use std::collections::HashSet;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AIEntry {
-    def: ParameterObject,
-    params: Option<ParameterObject>,
-    children: IndexMap<u32, ChildEntry>,
-    behaviors: Option<IndexMap<u32, ParameterList>>,
+    pub def: ParameterObject,
+    pub params: Option<ParameterObject>,
+    pub children: IndexMap<u32, ChildEntry>,
+    pub behaviors: Option<IndexMap<u32, ParameterList>>,
 }
 
 impl AIEntry {
@@ -20,9 +20,10 @@ impl AIEntry {
             .filter_map(|p| p.as_string().ok())
             .collect()
     }
+}
 
-    #[must_use]
-    pub fn diff(&self, other: &Self) -> Self {
+impl Mergeable for AIEntry {
+    fn diff(&self, other: &Self) -> Self {
         let mut diff = AIEntry::default();
         if self.def != other.def {
             diff.def = self.def.clone();
@@ -92,8 +93,7 @@ impl AIEntry {
         diff
     }
 
-    #[must_use]
-    pub fn merge(base: &Self, diff: &Self) -> Self {
+    fn merge(base: &Self, diff: &Self) -> Self {
         let mut new = base.clone();
         new.def = diff.def.clone();
         if let Some(diff_params) = &diff.params {
@@ -119,11 +119,20 @@ impl AIEntry {
         for (k, v) in &diff.children {
             if let Some(base_child) = base.children.get(k) {
                 match (base_child, v) {
-                    (ChildEntry::AI(_), ChildEntry::Action(_)) | (ChildEntry::Action(_), ChildEntry::AI(_)) => new.children.insert(*k, v.clone()),
-                    (ChildEntry::AI(&base_ai), ChildEntry::AI(&diff_ai)) => {
-                        new.children.insert(*k, AIEntry::merge(&base_ai, &diff_ai))
-                    },
-                    (ChildEntry::Action(&base_action), ChildEntry::Action(&diff_action)) => { },
+                    (ChildEntry::AI(_), ChildEntry::Action(_))
+                    | (ChildEntry::Action(_), ChildEntry::AI(_)) => {
+                        new.children.insert(*k, v.clone());
+                    }
+                    (ChildEntry::AI(base_ai), ChildEntry::AI(diff_ai)) => {
+                        new.children
+                            .insert(*k, ChildEntry::AI(AIEntry::merge(base_ai, diff_ai)));
+                    }
+                    (ChildEntry::Action(base_action), ChildEntry::Action(diff_action)) => {
+                        new.children.insert(
+                            *k,
+                            ChildEntry::Action(ActionEntry::merge(base_action, diff_action)),
+                        );
+                    }
                 }
             } else {
                 new.children.insert(*k, v.clone());
@@ -135,9 +144,9 @@ impl AIEntry {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ActionEntry {
-    def: ParameterObject,
-    params: Option<ParameterObject>,
-    behaviors: Option<IndexMap<u32, ParameterList>>,
+    pub def: ParameterObject,
+    pub params: Option<ParameterObject>,
+    pub behaviors: Option<IndexMap<u32, ParameterList>>,
 }
 
 impl ActionEntry {
@@ -148,9 +157,10 @@ impl ActionEntry {
             .filter_map(|p| p.as_string().ok())
             .collect()
     }
+}
 
-    #[must_use]
-    pub fn diff(&self, other: &Self) -> Self {
+impl Mergeable for ActionEntry {
+    fn diff(&self, other: &Self) -> Self {
         let mut diff = ActionEntry::default();
         if self.def != other.def {
             diff.def = self.def.clone();
@@ -197,8 +207,7 @@ impl ActionEntry {
         diff
     }
 
-    #[must_use]
-    pub fn merge(base: &Self, diff: &Self) -> Self {
+    fn merge(base: &Self, diff: &Self) -> Self {
         let mut new = base.clone();
         new.def = diff.def.clone();
         if let Some(diff_params) = &diff.params {
@@ -238,8 +247,8 @@ pub struct AIProgram {
     pub queries: IndexMap<String, ParameterList>,
 }
 
-impl AIProgram {
-    pub fn diff(&self, other: &AIProgram) -> Self {
+impl Mergeable for AIProgram {
+    fn diff(&self, other: &Self) -> Self {
         Self {
             demos: other
                 .demos
@@ -280,6 +289,47 @@ impl AIProgram {
                     }
                 })
                 .collect(),
+        }
+    }
+
+    fn merge(base: &Self, diff: &Self) -> Self {
+        Self {
+            demos: {
+                let mut new = base.demos.clone();
+                for (k, v) in &diff.demos {
+                    let merged = if let Some(entry) = new.get_mut(k) {
+                        ActionEntry::merge(entry, v)
+                    } else {
+                        v.clone()
+                    };
+                    new.insert(*k, merged);
+                }
+                new
+            },
+            queries: {
+                let mut new = base.queries.clone();
+                for (k, v) in &diff.queries {
+                    let merged = if let Some(entry) = new.get_mut(k) {
+                        util::merge_plist(entry, v)
+                    } else {
+                        v.clone()
+                    };
+                    new.insert(k.clone(), merged);
+                }
+                new
+            },
+            tree: {
+                let mut new = base.tree.clone();
+                for (k, v) in &diff.tree {
+                    let merged = if let Some(entry) = new.get_mut(k) {
+                        AIEntry::merge(entry, v)
+                    } else {
+                        v.clone()
+                    };
+                    new.insert(k.clone(), merged);
+                }
+                new
+            },
         }
     }
 }
@@ -535,6 +585,8 @@ mod parse {
 mod write {
     use std::collections::HashMap;
 
+    use crate::prelude::*;
+
     use super::*;
 
     fn count_ais(ai: &AIEntry) -> usize {
@@ -740,8 +792,8 @@ mod write {
         }
     }
 
-    impl AIProgram {
-        pub fn into_pio(self) -> ParameterIO {
+    impl IntoParameterIO for AIProgram {
+        fn into_pio(self) -> ParameterIO {
             ParameterIOBuilder::new(self).build()
         }
     }
@@ -749,6 +801,8 @@ mod write {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
+
     #[test]
     fn serde() {
         let actor = crate::tests::test_actorpack();
@@ -774,17 +828,37 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let aiprog = crate::actor::aiprog::AIProgram::try_from(&pio).unwrap();
+        let aiprog = super::AIProgram::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/AIProgram/Guardian_A_Modified.baiprog")
                 .unwrap(),
         )
         .unwrap();
-        let aiprog2 = crate::actor::aiprog::AIProgram::try_from(&pio2).unwrap();
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&aiprog.diff(&aiprog2)).unwrap()
-        );
+        let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
+        let diff = aiprog.diff(&aiprog2);
+        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+    }
+
+    #[test]
+    fn merge() {
+        let actor = crate::tests::test_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
+                .unwrap(),
+        )
+        .unwrap();
+        let aiprog = super::AIProgram::try_from(&pio).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/AIProgram/Guardian_A_Modified.baiprog")
+                .unwrap(),
+        )
+        .unwrap();
+        let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
+        let diff = aiprog.diff(&aiprog2);
+        let merged = super::AIProgram::merge(&aiprog, &diff);
+        assert_eq!(aiprog2, merged);
     }
 }
