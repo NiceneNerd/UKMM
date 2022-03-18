@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 pub mod actor;
+pub mod constants;
 pub mod util;
 
 #[derive(Debug, Error)]
@@ -9,6 +10,8 @@ pub enum UKError {
     MissingAampKey(String),
     #[error("Wrong type for parameter value")]
     WrongAampType(#[from] roead::aamp::AampError),
+    #[error("Invalid weather value: {0}")]
+    InvalidWeather(#[from] strum::ParseError),
 }
 
 pub type Result<T> = std::result::Result<T, UKError>;

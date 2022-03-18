@@ -3,7 +3,7 @@ use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DamageParam(ParameterIO);
+pub struct DamageParam(pub ParameterIO);
 
 impl From<&ParameterIO> for DamageParam {
     fn from(pio: &ParameterIO) -> Self {

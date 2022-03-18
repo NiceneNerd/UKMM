@@ -1,33 +1,66 @@
 use crate::{prelude::*, util, Result, UKError};
+use indexmap::IndexMap;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Tag {
-    pub inner: String,
-    pub delete: bool,
-}
-
-impl From<String> for Tag {
-    fn from(string: String) -> Self {
-        Tag {
-            inner: string,
-            delete: false,
-        }
-    }
-}
-
-impl From<&str> for Tag {
-    fn from(string: &str) -> Self {
-        string.to_owned().into()
-    }
-}
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActorLink {
     pub targets: ParameterObject,
-    pub tags: Option<HashSet<Tag>>,
+    pub tags: Option<IndexMap<String, bool>>,
+}
+
+impl TryFrom<&ParameterIO> for ActorLink {
+    type Error = UKError;
+
+    fn try_from(pio: &ParameterIO) -> Result<Self> {
+        Ok(Self {
+            targets: pio
+                .object("LinkTarget")
+                .ok_or_else(|| {
+                    UKError::MissingAampKey("Actor link missing link targets".to_owned())
+                })?
+                .clone(),
+            tags: pio.object("Tags").map(|tags| {
+                tags.0
+                    .values()
+                    .filter_map(|v| v.as_string().ok().map(|s| (s.to_owned(), false)))
+                    .collect()
+            }),
+        })
+    }
+}
+
+impl From<ActorLink> for ParameterIO {
+    fn from(val: ActorLink) -> Self {
+        ParameterIO {
+            objects: {
+                let mut objects = ParameterObjectMap::default();
+                objects.0.insert(hash_name("LinkTarget"), val.targets);
+                if let Some(tags) = val.tags {
+                    objects.0.insert(
+                        hash_name("Tags"),
+                        ParameterObject(
+                            tags.into_iter()
+                                .enumerate()
+                                .filter_map(|(i, (tag, delete))| {
+                                    if delete {
+                                        None
+                                    } else {
+                                        Some((
+                                            hash_name(&format!("Tag{}", i)),
+                                            Parameter::StringRef(tag),
+                                        ))
+                                    }
+                                })
+                                .collect(),
+                        ),
+                    );
+                }
+                objects
+            },
+            ..Default::default()
+        }
+    }
 }
 
 impl Mergeable for ActorLink {
@@ -38,16 +71,18 @@ impl Mergeable for ActorLink {
                 if let Some(self_tags) = self.tags.as_ref() {
                     diff_tags
                         .iter()
-                        .filter(|tag| !self_tags.contains(tag))
-                        .cloned()
-                        .chain(self_tags.iter().filter_map(|tag| {
-                            if diff_tags.contains(tag) {
+                        .filter_map(|(tag, _)| {
+                            if !self_tags.contains_key(tag.as_str()) {
+                                Some((tag.clone(), false))
+                            } else {
+                                None
+                            }
+                        })
+                        .chain(self_tags.iter().filter_map(|(tag, _)| {
+                            if diff_tags.contains_key(tag.as_str()) {
                                 None
                             } else {
-                                Some(Tag {
-                                    inner: tag.inner.clone(),
-                                    delete: true,
-                                })
+                                Some((tag.clone(), true))
                             }
                         }))
                         .collect()
@@ -75,7 +110,15 @@ impl Mergeable for ActorLink {
                             base_tags
                                 .iter()
                                 .chain(other_tags.iter())
-                                .filter_map(|tag| if tag.delete { None } else { Some(tag.clone()) })
+                                .collect::<IndexMap<&String, &bool>>()
+                                .into_iter()
+                                .filter_map(|(tag, delete)| {
+                                    if *delete {
+                                        None
+                                    } else {
+                                        Some((tag.clone(), false))
+                                    }
+                                })
                                 .collect(),
                         )
                     } else {
@@ -85,60 +128,6 @@ impl Mergeable for ActorLink {
                     other.tags.clone()
                 }
             },
-        }
-    }
-}
-
-impl TryFrom<&ParameterIO> for ActorLink {
-    type Error = UKError;
-
-    fn try_from(pio: &ParameterIO) -> Result<Self> {
-        Ok(Self {
-            targets: pio
-                .object("LinKTarget")
-                .ok_or_else(|| {
-                    UKError::MissingAampKey("Actor link missing link targets".to_owned())
-                })?
-                .clone(),
-            tags: pio.object("Tags").map(|tags| {
-                tags.0
-                    .values()
-                    .filter_map(|v| v.as_string().ok().map(|s| s.into()))
-                    .collect()
-            }),
-        })
-    }
-}
-
-impl From<ActorLink> for ParameterIO {
-    fn from(val: ActorLink) -> Self {
-        ParameterIO {
-            objects: {
-                let mut objects = ParameterObjectMap::default();
-                objects.0.insert(hash_name("LinkTarget"), val.targets);
-                if let Some(tags) = val.tags {
-                    objects.0.insert(
-                        hash_name("Tags"),
-                        ParameterObject(
-                            tags.into_iter()
-                                .enumerate()
-                                .filter_map(|(i, tag)| {
-                                    if tag.delete {
-                                        None
-                                    } else {
-                                        Some((
-                                            hash_name(&format!("Tag{}", i)),
-                                            Parameter::StringRef(tag.inner),
-                                        ))
-                                    }
-                                })
-                                .collect(),
-                        ),
-                    );
-                }
-                objects
-            },
-            ..Default::default()
         }
     }
 }

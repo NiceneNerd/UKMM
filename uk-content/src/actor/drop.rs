@@ -1,10 +1,10 @@
-use crate::{prelude::*, Result, UKError};
+use crate::{Result, UKError};
 use indexmap::IndexMap;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-struct DropTable(IndexMap<String, ParameterObject>);
+struct DropTable(pub IndexMap<String, ParameterObject>);
 
 impl TryFrom<ParameterIO> for DropTable {
     type Error = UKError;
