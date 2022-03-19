@@ -11,7 +11,7 @@ pub enum UKError {
     #[error("Wrong type for parameter value")]
     WrongAampType(#[from] roead::aamp::AampError),
     #[error("Invalid weather value: {0}")]
-    InvalidWeather(#[from] strum::ParseError),
+    InvalidWeatherOrTime(String),
 }
 
 pub type Result<T> = std::result::Result<T, UKError>;

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use crate::{
     constants::{Time, Weather},
@@ -31,7 +31,8 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                         .params()
                         .values()
                         .map(|w| -> Result<(Weather, bool)> {
-                            Ok((Weather::from_str(w.as_string()?)?, false))
+                            println!("{:?}", &w);
+                            Ok((w.as_string()?.try_into()?, false))
                         })
                         .collect::<Result<HashMap<_, _>>>()
                 })
@@ -43,7 +44,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                         .params()
                         .values()
                         .map(|w| -> Result<(Time, bool)> {
-                            Ok((Time::from_str(w.as_string()?)?, false))
+                            Ok((w.as_string()?.try_into()?, false))
                         })
                         .collect::<Result<HashMap<_, _>>>()
                 })
@@ -102,7 +103,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                         .params()
                         .values()
                         .map(|w| -> Result<(Weather, bool)> {
-                            Ok((Weather::from_str(w.as_string()?)?, false))
+                            Ok((w.as_string()?.try_into()?, false))
                         })
                         .collect::<Result<HashMap<_, _>>>()
                 })
@@ -114,7 +115,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                         .params()
                         .values()
                         .map(|w| -> Result<(Time, bool)> {
-                            Ok((Time::from_str(w.as_string()?)?, false))
+                            Ok((w.as_string()?.try_into()?, false))
                         })
                         .collect::<Result<HashMap<_, _>>>()
                 })
@@ -340,7 +341,162 @@ impl Mergeable for LifeCondition {
 
     fn merge(base: &Self, diff: &Self) -> Self {
         Self {
-            ..Default::default()
+            invalid_weathers: {
+                base.invalid_weathers
+                    .as_ref()
+                    .and_then(|base_weathers| {
+                        diff.invalid_weathers
+                            .as_ref()
+                            .map(|diff_weathers| {
+                                base_weathers
+                                    .iter()
+                                    .chain(diff_weathers.iter())
+                                    .collect::<HashMap<_, _>>()
+                                    .into_iter()
+                                    .filter_map(|(weather, delete)| {
+                                        (!delete).then(|| (*weather, false))
+                                    })
+                                    .collect()
+                            })
+                            .or_else(|| base.invalid_weathers.clone())
+                    })
+                    .or_else(|| diff.invalid_weathers.clone())
+            },
+            invalid_times: {
+                base.invalid_times
+                    .as_ref()
+                    .and_then(|base_times| {
+                        diff.invalid_times
+                            .as_ref()
+                            .map(|diff_times| {
+                                base_times
+                                    .iter()
+                                    .chain(diff_times.iter())
+                                    .collect::<HashMap<_, _>>()
+                                    .into_iter()
+                                    .filter_map(|(time, delete)| (!delete).then(|| (*time, false)))
+                                    .collect()
+                            })
+                            .or_else(|| base.invalid_times.clone())
+                    })
+                    .or_else(|| diff.invalid_times.clone())
+            },
+            display_dist: diff.display_dist.or(base.display_dist),
+            auto_disp_dist_algo: diff
+                .auto_disp_dist_algo
+                .clone()
+                .or_else(|| base.auto_disp_dist_algo.clone()),
+            y_limit_algo: diff
+                .y_limit_algo
+                .clone()
+                .or_else(|| base.y_limit_algo.clone()),
+            delete_weathers: {
+                base.delete_weathers
+                    .as_ref()
+                    .and_then(|base_weathers| {
+                        diff.delete_weathers
+                            .as_ref()
+                            .map(|diff_weathers| {
+                                base_weathers
+                                    .iter()
+                                    .chain(diff_weathers.iter())
+                                    .collect::<HashMap<_, _>>()
+                                    .into_iter()
+                                    .filter_map(|(weather, delete)| {
+                                        (!delete).then(|| (*weather, false))
+                                    })
+                                    .collect()
+                            })
+                            .or_else(|| base.delete_weathers.clone())
+                    })
+                    .or_else(|| diff.delete_weathers.clone())
+            },
+            delete_times: {
+                base.delete_times
+                    .as_ref()
+                    .and_then(|base_times| {
+                        diff.delete_times
+                            .as_ref()
+                            .map(|diff_times| {
+                                base_times
+                                    .iter()
+                                    .chain(diff_times.iter())
+                                    .collect::<HashMap<_, _>>()
+                                    .into_iter()
+                                    .filter_map(|(time, delete)| (!delete).then(|| (*time, false)))
+                                    .collect()
+                            })
+                            .or_else(|| base.delete_times.clone())
+                    })
+                    .or_else(|| diff.delete_times.clone())
+            },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+
+    #[test]
+    fn serde() {
+        let actor = crate::tests::test_base_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap(),
+        )
+        .unwrap();
+        let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
+        let data = lifecondition.clone().into_pio().to_binary();
+        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let lifecondition2 = super::LifeCondition::try_from(&pio2).unwrap();
+        assert_eq!(lifecondition, lifecondition2);
+    }
+
+    #[test]
+    fn diff() {
+        let actor = crate::tests::test_base_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap(),
+        )
+        .unwrap();
+        let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
+        let actor2 = crate::tests::test_mod_actorpack();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap(),
+        )
+        .unwrap();
+        let lifecondition2 = super::LifeCondition::try_from(&pio2).unwrap();
+        let diff = lifecondition.diff(&lifecondition2);
+        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+    }
+
+    #[test]
+    fn merge() {
+        let actor = crate::tests::test_base_actorpack();
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap(),
+        )
+        .unwrap();
+        let actor2 = crate::tests::test_mod_actorpack();
+        let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap(),
+        )
+        .unwrap();
+        let lifecondition2 = super::LifeCondition::try_from(&pio2).unwrap();
+        let diff = lifecondition.diff(&lifecondition2);
+        let merged = super::LifeCondition::merge(&lifecondition, &diff);
+        println!("{}", serde_json::to_string_pretty(&merged).unwrap());
+        assert_eq!(lifecondition2, merged);
     }
 }
