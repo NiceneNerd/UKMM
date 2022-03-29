@@ -1,3 +1,4 @@
+#![feature(negative_impls)]
 #![feature(let_chains)]
 use thiserror::Error;
 
@@ -39,6 +40,8 @@ pub mod prelude {
         fn inner(&self) -> &roead::aamp::ParameterIO;
     }
 
+    impl<T: SimpleMergeableAamp> !ShallowMergeableByml for T {}
+
     impl<'a, T: SimpleMergeableAamp + From<roead::aamp::ParameterIO>> Mergeable for T {
         fn diff(&self, other: &Self) -> Self {
             crate::util::diff_plist(self.inner(), other.inner()).into()
@@ -46,6 +49,18 @@ pub mod prelude {
 
         fn merge(base: &Self, diff: &Self) -> Self {
             crate::util::merge_plist(base.inner(), diff.inner()).into()
+        }
+    }
+
+    pub trait ShallowMergeableByml {
+        fn inner(&self) -> &roead::byml::Byml;
+    }
+
+    impl<T: ShallowMergeableByml> !SimpleMergeableAamp for T {}
+
+    impl <'a, T: ShallowMergeableByml + TryFrom<roead::byml::Byml>> Mergeable for T {
+        fn diff(&self, other: &Self) -> Self {
+            todo!()
         }
     }
 }

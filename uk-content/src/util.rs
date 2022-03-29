@@ -1,4 +1,5 @@
 use roead::aamp::*;
+use roead::byml::Byml;
 
 pub fn diff_plist<P: ParamList + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
@@ -34,7 +35,8 @@ pub fn diff_plist<P: ParamList + From<ParameterList>>(base: &P, other: &P) -> P 
                 })
                 .collect(),
         ),
-    }.into()
+    }
+    .into()
 }
 
 pub fn diff_pobj(base: &ParameterObject, other: &ParameterObject) -> ParameterObject {
@@ -76,8 +78,9 @@ pub fn merge_plist<P: ParamList + From<ParameterList>>(base: &P, diff: &P) -> P 
                 }
             }
             new
-        }
-    }.into()
+        },
+    }
+    .into()
 }
 
 pub fn merge_pobj(base: &ParameterObject, diff: &ParameterObject) -> ParameterObject {
@@ -88,4 +91,20 @@ pub fn merge_pobj(base: &ParameterObject, diff: &ParameterObject) -> ParameterOb
             .map(|(k, v)| (*k, v.clone()))
             .collect(),
     )
+}
+
+pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
+    if let Byml::Hash(base) = &base && let &Byml::Hash(other) = &other {
+        Byml::Hash(other.iter().filter_map(|(key, value)| {
+            if base.get(key) != Some(value) {
+                Some((key.clone(), value.clone()))
+            } else {
+                None
+            }
+        }).chain(
+            base.keys().filter_map(|key| (!other.contains_key(key)).then(|| (key.clone(), Byml::Null)))
+        ).collect())
+    } else {
+        panic!("Can only shallow diff BYML hashes")
+    }
 }
