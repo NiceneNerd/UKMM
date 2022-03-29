@@ -232,14 +232,14 @@ impl Mergeable for ShopData {
                                                 {
                                                     None
                                                 } else {
-                                                    Some((item.clone(), data.clone()))
+                                                    Some((item.clone(), *data))
                                                 }
                                             })
                                             .chain(self_table.iter().filter_map(|(item, data)| {
                                                 if other_table.contains_key(item.as_str()) {
                                                     None
                                                 } else {
-                                                    Some((item.clone(), data.clone().with_delete()))
+                                                    Some((item.clone(), (*data).with_delete()))
                                                 }
                                             }))
                                             .collect(),
@@ -286,6 +286,7 @@ impl Mergeable for ShopData {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use crate::prelude::*;
 
