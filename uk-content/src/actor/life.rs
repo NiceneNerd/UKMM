@@ -440,7 +440,7 @@ mod tests {
 
     #[test]
     fn serde() {
-        let actor = crate::tests::test_base_actorpack();
+        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
@@ -456,7 +456,7 @@ mod tests {
 
     #[test]
     fn diff() {
-        let actor = crate::tests::test_base_actorpack();
+        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
@@ -464,7 +464,7 @@ mod tests {
         )
         .unwrap();
         let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
-        let actor2 = crate::tests::test_mod_actorpack();
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
@@ -478,14 +478,14 @@ mod tests {
 
     #[test]
     fn merge() {
-        let actor = crate::tests::test_base_actorpack();
+        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
                 .unwrap(),
         )
         .unwrap();
-        let actor2 = crate::tests::test_mod_actorpack();
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2

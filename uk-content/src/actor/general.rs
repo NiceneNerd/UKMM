@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn serde() {
-        let actor = crate::tests::test_base_actorpack();
+        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
@@ -51,7 +51,7 @@ mod tests {
 
     #[test]
     fn diff() {
-        let actor = crate::tests::test_base_actorpack();
+        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
@@ -59,7 +59,7 @@ mod tests {
         )
         .unwrap();
         let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
-        let actor2 = crate::tests::test_mod_actorpack();
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
@@ -73,14 +73,14 @@ mod tests {
 
     #[test]
     fn merge() {
-        let actor = crate::tests::test_base_actorpack();
+        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
                 .unwrap(),
         )
         .unwrap();
-        let actor2 = crate::tests::test_mod_actorpack();
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2

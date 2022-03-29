@@ -5,3 +5,4 @@ pub mod drop;
 pub mod general;
 pub mod life;
 pub mod link;
+pub mod shop;

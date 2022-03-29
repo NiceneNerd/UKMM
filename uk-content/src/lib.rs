@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 use thiserror::Error;
 
 pub mod actor;
@@ -51,20 +52,18 @@ pub mod prelude {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    pub fn test_base_actorpack() -> roead::sarc::Sarc<'static> {
-        println!("{}", std::env::current_dir().unwrap().display());
+    pub fn test_base_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::read(
-            roead::yaz0::decompress(std::fs::read("test/Enemy_Guardian_A.sbactorpack").unwrap())
+            roead::yaz0::decompress(std::fs::read(&format!("test/{}.sbactorpack", name)).unwrap())
                 .unwrap(),
         )
         .unwrap()
     }
 
-    pub fn test_mod_actorpack() -> roead::sarc::Sarc<'static> {
-        println!("{}", std::env::current_dir().unwrap().display());
+    pub fn test_mod_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::read(
             roead::yaz0::decompress(
-                std::fs::read("test/Enemy_Guardian_A_Mod.sbactorpack").unwrap(),
+                std::fs::read(&format!("test/{}_Mod.sbactorpack", name)).unwrap(),
             )
             .unwrap(),
         )
