@@ -1,4 +1,3 @@
-#![feature(min_specialization)]
 #![feature(let_chains)]
 use thiserror::Error;
 
