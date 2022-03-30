@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Awareness(pub ParameterIO);
 
+impl Convertible<ParameterIO> for Awareness {}
+
 impl From<&ParameterIO> for Awareness {
     fn from(pio: &ParameterIO) -> Self {
         Self(pio.clone())

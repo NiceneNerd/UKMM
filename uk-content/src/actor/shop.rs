@@ -211,7 +211,7 @@ impl From<ShopData> for ParameterIO {
     }
 }
 
-impl Mergeable for ShopData {
+impl Mergeable<ParameterIO> for ShopData {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other

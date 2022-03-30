@@ -63,7 +63,7 @@ impl From<ActorLink> for ParameterIO {
     }
 }
 
-impl Mergeable for ActorLink {
+impl Mergeable<ParameterIO> for ActorLink {
     fn diff(&self, other: &Self) -> Self {
         Self {
             targets: util::diff_pobj(&self.targets, &other.targets),

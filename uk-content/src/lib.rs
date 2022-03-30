@@ -1,4 +1,4 @@
-#![feature(negative_impls)]
+#![feature(min_specialization)]
 #![feature(let_chains)]
 use thiserror::Error;
 
@@ -29,7 +29,11 @@ pub mod prelude {
         }
     }
 
-    pub trait Mergeable {
+    pub trait Convertible<T>: TryFrom<T> + Into<T> {}
+
+    impl<T: TryFrom<T> + Into<T>> Convertible<T> for T {}
+
+    pub trait Mergeable<T> {
         #[must_use]
         fn diff(&self, other: &Self) -> Self;
         #[must_use]
@@ -40,9 +44,13 @@ pub mod prelude {
         fn inner(&self) -> &roead::aamp::ParameterIO;
     }
 
-    impl<T: SimpleMergeableAamp> !ShallowMergeableByml for T {}
-
-    impl<'a, T: SimpleMergeableAamp + From<roead::aamp::ParameterIO>> Mergeable for T {
+    impl<
+            'a,
+            T: SimpleMergeableAamp
+                + Convertible<roead::aamp::ParameterIO>
+                + From<roead::aamp::ParameterIO>,
+        > Mergeable<roead::aamp::ParameterIO> for T
+    {
         fn diff(&self, other: &Self) -> Self {
             crate::util::diff_plist(self.inner(), other.inner()).into()
         }
@@ -56,11 +64,17 @@ pub mod prelude {
         fn inner(&self) -> &roead::byml::Byml;
     }
 
-    impl<T: ShallowMergeableByml> !SimpleMergeableAamp for T {}
-
-    impl <'a, T: ShallowMergeableByml + TryFrom<roead::byml::Byml>> Mergeable for T {
+    impl<
+            'a,
+            T: ShallowMergeableByml + Convertible<roead::byml::Byml> + From<roead::byml::Byml>,
+        > Mergeable<roead::byml::Byml> for T
+    {
         fn diff(&self, other: &Self) -> Self {
-            todo!()
+            crate::util::diff_byml_shallow(self.inner(), other.inner()).into()
+        }
+
+        fn merge(base: &Self, diff: &Self) -> Self {
+            crate::util::diff_byml_shallow(base.inner(), diff.inner()).into()
         }
     }
 }

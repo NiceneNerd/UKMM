@@ -1,4 +1,5 @@
 pub mod aiprog;
+pub mod animinfo;
 pub mod aware;
 pub mod damage;
 pub mod drop;

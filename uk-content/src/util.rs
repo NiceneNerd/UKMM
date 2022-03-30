@@ -108,3 +108,11 @@ pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
         panic!("Can only shallow diff BYML hashes")
     }
 }
+
+pub fn merge_byml_shallow(base: &Byml, diff: &Byml) -> Byml {
+    if let Byml::Hash(base) = &base && let &Byml::Hash(diff) = &diff {
+        Byml::Hash(base.iter().chain(diff.iter()).map(|(k, v)| (k.to_owned(), v.clone())).collect())
+    } else {
+        panic!("Can only shallow merge BYML hashes")
+    }
+}

@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DamageParam(pub ParameterIO);
 
+impl Convertible<ParameterIO> for DamageParam {}
+
 impl From<&ParameterIO> for DamageParam {
     fn from(pio: &ParameterIO) -> Self {
         Self(pio.clone())

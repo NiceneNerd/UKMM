@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GeneralParamList(pub ParameterIO);
 
+impl Convertible<ParameterIO> for GeneralParamList {}
+
 impl From<&ParameterIO> for GeneralParamList {
     fn from(pio: &ParameterIO) -> Self {
         Self(pio.clone())

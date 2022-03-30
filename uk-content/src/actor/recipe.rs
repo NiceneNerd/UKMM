@@ -96,7 +96,7 @@ impl From<Recipe> for ParameterIO {
     }
 }
 
-impl Mergeable for Recipe {
+impl Mergeable<ParameterIO> for Recipe {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other
@@ -198,4 +198,3 @@ mod tests {
         assert_eq!(recipe2, merged);
     }
 }
-
