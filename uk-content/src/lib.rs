@@ -44,12 +44,11 @@ pub mod prelude {
         fn inner(&self) -> &roead::aamp::ParameterIO;
     }
 
-    impl<
-            'a,
-            T: SimpleMergeableAamp
-                + Convertible<roead::aamp::ParameterIO>
-                + From<roead::aamp::ParameterIO>,
-        > Mergeable<roead::aamp::ParameterIO> for T
+    impl<'a, T> Mergeable<roead::aamp::ParameterIO> for T
+    where
+        T: SimpleMergeableAamp
+            + Convertible<roead::aamp::ParameterIO>
+            + From<roead::aamp::ParameterIO>,
     {
         fn diff(&self, other: &Self) -> Self {
             crate::util::diff_plist(self.inner(), other.inner()).into()
@@ -64,10 +63,9 @@ pub mod prelude {
         fn inner(&self) -> &roead::byml::Byml;
     }
 
-    impl<
-            'a,
-            T: ShallowMergeableByml + Convertible<roead::byml::Byml> + From<roead::byml::Byml>,
-        > Mergeable<roead::byml::Byml> for T
+    impl<'a, T> Mergeable<roead::byml::Byml> for T
+    where
+        T: ShallowMergeableByml + Convertible<roead::byml::Byml> + From<roead::byml::Byml>,
     {
         fn diff(&self, other: &Self) -> Self {
             crate::util::diff_byml_shallow(self.inner(), other.inner()).into()
@@ -83,8 +81,10 @@ pub mod prelude {
 pub(crate) mod tests {
     pub fn test_base_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::read(
-            roead::yaz0::decompress(std::fs::read(&format!("test/{}.sbactorpack", name)).unwrap())
-                .unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read(&format!("test/Actor/{}.sbactorpack", name)).unwrap(),
+            )
+            .unwrap(),
         )
         .unwrap()
     }
@@ -92,7 +92,7 @@ pub(crate) mod tests {
     pub fn test_mod_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::read(
             roead::yaz0::decompress(
-                std::fs::read(&format!("test/{}_Mod.sbactorpack", name)).unwrap(),
+                std::fs::read(&format!("test/Actor/{}_Mod.sbactorpack", name)).unwrap(),
             )
             .unwrap(),
         )
