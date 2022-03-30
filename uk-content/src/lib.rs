@@ -74,7 +74,7 @@ pub mod prelude {
         }
 
         fn merge(base: &Self, diff: &Self) -> Self {
-            crate::util::diff_byml_shallow(base.inner(), diff.inner()).into()
+            crate::util::merge_byml_shallow(base.inner(), diff.inner()).into()
         }
     }
 }
