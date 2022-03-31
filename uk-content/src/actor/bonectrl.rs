@@ -148,6 +148,10 @@ impl Mergeable<ParameterIO> for BoneControl {
                                     .keys()
                                     .filter(|b| !self_bones.contains_key(b.as_str()))
                                     .map(|b| (b.clone(), false))
+                                    .chain(self_bones.keys().filter_map(|b| {
+                                        (!other_bones.contains_key(b.as_str()))
+                                            .then(|| (b.clone(), true))
+                                    }))
                                     .collect(),
                             ))
                         }
@@ -160,6 +164,19 @@ impl Mergeable<ParameterIO> for BoneControl {
     }
 
     fn merge(base: &Self, diff: &Self) -> Self {
-        todo!()
+        Self {
+            objects: crate::util::merge_plist(
+                &ParameterList {
+                    objects: base.objects.clone(),
+                    ..Default::default()
+                },
+                &ParameterList {
+                    objects: diff.objects.clone(),
+                    ..Default::default()
+                },
+            )
+            .objects,
+            ..Default::default()
+        }
     }
 }
