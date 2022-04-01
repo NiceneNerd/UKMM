@@ -1,5 +1,74 @@
+use indexmap::IndexMap;
 use roead::aamp::*;
 use roead::byml::Byml;
+use std::borrow::Borrow;
+use std::hash::Hash;
+
+pub trait DeleteKey: Hash + Eq + Clone {}
+impl<T> DeleteKey for T where T: Hash + Eq + Clone {}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct DeleteList<T: Hash + Eq>(IndexMap<T, bool>);
+
+impl<T: DeleteKey> From<IndexMap<T, bool>> for DeleteList<T> {
+    fn from(val: IndexMap<T, bool>) -> Self {
+        Self(val)
+    }
+}
+
+impl<T: DeleteKey> FromIterator<(T, bool)> for DeleteList<T> {
+    fn from_iter<I: IntoIterator<Item = (T, bool)>>(iter: I) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
+
+impl<T: DeleteKey> DeleteList<T> {
+    #[inline]
+    pub fn and_delete(mut self) -> Self {
+        self.delete();
+        self
+    }
+
+    pub fn delete(&mut self) {
+        self.0.retain(|_, del| !*del);
+    }
+
+    pub fn deleted(&self) -> Vec<&T> {
+        self.0
+            .iter()
+            .filter_map(|(k, del)| (!*del).then(|| k))
+            .collect()
+    }
+
+    pub fn set_delete(&mut self, item: impl Borrow<T>) {
+        self.0.get_mut(item.borrow()).map(|del| *del = true);
+    }
+
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.0.iter().filter_map(|(k, del)| (!*del).then(|| k))
+    }
+
+    #[inline]
+    pub fn into_iter(self) -> impl Iterator<Item = T> {
+        self.0.into_iter().filter_map(|(k, del)| (!del).then(|| k))
+    }
+
+    #[inline]
+    pub fn contains(&self, item: impl Borrow<T>) -> bool {
+        self.0.contains_key(item.borrow())
+    }
+
+    pub fn merge(&self, other: &Self) -> Self {
+        Self(
+            self.0
+                .keys()
+                .chain(other.0.keys())
+                .map(|k| (k.clone(), other.0.get(k).map(|k| *k).unwrap_or(false)))
+                .collect(),
+        )
+    }
+}
 
 pub fn diff_plist<P: ParamList + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {

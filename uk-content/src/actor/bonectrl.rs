@@ -1,12 +1,13 @@
-use crate::{prelude::*, Result, UKError};
+use crate::{prelude::*, util::DeleteList, Result, UKError};
 use indexmap::IndexMap;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct BoneControl {
     pub objects: ParameterObjectMap,
-    pub bone_groups: IndexMap<String, IndexMap<String, bool>>,
+    pub bone_groups: IndexMap<String, DeleteList<String>>,
 }
 
 impl TryFrom<ParameterIO> for BoneControl {
@@ -31,7 +32,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
                 .lists
                 .0
                 .values()
-                .map(|plist| -> Result<(String, IndexMap<String, bool>)> {
+                .map(|plist| -> Result<(String, DeleteList<String>)> {
                     Ok((
                         plist
                             .object("Param")
@@ -70,49 +71,64 @@ impl From<BoneControl> for ParameterIO {
     fn from(val: BoneControl) -> Self {
         Self {
             objects: val.objects,
-            lists: val
-                .bone_groups
+            lists: ParameterListMap(
+                [(
+                    hash_name("BoneGroups"),
+                    ParameterList {
+                        lists: val
+                            .bone_groups
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, (group, bones))| {
+                                (
+                                    hash_name(&format!("Bone_{}", i)),
+                                    ParameterList {
+                                        objects: ParameterObjectMap(
+                                            [
+                                                (
+                                                    hash_name("Param"),
+                                                    ParameterObject(
+                                                        [(
+                                                            hash_name("GroupName"),
+                                                            Parameter::String64(group),
+                                                        )]
+                                                        .into_iter()
+                                                        .collect(),
+                                                    ),
+                                                ),
+                                                (
+                                                    hash_name("Bones"),
+                                                    ParameterObject(
+                                                        bones
+                                                            .into_iter()
+                                                            .enumerate()
+                                                            .map(|(i, bone)| {
+                                                                (
+                                                                    hash_name(&format!(
+                                                                        "Bone_{}",
+                                                                        i
+                                                                    )),
+                                                                    Parameter::String64(bone),
+                                                                )
+                                                            })
+                                                            .collect(),
+                                                    ),
+                                                ),
+                                            ]
+                                            .into_iter()
+                                            .collect(),
+                                        ),
+                                        ..Default::default()
+                                    },
+                                )
+                            })
+                            .collect(),
+                        ..Default::default()
+                    },
+                )]
                 .into_iter()
-                .enumerate()
-                .map(|(i, (group, bones))| {
-                    (
-                        hash_name(&format!("Bone_{}", i)),
-                        ParameterList {
-                            objects: ParameterObjectMap(
-                                [
-                                    (
-                                        hash_name("Param"),
-                                        ParameterObject(
-                                            [(hash_name("GroupName"), Parameter::String64(group))]
-                                                .into_iter()
-                                                .collect(),
-                                        ),
-                                    ),
-                                    (
-                                        hash_name("Bones"),
-                                        ParameterObject(
-                                            bones
-                                                .into_iter()
-                                                .filter(|(_, del)| !del)
-                                                .enumerate()
-                                                .map(|(i, (bone, _))| {
-                                                    (
-                                                        hash_name(&format!("Bone_{}", i)),
-                                                        Parameter::String64(bone),
-                                                    )
-                                                })
-                                                .collect(),
-                                        ),
-                                    ),
-                                ]
-                                .into_iter()
-                                .collect(),
-                            ),
-                            ..Default::default()
-                        },
-                    )
-                })
                 .collect(),
+            ),
             ..Default::default()
         }
     }
@@ -145,12 +161,11 @@ impl Mergeable<ParameterIO> for BoneControl {
                             Some((
                                 group.clone(),
                                 other_bones
-                                    .keys()
-                                    .filter(|b| !self_bones.contains_key(b.as_str()))
+                                    .iter()
+                                    .filter(|b| !self_bones.contains(*b))
                                     .map(|b| (b.clone(), false))
-                                    .chain(self_bones.keys().filter_map(|b| {
-                                        (!other_bones.contains_key(b.as_str()))
-                                            .then(|| (b.clone(), true))
+                                    .chain(self_bones.iter().filter_map(|b| {
+                                        (!other_bones.contains(b)).then(|| (b.clone(), true))
                                     }))
                                     .collect(),
                             ))
@@ -176,7 +191,93 @@ impl Mergeable<ParameterIO> for BoneControl {
                 },
             )
             .objects,
-            ..Default::default()
+            bone_groups: base
+                .bone_groups
+                .keys()
+                .chain(diff.bone_groups.keys())
+                .collect::<HashSet<&String>>()
+                .into_iter()
+                .map(|group| {
+                    (
+                        group.clone(),
+                        diff.bone_groups
+                            .get(group)
+                            .map(|diff_bones| {
+                                base.bone_groups
+                                    .get(group)
+                                    .map(|self_bones| self_bones.merge(diff_bones).and_delete())
+                                    .unwrap_or_else(|| diff_bones.clone())
+                            })
+                            .unwrap_or_else(|| base.bone_groups.get(group).cloned().unwrap()),
+                    )
+                })
+                .collect(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+
+    #[test]
+    fn serde() {
+        let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap(),
+        )
+        .unwrap();
+        let bonectrl = super::BoneControl::try_from(&pio).unwrap();
+        let data = bonectrl.clone().into_pio().to_binary();
+        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let bonectrl2 = super::BoneControl::try_from(&pio2).unwrap();
+        assert_eq!(bonectrl, bonectrl2);
+    }
+
+    #[test]
+    fn diff() {
+        let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap(),
+        )
+        .unwrap();
+        let bonectrl = super::BoneControl::try_from(&pio).unwrap();
+        let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap(),
+        )
+        .unwrap();
+        let bonectrl2 = super::BoneControl::try_from(&pio2).unwrap();
+        let diff = bonectrl.diff(&bonectrl2);
+        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+    }
+
+    #[test]
+    fn merge() {
+        let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap(),
+        )
+        .unwrap();
+        let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
+        let bonectrl = super::BoneControl::try_from(&pio).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap(),
+        )
+        .unwrap();
+        let bonectrl2 = super::BoneControl::try_from(&pio2).unwrap();
+        let diff = bonectrl.diff(&bonectrl2);
+        let merged = super::BoneControl::merge(&bonectrl, &diff);
+        assert_eq!(bonectrl2, merged);
     }
 }
