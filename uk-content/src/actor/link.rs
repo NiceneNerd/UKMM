@@ -1,12 +1,15 @@
-use crate::{prelude::*, util, Result, UKError};
-use indexmap::IndexMap;
+use crate::{
+    prelude::*,
+    util::{self, DeleteList},
+    Result, UKError,
+};
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActorLink {
     pub targets: ParameterObject,
-    pub tags: Option<IndexMap<String, bool>>,
+    pub tags: Option<DeleteList<String>>,
 }
 
 impl TryFrom<&ParameterIO> for ActorLink {
@@ -42,15 +45,8 @@ impl From<ActorLink> for ParameterIO {
                         ParameterObject(
                             tags.into_iter()
                                 .enumerate()
-                                .filter_map(|(i, (tag, delete))| {
-                                    if delete {
-                                        None
-                                    } else {
-                                        Some((
-                                            hash_name(&format!("Tag{}", i)),
-                                            Parameter::StringRef(tag),
-                                        ))
-                                    }
+                                .map(|(i, tag)| {
+                                    (hash_name(&format!("Tag{}", i)), Parameter::StringRef(tag))
                                 })
                                 .collect(),
                         ),
@@ -71,15 +67,15 @@ impl Mergeable<ParameterIO> for ActorLink {
                 if let Some(self_tags) = self.tags.as_ref() {
                     diff_tags
                         .iter()
-                        .filter_map(|(tag, _)| {
-                            if !self_tags.contains_key(tag.as_str()) {
+                        .filter_map(|tag| {
+                            if !self_tags.contains(tag) {
                                 Some((tag.clone(), false))
                             } else {
                                 None
                             }
                         })
-                        .chain(self_tags.iter().filter_map(|(tag, _)| {
-                            if diff_tags.contains_key(tag.as_str()) {
+                        .chain(self_tags.iter().filter_map(|tag| {
+                            if diff_tags.contains(tag) {
                                 None
                             } else {
                                 Some((tag.clone(), true))
@@ -106,21 +102,7 @@ impl Mergeable<ParameterIO> for ActorLink {
             tags: {
                 if let Some(base_tags) = &base.tags {
                     if let Some(other_tags) = &other.tags {
-                        Some(
-                            base_tags
-                                .iter()
-                                .chain(other_tags.iter())
-                                .collect::<IndexMap<&String, &bool>>()
-                                .into_iter()
-                                .filter_map(|(tag, delete)| {
-                                    if *delete {
-                                        None
-                                    } else {
-                                        Some((tag.clone(), false))
-                                    }
-                                })
-                                .collect(),
-                        )
+                        Some(base_tags.merge(other_tags))
                     } else {
                         base.tags.clone()
                     }

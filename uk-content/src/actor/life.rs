@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
 use crate::{
     constants::{Time, Weather},
     prelude::Mergeable,
+    util::DeleteList,
     Result, UKError,
 };
 use roead::aamp::*;
@@ -10,13 +9,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LifeCondition {
-    pub invalid_weathers: Option<HashMap<Weather, bool>>,
-    pub invalid_times: Option<HashMap<Time, bool>>,
+    pub invalid_weathers: Option<DeleteList<Weather>>,
+    pub invalid_times: Option<DeleteList<Time>>,
     pub display_dist: Option<f32>,
     pub auto_disp_dist_algo: Option<String>,
     pub y_limit_algo: Option<String>,
-    pub delete_weathers: Option<HashMap<Weather, bool>>,
-    pub delete_times: Option<HashMap<Time, bool>>,
+    pub delete_weathers: Option<DeleteList<Weather>>,
+    pub delete_times: Option<DeleteList<Time>>,
 }
 
 impl TryFrom<&ParameterIO> for LifeCondition {
@@ -26,27 +25,26 @@ impl TryFrom<&ParameterIO> for LifeCondition {
         Ok(Self {
             invalid_weathers: pio
                 .object("InvalidWeathers")
-                .map(|weathers| -> Result<HashMap<Weather, bool>> {
+                .map(|weathers| -> Result<DeleteList<Weather>> {
                     weathers
                         .params()
                         .values()
                         .map(|w| -> Result<(Weather, bool)> {
-                            println!("{:?}", &w);
                             Ok((w.as_string()?.try_into()?, false))
                         })
-                        .collect::<Result<HashMap<_, _>>>()
+                        .collect::<Result<_>>()
                 })
                 .transpose()?,
             invalid_times: pio
                 .object("InvalidTimes")
-                .map(|times| -> Result<HashMap<Time, bool>> {
+                .map(|times| -> Result<DeleteList<Time>> {
                     times
                         .params()
                         .values()
                         .map(|w| -> Result<(Time, bool)> {
                             Ok((w.as_string()?.try_into()?, false))
                         })
-                        .collect::<Result<HashMap<_, _>>>()
+                        .collect::<Result<_>>()
                 })
                 .transpose()?,
             display_dist: Some(
@@ -98,26 +96,26 @@ impl TryFrom<&ParameterIO> for LifeCondition {
             ),
             delete_weathers: pio
                 .object("DeleteWeathers")
-                .map(|weathers| -> Result<HashMap<Weather, bool>> {
+                .map(|weathers| -> Result<DeleteList<Weather>> {
                     weathers
                         .params()
                         .values()
                         .map(|w| -> Result<(Weather, bool)> {
                             Ok((w.as_string()?.try_into()?, false))
                         })
-                        .collect::<Result<HashMap<_, _>>>()
+                        .collect::<Result<_>>()
                 })
                 .transpose()?,
             delete_times: pio
                 .object("DeleteTimes")
-                .map(|times| -> Result<HashMap<Time, bool>> {
+                .map(|times| -> Result<DeleteList<Time>> {
                     times
                         .params()
                         .values()
                         .map(|w| -> Result<(Time, bool)> {
                             Ok((w.as_string()?.try_into()?, false))
                         })
-                        .collect::<Result<HashMap<_, _>>>()
+                        .collect::<Result<_>>()
                 })
                 .transpose()?,
         })
@@ -142,15 +140,11 @@ impl From<LifeCondition> for ParameterIO {
                     weathers
                         .into_iter()
                         .enumerate()
-                        .filter_map(|(i, (weather, delete))| {
-                            if delete {
-                                None
-                            } else {
-                                Some((
-                                    hash_name(&format!("Item{:03}", i)),
-                                    Parameter::String64(weather.to_string()),
-                                ))
-                            }
+                        .map(|(i, weather)| {
+                            (
+                                hash_name(&format!("Item{:03}", i)),
+                                Parameter::String64(weather.to_string()),
+                            )
                         })
                         .collect(),
                 ),
@@ -163,15 +157,11 @@ impl From<LifeCondition> for ParameterIO {
                     times
                         .into_iter()
                         .enumerate()
-                        .filter_map(|(i, (time, delete))| {
-                            if delete {
-                                None
-                            } else {
-                                Some((
-                                    hash_name(&format!("Item{:03}", i)),
-                                    Parameter::String64(time.to_string()),
-                                ))
-                            }
+                        .map(|(i, time)| {
+                            (
+                                hash_name(&format!("Item{:03}", i)),
+                                Parameter::String64(time.to_string()),
+                            )
                         })
                         .collect(),
                 ),
@@ -217,15 +207,11 @@ impl From<LifeCondition> for ParameterIO {
                     weathers
                         .into_iter()
                         .enumerate()
-                        .filter_map(|(i, (weather, delete))| {
-                            if delete {
-                                None
-                            } else {
-                                Some((
-                                    hash_name(&format!("Item{:03}", i)),
-                                    Parameter::String64(weather.to_string()),
-                                ))
-                            }
+                        .map(|(i, weather)| {
+                            (
+                                hash_name(&format!("Item{:03}", i)),
+                                Parameter::String64(weather.to_string()),
+                            )
                         })
                         .collect(),
                 ),
@@ -238,15 +224,11 @@ impl From<LifeCondition> for ParameterIO {
                     times
                         .into_iter()
                         .enumerate()
-                        .filter_map(|(i, (time, delete))| {
-                            if delete {
-                                None
-                            } else {
-                                Some((
-                                    hash_name(&format!("Item{:03}", i)),
-                                    Parameter::String64(time.to_string()),
-                                ))
-                            }
+                        .map(|(i, time)| {
+                            (
+                                hash_name(&format!("Item{:03}", i)),
+                                Parameter::String64(time.to_string()),
+                            )
                         })
                         .collect(),
                 ),
@@ -266,11 +248,11 @@ impl Mergeable<ParameterIO> for LifeCondition {
                     other.invalid_weathers.as_ref().map(|other_weathers| {
                         other_weathers
                             .iter()
-                            .filter_map(|(weather, _)| {
-                                (!self_weathers.contains_key(weather)).then(|| (*weather, false))
+                            .filter_map(|weather| {
+                                (!self_weathers.contains(weather)).then(|| (*weather, false))
                             })
-                            .chain(self_weathers.iter().filter_map(|(weather, _)| {
-                                (!other_weathers.contains_key(weather)).then(|| (*weather, true))
+                            .chain(self_weathers.iter().filter_map(|weather| {
+                                (!other_weathers.contains(weather)).then(|| (*weather, true))
                             }))
                             .collect()
                     })
@@ -283,11 +265,9 @@ impl Mergeable<ParameterIO> for LifeCondition {
                     other.invalid_times.as_ref().map(|other_times| {
                         other_times
                             .iter()
-                            .filter_map(|(time, _)| {
-                                (!self_times.contains_key(time)).then(|| (*time, false))
-                            })
-                            .chain(self_times.iter().filter_map(|(time, _)| {
-                                (!other_times.contains_key(time)).then(|| (*time, true))
+                            .filter_map(|time| (!self_times.contains(time)).then(|| (*time, false)))
+                            .chain(self_times.iter().filter_map(|time| {
+                                (!other_times.contains(time)).then(|| (*time, true))
                             }))
                             .collect()
                     })
@@ -309,11 +289,11 @@ impl Mergeable<ParameterIO> for LifeCondition {
                     other.delete_weathers.as_ref().map(|other_weathers| {
                         other_weathers
                             .iter()
-                            .filter_map(|(weather, _)| {
-                                (!self_weathers.contains_key(weather)).then(|| (*weather, false))
+                            .filter_map(|weather| {
+                                (!self_weathers.contains(weather)).then(|| (*weather, false))
                             })
-                            .chain(self_weathers.iter().filter_map(|(weather, _)| {
-                                (!other_weathers.contains_key(weather)).then(|| (*weather, true))
+                            .chain(self_weathers.iter().filter_map(|weather| {
+                                (!other_weathers.contains(weather)).then(|| (*weather, true))
                             }))
                             .collect()
                     })
@@ -326,11 +306,9 @@ impl Mergeable<ParameterIO> for LifeCondition {
                     other.delete_times.as_ref().map(|other_times| {
                         other_times
                             .iter()
-                            .filter_map(|(time, _)| {
-                                (!self_times.contains_key(time)).then(|| (*time, false))
-                            })
-                            .chain(self_times.iter().filter_map(|(time, _)| {
-                                (!other_times.contains_key(time)).then(|| (*time, true))
+                            .filter_map(|time| (!self_times.contains(time)).then(|| (*time, false)))
+                            .chain(self_times.iter().filter_map(|time| {
+                                (!other_times.contains(time)).then(|| (*time, true))
                             }))
                             .collect()
                     })
@@ -347,17 +325,7 @@ impl Mergeable<ParameterIO> for LifeCondition {
                     .and_then(|base_weathers| {
                         diff.invalid_weathers
                             .as_ref()
-                            .map(|diff_weathers| {
-                                base_weathers
-                                    .iter()
-                                    .chain(diff_weathers.iter())
-                                    .collect::<HashMap<_, _>>()
-                                    .into_iter()
-                                    .filter_map(|(weather, delete)| {
-                                        (!delete).then(|| (*weather, false))
-                                    })
-                                    .collect()
-                            })
+                            .map(|diff_weathers| base_weathers.merge(diff_weathers))
                             .or_else(|| base.invalid_weathers.clone())
                     })
                     .or_else(|| diff.invalid_weathers.clone())
@@ -368,15 +336,7 @@ impl Mergeable<ParameterIO> for LifeCondition {
                     .and_then(|base_times| {
                         diff.invalid_times
                             .as_ref()
-                            .map(|diff_times| {
-                                base_times
-                                    .iter()
-                                    .chain(diff_times.iter())
-                                    .collect::<HashMap<_, _>>()
-                                    .into_iter()
-                                    .filter_map(|(time, delete)| (!delete).then(|| (*time, false)))
-                                    .collect()
-                            })
+                            .map(|diff_times| base_times.merge(diff_times))
                             .or_else(|| base.invalid_times.clone())
                     })
                     .or_else(|| diff.invalid_times.clone())
@@ -396,17 +356,7 @@ impl Mergeable<ParameterIO> for LifeCondition {
                     .and_then(|base_weathers| {
                         diff.delete_weathers
                             .as_ref()
-                            .map(|diff_weathers| {
-                                base_weathers
-                                    .iter()
-                                    .chain(diff_weathers.iter())
-                                    .collect::<HashMap<_, _>>()
-                                    .into_iter()
-                                    .filter_map(|(weather, delete)| {
-                                        (!delete).then(|| (*weather, false))
-                                    })
-                                    .collect()
-                            })
+                            .map(|diff_weathers| base_weathers.merge(diff_weathers))
                             .or_else(|| base.delete_weathers.clone())
                     })
                     .or_else(|| diff.delete_weathers.clone())
@@ -417,15 +367,7 @@ impl Mergeable<ParameterIO> for LifeCondition {
                     .and_then(|base_times| {
                         diff.delete_times
                             .as_ref()
-                            .map(|diff_times| {
-                                base_times
-                                    .iter()
-                                    .chain(diff_times.iter())
-                                    .collect::<HashMap<_, _>>()
-                                    .into_iter()
-                                    .filter_map(|(time, delete)| (!delete).then(|| (*time, false)))
-                                    .collect()
-                            })
+                            .map(|diff_times| base_times.merge(diff_times))
                             .or_else(|| base.delete_times.clone())
                     })
                     .or_else(|| diff.delete_times.clone())
