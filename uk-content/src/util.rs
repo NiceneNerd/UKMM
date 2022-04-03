@@ -8,7 +8,7 @@ pub trait DeleteKey: Hash + Eq + Clone {}
 impl<T> DeleteKey for T where T: Hash + Eq + Clone {}
 
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct DeleteList<T: Hash + Eq>(IndexMap<T, bool>);
+pub struct DeleteList<T: DeleteKey>(IndexMap<T, bool>);
 
 impl<T: DeleteKey> From<IndexMap<T, bool>> for DeleteList<T> {
     fn from(val: IndexMap<T, bool>) -> Self {
@@ -72,56 +72,50 @@ impl<T: DeleteKey> DeleteList<T> {
 
 pub fn diff_plist<P: ParamList + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
-        lists: ParameterListMap(
-            other
-                .lists()
-                .0
-                .iter()
-                .filter_map(|(k, v)| {
-                    if !base.lists().0.contains_key(k) {
-                        Some((*k, v.clone()))
-                    } else if base.lists().0[k] != *v {
-                        Some((*k, diff_plist(&base.lists().0[k], v)))
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-        ),
-        objects: ParameterObjectMap(
-            other
-                .objects()
-                .0
-                .iter()
-                .filter_map(|(k, v)| {
-                    if !base.objects().0.contains_key(k) {
-                        Some((*k, v.clone()))
-                    } else if base.objects().0[k] != *v {
-                        Some((*k, diff_pobj(&base.objects().0[k], v)))
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-        ),
-    }
-    .into()
-}
-
-pub fn diff_pobj(base: &ParameterObject, other: &ParameterObject) -> ParameterObject {
-    ParameterObject(
-        other
+        lists: other
+            .lists()
             .0
             .iter()
             .filter_map(|(k, v)| {
-                if !base.0.contains_key(k) || base.0[k] != *v {
+                if !base.lists().0.contains_key(k) {
                     Some((*k, v.clone()))
+                } else if base.lists().0[k] != *v {
+                    Some((*k, diff_plist(&base.lists().0[k], v)))
                 } else {
                     None
                 }
             })
             .collect(),
-    )
+        objects: other
+            .objects()
+            .0
+            .iter()
+            .filter_map(|(k, v)| {
+                if !base.objects().0.contains_key(k) {
+                    Some((*k, v.clone()))
+                } else if base.objects().0[k] != *v {
+                    Some((*k, diff_pobj(&base.objects().0[k], v)))
+                } else {
+                    None
+                }
+            })
+            .collect(),
+    }
+    .into()
+}
+
+pub fn diff_pobj(base: &ParameterObject, other: &ParameterObject) -> ParameterObject {
+    other
+        .0
+        .iter()
+        .filter_map(|(k, v)| {
+            if !base.0.contains_key(k) || base.0[k] != *v {
+                Some((*k, v.clone()))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 pub fn merge_plist<P: ParamList + From<ParameterList>>(base: &P, diff: &P) -> P {
@@ -153,13 +147,11 @@ pub fn merge_plist<P: ParamList + From<ParameterList>>(base: &P, diff: &P) -> P 
 }
 
 pub fn merge_pobj(base: &ParameterObject, diff: &ParameterObject) -> ParameterObject {
-    ParameterObject(
-        base.0
-            .iter()
-            .chain(diff.0.iter())
-            .map(|(k, v)| (*k, v.clone()))
-            .collect(),
-    )
+    base.0
+        .iter()
+        .chain(diff.0.iter())
+        .map(|(k, v)| (*k, v.clone()))
+        .collect()
 }
 
 pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {

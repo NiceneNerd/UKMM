@@ -147,17 +147,15 @@ impl From<ShopData> for ParameterIO {
         let mut pio = ParameterIO::new();
         pio.set_object(
             "Header",
-            ParameterObject(
-                [(hash_name("TableNum"), Parameter::Int(val.0.len() as i32))]
-                    .into_iter()
-                    .chain(val.0.keys().enumerate().map(|(i, name)| {
-                        (
-                            hash_name(&format!("Table{:02}", i + 1)),
-                            Parameter::String64(name.to_owned()),
-                        )
-                    }))
-                    .collect(),
-            ),
+            [("TableNum".to_owned(), Parameter::Int(val.0.len() as i32))]
+                .into_iter()
+                .chain(val.0.keys().enumerate().map(|(i, name)| {
+                    (
+                        format!("Table{:02}", i + 1),
+                        Parameter::String64(name.to_owned()),
+                    )
+                }))
+                .collect(),
         );
         val.0
             .into_iter()
@@ -165,46 +163,41 @@ impl From<ShopData> for ParameterIO {
             .for_each(|(name, table)| {
                 pio.set_object(
                     &name,
-                    ParameterObject(
-                        [(hash_name("ColumnNum"), Parameter::Int(table.len() as i32))]
-                            .into_iter()
-                            .chain(
-                                table
-                                    .into_iter()
-                                    .filter(|(_, data)| !data.delete)
-                                    .enumerate()
-                                    .flat_map(|(i, (name, data))| {
-                                        let i = i + 1;
-                                        [
-                                            (
-                                                hash_name(&format!("ItemSort{:03}", i)),
-                                                Parameter::Int(data.sort as i32),
-                                            ),
-                                            (
-                                                hash_name(&format!("ItemName{:03}", i)),
-                                                Parameter::String64(name),
-                                            ),
-                                            (
-                                                hash_name(&format!("ItemNum{:03}", i)),
-                                                Parameter::Int(data.num as i32),
-                                            ),
-                                            (
-                                                hash_name(&format!("ItemAdjustPrice{:03}", i)),
-                                                Parameter::Int(data.adjust_price as i32),
-                                            ),
-                                            (
-                                                hash_name(&format!("ItemLookGetFlg{:03}", i)),
-                                                Parameter::Bool(data.look_get_flag),
-                                            ),
-                                            (
-                                                hash_name(&format!("ItemAmount{:03}", i)),
-                                                Parameter::Int(data.amount as i32),
-                                            ),
-                                        ]
-                                    }),
-                            )
-                            .collect(),
-                    ),
+                    [("ColumnNum".to_owned(), Parameter::Int(table.len() as i32))]
+                        .into_iter()
+                        .chain(
+                            table
+                                .into_iter()
+                                .filter(|(_, data)| !data.delete)
+                                .enumerate()
+                                .flat_map(|(i, (name, data))| {
+                                    let i = i + 1;
+                                    [
+                                        (
+                                            format!("ItemSort{:03}", i),
+                                            Parameter::Int(data.sort as i32),
+                                        ),
+                                        (format!("ItemName{:03}", i), Parameter::String64(name)),
+                                        (
+                                            format!("ItemNum{:03}", i),
+                                            Parameter::Int(data.num as i32),
+                                        ),
+                                        (
+                                            format!("ItemAdjustPrice{:03}", i),
+                                            Parameter::Int(data.adjust_price as i32),
+                                        ),
+                                        (
+                                            format!("ItemLookGetFlg{:03}", i),
+                                            Parameter::Bool(data.look_get_flag),
+                                        ),
+                                        (
+                                            format!("ItemAmount{:03}", i),
+                                            Parameter::Int(data.amount as i32),
+                                        ),
+                                    ]
+                                }),
+                        )
+                        .collect(),
                 );
             });
         pio

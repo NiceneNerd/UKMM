@@ -42,14 +42,10 @@ impl From<ActorLink> for ParameterIO {
                 if let Some(tags) = val.tags {
                     objects.0.insert(
                         hash_name("Tags"),
-                        ParameterObject(
-                            tags.into_iter()
-                                .enumerate()
-                                .map(|(i, tag)| {
-                                    (hash_name(&format!("Tag{}", i)), Parameter::StringRef(tag))
-                                })
-                                .collect(),
-                        ),
+                        tags.into_iter()
+                            .enumerate()
+                            .map(|(i, tag)| (format!("Tag{}", i), Parameter::StringRef(tag)))
+                            .collect(),
                     );
                 }
                 objects
@@ -91,14 +87,13 @@ impl Mergeable<ParameterIO> for ActorLink {
 
     fn merge(base: &Self, other: &Self) -> Self {
         Self {
-            targets: ParameterObject(
-                base.targets
-                    .0
-                    .iter()
-                    .chain(other.targets.0.iter())
-                    .map(|(k, v)| (*k, v.clone()))
-                    .collect(),
-            ),
+            targets: base
+                .targets
+                .0
+                .iter()
+                .chain(other.targets.0.iter())
+                .map(|(k, v)| (*k, v.clone()))
+                .collect(),
             tags: {
                 if let Some(base_tags) = &base.tags {
                     if let Some(other_tags) = &other.tags {

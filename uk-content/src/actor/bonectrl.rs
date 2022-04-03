@@ -71,64 +71,50 @@ impl From<BoneControl> for ParameterIO {
     fn from(val: BoneControl) -> Self {
         Self {
             objects: val.objects,
-            lists: ParameterListMap(
-                [(
-                    hash_name("BoneGroups"),
-                    ParameterList {
-                        lists: val
-                            .bone_groups
-                            .into_iter()
-                            .enumerate()
-                            .map(|(i, (group, bones))| {
-                                (
-                                    hash_name(&format!("Bone_{}", i)),
-                                    ParameterList {
-                                        objects: ParameterObjectMap(
-                                            [
-                                                (
-                                                    hash_name("Param"),
-                                                    ParameterObject(
-                                                        [(
-                                                            hash_name("GroupName"),
-                                                            Parameter::String64(group),
-                                                        )]
-                                                        .into_iter()
-                                                        .collect(),
-                                                    ),
-                                                ),
-                                                (
-                                                    hash_name("Bones"),
-                                                    ParameterObject(
-                                                        bones
-                                                            .into_iter()
-                                                            .enumerate()
-                                                            .map(|(i, bone)| {
-                                                                (
-                                                                    hash_name(&format!(
-                                                                        "Bone_{}",
-                                                                        i
-                                                                    )),
-                                                                    Parameter::String64(bone),
-                                                                )
-                                                            })
-                                                            .collect(),
-                                                    ),
-                                                ),
-                                            ]
-                                            .into_iter()
-                                            .collect(),
+            lists: [(
+                "BoneGroups",
+                ParameterList {
+                    lists: val
+                        .bone_groups
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, (group, bones))| {
+                            (
+                                format!("Bone_{}", i),
+                                ParameterList {
+                                    objects: [
+                                        (
+                                            "Param",
+                                            [("GroupName", Parameter::String64(group))]
+                                                .into_iter()
+                                                .collect(),
                                         ),
-                                        ..Default::default()
-                                    },
-                                )
-                            })
-                            .collect(),
-                        ..Default::default()
-                    },
-                )]
-                .into_iter()
-                .collect(),
-            ),
+                                        (
+                                            "Bones",
+                                            bones
+                                                .into_iter()
+                                                .enumerate()
+                                                .map(|(i, bone)| {
+                                                    (
+                                                        format!("Bone_{}", i),
+                                                        Parameter::String64(bone),
+                                                    )
+                                                })
+                                                .collect(),
+                                        ),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    ..Default::default()
+                                },
+                            )
+                        })
+                        .collect(),
+                    ..Default::default()
+                },
+            )]
+            .into_iter()
+            .collect(),
             ..Default::default()
         }
     }

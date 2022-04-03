@@ -136,102 +136,85 @@ impl From<LifeCondition> for ParameterIO {
         if let Some(weathers) = val.invalid_weathers {
             pio.set_object(
                 "InvalidWeathers",
-                ParameterObject(
-                    weathers
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, weather)| {
-                            (
-                                hash_name(&format!("Item{:03}", i)),
-                                Parameter::String64(weather.to_string()),
-                            )
-                        })
-                        .collect(),
-                ),
+                weathers
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, weather)| {
+                        (
+                            format!("Item{:03}", i),
+                            Parameter::String64(weather.to_string()),
+                        )
+                    })
+                    .collect(),
             );
         }
         if let Some(times) = val.invalid_times {
             pio.set_object(
                 "InvalidTimes",
-                ParameterObject(
-                    times
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, time)| {
-                            (
-                                hash_name(&format!("Item{:03}", i)),
-                                Parameter::String64(time.to_string()),
-                            )
-                        })
-                        .collect(),
-                ),
+                times
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, time)| {
+                        (
+                            format!("Item{:03}", i),
+                            Parameter::String64(time.to_string()),
+                        )
+                    })
+                    .collect(),
             );
         }
         if let Some(display_dist) = val.display_dist {
             pio.set_object(
                 "DisplayDistance",
-                ParameterObject(
-                    [(hash_name("Item"), Parameter::F32(display_dist))]
-                        .into_iter()
-                        .collect(),
-                ),
+                [("Item", Parameter::F32(display_dist))]
+                    .into_iter()
+                    .collect(),
             )
         }
         if let Some(auto_display_dist_algo) = val.auto_disp_dist_algo {
             pio.set_object(
                 "AutoDisplayDistanceAlgorithm",
-                ParameterObject(
-                    [(
-                        hash_name("Item"),
-                        Parameter::StringRef(auto_display_dist_algo),
-                    )]
+                [("Item", Parameter::StringRef(auto_display_dist_algo))]
                     .into_iter()
                     .collect(),
-                ),
             );
         }
         if let Some(y_limit_algo) = val.y_limit_algo {
             pio.set_object(
                 "YLimitAlgorithm",
-                ParameterObject(
-                    [(hash_name("Item"), Parameter::StringRef(y_limit_algo))]
-                        .into_iter()
-                        .collect(),
-                ),
+                [("Item", Parameter::StringRef(y_limit_algo))]
+                    .into_iter()
+                    .collect(),
             );
         }
         if let Some(weathers) = val.delete_weathers {
             pio.set_object(
                 "DeleteWeathers",
-                ParameterObject(
-                    weathers
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, weather)| {
-                            (
-                                hash_name(&format!("Item{:03}", i)),
-                                Parameter::String64(weather.to_string()),
-                            )
-                        })
-                        .collect(),
-                ),
+                weathers
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, weather)| {
+                        (
+                            format!("Item{:03}", i),
+                            Parameter::String64(weather.to_string()),
+                        )
+                    })
+                    .collect(),
             );
         }
         if let Some(times) = val.delete_times {
             pio.set_object(
                 "DeleteTimes",
-                ParameterObject(
-                    times
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, time)| {
-                            (
-                                hash_name(&format!("Item{:03}", i)),
-                                Parameter::String64(time.to_string()),
-                            )
-                        })
-                        .collect(),
-                ),
+                times
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, time)| {
+                        (
+                            format!("Item{:03}", i),
+                            Parameter::String64(time.to_string()),
+                        )
+                    })
+                    .collect(),
             );
         }
         pio

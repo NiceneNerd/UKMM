@@ -45,52 +45,43 @@ impl TryFrom<&ParameterIO> for Recipe {
 impl From<Recipe> for ParameterIO {
     fn from(val: Recipe) -> Self {
         Self {
-            objects: ParameterObjectMap(
-                [
-                    (
-                        hash_name("Header"),
-                        ParameterObject(
-                            [
-                                (hash_name("TableNum"), Parameter::Int(1)),
-                                (
-                                    hash_name("Table01"),
-                                    Parameter::String64("Normal0".to_owned()),
-                                ),
-                            ]
-                            .into_iter()
-                            .collect(),
-                        ),
-                    ),
-                    (
-                        hash_name("Normal0"),
-                        ParameterObject(
-                            [(hash_name("ColumnNum"), Parameter::Int(val.0.len() as i32))]
+            objects: [
+                (
+                    "Header",
+                    [
+                        ("TableNum", Parameter::Int(1)),
+                        ("Table01", Parameter::String64("Normal0".to_owned())),
+                    ]
+                    .into_iter()
+                    .collect(),
+                ),
+                (
+                    "Normal0",
+                    [("ColumnNum".to_owned(), Parameter::Int(val.0.len() as i32))]
+                        .into_iter()
+                        .chain(
+                            val.0
                                 .into_iter()
-                                .chain(
-                                    val.0
-                                        .into_iter()
-                                        .filter(|(_, count)| *count > 0)
-                                        .enumerate()
-                                        .flat_map(|(i, (name, count))| {
-                                            [
-                                                (
-                                                    hash_name(&format!("ItemName{:02}", i + 1)),
-                                                    Parameter::String64(name),
-                                                ),
-                                                (
-                                                    hash_name(&format!("ItemNum{:02}", i + 1)),
-                                                    Parameter::Int(count as i32),
-                                                ),
-                                            ]
-                                        }),
-                                )
-                                .collect(),
-                        ),
-                    ),
-                ]
-                .into_iter()
-                .collect(),
-            ),
+                                .filter(|(_, count)| *count > 0)
+                                .enumerate()
+                                .flat_map(|(i, (name, count))| {
+                                    [
+                                        (
+                                            format!("ItemName{:02}", i + 1),
+                                            Parameter::String64(name),
+                                        ),
+                                        (
+                                            format!("ItemNum{:02}", i + 1),
+                                            Parameter::Int(count as i32),
+                                        ),
+                                    ]
+                                }),
+                        )
+                        .collect(),
+                ),
+            ]
+            .into_iter()
+            .collect(),
             ..Default::default()
         }
     }

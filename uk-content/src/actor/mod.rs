@@ -1,4 +1,5 @@
 pub mod aiprog;
+pub mod aischedule;
 pub mod animinfo;
 pub mod aware;
 pub mod bonectrl;

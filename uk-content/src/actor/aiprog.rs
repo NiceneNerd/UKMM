@@ -726,62 +726,49 @@ mod write {
             pio.set_list(
                 "AI",
                 ParameterList {
-                    lists: ParameterListMap(
-                        self.ais
-                            .iter()
-                            .enumerate()
-                            .map(|(i, p)| (roead::aamp::hash_name(&format!("AI_{}", i)), p.clone()))
-                            .collect(),
-                    ),
+                    lists: self
+                        .ais
+                        .iter()
+                        .enumerate()
+                        .map(|(i, p)| (format!("AI_{}", i), p.clone()))
+                        .collect(),
                     objects: ParameterObjectMap::default(),
                 },
             );
             pio.set_list(
                 "Action",
                 ParameterList {
-                    lists: ParameterListMap(
-                        self.actions
-                            .iter()
-                            .enumerate()
-                            .map(|(i, p)| {
-                                (roead::aamp::hash_name(&format!("Action_{}", i)), p.clone())
-                            })
-                            .collect(),
-                    ),
+                    lists: self
+                        .actions
+                        .iter()
+                        .enumerate()
+                        .map(|(i, p)| (format!("Action_{}", i), p.clone()))
+                        .collect(),
                     objects: ParameterObjectMap::default(),
                 },
             );
             pio.set_list(
                 "Behavior",
                 ParameterList {
-                    lists: ParameterListMap(
-                        self.behaviors
-                            .iter()
-                            .enumerate()
-                            .map(|(i, p)| {
-                                (
-                                    roead::aamp::hash_name(&format!("Behavior_{}", i)),
-                                    p.clone(),
-                                )
-                            })
-                            .collect(),
-                    ),
+                    lists: self
+                        .behaviors
+                        .iter()
+                        .enumerate()
+                        .map(|(i, p)| (format!("Behavior_{}", i), p.clone()))
+                        .collect(),
                     objects: ParameterObjectMap::default(),
                 },
             );
             pio.set_list(
                 "Query",
                 ParameterList {
-                    lists: ParameterListMap(
-                        self.aiprog
-                            .queries
-                            .values()
-                            .enumerate()
-                            .map(|(i, p)| {
-                                (roead::aamp::hash_name(&format!("Query_{}", i)), p.clone())
-                            })
-                            .collect(),
-                    ),
+                    lists: self
+                        .aiprog
+                        .queries
+                        .values()
+                        .enumerate()
+                        .map(|(i, p)| (format!("Query_{}", i), p.clone()))
+                        .collect(),
                     objects: ParameterObjectMap::default(),
                 },
             );
@@ -799,11 +786,12 @@ mod write {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
+    use roead::aamp::*;
 
     #[test]
     fn serde() {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
-        let pio = roead::aamp::ParameterIO::from_binary(
+        let pio = ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap(),
@@ -811,7 +799,7 @@ mod tests {
         .unwrap();
         let aiprog = super::AIProgram::try_from(&pio).unwrap();
         let data = aiprog.clone().into_pio().to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = ParameterIO::from_binary(&data).unwrap();
         let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
         assert_eq!(aiprog, aiprog2);
     }
@@ -819,7 +807,7 @@ mod tests {
     #[test]
     fn diff() {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
-        let pio = roead::aamp::ParameterIO::from_binary(
+        let pio = ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap(),
@@ -827,7 +815,7 @@ mod tests {
         .unwrap();
         let aiprog = super::AIProgram::try_from(&pio).unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
-        let pio2 = roead::aamp::ParameterIO::from_binary(
+        let pio2 = ParameterIO::from_binary(
             actor2
                 .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap(),
@@ -841,7 +829,7 @@ mod tests {
     #[test]
     fn merge() {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
-        let pio = roead::aamp::ParameterIO::from_binary(
+        let pio = ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap(),
@@ -849,7 +837,7 @@ mod tests {
         .unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let aiprog = super::AIProgram::try_from(&pio).unwrap();
-        let pio2 = roead::aamp::ParameterIO::from_binary(
+        let pio2 = ParameterIO::from_binary(
             actor2
                 .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap(),

@@ -13,17 +13,15 @@ impl From<DropTable> for ParameterIO {
                 let mut objs: IndexMap<u32, ParameterObject> = IndexMap::new();
                 objs.insert(
                     hash_name("Header"),
-                    ParameterObject(
-                        [(hash_name("TableNum"), Parameter::Int(drop.0.len() as i32))]
-                            .into_iter()
-                            .chain(drop.0.keys().enumerate().map(|(i, name)| {
-                                (
-                                    hash_name(&format!("Table{:02}", i + 1)),
-                                    Parameter::StringRef(name.to_owned()),
-                                )
-                            }))
-                            .collect::<IndexMap<_, _>>(),
-                    ),
+                    [("TableNum".to_owned(), Parameter::Int(drop.0.len() as i32))]
+                        .into_iter()
+                        .chain(drop.0.keys().enumerate().map(|(i, name)| {
+                            (
+                                format!("Table{:02}", i + 1),
+                                Parameter::StringRef(name.to_owned()),
+                            )
+                        }))
+                        .collect(),
                 );
                 objs.extend(
                     drop.0
