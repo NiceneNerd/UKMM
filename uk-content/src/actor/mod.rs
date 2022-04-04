@@ -3,6 +3,7 @@ pub mod aischedule;
 pub mod animinfo;
 pub mod aware;
 pub mod bonectrl;
+pub mod chemical;
 pub mod damage;
 pub mod drop;
 pub mod general;
