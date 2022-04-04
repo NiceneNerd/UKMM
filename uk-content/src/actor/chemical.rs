@@ -1,11 +1,10 @@
-use std::collections::HashMap;
-
 use crate::{
     prelude::{Convertible, Mergeable},
     Result, UKError,
 };
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ChemicalBody {
@@ -16,7 +15,7 @@ pub struct ChemicalBody {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Chemical {
     pub unknown: Option<usize>,
-    pub body: HashMap<usize, ChemicalBody>,
+    pub body: BTreeMap<usize, ChemicalBody>,
 }
 
 impl TryFrom<ParameterIO> for Chemical {
@@ -93,7 +92,7 @@ impl From<Chemical> for ParameterIO {
     fn from(val: Chemical) -> Self {
         ParameterIO {
             lists: [(
-                "chemical_body",
+                "chemical_root",
                 ParameterList {
                     objects: [(
                         "chemical_header",
@@ -102,7 +101,7 @@ impl From<Chemical> for ParameterIO {
                                 hash_name("res_shape_num"),
                                 Parameter::U32(val.body.len() as u32),
                             ),
-                            (635073347, Parameter::U32(val.unknown.unwrap() as u32)),
+                            (3635073347, Parameter::U32(val.unknown.unwrap() as u32)),
                         ]
                         .into_iter()
                         .collect(),
@@ -157,6 +156,74 @@ impl Mergeable<ParameterIO> for Chemical {
     }
 
     fn merge(base: &Self, diff: &Self) -> Self {
-        todo!()
+        Self {
+            unknown: diff.unknown.or(base.unknown),
+            body: base
+                .body
+                .iter()
+                .chain(diff.body.iter())
+                .map(|(i, body)| (*i, body.clone()))
+                .collect(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+
+    #[test]
+    fn serde() {
+        let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor.get_file_data("Actor/Chemical/NPC.bchemical").unwrap(),
+        )
+        .unwrap();
+        let chemical = super::Chemical::try_from(&pio).unwrap();
+        let data = chemical.clone().into_pio().to_binary();
+        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let chemical2 = super::Chemical::try_from(&pio2).unwrap();
+        assert_eq!(chemical, chemical2);
+    }
+
+    #[test]
+    fn diff() {
+        let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor.get_file_data("Actor/Chemical/NPC.bchemical").unwrap(),
+        )
+        .unwrap();
+        let chemical = super::Chemical::try_from(&pio).unwrap();
+        let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/Chemical/NPC.bchemical")
+                .unwrap(),
+        )
+        .unwrap();
+        let chemical2 = super::Chemical::try_from(&pio2).unwrap();
+        let diff = chemical.diff(&chemical2);
+        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+    }
+
+    #[test]
+    fn merge() {
+        let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor.get_file_data("Actor/Chemical/NPC.bchemical").unwrap(),
+        )
+        .unwrap();
+        let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
+        let chemical = super::Chemical::try_from(&pio).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/Chemical/NPC.bchemical")
+                .unwrap(),
+        )
+        .unwrap();
+        let chemical2 = super::Chemical::try_from(&pio2).unwrap();
+        let diff = chemical.diff(&chemical2);
+        let merged = super::Chemical::merge(&chemical, &diff);
+        assert_eq!(chemical2, merged);
     }
 }
