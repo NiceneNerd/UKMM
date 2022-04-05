@@ -1,7 +1,7 @@
 use crate::{
     constants::{Time, Weather},
     prelude::Mergeable,
-    util::DeleteList,
+    util::DeleteSet,
     Result, UKError,
 };
 use roead::aamp::*;
@@ -9,13 +9,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LifeCondition {
-    pub invalid_weathers: Option<DeleteList<Weather>>,
-    pub invalid_times: Option<DeleteList<Time>>,
+    pub invalid_weathers: Option<DeleteSet<Weather>>,
+    pub invalid_times: Option<DeleteSet<Time>>,
     pub display_dist: Option<f32>,
     pub auto_disp_dist_algo: Option<String>,
     pub y_limit_algo: Option<String>,
-    pub delete_weathers: Option<DeleteList<Weather>>,
-    pub delete_times: Option<DeleteList<Time>>,
+    pub delete_weathers: Option<DeleteSet<Weather>>,
+    pub delete_times: Option<DeleteSet<Time>>,
 }
 
 impl TryFrom<&ParameterIO> for LifeCondition {
@@ -25,7 +25,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
         Ok(Self {
             invalid_weathers: pio
                 .object("InvalidWeathers")
-                .map(|weathers| -> Result<DeleteList<Weather>> {
+                .map(|weathers| -> Result<DeleteSet<Weather>> {
                     weathers
                         .params()
                         .values()
@@ -37,7 +37,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                 .transpose()?,
             invalid_times: pio
                 .object("InvalidTimes")
-                .map(|times| -> Result<DeleteList<Time>> {
+                .map(|times| -> Result<DeleteSet<Time>> {
                     times
                         .params()
                         .values()
@@ -96,7 +96,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
             ),
             delete_weathers: pio
                 .object("DeleteWeathers")
-                .map(|weathers| -> Result<DeleteList<Weather>> {
+                .map(|weathers| -> Result<DeleteSet<Weather>> {
                     weathers
                         .params()
                         .values()
@@ -108,7 +108,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                 .transpose()?,
             delete_times: pio
                 .object("DeleteTimes")
-                .map(|times| -> Result<DeleteList<Time>> {
+                .map(|times| -> Result<DeleteSet<Time>> {
                     times
                         .params()
                         .values()

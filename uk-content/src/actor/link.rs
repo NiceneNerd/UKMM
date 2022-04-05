@@ -1,6 +1,6 @@
 use crate::{
     prelude::*,
-    util::{self, DeleteList},
+    util::{self, DeleteSet},
     Result, UKError,
 };
 use roead::aamp::*;
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActorLink {
     pub targets: ParameterObject,
-    pub tags: Option<DeleteList<String>>,
+    pub tags: Option<DeleteSet<String>>,
 }
 
 impl TryFrom<&ParameterIO> for ActorLink {

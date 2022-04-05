@@ -1,4 +1,4 @@
-use crate::{prelude::*, util::DeleteList, Result, UKError};
+use crate::{prelude::*, util::DeleteSet, Result, UKError};
 use indexmap::IndexMap;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,7 @@ use std::collections::HashSet;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct BoneControl {
     pub objects: ParameterObjectMap,
-    pub bone_groups: IndexMap<String, DeleteList<String>>,
+    pub bone_groups: IndexMap<String, DeleteSet<String>>,
 }
 
 impl TryFrom<ParameterIO> for BoneControl {
@@ -32,7 +32,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
                 .lists
                 .0
                 .values()
-                .map(|plist| -> Result<(String, DeleteList<String>)> {
+                .map(|plist| -> Result<(String, DeleteSet<String>)> {
                     Ok((
                         plist
                             .object("Param")
@@ -144,17 +144,7 @@ impl Mergeable<ParameterIO> for BoneControl {
                         if self_bones == other_bones {
                             None
                         } else {
-                            Some((
-                                group.clone(),
-                                other_bones
-                                    .iter()
-                                    .filter(|b| !self_bones.contains(*b))
-                                    .map(|b| (b.clone(), false))
-                                    .chain(self_bones.iter().filter_map(|b| {
-                                        (!other_bones.contains(b)).then(|| (b.clone(), true))
-                                    }))
-                                    .collect(),
-                            ))
+                            Some((group.clone(), self_bones.diff(other_bones)))
                         }
                     } else {
                         Some((group.clone(), other_bones.clone()))

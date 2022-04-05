@@ -1,6 +1,6 @@
 use crate::{
     prelude::{Convertible, Mergeable},
-    Result, UKError,
+    util, Result, UKError,
 };
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -145,25 +145,14 @@ impl Mergeable<ParameterIO> for Chemical {
             } else {
                 None
             },
-            body: other
-                .body
-                .iter()
-                .filter_map(|(i, other_body)| {
-                    (self.body.get(i) != Some(other_body)).then(|| (*i, other_body.clone()))
-                })
-                .collect(),
+            body: util::simple_index_diff(&self.body, &other.body),
         }
     }
 
     fn merge(base: &Self, diff: &Self) -> Self {
         Self {
             unknown: diff.unknown.or(base.unknown),
-            body: base
-                .body
-                .iter()
-                .chain(diff.body.iter())
-                .map(|(i, body)| (*i, body.clone()))
-                .collect(),
+            body: util::simple_index_merge(&base.body, &diff.body),
         }
     }
 }
