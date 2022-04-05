@@ -5,13 +5,14 @@ use crate::{
 };
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ModelList {
     pub controller_info: ParameterObject,
     pub attention: ParameterObject,
     pub model_data: ParameterList,
-    pub anm_target: DeleteVec<ParameterList>,
+    pub anm_target: BTreeMap<usize, ParameterList>,
 }
 
 impl TryFrom<&ParameterIO> for ModelList {
@@ -43,6 +44,7 @@ impl TryFrom<&ParameterIO> for ModelList {
                 .0
                 .values()
                 .cloned()
+                .enumerate()
                 .collect(),
         })
     }
@@ -78,7 +80,6 @@ impl From<ModelList> for ParameterIO {
                         lists: val
                             .anm_target
                             .into_iter()
-                            .enumerate()
                             .map(|(i, target)| (format!("AnmTarget_{}", i), target))
                             .collect(),
                         ..Default::default()
@@ -100,7 +101,7 @@ impl Mergeable<ParameterIO> for ModelList {
             controller_info: diff_pobj(&self.controller_info, &other.controller_info),
             attention: diff_pobj(&self.attention, &other.attention),
             model_data: diff_plist(&self.model_data, &other.model_data),
-            anm_target: self.anm_target.diff(&other.anm_target),
+            anm_target: simple_index_diff(&self.anm_target, &other.anm_target),
         }
     }
 
@@ -109,7 +110,7 @@ impl Mergeable<ParameterIO> for ModelList {
             controller_info: merge_pobj(&base.controller_info, &diff.controller_info),
             attention: merge_pobj(&base.attention, &diff.attention),
             model_data: merge_plist(&base.model_data, &diff.model_data),
-            anm_target: base.anm_target.merge(&diff.anm_target),
+            anm_target: simple_index_merge(&base.anm_target, &diff.anm_target),
         }
     }
 }
