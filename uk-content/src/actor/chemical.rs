@@ -30,33 +30,27 @@ impl TryFrom<&ParameterIO> for Chemical {
     fn try_from(value: &ParameterIO) -> Result<Self> {
         let shape_num = value
             .list("chemical_root")
-            .ok_or_else(|| UKError::MissingAampKey("Chemical missing chemical_root".to_owned()))?
+            .ok_or(UKError::MissingAampKey("Chemical missing chemical_root"))?
             .object("chemical_header")
-            .ok_or_else(|| UKError::MissingAampKey("Chemical missing chemical_header".to_owned()))?
+            .ok_or(UKError::MissingAampKey("Chemical missing chemical_header"))?
             .param("res_shape_num")
-            .ok_or_else(|| UKError::MissingAampKey("Chemical missing shape count".to_owned()))?
+            .ok_or(UKError::MissingAampKey("Chemical missing shape count"))?
             .as_u32()? as usize;
         let chemical_body = value
             .list("chemical_root")
             .unwrap()
             .list("chemical_body")
-            .ok_or_else(|| UKError::MissingAampKey("Chemical missing chemical_body".to_owned()))?;
+            .ok_or(UKError::MissingAampKey("Chemical missing chemical_body"))?;
         Ok(Self {
             unknown: Some(
                 value
                     .list("chemical_root")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey("Chemical missing chemical_root".to_owned())
-                    })?
+                    .ok_or(UKError::MissingAampKey("Chemical missing chemical_root"))?
                     .object("chemical_header")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey("Chemical missing chemical_header".to_owned())
-                    })?
+                    .ok_or(UKError::MissingAampKey("Chemical missing chemical_header"))?
                     .0
                     .get(&3635073347)
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey("Chemical missing 3635073347".to_owned())
-                    })?
+                    .ok_or(UKError::MissingAampKey("Chemical missing 3635073347"))?
                     .as_u32()? as usize,
             ),
             body: (0..shape_num)
@@ -66,19 +60,11 @@ impl TryFrom<&ParameterIO> for Chemical {
                         ChemicalBody {
                             rigid_c: chemical_body
                                 .object(&format!("rigid_c_{:02}", i))
-                                .ok_or_else(|| {
-                                    UKError::MissingAampKey(
-                                        "Chemical missing rigid_c entry".to_owned(),
-                                    )
-                                })
+                                .ok_or(UKError::MissingAampKey("Chemical missing rigid_c entry"))
                                 .cloned()?,
                             shape: chemical_body
                                 .object(&format!("shape_{:02}", i))
-                                .ok_or_else(|| {
-                                    UKError::MissingAampKey(
-                                        "Chemical missing shape entry".to_owned(),
-                                    )
-                                })
+                                .ok_or(UKError::MissingAampKey("Chemical missing shape entry"))
                                 .cloned()?,
                         },
                     ))

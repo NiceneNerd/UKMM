@@ -338,21 +338,19 @@ mod parse {
     use super::*;
 
     fn plist_to_ai(
-        plist: &ParameterList,
+        list: &ParameterList,
         pio: &ParameterIO,
         action_offset: usize,
     ) -> Result<AIEntry> {
         Ok(AIEntry {
-            def: plist
+            def: list
                 .object("Def")
-                .ok_or_else(|| UKError::MissingAampKey("AI entry missing Def object".to_owned()))?
+                .ok_or(UKError::MissingAampKey("AI entry missing Def object"))?
                 .clone(),
-            params: plist.object("SInst").cloned(),
-            children: plist
+            params: list.object("SInst").cloned(),
+            children: list
                 .object("ChildIdx")
-                .ok_or_else(|| {
-                    UKError::MissingAampKey("AI entry missing ChildIdx object".to_owned())
-                })?
+                .ok_or(UKError::MissingAampKey("AI entry missing ChildIdx object"))?
                 .0
                 .iter()
                 .map(|(k, v)| -> Result<(u32, ChildEntry)> {
@@ -368,7 +366,7 @@ mod parse {
                                     .values()
                                     .nth(idx)
                                     .ok_or_else(|| {
-                                        UKError::MissingAampKey(format!(
+                                        UKError::MissingAampKeyD(format!(
                                             "AI program missing entry at {}",
                                             idx
                                         ))
@@ -385,7 +383,7 @@ mod parse {
                                     .values()
                                     .nth(idx - action_offset)
                                     .ok_or_else(|| {
-                                        UKError::MissingAampKey(format!(
+                                        UKError::MissingAampKeyD(format!(
                                             "AI program missing entry at {}",
                                             idx
                                         ))
@@ -396,10 +394,10 @@ mod parse {
                     ))
                 })
                 .collect::<Result<IndexMap<_, _>>>()?,
-            behaviors: plist
+            behaviors: list
                 .object("BehaviorIdx")
-                .map(|pobj| -> Result<IndexMap<u32, ParameterList>> {
-                    pobj.params()
+                .map(|obj| -> Result<IndexMap<u32, ParameterList>> {
+                    obj.params()
                         .iter()
                         .map(|(k, v)| -> Result<(u32, ParameterList)> {
                             Ok((
@@ -411,7 +409,7 @@ mod parse {
                                     .values()
                                     .nth(v.as_int()? as usize)
                                     .ok_or_else(|| {
-                                        UKError::MissingAampKey(format!(
+                                        UKError::MissingAampKeyD(format!(
                                             "AI program missing behavior at {:?}",
                                             v
                                         ))
@@ -425,19 +423,17 @@ mod parse {
         })
     }
 
-    fn plist_to_action(plist: &ParameterList, pio: &ParameterIO) -> Result<ActionEntry> {
+    fn plist_to_action(list: &ParameterList, pio: &ParameterIO) -> Result<ActionEntry> {
         Ok(ActionEntry {
-            def: plist
+            def: list
                 .object("Def")
-                .ok_or_else(|| {
-                    UKError::MissingAampKey("Action entry missing Def object".to_owned())
-                })?
+                .ok_or(UKError::MissingAampKey("Action entry missing Def object"))?
                 .clone(),
-            params: plist.object("SInst").cloned(),
-            behaviors: plist
+            params: list.object("SInst").cloned(),
+            behaviors: list
                 .object("BehaviorIdx")
-                .map(|pobj| -> Result<IndexMap<u32, ParameterList>> {
-                    pobj.params()
+                .map(|obj| -> Result<IndexMap<u32, ParameterList>> {
+                    obj.params()
                         .iter()
                         .map(|(k, v)| -> Result<(u32, ParameterList)> {
                             Ok((
@@ -449,7 +445,7 @@ mod parse {
                                     .values()
                                     .nth(v.as_int()? as usize)
                                     .ok_or_else(|| {
-                                        UKError::MissingAampKey(format!(
+                                        UKError::MissingAampKeyD(format!(
                                             "AI program missing behavior at {:?}",
                                             v
                                         ))
@@ -499,17 +495,11 @@ mod parse {
                             .map(|root| -> Result<(String, AIEntry)> {
                                 Ok((
                                     root.object("Def")
-                                        .ok_or_else(|| {
-                                            UKError::MissingAampKey(
-                                                "AI entry missing Def object".to_owned(),
-                                            )
-                                        })?
+                                        .ok_or(UKError::MissingAampKey(
+                                            "AI entry missing Def object",
+                                        ))?
                                         .param("ClassName")
-                                        .ok_or_else(|| {
-                                            UKError::MissingAampKey(
-                                                "AI def missing ClassName".to_owned(),
-                                            )
-                                        })?
+                                        .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
                                         .as_string()?
                                         .to_owned(),
                                     plist_to_ai(root, pio, action_offset)?,
@@ -517,16 +507,14 @@ mod parse {
                             })
                             .collect::<Result<IndexMap<_, _>>>()?
                     } else {
-                        return Err(UKError::MissingAampKey(
-                            "AI program missing AI list".to_owned(),
-                        ));
+                        return Err(UKError::MissingAampKey("AI program missing AI list"));
                     }
                 },
                 demos: pio
                     .object("DemoAIActionIdx")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey("AI program missing Demo action indexes".to_owned())
-                    })?
+                    .ok_or(UKError::MissingAampKey(
+                        "AI program missing Demo action indexes",
+                    ))?
                     .0
                     .iter()
                     .map(|(k, v)| -> Result<(u32, ActionEntry)> {
@@ -541,7 +529,7 @@ mod parse {
                                     .values()
                                     .nth(idx)
                                     .ok_or_else(|| {
-                                        UKError::MissingAampKey(format!(
+                                        UKError::MissingAampKeyD(format!(
                                             "AI program missing entry at {}",
                                             idx
                                         ))
@@ -553,9 +541,7 @@ mod parse {
                     .collect::<Result<IndexMap<u32, ActionEntry>>>()?,
                 queries: pio
                     .list("Query")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey("AI program missing Queries list".to_owned())
-                    })?
+                    .ok_or(UKError::MissingAampKey("AI program missing Queries list"))?
                     .lists
                     .0
                     .values()
@@ -564,13 +550,9 @@ mod parse {
                         Ok((
                             query
                                 .object("Def")
-                                .ok_or_else(|| {
-                                    UKError::MissingAampKey("Query missing Def object".to_owned())
-                                })?
+                                .ok_or(UKError::MissingAampKey("Query missing Def object"))?
                                 .param("ClassName")
-                                .ok_or_else(|| {
-                                    UKError::MissingAampKey("AI def missing ClassName".to_owned())
-                                })?
+                                .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
                                 .as_string()?
                                 .to_owned(),
                             query,
@@ -627,12 +609,12 @@ mod write {
             if let Some(idx) = self.done_ais.get(&name) {
                 return *idx;
             }
-            let mut plist = ParameterList::new();
+            let mut list = ParameterList::new();
             let idx = self.ais.len();
             self.ais.insert(idx, ParameterList::new());
-            plist.set_object("Def", ai.def);
+            list.set_object("Def", ai.def);
             if let Some(params) = ai.params {
-                plist.set_object("SInst", params);
+                list.set_object("SInst", params);
             };
             if !ai.children.is_empty() {
                 let mut children = ParameterObject::new();
@@ -645,7 +627,7 @@ mod write {
                     };
                     children.0.insert(key, Parameter::Int(idx as i32));
                 }
-                plist.set_object("ChildIdx", children);
+                list.set_object("ChildIdx", children);
             }
             if let Some(behaviors) = ai.behaviors {
                 let mut behavior_indexes = ParameterObject::new();
@@ -663,10 +645,10 @@ mod write {
                         } as i32),
                     );
                 }
-                plist.set_object("BehaviorIdx", behavior_indexes);
+                list.set_object("BehaviorIdx", behavior_indexes);
             };
             self.done_ais.insert(name, idx);
-            std::mem::swap(&mut plist, self.ais.get_mut(idx).unwrap());
+            std::mem::swap(&mut list, self.ais.get_mut(idx).unwrap());
             idx
         }
 
@@ -675,10 +657,10 @@ mod write {
             if let Some(idx) = self.done_actions.get(&name) {
                 return *idx;
             }
-            let mut plist = ParameterList::new();
-            plist.set_object("Def", action.def);
+            let mut list = ParameterList::new();
+            list.set_object("Def", action.def);
             if let Some(params) = action.params {
-                plist.set_object("SInst", params);
+                list.set_object("SInst", params);
             }
             if let Some(behaviors) = action.behaviors {
                 let mut behavior_indexes = ParameterObject::new();
@@ -696,11 +678,11 @@ mod write {
                         } as i32),
                     );
                 }
-                plist.set_object("BehaviorIdx", behavior_indexes);
+                list.set_object("BehaviorIdx", behavior_indexes);
             };
             let idx = self.actions.len();
             self.done_actions.insert(name, idx);
-            self.actions.push(plist);
+            self.actions.push(list);
             idx
         }
 

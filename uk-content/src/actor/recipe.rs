@@ -12,28 +12,22 @@ impl TryFrom<&ParameterIO> for Recipe {
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         let table = pio
             .object("Normal0")
-            .ok_or_else(|| UKError::MissingAampKey("Recipe missing table Normal0".to_owned()))?;
+            .ok_or(UKError::MissingAampKey("Recipe missing table Normal0"))?;
         Ok(Self(
             (1..=table
                 .param("ColumnNum")
-                .ok_or_else(|| {
-                    UKError::MissingAampKey("Recipe table missing column num".to_owned())
-                })?
+                .ok_or(UKError::MissingAampKey("Recipe table missing column num"))?
                 .as_int()?)
                 .map(|i| -> Result<(String, u8)> {
                     Ok((
                         table
                             .param(&format!("ItemName{:02}", i))
-                            .ok_or_else(|| {
-                                UKError::MissingAampKey("Recipe missing item name".to_owned())
-                            })?
+                            .ok_or(UKError::MissingAampKey("Recipe missing item name"))?
                             .as_string()?
                             .to_owned(),
                         table
                             .param(&format!("ItemNum{:02}", i))
-                            .ok_or_else(|| {
-                                UKError::MissingAampKey("Recipe missing item count".to_owned())
-                            })?
+                            .ok_or(UKError::MissingAampKey("Recipe missing item count"))?
                             .as_int()? as u8,
                     ))
                 })

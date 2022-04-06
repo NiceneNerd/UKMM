@@ -8,7 +8,9 @@ pub mod util;
 #[derive(Debug, Error)]
 pub enum UKError {
     #[error("Parameter file missing key: {0}")]
-    MissingAampKey(String),
+    MissingAampKey(&'static str),
+    #[error("Parameter file missing key: {0}")]
+    MissingAampKeyD(String),
     #[error("Wrong type for parameter value")]
     WrongAampType(#[from] roead::aamp::AampError),
     #[error("Invalid weather value: {0}")]

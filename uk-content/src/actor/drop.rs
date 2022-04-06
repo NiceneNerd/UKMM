@@ -38,15 +38,15 @@ impl From<DropTable> for ParameterIO {
 impl TryFrom<&ParameterIO> for DropTable {
     type Error = UKError;
 
-    fn try_from(plist: &ParameterIO) -> Result<Self> {
-        let header = plist
+    fn try_from(list: &ParameterIO) -> Result<Self> {
+        let header = list
             .object("Header")
-            .ok_or_else(|| UKError::MissingAampKey("Drop table missing header".to_owned()))?;
+            .ok_or(UKError::MissingAampKey("Drop table missing header"))?;
         let table_count = header
             .param("TableNum")
-            .ok_or_else(|| {
-                UKError::MissingAampKey("Drop table header missing table count".to_owned())
-            })?
+            .ok_or(UKError::MissingAampKey(
+                "Drop table header missing table count",
+            ))?
             .as_int()? as usize;
         Ok(Self(
             (1..=table_count)
@@ -56,8 +56,7 @@ impl TryFrom<&ParameterIO> for DropTable {
                         .param(&format!("Table{:02}", i))
                         .and_then(|name| name.as_string().ok())
                         .and_then(|name| {
-                            plist
-                                .object(name)
+                            list.object(name)
                                 .map(|table| (name.to_owned(), table.clone()))
                         })
                 })

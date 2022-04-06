@@ -38,6 +38,10 @@ impl<T: Clone + PartialEq> PartialEq for DeleteVec<T> {
 }
 
 impl<T: Clone + PartialEq> DeleteVec<T> {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     #[inline]
     pub fn and_delete(mut self) -> Self {
         self.delete();

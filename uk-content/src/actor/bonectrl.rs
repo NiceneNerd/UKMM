@@ -26,36 +26,24 @@ impl TryFrom<&ParameterIO> for BoneControl {
             objects: pio.objects.clone(),
             bone_groups: pio
                 .list("BoneGroups")
-                .ok_or_else(|| {
-                    UKError::MissingAampKey("Bone control missing BoneGroups".to_owned())
-                })?
+                .ok_or(UKError::MissingAampKey("Bone control missing BoneGroups"))?
                 .lists
                 .0
                 .values()
-                .map(|plist| -> Result<(String, DeleteSet<String>)> {
+                .map(|list| -> Result<(String, DeleteSet<String>)> {
                     Ok((
-                        plist
-                            .object("Param")
-                            .ok_or_else(|| {
-                                UKError::MissingAampKey(
-                                    "Bone control group missing param".to_owned(),
-                                )
-                            })?
+                        list.object("Param")
+                            .ok_or(UKError::MissingAampKey("Bone control group missing param"))?
                             .param("GroupName")
-                            .ok_or_else(|| {
-                                UKError::MissingAampKey(
-                                    "Bone control group missing group name".to_owned(),
-                                )
-                            })?
+                            .ok_or(UKError::MissingAampKey(
+                                "Bone control group missing group name",
+                            ))?
                             .as_string()?
                             .to_owned(),
-                        plist
-                            .object("Bones")
-                            .ok_or_else(|| {
-                                UKError::MissingAampKey(
-                                    "Bone control group missing bone list".to_owned(),
-                                )
-                            })?
+                        list.object("Bones")
+                            .ok_or(UKError::MissingAampKey(
+                                "Bone control group missing bone list",
+                            ))?
                             .params()
                             .values()
                             .filter_map(|v| v.as_string().ok().map(|s| (s.to_owned(), false)))

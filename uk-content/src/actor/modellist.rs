@@ -21,25 +21,25 @@ impl TryFrom<&ParameterIO> for ModelList {
         Ok(Self {
             controller_info: pio
                 .object("ControllerInfo")
-                .ok_or_else(|| {
-                    UKError::MissingAampKey("Model list missing controller info".to_owned())
-                })?
+                .ok_or(UKError::MissingAampKey(
+                    "Model list missing controller info",
+                ))?
                 .clone(),
             attention: pio
                 .object("Attention")
-                .ok_or_else(|| UKError::MissingAampKey("Model list missing attention".to_owned()))?
+                .ok_or(UKError::MissingAampKey("Model list missing attention"))?
                 .clone(),
             model_data: pio
                 .list("ModelData")
-                .ok_or_else(|| UKError::MissingAampKey("Model list missing model data".to_owned()))?
+                .ok_or(UKError::MissingAampKey("Model list missing model data"))?
                 .list("ModelData_0")
-                .ok_or_else(|| UKError::MissingAampKey("Model list missing model data".to_owned()))?
+                .ok_or(UKError::MissingAampKey("Model list missing model data"))?
                 .clone(),
             anm_target: pio
                 .list("AnmTarget")
-                .ok_or_else(|| {
-                    UKError::MissingAampKey("Model list missing animation target".to_owned())
-                })?
+                .ok_or(UKError::MissingAampKey(
+                    "Model list missing animation target",
+                ))?
                 .lists
                 .0
                 .values()

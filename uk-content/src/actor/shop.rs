@@ -49,10 +49,10 @@ impl TryFrom<&ParameterIO> for ShopData {
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         let header = pio
             .object("Header")
-            .ok_or_else(|| UKError::MissingAampKey("Shop data missing header".to_owned()))?;
+            .ok_or(UKError::MissingAampKey("Shop data missing header"))?;
         let table_count = header
             .param("TableNum")
-            .ok_or_else(|| UKError::MissingAampKey("Shop data missing table count".to_owned()))?
+            .ok_or(UKError::MissingAampKey("Shop data missing table count"))?
             .as_int()? as usize;
         let tables: Vec<String> = (1..=table_count)
             .filter_map(|i| {
@@ -64,13 +64,13 @@ impl TryFrom<&ParameterIO> for ShopData {
         let mut shop_tables = IndexMap::with_capacity(table_count);
         for table_name in tables {
             let table_obj = pio.object(&table_name).ok_or_else(|| {
-                UKError::MissingAampKey(format!("Table {} in shop data missing", &table_name))
+                UKError::MissingAampKeyD(format!("Table {} in shop data missing", &table_name))
             })?;
             let column_num = table_obj
                 .param("ColumnNum")
-                .ok_or_else(|| {
-                    UKError::MissingAampKey("Shop data table missing column count".to_owned())
-                })?
+                .ok_or(UKError::MissingAampKey(
+                    "Shop data table missing column count",
+                ))?
                 .as_int()? as usize;
             shop_tables.insert(
                 table_name,
@@ -79,55 +79,41 @@ impl TryFrom<&ParameterIO> for ShopData {
                         .map(|i| -> Result<(String, ShopItem)> {
                             let item_name = table_obj
                                 .param(&format!("ItemName{:03}", i))
-                                .ok_or_else(|| {
-                                    UKError::MissingAampKey(
-                                        "Shop table missing item name".to_owned(),
-                                    )
-                                })?
+                                .ok_or(UKError::MissingAampKey("Shop table missing item name"))?
                                 .as_string()?;
                             Ok((
                                 item_name.to_owned(),
                                 ShopItem {
                                     sort: table_obj
                                         .param(&format!("ItemSort{:03}", i))
-                                        .ok_or_else(|| {
-                                            UKError::MissingAampKey(
-                                                "Shop table missing item name".to_owned(),
-                                            )
-                                        })?
+                                        .ok_or(UKError::MissingAampKey(
+                                            "Shop table missing item name",
+                                        ))?
                                         .as_int()? as u8,
                                     num: table_obj
                                         .param(&format!("ItemNum{:03}", i))
-                                        .ok_or_else(|| {
-                                            UKError::MissingAampKey(
-                                                "Shop table missing item num".to_owned(),
-                                            )
-                                        })?
+                                        .ok_or(UKError::MissingAampKey(
+                                            "Shop table missing item num",
+                                        ))?
                                         .as_int()? as u8,
                                     adjust_price: table_obj
                                         .param(&format!("ItemAdjustPrice{:03}", i))
-                                        .ok_or_else(|| {
-                                            UKError::MissingAampKey(
-                                                "Shop table missing adjust price".to_owned(),
-                                            )
-                                        })?
+                                        .ok_or(UKError::MissingAampKey(
+                                            "Shop table missing adjust price",
+                                        ))?
                                         .as_int()?
                                         as u8,
                                     look_get_flag: table_obj
                                         .param(&format!("ItemLookGetFlg{:03}", i))
-                                        .ok_or_else(|| {
-                                            UKError::MissingAampKey(
-                                                "Shop table missing look get flag".to_owned(),
-                                            )
-                                        })?
+                                        .ok_or(UKError::MissingAampKey(
+                                            "Shop table missing look get flag",
+                                        ))?
                                         .as_bool()?,
                                     amount: table_obj
                                         .param(&format!("ItemAdjustPrice{:03}", i))
-                                        .ok_or_else(|| {
-                                            UKError::MissingAampKey(
-                                                "Shop table missing item amount".to_owned(),
-                                            )
-                                        })?
+                                        .ok_or(UKError::MissingAampKey(
+                                            "Shop table missing item amount",
+                                        ))?
                                         .as_int()?
                                         as u8,
                                     delete: false,

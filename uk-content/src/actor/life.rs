@@ -49,48 +49,36 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                 .transpose()?,
             display_dist: Some(
                 pio.object("DisplayDistance")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey(
-                            "Life condition missing display distance".to_owned(),
-                        )
-                    })?
+                    .ok_or(UKError::MissingAampKey(
+                        "Life condition missing display distance",
+                    ))?
                     .param("Item")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey(
-                            "Life condition display distance missing item".to_owned(),
-                        )
-                    })?
+                    .ok_or(UKError::MissingAampKey(
+                        "Life condition display distance missing item",
+                    ))?
                     .as_f32()?,
             ),
             auto_disp_dist_algo: Some(
                 pio.object("AutoDisplayDistanceAlgorithm")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey(
-                            "Life condition missing display distance".to_owned(),
-                        )
-                    })?
+                    .ok_or(UKError::MissingAampKey(
+                        "Life condition missing display distance",
+                    ))?
                     .param("Item")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey(
-                            "Life condition display distance missing item".to_owned(),
-                        )
-                    })?
+                    .ok_or(UKError::MissingAampKey(
+                        "Life condition display distance missing item",
+                    ))?
                     .as_string()?
                     .to_owned(),
             ),
             y_limit_algo: Some(
                 pio.object("YLimitAlgorithm")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey(
-                            "Life condition missing display distance".to_owned(),
-                        )
-                    })?
+                    .ok_or(UKError::MissingAampKey(
+                        "Life condition missing display distance",
+                    ))?
                     .param("Item")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey(
-                            "Life condition display distance missing item".to_owned(),
-                        )
-                    })?
+                    .ok_or(UKError::MissingAampKey(
+                        "Life condition display distance missing item",
+                    ))?
                     .as_string()?
                     .to_owned(),
             ),
