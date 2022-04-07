@@ -158,7 +158,7 @@ mod tests {
         .unwrap();
         let drop2 = super::DropTable::try_from(&pio2).unwrap();
         let diff = drop.diff(&drop2);
-        let merged = super::DropTable::merge(&drop, &diff);
+        let merged = drop.merge(&diff);
         assert_eq!(drop2, merged);
     }
 }

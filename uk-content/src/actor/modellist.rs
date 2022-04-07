@@ -176,7 +176,7 @@ mod tests {
         .unwrap();
         let modellist2 = super::ModelList::try_from(&pio2).unwrap();
         let diff = modellist.diff(&modellist2);
-        let merged = super::ModelList::merge(&modellist, &diff);
+        let merged = modellist.merge(&diff);
         assert_eq!(modellist2, merged);
     }
 }

@@ -326,7 +326,7 @@ mod tests {
         .unwrap();
         let shop2 = super::ShopData::try_from(&pio2).unwrap();
         let diff = shop.diff(&shop2);
-        let merged = super::ShopData::merge(&shop, &diff);
+        let merged = shop.merge(&diff);
         assert_eq!(shop2, merged);
     }
 }

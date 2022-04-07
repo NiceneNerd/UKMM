@@ -92,7 +92,7 @@ mod tests {
         .unwrap();
         let awareness2 = super::Awareness::try_from(&pio2).unwrap();
         let diff = awareness.diff(&awareness2);
-        let merged = super::Awareness::merge(&awareness, &diff);
+        let merged = awareness.merge(&diff);
         assert_eq!(awareness2, merged);
     }
 }

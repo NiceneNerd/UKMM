@@ -408,7 +408,7 @@ mod tests {
         .unwrap();
         let lifecondition2 = super::LifeCondition::try_from(&pio2).unwrap();
         let diff = lifecondition.diff(&lifecondition2);
-        let merged = super::LifeCondition::merge(&lifecondition, &diff);
+        let merged = lifecondition.merge(&diff);
         println!("{}", serde_json::to_string_pretty(&merged).unwrap());
         assert_eq!(lifecondition2, merged);
     }

@@ -93,7 +93,7 @@ mod tests {
         .unwrap();
         let animinfo2 = super::AnimationInfo::from(&byml2);
         let diff = animinfo.diff(&animinfo2);
-        let merged = super::AnimationInfo::merge(&animinfo, &diff);
+        let merged = animinfo.merge(&diff);
         assert_eq!(animinfo2, merged);
     }
 }

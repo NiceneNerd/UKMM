@@ -179,7 +179,7 @@ mod tests {
         .unwrap();
         let recipe2 = super::Recipe::try_from(&pio2).unwrap();
         let diff = recipe.diff(&recipe2);
-        let merged = super::Recipe::merge(&recipe, &diff);
+        let merged = recipe.merge(&diff);
         assert_eq!(recipe2, merged);
     }
 }

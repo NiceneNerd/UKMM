@@ -241,7 +241,7 @@ mod tests {
         .unwrap();
         let bonectrl2 = super::BoneControl::try_from(&pio2).unwrap();
         let diff = bonectrl.diff(&bonectrl2);
-        let merged = super::BoneControl::merge(&bonectrl, &diff);
+        let merged = bonectrl.merge(&diff);
         assert_eq!(bonectrl2, merged);
     }
 }

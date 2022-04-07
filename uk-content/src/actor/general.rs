@@ -92,7 +92,7 @@ mod tests {
         .unwrap();
         let gparamlist2 = super::GeneralParamList::try_from(&pio2).unwrap();
         let diff = gparamlist.diff(&gparamlist2);
-        let merged = super::GeneralParamList::merge(&gparamlist, &diff);
+        let merged = gparamlist.merge(&diff);
         assert_eq!(gparamlist2, merged);
     }
 }

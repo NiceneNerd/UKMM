@@ -168,7 +168,7 @@ mod tests {
         .unwrap();
         let actorlink2 = super::ActorLink::try_from(&pio2).unwrap();
         let diff = actorlink.diff(&actorlink2);
-        let merged = super::ActorLink::merge(&actorlink, &diff);
+        let merged = actorlink.merge(&diff);
         assert_eq!(actorlink2, merged);
     }
 }

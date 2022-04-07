@@ -92,7 +92,7 @@ mod tests {
         .unwrap();
         let dmgparam2 = super::DamageParam::try_from(&pio2).unwrap();
         let diff = dmgparam.diff(&dmgparam2);
-        let merged = super::DamageParam::merge(&dmgparam, &diff);
+        let merged = dmgparam.merge(&diff);
         assert_eq!(dmgparam2, merged);
     }
 }

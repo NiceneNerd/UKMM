@@ -93,7 +93,7 @@ mod tests {
         .unwrap();
         let aischedule2 = super::AISchedule::from(&byml2);
         let diff = aischedule.diff(&aischedule2);
-        let merged = super::AISchedule::merge(&aischedule, &diff);
+        let merged = aischedule.merge(&diff);
         assert_eq!(aischedule2, merged);
     }
 }

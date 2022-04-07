@@ -827,7 +827,7 @@ mod tests {
         .unwrap();
         let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
         let diff = aiprog.diff(&aiprog2);
-        let merged = super::AIProgram::merge(&aiprog, &diff);
+        let merged = aiprog.merge(&diff);
         assert_eq!(aiprog2, merged);
     }
 }
