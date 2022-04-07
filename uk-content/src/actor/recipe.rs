@@ -105,9 +105,9 @@ impl Mergeable<ParameterIO> for Recipe {
         )
     }
 
-    fn merge(base: &Self, diff: &Self) -> Self {
+    fn merge(&self, diff: &Self) -> Self {
         Self(
-            base.0
+            self.0
                 .iter()
                 .chain(diff.0.iter())
                 .collect::<IndexMap<_, _>>()

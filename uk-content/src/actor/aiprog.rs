@@ -93,8 +93,8 @@ impl Mergeable<()> for AIEntry {
         diff
     }
 
-    fn merge(base: &Self, diff: &Self) -> Self {
-        let mut new = base.clone();
+    fn merge(&self, diff: &Self) -> Self {
+        let mut new = self.clone();
         new.def = diff.def.clone();
         if let Some(diff_params) = &diff.params {
             if let Some(new_params) = &new.params {
@@ -104,7 +104,7 @@ impl Mergeable<()> for AIEntry {
             }
         }
         if let Some(diff_behaviors) = &diff.behaviors {
-            if let Some(base_behaviors) = &base.behaviors {
+            if let Some(base_behaviors) = &self.behaviors {
                 new.behaviors = Some(
                     base_behaviors
                         .iter()
@@ -117,7 +117,7 @@ impl Mergeable<()> for AIEntry {
             }
         }
         for (k, v) in &diff.children {
-            if let Some(base_child) = base.children.get(k) {
+            if let Some(base_child) = self.children.get(k) {
                 match (base_child, v) {
                     (ChildEntry::AI(_), ChildEntry::Action(_))
                     | (ChildEntry::Action(_), ChildEntry::AI(_)) => {
@@ -207,8 +207,8 @@ impl Mergeable<()> for ActionEntry {
         diff
     }
 
-    fn merge(base: &Self, diff: &Self) -> Self {
-        let mut new = base.clone();
+    fn merge(&self, diff: &Self) -> Self {
+        let mut new = self.clone();
         new.def = diff.def.clone();
         if let Some(diff_params) = &diff.params {
             if let Some(new_params) = &new.params {
@@ -218,7 +218,7 @@ impl Mergeable<()> for ActionEntry {
             }
         }
         if let Some(diff_behaviors) = &diff.behaviors {
-            if let Some(base_behaviors) = &base.behaviors {
+            if let Some(base_behaviors) = &self.behaviors {
                 new.behaviors = Some(
                     base_behaviors
                         .iter()
@@ -292,10 +292,10 @@ impl Mergeable<ParameterIO> for AIProgram {
         }
     }
 
-    fn merge(base: &Self, diff: &Self) -> Self {
+    fn merge(&self, diff: &Self) -> Self {
         Self {
             demos: {
-                let mut new = base.demos.clone();
+                let mut new = self.demos.clone();
                 for (k, v) in &diff.demos {
                     let merged = if let Some(entry) = new.get_mut(k) {
                         ActionEntry::merge(entry, v)
@@ -307,7 +307,7 @@ impl Mergeable<ParameterIO> for AIProgram {
                 new
             },
             queries: {
-                let mut new = base.queries.clone();
+                let mut new = self.queries.clone();
                 for (k, v) in &diff.queries {
                     let merged = if let Some(entry) = new.get_mut(k) {
                         util::merge_plist(entry, v)
@@ -319,7 +319,7 @@ impl Mergeable<ParameterIO> for AIProgram {
                 new
             },
             tree: {
-                let mut new = base.tree.clone();
+                let mut new = self.tree.clone();
                 for (k, v) in &diff.tree {
                     let merged = if let Some(entry) = new.get_mut(k) {
                         AIEntry::merge(entry, v)

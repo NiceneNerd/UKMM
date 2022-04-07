@@ -142,11 +142,11 @@ impl Mergeable<ParameterIO> for BoneControl {
         }
     }
 
-    fn merge(base: &Self, diff: &Self) -> Self {
+    fn merge(&self, diff: &Self) -> Self {
         Self {
             objects: crate::util::merge_plist(
                 &ParameterList {
-                    objects: base.objects.clone(),
+                    objects: self.objects.clone(),
                     ..Default::default()
                 },
                 &ParameterList {
@@ -155,7 +155,7 @@ impl Mergeable<ParameterIO> for BoneControl {
                 },
             )
             .objects,
-            bone_groups: base
+            bone_groups: self
                 .bone_groups
                 .keys()
                 .chain(diff.bone_groups.keys())
@@ -167,12 +167,12 @@ impl Mergeable<ParameterIO> for BoneControl {
                         diff.bone_groups
                             .get(group)
                             .map(|diff_bones| {
-                                base.bone_groups
+                                self.bone_groups
                                     .get(group)
                                     .map(|self_bones| self_bones.merge(diff_bones).and_delete())
                                     .unwrap_or_else(|| diff_bones.clone())
                             })
-                            .unwrap_or_else(|| base.bone_groups.get(group).cloned().unwrap()),
+                            .unwrap_or_else(|| self.bone_groups.get(group).cloned().unwrap()),
                     )
                 })
                 .collect(),

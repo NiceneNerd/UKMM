@@ -135,10 +135,10 @@ impl Mergeable<ParameterIO> for Chemical {
         }
     }
 
-    fn merge(base: &Self, diff: &Self) -> Self {
+    fn merge(&self, diff: &Self) -> Self {
         Self {
-            unknown: diff.unknown.or(base.unknown),
-            body: util::simple_index_merge(&base.body, &diff.body),
+            unknown: diff.unknown.or(self.unknown),
+            body: util::simple_index_merge(&self.body, &diff.body),
         }
     }
 }

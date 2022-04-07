@@ -83,9 +83,9 @@ impl Mergeable<ParameterIO> for ActorLink {
         }
     }
 
-    fn merge(base: &Self, other: &Self) -> Self {
+    fn merge(&self, other: &Self) -> Self {
         Self {
-            targets: base
+            targets: self
                 .targets
                 .0
                 .iter()
@@ -93,11 +93,11 @@ impl Mergeable<ParameterIO> for ActorLink {
                 .map(|(k, v)| (*k, v.clone()))
                 .collect(),
             tags: {
-                if let Some(base_tags) = &base.tags {
+                if let Some(base_tags) = &self.tags {
                     if let Some(other_tags) = &other.tags {
                         Some(base_tags.merge(other_tags))
                     } else {
-                        base.tags.clone()
+                        self.tags.clone()
                     }
                 } else {
                     other.tags.clone()

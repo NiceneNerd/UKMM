@@ -97,4 +97,3 @@ mod tests {
         assert_eq!(animinfo2, merged);
     }
 }
-

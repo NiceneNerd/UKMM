@@ -288,58 +288,58 @@ impl Mergeable<ParameterIO> for LifeCondition {
         }
     }
 
-    fn merge(base: &Self, diff: &Self) -> Self {
+    fn merge(&self, diff: &Self) -> Self {
         Self {
             invalid_weathers: {
-                base.invalid_weathers
+                self.invalid_weathers
                     .as_ref()
                     .and_then(|base_weathers| {
                         diff.invalid_weathers
                             .as_ref()
                             .map(|diff_weathers| base_weathers.merge(diff_weathers))
-                            .or_else(|| base.invalid_weathers.clone())
+                            .or_else(|| self.invalid_weathers.clone())
                     })
                     .or_else(|| diff.invalid_weathers.clone())
             },
             invalid_times: {
-                base.invalid_times
+                self.invalid_times
                     .as_ref()
                     .and_then(|base_times| {
                         diff.invalid_times
                             .as_ref()
                             .map(|diff_times| base_times.merge(diff_times))
-                            .or_else(|| base.invalid_times.clone())
+                            .or_else(|| self.invalid_times.clone())
                     })
                     .or_else(|| diff.invalid_times.clone())
             },
-            display_dist: diff.display_dist.or(base.display_dist),
+            display_dist: diff.display_dist.or(self.display_dist),
             auto_disp_dist_algo: diff
                 .auto_disp_dist_algo
                 .clone()
-                .or_else(|| base.auto_disp_dist_algo.clone()),
+                .or_else(|| self.auto_disp_dist_algo.clone()),
             y_limit_algo: diff
                 .y_limit_algo
                 .clone()
-                .or_else(|| base.y_limit_algo.clone()),
+                .or_else(|| self.y_limit_algo.clone()),
             delete_weathers: {
-                base.delete_weathers
+                self.delete_weathers
                     .as_ref()
                     .and_then(|base_weathers| {
                         diff.delete_weathers
                             .as_ref()
                             .map(|diff_weathers| base_weathers.merge(diff_weathers))
-                            .or_else(|| base.delete_weathers.clone())
+                            .or_else(|| self.delete_weathers.clone())
                     })
                     .or_else(|| diff.delete_weathers.clone())
             },
             delete_times: {
-                base.delete_times
+                self.delete_times
                     .as_ref()
                     .and_then(|base_times| {
                         diff.delete_times
                             .as_ref()
                             .map(|diff_times| base_times.merge(diff_times))
-                            .or_else(|| base.delete_times.clone())
+                            .or_else(|| self.delete_times.clone())
                     })
                     .or_else(|| diff.delete_times.clone())
             },

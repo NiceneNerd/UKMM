@@ -38,7 +38,7 @@ pub mod prelude {
         #[must_use]
         fn diff(&self, other: &Self) -> Self;
         #[must_use]
-        fn merge(base: &Self, diff: &Self) -> Self;
+        fn merge(&self, diff: &Self) -> Self;
     }
 
     pub trait SimpleMergeableAamp {
@@ -55,8 +55,8 @@ pub mod prelude {
             crate::util::diff_plist(self.inner(), other.inner()).into()
         }
 
-        fn merge(base: &Self, diff: &Self) -> Self {
-            crate::util::merge_plist(base.inner(), diff.inner()).into()
+        fn merge(&self, diff: &Self) -> Self {
+            crate::util::merge_plist(self.inner(), diff.inner()).into()
         }
     }
 
@@ -72,8 +72,8 @@ pub mod prelude {
             crate::util::diff_byml_shallow(self.inner(), other.inner()).into()
         }
 
-        fn merge(base: &Self, diff: &Self) -> Self {
-            crate::util::merge_byml_shallow(base.inner(), diff.inner()).into()
+        fn merge(&self, diff: &Self) -> Self {
+            crate::util::merge_byml_shallow(self.inner(), diff.inner()).into()
         }
     }
 }

@@ -238,9 +238,9 @@ impl Mergeable<ParameterIO> for ShopData {
         )
     }
 
-    fn merge(base: &Self, diff: &Self) -> Self {
+    fn merge(&self, diff: &Self) -> Self {
         Self(
-            base.0
+            self.0
                 .iter()
                 .filter_map(|(base_name, base_table)| {
                     if let Some(base_table) = base_table {
@@ -257,7 +257,7 @@ impl Mergeable<ParameterIO> for ShopData {
                     }
                 })
                 .chain(diff.0.iter().filter_map(|(diff_name, diff_table)| {
-                    (!base.0.contains_key(diff_name.as_str()))
+                    (!self.0.contains_key(diff_name.as_str()))
                         .then(|| (diff_name.clone(), diff_table.clone()))
                 }))
                 .collect(),

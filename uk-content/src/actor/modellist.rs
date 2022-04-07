@@ -105,12 +105,12 @@ impl Mergeable<ParameterIO> for ModelList {
         }
     }
 
-    fn merge(base: &Self, diff: &Self) -> Self {
+    fn merge(&self, diff: &Self) -> Self {
         Self {
-            controller_info: merge_pobj(&base.controller_info, &diff.controller_info),
-            attention: merge_pobj(&base.attention, &diff.attention),
-            model_data: merge_plist(&base.model_data, &diff.model_data),
-            anm_target: simple_index_merge(&base.anm_target, &diff.anm_target),
+            controller_info: merge_pobj(&self.controller_info, &diff.controller_info),
+            attention: merge_pobj(&self.attention, &diff.attention),
+            model_data: merge_plist(&self.model_data, &diff.model_data),
+            anm_target: simple_index_merge(&self.anm_target, &diff.anm_target),
         }
     }
 }
