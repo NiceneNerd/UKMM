@@ -9,6 +9,7 @@ pub mod drop;
 pub mod general;
 pub mod life;
 pub mod link;
+pub mod lod;
 pub mod modellist;
 pub mod physics;
 pub mod recipe;
