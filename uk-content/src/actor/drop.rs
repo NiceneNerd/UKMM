@@ -4,7 +4,7 @@ use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-struct DropTable(IndexMap<String, ParameterObject>);
+struct DropTable(pub IndexMap<String, ParameterObject>);
 
 impl From<DropTable> for ParameterIO {
     fn from(drop: DropTable) -> Self {

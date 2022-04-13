@@ -1,8 +1,7 @@
-use std::collections::BTreeMap;
-
 use crate::{prelude::Mergeable, util, Result, UKError};
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct RagdollConfig {

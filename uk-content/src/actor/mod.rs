@@ -15,4 +15,5 @@ pub mod physics;
 pub mod recipe;
 pub mod rgbw;
 pub mod rgconfig;
+pub mod rgconfiglist;
 pub mod shop;
