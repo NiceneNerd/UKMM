@@ -69,21 +69,15 @@ impl From<ModelList> for ParameterIO {
             lists: [
                 (
                     "ModelData",
-                    ParameterList {
-                        lists: [("ModelData_0", val.model_data)].into_iter().collect(),
-                        ..Default::default()
-                    },
+                    ParameterList::new().with_list("ModelData_0", val.model_data),
                 ),
                 (
                     "AnmTarget",
-                    ParameterList {
-                        lists: val
-                            .anm_target
+                    ParameterList::new().with_lists(
+                        val.anm_target
                             .into_iter()
-                            .map(|(i, target)| (format!("AnmTarget_{}", i), target))
-                            .collect(),
-                        ..Default::default()
-                    },
+                            .map(|(i, target)| (format!("AnmTarget_{}", i), target)),
+                    ),
                 ),
             ]
             .into_iter()

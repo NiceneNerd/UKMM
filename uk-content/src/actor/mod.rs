@@ -14,4 +14,5 @@ pub mod modellist;
 pub mod physics;
 pub mod recipe;
 pub mod rgbw;
+pub mod rgconfig;
 pub mod shop;

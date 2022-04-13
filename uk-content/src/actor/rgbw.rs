@@ -107,24 +107,19 @@ impl From<RagdollBlendWeight> for ParameterIO {
                             objects: [("Setting", key.into())].into_iter().collect(),
                             lists: [(
                                 "InputWeightList",
-                                ParameterList {
-                                    objects: state
-                                        .into_iter()
-                                        .enumerate()
-                                        .map(|(i, (name, rate))| {
-                                            (
-                                                format!("InputWeight_{}", i + 1),
-                                                [
-                                                    ("RigidName", Parameter::String32(name)),
-                                                    ("BlendRate", Parameter::F32(rate)),
-                                                ]
-                                                .into_iter()
-                                                .collect(),
-                                            )
-                                        })
-                                        .collect(),
-                                    ..Default::default()
-                                },
+                                ParameterList::new().with_objects(
+                                    state.into_iter().enumerate().map(|(i, (name, rate))| {
+                                        (
+                                            format!("InputWeight_{}", i + 1),
+                                            [
+                                                ("RigidName", Parameter::String32(name)),
+                                                ("BlendRate", Parameter::F32(rate)),
+                                            ]
+                                            .into_iter()
+                                            .collect(),
+                                        )
+                                    }),
+                                ),
                             )]
                             .into_iter()
                             .collect(),
