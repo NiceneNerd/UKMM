@@ -202,6 +202,244 @@ impl<T: DeleteKey> DeleteSet<T> {
     }
 }
 
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+pub struct DeleteMap<T: DeleteKey, U: PartialEq + Clone>(IndexMap<T, U>, IndexMap<T, bool>);
+
+impl<T: DeleteKey, U: PartialEq + Clone> FromIterator<(T, U, bool)> for DeleteMap<T, U> {
+    fn from_iter<I: IntoIterator<Item = (T, U, bool)>>(iter: I) -> Self {
+        let (map1, map2) = iter
+            .into_iter()
+            .map(|(k, v, del)| ((k.clone(), v), (k, del)))
+            .unzip();
+        Self(map1, map2)
+    }
+}
+
+impl<T: DeleteKey, U: PartialEq + Clone> FromIterator<(T, U)> for DeleteMap<T, U> {
+    fn from_iter<I: IntoIterator<Item = (T, U)>>(iter: I) -> Self {
+        let (items, dels) = iter
+            .into_iter()
+            .map(|(k, v)| ((k.clone(), v), (k, false)))
+            .unzip();
+        Self(items, dels)
+    }
+}
+
+impl<T: DeleteKey, U: PartialEq + Clone> PartialEq for DeleteMap<T, U> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.len() == other.0.len() && self.iter().all(|(k, v)| other.get(k) == Some(v))
+    }
+}
+
+impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    #[inline]
+    pub fn and_delete(mut self) -> Self {
+        self.delete();
+        self
+    }
+
+    pub fn delete(&mut self) {
+        self.0.retain(|k, _| !self.1[k])
+    }
+
+    pub fn deleted(&self) -> IndexMap<T, U> {
+        self.0
+            .iter()
+            .filter_map(|(k, v)| (!self.1[k]).then(|| (k.clone(), v.clone())))
+            .collect()
+    }
+
+    pub fn set_delete(&mut self, key: impl Borrow<T>) {
+        if let Some(del_val) = self.1.get_mut(key.borrow()) {
+            *del_val = true;
+        }
+    }
+
+    pub fn is_delete(&self, key: impl Borrow<T>) -> Option<bool> {
+        self.1.get(key.borrow()).map(|b| *b)
+    }
+
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = (&T, &U)> {
+        self.0.iter().filter(|(k, _)| !self.1[*k])
+    }
+
+    #[inline]
+    pub fn into_iter(self) -> impl Iterator<Item = (T, U)> {
+        let Self(items, dels) = self;
+        items.into_iter().filter(move |(k, _)| !dels[k])
+    }
+
+    #[inline]
+    pub fn contains_key(&self, key: impl Borrow<T>) -> bool {
+        self.0.contains_key(key.borrow())
+    }
+
+    #[inline]
+    pub fn get(&self, key: impl Borrow<T>) -> Option<&U> {
+        self.0.get(key.borrow())
+    }
+
+    #[inline]
+    pub fn get_mut(&mut self, key: impl Borrow<T>) -> Option<&mut U> {
+        self.0.get_mut(key.borrow())
+    }
+
+    pub fn diff(&self, other: &Self) -> Self {
+        other
+            .0
+            .iter()
+            .filter_map(|(k, v)| (self.get(k) != Some(v)).then(|| (k.clone(), v.clone(), false)))
+            .chain(self.0.iter().filter_map(|(k, v)| {
+                (!other.contains_key(k)).then(|| (k.clone(), v.clone(), true))
+            }))
+            .collect()
+    }
+
+    pub fn merge(&self, other: &Self) -> Self {
+        Self(
+            self.0
+                .iter()
+                .chain(other.0.iter())
+                .collect::<IndexMap<_, _>>()
+                .into_iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect(),
+            self.1
+                .iter()
+                .chain(other.1.iter())
+                .collect::<IndexMap<_, _>>()
+                .into_iter()
+                .map(|(k, v)| (k.clone(), *v))
+                .collect(),
+        )
+        .and_delete()
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct SortedDeleteMap<T: DeleteKey + Ord, U: PartialEq + Clone>(
+    BTreeMap<T, U>,
+    BTreeMap<T, bool>,
+);
+
+impl<T: DeleteKey + Ord, U: PartialEq + Clone> FromIterator<(T, U, bool)>
+    for SortedDeleteMap<T, U>
+{
+    fn from_iter<I: IntoIterator<Item = (T, U, bool)>>(iter: I) -> Self {
+        let (map1, map2) = iter
+            .into_iter()
+            .map(|(k, v, del)| ((k.clone(), v), (k, del)))
+            .unzip();
+        Self(map1, map2)
+    }
+}
+
+impl<T: DeleteKey + Ord, U: PartialEq + Clone> FromIterator<(T, U)> for SortedDeleteMap<T, U> {
+    fn from_iter<I: IntoIterator<Item = (T, U)>>(iter: I) -> Self {
+        let (items, dels) = iter
+            .into_iter()
+            .map(|(k, v)| ((k.clone(), v), (k, false)))
+            .unzip();
+        Self(items, dels)
+    }
+}
+
+impl<T: DeleteKey + Ord, U: PartialEq + Clone> SortedDeleteMap<T, U> {
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    #[inline]
+    pub fn and_delete(mut self) -> Self {
+        self.delete();
+        self
+    }
+
+    pub fn delete(&mut self) {
+        self.0.retain(|k, _| !self.1[k])
+    }
+
+    pub fn deleted(&self) -> BTreeMap<T, U> {
+        self.0
+            .iter()
+            .filter_map(|(k, v)| (!self.1[k]).then(|| (k.clone(), v.clone())))
+            .collect()
+    }
+
+    pub fn set_delete(&mut self, key: impl Borrow<T>) {
+        if let Some(del_val) = self.1.get_mut(key.borrow()) {
+            *del_val = true;
+        }
+    }
+
+    pub fn is_delete(&self, key: impl Borrow<T>) -> Option<bool> {
+        self.1.get(key.borrow()).map(|b| *b)
+    }
+
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = (&T, &U)> {
+        self.0.iter().filter(|(k, _)| !self.1[*k])
+    }
+
+    #[inline]
+    pub fn into_iter(self) -> impl Iterator<Item = (T, U)> {
+        let Self(items, dels) = self;
+        items.into_iter().filter(move |(k, _)| !dels[k])
+    }
+
+    #[inline]
+    pub fn contains_key(&self, key: impl Borrow<T>) -> bool {
+        self.0.contains_key(key.borrow())
+    }
+
+    #[inline]
+    pub fn get(&self, key: impl Borrow<T>) -> Option<&U> {
+        self.0.get(key.borrow())
+    }
+
+    #[inline]
+    pub fn get_mut(&mut self, key: impl Borrow<T>) -> Option<&mut U> {
+        self.0.get_mut(key.borrow())
+    }
+
+    pub fn diff(&self, other: &Self) -> Self {
+        other
+            .0
+            .iter()
+            .filter_map(|(k, v)| (self.get(k) != Some(v)).then(|| (k.clone(), v.clone(), false)))
+            .chain(self.0.iter().filter_map(|(k, v)| {
+                (!other.contains_key(k)).then(|| (k.clone(), v.clone(), true))
+            }))
+            .collect()
+    }
+
+    pub fn merge(&self, other: &Self) -> Self {
+        Self(
+            self.0
+                .iter()
+                .chain(other.0.iter())
+                .collect::<BTreeMap<_, _>>()
+                .into_iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect(),
+            self.1
+                .iter()
+                .chain(other.1.iter())
+                .collect::<BTreeMap<_, _>>()
+                .into_iter()
+                .map(|(k, v)| (k.clone(), *v))
+                .collect(),
+        )
+    }
+}
+
 pub fn diff_plist<P: ParamList + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
         lists: other

@@ -30,13 +30,16 @@ impl TryFrom<&ParameterIO> for RagdollConfig {
 
 impl From<RagdollConfig> for ParameterIO {
     fn from(val: RagdollConfig) -> Self {
-        Self::new()
-            .with_object("AttackTypeImpulseData", val.attack_type_impulse_data)
-            .with_lists(
-                val.impact_impulse_info
-                    .into_iter()
-                    .map(|(i, list)| (format!("ImpactImpulseInfo{:02}", i), list)),
-            )
+        Self::new().with_list(
+            "ConfigRoot",
+            ParameterList::new()
+                .with_object("AttackTypeImpulseData", val.attack_type_impulse_data)
+                .with_lists(
+                    val.impact_impulse_info
+                        .into_iter()
+                        .map(|(i, list)| (format!("ImpactImpulseInfo{:02}", i), list)),
+                ),
+        )
     }
 }
 
@@ -74,10 +77,10 @@ mod tests {
 
     #[test]
     fn serde() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollConfig/Enemy_Guardian_A.brgconfig")
+                .get_file_data("Actor/RagdollConfig/Moriblin_Blue_Bomb.brgconfig")
                 .unwrap(),
         )
         .unwrap();
@@ -90,18 +93,18 @@ mod tests {
 
     #[test]
     fn diff() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollConfig/Enemy_Guardian_A.brgconfig")
+                .get_file_data("Actor/RagdollConfig/Moriblin_Blue_Bomb.brgconfig")
                 .unwrap(),
         )
         .unwrap();
         let rgconfig = super::RagdollConfig::try_from(&pio).unwrap();
-        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Moriblin_Junior");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollConfig/Enemy_Guardian_A.brgconfig")
+                .get_file_data("Actor/RagdollConfig/Moriblin_Blue_Bomb.brgconfig")
                 .unwrap(),
         )
         .unwrap();
@@ -112,18 +115,18 @@ mod tests {
 
     #[test]
     fn merge() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollConfig/Enemy_Guardian_A.brgconfig")
+                .get_file_data("Actor/RagdollConfig/Moriblin_Blue_Bomb.brgconfig")
                 .unwrap(),
         )
         .unwrap();
-        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Moriblin_Junior");
         let rgconfig = super::RagdollConfig::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollConfig/Enemy_Guardian_A.brgconfig")
+                .get_file_data("Actor/RagdollConfig/Moriblin_Blue_Bomb.brgconfig")
                 .unwrap(),
         )
         .unwrap();

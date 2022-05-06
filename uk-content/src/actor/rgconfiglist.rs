@@ -1,4 +1,8 @@
-use crate::{prelude::Mergeable, util, Result, UKError};
+use crate::{
+    prelude::Mergeable,
+    util::{self, DeleteMap},
+    Result, UKError,
+};
 use indexmap::IndexMap;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -15,7 +19,7 @@ impl TryFrom<&ParameterObject> for BodyParam {
 
     fn try_from(obj: &ParameterObject) -> Result<Self> {
         Ok(Self {
-            name: obj.param("Name").unwrap().as_string()?.to_owned(),
+            name: obj.param("RigidName").unwrap().as_string()?.to_owned(),
             friction_scale: obj
                 .param("FrictionScale")
                 .ok_or(UKError::MissingAampKey(
@@ -48,7 +52,7 @@ impl From<BodyParam> for ParameterObject {
 pub struct RagdollConfigList {
     pub common_data: ParameterObject,
     pub impulse_params: ParameterList,
-    pub body_param_list: IndexMap<String, BodyParam>,
+    pub body_param_list: DeleteMap<String, BodyParam>,
 }
 
 impl TryFrom<&ParameterIO> for RagdollConfigList {
@@ -102,9 +106,11 @@ impl From<RagdollConfigList> for ParameterIO {
                 "BodyParamList",
                 ParameterList::new().with_objects(
                     val.body_param_list
-                        .into_values()
+                        .into_iter()
                         .enumerate()
-                        .map(|(i, body_param)| (format!("BodyParam_{}", i), body_param.into())),
+                        .map(|(i, (_, body_param))| {
+                            (format!("BodyParam_{}", i), body_param.into())
+                        }),
                 ),
             )
     }
@@ -115,14 +121,7 @@ impl Mergeable<ParameterIO> for RagdollConfigList {
         Self {
             common_data: util::diff_pobj(&self.common_data, &other.common_data),
             impulse_params: util::diff_plist(&self.impulse_params, &other.impulse_params),
-            body_param_list: other
-                .body_param_list
-                .iter()
-                .filter_map(|(name, body_param)| {
-                    (self.body_param_list.get(name) != Some(body_param))
-                        .then(|| (name.clone(), body_param.clone()))
-                })
-                .collect(),
+            body_param_list: self.body_param_list.diff(&other.body_param_list),
         }
     }
 
@@ -130,12 +129,7 @@ impl Mergeable<ParameterIO> for RagdollConfigList {
         Self {
             common_data: util::merge_pobj(&self.common_data, &diff.common_data),
             impulse_params: util::merge_plist(&self.impulse_params, &diff.impulse_params),
-            body_param_list: self
-                .body_param_list
-                .iter()
-                .chain(diff.body_param_list.iter())
-                .map(|(name, body_param)| (name.clone(), body_param.clone()))
-                .collect(),
+            body_param_list: self.body_param_list.merge(&diff.body_param_list),
         }
     }
 }
@@ -146,10 +140,10 @@ mod tests {
 
     #[test]
     fn serde() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollConfigList/Enemy_Guardian_A.brgconfiglist")
+                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
                 .unwrap(),
         )
         .unwrap();
@@ -162,18 +156,18 @@ mod tests {
 
     #[test]
     fn diff() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollConfigList/Enemy_Guardian_A.brgconfiglist")
+                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
                 .unwrap(),
         )
         .unwrap();
         let rgconfiglist = super::RagdollConfigList::try_from(&pio).unwrap();
-        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Moriblin_Junior");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollConfigList/Enemy_Guardian_A.brgconfiglist")
+                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
                 .unwrap(),
         )
         .unwrap();
@@ -184,18 +178,18 @@ mod tests {
 
     #[test]
     fn merge() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollConfigList/Enemy_Guardian_A.brgconfiglist")
+                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
                 .unwrap(),
         )
         .unwrap();
-        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Moriblin_Junior");
         let rgconfiglist = super::RagdollConfigList::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollConfigList/Enemy_Guardian_A.brgconfiglist")
+                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
                 .unwrap(),
         )
         .unwrap();

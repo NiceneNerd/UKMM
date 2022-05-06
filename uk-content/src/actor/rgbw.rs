@@ -1,9 +1,8 @@
-use std::collections::HashSet;
-
-use crate::{prelude::Mergeable, Result, UKError};
+use crate::{prelude::Mergeable, util::DeleteMap, Result, UKError};
 use indexmap::IndexMap;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 #[derive(Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Serialize, Deserialize)]
 pub struct Key {
@@ -45,8 +44,8 @@ impl From<Key> for ParameterObject {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct RagdollBlendWeight(IndexMap<Key, IndexMap<String, f32>>);
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RagdollBlendWeight(IndexMap<Key, DeleteMap<String, f32>>);
 
 impl TryFrom<&ParameterIO> for RagdollBlendWeight {
     type Error = UKError;
@@ -56,7 +55,7 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
             pio.lists
                 .0
                 .values()
-                .map(|list| -> Result<(Key, IndexMap<String, f32>)> {
+                .map(|list| -> Result<(Key, DeleteMap<String, f32>)> {
                     Ok((
                         list.object("Setting")
                             .ok_or(UKError::MissingAampKey(
@@ -134,25 +133,25 @@ impl From<RagdollBlendWeight> for ParameterIO {
 
 impl Mergeable<ParameterIO> for RagdollBlendWeight {
     fn diff(&self, other: &Self) -> Self {
-        Self(other
-        .0
-        .iter()
-        .filter_map(|(key, other_list)| {
-            let self_list = self.0.get(key);
-            if let Some(self_list) = self_list && other_list != self_list {
+        Self(
+            other
+                .0
+                .iter()
+                .filter_map(|(key, other_list)| {
+                    let self_list = self.0.get(key);
+                    if let Some(self_list) = self_list && other_list != self_list {
                 Some((
                     key.clone(),
-                    other_list.iter().filter_map(|(name, other_rate)| {
-                        (self_list.get(name) != Some(other_rate)).then(|| (name.clone(), *other_rate))
-                    }).collect()
+                    self_list.diff(other_list)
                 ))
             } else if self_list == None {
                 Some(( key.clone(), other_list.clone() ))
             } else {
                 None
             }
-        })
-        .collect())
+                })
+                .collect(),
+        )
     }
 
     fn merge(&self, diff: &Self) -> Self {
@@ -164,11 +163,7 @@ impl Mergeable<ParameterIO> for RagdollBlendWeight {
                     (
                         key.clone(),
                         if let Some(self_list) = self.0.get(&key) && let Some(other_list) = diff.0.get(&key) {
-                            self_list
-                                .iter()
-                                .chain(other_list.iter())
-                                .map(|(n, r)| (n.clone(), *r))
-                                .collect()
+                            self_list.merge(other_list)
                         } else {
                             diff.0
                                 .get(&key)
@@ -189,10 +184,10 @@ mod tests {
 
     #[test]
     fn serde() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollBlendWeight/Enemy_Guardian_A.brgbw")
+                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
                 .unwrap(),
         )
         .unwrap();
@@ -205,40 +200,40 @@ mod tests {
 
     #[test]
     fn diff() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollBlendWeight/Enemy_Guardian_A.brgbw")
+                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
                 .unwrap(),
         )
         .unwrap();
         let rgbw = super::RagdollBlendWeight::try_from(&pio).unwrap();
-        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Moriblin_Junior");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollBlendWeight/Enemy_Guardian_A.brgbw")
+                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
                 .unwrap(),
         )
         .unwrap();
         let rgbw2 = super::RagdollBlendWeight::try_from(&pio2).unwrap();
         let diff = rgbw.diff(&rgbw2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        dbg!("{}", diff);
     }
 
     #[test]
     fn merge() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollBlendWeight/Enemy_Guardian_A.brgbw")
+                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
                 .unwrap(),
         )
         .unwrap();
-        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Moriblin_Junior");
         let rgbw = super::RagdollBlendWeight::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollBlendWeight/Enemy_Guardian_A.brgbw")
+                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
                 .unwrap(),
         )
         .unwrap();
