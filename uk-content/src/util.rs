@@ -37,9 +37,25 @@ impl<T: Clone + PartialEq> PartialEq for DeleteVec<T> {
     }
 }
 
+impl<T: Clone + PartialEq> IntoIterator for DeleteVec<T> {
+    type Item = T;
+    type IntoIter = impl Iterator<Item = T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0
+            .into_iter()
+            .zip(self.1.into_iter())
+            .filter_map(|(k, del)| (!del).then(|| k))
+    }
+}
+
 impl<T: Clone + PartialEq> DeleteVec<T> {
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.len() == 0
     }
 
     #[inline]
@@ -87,14 +103,6 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
     }
 
     #[inline]
-    pub fn into_iter(self) -> impl Iterator<Item = T> {
-        self.0
-            .into_iter()
-            .zip(self.1.into_iter())
-            .filter_map(|(k, del)| (!del).then(|| k))
-    }
-
-    #[inline]
     pub fn contains(&self, item: impl Borrow<T>) -> bool {
         self.0.contains(item.borrow())
     }
@@ -130,6 +138,15 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
 #[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DeleteSet<T: DeleteKey>(IndexMap<T, bool>);
 
+impl<T: DeleteKey> IntoIterator for DeleteSet<T> {
+    type Item = T;
+    type IntoIter = impl Iterator<Item = T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter().filter_map(|(k, del)| (!del).then(|| k))
+    }
+}
+
 impl<T: DeleteKey> From<IndexMap<T, bool>> for DeleteSet<T> {
     fn from(val: IndexMap<T, bool>) -> Self {
         Self(val)
@@ -161,17 +178,14 @@ impl<T: DeleteKey> DeleteSet<T> {
     }
 
     pub fn set_delete(&mut self, item: impl Borrow<T>) {
-        self.0.get_mut(item.borrow()).map(|del| *del = true);
+        if let Some(del) = self.0.get_mut(item.borrow()) {
+            *del = true
+        }
     }
 
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.0.iter().filter_map(|(k, del)| (!*del).then(|| k))
-    }
-
-    #[inline]
-    pub fn into_iter(self) -> impl Iterator<Item = T> {
-        self.0.into_iter().filter_map(|(k, del)| (!del).then(|| k))
     }
 
     #[inline]
@@ -196,7 +210,7 @@ impl<T: DeleteKey> DeleteSet<T> {
             self.0
                 .keys()
                 .chain(other.0.keys())
-                .map(|k| (k.clone(), other.0.get(k).map(|k| *k).unwrap_or(false)))
+                .map(|k| (k.clone(), other.0.get(k).copied().unwrap_or(false)))
                 .collect(),
         )
     }
@@ -204,6 +218,16 @@ impl<T: DeleteKey> DeleteSet<T> {
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DeleteMap<T: DeleteKey, U: PartialEq + Clone>(IndexMap<T, U>, IndexMap<T, bool>);
+
+impl<T: DeleteKey, U: PartialEq + Clone> IntoIterator for DeleteMap<T, U> {
+    type Item = (T, U);
+    type IntoIter = impl Iterator<Item = (T, U)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let Self(items, dels) = self;
+        items.into_iter().filter(move |(k, _)| !dels[k])
+    }
+}
 
 impl<T: DeleteKey, U: PartialEq + Clone> FromIterator<(T, U, bool)> for DeleteMap<T, U> {
     fn from_iter<I: IntoIterator<Item = (T, U, bool)>>(iter: I) -> Self {
@@ -238,6 +262,11 @@ impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
     }
 
     #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    #[inline]
     pub fn and_delete(mut self) -> Self {
         self.delete();
         self
@@ -261,18 +290,12 @@ impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
     }
 
     pub fn is_delete(&self, key: impl Borrow<T>) -> Option<bool> {
-        self.1.get(key.borrow()).map(|b| *b)
+        self.1.get(key.borrow()).copied()
     }
 
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = (&T, &U)> {
         self.0.iter().filter(|(k, _)| !self.1[*k])
-    }
-
-    #[inline]
-    pub fn into_iter(self) -> impl Iterator<Item = (T, U)> {
-        let Self(items, dels) = self;
-        items.into_iter().filter(move |(k, _)| !dels[k])
     }
 
     #[inline]
@@ -328,6 +351,16 @@ pub struct SortedDeleteMap<T: DeleteKey + Ord, U: PartialEq + Clone>(
     BTreeMap<T, bool>,
 );
 
+impl<T: DeleteKey + Ord, U: PartialEq + Clone> IntoIterator for SortedDeleteMap<T, U> {
+    type Item = (T, U);
+    type IntoIter = impl Iterator<Item = (T, U)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let Self(items, dels) = self;
+        items.into_iter().filter(move |(k, _)| !dels[k])
+    }
+}
+
 impl<T: DeleteKey + Ord, U: PartialEq + Clone> FromIterator<(T, U, bool)>
     for SortedDeleteMap<T, U>
 {
@@ -357,6 +390,11 @@ impl<T: DeleteKey + Ord, U: PartialEq + Clone> SortedDeleteMap<T, U> {
     }
 
     #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    #[inline]
     pub fn and_delete(mut self) -> Self {
         self.delete();
         self
@@ -380,18 +418,12 @@ impl<T: DeleteKey + Ord, U: PartialEq + Clone> SortedDeleteMap<T, U> {
     }
 
     pub fn is_delete(&self, key: impl Borrow<T>) -> Option<bool> {
-        self.1.get(key.borrow()).map(|b| *b)
+        self.1.get(key.borrow()).copied()
     }
 
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = (&T, &U)> {
         self.0.iter().filter(|(k, _)| !self.1[*k])
-    }
-
-    #[inline]
-    pub fn into_iter(self) -> impl Iterator<Item = (T, U)> {
-        let Self(items, dels) = self;
-        items.into_iter().filter(move |(k, _)| !dels[k])
     }
 
     #[inline]

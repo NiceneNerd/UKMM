@@ -72,7 +72,21 @@ impl Mergeable<()> for Element {
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        todo!()
+        Self {
+            params: util::merge_pobj(&self.params, &diff.params),
+            children: diff.children.as_ref().map(|diff_children| {
+                self.children
+                    .as_ref()
+                    .map(|self_children| util::simple_index_merge(self_children, diff_children))
+                    .unwrap_or_else(|| diff_children.clone())
+            }),
+            extend: diff.extend.as_ref().map(|diff_extend| {
+                self.extend
+                    .as_ref()
+                    .map(|self_extend| util::merge_plist(self_extend, diff_extend))
+                    .unwrap_or_else(|| diff_extend.clone())
+            }),
+        }
     }
 }
 
@@ -176,11 +190,19 @@ impl From<AS> for ParameterIO {
 
 impl Mergeable<ParameterIO> for AS {
     fn diff(&self, other: &Self) -> Self {
-        todo!()
+        if let Some(self_as) = self.0.as_ref() && let Some(other_as) = other.0.as_ref() {
+            Self(Some(self_as.diff(other_as)))
+        } else {
+            Self(other.0.clone())
+        }
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        todo!()
+        if let Some(self_as) = self.0.as_ref() && let Some(diff_as) = diff.0.as_ref() {
+            Self(Some(self_as.merge(diff_as)))
+        } else {
+            Self(diff.0.clone().or_else(|| self.0.clone()))
+        }
     }
 }
 

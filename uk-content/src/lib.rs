@@ -1,4 +1,5 @@
 #![feature(let_chains)]
+#![feature(type_alias_impl_trait)]
 use thiserror::Error;
 
 pub mod actor;
@@ -45,7 +46,7 @@ pub mod prelude {
         fn inner(&self) -> &roead::aamp::ParameterIO;
     }
 
-    impl<'a, T> Mergeable<roead::aamp::ParameterIO> for T
+    impl<T> Mergeable<roead::aamp::ParameterIO> for T
     where
         T: SimpleMergeableAamp
             + Convertible<roead::aamp::ParameterIO>
@@ -64,7 +65,7 @@ pub mod prelude {
         fn inner(&self) -> &roead::byml::Byml;
     }
 
-    impl<'a, T> Mergeable<roead::byml::Byml> for T
+    impl<T> Mergeable<roead::byml::Byml> for T
     where
         T: ShallowMergeableByml + Convertible<roead::byml::Byml> + From<roead::byml::Byml>,
     {
