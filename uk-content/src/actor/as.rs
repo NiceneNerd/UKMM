@@ -227,4 +227,49 @@ mod tests {
         let as_data2 = super::AS::try_from(&pio2).unwrap();
         assert_eq!(as_data, as_data2);
     }
+
+    #[test]
+    fn diff() {
+        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let pio = ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/AS/Guardian_MaterialDefault.bas")
+                .unwrap(),
+        )
+        .unwrap();
+        let as_data = super::AS::try_from(&pio).unwrap();
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let pio2 = ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/AS/Guardian_MaterialDefault.bas")
+                .unwrap(),
+        )
+        .unwrap();
+        let as_data2 = super::AS::try_from(&pio2).unwrap();
+        let diff = as_data.diff(&as_data2);
+        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+    }
+
+    #[test]
+    fn merge() {
+        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let pio = ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/AS/Guardian_MaterialDefault.bas")
+                .unwrap(),
+        )
+        .unwrap();
+        let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let as_data = super::AS::try_from(&pio).unwrap();
+        let pio2 = ParameterIO::from_binary(
+            actor2
+                .get_file_data("Actor/AS/Guardian_MaterialDefault.bas")
+                .unwrap(),
+        )
+        .unwrap();
+        let as_data2 = super::AS::try_from(&pio2).unwrap();
+        let diff = as_data.diff(&as_data2);
+        let merged = as_data.merge(&diff);
+        assert_eq!(as_data2, merged);
+    }
 }

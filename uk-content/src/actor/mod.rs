@@ -2,6 +2,7 @@ pub mod aiprog;
 pub mod aischedule;
 pub mod animinfo;
 pub mod r#as;
+pub mod aslist;
 pub mod aware;
 pub mod bonectrl;
 pub mod chemical;
