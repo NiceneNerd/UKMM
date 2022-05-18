@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct AddRes {
-    anim: String,
-    retarget_model: Option<String>,
-    retarget_nocorrect: Option<bool>,
+    pub anim: String,
+    pub retarget_model: Option<String>,
+    pub retarget_nocorrect: Option<bool>,
 }
 
 impl TryFrom<&ParameterObject> for AddRes {
@@ -52,10 +52,10 @@ impl From<AddRes> for ParameterObject {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ASList {
-    common: Option<ParameterObject>,
-    add_reses: DeleteMap<String, AddRes>,
-    as_defines: DeleteMap<String, String>,
-    cf_defines: Option<DeleteMap<String, ParameterList>>,
+    pub common: Option<ParameterObject>,
+    pub add_reses: DeleteMap<String, AddRes>,
+    pub as_defines: DeleteMap<String, String>,
+    pub cf_defines: Option<DeleteMap<String, ParameterList>>,
 }
 
 impl TryFrom<&ParameterIO> for ASList {

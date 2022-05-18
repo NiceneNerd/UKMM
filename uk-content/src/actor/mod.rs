@@ -4,6 +4,7 @@ pub mod animinfo;
 pub mod r#as;
 pub mod aslist;
 pub mod atcl;
+pub mod atcllist;
 pub mod aware;
 pub mod bonectrl;
 pub mod chemical;

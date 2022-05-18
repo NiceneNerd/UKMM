@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct AttClient {
-    client_params: ParameterObject,
-    checks: DeleteVec<ParameterList>,
+    pub client_params: ParameterObject,
+    pub checks: DeleteVec<ParameterList>,
 }
 
 impl TryFrom<&ParameterIO> for AttClient {
