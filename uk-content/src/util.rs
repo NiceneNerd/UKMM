@@ -299,6 +299,18 @@ impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
     }
 
     #[inline]
+    pub fn keys(&self) -> impl Iterator<Item = &T> {
+        self.0.keys().filter(|k| !self.1[*k])
+    }
+
+    #[inline]
+    pub fn values(&self) -> impl Iterator<Item = &U> {
+        self.0
+            .iter()
+            .filter_map(|(k, v)| (!self.1.get(k).unwrap()).then(|| v))
+    }
+
+    #[inline]
     pub fn contains_key(&self, key: impl Borrow<T>) -> bool {
         self.0.contains_key(key.borrow())
     }
@@ -424,6 +436,18 @@ impl<T: DeleteKey + Ord, U: PartialEq + Clone> SortedDeleteMap<T, U> {
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = (&T, &U)> {
         self.0.iter().filter(|(k, _)| !self.1[*k])
+    }
+
+    #[inline]
+    pub fn keys(&self) -> impl Iterator<Item = &T> {
+        self.0.keys().filter(|k| !self.1[*k])
+    }
+
+    #[inline]
+    pub fn values(&self) -> impl Iterator<Item = &U> {
+        self.0
+            .iter()
+            .filter_map(|(k, v)| (!self.1.get(k).unwrap()).then(|| v))
     }
 
     #[inline]

@@ -12,10 +12,20 @@ pub enum UKError {
     MissingAampKey(&'static str),
     #[error("Parameter file missing key: {0}")]
     MissingAampKeyD(String),
+    #[error("BYML file missing key: {0}")]
+    MissingBymlKey(&'static str),
+    #[error("BYML file missing key: {0}")]
+    MissingBymlKeyD(String),
     #[error("Wrong type for parameter value")]
     WrongAampType(#[from] roead::aamp::AampError),
+    #[error("Wrong type for BYML value")]
+    WrongBymlType(#[from] roead::byml::BymlError),
     #[error("Invalid weather value: {0}")]
     InvalidWeatherOrTime(String),
+    #[error("{0}")]
+    Other(&'static str),
+    #[error("{0}")]
+    OtherD(String),
 }
 
 pub type Result<T> = std::result::Result<T, UKError>;
@@ -84,7 +94,7 @@ pub(crate) mod tests {
     pub fn test_base_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::read(
             roead::yaz0::decompress(
-                std::fs::read(&format!("test/Actor/{}.sbactorpack", name)).unwrap(),
+                std::fs::read(&format!("test/Actor/Pack/{}.sbactorpack", name)).unwrap(),
             )
             .unwrap(),
         )
@@ -94,7 +104,7 @@ pub(crate) mod tests {
     pub fn test_mod_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::read(
             roead::yaz0::decompress(
-                std::fs::read(&format!("test/Actor/{}_Mod.sbactorpack", name)).unwrap(),
+                std::fs::read(&format!("test/Actor/Pack/{}_Mod.sbactorpack", name)).unwrap(),
             )
             .unwrap(),
         )

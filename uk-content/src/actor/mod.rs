@@ -11,6 +11,7 @@ pub mod chemical;
 pub mod damage;
 pub mod drop;
 pub mod general;
+pub mod info;
 pub mod life;
 pub mod link;
 pub mod lod;

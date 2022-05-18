@@ -1,7 +1,6 @@
+use crate::prelude::{Convertible, ShallowMergeableByml};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-
-use crate::prelude::{Convertible, ShallowMergeableByml};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct AISchedule(pub Byml);
