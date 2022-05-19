@@ -1,11 +1,6 @@
-use crate::{
-    prelude::Mergeable,
-    util::{self, DeleteMap},
-    Result, UKError,
-};
-use roead::byml::{Byml, Hash};
+use crate::{prelude::Mergeable, util::DeleteMap, Result, UKError};
+use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct ResidentActorData {
@@ -51,5 +46,82 @@ impl TryFrom<&Byml> for ResidentActors {
                 })
                 .collect::<Result<_>>()?,
         ))
+    }
+}
+
+impl From<ResidentActors> for Byml {
+    fn from(val: ResidentActors) -> Self {
+        Byml::Array(
+            val.0
+                .into_iter()
+                .map(|(name, data)| {
+                    Byml::Hash(
+                        [
+                            ("name", Some(Byml::String(name))),
+                            ("only_res", Some(Byml::Bool(data.only_res))),
+                            ("scale", data.scale),
+                        ]
+                        .into_iter()
+                        .filter_map(|(k, v)| v.map(|v| (k.to_owned(), v)))
+                        .collect(),
+                    )
+                })
+                .collect(),
+        )
+    }
+}
+
+impl Mergeable<Byml> for ResidentActors {
+    fn diff(&self, other: &Self) -> Self {
+        Self(self.0.diff(&other.0))
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self(self.0.merge(&diff.0))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use roead::byml::Byml;
+
+    fn load_residents() -> Byml {
+        Byml::from_binary(&std::fs::read("test/Actor/ResidentActors.byml").unwrap()).unwrap()
+    }
+
+    fn load_mod_residents() -> Byml {
+        Byml::from_binary(&std::fs::read("test/Actor/ResidentActors.mod.byml").unwrap()).unwrap()
+    }
+
+    #[test]
+    fn serde() {
+        let byml = load_residents();
+        let residents = super::ResidentActors::try_from(&byml).unwrap();
+        let data = Byml::from(residents.clone()).to_binary(roead::Endian::Big);
+        let byml2 = Byml::from_binary(&data).unwrap();
+        let residents2 = super::ResidentActors::try_from(&byml2).unwrap();
+        assert_eq!(residents, residents2);
+    }
+
+    #[test]
+    fn diff() {
+        let byml = load_residents();
+        let residents = super::ResidentActors::try_from(&byml).unwrap();
+        let byml2 = load_mod_residents();
+        let residents2 = super::ResidentActors::try_from(&byml2).unwrap();
+        let diff = residents.diff(&residents2);
+        dbg!(diff);
+    }
+
+    #[test]
+    fn merge() {
+        let byml = load_residents();
+        let residents = super::ResidentActors::try_from(&byml).unwrap();
+        let byml2 = load_mod_residents();
+        let residents2 = super::ResidentActors::try_from(&byml2).unwrap();
+        let diff = residents.diff(&residents2);
+        let merged = residents.merge(&diff);
+        assert_eq!(merged, residents2);
     }
 }

@@ -156,8 +156,7 @@ mod tests {
         let actorinfo = super::ActorInfo::try_from(&byml).unwrap();
         let byml2 = load_mod_actorinfo();
         let actorinfo2 = super::ActorInfo::try_from(&byml2).unwrap();
-        let diff = actorinfo.diff(&actorinfo2);
-        // assert_eq!(diff.0.as_hash().unwrap().len(), 2);
+        let _diff = actorinfo.diff(&actorinfo2);
     }
 
     #[test]
