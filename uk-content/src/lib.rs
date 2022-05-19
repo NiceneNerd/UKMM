@@ -4,6 +4,7 @@ use thiserror::Error;
 
 pub mod actor;
 pub mod constants;
+pub mod data;
 pub mod util;
 
 #[derive(Debug, Error)]
