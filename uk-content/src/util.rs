@@ -273,7 +273,8 @@ impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
     }
 
     pub fn delete(&mut self) {
-        self.0.retain(|k, _| !self.1[k])
+        self.0.retain(|k, _| !self.1[k]);
+        self.1.retain(|_, v| !*v);
     }
 
     pub fn deleted(&self) -> IndexMap<T, U> {
@@ -413,7 +414,8 @@ impl<T: DeleteKey + Ord, U: PartialEq + Clone> SortedDeleteMap<T, U> {
     }
 
     pub fn delete(&mut self) {
-        self.0.retain(|k, _| !self.1[k])
+        self.0.retain(|k, _| !self.1[k]);
+        self.1.retain(|_, v| !*v);
     }
 
     pub fn deleted(&self) -> BTreeMap<T, U> {

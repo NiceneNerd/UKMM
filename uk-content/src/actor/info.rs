@@ -112,13 +112,15 @@ impl Mergeable<Byml> for ActorInfo {
                         )
                     }
                 })
-                .collect(),
+                .collect::<SortedDeleteMap<u32, Byml>>()
+                .and_delete(),
         )
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use roead::byml::Byml;
 
     fn load_actorinfo() -> Byml {
@@ -147,5 +149,28 @@ mod tests {
         let byml2 = Byml::from_binary(&data).unwrap();
         let actorinfo2 = super::ActorInfo::try_from(&byml2).unwrap();
         assert_eq!(actorinfo, actorinfo2);
+    }
+
+    #[test]
+    fn diff() {
+        let byml = load_actorinfo();
+        let actorinfo = super::ActorInfo::try_from(&byml).unwrap();
+        let byml2 = load_mod_actorinfo();
+        let actorinfo2 = super::ActorInfo::try_from(&byml2).unwrap();
+        let diff = actorinfo.diff(&actorinfo2);
+        // assert_eq!(diff.0.as_hash().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn merge() {
+        let byml = load_actorinfo();
+        let actorinfo = super::ActorInfo::try_from(&byml).unwrap();
+        let byml2 = load_mod_actorinfo();
+        let actorinfo2 = super::ActorInfo::try_from(&byml2).unwrap();
+        let diff = actorinfo.diff(&actorinfo2);
+        let merged = actorinfo.merge(&diff);
+        if merged != actorinfo2 {
+            panic!("merged != actorinfo2");
+        }
     }
 }
