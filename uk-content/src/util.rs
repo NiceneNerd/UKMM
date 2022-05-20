@@ -495,6 +495,7 @@ impl<T: DeleteKey + Ord, U: PartialEq + Clone> SortedDeleteMap<T, U> {
                 .map(|(k, v)| (k.clone(), *v))
                 .collect(),
         )
+        .and_delete()
     }
 }
 
