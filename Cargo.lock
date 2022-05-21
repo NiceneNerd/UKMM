@@ -456,7 +456,7 @@ dependencies = [
 [[package]]
 name = "roead"
 version = "0.10.0"
-source = "git+https://github.com/NiceneNerd/roead?rev=ff17ad82eaa62ab5986fae9a455c8e5a113f5d19#ff17ad82eaa62ab5986fae9a455c8e5a113f5d19"
+source = "git+https://github.com/NiceneNerd/roead?rev=c172ab2941d7a4c8df8930f72a540e25dfcb81fa#c172ab2941d7a4c8df8930f72a540e25dfcb81fa"
 dependencies = [
  "cached",
  "crc",
