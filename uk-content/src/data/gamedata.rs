@@ -43,14 +43,9 @@ impl TryFrom<&Byml> for GameData {
 
 impl From<GameData> for Byml {
     fn from(val: GameData) -> Self {
-        Self::Hash(
-            [(
-                val.data_type,
-                Byml::Array(val.flags.values().cloned().collect()),
-            )]
+        [(val.data_type, val.flags.values().cloned().collect())]
             .into_iter()
-            .collect(),
-        )
+            .collect()
     }
 }
 

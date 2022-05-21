@@ -216,6 +216,94 @@ impl<T: DeleteKey> DeleteSet<T> {
     }
 }
 
+#[derive(Debug, Default, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct SortedDeleteSet<T: DeleteKey + Ord>(BTreeMap<T, bool>);
+
+impl<T: DeleteKey + Ord> IntoIterator for SortedDeleteSet<T> {
+    type Item = T;
+    type IntoIter = impl Iterator<Item = T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter().filter_map(|(k, del)| (!del).then(|| k))
+    }
+}
+
+impl<T: DeleteKey + Ord> From<BTreeMap<T, bool>> for SortedDeleteSet<T> {
+    fn from(val: BTreeMap<T, bool>) -> Self {
+        Self(val)
+    }
+}
+
+impl<T: DeleteKey + Ord> FromIterator<(T, bool)> for SortedDeleteSet<T> {
+    fn from_iter<I: IntoIterator<Item = (T, bool)>>(iter: I) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
+
+impl<T: DeleteKey + Ord> FromIterator<T> for SortedDeleteSet<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self(iter.into_iter().map(|v| (v, false)).collect())
+    }
+}
+
+impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
+    #[inline]
+    pub fn and_delete(mut self) -> Self {
+        self.delete();
+        self
+    }
+
+    pub fn delete(&mut self) {
+        self.0.retain(|_, del| !*del);
+    }
+
+    pub fn deleted(&self) -> Vec<&T> {
+        self.0
+            .iter()
+            .filter_map(|(k, del)| (!*del).then(|| k))
+            .collect()
+    }
+
+    pub fn set_delete(&mut self, item: impl Borrow<T>) {
+        if let Some(del) = self.0.get_mut(item.borrow()) {
+            *del = true
+        }
+    }
+
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.0.iter().filter_map(|(k, del)| (!*del).then(|| k))
+    }
+
+    #[inline]
+    pub fn contains(&self, item: impl Borrow<T>) -> bool {
+        self.0.contains_key(item.borrow())
+    }
+
+    pub fn diff(&self, other: &Self) -> Self {
+        other
+            .iter()
+            .filter(|it| !self.contains(*it))
+            .map(|it| (it.clone(), false))
+            .chain(
+                self.iter()
+                    .filter_map(|it| (!other.contains(it)).then(|| (it.clone(), true))),
+            )
+            .collect()
+    }
+
+    pub fn merge(&self, other: &Self) -> Self {
+        Self(
+            self.0
+                .keys()
+                .chain(other.0.keys())
+                .map(|k| (k.clone(), other.0.get(k).copied().unwrap_or(false)))
+                .collect(),
+        )
+        .and_delete()
+    }
+}
+
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DeleteMap<T: DeleteKey, U: PartialEq + Clone>(IndexMap<T, U>, IndexMap<T, bool>);
 
