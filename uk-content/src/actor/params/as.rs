@@ -1,4 +1,5 @@
 use crate::{prelude::*, util, Result, UKError};
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -35,9 +36,8 @@ impl Element {
                                         .values()
                                         .nth(idx)
                                         .ok_or_else(|| {
-                                            UKError::MissingAampKeyD(format!(
-                                                "AS control node missing child at index {}",
-                                                idx,
+                                            UKError::MissingAampKeyD(jstr!(
+                                                "AS control node missing child at index {&lexical::to_string(idx)}"
                                             ))
                                         })?,
                                     pio,
@@ -145,7 +145,10 @@ impl ParameterIOBuilder {
                                     let (index, child_list) =
                                         self.add_element(child, idx + count + 1);
                                     child_lists.extend(child_list);
-                                    (format!("Child{}", i), Parameter::Int(index as i32))
+                                    (
+                                        jstr!("Child{&lexical::to_string(*i)}"),
+                                        Parameter::Int(index as i32),
+                                    )
                                 })
                                 .collect(),
                         )
@@ -172,7 +175,7 @@ impl ParameterIOBuilder {
                     lists: elements
                         .into_iter()
                         .enumerate()
-                        .map(|(i, list)| (format!("Element{}", i), list))
+                        .map(|(i, list)| (jstr!("Element{&lexical::to_string(i)}"), list))
                         .collect(),
                     ..Default::default()
                 }

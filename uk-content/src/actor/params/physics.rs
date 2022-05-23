@@ -1,4 +1,5 @@
 use crate::{prelude::Mergeable, util, Result, UKError};
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -76,7 +77,7 @@ impl TryFrom<&ParameterList> for ContactInfo {
             contact_point_info: Some(
                 (0..point_count)
                     .map(|i| -> Result<ContactInfoItem> {
-                        list.object(&format!("ContactPointInfo_{}", i))
+                        list.object(&jstr!("ContactPointInfo_{&lexical::to_string(i)}"))
                             .ok_or(UKError::MissingAampKey(
                                 "Physics rigid contact info missing entry",
                             ))?
@@ -87,7 +88,7 @@ impl TryFrom<&ParameterList> for ContactInfo {
             collision_info: Some(
                 (0..collision_count)
                     .map(|i| -> Result<ContactInfoItem> {
-                        list.object(&format!("CollisionInfo_{}", i))
+                        list.object(&jstr!("CollisionInfo_{&lexical::to_string(i)}"))
                             .ok_or(UKError::MissingAampKey(
                                 "Physics rigid collision info missing entry",
                             ))?
@@ -121,14 +122,14 @@ impl From<ContactInfo> for ParameterList {
                 .into_iter()
                 .chain(
                     contact_point_info.into_iter().enumerate().map(|(i, info)| {
-                        (hash_name(&format!("ContactPointInfo_{}", i)), info.into())
+                        (hash_name(&jstr!("ContactPointInfo_{&lexical::to_string(i)}")), info.into())
                     }),
                 )
                 .chain(
                     collision_info
                         .into_iter()
                         .enumerate()
-                        .map(|(i, info)| (hash_name(&format!("CollisionInfo_{}", i)), info.into())),
+                        .map(|(i, info)| (hash_name(&jstr!("CollisionInfo_{&lexical::to_string(i)}")), info.into())),
                 )
                 .collect(),
                 ..Default::default()
@@ -200,7 +201,7 @@ impl From<CharacterController> for ParameterList {
             lists: val
                 .forms
                 .into_iter()
-                .map(|(i, form)| (format!("Form_{}", i), form))
+                .map(|(i, form)| (jstr!("Form_{&lexical::to_string(i)}"), form))
                 .collect(),
         }
     }
@@ -260,11 +261,10 @@ impl TryFrom<&ParameterList> for Cloth {
                         .map(|i| -> Result<(usize, ParameterObject)> {
                             Ok((
                                 i as usize,
-                                list.object(&format!("Cloth_{}", i))
+                                list.object(&jstr!("Cloth_{&lexical::to_string(i)}"))
                                     .ok_or_else(|| {
-                                        UKError::MissingAampKeyD(format!(
-                                            "Physics cloth missing Cloth_{}",
-                                            i
+                                        UKError::MissingAampKeyD(jstr!(
+                                            "Physics cloth missing Cloth_{&lexical::to_string(i)}"
                                         ))
                                     })?
                                     .clone(),
@@ -298,7 +298,7 @@ impl From<Cloth> for ParameterList {
             .chain(
                 val.cloths
                     .into_iter()
-                    .map(|(i, cloth)| (format!("Cloth_{}", i), cloth)),
+                    .map(|(i, cloth)| (jstr!("Cloth_{&lexical::to_string(i)}"), cloth)),
             )
             .collect(),
             ..Default::default()
@@ -426,7 +426,7 @@ impl TryFrom<&ParameterIO> for Physics {
                                 Ok((
                                     i as usize,
                                     rigid_body_set
-                                        .list(&format!("RigidBodySet_{}", i))
+                                        .list(&jstr!("RigidBodySet_{&lexical::to_string(i)}"))
                                         .ok_or(UKError::MissingAampKey(
                                             "Physics missing rigid body set entry",
                                         ))?
@@ -542,7 +542,9 @@ impl From<Physics> for ParameterIO {
                             val.rigid_body_set.map(|rigid_body_set| ParameterList {
                                 lists: rigid_body_set
                                     .into_iter()
-                                    .map(|(i, list)| (format!("RigidBodySet_{}", i), list))
+                                    .map(|(i, list)| {
+                                        (jstr!("RigidBodySet_{&lexical::to_string(i)}"), list)
+                                    })
                                     .collect(),
                                 ..Default::default()
                             }),

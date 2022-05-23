@@ -3,6 +3,7 @@ use crate::{
     util::*,
     Result, UKError,
 };
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -74,9 +75,9 @@ impl From<ModelList> for ParameterIO {
                 (
                     "AnmTarget",
                     ParameterList::new().with_lists(
-                        val.anm_target
-                            .into_iter()
-                            .map(|(i, target)| (format!("AnmTarget_{}", i), target)),
+                        val.anm_target.into_iter().map(|(i, target)| {
+                            (jstr!("AnmTarget_{&lexical::to_string(i)}"), target)
+                        }),
                     ),
                 ),
             ]

@@ -1,5 +1,6 @@
 use crate::{prelude::*, util, Result, UKError};
 use indexmap::IndexMap;
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -366,9 +367,8 @@ mod parse {
                                     .values()
                                     .nth(idx)
                                     .ok_or_else(|| {
-                                        UKError::MissingAampKeyD(format!(
-                                            "AI program missing entry at {}",
-                                            idx
+                                        UKError::MissingAampKeyD(jstr!(
+                                            "AI program missing entry at {&lexical::to_string(idx)}"
                                         ))
                                     })?,
                                 pio,
@@ -383,9 +383,8 @@ mod parse {
                                     .values()
                                     .nth(idx - action_offset)
                                     .ok_or_else(|| {
-                                        UKError::MissingAampKeyD(format!(
-                                            "AI program missing entry at {}",
-                                            idx
+                                        UKError::MissingAampKeyD(jstr!(
+                                            "AI program missing entry at {&lexical::to_string(idx)}"
                                         ))
                                     })?,
                                 pio,
@@ -529,9 +528,8 @@ mod parse {
                                     .values()
                                     .nth(idx)
                                     .ok_or_else(|| {
-                                        UKError::MissingAampKeyD(format!(
-                                            "AI program missing entry at {}",
-                                            idx
+                                        UKError::MissingAampKeyD(jstr!(
+                                            "AI program missing entry at {&lexical::to_string(idx)}"
                                         ))
                                     })?,
                                 pio,
@@ -712,7 +710,7 @@ mod write {
                         .ais
                         .iter()
                         .enumerate()
-                        .map(|(i, p)| (format!("AI_{}", i), p.clone()))
+                        .map(|(i, p)| (jstr!("AI_{&lexical::to_string(i)}"), p.clone()))
                         .collect(),
                     objects: ParameterObjectMap::default(),
                 },
@@ -724,7 +722,7 @@ mod write {
                         .actions
                         .iter()
                         .enumerate()
-                        .map(|(i, p)| (format!("Action_{}", i), p.clone()))
+                        .map(|(i, p)| (jstr!("Action_{&lexical::to_string(i)}"), p.clone()))
                         .collect(),
                     objects: ParameterObjectMap::default(),
                 },
@@ -736,7 +734,7 @@ mod write {
                         .behaviors
                         .iter()
                         .enumerate()
-                        .map(|(i, p)| (format!("Behavior_{}", i), p.clone()))
+                        .map(|(i, p)| (jstr!("Behavior_{&lexical::to_string(i)}"), p.clone()))
                         .collect(),
                     objects: ParameterObjectMap::default(),
                 },
@@ -749,7 +747,7 @@ mod write {
                         .queries
                         .values()
                         .enumerate()
-                        .map(|(i, p)| (format!("Query_{}", i), p.clone()))
+                        .map(|(i, p)| (jstr!("Query_{&lexical::to_string(i)}"), p.clone()))
                         .collect(),
                     objects: ParameterObjectMap::default(),
                 },

@@ -1,5 +1,6 @@
 use crate::{prelude::Mergeable, util::DeleteMap, Result, UKError};
 use indexmap::IndexMap;
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -101,7 +102,7 @@ impl From<RagdollBlendWeight> for ParameterIO {
                 .enumerate()
                 .map(|(idx, (key, state))| {
                     (
-                        format!("State_{}", idx + 1),
+                        jstr!("State_{&lexical::to_string(idx + 1)}"),
                         ParameterList {
                             objects: [("Setting", key.into())].into_iter().collect(),
                             lists: [(
@@ -109,7 +110,7 @@ impl From<RagdollBlendWeight> for ParameterIO {
                                 ParameterList::new().with_objects(
                                     state.into_iter().enumerate().map(|(i, (name, rate))| {
                                         (
-                                            format!("InputWeight_{}", i + 1),
+                                            jstr!("InputWeight_{&lexical::to_string(i + 1)}"),
                                             [
                                                 ("RigidName", Parameter::String32(name)),
                                                 ("BlendRate", Parameter::F32(rate)),

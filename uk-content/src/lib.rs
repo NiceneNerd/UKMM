@@ -3,6 +3,7 @@
 use thiserror::Error;
 
 pub mod actor;
+pub mod chemical;
 pub mod constants;
 pub mod data;
 pub mod util;
@@ -92,10 +93,12 @@ pub mod prelude {
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use join_str::jstr;
+
     pub fn test_base_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::read(
             roead::yaz0::decompress(
-                std::fs::read(&format!("test/Actor/Pack/{}.sbactorpack", name)).unwrap(),
+                std::fs::read(&jstr!("test/Actor/Pack/{name}.sbactorpack")).unwrap(),
             )
             .unwrap(),
         )
@@ -105,7 +108,7 @@ pub(crate) mod tests {
     pub fn test_mod_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::read(
             roead::yaz0::decompress(
-                std::fs::read(&format!("test/Actor/Pack/{}_Mod.sbactorpack", name)).unwrap(),
+                std::fs::read(&jstr!("test/Actor/Pack/{name}_Mod.sbactorpack")).unwrap(),
             )
             .unwrap(),
         )

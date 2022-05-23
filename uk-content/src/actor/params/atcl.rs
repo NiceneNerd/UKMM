@@ -3,6 +3,7 @@ use crate::{
     util::{self, DeleteVec},
     Result, UKError,
 };
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +35,7 @@ impl From<AttClient> for ParameterIO {
                 val.checks
                     .into_iter()
                     .enumerate()
-                    .map(|(i, check)| (format!("Check_{}", i), check)),
+                    .map(|(i, check)| (jstr!("Check_{&lexical::to_string(i)}"), check)),
             )
     }
 }

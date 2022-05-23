@@ -1,5 +1,6 @@
 use crate::{prelude::*, util::DeleteSet, Result, UKError};
 use indexmap::IndexMap;
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -68,7 +69,7 @@ impl From<BoneControl> for ParameterIO {
                         .enumerate()
                         .map(|(i, (group, bones))| {
                             (
-                                format!("Bone_{}", i),
+                                jstr!("Bone_{&lexical::to_string(i)}"),
                                 ParameterList {
                                     objects: [
                                         (
@@ -84,7 +85,7 @@ impl From<BoneControl> for ParameterIO {
                                                 .enumerate()
                                                 .map(|(i, bone)| {
                                                     (
-                                                        format!("Bone_{}", i),
+                                                        jstr!("Bone_{&lexical::to_string(i)}"),
                                                         Parameter::String64(bone),
                                                     )
                                                 })

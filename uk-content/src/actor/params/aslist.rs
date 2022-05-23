@@ -1,4 +1,5 @@
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -129,14 +130,11 @@ impl From<ASList> for ParameterIO {
             lists: [
                 (
                     "AddReses",
-                    Some(
-                        ParameterList::new().with_objects(
-                            val.add_reses
-                                .into_iter()
-                                .enumerate()
-                                .map(|(i, (_, res))| (format!("AddRes_{}", i), res.into())),
-                        ),
-                    ),
+                    Some(ParameterList::new().with_objects(
+                        val.add_reses.into_iter().enumerate().map(|(i, (_, res))| {
+                            (jstr!("AddRes_{&lexical::to_string(i)}"), res.into())
+                        }),
+                    )),
                 ),
                 (
                     "ASDefines",
@@ -147,7 +145,7 @@ impl From<ASList> for ParameterIO {
                                 .enumerate()
                                 .map(|(i, (name, filename))| {
                                     (
-                                        format!("ASDefine_{}", i),
+                                        jstr!("ASDefine_{&lexical::to_string(i)}"),
                                         ParameterObject::new()
                                             .with_param("Name", Parameter::String64(name))
                                             .with_param("Filename", Parameter::String64(filename)),
@@ -159,12 +157,9 @@ impl From<ASList> for ParameterIO {
                 (
                     "CFDefines",
                     val.cf_defines.map(|defines| {
-                        ParameterList::new().with_lists(
-                            defines
-                                .into_iter()
-                                .enumerate()
-                                .map(|(i, (_, list))| (format!("CFDefine_{}", i), list)),
-                        )
+                        ParameterList::new().with_lists(defines.into_iter().enumerate().map(
+                            |(i, (_, list))| (jstr!("CFDefine_{&lexical::to_string(i)}"), list),
+                        ))
                     }),
                 ),
             ]

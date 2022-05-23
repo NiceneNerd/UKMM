@@ -3,6 +3,7 @@ use crate::{
     util::{self, DeleteMap},
     Result, UKError,
 };
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -59,7 +60,7 @@ impl From<AttClientList> for ParameterIO {
             ParameterList::new().with_objects(val.att_clients.into_iter().enumerate().map(
                 |(i, (name, filename))| {
                     (
-                        format!("AttClient_{}", i),
+                        jstr!("AttClient_{&lexical::to_string(i)}"),
                         ParameterObject::new()
                             .with_param("Name", Parameter::String64(name))
                             .with_param("FileName", Parameter::String64(filename)),

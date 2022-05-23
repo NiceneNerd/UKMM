@@ -3,6 +3,7 @@ use crate::{
     util::{self, DeleteSet},
     Result, UKError,
 };
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +43,12 @@ impl From<ActorLink> for ParameterIO {
                         hash_name("Tags"),
                         tags.into_iter()
                             .enumerate()
-                            .map(|(i, tag)| (format!("Tag{}", i), Parameter::StringRef(tag)))
+                            .map(|(i, tag)| {
+                                (
+                                    jstr!("Tag{&lexical::to_string(i)}"),
+                                    Parameter::StringRef(tag),
+                                )
+                            })
                             .collect(),
                     );
                 }

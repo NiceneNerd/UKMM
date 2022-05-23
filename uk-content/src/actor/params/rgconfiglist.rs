@@ -3,6 +3,7 @@ use crate::{
     util::{self, DeleteMap},
     Result, UKError,
 };
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -103,14 +104,14 @@ impl From<RagdollConfigList> for ParameterIO {
             .with_list("ImpulseParamList", val.impulse_params)
             .with_list(
                 "BodyParamList",
-                ParameterList::new().with_objects(
-                    val.body_param_list
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, (_, body_param))| {
-                            (format!("BodyParam_{}", i), body_param.into())
-                        }),
-                ),
+                ParameterList::new().with_objects(val.body_param_list.into_iter().enumerate().map(
+                    |(i, (_, body_param))| {
+                        (
+                            jstr!("BodyParam_{&lexical::to_string(i)}"),
+                            body_param.into(),
+                        )
+                    },
+                )),
             )
     }
 }
