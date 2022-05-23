@@ -5,6 +5,7 @@ use thiserror::Error;
 pub mod actor;
 pub mod chemical;
 pub mod constants;
+pub mod cooking;
 pub mod data;
 pub mod util;
 
