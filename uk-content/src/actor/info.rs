@@ -81,8 +81,8 @@ impl Mergeable<Byml> for ActorInfo {
                         Some((*hash, other_info.clone(), false))
                     }
                 })
-                .chain(self.0.iter().filter_map(|(hash, self_info)| {
-                    (!other.0.contains_key(hash)).then(|| (*hash, self_info.clone(), true))
+                .chain(self.0.keys().filter_map(|hash| {
+                    (!other.0.contains_key(hash)).then(|| (*hash, Byml::Null, true))
                 }))
                 .collect(),
         )

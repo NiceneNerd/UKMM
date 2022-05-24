@@ -7,6 +7,7 @@ pub mod chemical;
 pub mod constants;
 pub mod cooking;
 pub mod data;
+pub mod eco;
 pub mod util;
 
 #[derive(Debug, Error)]
