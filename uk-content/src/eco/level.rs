@@ -1,12 +1,7 @@
-use std::collections::BTreeSet;
-
-use crate::{
-    prelude::Mergeable,
-    util::{self, DeleteMap},
-    Result, UKError,
-};
+use crate::{prelude::Mergeable, util::DeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 type Series = DeleteMap<String, f32>;
 
@@ -295,8 +290,10 @@ impl Mergeable<Byml> for LevelSensor {
                     } else {
                         (species, diff_actors.or(self_actors).cloned().unwrap())
                     }
-                }).collect()
-            },
+                })
+                .collect::<DeleteMap<_, _>>()
+            }
+            .and_delete(),
             flag: self.flag.merge(&diff.flag),
             setting: self.setting.merge(&diff.setting),
             weapon: {
@@ -313,8 +310,10 @@ impl Mergeable<Byml> for LevelSensor {
                     } else {
                         (key, diff_series.or(self_series).cloned().unwrap())
                     }
-                }).collect()
-            },
+                })
+                .collect::<DeleteMap<_, _>>()
+            }
+            .and_delete(),
         }
     }
 }
