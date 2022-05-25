@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use crate::{
     prelude::Mergeable,
     util::{self, SortedDeleteMap},
@@ -7,6 +5,7 @@ use crate::{
 };
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct AreaData(pub SortedDeleteMap<usize, Byml>);
