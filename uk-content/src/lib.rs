@@ -30,6 +30,8 @@ pub enum UKError {
     Other(&'static str),
     #[error("{0}")]
     OtherD(String),
+    #[error(transparent)]
+    Any(#[from] anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<T, UKError>;

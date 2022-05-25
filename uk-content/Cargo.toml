@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.57"
 indexmap = "1.8.0"
 itertools = "0.10.3"
 join_str = "0.1.0"
