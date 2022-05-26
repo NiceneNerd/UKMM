@@ -8,6 +8,7 @@ pub mod constants;
 pub mod cooking;
 pub mod data;
 pub mod eco;
+pub mod event;
 pub mod util;
 
 #[derive(Debug, Error)]
