@@ -1,16 +1,26 @@
-use crate::{map::EntryPos, prelude::Mergeable, util::DeleteMap, Result, UKError};
+use crate::{
+    map::EntryPos,
+    prelude::Mergeable,
+    util::{DeleteMap, DeleteVec, SortedDeleteMap},
+    Result, UKError,
+};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-pub struct Static(pub DeleteMap<String, DeleteMap<String, EntryPos>>);
+pub struct Static {
+    pub general: BTreeMap<String, DeleteVec<Byml>>,
+    pub start_pos: DeleteMap<String, DeleteMap<String, EntryPos>>,
+}
 
 impl TryFrom<&Byml> for Static {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        Ok(Self(
-            byml.as_hash()?
+        Ok(Self {
+            start_pos: byml
+                .as_hash()?
                 .get("StartPos")
                 .ok_or(UKError::MissingBymlKey("CDungeon static missing StartPos"))?
                 .as_array()?
@@ -60,15 +70,22 @@ impl TryFrom<&Byml> for Static {
                         Ok(entry_map)
                     },
                 )?,
-        ))
+            general: byml
+                .as_hash()?
+                .iter()
+                .map(|(key, array)| -> Result<(String, DeleteVec<Byml>)> {
+                    Ok((key.to_owned(), array.as_array()?.iter().cloned().collect()))
+                })
+                .collect::<Result<_>>()?,
+        })
     }
 }
 
 impl From<Static> for Byml {
     fn from(val: Static) -> Self {
         [(
-            "StartPos",
-            val.0
+            "StartPos".to_owned(),
+            val.start_pos
                 .into_iter()
                 .flat_map(|(map, entries): (String, DeleteMap<String, EntryPos>)| {
                     entries
@@ -88,70 +105,11 @@ impl From<Static> for Byml {
                 .collect(),
         )]
         .into_iter()
+        .chain(
+            val.general
+                .into_iter()
+                .map(|(key, array)| (key, array.into_iter().collect())),
+        )
         .collect()
-    }
-}
-
-impl Mergeable<Byml> for Static {
-    fn diff(&self, other: &Self) -> Self {
-        Self(self.0.deep_diff(&other.0))
-    }
-
-    fn merge(&self, diff: &Self) -> Self {
-        Self(self.0.deep_merge(&diff.0))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::prelude::*;
-    use roead::byml::Byml;
-
-    fn load_static() -> Byml {
-        Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Map/CDungeon/Static.smubin").unwrap())
-                .unwrap(),
-        )
-        .unwrap()
-    }
-
-    fn load_mod_static() -> Byml {
-        Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Map/CDungeon/Static.mod.smubin").unwrap(),
-            )
-            .unwrap(),
-        )
-        .unwrap()
-    }
-
-    #[test]
-    fn serde() {
-        let byml = load_static();
-        let cstatic = super::Static::try_from(&byml).unwrap();
-        let data = Byml::from(cstatic.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
-        let static2 = super::Static::try_from(&byml2).unwrap();
-        assert_eq!(cstatic, static2);
-    }
-
-    #[test]
-    fn diff() {
-        let byml = load_static();
-        let cstatic = super::Static::try_from(&byml).unwrap();
-        let byml2 = load_mod_static();
-        let static2 = super::Static::try_from(&byml2).unwrap();
-        let _diff = cstatic.diff(&static2);
-    }
-
-    #[test]
-    fn merge() {
-        let byml = load_static();
-        let cstatic = super::Static::try_from(&byml).unwrap();
-        let byml2 = load_mod_static();
-        let static2 = super::Static::try_from(&byml2).unwrap();
-        let diff = cstatic.diff(&static2);
-        let merged = cstatic.merge(&diff);
-        assert_eq!(merged, static2);
     }
 }
