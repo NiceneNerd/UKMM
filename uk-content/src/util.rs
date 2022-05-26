@@ -141,7 +141,7 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
             }
         }
         let dels = vec![false; all_items.len()];
-        Self(all_items, dels)
+        Self(all_items, dels).and_delete()
     }
 }
 
@@ -498,10 +498,10 @@ impl<T: DeleteKey, U: PartialEq + Clone, V: DeleteKey> DeleteMap<T, DeleteMap<V,
             .map(|key| {
                 let (self_map, diff_map) = (self.get(&key), diff.get(&key));
                 if let Some(self_map) = self_map && let Some(diff_map) = diff_map {
-            (key, self_map.merge(diff_map))
-        } else {
-            (key, diff_map.or(self_map).cloned().unwrap())
-        }
+                    (key.clone(), self_map.merge(diff_map), diff.is_delete(&key).unwrap())
+                } else {
+                    (key.clone(), diff_map.or(self_map).cloned().unwrap(), diff.is_delete(&key).unwrap_or_default())
+                }
             })
             .collect::<DeleteMap<_, _>>()
             .and_delete()
@@ -692,11 +692,11 @@ impl<T: DeleteKey + Ord, U: PartialEq + Clone, V: DeleteKey + Ord>
         keys.into_iter()
             .map(|key| {
                 let (self_map, diff_map) = (self.get(&key), diff.get(&key));
-                if let Some(self_actors) = self_map && let Some(diff_actors) = diff_map {
-                (key, self_actors.merge(diff_actors))
-            } else {
-                (key, diff_map.or(self_map).cloned().unwrap())
-            }
+                if let Some(self_map) = self_map && let Some(diff_map) = diff_map {
+                    (key.clone(), self_map.merge(diff_map), diff.is_delete(&key).unwrap())
+                } else {
+                    (key.clone(), diff_map.or(self_map).cloned().unwrap(), diff.is_delete(&key).unwrap_or_default())
+                }
             })
             .collect::<SortedDeleteMap<_, _>>()
             .and_delete()

@@ -115,7 +115,7 @@ mod tests {
 
     fn load_static() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Map/CDungeon/Static.sbyml").unwrap())
+            &roead::yaz0::decompress(&std::fs::read("test/Map/CDungeon/Static.smubin").unwrap())
                 .unwrap(),
         )
         .unwrap()
@@ -123,8 +123,10 @@ mod tests {
 
     fn load_mod_static() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Map/CDungeon/Static.mod.sbyml").unwrap())
-                .unwrap(),
+            &roead::yaz0::decompress(
+                &std::fs::read("test/Map/CDungeon/Static.mod.smubin").unwrap(),
+            )
+            .unwrap(),
         )
         .unwrap()
     }
