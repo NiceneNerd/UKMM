@@ -1,7 +1,7 @@
 use crate::{prelude::Mergeable, util::DeleteMap, Result, UKError};
+use indexmap::IndexSet;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 type Series = DeleteMap<String, f32>;
 
@@ -231,25 +231,7 @@ impl From<LevelSensor> for Byml {
 impl Mergeable<Byml> for LevelSensor {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            enemy: other
-                .enemy
-                .iter()
-                .filter_map(|(species, other_actors)| {
-                    if let Some(self_actors) = self.enemy.get(species) {
-                        if self_actors != other_actors {
-                            Some((species.clone(), self_actors.diff(other_actors), false))
-                        } else {
-                            None
-                        }
-                    } else {
-                        Some((species.clone(), other_actors.clone(), false))
-                    }
-                })
-                .chain(self.enemy.iter().filter_map(|(species, _)| {
-                    (!other.enemy.contains_key(species))
-                        .then(|| (species.clone(), Default::default(), true))
-                }))
-                .collect(),
+            enemy: self.enemy.deep_diff(&other.enemy),
             flag: self.flag.diff(&other.flag),
             setting: self.setting.diff(&other.setting),
             weapon: other
@@ -276,28 +258,11 @@ impl Mergeable<Byml> for LevelSensor {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            enemy: {
-                let species: BTreeSet<String> = self
-                    .enemy
-                    .keys()
-                    .chain(diff.enemy.keys())
-                    .cloned()
-                    .collect();
-                species.into_iter().map(|species| {
-                    let (self_actors, diff_actors) = (self.enemy.get(&species), diff.enemy.get(&species));
-                    if let Some(self_actors) = self_actors && let Some(diff_actors) = diff_actors {
-                        (species, self_actors.merge(diff_actors))
-                    } else {
-                        (species, diff_actors.or(self_actors).cloned().unwrap())
-                    }
-                })
-                .collect::<DeleteMap<_, _>>()
-            }
-            .and_delete(),
+            enemy: self.enemy.deep_merge(&diff.enemy),
             flag: self.flag.merge(&diff.flag),
             setting: self.setting.merge(&diff.setting),
             weapon: {
-                let key: BTreeSet<_> = self
+                let key: IndexSet<_> = self
                     .weapon
                     .keys()
                     .chain(diff.weapon.keys())

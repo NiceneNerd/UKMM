@@ -1,8 +1,8 @@
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use roead::aamp::*;
 use roead::byml::Byml;
 use std::borrow::Borrow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::hash::Hash;
 
 pub trait DeleteKey: Hash + Eq + Clone {}
@@ -105,6 +105,16 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
     #[inline]
     pub fn contains(&self, item: impl Borrow<T>) -> bool {
         self.0.contains(item.borrow())
+    }
+
+    pub fn push(&mut self, item: T) {
+        self.0.push(item);
+        self.1.push(false);
+    }
+
+    pub fn push_del(&mut self, item: T) {
+        self.0.push(item);
+        self.1.push(true);
     }
 
     pub fn diff(&self, other: &Self) -> Self {
@@ -344,6 +354,10 @@ impl<T: DeleteKey, U: PartialEq + Clone> PartialEq for DeleteMap<T, U> {
 }
 
 impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
+    pub fn new() -> Self {
+        Self(IndexMap::new(), IndexMap::new())
+    }
+
     #[inline]
     pub fn len(&self) -> usize {
         self.0.len()
@@ -414,6 +428,16 @@ impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
         self.0.get_mut(key.borrow())
     }
 
+    pub fn insert(&mut self, key: impl Borrow<T>, value: U) {
+        self.0.insert(key.borrow().clone(), value);
+        self.1.insert(key.borrow().clone(), false);
+    }
+
+    pub fn insert_del(&mut self, key: impl Borrow<T>, value: U) {
+        self.0.insert(key.borrow().clone(), value);
+        self.1.insert(key.borrow().clone(), true);
+    }
+
     pub fn diff(&self, other: &Self) -> Self {
         other
             .0
@@ -443,6 +467,44 @@ impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
                 .collect(),
         )
         .and_delete()
+    }
+}
+
+impl<T: DeleteKey, U: PartialEq + Clone, V: DeleteKey> DeleteMap<T, DeleteMap<V, U>> {
+    pub fn deep_diff(&self, other: &Self) -> Self {
+        other
+            .0
+            .iter()
+            .filter_map(|(k, other_map)| {
+                if let Some(self_map) = self.get(k) {
+                    if self_map != other_map {
+                        Some((k.clone(), self_map.diff(other_map), false))
+                    } else {
+                        None
+                    }
+                } else {
+                    Some((k.clone(), other_map.clone(), false))
+                }
+            })
+            .chain(self.iter().filter_map(|(k, _)| {
+                (!other.contains_key(k)).then(|| (k.clone(), DeleteMap::new(), true))
+            }))
+            .collect()
+    }
+
+    pub fn deep_merge(&self, diff: &Self) -> Self {
+        let keys: IndexSet<_> = self.keys().chain(diff.keys()).cloned().collect();
+        keys.into_iter()
+            .map(|key| {
+                let (self_map, diff_map) = (self.get(&key), diff.get(&key));
+                if let Some(self_map) = self_map && let Some(diff_map) = diff_map {
+            (key, self_map.merge(diff_map))
+        } else {
+            (key, diff_map.or(self_map).cloned().unwrap())
+        }
+            })
+            .collect::<DeleteMap<_, _>>()
+            .and_delete()
     }
 }
 
@@ -485,6 +547,10 @@ impl<T: DeleteKey + Ord, U: PartialEq + Clone> FromIterator<(T, U)> for SortedDe
 }
 
 impl<T: DeleteKey + Ord, U: PartialEq + Clone> SortedDeleteMap<T, U> {
+    pub fn new() -> Self {
+        Self(BTreeMap::new(), BTreeMap::new())
+    }
+
     #[inline]
     pub fn len(&self) -> usize {
         self.0.len()
@@ -555,6 +621,16 @@ impl<T: DeleteKey + Ord, U: PartialEq + Clone> SortedDeleteMap<T, U> {
         self.0.get_mut(key.borrow())
     }
 
+    pub fn insert(&mut self, key: impl Borrow<T>, value: U) {
+        self.0.insert(key.borrow().clone(), value);
+        self.1.insert(key.borrow().clone(), false);
+    }
+
+    pub fn insert_del(&mut self, key: impl Borrow<T>, value: U) {
+        self.0.insert(key.borrow().clone(), value);
+        self.1.insert(key.borrow().clone(), true);
+    }
+
     pub fn diff(&self, other: &Self) -> Self {
         other
             .0
@@ -584,6 +660,46 @@ impl<T: DeleteKey + Ord, U: PartialEq + Clone> SortedDeleteMap<T, U> {
                 .collect(),
         )
         .and_delete()
+    }
+}
+
+impl<T: DeleteKey + Ord, U: PartialEq + Clone, V: DeleteKey + Ord>
+    SortedDeleteMap<T, SortedDeleteMap<V, U>>
+{
+    pub fn deep_diff(&self, other: &Self) -> Self {
+        other
+            .0
+            .iter()
+            .filter_map(|(k, other_map)| {
+                if let Some(self_map) = self.get(k) {
+                    if self_map != other_map {
+                        Some((k.clone(), self_map.diff(other_map), false))
+                    } else {
+                        None
+                    }
+                } else {
+                    Some((k.clone(), other_map.clone(), false))
+                }
+            })
+            .chain(self.iter().filter_map(|(k, _)| {
+                (!other.contains_key(k)).then(|| (k.clone(), SortedDeleteMap::new(), true))
+            }))
+            .collect()
+    }
+
+    pub fn deep_merge(&self, diff: &Self) -> Self {
+        let keys: BTreeSet<T> = self.keys().chain(diff.keys()).cloned().collect();
+        keys.into_iter()
+            .map(|key| {
+                let (self_map, diff_map) = (self.get(&key), diff.get(&key));
+                if let Some(self_actors) = self_map && let Some(diff_actors) = diff_map {
+                (key, self_actors.merge(diff_actors))
+            } else {
+                (key, diff_map.or(self_map).cloned().unwrap())
+            }
+            })
+            .collect::<SortedDeleteMap<_, _>>()
+            .and_delete()
     }
 }
 
