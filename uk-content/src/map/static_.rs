@@ -1,5 +1,4 @@
 use crate::{
-    map::EntryPos,
     prelude::Mergeable,
     util::{DeleteMap, DeleteVec, SortedDeleteMap},
     Result, UKError,
@@ -7,6 +6,13 @@ use crate::{
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
+pub struct EntryPos {
+    pub rotate: roead::byml::Byml,
+    pub translate: roead::byml::Byml,
+    pub player_state: Option<String>,
+}
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct Static {
@@ -88,6 +94,7 @@ impl TryFrom<&Byml> for Static {
             general: byml
                 .as_hash()?
                 .iter()
+                .filter(|(k, _)| k.as_str() != "StartPos")
                 .map(|(key, array)| -> Result<(String, DeleteVec<Byml>)> {
                     Ok((key.to_owned(), array.as_array()?.iter().cloned().collect()))
                 })
@@ -113,6 +120,10 @@ impl From<Static> for Byml {
                                 ("Translate", pos.translate),
                             ]
                             .into_iter()
+                            .chain(
+                                pos.player_state
+                                    .map(|state| ("PlayerState", Byml::String(state))),
+                            )
                             .collect()
                         })
                         .collect::<Vec<Byml>>()
@@ -174,7 +185,25 @@ mod tests {
     use crate::prelude::*;
     use roead::byml::Byml;
 
-    fn load_mstatic() -> Byml {
+    fn load_cdungeon_static() -> Byml {
+        Byml::from_binary(
+            &roead::yaz0::decompress(&std::fs::read("test/Map/CDungeon/Static.smubin").unwrap())
+                .unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn load_mod_cdungeon_static() -> Byml {
+        Byml::from_binary(
+            &roead::yaz0::decompress(
+                &std::fs::read("test/Map/CDungeon/Static.mod.smubin").unwrap(),
+            )
+            .unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn load_mainfield_static() -> Byml {
         Byml::from_binary(
             &roead::yaz0::decompress(&std::fs::read("test/Map/MainField/Static.smubin").unwrap())
                 .unwrap(),
@@ -182,7 +211,7 @@ mod tests {
         .unwrap()
     }
 
-    fn load_mod_mstatic() -> Byml {
+    fn load_mod_mainfield_static() -> Byml {
         Byml::from_binary(
             &roead::yaz0::decompress(
                 &std::fs::read("test/Map/MainField/Static.mod.smubin").unwrap(),
@@ -194,31 +223,52 @@ mod tests {
 
     #[test]
     fn serde() {
-        let byml = load_mstatic();
+        let byml = load_mainfield_static();
         let mstatic = super::Static::try_from(&byml).unwrap();
         let data = Byml::from(mstatic.clone()).to_binary(roead::Endian::Big);
         let byml2 = Byml::from_binary(&data).unwrap();
         let mstatic2 = super::Static::try_from(&byml2).unwrap();
-        assert_eq!(mstatic, mstatic2);
+        assert_eq!(mstatic.general, mstatic2.general);
+        assert_eq!(mstatic.start_pos, mstatic2.start_pos);
     }
 
     #[test]
-    fn diff() {
-        let byml = load_mstatic();
+    fn diff_mainfield() {
+        let byml = load_mainfield_static();
         let mstatic = super::Static::try_from(&byml).unwrap();
-        let byml2 = load_mod_mstatic();
+        let byml2 = load_mod_mainfield_static();
         let mstatic2 = super::Static::try_from(&byml2).unwrap();
         let _diff = mstatic.diff(&mstatic2);
     }
 
     #[test]
-    fn merge() {
-        let byml = load_mstatic();
+    fn diff_cdungeon() {
+        let byml = load_cdungeon_static();
         let mstatic = super::Static::try_from(&byml).unwrap();
-        let byml2 = load_mod_mstatic();
+        let byml2 = load_mod_cdungeon_static();
+        let mstatic2 = super::Static::try_from(&byml2).unwrap();
+        let _diff = mstatic.diff(&mstatic2);
+    }
+
+    #[test]
+    fn merge_mainfield() {
+        let byml = load_mainfield_static();
+        let mstatic = super::Static::try_from(&byml).unwrap();
+        let byml2 = load_mod_mainfield_static();
         let mstatic2 = super::Static::try_from(&byml2).unwrap();
         let diff = mstatic.diff(&mstatic2);
         let merged = mstatic.merge(&diff);
         assert_eq!(merged, mstatic2);
+    }
+
+    #[test]
+    fn merge() {
+        let byml = load_cdungeon_static();
+        let static_ = super::Static::try_from(&byml).unwrap();
+        let byml2 = load_mod_cdungeon_static();
+        let static2 = super::Static::try_from(&byml2).unwrap();
+        let diff = static_.diff(&static2);
+        let merged = static_.merge(&diff);
+        assert_eq!(merged, static2);
     }
 }
