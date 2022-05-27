@@ -5,4 +5,5 @@ pub mod mainfield;
 pub struct EntryPos {
     pub rotate: roead::byml::Byml,
     pub translate: roead::byml::Byml,
+    pub player_state: Option<String>,
 }

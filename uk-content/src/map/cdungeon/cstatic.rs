@@ -48,13 +48,27 @@ impl TryFrom<&Byml> for Static {
                             ))?
                             .clone();
                         if let Some(map_entries) = entry_map.get_mut(&map) {
-                            map_entries.insert(pos_name, EntryPos { rotate, translate });
+                            map_entries.insert(
+                                pos_name,
+                                EntryPos {
+                                    rotate,
+                                    translate,
+                                    player_state: None,
+                                },
+                            );
                         } else {
                             entry_map.insert(
                                 map,
-                                [(pos_name, EntryPos { rotate, translate })]
-                                    .into_iter()
-                                    .collect(),
+                                [(
+                                    pos_name,
+                                    EntryPos {
+                                        rotate,
+                                        translate,
+                                        player_state: None,
+                                    },
+                                )]
+                                .into_iter()
+                                .collect(),
                             );
                         };
                         Ok(entry_map)
