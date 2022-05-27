@@ -1,11 +1,11 @@
 use crate::{
     prelude::Mergeable,
-    util::{DeleteMap, DeleteVec, SortedDeleteMap},
+    util::{DeleteMap, DeleteVec},
     Result, UKError,
 };
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct EntryPos {
