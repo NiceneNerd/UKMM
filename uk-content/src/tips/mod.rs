@@ -1,9 +1,8 @@
 use crate::{prelude::Mergeable, util::SortedDeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct Tips(pub SortedDeleteMap<String, Byml>);
 
 impl TryFrom<&Byml> for Tips {
