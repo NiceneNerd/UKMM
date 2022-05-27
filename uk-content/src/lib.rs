@@ -1,5 +1,4 @@
-#![feature(let_chains)]
-#![feature(type_alias_impl_trait)]
+#![feature(let_chains, type_alias_impl_trait)]
 use thiserror::Error;
 
 pub mod actor;
