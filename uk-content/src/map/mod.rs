@@ -1,3 +1,4 @@
+pub mod unit;
 pub mod lazy;
 pub mod cdungeon;
 pub mod mainfield;
