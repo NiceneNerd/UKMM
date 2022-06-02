@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct MapUnit {
-    pub pos_x: f32,
-    pub pos_y: f32,
-    pub size: f32,
+    pub pos_x: Option<f32>,
+    pub pos_y: Option<f32>,
+    pub size: Option<f32>,
     pub objects: SortedDeleteMap<u32, Byml>,
     pub rails: SortedDeleteMap<u32, Byml>,
 }
@@ -19,16 +19,16 @@ impl TryFrom<&Byml> for MapUnit {
         Ok(Self {
             pos_x: hash
                 .get("LocationPosX")
-                .ok_or(UKError::MissingBymlKey("Map unit missing location pos x"))?
-                .as_float()?,
+                .map(|v| -> Result<f32> { Ok(v.as_float()?) })
+                .transpose()?,
             pos_y: hash
                 .get("LocationPosY")
-                .ok_or(UKError::MissingBymlKey("Map unit missing location pos y"))?
-                .as_float()?,
+                .map(|v| -> Result<f32> { Ok(v.as_float()?) })
+                .transpose()?,
             size: hash
                 .get("LocationSize")
-                .ok_or(UKError::MissingBymlKey("Map unit missing location size"))?
-                .as_float()?,
+                .map(|v| -> Result<f32> { Ok(v.as_float()?) })
+                .transpose()?,
             objects: hash
                 .get("Objs")
                 .ok_or(UKError::MissingBymlKey("Map unit missing objs"))?
@@ -64,9 +64,6 @@ impl TryFrom<&Byml> for MapUnit {
 impl From<MapUnit> for Byml {
     fn from(val: MapUnit) -> Self {
         [
-            ("LocationPosX", Byml::Float(val.pos_x)),
-            ("LocationPosY", Byml::Float(val.pos_y)),
-            ("LocationSize", Byml::Float(val.size)),
             (
                 "Objs",
                 val.objects.into_iter().map(|(_, obj)| obj).collect(),
@@ -74,6 +71,15 @@ impl From<MapUnit> for Byml {
             ("Rails", val.rails.into_iter().map(|(_, obj)| obj).collect()),
         ]
         .into_iter()
+        .chain(
+            [
+                ("LocationPosX", val.pos_x),
+                ("LocationPosY", val.pos_y),
+                ("LocationSize", val.size),
+            ]
+            .into_iter()
+            .filter_map(|(k, v)| v.map(|v| (k, Byml::Float(v)))),
+        )
         .collect()
     }
 }
@@ -105,18 +111,41 @@ mod tests {
     use crate::prelude::*;
     use roead::byml::Byml;
 
-    fn load_munt() -> Byml {
+    fn load_cdungeon_munt() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Map/MainField/E-.smubin").unwrap())
-                .unwrap(),
+            &roead::yaz0::decompress(
+                &std::fs::read("test/Map/CDungeon/Dungeon044/Dungeon044_Static.smubin").unwrap(),
+            )
+            .unwrap(),
         )
         .unwrap()
     }
 
-    fn load_mod_munt() -> Byml {
+    fn load_mod_cdungeon_munt() -> Byml {
         Byml::from_binary(
             &roead::yaz0::decompress(
-                &std::fs::read("test/Map/MainField/MapUnit.mod.smubin").unwrap(),
+                &std::fs::read("test/Map/CDungeon/Dungeon044/Dungeon044_Static.mod.smubin")
+                    .unwrap(),
+            )
+            .unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn load_mainfield_munt() -> Byml {
+        Byml::from_binary(
+            &roead::yaz0::decompress(
+                &std::fs::read("test/Map/MainField/D-3/D-3_Dynamic.smubin").unwrap(),
+            )
+            .unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn load_mod_mainfield_munt() -> Byml {
+        Byml::from_binary(
+            &roead::yaz0::decompress(
+                &std::fs::read("test/Map/MainField/D-3/D-3_Dynamic.mod.smubin").unwrap(),
             )
             .unwrap(),
         )
@@ -124,8 +153,8 @@ mod tests {
     }
 
     #[test]
-    fn serde() {
-        let byml = load_munt();
+    fn serde_mainfield() {
+        let byml = load_mainfield_munt();
         let munt = super::MapUnit::try_from(&byml).unwrap();
         let data = Byml::from(munt.clone()).to_binary(roead::Endian::Big);
         let byml2 = Byml::from_binary(&data).unwrap();
@@ -134,19 +163,49 @@ mod tests {
     }
 
     #[test]
-    fn diff() {
-        let byml = load_munt();
+    fn serde_cdungeon() {
+        let byml = load_cdungeon_munt();
         let munt = super::MapUnit::try_from(&byml).unwrap();
-        let byml2 = load_mod_munt();
+        let data = Byml::from(munt.clone()).to_binary(roead::Endian::Big);
+        let byml2 = Byml::from_binary(&data).unwrap();
+        let munt2 = super::MapUnit::try_from(&byml2).unwrap();
+        assert_eq!(munt, munt2);
+    }
+
+    #[test]
+    fn diff_mainfield() {
+        let byml = load_mainfield_munt();
+        let munt = super::MapUnit::try_from(&byml).unwrap();
+        let byml2 = load_mod_mainfield_munt();
         let munt2 = super::MapUnit::try_from(&byml2).unwrap();
         let _diff = munt.diff(&munt2);
     }
 
     #[test]
-    fn merge() {
-        let byml = load_munt();
+    fn diff_cdungeon() {
+        let byml = load_cdungeon_munt();
         let munt = super::MapUnit::try_from(&byml).unwrap();
-        let byml2 = load_mod_munt();
+        let byml2 = load_mod_cdungeon_munt();
+        let munt2 = super::MapUnit::try_from(&byml2).unwrap();
+        let _diff = munt.diff(&munt2);
+    }
+
+    #[test]
+    fn merge_mainfield() {
+        let byml = load_mainfield_munt();
+        let munt = super::MapUnit::try_from(&byml).unwrap();
+        let byml2 = load_mod_mainfield_munt();
+        let munt2 = super::MapUnit::try_from(&byml2).unwrap();
+        let diff = munt.diff(&munt2);
+        let merged = munt.merge(&diff);
+        assert_eq!(merged, munt2);
+    }
+
+    #[test]
+    fn merge_cdungeon() {
+        let byml = load_cdungeon_munt();
+        let munt = super::MapUnit::try_from(&byml).unwrap();
+        let byml2 = load_cdungeon_munt();
         let munt2 = super::MapUnit::try_from(&byml2).unwrap();
         let diff = munt.diff(&munt2);
         let merged = munt.merge(&diff);
