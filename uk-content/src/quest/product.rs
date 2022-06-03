@@ -1,8 +1,4 @@
-use crate::{
-    prelude::{Convertible, Mergeable, ShallowMergeableByml},
-    util::DeleteMap,
-    Result, UKError,
-};
+use crate::{prelude::Mergeable, util::DeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +11,7 @@ impl TryFrom<&Byml> for QuestProduct {
     fn try_from(byml: &Byml) -> Result<Self> {
         Ok(Self(
             byml.as_array()?
-                .into_iter()
+                .iter()
                 .map(|quest| -> Result<(String, Byml)> {
                     Ok((
                         quest

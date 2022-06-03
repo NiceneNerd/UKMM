@@ -1,10 +1,11 @@
 use crate::{
+    actor::InfoSource,
     prelude::*,
     util::{self, DeleteSet},
     Result, UKError,
 };
 use join_str::jstr;
-use roead::aamp::*;
+use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
@@ -110,6 +111,53 @@ impl Mergeable<ParameterIO> for ActorLink {
                 }
             },
         }
+    }
+}
+
+impl InfoSource for ActorLink {
+    fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()> {
+        info.extend(
+            [
+                (
+                    "actorScale",
+                    self.targets
+                        .param("ActorScale")
+                        .map(|v| -> Result<Byml> { Ok(Byml::Float(v.as_f32()?)) })
+                        .transpose()?,
+                ),
+                (
+                    "elink",
+                    self.targets
+                        .param("ELinkUser")
+                        .map(|v| -> Result<Byml> { Ok(Byml::String(v.as_string()?.to_owned())) })
+                        .transpose()?,
+                ),
+                (
+                    "profile",
+                    self.targets
+                        .param("ProfileUser")
+                        .map(|v| -> Result<Byml> { Ok(Byml::String(v.as_string()?.to_owned())) })
+                        .transpose()?,
+                ),
+                (
+                    "slink",
+                    self.targets
+                        .param("SLinkUser")
+                        .map(|v| -> Result<Byml> { Ok(Byml::String(v.as_string()?.to_owned())) })
+                        .transpose()?,
+                ),
+                (
+                    "xlink",
+                    self.targets
+                        .param("XLinkUser")
+                        .map(|v| -> Result<Byml> { Ok(Byml::String(v.as_string()?.to_owned())) })
+                        .transpose()?,
+                ),
+            ]
+            .into_iter()
+            .filter_map(|(k, v)| v.map(|v| (k.to_owned(), v))),
+        );
+        Ok(())
     }
 }
 
