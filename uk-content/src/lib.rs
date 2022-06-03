@@ -10,8 +10,10 @@ pub mod demo;
 pub mod eco;
 pub mod event;
 pub mod map;
+pub mod quest;
 pub mod tips;
 pub mod util;
+pub mod worldmgr;
 
 #[derive(Debug, Error)]
 pub enum UKError {
@@ -76,7 +78,10 @@ pub mod prelude {
         }
 
         fn merge(&self, diff: &Self) -> Self {
-            crate::util::merge_plist(self.inner(), diff.inner()).into()
+            let mut pio = crate::util::merge_plist(self.inner(), diff.inner());
+            pio.doc_type = self.inner().doc_type.clone();
+            pio.version = self.inner().version;
+            pio.into()
         }
     }
 
