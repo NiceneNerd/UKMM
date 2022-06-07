@@ -5,7 +5,7 @@ use crate::{
     Result, UKError,
 };
 use join_str::jstr;
-use roead::{aamp::*, byml::Byml};
+use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
@@ -116,46 +116,16 @@ impl Mergeable<ParameterIO> for ActorLink {
 
 impl InfoSource for ActorLink {
     fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()> {
-        info.extend(
-            [
-                (
-                    "actorScale",
-                    self.targets
-                        .param("ActorScale")
-                        .map(|v| -> Result<Byml> { Ok(Byml::Float(v.as_f32()?)) })
-                        .transpose()?,
-                ),
-                (
-                    "elink",
-                    self.targets
-                        .param("ELinkUser")
-                        .map(|v| -> Result<Byml> { Ok(Byml::String(v.as_string()?.to_owned())) })
-                        .transpose()?,
-                ),
-                (
-                    "profile",
-                    self.targets
-                        .param("ProfileUser")
-                        .map(|v| -> Result<Byml> { Ok(Byml::String(v.as_string()?.to_owned())) })
-                        .transpose()?,
-                ),
-                (
-                    "slink",
-                    self.targets
-                        .param("SLinkUser")
-                        .map(|v| -> Result<Byml> { Ok(Byml::String(v.as_string()?.to_owned())) })
-                        .transpose()?,
-                ),
-                (
-                    "xlink",
-                    self.targets
-                        .param("XLinkUser")
-                        .map(|v| -> Result<Byml> { Ok(Byml::String(v.as_string()?.to_owned())) })
-                        .transpose()?,
-                ),
-            ]
-            .into_iter()
-            .filter_map(|(k, v)| v.map(|v| (k.to_owned(), v))),
+        crate::actor::info_params!(
+            &self.targets,
+            info,
+            {
+                ("actorScale", "ActorScale",  f32),
+                ("elink", "ElinkUser",  String),
+                ("profile", "ProfileUser",  String),
+                ("slink", "SlinkUser",  String),
+                ("xlink", "XlinkUser",  String),
+            }
         );
         Ok(())
     }
@@ -163,7 +133,7 @@ impl InfoSource for ActorLink {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use crate::{actor::InfoSource, prelude::*};
 
     #[test]
     fn serde() {
@@ -224,5 +194,25 @@ mod tests {
         let diff = actorlink.diff(&actorlink2);
         let merged = actorlink.merge(&diff);
         assert_eq!(actorlink2, merged);
+    }
+
+    #[test]
+    fn info() {
+        use roead::byml::Byml;
+        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap(),
+        )
+        .unwrap();
+        let actorlink = super::ActorLink::try_from(&pio).unwrap();
+        let mut info = roead::byml::Hash::new();
+        actorlink.update_info(&mut info).unwrap();
+        assert_eq!(info["actorScale"], Byml::Float(1.0));
+        assert_eq!(info["elink"], Byml::String("Guardian_A".to_owned()));
+        assert_eq!(info["profile"], Byml::String("Guardian".to_owned()));
+        assert_eq!(info["slink"], Byml::String("Guardian".to_owned()));
+        assert_eq!(info["xlink"], Byml::String("Guardian".to_owned()));
     }
 }

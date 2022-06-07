@@ -18,7 +18,7 @@ strum_macros = "0.24.0"
 [dependencies.roead]
 git = "https://github.com/NiceneNerd/roead"
 features = ["with-serde"]
-rev = "c172ab2941d7a4c8df8930f72a540e25dfcb81fa"
+# rev = "c172ab2941d7a4c8df8930f72a540e25dfcb81fa"
 
 [dev-dependencies]
 pretty_assertions = "1.2.1"
