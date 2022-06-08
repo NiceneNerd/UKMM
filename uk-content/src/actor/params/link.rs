@@ -5,7 +5,7 @@ use crate::{
     Result, UKError,
 };
 use join_str::jstr;
-use roead::aamp::*;
+use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
@@ -127,6 +127,24 @@ impl InfoSource for ActorLink {
                 ("xlink", "XlinkUser",  String),
             }
         );
+        if let Some(tags) = &self.tags {
+            info.insert(
+                "tags".to_owned(),
+                tags.iter()
+                    .map(|tag| -> (String, Byml) {
+                        let hash = roead::aamp::hash_name(tag.as_str());
+                        (
+                            format!("tag{:08x}", hash),
+                            if hash > 2147483647 {
+                                Byml::UInt(hash)
+                            } else {
+                                Byml::Int(hash as i32)
+                            },
+                        )
+                    })
+                    .collect(),
+            );
+        }
         Ok(())
     }
 }
@@ -214,5 +232,7 @@ mod tests {
         assert_eq!(info["profile"], Byml::String("Guardian".to_owned()));
         assert_eq!(info["slink"], Byml::String("Guardian".to_owned()));
         assert_eq!(info["xlink"], Byml::String("Guardian".to_owned()));
+        assert_eq!(info["tags"]["tag3a61e2a9"], Byml::Int(979493545));
+        assert_eq!(info["tags"]["tag994aef4b"], Byml::UInt(0x994aef4b));
     }
 }
