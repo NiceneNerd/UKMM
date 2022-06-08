@@ -1,4 +1,4 @@
-use crate::{prelude::Mergeable, util, Result, UKError};
+use crate::{actor::InfoSource, prelude::Mergeable, util, Result, UKError};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -680,9 +680,26 @@ impl Mergeable<ParameterIO> for Physics {
     }
 }
 
+impl InfoSource for Physics {
+    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+        if let Some(Parameter::Vec3(center)) = self.rigid_body_set.as_ref().and_then(|body_set| {
+            body_set.values().next().and_then(|list| {
+                list.lists.0.values().next().and_then(|list| {
+                    list.objects()
+                        .get(948250248)
+                        .and_then(|obj| obj.param("center_of_mass"))
+                })
+            })
+        }) {
+            info.insert("rigidBodyCenterY".to_owned(), center.y.into());
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use crate::{actor::InfoSource, prelude::*};
 
     #[test]
     fn serde() {
@@ -743,5 +760,23 @@ mod tests {
         let diff = physics.diff(&physics2);
         let merged = physics.merge(&diff);
         assert_eq!(physics2, merged);
+    }
+
+    #[test]
+    fn info() {
+        let actor = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .unwrap(),
+        )
+        .unwrap();
+        let physics = super::Physics::try_from(&pio).unwrap();
+        let mut info = roead::byml::Hash::new();
+        physics.update_info(&mut info).unwrap();
+        assert_eq!(
+            info["rigidBodyCenterY"],
+            roead::byml::Byml::Float(0.150000006)
+        );
     }
 }
