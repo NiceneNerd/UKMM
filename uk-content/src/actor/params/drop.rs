@@ -1,9 +1,6 @@
 use crate::{actor::InfoSource, prelude::*, Result, UKError};
 use indexmap::IndexMap;
-use roead::{
-    aamp::*,
-    byml::{Byml, Hash},
-};
+use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -168,7 +165,7 @@ mod tests {
         )
         .unwrap();
         let drop2 = super::DropTable::try_from(&pio2).unwrap();
-        let diff = drop.diff(&drop2);
+        let _diff = drop.diff(&drop2);
     }
 
     #[test]

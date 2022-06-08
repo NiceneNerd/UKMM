@@ -5,7 +5,7 @@ use crate::{
     Result, UKError,
 };
 use join_str::jstr;
-use roead::aamp::*;
+use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -120,6 +120,59 @@ impl InfoSource for ModelList {
             ("variationMatAnim", "VariationMatAnim", String),
             ("variationMatAnimFrame", "VariationMatAnimFrame", i32)
         });
+        if let Some(Parameter::Vec3(lookat)) = self.attention.param("LookAtOffset") {
+            info.insert("lookAtOffsetY".to_string(), lookat.y.into());
+        }
+        if let Some(Parameter::Color(add_color)) = self.controller_info.param("AddColor") && add_color.a + add_color.r + add_color.g + add_color.b > 0.0 {
+            info.insert("addColorR".to_string(), add_color.r.into());
+            info.insert("addColorG".to_string(), add_color.g.into());
+            info.insert("addColorB".to_string(), add_color.b.into());
+            info.insert("addColorA".to_string(), add_color.a.into());
+        }
+        if let Some(Parameter::Vec3(base_scale)) = self.controller_info.param("BaseScale") {
+            info.insert("baseScaleX".to_string(), base_scale.x.into());
+            info.insert("baseScaleY".to_string(), base_scale.y.into());
+            info.insert("baseScaleZ".to_string(), base_scale.z.into());
+        }
+        if let Some(Parameter::Vec3(fm_center)) = self.controller_info.param("FarModelCullingCenter")
+            && let Some(Parameter::F32(fm_height)) = self.controller_info.param("FarModelCullingHeight")
+            && let Some(Parameter::F32(fm_radius)) = self.controller_info.param("FarModelCullingRadius")
+            && fm_center.x + fm_center.y + fm_center.z + fm_height + fm_radius > 0.0
+        {
+            info.insert(
+                "farModelCulling".to_owned(),
+                [
+                    (
+                        "center",
+                        [
+                            ("X", fm_center.x.into()),
+                            ("Y", fm_center.y.into()),
+                            ("Z", fm_center.z.into()),
+                        ]
+                        .into_iter()
+                        .collect::<Byml>(),
+                    ),
+                    ("height", (*fm_height).into()),
+                    ("radius", (*fm_radius).into()),
+                ]
+                .into_iter()
+                .collect::<Byml>(),
+            );
+        }
+        if let Some(Parameter::String64(bfres)) = self
+            .model_data
+            .object("Base")
+            .and_then(|o| o.param("Folder"))
+        {
+            info.insert("bfres".to_owned(), bfres.clone().into());
+        }
+        if let Some(Parameter::String64(model)) = self
+            .model_data
+            .list("Unit")
+            .and_then(|list| list.object("Unit_0").and_then(|obj| obj.param("UnitName")))
+        {
+            info.insert("mainModel".to_owned(), model.clone().into());
+        }
         Ok(())
     }
 }
@@ -203,6 +256,11 @@ mod tests {
         let mut info = roead::byml::Hash::new();
         modellist.update_info(&mut info).unwrap();
         assert_eq!(info["cursorOffsetY"], Byml::Float(0.699999988));
+        assert_eq!(info["baseScaleY"], Byml::Float(1.0));
+        assert_eq!(
+            info["mainModel"],
+            Byml::String("Npc_Hylia_Jonathan".to_owned())
+        );
         assert!(!info.contains_key("variationMatAnim"));
     }
 }
