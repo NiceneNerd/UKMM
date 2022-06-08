@@ -1,6 +1,6 @@
-use crate::{prelude::Mergeable, Result, UKError};
+use crate::{actor::InfoSource, prelude::Mergeable, Result, UKError};
 use indexmap::IndexMap;
-use roead::aamp::*;
+use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -118,9 +118,26 @@ impl Mergeable<ParameterIO> for Recipe {
     }
 }
 
+impl InfoSource for Recipe {
+    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+        info.insert("normal0StuffNum".to_owned(), Byml::Int(self.0.len() as i32));
+        for (i, (name, num)) in self.0.iter().enumerate() {
+            info.insert(
+                format!("normal0ItemName{:02}", i + 1),
+                Byml::String(name.clone()),
+            );
+            info.insert(
+                format!("normal0ItemNum{:02}", i + 1),
+                Byml::Int(*num as i32),
+            );
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use crate::{actor::InfoSource, prelude::*};
 
     #[test]
     fn serde() {
@@ -181,5 +198,37 @@ mod tests {
         let diff = recipe.diff(&recipe2);
         let merged = recipe.merge(&diff);
         assert_eq!(recipe2, merged);
+    }
+
+    #[test]
+    fn info() {
+        let actor = crate::tests::test_mod_actorpack("Armor_151_Upper");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .unwrap(),
+        )
+        .unwrap();
+        let recipe = super::Recipe::try_from(&pio).unwrap();
+        let mut info = roead::byml::Hash::new();
+        recipe.update_info(&mut info).unwrap();
+        assert_eq!(
+            info["normal0StuffNum"].as_int().unwrap(),
+            recipe.0.len() as i32
+        );
+        for (i, (name, num)) in recipe.0.iter().enumerate() {
+            assert_eq!(
+                info[&format!("normal0ItemName{:02}", i + 1)]
+                    .as_string()
+                    .unwrap(),
+                name
+            );
+            assert_eq!(
+                info[&format!("normal0ItemNum{:02}", i + 1)]
+                    .as_int()
+                    .unwrap(),
+                *num as i32
+            );
+        }
     }
 }
