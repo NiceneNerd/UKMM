@@ -312,7 +312,8 @@ mod tests {
 
     #[test]
     fn info() {
-        let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        use roead::byml::Byml;
+        let actor = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
@@ -322,6 +323,22 @@ mod tests {
         let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
         let mut info = roead::byml::Hash::new();
         gparamlist.update_info(&mut info).unwrap();
-        println!("{}", serde_json::to_string_pretty(&info).unwrap());
+        assert_eq!(info["systemIsGetItemSelf"], Byml::Bool(false));
+        assert_eq!(
+            info["systemSameGroupActorName"],
+            Byml::String("Enemy_Guardian_A_Mod".to_owned())
+        );
+        assert_eq!(info["generalLife"], Byml::Int(1500000));
+        assert_eq!(info["enemyRank"], Byml::Int(15));
+        assert_eq!(info["attackPower"], Byml::Int(0));
+        assert_eq!(info["pictureBookLiveSpot1"], Byml::Int(27));
+        assert_eq!(
+            info["travelerAppearGameDataName"],
+            Byml::String("Testing".to_owned())
+        );
+        assert_eq!(
+            info["travelerRoutePoint24Name"],
+            Byml::String("SomePoint".to_owned())
+        );
     }
 }

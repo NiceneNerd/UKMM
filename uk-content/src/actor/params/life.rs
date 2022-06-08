@@ -1,4 +1,5 @@
 use crate::{
+    actor::InfoSource,
     constants::{Time, Weather},
     prelude::Mergeable,
     util::DeleteSet,
@@ -347,9 +348,40 @@ impl Mergeable<ParameterIO> for LifeCondition {
     }
 }
 
+impl InfoSource for LifeCondition {
+    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+        use roead::byml::Byml;
+        if let Some(display_dist) = self.display_dist {
+            info.insert("traverseDist".into(), display_dist.into());
+        }
+        if let Some(limit) = &self.y_limit_algo {
+            info.insert("yLimitAlgo".into(), limit.clone().into());
+        }
+        if let Some(invalid_times) = &self.invalid_times && !invalid_times.is_empty() {
+            info.insert(
+                "invalidTimes".into(),
+                invalid_times
+                    .iter()
+                    .map(|t| Byml::String(t.to_string()))
+                    .collect(),
+            );
+        }
+        if let Some(invalid_weathers) = &self.invalid_weathers && !invalid_weathers.is_empty() {
+            info.insert(
+                "invalidWeathers".into(),
+                invalid_weathers
+                    .iter()
+                    .map(|w| Byml::String(w.to_string()))
+                    .collect(),
+            );
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use crate::{actor::InfoSource, prelude::*};
 
     #[test]
     fn serde() {
@@ -411,5 +443,30 @@ mod tests {
         let merged = lifecondition.merge(&diff);
         println!("{}", serde_json::to_string_pretty(&merged).unwrap());
         assert_eq!(lifecondition2, merged);
+    }
+
+    #[test]
+    fn info() {
+        use roead::byml::Byml;
+        let actor = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap(),
+        )
+        .unwrap();
+        let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
+        let mut info = roead::byml::Hash::new();
+        lifecondition.update_info(&mut info).unwrap();
+        assert!(info["invalidTimes"]
+            .as_array()
+            .unwrap()
+            .contains(&Byml::String("Morning_B".into())));
+        assert!(info["invalidWeathers"]
+            .as_array()
+            .unwrap()
+            .contains(&Byml::String("ThunderRain".into())));
+        assert_eq!(info["traverseDist"], Byml::Float(0.0));
+        assert_eq!(info["yLimitAlgo"], Byml::String("NoLimit".into()));
     }
 }
