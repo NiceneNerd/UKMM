@@ -1,4 +1,5 @@
 use crate::{
+    actor::{info_params_filtered, InfoSource},
     prelude::{Convertible, Mergeable},
     util::*,
     Result, UKError,
@@ -110,9 +111,22 @@ impl Mergeable<ParameterIO> for ModelList {
     }
 }
 
+impl InfoSource for ModelList {
+    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+        info_params_filtered!(&self.attention, info, {
+            ("cursorOffsetY", "CursorOffsetY", f32)
+        });
+        info_params_filtered!(&self.controller_info, info, {
+            ("variationMatAnim", "VariationMatAnim", String),
+            ("variationMatAnimFrame", "VariationMatAnimFrame", i32)
+        });
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use crate::{actor::InfoSource, prelude::*};
 
     #[test]
     fn serde() {
@@ -173,5 +187,22 @@ mod tests {
         let diff = modellist.diff(&modellist2);
         let merged = modellist.merge(&diff);
         assert_eq!(modellist2, merged);
+    }
+
+    #[test]
+    fn info() {
+        use roead::byml::Byml;
+        let actor = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor
+                .get_file_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .unwrap(),
+        )
+        .unwrap();
+        let modellist = super::ModelList::try_from(&pio).unwrap();
+        let mut info = roead::byml::Hash::new();
+        modellist.update_info(&mut info).unwrap();
+        assert_eq!(info["cursorOffsetY"], Byml::Float(0.699999988));
+        assert!(!info.contains_key("variationMatAnim"));
     }
 }
