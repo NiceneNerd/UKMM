@@ -124,7 +124,10 @@ macro_rules! extract_sarc_gamedata {
                 $type: {
                     let _key = stringify!($type);
                     $sarc.files().filter_map(|file| {
-                        if file.name().map(|n| n.starts_with(_key)).unwrap_or(false) {
+                        println!("{:?}", file.name());
+                        println!("{}", file.name().map(|n| n.trim_start_matches('/').starts_with(_key)).unwrap_or(false));
+                        println!("{}", _key);
+                        if file.name().map(|n| n.trim_start_matches('/').starts_with(_key)).unwrap_or(false) {
                             Byml::from_binary(file.data())
                                 .ok()
                                 .and_then(|byml| -> Option<GameData> { (&byml).try_into().ok() })
@@ -133,7 +136,11 @@ macro_rules! extract_sarc_gamedata {
                         }
                     })
                     .fold(GameData {
-                        data_type: _key.trim_start_matches("revival_").to_owned(),
+                        data_type: if _key == "string32_data" {
+                            "string_data"
+                        } else {
+                            _key.trim_start_matches("revival_")
+                        }.to_owned(),
                         flags: SortedDeleteMap::new(),
                     }, |acc, val| {
                         acc.merge(&val)
@@ -178,7 +185,7 @@ macro_rules! extract_sarcwriter_gamedata {
                 $type: {
                     let _key = stringify!($type);
                     $sarc.files.iter().filter_map(|(file, data)| {
-                        if file.starts_with(_key) {
+                        if file.trim_start_matches('/').starts_with(_key) {
                             Byml::from_binary(data)
                                 .ok()
                                 .and_then(|byml| -> Option<GameData> { (&byml).try_into().ok() })
@@ -187,7 +194,11 @@ macro_rules! extract_sarcwriter_gamedata {
                         }
                     })
                     .fold(GameData {
-                        data_type: _key.trim_start_matches("revival_").to_owned(),
+                        data_type: if _key == "string32_data" {
+                            "string_data"
+                        } else {
+                            _key.trim_start_matches("revival_")
+                        }.to_owned(),
                         flags: SortedDeleteMap::new(),
                     }, |acc, val| {
                         acc.merge(&val)
@@ -271,16 +282,23 @@ impl From<GameDataPack> for SarcWriter {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use roead::byml::Byml;
+    use roead::{
+        byml::Byml,
+        sarc::{Sarc, SarcWriter},
+    };
+
+    fn load_gamedata_sarc() -> Sarc<'static> {
+        Sarc::read(std::fs::read("test/GameData/gamedata.ssarc").unwrap()).unwrap()
+    }
 
     fn load_gamedata() -> Byml {
-        Byml::from_binary(&std::fs::read("test/GameData/revival_s32_data_0.bgdata").unwrap())
-            .unwrap()
+        let gs = load_gamedata_sarc();
+        Byml::from_binary(&gs.get_file_data("/revival_s32_data_0.bgdata").unwrap()).unwrap()
     }
 
     fn load_mod_gamedata() -> Byml {
-        Byml::from_binary(&std::fs::read("test/GameData/revival_s32_data_0.mod.bgdata").unwrap())
-            .unwrap()
+        let gs = load_gamedata_sarc();
+        Byml::from_binary(&gs.get_file_data("/revival_s32_data_0_mod.bgdata").unwrap()).unwrap()
     }
 
     #[test]
@@ -312,5 +330,14 @@ mod tests {
         let diff = gamedata.diff(&gamedata2);
         let merged = gamedata.merge(&diff);
         assert_eq!(merged, gamedata2);
+    }
+
+    #[test]
+    fn pack() {
+        let gs = load_gamedata_sarc();
+        let gamedata = super::GameDataPack::from(&gs);
+        let gs2 = Sarc::read(SarcWriter::from(gamedata.clone()).to_binary()).unwrap();
+        let gamedata2 = super::GameDataPack::from(&gs2);
+        assert!(gamedata == gamedata2);
     }
 }
