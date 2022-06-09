@@ -1,8 +1,12 @@
 use crate::{
+    actor::InfoSource,
     prelude::{Convertible, Mergeable},
     util, Result, UKError,
 };
-use roead::aamp::*;
+use roead::{
+    aamp::*,
+    byml::{Byml, Hash},
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -143,9 +147,37 @@ impl Mergeable<ParameterIO> for Chemical {
     }
 }
 
+impl InfoSource for Chemical {
+    fn update_info(&self, info: &mut Hash) -> crate::Result<()> {
+        let mut chem_info = Hash::new();
+        if let Some(Parameter::U32(attribute)) = self
+            .body
+            .values()
+            .next()
+            .and_then(|body| body.rigid_c.param("attribute"))
+            && *attribute == 650
+        {
+            chem_info.insert("Capaciter".into(), Byml::Int(1));
+        }
+        if let Some(Parameter::String32(name)) = self
+            .body
+            .values()
+            .next()
+            .and_then(|body| body.shape.param("name"))
+            && name == "WeaponFire"
+        {
+            chem_info.insert("Burnable".into(), Byml::Int(1));
+        }
+        if !chem_info.is_empty() {
+            info.insert("Chemical".to_owned(), Byml::Hash(chem_info));
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use crate::{actor::InfoSource, prelude::*};
 
     #[test]
     fn serde() {
@@ -200,5 +232,19 @@ mod tests {
         let diff = chemical.diff(&chemical2);
         let merged = chemical.merge(&diff);
         assert_eq!(chemical2, merged);
+    }
+
+    #[test]
+    fn info() {
+        let actor = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
+        let pio = roead::aamp::ParameterIO::from_binary(
+            actor.get_file_data("Actor/Chemical/NPC.bchemical").unwrap(),
+        )
+        .unwrap();
+        let chemical = super::Chemical::try_from(&pio).unwrap();
+        let mut info = roead::byml::Hash::new();
+        chemical.update_info(&mut info).unwrap();
+        assert_eq!(info["Chemical"]["Capaciter"], roead::byml::Byml::Int(1));
+        assert_eq!(info["Chemical"]["Burnable"], roead::byml::Byml::Int(1));
     }
 }

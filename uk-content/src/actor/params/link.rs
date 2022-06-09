@@ -127,7 +127,10 @@ impl InfoSource for ActorLink {
                 ("xlink", "XlinkUser",  String),
             }
         );
-        if let Some(tags) = &self.tags {
+        if self.targets.param("SlinkUser") != Some(&Parameter::StringRef("Dummy".to_owned())) {
+            info.insert("bugMask".to_owned(), Byml::Int(2));
+        }
+        if let Some(tags) = &self.tags && !tags.is_empty() {
             info.insert(
                 "tags".to_owned(),
                 tags.iter()
