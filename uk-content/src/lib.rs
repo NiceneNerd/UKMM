@@ -101,6 +101,48 @@ pub mod prelude {
             crate::util::merge_byml_shallow(self.inner(), diff.inner()).into()
         }
     }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+    pub enum Endian {
+        Little,
+        Big,
+    }
+
+    impl From<roead::Endian> for Endian {
+        fn from(endian: roead::Endian) -> Self {
+            match endian {
+                roead::Endian::Little => Endian::Little,
+                roead::Endian::Big => Endian::Big,
+            }
+        }
+    }
+
+    impl From<Endian> for roead::Endian {
+        fn from(endian: Endian) -> Self {
+            match endian {
+                Endian::Little => roead::Endian::Little,
+                Endian::Big => roead::Endian::Big,
+            }
+        }
+    }
+
+    impl From<&roead::Endian> for Endian {
+        fn from(endian: &roead::Endian) -> Self {
+            match endian {
+                roead::Endian::Little => Endian::Little,
+                roead::Endian::Big => Endian::Big,
+            }
+        }
+    }
+
+    impl From<&Endian> for roead::Endian {
+        fn from(endian: &Endian) -> Self {
+            match endian {
+                Endian::Little => roead::Endian::Little,
+                Endian::Big => roead::Endian::Big,
+            }
+        }
+    }
 }
 
 #[cfg(test)]
