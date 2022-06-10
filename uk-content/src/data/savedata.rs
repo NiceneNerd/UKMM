@@ -1,5 +1,11 @@
-use crate::{prelude::Mergeable, util::SortedDeleteSet, Result, UKError};
-use roead::{aamp::hash_name, byml::Byml};
+use std::collections::HashMap;
+
+use crate::{prelude::*, util::SortedDeleteSet, Result, UKError};
+use roead::{
+    aamp::hash_name,
+    byml::Byml,
+    sarc::{Sarc, SarcWriter},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
@@ -215,18 +221,101 @@ impl Mergeable<Byml> for SaveData {
     }
 }
 
+impl SaveData {
+    fn divide(self) -> Vec<Self> {
+        let total = (self.flags.len() as f32 / 8192.).ceil() as usize;
+        let mut iter = self.flags.into_iter();
+        let mut out = Vec::with_capacity(total);
+        for _ in 0..total {
+            out.push(Self {
+                header: self.header.clone(),
+                flags: iter.by_ref().take(8192).collect(),
+            });
+        }
+        out
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SaveDataPack(pub HashMap<String, SaveData>);
+
+impl SaveDataPack {
+    pub fn from_sarc(sarc: &Sarc<'_>) -> Result<SaveDataPack> {
+        sarc.files()
+            .filter(|f| f.name().map(|n| n.ends_with(".bgsvdata")).unwrap_or(false))
+            .try_fold(Self(HashMap::new()), |mut acc, file| {
+                let byml = Byml::from_binary(file.data())?;
+                let savedata = SaveData::try_from(&byml)?;
+                let save_file = &savedata.header.file_name;
+                if let Some(save_file_data) = acc.0.get_mut(save_file) {
+                    *save_file_data = save_file_data.merge(&savedata);
+                } else {
+                    acc.0.insert(save_file.clone(), savedata);
+                }
+                Ok(acc)
+            })
+    }
+
+    pub fn from_sarc_writer(sarc: &SarcWriter) -> Result<SaveDataPack> {
+        sarc.files
+            .iter()
+            .filter(|(f, _)| f.ends_with(".bgsvdata"))
+            .try_fold(Self(HashMap::new()), |mut acc, (_, data)| {
+                let byml = Byml::from_binary(data)?;
+                let savedata = SaveData::try_from(&byml)?;
+                let save_file = &savedata.header.file_name;
+                if let Some(save_file_data) = acc.0.get_mut(save_file) {
+                    *save_file_data = save_file_data.merge(&savedata);
+                } else {
+                    acc.0.insert(save_file.clone(), savedata);
+                }
+                Ok(acc)
+            })
+    }
+
+    pub fn into_sarc_writer(mut self, endian: Endian) -> SarcWriter {
+        let mut out = SarcWriter::new(endian.into());
+        if let Some(game) = self.0.remove("game_data.sav") {
+            out.add_files(game.divide().into_iter().enumerate().map(|(i, data)| {
+                let name = format!("saveformat_{}.bgsvdata", i);
+                (name, Byml::from(data).to_binary(endian.into()))
+            }));
+        }
+        if let Some(caption) = self.0.remove("caption.sav") {
+            let count = out.files.len();
+            out.add_files(caption.divide().into_iter().enumerate().map(|(i, data)| {
+                let name = format!("saveformat_{}.bgsvdata", i + count);
+                (name, Byml::from(data).to_binary(endian.into()))
+            }));
+        }
+        if let Some(option) = self.0.remove("option.sav") {
+            let count = out.files.len();
+            out.add_files(option.divide().into_iter().enumerate().map(|(i, data)| {
+                let name = format!("saveformat_{}.bgsvdata", i + count);
+                (name, Byml::from(data).to_binary(endian.into()))
+            }));
+        }
+        out
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use roead::byml::Byml;
+    use roead::{byml::Byml, sarc::Sarc};
+
+    fn load_savedata_sarc() -> Sarc<'static> {
+        Sarc::read(std::fs::read("test/GameData/savedataformat.ssarc").unwrap()).unwrap()
+    }
 
     fn load_savedata() -> Byml {
-        Byml::from_binary(&std::fs::read("test/GameData/saveformat_0.bgsvdata").unwrap()).unwrap()
+        let sv = load_savedata_sarc();
+        Byml::from_binary(sv.get_file_data("/saveformat_0.bgsvdata").unwrap()).unwrap()
     }
 
     fn load_mod_savedata() -> Byml {
-        Byml::from_binary(&std::fs::read("test/GameData/saveformat_0.mod.bgsvdata").unwrap())
-            .unwrap()
+        let sv = load_savedata_sarc();
+        Byml::from_binary(sv.get_file_data("/saveformat_0.mod.bgsvdata").unwrap()).unwrap()
     }
 
     #[test]
@@ -258,5 +347,14 @@ mod tests {
         let diff = savedata.diff(&savedata2);
         let merged = savedata.merge(&diff);
         assert_eq!(merged, savedata2);
+    }
+
+    #[test]
+    fn pack() {
+        let pack = super::SaveDataPack::from_sarc(&load_savedata_sarc()).unwrap();
+        let pack2 =
+            super::SaveDataPack::from_sarc_writer(&pack.clone().into_sarc_writer(Endian::Big))
+                .unwrap();
+        assert_eq!(pack, pack2);
     }
 }

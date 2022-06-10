@@ -287,6 +287,16 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
     }
 
     #[inline]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.0.iter().filter_map(|(k, del)| (!*del).then(|| k))
     }

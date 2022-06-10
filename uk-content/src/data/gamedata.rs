@@ -54,7 +54,7 @@ impl From<GameData> for Byml {
 
 impl GameData {
     fn divide(self) -> Vec<GameData> {
-        let total = (self.flags.len() as f32 / 4096.) as usize;
+        let total = (self.flags.len() as f32 / 4096.).ceil() as usize;
         let mut iter = self.flags.into_iter();
         let mut out = Vec::with_capacity(total);
         for _ in 0..total {
@@ -93,9 +93,8 @@ impl Mergeable<Byml> for GameData {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct GameDataPack {
-    pub endian: Endian,
     pub bool_array_data: GameData,
     pub bool_data: GameData,
     pub f32_array_data: GameData,
@@ -119,22 +118,20 @@ pub struct GameDataPack {
 macro_rules! extract_sarc_gamedata {
     ($sarc:expr, $($type:ident),*) => {
         Self {
-            endian: $sarc.endian().into(),
             $(
                 $type: {
                     let _key = stringify!($type);
-                    $sarc.files().filter_map(|file| {
-                        println!("{:?}", file.name());
-                        println!("{}", file.name().map(|n| n.trim_start_matches('/').starts_with(_key)).unwrap_or(false));
-                        println!("{}", _key);
+                    $sarc.files().filter_map(|file| -> Option<Result<GameData>> {
                         if file.name().map(|n| n.trim_start_matches('/').starts_with(_key)).unwrap_or(false) {
-                            Byml::from_binary(file.data())
-                                .ok()
-                                .and_then(|byml| -> Option<GameData> { (&byml).try_into().ok() })
+                            Some(Byml::from_binary(file.data())
+                                .map_err(UKError::from)
+                                .and_then(|byml: Byml| -> Result<GameData> { (&byml).try_into() }))
                         } else {
                             None
                         }
                     })
+                    .collect::<Result<Vec<GameData>>>()?
+                    .into_iter()
                     .fold(GameData {
                         data_type: if _key == "string32_data" {
                             "string_data"
@@ -149,50 +146,25 @@ macro_rules! extract_sarc_gamedata {
             )*
         }
     };
-}
-
-impl From<&Sarc<'_>> for GameDataPack {
-    fn from(sarc: &Sarc<'_>) -> Self {
-        extract_sarc_gamedata!(
-            sarc,
-            bool_array_data,
-            bool_data,
-            f32_array_data,
-            f32_data,
-            revival_bool_data,
-            revival_s32_data,
-            s32_array_data,
-            s32_data,
-            string32_data,
-            string64_array_data,
-            string64_data,
-            string256_array_data,
-            string256_data,
-            vector2f_array_data,
-            vector2f_data,
-            vector3f_array_data,
-            vector3f_data,
-            vector4f_data
-        )
-    }
 }
 
 macro_rules! extract_sarcwriter_gamedata {
     ($sarc:expr, $($type:ident),*) => {
         Self {
-            endian: $sarc.endian.into(),
             $(
                 $type: {
                     let _key = stringify!($type);
-                    $sarc.files.iter().filter_map(|(file, data)| {
+                    $sarc.files.iter().filter_map(|(file, data)| -> Option<Result<GameData>> {
                         if file.trim_start_matches('/').starts_with(_key) {
-                            Byml::from_binary(data)
-                                .ok()
-                                .and_then(|byml| -> Option<GameData> { (&byml).try_into().ok() })
+                            Some(Byml::from_binary(&data)
+                                .map_err(UKError::from)
+                                .and_then(|byml: Byml| -> Result<GameData> { (&byml).try_into() }))
                         } else {
                             None
                         }
                     })
+                    .collect::<Result<Vec<GameData>>>()?
+                    .into_iter()
                     .fold(GameData {
                         data_type: if _key == "string32_data" {
                             "string_data"
@@ -207,32 +179,6 @@ macro_rules! extract_sarcwriter_gamedata {
             )*
         }
     };
-}
-
-impl From<&SarcWriter> for GameDataPack {
-    fn from(sarc: &SarcWriter) -> Self {
-        extract_sarcwriter_gamedata!(
-            sarc,
-            bool_array_data,
-            bool_data,
-            f32_array_data,
-            f32_data,
-            revival_bool_data,
-            revival_s32_data,
-            s32_array_data,
-            s32_data,
-            string32_data,
-            string64_array_data,
-            string64_data,
-            string256_array_data,
-            string256_data,
-            vector2f_array_data,
-            vector2f_data,
-            vector3f_array_data,
-            vector3f_data,
-            vector4f_data
-        )
-    }
 }
 
 macro_rules! build_gamedata_pack {
@@ -250,11 +196,59 @@ macro_rules! build_gamedata_pack {
     };
 }
 
-impl From<GameDataPack> for SarcWriter {
-    fn from(gamedata: GameDataPack) -> Self {
-        let mut sarc = SarcWriter::new(gamedata.endian.into());
+impl GameDataPack {
+    pub fn from_sarc_writer(sarc: &SarcWriter) -> Result<Self> {
+        Ok(extract_sarcwriter_gamedata!(
+            sarc,
+            bool_array_data,
+            bool_data,
+            f32_array_data,
+            f32_data,
+            revival_bool_data,
+            revival_s32_data,
+            s32_array_data,
+            s32_data,
+            string32_data,
+            string64_array_data,
+            string64_data,
+            string256_array_data,
+            string256_data,
+            vector2f_array_data,
+            vector2f_data,
+            vector3f_array_data,
+            vector3f_data,
+            vector4f_data
+        ))
+    }
+
+    pub fn from_sarc(sarc: &Sarc<'_>) -> Result<Self> {
+        Ok(extract_sarc_gamedata!(
+            sarc,
+            bool_array_data,
+            bool_data,
+            f32_array_data,
+            f32_data,
+            revival_bool_data,
+            revival_s32_data,
+            s32_array_data,
+            s32_data,
+            string32_data,
+            string64_array_data,
+            string64_data,
+            string256_array_data,
+            string256_data,
+            vector2f_array_data,
+            vector2f_data,
+            vector3f_array_data,
+            vector3f_data,
+            vector4f_data
+        ))
+    }
+
+    pub fn into_sarc_writer(self, endian: Endian) -> SarcWriter {
+        let mut sarc = SarcWriter::new(endian.into());
         build_gamedata_pack!(
-            gamedata,
+            self,
             sarc,
             bool_array_data,
             bool_data,
@@ -282,10 +276,7 @@ impl From<GameDataPack> for SarcWriter {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use roead::{
-        byml::Byml,
-        sarc::{Sarc, SarcWriter},
-    };
+    use roead::{byml::Byml, sarc::Sarc};
 
     fn load_gamedata_sarc() -> Sarc<'static> {
         Sarc::read(std::fs::read("test/GameData/gamedata.ssarc").unwrap()).unwrap()
@@ -298,7 +289,7 @@ mod tests {
 
     fn load_mod_gamedata() -> Byml {
         let gs = load_gamedata_sarc();
-        Byml::from_binary(&gs.get_file_data("/revival_s32_data_0_mod.bgdata").unwrap()).unwrap()
+        Byml::from_binary(&gs.get_file_data("/revival_s32_data_0.mod.bgdata").unwrap()).unwrap()
     }
 
     #[test]
@@ -335,9 +326,11 @@ mod tests {
     #[test]
     fn pack() {
         let gs = load_gamedata_sarc();
-        let gamedata = super::GameDataPack::from(&gs);
-        let gs2 = Sarc::read(SarcWriter::from(gamedata.clone()).to_binary()).unwrap();
-        let gamedata2 = super::GameDataPack::from(&gs2);
-        assert!(gamedata == gamedata2);
+        let gamedata = super::GameDataPack::from_sarc(&gs).unwrap();
+        let gs2 = gamedata
+            .clone()
+            .into_sarc_writer(crate::prelude::Endian::Big);
+        let gamedata2 = super::GameDataPack::from_sarc_writer(&gs2).unwrap();
+        assert_eq!(gamedata, gamedata2);
     }
 }
