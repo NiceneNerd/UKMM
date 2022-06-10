@@ -53,7 +53,7 @@ impl From<CookData> for Byml {
     }
 }
 
-impl Mergeable<Byml> for CookData {
+impl Mergeable for CookData {
     fn diff(&self, other: &Self) -> Self {
         Self {
             recipes: self.recipes.diff(&other.recipes),

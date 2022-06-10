@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DamageParam(pub ParameterIO);
 
-impl Convertible<ParameterIO> for DamageParam {}
-
 impl From<&ParameterIO> for DamageParam {
     fn from(pio: &ParameterIO) -> Self {
         Self(pio.clone())
@@ -25,11 +23,7 @@ impl From<DamageParam> for ParameterIO {
     }
 }
 
-impl SimpleMergeableAamp for DamageParam {
-    fn inner(&self) -> &ParameterIO {
-        &self.0
-    }
-}
+impl_simple_aamp!(DamageParam, 0);
 
 #[cfg(test)]
 mod tests {

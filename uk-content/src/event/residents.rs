@@ -49,7 +49,7 @@ impl From<ResidentEvents> for Byml {
     }
 }
 
-impl Mergeable<Byml> for ResidentEvents {
+impl Mergeable for ResidentEvents {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.diff(&other.0))
     }

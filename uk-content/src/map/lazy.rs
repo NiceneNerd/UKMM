@@ -65,7 +65,7 @@ impl From<LazyTraverseList> for Byml {
     }
 }
 
-impl Mergeable<Byml> for LazyTraverseList {
+impl Mergeable for LazyTraverseList {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.deep_diff(&other.0))
     }

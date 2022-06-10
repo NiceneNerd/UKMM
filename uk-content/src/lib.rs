@@ -52,55 +52,47 @@ pub mod prelude {
         }
     }
 
-    pub trait Convertible<T>: TryFrom<T> + Into<T> {}
-
-    impl<T: TryFrom<T> + Into<T>> Convertible<T> for T {}
-
-    pub trait Mergeable<T> {
+    pub trait Mergeable {
         #[must_use]
         fn diff(&self, other: &Self) -> Self;
         #[must_use]
         fn merge(&self, diff: &Self) -> Self;
     }
 
-    pub trait SimpleMergeableAamp {
-        fn inner(&self) -> &roead::aamp::ParameterIO;
+    macro_rules! impl_simple_aamp {
+        ($type:ty, $field:tt) => {
+            impl Mergeable for $type {
+                fn diff(&self, other: &Self) -> Self {
+                    crate::util::diff_plist(&self.$field, &other.$field).into()
+                }
+
+                fn merge(&self, diff: &Self) -> Self {
+                    let mut pio = crate::util::merge_plist(&self.$field, &diff.$field);
+                    pio.doc_type = self.$field.doc_type.clone();
+                    pio.version = self.$field.version;
+                    pio.into()
+                }
+            }
+        };
     }
 
-    impl<T> Mergeable<roead::aamp::ParameterIO> for T
-    where
-        T: SimpleMergeableAamp
-            + Convertible<roead::aamp::ParameterIO>
-            + From<roead::aamp::ParameterIO>,
-    {
-        fn diff(&self, other: &Self) -> Self {
-            crate::util::diff_plist(self.inner(), other.inner()).into()
-        }
+    pub(crate) use impl_simple_aamp;
 
-        fn merge(&self, diff: &Self) -> Self {
-            let mut pio = crate::util::merge_plist(self.inner(), diff.inner());
-            pio.doc_type = self.inner().doc_type.clone();
-            pio.version = self.inner().version;
-            pio.into()
-        }
+    macro_rules! impl_simple_byml {
+        ($type:ty, $field:tt) => {
+            impl Mergeable for $type {
+                fn diff(&self, other: &Self) -> Self {
+                    crate::util::diff_byml_shallow(&self.$field, &other.$field).into()
+                }
+
+                fn merge(&self, diff: &Self) -> Self {
+                    crate::util::merge_byml_shallow(&self.$field, &diff.$field).into()
+                }
+            }
+        };
     }
 
-    pub trait ShallowMergeableByml {
-        fn inner(&self) -> &roead::byml::Byml;
-    }
-
-    impl<T> Mergeable<roead::byml::Byml> for T
-    where
-        T: ShallowMergeableByml + Convertible<roead::byml::Byml> + From<roead::byml::Byml>,
-    {
-        fn diff(&self, other: &Self) -> Self {
-            crate::util::diff_byml_shallow(self.inner(), other.inner()).into()
-        }
-
-        fn merge(&self, diff: &Self) -> Self {
-            crate::util::merge_byml_shallow(self.inner(), diff.inner()).into()
-        }
-    }
+    pub(crate) use impl_simple_byml;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
     pub enum Endian {

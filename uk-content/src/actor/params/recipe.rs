@@ -81,7 +81,7 @@ impl From<Recipe> for ParameterIO {
     }
 }
 
-impl Mergeable<ParameterIO> for Recipe {
+impl Mergeable for Recipe {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other

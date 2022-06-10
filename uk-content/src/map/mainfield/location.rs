@@ -86,7 +86,7 @@ impl From<Location> for Byml {
     }
 }
 
-impl Mergeable<Byml> for Location {
+impl Mergeable for Location {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other

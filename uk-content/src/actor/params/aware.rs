@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Awareness(pub ParameterIO);
 
-impl Convertible<ParameterIO> for Awareness {}
-
 impl From<&ParameterIO> for Awareness {
     fn from(pio: &ParameterIO) -> Self {
         Self(pio.clone())
@@ -25,11 +23,7 @@ impl From<Awareness> for ParameterIO {
     }
 }
 
-impl SimpleMergeableAamp for Awareness {
-    fn inner(&self) -> &ParameterIO {
-        &self.0
-    }
-}
+impl_simple_aamp!(Awareness, 0);
 
 #[cfg(test)]
 mod tests {

@@ -140,7 +140,7 @@ impl From<ContactInfo> for ParameterList {
     }
 }
 
-impl Mergeable<()> for ContactInfo {
+impl Mergeable for ContactInfo {
     fn diff(&self, other: &Self) -> Self {
         Self {
             contact_point_info: if other.contact_point_info != self.contact_point_info {
@@ -207,7 +207,7 @@ impl From<CharacterController> for ParameterList {
     }
 }
 
-impl Mergeable<()> for CharacterController {
+impl Mergeable for CharacterController {
     fn diff(&self, other: &Self) -> Self {
         Self {
             header: util::diff_pobj(&self.header, &other.header),
@@ -306,7 +306,7 @@ impl From<Cloth> for ParameterList {
     }
 }
 
-impl Mergeable<()> for Cloth {
+impl Mergeable for Cloth {
     fn diff(&self, other: &Self) -> Self {
         Self {
             setup_file_path: if other.setup_file_path != self.setup_file_path {
@@ -567,7 +567,7 @@ impl From<Physics> for ParameterIO {
     }
 }
 
-impl Mergeable<ParameterIO> for Physics {
+impl Mergeable for Physics {
     fn diff(&self, other: &Self) -> Self {
         Self {
             ragdoll: if other.ragdoll != self.ragdoll {

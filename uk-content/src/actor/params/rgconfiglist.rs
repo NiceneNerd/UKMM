@@ -116,7 +116,7 @@ impl From<RagdollConfigList> for ParameterIO {
     }
 }
 
-impl Mergeable<ParameterIO> for RagdollConfigList {
+impl Mergeable for RagdollConfigList {
     fn diff(&self, other: &Self) -> Self {
         Self {
             common_data: util::diff_pobj(&self.common_data, &other.common_data),

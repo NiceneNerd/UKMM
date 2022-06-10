@@ -171,7 +171,7 @@ impl From<ASList> for ParameterIO {
     }
 }
 
-impl Mergeable<ParameterIO> for ASList {
+impl Mergeable for ASList {
     fn diff(&self, other: &Self) -> Self {
         Self {
             common: (other.common != self.common)

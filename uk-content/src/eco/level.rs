@@ -11,7 +11,7 @@ pub struct WeaponSeries {
     pub not_rank_up: bool,
 }
 
-impl Mergeable<()> for WeaponSeries {
+impl Mergeable for WeaponSeries {
     fn diff(&self, other: &Self) -> Self {
         Self {
             actors: self.actors.diff(&other.actors),
@@ -228,7 +228,7 @@ impl From<LevelSensor> for Byml {
     }
 }
 
-impl Mergeable<Byml> for LevelSensor {
+impl Mergeable for LevelSensor {
     fn diff(&self, other: &Self) -> Self {
         Self {
             enemy: self.enemy.deep_diff(&other.enemy),

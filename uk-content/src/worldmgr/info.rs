@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WorldInfo(pub ParameterIO);
 
-impl Convertible<ParameterIO> for WorldInfo {}
-
 impl From<&ParameterIO> for WorldInfo {
     fn from(pio: &ParameterIO) -> Self {
         Self(pio.clone())
@@ -25,11 +23,7 @@ impl From<WorldInfo> for ParameterIO {
     }
 }
 
-impl SimpleMergeableAamp for WorldInfo {
-    fn inner(&self) -> &ParameterIO {
-        &self.0
-    }
-}
+impl_simple_aamp!(WorldInfo, 0);
 
 #[cfg(test)]
 mod tests {

@@ -67,7 +67,7 @@ impl GameData {
     }
 }
 
-impl Mergeable<Byml> for GameData {
+impl Mergeable for GameData {
     fn diff(&self, other: &Self) -> Self {
         assert_eq!(
             self.data_type, other.data_type,

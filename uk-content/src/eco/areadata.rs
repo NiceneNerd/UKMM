@@ -39,7 +39,7 @@ impl From<AreaData> for Byml {
     }
 }
 
-impl Mergeable<Byml> for AreaData {
+impl Mergeable for AreaData {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other

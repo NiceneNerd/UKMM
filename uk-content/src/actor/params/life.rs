@@ -210,7 +210,7 @@ impl From<LifeCondition> for ParameterIO {
     }
 }
 
-impl Mergeable<ParameterIO> for LifeCondition {
+impl Mergeable for LifeCondition {
     fn diff(&self, other: &Self) -> Self {
         Self {
             invalid_weathers: self

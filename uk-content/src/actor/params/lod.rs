@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Lod(pub ParameterIO);
 
-impl Convertible<ParameterIO> for Lod {}
-
 impl From<&ParameterIO> for Lod {
     fn from(pio: &ParameterIO) -> Self {
         Self(pio.clone())
@@ -25,11 +23,7 @@ impl From<Lod> for ParameterIO {
     }
 }
 
-impl SimpleMergeableAamp for Lod {
-    fn inner(&self) -> &ParameterIO {
-        &self.0
-    }
-}
+impl_simple_aamp!(Lod, 0);
 
 #[cfg(test)]
 mod tests {

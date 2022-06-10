@@ -132,7 +132,7 @@ impl From<RagdollBlendWeight> for ParameterIO {
     }
 }
 
-impl Mergeable<ParameterIO> for RagdollBlendWeight {
+impl Mergeable for RagdollBlendWeight {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other

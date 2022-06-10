@@ -1,4 +1,4 @@
-use crate::prelude::{Convertible, ShallowMergeableByml};
+use crate::prelude::*;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -23,13 +23,7 @@ impl From<EventInfo> for Byml {
     }
 }
 
-impl Convertible<Byml> for EventInfo {}
-
-impl ShallowMergeableByml for EventInfo {
-    fn inner(&self) -> &roead::byml::Byml {
-        &self.0
-    }
-}
+impl_simple_byml!(EventInfo, 0);
 
 #[cfg(test)]
 mod tests {

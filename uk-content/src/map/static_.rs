@@ -140,7 +140,7 @@ impl From<Static> for Byml {
     }
 }
 
-impl Mergeable<Byml> for Static {
+impl Mergeable for Static {
     fn diff(&self, other: &Self) -> Self {
         Self {
             general: other

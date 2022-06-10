@@ -84,7 +84,7 @@ impl From<MapUnit> for Byml {
     }
 }
 
-impl Mergeable<Byml> for MapUnit {
+impl Mergeable for MapUnit {
     fn diff(&self, other: &Self) -> Self {
         Self {
             pos_x: other.pos_x,

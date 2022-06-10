@@ -10,8 +10,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GeneralParamList(pub ParameterIO);
 
-impl Convertible<ParameterIO> for GeneralParamList {}
-
 impl From<&ParameterIO> for GeneralParamList {
     fn from(pio: &ParameterIO) -> Self {
         Self(pio.clone())
@@ -30,11 +28,7 @@ impl From<GeneralParamList> for ParameterIO {
     }
 }
 
-impl SimpleMergeableAamp for GeneralParamList {
-    fn inner(&self) -> &ParameterIO {
-        &self.0
-    }
-}
+impl_simple_aamp!(GeneralParamList, 0);
 
 impl InfoSource for GeneralParamList {
     fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {

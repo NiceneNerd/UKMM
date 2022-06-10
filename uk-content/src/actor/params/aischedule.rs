@@ -1,4 +1,4 @@
-use crate::prelude::{Convertible, ShallowMergeableByml};
+use crate::prelude::*;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -23,13 +23,7 @@ impl From<AISchedule> for Byml {
     }
 }
 
-impl Convertible<Byml> for AISchedule {}
-
-impl ShallowMergeableByml for AISchedule {
-    fn inner(&self) -> &roead::byml::Byml {
-        &self.0
-    }
-}
+impl_simple_byml!(AISchedule, 0);
 
 #[cfg(test)]
 mod tests {

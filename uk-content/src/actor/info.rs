@@ -64,7 +64,7 @@ impl From<ActorInfo> for Byml {
     }
 }
 
-impl Mergeable<Byml> for ActorInfo {
+impl Mergeable for ActorInfo {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other

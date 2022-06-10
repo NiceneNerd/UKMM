@@ -33,7 +33,7 @@ impl From<Tips> for Byml {
     }
 }
 
-impl Mergeable<Byml> for Tips {
+impl Mergeable for Tips {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.diff(&other.0))
     }

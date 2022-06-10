@@ -109,9 +109,7 @@ impl From<BoneControl> for ParameterIO {
     }
 }
 
-impl Convertible<ParameterIO> for BoneControl {}
-
-impl Mergeable<ParameterIO> for BoneControl {
+impl Mergeable for BoneControl {
     fn diff(&self, other: &Self) -> Self {
         Self {
             objects: crate::util::diff_plist(

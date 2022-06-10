@@ -34,7 +34,7 @@ impl From<QuestProduct> for Byml {
     }
 }
 
-impl Mergeable<Byml> for QuestProduct {
+impl Mergeable for QuestProduct {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.diff(&other.0))
     }

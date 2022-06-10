@@ -1,7 +1,6 @@
+use crate::prelude::*;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-
-use crate::prelude::{Convertible, ShallowMergeableByml};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct AnimationInfo(pub Byml);
@@ -24,13 +23,7 @@ impl From<AnimationInfo> for Byml {
     }
 }
 
-impl Convertible<Byml> for AnimationInfo {}
-
-impl ShallowMergeableByml for AnimationInfo {
-    fn inner(&self) -> &roead::byml::Byml {
-        &self.0
-    }
-}
+impl_simple_byml!(AnimationInfo, 0);
 
 #[cfg(test)]
 mod tests {

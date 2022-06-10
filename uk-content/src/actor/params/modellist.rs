@@ -1,6 +1,6 @@
 use crate::{
     actor::{info_params_filtered, InfoSource},
-    prelude::{Convertible, Mergeable},
+    prelude::Mergeable,
     util::*,
     Result, UKError,
 };
@@ -89,9 +89,7 @@ impl From<ModelList> for ParameterIO {
     }
 }
 
-impl Convertible<ParameterIO> for ModelList {}
-
-impl Mergeable<ParameterIO> for ModelList {
+impl Mergeable for ModelList {
     fn diff(&self, other: &Self) -> Self {
         Self {
             controller_info: diff_pobj(&self.controller_info, &other.controller_info),

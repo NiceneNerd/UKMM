@@ -195,7 +195,7 @@ impl From<SaveData> for Byml {
     }
 }
 
-impl Mergeable<Byml> for SaveData {
+impl Mergeable for SaveData {
     fn diff(&self, other: &Self) -> Self {
         assert_eq!(
             self.header, other.header,

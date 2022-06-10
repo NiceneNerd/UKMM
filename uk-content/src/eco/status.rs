@@ -80,7 +80,7 @@ impl From<StatusEffectValues> for Byml {
     }
 }
 
-impl Mergeable<()> for StatusEffectValues {
+impl Mergeable for StatusEffectValues {
     fn diff(&self, other: &Self) -> Self {
         match (self, other) {
             (Self::Special, Self::Special) => Self::Special,
@@ -133,7 +133,7 @@ impl From<StatusEffectList> for Byml {
     }
 }
 
-impl Mergeable<Byml> for StatusEffectList {
+impl Mergeable for StatusEffectList {
     fn diff(&self, other: &Self) -> Self {
         Self(
             self.0

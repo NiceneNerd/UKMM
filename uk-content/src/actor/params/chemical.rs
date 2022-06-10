@@ -1,8 +1,4 @@
-use crate::{
-    actor::InfoSource,
-    prelude::{Convertible, Mergeable},
-    util, Result, UKError,
-};
+use crate::{actor::InfoSource, prelude::Mergeable, util, Result, UKError};
 use roead::{
     aamp::*,
     byml::{Byml, Hash},
@@ -125,9 +121,7 @@ impl From<Chemical> for ParameterIO {
     }
 }
 
-impl Convertible<ParameterIO> for Chemical {}
-
-impl Mergeable<ParameterIO> for Chemical {
+impl Mergeable for Chemical {
     fn diff(&self, other: &Self) -> Self {
         Self {
             unknown: if other.unknown != self.unknown {

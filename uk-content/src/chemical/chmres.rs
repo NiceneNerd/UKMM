@@ -56,7 +56,7 @@ impl From<ChemicalRes> for ParameterIO {
     }
 }
 
-impl Mergeable<ParameterIO> for ChemicalRes {
+impl Mergeable for ChemicalRes {
     fn diff(&self, other: &Self) -> Self {
         Self {
             world: self.world.diff(&other.world),

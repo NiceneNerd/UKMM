@@ -71,7 +71,7 @@ impl From<ResidentActors> for Byml {
     }
 }
 
-impl Mergeable<Byml> for ResidentActors {
+impl Mergeable for ResidentActors {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.diff(&other.0))
     }

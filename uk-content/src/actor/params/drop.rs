@@ -65,7 +65,7 @@ impl TryFrom<&ParameterIO> for DropTable {
     }
 }
 
-impl Mergeable<ParameterIO> for DropTable {
+impl Mergeable for DropTable {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other

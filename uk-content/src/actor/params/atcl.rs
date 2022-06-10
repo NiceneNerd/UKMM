@@ -40,7 +40,7 @@ impl From<AttClient> for ParameterIO {
     }
 }
 
-impl Mergeable<ParameterIO> for AttClient {
+impl Mergeable for AttClient {
     fn diff(&self, other: &Self) -> Self {
         Self {
             client_params: util::diff_pobj(&self.client_params, &other.client_params),

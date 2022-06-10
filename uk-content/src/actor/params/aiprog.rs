@@ -23,7 +23,7 @@ impl AIEntry {
     }
 }
 
-impl Mergeable<()> for AIEntry {
+impl Mergeable for AIEntry {
     fn diff(&self, other: &Self) -> Self {
         let mut diff = AIEntry::default();
         if self.def != other.def {
@@ -160,7 +160,7 @@ impl ActionEntry {
     }
 }
 
-impl Mergeable<()> for ActionEntry {
+impl Mergeable for ActionEntry {
     fn diff(&self, other: &Self) -> Self {
         let mut diff = ActionEntry::default();
         if self.def != other.def {
@@ -248,7 +248,7 @@ pub struct AIProgram {
     pub queries: IndexMap<String, ParameterList>,
 }
 
-impl Mergeable<ParameterIO> for AIProgram {
+impl Mergeable for AIProgram {
     fn diff(&self, other: &Self) -> Self {
         Self {
             demos: other

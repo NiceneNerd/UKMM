@@ -43,7 +43,7 @@ impl From<RagdollConfig> for ParameterIO {
     }
 }
 
-impl Mergeable<ParameterIO> for RagdollConfig {
+impl Mergeable for RagdollConfig {
     fn diff(&self, other: &Self) -> Self {
         Self {
             attack_type_impulse_data: util::diff_pobj(
