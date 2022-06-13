@@ -299,6 +299,42 @@ impl SaveDataPack {
     }
 }
 
+impl Mergeable for SaveDataPack {
+    fn diff(&self, other: &Self) -> Self {
+        Self(
+            ["game_data.sav", "caption.sav", "option.sav"]
+                .into_iter()
+                .map(|key| {
+                    (
+                        key.to_owned(),
+                        self.0
+                            .get(key)
+                            .unwrap_or(&Default::default())
+                            .diff(other.0.get(key).unwrap_or(&Default::default())),
+                    )
+                })
+                .collect(),
+        )
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self(
+            ["game_data.sav", "caption.sav", "option.sav"]
+                .into_iter()
+                .map(|key| {
+                    (
+                        key.to_owned(),
+                        self.0
+                            .get(key)
+                            .unwrap_or(&Default::default())
+                            .merge(diff.0.get(key).unwrap_or(&Default::default())),
+                    )
+                })
+                .collect(),
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

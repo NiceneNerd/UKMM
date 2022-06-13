@@ -273,6 +273,54 @@ impl GameDataPack {
     }
 }
 
+impl Mergeable for GameDataPack {
+    fn diff(&self, other: &Self) -> Self {
+        Self {
+            bool_array_data: self.bool_array_data.diff(&other.bool_array_data),
+            bool_data: self.bool_data.diff(&other.bool_data),
+            f32_array_data: self.f32_array_data.diff(&other.f32_array_data),
+            f32_data: self.f32_data.diff(&other.f32_data),
+            revival_bool_data: self.revival_bool_data.diff(&other.revival_bool_data),
+            revival_s32_data: self.revival_s32_data.diff(&other.revival_s32_data),
+            s32_array_data: self.s32_array_data.diff(&other.s32_array_data),
+            s32_data: self.s32_data.diff(&other.s32_data),
+            string32_data: self.string32_data.diff(&other.string32_data),
+            string64_array_data: self.string64_array_data.diff(&other.string64_array_data),
+            string64_data: self.string64_data.diff(&other.string64_data),
+            string256_array_data: self.string256_array_data.diff(&other.string256_array_data),
+            string256_data: self.string256_data.diff(&other.string256_data),
+            vector2f_array_data: self.vector2f_array_data.diff(&other.vector2f_array_data),
+            vector2f_data: self.vector2f_data.diff(&other.vector2f_data),
+            vector3f_array_data: self.vector3f_array_data.diff(&other.vector3f_array_data),
+            vector3f_data: self.vector3f_data.diff(&other.vector3f_data),
+            vector4f_data: self.vector4f_data.diff(&other.vector4f_data),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self {
+            bool_array_data: self.bool_array_data.merge(&diff.bool_array_data),
+            bool_data: self.bool_data.merge(&diff.bool_data),
+            f32_array_data: self.f32_array_data.merge(&diff.f32_array_data),
+            f32_data: self.f32_data.merge(&diff.f32_data),
+            revival_bool_data: self.revival_bool_data.merge(&diff.revival_bool_data),
+            revival_s32_data: self.revival_s32_data.merge(&diff.revival_s32_data),
+            s32_array_data: self.s32_array_data.merge(&diff.s32_array_data),
+            s32_data: self.s32_data.merge(&diff.s32_data),
+            string32_data: self.string32_data.merge(&diff.string32_data),
+            string64_array_data: self.string64_array_data.merge(&diff.string64_array_data),
+            string64_data: self.string64_data.merge(&diff.string64_data),
+            string256_array_data: self.string256_array_data.merge(&diff.string256_array_data),
+            string256_data: self.string256_data.merge(&diff.string256_data),
+            vector2f_array_data: self.vector2f_array_data.merge(&diff.vector2f_array_data),
+            vector2f_data: self.vector2f_data.merge(&diff.vector2f_data),
+            vector3f_array_data: self.vector3f_array_data.merge(&diff.vector3f_array_data),
+            vector3f_data: self.vector3f_data.merge(&diff.vector3f_data),
+            vector4f_data: self.vector4f_data.merge(&diff.vector4f_data),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
