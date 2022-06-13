@@ -39,7 +39,7 @@ mod tests {
         )
         .unwrap();
         let umii = super::UMii::try_from(&pio).unwrap();
-        let data = umii.clone().into_pio().to_binary();
+        let data = roead::aamp::ParameterIO::from(umii.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
         let umii2 = super::UMii::try_from(&pio2).unwrap();
         assert_eq!(umii, umii2);

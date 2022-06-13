@@ -778,7 +778,7 @@ mod tests {
         )
         .unwrap();
         let aiprog = super::AIProgram::try_from(&pio).unwrap();
-        let data = aiprog.clone().into_pio().to_binary();
+        let data = roead::aamp::ParameterIO::from(aiprog.clone()).to_binary();
         let pio2 = ParameterIO::from_binary(&data).unwrap();
         let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
         assert_eq!(aiprog, aiprog2);

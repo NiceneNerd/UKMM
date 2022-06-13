@@ -42,16 +42,6 @@ pub enum UKError {
 pub type Result<T> = std::result::Result<T, UKError>;
 
 pub mod prelude {
-    pub trait IntoParameterIO {
-        fn into_pio(self) -> roead::aamp::ParameterIO;
-    }
-
-    impl<T: Into<roead::aamp::ParameterIO>> IntoParameterIO for T {
-        fn into_pio(self) -> roead::aamp::ParameterIO {
-            self.into()
-        }
-    }
-
     pub trait Mergeable {
         #[must_use]
         fn diff(&self, other: &Self) -> Self;

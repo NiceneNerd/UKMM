@@ -228,7 +228,7 @@ mod tests {
         )
         .unwrap();
         let aslist = super::ASList::try_from(&pio).unwrap();
-        let data = aslist.clone().into_pio().to_binary();
+        let data = roead::aamp::ParameterIO::from(aslist.clone()).to_binary();
         let pio2 = ParameterIO::from_binary(&data).unwrap();
         let aslist2 = super::ASList::try_from(&pio2).unwrap();
         assert_eq!(aslist, aslist2);

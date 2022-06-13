@@ -193,7 +193,7 @@ mod tests {
         )
         .unwrap();
         let rgbw = super::RagdollBlendWeight::try_from(&pio).unwrap();
-        let data = rgbw.clone().into_pio().to_binary();
+        let data = roead::aamp::ParameterIO::from(rgbw.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
         let rgbw2 = super::RagdollBlendWeight::try_from(&pio2).unwrap();
         assert_eq!(rgbw, rgbw2);

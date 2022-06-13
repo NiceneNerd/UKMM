@@ -711,7 +711,7 @@ mod tests {
         )
         .unwrap();
         let physics = super::Physics::try_from(&pio).unwrap();
-        let data = physics.clone().into_pio().to_binary();
+        let data = roead::aamp::ParameterIO::from(physics.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
         let physics2 = super::Physics::try_from(&pio2).unwrap();
         assert_eq!(physics, physics2);

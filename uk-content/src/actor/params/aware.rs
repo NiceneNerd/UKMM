@@ -39,7 +39,7 @@ mod tests {
         )
         .unwrap();
         let awareness = super::Awareness::try_from(&pio).unwrap();
-        let data = awareness.clone().into_pio().to_binary();
+        let data = roead::aamp::ParameterIO::from(awareness.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
         let awareness2 = super::Awareness::try_from(&pio2).unwrap();
         assert_eq!(awareness, awareness2);

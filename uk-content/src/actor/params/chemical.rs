@@ -181,7 +181,7 @@ mod tests {
         )
         .unwrap();
         let chemical = super::Chemical::try_from(&pio).unwrap();
-        let data = chemical.clone().into_pio().to_binary();
+        let data = roead::aamp::ParameterIO::from(chemical.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
         let chemical2 = super::Chemical::try_from(&pio2).unwrap();
         assert_eq!(chemical, chemical2);

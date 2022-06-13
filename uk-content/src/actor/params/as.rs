@@ -225,7 +225,7 @@ mod tests {
         )
         .unwrap();
         let as_data = super::AS::try_from(&pio).unwrap();
-        let data = as_data.clone().into_pio().to_binary();
+        let data = roead::aamp::ParameterIO::from(as_data.clone()).to_binary();
         let pio2 = ParameterIO::from_binary(&data).unwrap();
         let as_data2 = super::AS::try_from(&pio2).unwrap();
         assert_eq!(as_data, as_data2);

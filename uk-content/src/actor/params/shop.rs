@@ -280,7 +280,7 @@ mod tests {
         )
         .unwrap();
         let shop = super::ShopData::try_from(&pio).unwrap();
-        let data = shop.clone().into_pio().to_binary();
+        let data = roead::aamp::ParameterIO::from(shop.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
         let shop2 = super::ShopData::try_from(&pio2).unwrap();
         assert_eq!(shop, shop2);
