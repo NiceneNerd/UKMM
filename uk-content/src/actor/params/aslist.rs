@@ -1,4 +1,4 @@
-use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -209,6 +209,12 @@ impl Mergeable for ASList {
                 })
                 .or_else(|| self.cf_defines.clone()),
         }
+    }
+}
+
+impl ParameterResource for ASList {
+    fn path(name: &str) -> String {
+        jstr!("Actor/ASList/{name}.baslist")
     }
 }
 

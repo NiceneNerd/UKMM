@@ -1,4 +1,5 @@
-use crate::prelude::*;
+use crate::{actor::ParameterResource, prelude::*};
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +25,12 @@ impl From<Awareness> for ParameterIO {
 }
 
 impl_simple_aamp!(Awareness, 0);
+
+impl ParameterResource for Awareness {
+    fn path(name: &str) -> String {
+        jstr!("Actor/Awareness/{name}.bawareness")
+    }
+}
 
 #[cfg(test)]
 mod tests {

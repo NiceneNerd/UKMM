@@ -1,4 +1,4 @@
-use crate::{prelude::*, util, Result, UKError};
+use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -206,6 +206,12 @@ impl Mergeable for AS {
         } else {
             Self(diff.0.clone().or_else(|| self.0.clone()))
         }
+    }
+}
+
+impl ParameterResource for AS {
+    fn path(name: &str) -> String {
+        jstr!("Actor/AS/{name}.bas")
     }
 }
 

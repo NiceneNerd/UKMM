@@ -1,4 +1,4 @@
-use crate::{prelude::*, util, Result, UKError};
+use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
 use indexmap::IndexMap;
 use join_str::jstr;
 use roead::aamp::*;
@@ -760,6 +760,16 @@ mod write {
         fn from(val: AIProgram) -> Self {
             ParameterIOBuilder::new(val).build()
         }
+    }
+}
+
+impl ParameterResource for AIProgram {
+    fn path(name: &str) -> String {
+        jstr!("Actor/AIProgram/{name}.baiprog")
+    }
+
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 }
 

@@ -1,10 +1,15 @@
-use crate::{actor::InfoSource, prelude::*, Result, UKError};
+use crate::{
+    actor::{InfoSource, ParameterResource},
+    prelude::*,
+    Result, UKError,
+};
 use indexmap::IndexMap;
+use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-struct DropTable(pub IndexMap<String, ParameterObject>);
+pub struct DropTable(pub IndexMap<String, ParameterObject>);
 
 impl From<DropTable> for ParameterIO {
     fn from(drop: DropTable) -> Self {
@@ -124,6 +129,12 @@ impl InfoSource for DropTable {
                 .collect::<Result<_>>()?,
         );
         Ok(())
+    }
+}
+
+impl ParameterResource for DropTable {
+    fn path(name: &str) -> String {
+        jstr!("Actor/DropTable/{name}.bdrop")
     }
 }
 

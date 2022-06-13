@@ -1,4 +1,5 @@
-use crate::prelude::*;
+use crate::{actor::ParameterResource, prelude::*};
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +25,12 @@ impl From<DamageParam> for ParameterIO {
 }
 
 impl_simple_aamp!(DamageParam, 0);
+
+impl ParameterResource for DamageParam {
+    fn path(name: &str) -> String {
+        jstr!("Actor/DamageParam/{name}.bdmgparam")
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -1,4 +1,8 @@
-use crate::{actor::InfoSource, prelude::Mergeable, util, Result, UKError};
+use crate::{
+    actor::{InfoSource, ParameterResource},
+    prelude::Mergeable,
+    util, Result, UKError,
+};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -97,6 +101,12 @@ impl TryFrom<&ParameterList> for ContactInfo {
                     .collect::<Result<_>>()?,
             ),
         })
+    }
+}
+
+impl ParameterResource for Physics {
+    fn path(name: &str) -> String {
+        jstr!("Actor/Physics/{name}.bphysics")
     }
 }
 

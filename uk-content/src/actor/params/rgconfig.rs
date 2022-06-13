@@ -1,4 +1,5 @@
-use crate::{prelude::Mergeable, util, Result, UKError};
+use crate::{actor::ParameterResource, prelude::Mergeable, util, Result, UKError};
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -68,6 +69,12 @@ impl Mergeable for RagdollConfig {
                 &diff.impact_impulse_info,
             ),
         }
+    }
+}
+
+impl ParameterResource for RagdollConfig {
+    fn path(name: &str) -> String {
+        jstr!("Actor/RagdollConfig/{name}.brgconfig")
     }
 }
 

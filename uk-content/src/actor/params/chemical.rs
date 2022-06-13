@@ -1,4 +1,9 @@
-use crate::{actor::InfoSource, prelude::Mergeable, util, Result, UKError};
+use crate::{
+    actor::{InfoSource, ParameterResource},
+    prelude::Mergeable,
+    util, Result, UKError,
+};
+use join_str::jstr;
 use roead::{
     aamp::*,
     byml::{Byml, Hash},
@@ -166,6 +171,12 @@ impl InfoSource for Chemical {
             info.insert("Chemical".to_owned(), Byml::Hash(chem_info));
         }
         Ok(())
+    }
+}
+
+impl ParameterResource for Chemical {
+    fn path(name: &str) -> String {
+        jstr!("Actor/Chemical/{name}.bchemical")
     }
 }
 

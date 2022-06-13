@@ -1,3 +1,4 @@
+use crate::actor::ParameterResource;
 use crate::Result;
 use crate::{
     actor::{extract_info_param, InfoSource},
@@ -236,6 +237,12 @@ impl InfoSource for GeneralParamList {
             });
         };
         Ok(())
+    }
+}
+
+impl ParameterResource for GeneralParamList {
+    fn path(name: &str) -> String {
+        jstr!("Actor/GeneralParamList/{name}.bgparamlist")
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{prelude::Mergeable, util::DeleteMap, Result, UKError};
+use crate::{actor::ParameterResource, prelude::Mergeable, util::DeleteMap, Result, UKError};
 use indexmap::IndexMap;
 use join_str::jstr;
 use roead::aamp::*;
@@ -176,6 +176,12 @@ impl Mergeable for RagdollBlendWeight {
                 })
                 .collect(),
         )
+    }
+}
+
+impl ParameterResource for RagdollBlendWeight {
+    fn path(name: &str) -> String {
+        jstr!("Actor/RagdollBlendWeight/{name}.brgbw")
     }
 }
 

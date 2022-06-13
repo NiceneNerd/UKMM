@@ -1,4 +1,5 @@
 use crate::{
+    actor::ParameterResource,
     prelude::Mergeable,
     util::{self, DeleteMap},
     Result, UKError,
@@ -131,6 +132,12 @@ impl Mergeable for RagdollConfigList {
             impulse_params: util::merge_plist(&self.impulse_params, &diff.impulse_params),
             body_param_list: self.body_param_list.merge(&diff.body_param_list),
         }
+    }
+}
+
+impl ParameterResource for RagdollConfigList {
+    fn path(name: &str) -> String {
+        jstr!("Actor/RagdollConfigList/{name}.brgconfiglist")
     }
 }
 

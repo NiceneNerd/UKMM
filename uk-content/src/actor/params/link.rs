@@ -1,5 +1,5 @@
 use crate::{
-    actor::InfoSource,
+    actor::{InfoSource, ParameterResource},
     prelude::*,
     util::{self, DeleteSet},
     Result, UKError,
@@ -30,6 +30,14 @@ impl TryFrom<&ParameterIO> for ActorLink {
                     .collect()
             }),
         })
+    }
+}
+
+impl TryFrom<ParameterIO> for ActorLink {
+    type Error = UKError;
+
+    fn try_from(pio: ParameterIO) -> Result<Self> {
+        Self::try_from(&pio)
     }
 }
 
@@ -149,6 +157,12 @@ impl InfoSource for ActorLink {
             );
         }
         Ok(())
+    }
+}
+
+impl ParameterResource for ActorLink {
+    fn path(name: &str) -> String {
+        jstr!("Actor/ActorLink/{name}.bxml")
     }
 }
 

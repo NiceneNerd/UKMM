@@ -1,4 +1,5 @@
 use crate::{
+    actor::ParameterResource,
     prelude::*,
     util::{self, DeleteVec},
     Result, UKError,
@@ -53,6 +54,12 @@ impl Mergeable for AttClient {
             client_params: util::merge_pobj(&self.client_params, &diff.client_params),
             checks: self.checks.merge(&diff.checks),
         }
+    }
+}
+
+impl ParameterResource for AttClient {
+    fn path(name: &str) -> String {
+        jstr!("Actor/AttClient/{name}.batcl")
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::{
+    actor::ParameterResource,
     prelude::*,
     util::{self, DeleteMap},
     Result, UKError,
@@ -84,6 +85,12 @@ impl Mergeable for AttClientList {
             att_pos: util::merge_pobj(&self.att_pos, &diff.att_pos),
             att_clients: self.att_clients.merge(&diff.att_clients),
         }
+    }
+}
+
+impl ParameterResource for AttClientList {
+    fn path(name: &str) -> String {
+        jstr!("Actor/AttClientList/{name}.batcllist")
     }
 }
 

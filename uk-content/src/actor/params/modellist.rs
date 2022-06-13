@@ -1,5 +1,5 @@
 use crate::{
-    actor::{info_params_filtered, InfoSource},
+    actor::{info_params_filtered, InfoSource, ParameterResource},
     prelude::Mergeable,
     util::*,
     Result, UKError,
@@ -172,6 +172,12 @@ impl InfoSource for ModelList {
             info.insert("mainModel".to_owned(), model.clone().into());
         }
         Ok(())
+    }
+}
+
+impl ParameterResource for ModelList {
+    fn path(name: &str) -> String {
+        jstr!("Actor/ModelList/{name}.bmodellist")
     }
 }
 

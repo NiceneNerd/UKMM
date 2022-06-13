@@ -1,4 +1,4 @@
-#![feature(let_chains, type_alias_impl_trait)]
+#![feature(let_chains, type_alias_impl_trait, drain_filter)]
 use thiserror::Error;
 
 pub mod actor;
@@ -29,6 +29,10 @@ pub enum UKError {
     WrongAampType(#[from] roead::aamp::AampError),
     #[error("Wrong type for BYML value")]
     WrongBymlType(#[from] roead::byml::BymlError),
+    #[error("{0} missing from SARC")]
+    MissingSarcFile(&'static str),
+    #[error("{0} missing from SARC")]
+    MissingSarcFileD(String),
     #[error("Invalid weather value: {0}")]
     InvalidWeatherOrTime(String),
     #[error("{0}")]
@@ -36,10 +40,14 @@ pub enum UKError {
     #[error("{0}")]
     OtherD(String),
     #[error(transparent)]
+    _Infallible(#[from] std::convert::Infallible),
+    #[error(transparent)]
     Any(#[from] anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<T, UKError>;
+
+pub type Assets = util::DeleteMap<String, Vec<u8>>;
 
 pub mod prelude {
     pub trait Mergeable {

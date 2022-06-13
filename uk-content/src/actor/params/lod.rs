@@ -1,4 +1,5 @@
-use crate::prelude::*;
+use crate::{actor::ParameterResource, prelude::*};
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +25,12 @@ impl From<Lod> for ParameterIO {
 }
 
 impl_simple_aamp!(Lod, 0);
+
+impl ParameterResource for Lod {
+    fn path(name: &str) -> String {
+        jstr!("Actor/LOD/{name}.blod")
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -1,10 +1,11 @@
 use crate::{
-    actor::InfoSource,
+    actor::{InfoSource, ParameterResource},
     constants::{Time, Weather},
     prelude::Mergeable,
     util::DeleteSet,
     Result, UKError,
 };
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -376,6 +377,12 @@ impl InfoSource for LifeCondition {
             );
         }
         Ok(())
+    }
+}
+
+impl ParameterResource for LifeCondition {
+    fn path(name: &str) -> String {
+        jstr!("Actor/LifeCondition/{name}.blifecondition")
     }
 }
 

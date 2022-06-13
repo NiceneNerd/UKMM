@@ -1,4 +1,5 @@
-use crate::prelude::*;
+use crate::{actor::ParameterResource, prelude::*};
+use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +25,12 @@ impl From<UMii> for ParameterIO {
 }
 
 impl_simple_aamp!(UMii, 0);
+
+impl ParameterResource for UMii {
+    fn path(name: &str) -> String {
+        jstr!("Actor/UMii/{name}.bumii")
+    }
+}
 
 #[cfg(test)]
 mod tests {

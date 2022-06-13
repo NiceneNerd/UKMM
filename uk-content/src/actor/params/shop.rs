@@ -1,4 +1,4 @@
-use crate::{prelude::*, Result, UKError};
+use crate::{actor::ParameterResource, prelude::*, Result, UKError};
 use indexmap::IndexMap;
 use join_str::jstr;
 use roead::aamp::*;
@@ -263,6 +263,12 @@ impl Mergeable for ShopData {
                 }))
                 .collect(),
         )
+    }
+}
+
+impl ParameterResource for ShopData {
+    fn path(name: &str) -> String {
+        jstr!("Actor/ShopData/{name}.bshop")
     }
 }
 

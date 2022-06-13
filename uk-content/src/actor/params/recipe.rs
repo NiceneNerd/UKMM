@@ -1,5 +1,10 @@
-use crate::{actor::InfoSource, prelude::Mergeable, Result, UKError};
+use crate::{
+    actor::{InfoSource, ParameterResource},
+    prelude::Mergeable,
+    Result, UKError,
+};
 use indexmap::IndexMap;
+use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 
@@ -132,6 +137,12 @@ impl InfoSource for Recipe {
             );
         }
         Ok(())
+    }
+}
+
+impl ParameterResource for Recipe {
+    fn path(name: &str) -> String {
+        jstr!("Actor/Recipe/{name}.brecipe")
     }
 }
 

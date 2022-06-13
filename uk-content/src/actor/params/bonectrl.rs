@@ -1,4 +1,4 @@
-use crate::{prelude::*, util::DeleteSet, Result, UKError};
+use crate::{actor::ParameterResource, prelude::*, util::DeleteSet, Result, UKError};
 use indexmap::IndexMap;
 use join_str::jstr;
 use roead::aamp::*;
@@ -176,6 +176,12 @@ impl Mergeable for BoneControl {
                 })
                 .collect(),
         }
+    }
+}
+
+impl ParameterResource for BoneControl {
+    fn path(name: &str) -> String {
+        jstr!("Actor/BoneControl/{name}.bbonectrl")
     }
 }
 

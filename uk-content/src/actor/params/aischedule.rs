@@ -1,4 +1,5 @@
-use crate::prelude::*;
+use crate::{actor::ParameterResource, prelude::*};
+use join_str::jstr;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +25,12 @@ impl From<AISchedule> for Byml {
 }
 
 impl_simple_byml!(AISchedule, 0);
+
+impl ParameterResource for AISchedule {
+    fn path(name: &str) -> String {
+        jstr!("Actor/AISchedule/{name}.baischedule")
+    }
+}
 
 #[cfg(test)]
 mod tests {
