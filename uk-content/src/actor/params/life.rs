@@ -1,7 +1,7 @@
 use crate::{
     actor::{InfoSource, ParameterResource},
     constants::{Time, Weather},
-    prelude::Mergeable,
+    prelude::*,
     util::DeleteSet,
     Result, UKError,
 };
@@ -383,6 +383,16 @@ impl InfoSource for LifeCondition {
 impl ParameterResource for LifeCondition {
     fn path(name: &str) -> String {
         jstr!("Actor/LifeCondition/{name}.blifecondition")
+    }
+}
+
+impl Resource for LifeCondition {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     actor::{InfoSource, ParameterResource},
-    prelude::Mergeable,
+    prelude::*,
     util, Result, UKError,
 };
 use join_str::jstr;
@@ -107,6 +107,16 @@ impl TryFrom<&ParameterList> for ContactInfo {
 impl ParameterResource for Physics {
     fn path(name: &str) -> String {
         jstr!("Actor/Physics/{name}.bphysics")
+    }
+}
+
+impl Resource for Physics {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
     }
 }
 

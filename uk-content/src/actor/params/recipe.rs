@@ -1,6 +1,6 @@
 use crate::{
     actor::{InfoSource, ParameterResource},
-    prelude::Mergeable,
+    prelude::*,
     Result, UKError,
 };
 use indexmap::IndexMap;
@@ -143,6 +143,16 @@ impl InfoSource for Recipe {
 impl ParameterResource for Recipe {
     fn path(name: &str) -> String {
         jstr!("Actor/Recipe/{name}.brecipe")
+    }
+}
+
+impl Resource for Recipe {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
     }
 }
 

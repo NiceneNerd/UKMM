@@ -246,6 +246,16 @@ impl ParameterResource for GeneralParamList {
     }
 }
 
+impl Resource for GeneralParamList {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        Ok((&ParameterIO::from_binary(data.as_ref())?).into())
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{actor::InfoSource, prelude::*};

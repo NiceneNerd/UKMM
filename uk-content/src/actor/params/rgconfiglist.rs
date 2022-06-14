@@ -1,6 +1,6 @@
 use crate::{
     actor::ParameterResource,
-    prelude::Mergeable,
+    prelude::*,
     util::{self, DeleteMap},
     Result, UKError,
 };
@@ -138,6 +138,16 @@ impl Mergeable for RagdollConfigList {
 impl ParameterResource for RagdollConfigList {
     fn path(name: &str) -> String {
         jstr!("Actor/RagdollConfigList/{name}.brgconfiglist")
+    }
+}
+
+impl Resource for RagdollConfigList {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
     }
 }
 

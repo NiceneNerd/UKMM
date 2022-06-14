@@ -1,4 +1,4 @@
-use crate::{actor::ParameterResource, prelude::Mergeable, util, Result, UKError};
+use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -75,6 +75,16 @@ impl Mergeable for RagdollConfig {
 impl ParameterResource for RagdollConfig {
     fn path(name: &str) -> String {
         jstr!("Actor/RagdollConfig/{name}.brgconfig")
+    }
+}
+
+impl Resource for RagdollConfig {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
     }
 }
 

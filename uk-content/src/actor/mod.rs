@@ -470,11 +470,6 @@ pub trait InfoSource {
     fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()>;
 }
 
-pub trait ParameterResource
-where
-    Self: std::marker::Sized,
-{
+pub trait ParameterResource {
     fn path(name: &str) -> String;
-    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self>;
-    fn into_binary(self) -> Vec<u8>;
 }

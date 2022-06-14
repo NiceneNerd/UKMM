@@ -32,6 +32,16 @@ impl ParameterResource for AISchedule {
     }
 }
 
+impl Resource for AISchedule {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        Ok((&Byml::from_binary(data.as_ref())?).into())
+    }
+
+    fn into_binary(self, endian: Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

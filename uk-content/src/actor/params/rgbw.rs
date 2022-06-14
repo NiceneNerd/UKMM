@@ -1,4 +1,4 @@
-use crate::{actor::ParameterResource, prelude::Mergeable, util::DeleteMap, Result, UKError};
+use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
 use indexmap::IndexMap;
 use join_str::jstr;
 use roead::aamp::*;
@@ -182,6 +182,16 @@ impl Mergeable for RagdollBlendWeight {
 impl ParameterResource for RagdollBlendWeight {
     fn path(name: &str) -> String {
         jstr!("Actor/RagdollBlendWeight/{name}.brgbw")
+    }
+}
+
+impl Resource for RagdollBlendWeight {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
     }
 }
 

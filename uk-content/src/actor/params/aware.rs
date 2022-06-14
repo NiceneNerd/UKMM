@@ -32,6 +32,16 @@ impl ParameterResource for Awareness {
     }
 }
 
+impl Resource for Awareness {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        Ok((&ParameterIO::from_binary(data.as_ref())?).into())
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

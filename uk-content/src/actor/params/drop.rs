@@ -138,6 +138,16 @@ impl ParameterResource for DropTable {
     }
 }
 
+impl Resource for DropTable {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{actor::InfoSource, prelude::*};

@@ -1,6 +1,6 @@
 use crate::{
     actor::{info_params_filtered, InfoSource, ParameterResource},
-    prelude::Mergeable,
+    prelude::*,
     util::*,
     Result, UKError,
 };
@@ -178,6 +178,16 @@ impl InfoSource for ModelList {
 impl ParameterResource for ModelList {
     fn path(name: &str) -> String {
         jstr!("Actor/ModelList/{name}.bmodellist")
+    }
+}
+
+impl Resource for ModelList {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
     }
 }
 

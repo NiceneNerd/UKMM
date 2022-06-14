@@ -133,6 +133,14 @@ pub mod prelude {
             }
         }
     }
+
+    pub trait Resource
+    where
+        Self: std::marker::Sized,
+    {
+        fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self>;
+        fn into_binary(self, endian: Endian) -> Vec<u8>;
+    }
 }
 
 #[cfg(test)]
