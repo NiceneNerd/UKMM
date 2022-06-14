@@ -1,5 +1,5 @@
 use crate::{
-    prelude::Mergeable,
+    prelude::*,
     util::{self, SortedDeleteMap},
     Result, UKError,
 };
@@ -89,6 +89,20 @@ impl Mergeable for AreaData {
                 .collect::<SortedDeleteMap<usize, Byml>>()
                 .and_delete(),
         )
+    }
+}
+
+impl Resource for AreaData {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&Byml::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().file_stem().and_then(|name| name.to_str()) == Some("AreaData")
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{prelude::Mergeable, util::DeleteVec, Result, UKError};
+use crate::{prelude::*, util::DeleteVec, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -162,6 +162,20 @@ impl Mergeable for StatusEffectList {
                 })
                 .collect(),
         )
+    }
+}
+
+impl Resource for StatusEffectList {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&Byml::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().file_stem().and_then(|name| name.to_str()) == Some("StatusEffectList")
     }
 }
 

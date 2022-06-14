@@ -1,4 +1,4 @@
-use crate::{prelude::Mergeable, util::DeleteMap, Result, UKError};
+use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use indexmap::IndexSet;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
@@ -122,22 +122,78 @@ impl TryFrom<&Byml> for LevelSensor {
                 let weapon = weapon.as_hash().unwrap();
                 Ok((
                     (
-                        weapon.get("actorType").ok_or(UKError::MissingBymlKey("Level sensor weapon entry missing actor type")).unwrap().as_string().unwrap().to_owned(),
-                        weapon.get("series").ok_or(UKError::MissingBymlKey("Level sensor weapon entry missing series")).unwrap().as_string().unwrap().to_owned(),
+                        weapon
+                            .get("actorType")
+                            .ok_or(UKError::MissingBymlKey(
+                                "Level sensor weapon entry missing actor type",
+                            ))
+                            .unwrap()
+                            .as_string()
+                            .unwrap()
+                            .to_owned(),
+                        weapon
+                            .get("series")
+                            .ok_or(UKError::MissingBymlKey(
+                                "Level sensor weapon entry missing series",
+                            ))
+                            .unwrap()
+                            .as_string()
+                            .unwrap()
+                            .to_owned(),
                     ),
                     WeaponSeries {
-                        not_rank_up: weapon.get("not_rank_up").ok_or(UKError::MissingBymlKey("Level sensor weapon entry missing not_rank_up")).unwrap().as_bool().unwrap(),
-                        actors: weapon.get("actors").ok_or(UKError::MissingBymlKey("Level sensor weapon entry missing actors list")).unwrap().as_array().unwrap().iter().map(|actor| -> Result<(String, (i32, f32))> {
-                            let actor = actor.as_hash().unwrap();
-                            Ok((
-                                actor.get("name").ok_or(UKError::MissingBymlKey("Level sensor weapon actor entry missing name")).unwrap().as_string().unwrap().to_owned(),
-                                (
-                                    actor.get("plus").ok_or(UKError::MissingBymlKey("Level sensor weapon actor entry missing plus value")).unwrap().as_int().unwrap(),
-                                    actor.get("value").ok_or(UKError::MissingBymlKey("Level sensor weapon actor entry missing value")).unwrap().as_float().unwrap(),
-                                )
+                        not_rank_up: weapon
+                            .get("not_rank_up")
+                            .ok_or(UKError::MissingBymlKey(
+                                "Level sensor weapon entry missing not_rank_up",
                             ))
-                        }).collect::<Result<_>>().unwrap()
-                    }
+                            .unwrap()
+                            .as_bool()
+                            .unwrap(),
+                        actors: weapon
+                            .get("actors")
+                            .ok_or(UKError::MissingBymlKey(
+                                "Level sensor weapon entry missing actors list",
+                            ))
+                            .unwrap()
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|actor| -> Result<(String, (i32, f32))> {
+                                let actor = actor.as_hash().unwrap();
+                                Ok((
+                                    actor
+                                        .get("name")
+                                        .ok_or(UKError::MissingBymlKey(
+                                            "Level sensor weapon actor entry missing name",
+                                        ))
+                                        .unwrap()
+                                        .as_string()
+                                        .unwrap()
+                                        .to_owned(),
+                                    (
+                                        actor
+                                            .get("plus")
+                                            .ok_or(UKError::MissingBymlKey(
+                                                "Level sensor weapon actor entry missing plus value",
+                                            ))
+                                            .unwrap()
+                                            .as_int()
+                                            .unwrap(),
+                                        actor
+                                            .get("value")
+                                            .ok_or(UKError::MissingBymlKey(
+                                                "Level sensor weapon actor entry missing value",
+                                            ))
+                                            .unwrap()
+                                            .as_float()
+                                            .unwrap(),
+                                    ),
+                                ))
+                            })
+                            .collect::<Result<_>>()
+                            .unwrap(),
+                    },
                 ))
             }).collect::<Result<_>>().unwrap()
         })
@@ -280,6 +336,20 @@ impl Mergeable for LevelSensor {
             }
             .and_delete(),
         }
+    }
+}
+
+impl Resource for LevelSensor {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&Byml::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().file_stem().and_then(|name| name.to_str()) == Some("LevelSensor")
     }
 }
 

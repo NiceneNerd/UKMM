@@ -1,5 +1,5 @@
 use crate::{
-    prelude::Mergeable,
+    prelude::*,
     util::{self, DeleteVec},
     Result, UKError,
 };
@@ -68,6 +68,20 @@ impl Mergeable for CookData {
             single_recipes: self.single_recipes.merge(&diff.single_recipes),
             system: util::merge_byml_shallow(&self.system, &diff.system),
         }
+    }
+}
+
+impl Resource for CookData {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&Byml::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().file_stem().and_then(|name| name.to_str()) == Some("CookData")
     }
 }
 

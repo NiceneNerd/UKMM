@@ -322,6 +322,20 @@ impl Mergeable for GameDataPack {
     }
 }
 
+impl Resource for GameDataPack {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        Self::from_sarc(&Sarc::read(data.as_ref())?)
+    }
+
+    fn into_binary(self, endian: Endian) -> Vec<u8> {
+        self.into_sarc_writer(endian).to_binary()
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().file_stem().and_then(|name| name.to_str()) == Some("gamedata")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

@@ -74,6 +74,20 @@ impl Mergeable for ChemicalRes {
     }
 }
 
+impl Resource for ChemicalRes {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&ParameterIO::from_binary(data)?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().file_name().and_then(|name| name.to_str()) == Some("system.bchmres")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

@@ -174,6 +174,10 @@ impl Resource for ActorLink {
     fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().extension().and_then(|ext| ext.to_str()) == Some("bxml")
+    }
 }
 
 #[cfg(test)]

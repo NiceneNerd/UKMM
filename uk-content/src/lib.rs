@@ -33,6 +33,8 @@ pub enum UKError {
     MissingSarcFile(&'static str),
     #[error("{0} missing from SARC")]
     MissingSarcFileD(String),
+    #[error("Invalid SARC file: {0}")]
+    InvalidSarc(#[from] roead::sarc::SarcError),
     #[error("Invalid weather value: {0}")]
     InvalidWeatherOrTime(String),
     #[error("{0}")]
@@ -140,6 +142,7 @@ pub mod prelude {
     {
         fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self>;
         fn into_binary(self, endian: Endian) -> Vec<u8>;
+        fn path_matches(path: impl AsRef<std::path::Path>) -> bool;
     }
 }
 

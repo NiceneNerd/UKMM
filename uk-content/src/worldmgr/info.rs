@@ -25,6 +25,20 @@ impl From<WorldInfo> for ParameterIO {
 
 impl_simple_aamp!(WorldInfo, 0);
 
+impl Resource for WorldInfo {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        Ok((&ParameterIO::from_binary(data)?).into())
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().extension().and_then(|ext| ext.to_str()) == Some("bwinfo")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

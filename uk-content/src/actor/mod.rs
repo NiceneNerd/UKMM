@@ -341,6 +341,24 @@ impl InfoSource for Actor {
     }
 }
 
+impl Resource for Actor {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        Self::from_sarc(&Sarc::read(data.as_ref())?)
+    }
+
+    fn into_binary(self, endian: Endian) -> Vec<u8> {
+        self.into_sarc(endian).to_binary()
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| ext.ends_with("bactorpack"))
+            .unwrap_or(false)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
