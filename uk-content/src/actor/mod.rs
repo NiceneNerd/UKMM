@@ -1,12 +1,13 @@
 pub mod info;
 pub mod params;
+mod prelude;
 pub mod residents;
 
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use join_str::jstr;
+pub use prelude::*;
 use roead::{
     aamp::ParameterIO,
-    byml::Byml,
     sarc::{Sarc, SarcWriter},
 };
 use serde::{Deserialize, Serialize};
@@ -73,6 +74,15 @@ impl<T: TargetParams> Mergeable for LinkTarget<T> {
     }
 }
 
+impl<T: TargetParams + InfoSource> InfoSource for LinkTarget<T> {
+    fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()> {
+        match self {
+            Self::Dummy | Self::External(_) => Ok(()),
+            Self::Included { path: _, params } => params.update_info(info),
+        }
+    }
+}
+
 impl<T: TargetParams> LinkTarget<T> {
     pub fn extract(
         actorlink: &params::link::ActorLink,
@@ -95,7 +105,7 @@ impl<T: TargetParams> LinkTarget<T> {
             {
                 let target = T::from_binary(data)?;
                 Ok(Self::Included {
-                    path,
+                    path: name.to_owned(),
                     params: target,
                 })
             } else {
@@ -154,7 +164,12 @@ impl Actor {
         let actorlink: params::link::ActorLink =
             ParameterIO::from_binary(&link_file.1)?.try_into()?;
         Ok(Self {
-            name: link_file.0.unwrap(),
+            name: link_file
+                .0
+                .unwrap()
+                .trim_start_matches("Actor/ActorLink/")
+                .trim_end_matches(".bxml")
+                .to_owned(),
             ai_program: LinkTarget::extract(&actorlink, &mut sarc, "AIProgramUser")?,
             ai_schedule: LinkTarget::extract(&actorlink, &mut sarc, "AIScheduleUser")?,
             as_list: LinkTarget::extract(&actorlink, &mut sarc, "ASUser")?,
@@ -235,6 +250,16 @@ impl Actor {
         self.shop.build(&mut sarc);
         self.umii.build(&mut sarc);
         self.anim_info.build(&mut sarc);
+        sarc.add_files(
+            self.as_files
+                .into_iter()
+                .map(|(f, d)| (f, d.into_binary(endian))),
+        );
+        sarc.add_files(
+            self.rg_config_files
+                .into_iter()
+                .map(|(f, d)| (f, d.into_binary(endian))),
+        );
         sarc.add_files(self.assets.into_iter());
         sarc
     }
@@ -302,79 +327,56 @@ impl Mergeable for Actor {
     }
 }
 
-pub(crate) fn extract_info_param<T: TryFrom<roead::aamp::Parameter> + Into<Byml> + Clone>(
-    obj: &roead::aamp::ParameterObject,
-    key: &str,
-) -> Result<Option<Byml>> {
-    Ok(obj
-        .param(key)
-        .map(|v| -> Result<T> {
-            v.clone()
-                .try_into()
-                .map_err(|_| crate::UKError::WrongAampType(roead::aamp::AampError::TypeError))
-        })
-        .transpose()?
-        .map(|v| v.into()))
-}
-
-macro_rules! info_params {
-    (
-        $o: expr,
-        $i: expr,
-        {
-            $(($k: expr, $v: expr, $t: ty)),* $(,)?
-        }
-    ) => {
-        $i.extend(
-            [
-                $(
-                    ($k, crate::actor::extract_info_param::<$t>($o, $v)?),
-                )*
-            ]
-                .into_iter()
-                .filter_map(|(k, v)| v.map(|v| (k.to_owned(), v))),
-        );
-    };
-}
-
-macro_rules! info_params_filtered {
-    (
-        $o: expr,
-        $i: expr,
-        {
-            $(($k: expr, $v: expr, $t: ty)),* $(,)?
-        }
-    ) => {
-        $i.extend(
-            [
-                $(
-                    ($k, crate::actor::extract_info_param::<$t>($o, $v)?),
-                )*
-            ]
-                .into_iter()
-                .filter_map(|(k, v)| {
-                    v.and_then(|v| (!crate::actor::is_byml_null(&v)).then(|| (k.to_owned(), v)))
-                }),
-        );
-    };
-}
-
-pub(crate) fn is_byml_null(byml: &Byml) -> bool {
-    match byml {
-        Byml::Float(v) => *v == 0.0,
-        Byml::Int(v) => *v == 0,
-        Byml::String(v) => v.is_empty(),
-        _ => true,
+impl InfoSource for Actor {
+    fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()> {
+        self.link.update_info(info)?;
+        self.chemical.update_info(info)?;
+        self.drop.update_info(info)?;
+        self.gparam.update_info(info)?;
+        self.life_condition.update_info(info)?;
+        self.model.update_info(info)?;
+        self.physics.update_info(info)?;
+        self.physics.update_info(info)?;
+        Ok(())
     }
 }
 
-pub(crate) use info_params;
-pub(crate) use info_params_filtered;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-pub trait InfoSource: ParameterResource {
-    fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()>;
-}
+    #[test]
+    fn serde() {
+        let pack1 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let actor1 = Actor::from_sarc(&pack1).unwrap();
+        let pack2 = Sarc::read(
+            actor1
+                .clone()
+                .into_sarc(crate::prelude::Endian::Big)
+                .to_binary(),
+        )
+        .unwrap();
+        let actor2 = Actor::from_sarc(&pack2).unwrap();
+        assert_eq!(actor1, actor2);
+    }
 
-pub trait ParameterResource: Resource {
-    fn path(name: &str) -> String;
+    #[test]
+    fn diff() {
+        let pack1 = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor1 = Actor::from_sarc(&pack1).unwrap();
+        let pack2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let actor2 = Actor::from_sarc(&pack2).unwrap();
+        let _diff = actor1.diff(&actor2);
+    }
+
+    #[test]
+    fn merge() {
+        let pack1 = crate::tests::test_base_actorpack("Enemy_Guardian_A");
+        let actor1 = Actor::from_sarc(&pack1).unwrap();
+        let pack2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
+        let actor2 = Actor::from_sarc(&pack2).unwrap();
+        let diff = actor1.diff(&actor2);
+        let merged = actor1.merge(&diff);
+        assert_eq!(merged, actor2);
+    }
 }
