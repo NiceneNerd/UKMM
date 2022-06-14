@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{prelude::*, util::SortedDeleteSet, Result, UKError};
+use join_str::jstr;
 use roead::{
     aamp::hash_name,
     byml::Byml,
@@ -277,21 +278,21 @@ impl SaveDataPack {
         let mut out = SarcWriter::new(endian.into());
         if let Some(game) = self.0.remove("game_data.sav") {
             out.add_files(game.divide().into_iter().enumerate().map(|(i, data)| {
-                let name = format!("saveformat_{}.bgsvdata", i);
+                let name = jstr!("saveformat_{&lexical::to_string(i)}.bgsvdata");
                 (name, Byml::from(data).to_binary(endian.into()))
             }));
         }
         if let Some(caption) = self.0.remove("caption.sav") {
             let count = out.files.len();
             out.add_files(caption.divide().into_iter().enumerate().map(|(i, data)| {
-                let name = format!("saveformat_{}.bgsvdata", i + count);
+                let name = jstr!("saveformat_{&lexical::to_string(i + count)}.bgsvdata");
                 (name, Byml::from(data).to_binary(endian.into()))
             }));
         }
         if let Some(option) = self.0.remove("option.sav") {
             let count = out.files.len();
             out.add_files(option.divide().into_iter().enumerate().map(|(i, data)| {
-                let name = format!("saveformat_{}.bgsvdata", i + count);
+                let name = jstr!("saveformat_{&lexical::to_string(i + count)}.bgsvdata");
                 (name, Byml::from(data).to_binary(endian.into()))
             }));
         }

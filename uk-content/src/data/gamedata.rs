@@ -186,9 +186,10 @@ macro_rules! build_gamedata_pack {
         let _endian = $sarc.endian;
         $(
             let _type = $data.$type.data_type.clone();
+            let _name_type = stringify!($type);
             $sarc.add_files($data.$type.divide().into_iter().enumerate().map(|(i, data)| {
                 (
-                    format!("/{}_{}.bgdata", stringify!($type), i),
+                    join_str::jstr!("/{_name_type}_{&lexical::to_string(i)}.bgdata"),
                     Byml::from(data).to_binary(_endian),
                 )
             }));

@@ -3,6 +3,7 @@ pub mod params;
 pub mod residents;
 
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use join_str::jstr;
 use roead::{
     aamp::ParameterIO,
     byml::Byml,
@@ -10,20 +11,23 @@ use roead::{
 };
 use serde::{Deserialize, Serialize};
 
+pub trait TargetParams: Clone + Mergeable + ParameterResource {}
+impl<T> TargetParams for T where T: Clone + Mergeable + ParameterResource {}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub enum LinkTarget<T: Clone + Mergeable + ParameterResource> {
+pub enum LinkTarget<T: TargetParams> {
     Dummy,
     External(String),
     Included { path: String, params: T },
 }
 
-impl<T: Clone + Mergeable + ParameterResource> Default for LinkTarget<T> {
+impl<T: TargetParams> Default for LinkTarget<T> {
     fn default() -> Self {
         Self::Dummy
     }
 }
 
-impl<T: Clone + Mergeable + ParameterResource> Mergeable for LinkTarget<T> {
+impl<T: TargetParams> Mergeable for LinkTarget<T> {
     fn diff(&self, other: &Self) -> Self {
         match (self, other) {
             (
@@ -69,6 +73,47 @@ impl<T: Clone + Mergeable + ParameterResource> Mergeable for LinkTarget<T> {
     }
 }
 
+impl<T: TargetParams> LinkTarget<T> {
+    pub fn extract(
+        actorlink: &params::link::ActorLink,
+        sarc: &mut Vec<(Option<String>, Vec<u8>)>,
+        user_name: &str,
+    ) -> Result<Self> {
+        let name = actorlink
+            .targets
+            .param(user_name)
+            .ok_or_else(|| UKError::MissingAampKeyD(jstr!("Actor link missing {user_name}")))?
+            .as_string()?;
+        if name == "Dummy" {
+            Ok(Self::Dummy)
+        } else {
+            let path = T::path(name);
+            if let Some(data) = sarc
+                .iter()
+                .position(|f| f.0.as_ref() == Some(&path))
+                .map(|i| sarc.swap_remove(i).1)
+            {
+                let target = T::from_binary(data)?;
+                Ok(Self::Included {
+                    path,
+                    params: target,
+                })
+            } else {
+                Ok(Self::External(name.to_string()))
+            }
+        }
+    }
+
+    pub fn build(self, sarc: &mut SarcWriter) {
+        match self {
+            Self::Dummy | Self::External(_) => {}
+            Self::Included { path, params } => {
+                sarc.add_file(&T::path(&path), params.into_binary(sarc.endian.into()))
+            }
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Actor {
     pub name: String,
@@ -98,46 +143,6 @@ pub struct Actor {
     pub assets: crate::Assets,
 }
 
-macro_rules! extract_target {
-    ($link:expr, $sarc:expr, $userkey:expr, $type:ty, $mtype:ty) => {{
-        let _user = $link
-            .targets
-            .param($userkey)
-            .ok_or(crate::UKError::MissingAampKey(concat!(
-                "Actor link missing ",
-                $userkey
-            )))?
-            .as_string()?;
-        if _user == "Dummy" {
-            LinkTarget::Dummy
-        } else {
-            if let Some((_path, _target)) = $sarc
-                .iter()
-                .position(|f| {
-                    f.0.as_ref()
-                        .map(|n| n == &<$type>::path(_user))
-                        .unwrap_or(false)
-                })
-                .map(|i| -> Result<(String, $type)> {
-                    let (_path, _data) = $sarc.swap_remove(i);
-                    Ok((
-                        _path.unwrap().to_owned(),
-                        <$type>::try_from(&<$mtype>::from_binary(&_data)?)?,
-                    ))
-                })
-                .transpose()?
-            {
-                LinkTarget::Included {
-                    path: _path,
-                    params: _target,
-                }
-            } else {
-                LinkTarget::External(_user.to_owned())
-            }
-        }
-    }};
-}
-
 impl Actor {
     pub fn from_sarc(sarc: &Sarc) -> Result<Self> {
         let mut sarc = sarc.clone().into_files();
@@ -150,146 +155,26 @@ impl Actor {
             ParameterIO::from_binary(&link_file.1)?.try_into()?;
         Ok(Self {
             name: link_file.0.unwrap(),
-            ai_program: extract_target!(
-                actorlink,
-                sarc,
-                "AIProgramUser",
-                params::aiprog::AIProgram,
-                roead::aamp::ParameterIO
-            ),
-            ai_schedule: extract_target!(
-                actorlink,
-                sarc,
-                "AIScheduleUser",
-                params::aischedule::AISchedule,
-                roead::byml::Byml
-            ),
-            as_list: extract_target!(
-                actorlink,
-                sarc,
-                "ASUser",
-                params::aslist::ASList,
-                roead::aamp::ParameterIO
-            ),
-            attention: extract_target!(
-                actorlink,
-                sarc,
-                "AttentionUser",
-                params::atcllist::AttClientList,
-                roead::aamp::ParameterIO
-            ),
-            awareness: extract_target!(
-                actorlink,
-                sarc,
-                "AwarenessUser",
-                params::aware::Awareness,
-                roead::aamp::ParameterIO
-            ),
-            bone_control: extract_target!(
-                actorlink,
-                sarc,
-                "BoneControlUser",
-                params::bonectrl::BoneControl,
-                roead::aamp::ParameterIO
-            ),
-            chemical: extract_target!(
-                actorlink,
-                sarc,
-                "ChemicalUser",
-                params::chemical::Chemical,
-                roead::aamp::ParameterIO
-            ),
-            damage_param: extract_target!(
-                actorlink,
-                sarc,
-                "DamageParamUser",
-                params::damage::DamageParam,
-                roead::aamp::ParameterIO
-            ),
-            drop: extract_target!(
-                actorlink,
-                sarc,
-                "DropTableUser",
-                params::drop::DropTable,
-                roead::aamp::ParameterIO
-            ),
-            gparam: extract_target!(
-                actorlink,
-                sarc,
-                "GParamUser",
-                params::general::GeneralParamList,
-                roead::aamp::ParameterIO
-            ),
-            life_condition: extract_target!(
-                actorlink,
-                sarc,
-                "LifeConditionUser",
-                params::life::LifeCondition,
-                roead::aamp::ParameterIO
-            ),
-            lod: extract_target!(
-                actorlink,
-                sarc,
-                "LODUser",
-                params::lod::Lod,
-                roead::aamp::ParameterIO
-            ),
-            model: extract_target!(
-                actorlink,
-                sarc,
-                "ModelUser",
-                params::modellist::ModelList,
-                roead::aamp::ParameterIO
-            ),
-            physics: extract_target!(
-                actorlink,
-                sarc,
-                "PhysicsUser",
-                params::physics::Physics,
-                roead::aamp::ParameterIO
-            ),
-            rg_blend_weight: extract_target!(
-                actorlink,
-                sarc,
-                "RgBlendWeightUser",
-                params::rgbw::RagdollBlendWeight,
-                roead::aamp::ParameterIO
-            ),
-            rg_config_list: extract_target!(
-                actorlink,
-                sarc,
-                "RgConfigListUser",
-                params::rgconfiglist::RagdollConfigList,
-                roead::aamp::ParameterIO
-            ),
-            recipe: extract_target!(
-                actorlink,
-                sarc,
-                "RecipeUser",
-                params::recipe::Recipe,
-                roead::aamp::ParameterIO
-            ),
-            shop: extract_target!(
-                actorlink,
-                sarc,
-                "ShopDataUser",
-                params::shop::ShopData,
-                roead::aamp::ParameterIO
-            ),
-            umii: extract_target!(
-                actorlink,
-                sarc,
-                "UMiiUser",
-                params::umii::UMii,
-                roead::aamp::ParameterIO
-            ),
-            anim_info: extract_target!(
-                actorlink,
-                sarc,
-                "AnimationInfo",
-                params::animinfo::AnimationInfo,
-                roead::byml::Byml
-            ),
+            ai_program: LinkTarget::extract(&actorlink, &mut sarc, "AIProgramUser")?,
+            ai_schedule: LinkTarget::extract(&actorlink, &mut sarc, "AIScheduleUser")?,
+            as_list: LinkTarget::extract(&actorlink, &mut sarc, "ASUser")?,
+            attention: LinkTarget::extract(&actorlink, &mut sarc, "AttentionUser")?,
+            awareness: LinkTarget::extract(&actorlink, &mut sarc, "AwarenessUser")?,
+            bone_control: LinkTarget::extract(&actorlink, &mut sarc, "BoneControlUser")?,
+            chemical: LinkTarget::extract(&actorlink, &mut sarc, "ChemicalUser")?,
+            damage_param: LinkTarget::extract(&actorlink, &mut sarc, "DamageParamUser")?,
+            drop: LinkTarget::extract(&actorlink, &mut sarc, "DropTableUser")?,
+            gparam: LinkTarget::extract(&actorlink, &mut sarc, "GParamUser")?,
+            life_condition: LinkTarget::extract(&actorlink, &mut sarc, "LifeConditionUser")?,
+            lod: LinkTarget::extract(&actorlink, &mut sarc, "LODUser")?,
+            model: LinkTarget::extract(&actorlink, &mut sarc, "ModelUser")?,
+            physics: LinkTarget::extract(&actorlink, &mut sarc, "PhysicsUser")?,
+            rg_blend_weight: LinkTarget::extract(&actorlink, &mut sarc, "RgBlendWeightUser")?,
+            rg_config_list: LinkTarget::extract(&actorlink, &mut sarc, "RgConfigListUser")?,
+            recipe: LinkTarget::extract(&actorlink, &mut sarc, "RecipeUser")?,
+            shop: LinkTarget::extract(&actorlink, &mut sarc, "ShopDataUser")?,
+            umii: LinkTarget::extract(&actorlink, &mut sarc, "UMiiUser")?,
+            anim_info: LinkTarget::extract(&actorlink, &mut sarc, "AnimationInfo")?,
             link: actorlink,
             as_files: sarc
                 .drain_filter(|(f, _)| f.as_ref().map(|n| n.ends_with(".bas")).unwrap_or(false))
@@ -330,6 +215,26 @@ impl Actor {
             &params::link::ActorLink::path(&self.name),
             ParameterIO::from(self.link).to_binary(),
         );
+        self.ai_program.build(&mut sarc);
+        self.ai_schedule.build(&mut sarc);
+        self.as_list.build(&mut sarc);
+        self.attention.build(&mut sarc);
+        self.awareness.build(&mut sarc);
+        self.bone_control.build(&mut sarc);
+        self.chemical.build(&mut sarc);
+        self.damage_param.build(&mut sarc);
+        self.drop.build(&mut sarc);
+        self.gparam.build(&mut sarc);
+        self.life_condition.build(&mut sarc);
+        self.lod.build(&mut sarc);
+        self.model.build(&mut sarc);
+        self.physics.build(&mut sarc);
+        self.rg_blend_weight.build(&mut sarc);
+        self.rg_config_list.build(&mut sarc);
+        self.recipe.build(&mut sarc);
+        self.shop.build(&mut sarc);
+        self.umii.build(&mut sarc);
+        self.anim_info.build(&mut sarc);
         sarc.add_files(self.assets.into_iter());
         sarc
     }
@@ -466,10 +371,10 @@ pub(crate) fn is_byml_null(byml: &Byml) -> bool {
 pub(crate) use info_params;
 pub(crate) use info_params_filtered;
 
-pub trait InfoSource {
+pub trait InfoSource: ParameterResource {
     fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()>;
 }
 
-pub trait ParameterResource {
+pub trait ParameterResource: Resource {
     fn path(name: &str) -> String;
 }
