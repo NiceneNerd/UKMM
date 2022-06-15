@@ -141,4 +141,12 @@ mod tests {
         let merged = atcl.merge(&diff);
         assert_eq!(atcl2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/AttClient/Enemy_Guardian_LockOn.batcl",
+        );
+        assert!(super::AttClient::path_matches(path));
+    }
 }

@@ -408,4 +408,10 @@ mod tests {
                 .unwrap();
         assert_eq!(pack, pack2);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/Bootup.pack//GameData/savedataformat.ssarc");
+        assert!(super::SaveDataPack::path_matches(path));
+    }
 }

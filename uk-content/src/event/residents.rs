@@ -1,4 +1,4 @@
-use crate::{prelude::Mergeable, util::DeleteMap, Result, UKError};
+use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -59,6 +59,20 @@ impl Mergeable for ResidentEvents {
     }
 }
 
+impl Resource for ResidentEvents {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&Byml::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().file_stem().and_then(|name| name.to_str()) == Some("ResidentEvent")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
@@ -101,5 +115,11 @@ mod tests {
         let diff = residents.diff(&residents2);
         let merged = residents.merge(&diff);
         assert_eq!(merged, residents2);
+    }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/TitleBG.pack//Event/ResidentEvent.byml");
+        assert!(super::ResidentEvents::path_matches(path));
     }
 }

@@ -1,4 +1,4 @@
-use crate::{prelude::Mergeable, util::SortedDeleteMap, Result, UKError};
+use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -106,6 +106,24 @@ impl Mergeable for MapUnit {
     }
 }
 
+impl Resource for MapUnit {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&Byml::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| ext.ends_with("mubin"))
+            .unwrap_or(false)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
@@ -210,5 +228,14 @@ mod tests {
         let diff = munt.diff(&munt2);
         let merged = munt.merge(&diff);
         assert_eq!(merged, munt2);
+    }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Map/MainField/F-3/F-3_Dynamic.smubin");
+        assert!(super::MapUnit::path_matches(&path));
+        let path2 =
+            std::path::Path::new("aoc/0010/Map/CDungeon/Dungeon044/Dungeon044_Static.mubin");
+        assert!(super::MapUnit::path_matches(&path2));
     }
 }

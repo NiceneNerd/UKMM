@@ -172,4 +172,12 @@ mod tests {
         let merged = atcllist.merge(&diff);
         assert_eq!(atcllist2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/AttClientList/Guardian_A.batcllist",
+        );
+        assert!(super::AttClientList::path_matches(path));
+    }
 }

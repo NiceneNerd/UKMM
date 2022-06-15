@@ -350,4 +350,12 @@ mod tests {
         let merged = shop.merge(&diff);
         assert_eq!(shop2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/ShopData/Npc_TripMaster_00.bshop",
+        );
+        assert!(super::ShopData::path_matches(path));
+    }
 }

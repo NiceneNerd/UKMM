@@ -219,4 +219,12 @@ mod tests {
         let merged = rgconfiglist.merge(&diff);
         assert_eq!(rgconfiglist2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Moriblin_Junior.sbactorpack//Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist",
+        );
+        assert!(super::RagdollConfigList::path_matches(path));
+    }
 }

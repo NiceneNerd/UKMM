@@ -82,4 +82,10 @@ mod tests {
         let merged = winfo.merge(&diff);
         assert_eq!(merged, winfo2);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/WorldMgr/normal.bwinfo");
+        assert!(super::WorldInfo::path_matches(&path));
+    }
 }

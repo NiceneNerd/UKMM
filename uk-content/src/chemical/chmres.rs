@@ -131,4 +131,10 @@ mod tests {
         let merged = chmres.merge(&diff);
         assert_eq!(merged, chmres2)
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/Bootup.pack//Chemical/system.bchmres");
+        assert!(super::ChemicalRes::path_matches(path));
+    }
 }

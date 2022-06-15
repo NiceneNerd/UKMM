@@ -490,4 +490,12 @@ mod tests {
         assert_eq!(info["traverseDist"], Byml::Float(0.0));
         assert_eq!(info["yLimitAlgo"], Byml::String("NoLimit".into()));
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/LifeCondition/Enemy_Guardian_A.blifecondition",
+        );
+        assert!(super::LifeCondition::path_matches(path));
+    }
 }

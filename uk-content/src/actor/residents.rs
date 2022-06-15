@@ -142,4 +142,10 @@ mod tests {
         let merged = residents.merge(&diff);
         assert_eq!(merged, residents2);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/TitleBG.pack//Actor/ResidentActors.byml");
+        assert!(super::ResidentActors::path_matches(path));
+    }
 }

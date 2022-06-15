@@ -803,4 +803,12 @@ mod tests {
             roead::byml::Byml::Float(0.150000006)
         );
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/Physics/Npc_TripMaster_00.bphysics",
+        );
+        assert!(super::Physics::path_matches(path));
+    }
 }

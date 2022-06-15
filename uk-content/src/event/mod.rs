@@ -1,2 +1,2 @@
-pub mod residents;
 pub mod info;
+pub mod residents;

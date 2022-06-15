@@ -110,4 +110,12 @@ mod tests {
         let merged = awareness.merge(&diff);
         assert_eq!(awareness2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/Awareness/Guardian.bawareness",
+        );
+        assert!(super::Awareness::path_matches(path));
+    }
 }

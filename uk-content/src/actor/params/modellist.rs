@@ -281,4 +281,12 @@ mod tests {
         );
         assert!(!info.contains_key("variationMatAnim"));
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/ModelList/Npc_TripMaster_00.bmodellist",
+        );
+        assert!(super::ModelList::path_matches(path));
+    }
 }

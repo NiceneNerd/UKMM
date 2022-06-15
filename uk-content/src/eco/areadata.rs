@@ -156,4 +156,10 @@ mod tests {
         let merged = areadata.merge(&diff);
         assert_eq!(merged, areadata2);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/Bootup.pack//Ecosystem/AreaData.sbyml");
+        assert!(super::AreaData::path_matches(path));
+    }
 }

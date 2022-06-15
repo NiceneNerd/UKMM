@@ -110,4 +110,12 @@ mod tests {
         let merged = aischedule.merge(&diff);
         assert_eq!(aischedule2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/AISchedule/Npc_TripMaster_00.baischedule",
+        );
+        assert!(super::AISchedule::path_matches(path));
+    }
 }

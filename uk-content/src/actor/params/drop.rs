@@ -243,4 +243,12 @@ mod tests {
             .as_slice()
         );
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/DropTable/Enemy_Guardian_A.bdrop",
+        );
+        assert!(super::DropTable::path_matches(path));
+    }
 }

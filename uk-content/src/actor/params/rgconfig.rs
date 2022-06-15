@@ -156,4 +156,12 @@ mod tests {
         let merged = rgconfig.merge(&diff);
         assert_eq!(rgconfig2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Moriblin_Junior.sbactorpack//Actor/RagdollConfig/Moriblin_Blue_Bomb.brgconfig",
+        );
+        assert!(super::RagdollConfig::path_matches(path));
+    }
 }

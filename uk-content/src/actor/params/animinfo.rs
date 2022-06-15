@@ -110,4 +110,12 @@ mod tests {
         let merged = animinfo.merge(&diff);
         assert_eq!(animinfo2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/AnimationInfo/Npc_TripMaster_00.baniminfo",
+        );
+        assert!(super::AnimationInfo::path_matches(path));
+    }
 }

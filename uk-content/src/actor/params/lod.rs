@@ -110,4 +110,12 @@ mod tests {
         let merged = lod.merge(&diff);
         assert_eq!(lod2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/LOD/EnemyNoCalcSkip.blod",
+        );
+        assert!(super::Lod::path_matches(path));
+    }
 }

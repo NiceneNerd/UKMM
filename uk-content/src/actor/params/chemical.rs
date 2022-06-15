@@ -266,4 +266,12 @@ mod tests {
         assert_eq!(info["Chemical"]["Capaciter"], roead::byml::Byml::Int(1));
         assert_eq!(info["Chemical"]["Burnable"], roead::byml::Byml::Int(1));
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/Chemical/NPC.bchemical",
+        );
+        assert!(super::Chemical::path_matches(path));
+    }
 }

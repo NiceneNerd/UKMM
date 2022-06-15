@@ -266,4 +266,12 @@ mod tests {
         assert_eq!(info["tags"]["tag3a61e2a9"], Byml::Int(979493545));
         assert_eq!(info["tags"]["tag994aef4b"], Byml::UInt(0x994aef4b));
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/ActorLink/Enemy_Guardian_A.bxml",
+        );
+        assert!(super::ActorLink::path_matches(path));
+    }
 }

@@ -110,4 +110,12 @@ mod tests {
         let merged = umii.merge(&diff);
         assert_eq!(umii2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/UMii/Npc_TripMaster_00.bumii",
+        );
+        assert!(super::UMii::path_matches(path));
+    }
 }

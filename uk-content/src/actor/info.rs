@@ -185,4 +185,10 @@ mod tests {
             panic!("merged != actorinfo2");
         }
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Actor/ActorInfo.product.sbyml");
+        assert!(super::ActorInfo::path_matches(path));
+    }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    prelude::Mergeable,
+    prelude::*,
     util::{DeleteMap, DeleteVec},
     Result, UKError,
 };
@@ -180,6 +180,22 @@ impl Mergeable for Static {
     }
 }
 
+impl Resource for Static {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&Byml::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref()
+            .with_extension("")
+            .ends_with("CDungeon/Static")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
@@ -270,5 +286,11 @@ mod tests {
         let diff = static_.diff(&static2);
         let merged = static_.merge(&diff);
         assert_eq!(merged, static2);
+    }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/Bootup.pack//Map/CDungeon/Static.smubin");
+        assert!(super::Static::path_matches(path));
     }
 }

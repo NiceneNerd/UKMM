@@ -263,4 +263,12 @@ mod tests {
         let merged = bonectrl.merge(&diff);
         assert_eq!(bonectrl2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/BoneControl/Npc_TripMaster_00.bbonectrl",
+        );
+        assert!(super::BoneControl::path_matches(path));
+    }
 }

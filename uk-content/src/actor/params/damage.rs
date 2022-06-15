@@ -110,4 +110,12 @@ mod tests {
         let merged = dmgparam.merge(&diff);
         assert_eq!(dmgparam2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/DamageParam/Guardian.bdmgparam",
+        );
+        assert!(super::DamageParam::path_matches(path));
+    }
 }

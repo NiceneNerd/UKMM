@@ -295,4 +295,12 @@ mod tests {
         let merged = as_data.merge(&diff);
         assert_eq!(as_data2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/AS/Guardian_MaterialDefault.bas",
+        );
+        assert!(super::AS::path_matches(path));
+    }
 }

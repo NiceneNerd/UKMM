@@ -25,6 +25,20 @@ impl From<EventInfo> for Byml {
 
 impl_simple_byml!(EventInfo, 0);
 
+impl Resource for EventInfo {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        Ok((&Byml::from_binary(data.as_ref())?).into())
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().file_stem().and_then(|name| name.to_str()) == Some("EventInfo.product")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
@@ -76,5 +90,11 @@ mod tests {
         let diff = eventinfo.diff(&eventinfo2);
         let merged = eventinfo.merge(&diff);
         assert_eq!(merged, eventinfo2);
+    }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/TitleBG.pack//Event/EventInfo.product.sbyml");
+        assert!(super::EventInfo::path_matches(path));
     }
 }

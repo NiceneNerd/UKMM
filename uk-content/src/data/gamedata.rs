@@ -396,4 +396,10 @@ mod tests {
         let gamedata2 = super::GameDataPack::from_sarc_writer(&gs2).unwrap();
         assert_eq!(gamedata, gamedata2);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/Bootup.pack//GameData/gamedata.ssarc");
+        assert!(super::GameDataPack::path_matches(path));
+    }
 }

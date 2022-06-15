@@ -1,5 +1,5 @@
 use crate::{
-    prelude::Mergeable,
+    prelude::*,
     util::{DeleteVec, SortedDeleteMap},
     Result, UKError,
 };
@@ -124,6 +124,20 @@ impl Mergeable for Location {
     }
 }
 
+impl Resource for Location {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&Byml::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref().file_stem().and_then(|name| name.to_str()) == Some("Location")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
@@ -175,5 +189,11 @@ mod tests {
         let diff = location.diff(&location2);
         let merged = location.merge(&diff);
         assert_eq!(merged, location2);
+    }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Map/MainField/Location.smubin");
+        assert!(super::Location::path_matches(path));
     }
 }

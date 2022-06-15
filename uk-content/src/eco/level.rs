@@ -39,163 +39,157 @@ impl TryFrom<&Byml> for LevelSensor {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let hash = byml.as_hash().unwrap();
+        let hash = byml.as_hash()?;
         Ok(Self {
             enemy: hash
                 .get("enemy")
                 .ok_or(UKError::MissingBymlKey(
                     "Level sensor missing enemy section",
-                )).unwrap()
-                .as_array().unwrap()
+                ))?
+                .as_array()?
                 .iter()
                 .map(|enemy| -> Result<(String, Series)> {
-                    let enemy = enemy.as_hash().unwrap();
+                    let enemy = enemy.as_hash()?;
                     Ok((
                         enemy
                             .get("species")
                             .ok_or(UKError::MissingBymlKey(
                                 "Level sensor enemy entry missing species",
-                            )).unwrap()
-                            .as_string().unwrap()
+                            ))?
+                            .as_string()?
                             .to_owned(),
                         enemy
                             .get("actors")
                             .ok_or(UKError::MissingBymlKey(
                                 "Level sensor enemy entry missing actors",
-                            )).unwrap()
-                            .as_array().unwrap()
+                            ))?
+                            .as_array()?
                             .iter()
                             .map(|actor| -> Result<(String, f32)> {
-                                let actor = actor.as_hash().unwrap();
+                                let actor = actor.as_hash()?;
                                 Ok((
                                     actor
                                         .get("name")
                                         .ok_or(UKError::MissingBymlKey(
                                             "Leven sensor enemy entry actor missing name",
-                                        )).unwrap()
-                                        .as_string().unwrap()
+                                        ))?
+                                        .as_string()?
                                         .to_owned(),
                                     actor
                                         .get("value")
                                         .ok_or(UKError::MissingBymlKey(
                                             "Leven sensor enemy entry actor missing value",
-                                        )).unwrap()
-                                        .as_float().unwrap(),
+                                        ))?
+                                        .as_float()?,
                                 ))
                             })
-                            .collect::<Result<_>>().unwrap(),
+                            .collect::<Result<_>>()?,
                     ))
                 })
-                .collect::<Result<_>>().unwrap(),
+                .collect::<Result<_>>()?,
             flag: hash
                 .get("flag")
-                .ok_or(UKError::MissingBymlKey("Level sensor missing flag section")).unwrap()
-                .as_array().unwrap()
+                .ok_or(UKError::MissingBymlKey("Level sensor missing flag section"))?
+                .as_array()?
                 .iter()
                 .map(|flag| -> Result<(String, f32)> {
-                    let flag = flag.as_hash().unwrap();
+                    let flag = flag.as_hash()?;
                     Ok((
                         flag.get("name")
                             .ok_or(UKError::MissingBymlKey(
                                 "Leven sensor flag entry missing name",
-                            )).unwrap()
-                            .as_string().unwrap()
+                            ))?
+                            .as_string()?
                             .to_owned(),
                         flag.get("point")
                             .ok_or(UKError::MissingBymlKey(
                                 "Leven sensor flag entry missing point",
-                            )).unwrap()
-                            .as_float().unwrap(),
+                            ))?
+                            .as_float()?,
                     ))
                 })
-                .collect::<Result<_>>().unwrap(),
+                .collect::<Result<_>>()?,
             setting: hash
                 .get("setting")
                 .ok_or(UKError::MissingBymlKey(
                     "Level sensor missing setting section",
-                )).unwrap()
-                .as_hash().unwrap()
+                ))?
+                .as_hash()?
                 .iter()
-                .map(|(k, v)| -> Result<(String, f32)> { Ok((k.clone(), v.as_float().unwrap())) })
-                .collect::<Result<_>>().unwrap(),
-            weapon: hash.get("weapon").ok_or(UKError::MissingBymlKey("Level sensor missing weapon section")).unwrap().as_array().unwrap().iter().map(|weapon| -> Result<((String, String), WeaponSeries)> {
-                let weapon = weapon.as_hash().unwrap();
-                Ok((
-                    (
-                        weapon
-                            .get("actorType")
-                            .ok_or(UKError::MissingBymlKey(
-                                "Level sensor weapon entry missing actor type",
-                            ))
-                            .unwrap()
-                            .as_string()
-                            .unwrap()
-                            .to_owned(),
-                        weapon
-                            .get("series")
-                            .ok_or(UKError::MissingBymlKey(
-                                "Level sensor weapon entry missing series",
-                            ))
-                            .unwrap()
-                            .as_string()
-                            .unwrap()
-                            .to_owned(),
-                    ),
-                    WeaponSeries {
-                        not_rank_up: weapon
-                            .get("not_rank_up")
-                            .ok_or(UKError::MissingBymlKey(
-                                "Level sensor weapon entry missing not_rank_up",
-                            ))
-                            .unwrap()
-                            .as_bool()
-                            .unwrap(),
-                        actors: weapon
-                            .get("actors")
-                            .ok_or(UKError::MissingBymlKey(
-                                "Level sensor weapon entry missing actors list",
-                            ))
-                            .unwrap()
-                            .as_array()
-                            .unwrap()
-                            .iter()
-                            .map(|actor| -> Result<(String, (i32, f32))> {
-                                let actor = actor.as_hash().unwrap();
-                                Ok((
-                                    actor
-                                        .get("name")
-                                        .ok_or(UKError::MissingBymlKey(
-                                            "Level sensor weapon actor entry missing name",
-                                        ))
-                                        .unwrap()
-                                        .as_string()
-                                        .unwrap()
-                                        .to_owned(),
-                                    (
+                .map(|(k, v)| -> Result<(String, f32)> {
+                    Ok((k.clone(), v.as_float()?))
+                })
+                .collect::<Result<_>>()?,
+            weapon: hash.get("weapon")
+                .ok_or(UKError::MissingBymlKey(
+                    "Level sensor missing weapon section",
+                ))?
+                .as_array()?
+                .iter()
+                .map(|weapon| -> Result<((String, String), WeaponSeries)> {
+                    let weapon = weapon.as_hash()?;
+                    Ok((
+                        (
+                            weapon
+                                .get("actorType")
+                                .ok_or(UKError::MissingBymlKey(
+                                    "Level sensor weapon entry missing actor type",
+                                ))?
+                                .as_string()?
+                                .to_owned(),
+                            weapon
+                                .get("series")
+                                .ok_or(UKError::MissingBymlKey(
+                                    "Level sensor weapon entry missing series",
+                                ))?
+                                .as_string()?
+                                .to_owned(),
+                        ),
+                        WeaponSeries {
+                            not_rank_up: weapon
+                                .get("not_rank_up")
+                                .ok_or(UKError::MissingBymlKey(
+                                    "Level sensor weapon entry missing not_rank_up",
+                                ))?
+                                .as_bool()?,
+                            actors: weapon
+                                .get("actors")
+                                .ok_or(UKError::MissingBymlKey(
+                                    "Level sensor weapon entry missing actors list",
+                                ))?
+                                .as_array()?
+                                .iter()
+                                .map(|actor| -> Result<(String, (i32, f32))> {
+                                    let actor = actor.as_hash()?;
+                                    Ok((
                                         actor
-                                            .get("plus")
+                                            .get("name")
                                             .ok_or(UKError::MissingBymlKey(
-                                                "Level sensor weapon actor entry missing plus value",
-                                            ))
-                                            .unwrap()
-                                            .as_int()
-                                            .unwrap(),
-                                        actor
-                                            .get("value")
-                                            .ok_or(UKError::MissingBymlKey(
-                                                "Level sensor weapon actor entry missing value",
-                                            ))
-                                            .unwrap()
-                                            .as_float()
-                                            .unwrap(),
-                                    ),
-                                ))
-                            })
-                            .collect::<Result<_>>()
-                            .unwrap(),
-                    },
-                ))
-            }).collect::<Result<_>>().unwrap()
+                                                "Level sensor weapon actor entry missing name",
+                                            ))?
+                                            .as_string()?
+                                            .to_owned(),
+                                        (
+                                            actor
+                                                .get("plus")
+                                                .ok_or(UKError::MissingBymlKey(
+                                                    "Level sensor weapon actor entry missing plus value",
+                                                ))?
+                                                .as_int()?,
+                                            actor
+                                                .get("value")
+                                                .ok_or(UKError::MissingBymlKey(
+                                                    "Level sensor weapon actor entry missing value",
+                                                ))?
+                                                .as_float()?,
+                                        ),
+                                    ))
+                                })
+                                .collect::<Result<_>>()?,
+                        },
+                    ))
+                })
+                .collect::<Result<_>>()?
         })
     }
 }
@@ -324,15 +318,19 @@ impl Mergeable for LevelSensor {
                     .chain(diff.weapon.keys())
                     .cloned()
                     .collect();
-                key.into_iter().map(|key| {
-                    let (self_series, diff_series) = (self.weapon.get(&key), diff.weapon.get(&key));
-                    if let Some(self_series) = self_series && let Some(diff_series) = diff_series {
+                key.into_iter()
+                    .map(|key| {
+                        let (self_series, diff_series) =
+                            (self.weapon.get(&key), diff.weapon.get(&key));
+                        if let Some(self_series) = self_series
+                        && let Some(diff_series) = diff_series
+                    {
                         (key, self_series.merge(diff_series))
                     } else {
                         (key, diff_series.or(self_series).cloned().unwrap())
                     }
-                })
-                .collect::<DeleteMap<_, _>>()
+                    })
+                    .collect::<DeleteMap<_, _>>()
             }
             .and_delete(),
         }
@@ -404,5 +402,11 @@ mod tests {
         let diff = sensor.diff(&sensor2);
         let merged = sensor.merge(&diff);
         assert_eq!(merged, sensor2);
+    }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/Bootup.pack//Ecosystem/LevelSensor.sbyml");
+        assert!(super::LevelSensor::path_matches(path));
     }
 }

@@ -356,4 +356,12 @@ mod tests {
             Byml::String("SomePoint".to_owned())
         );
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/GeneralParamList/Guardian.bgparamlist",
+        );
+        assert!(super::GeneralParamList::path_matches(path));
+    }
 }

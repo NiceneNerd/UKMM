@@ -256,4 +256,12 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Armor_151_Upper.sbactorpack//Actor/Recipe/Armor_151_Upper.brecipe",
+        );
+        assert!(super::Recipe::path_matches(path));
+    }
 }

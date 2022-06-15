@@ -848,4 +848,12 @@ mod tests {
         let merged = aiprog.merge(&diff);
         assert_eq!(aiprog2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/AIProgram/Guardian_A.baiprog",
+        );
+        assert!(super::AIProgram::path_matches(path));
+    }
 }

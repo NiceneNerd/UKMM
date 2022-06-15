@@ -298,4 +298,12 @@ mod tests {
         let merged = aslist.merge(&diff);
         assert_eq!(aslist2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Npn_TripMaster_00.sbactorpack//Actor/ASList/Npc_TripMaster_00.baslist",
+        );
+        assert!(super::ASList::path_matches(path));
+    }
 }

@@ -135,4 +135,10 @@ mod tests {
         let merged = cookdata.merge(&diff);
         assert_eq!(merged, cookdata2);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/Bootup.pack//Cooking/CookData.sbyml");
+        assert!(super::CookData::path_matches(path));
+    }
 }

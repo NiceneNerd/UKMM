@@ -1,4 +1,4 @@
-use crate::{prelude::Mergeable, util::SortedDeleteMap, Result, UKError};
+use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +40,24 @@ impl Mergeable for Tips {
 
     fn merge(&self, diff: &Self) -> Self {
         Self(self.0.merge(&diff.0))
+    }
+}
+
+impl Resource for Tips {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&Byml::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+        Byml::from(self).to_binary(endian.into())
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref()
+            .file_stem()
+            .and_then(|name| name.to_str())
+            .map(|name| name.starts_with("Tips"))
+            .unwrap_or(false)
     }
 }
 
@@ -91,5 +109,11 @@ mod tests {
         let diff = tips.diff(&tips2);
         let merged = tips.merge(&diff);
         assert_eq!(merged, tips2);
+    }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new("content/Pack/Bootup.pack//Tips/TipsWorld.sbyml");
+        assert!(super::Tips::path_matches(&path));
     }
 }

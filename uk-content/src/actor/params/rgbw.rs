@@ -263,4 +263,12 @@ mod tests {
         let merged = rgbw.merge(&diff);
         assert_eq!(rgbw2, merged);
     }
+
+    #[test]
+    fn identify() {
+        let path = std::path::Path::new(
+            "content/Actor/Pack/Enemy_Moriblin_Junior.sbactorpack//Actor/RagdollBlendWeight/Moriblin.brgbw",
+        );
+        assert!(super::RagdollBlendWeight::path_matches(path));
+    }
 }

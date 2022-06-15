@@ -81,4 +81,11 @@ mod tests {
         let merged = demo.merge(&diff);
         assert_eq!(merged, demo2)
     }
+
+    #[test]
+    fn identify() {
+        let path =
+            std::path::Path::new("content/Event/SomeEvent.sbeventpack//Demo/Demo005_0.bdemo");
+        assert!(super::Demo::path_matches(path));
+    }
 }

@@ -233,4 +233,11 @@ mod tests {
         let merged = status.merge(&diff);
         assert_eq!(merged, status2);
     }
+
+    #[test]
+    fn identify() {
+        let path =
+            std::path::Path::new("content/Pack/Bootup.pack//Ecosystem/StatusEffectList.sbyml");
+        assert!(super::StatusEffectList::path_matches(path));
+    }
 }
