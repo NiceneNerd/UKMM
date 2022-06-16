@@ -1,7 +1,10 @@
 use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::hash::Hash;
+
+use crate::prelude::Mergeable;
 
 pub trait DeleteKey: Hash + Eq + Clone {}
 impl<T> DeleteKey for T where T: Hash + Eq + Clone {}
@@ -114,8 +117,10 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
         self.0.push(item);
         self.1.push(true);
     }
+}
 
-    pub fn diff(&self, other: &Self) -> Self {
+impl<T: Clone + PartialEq> Mergeable for DeleteVec<T> {
+    fn diff(&self, other: &Self) -> Self {
         other
             .iter()
             .filter(|it| !self.contains(*it))
@@ -127,13 +132,13 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
             .collect()
     }
 
-    pub fn merge(&self, other: &Self) -> Self {
+    fn merge(&self, diff: &Self) -> Self {
         let mut all_items: Vec<T> = self
             .iter()
-            .filter(|item| other.is_delete(*item) != Some(true))
+            .filter(|item| diff.is_delete(*item) != Some(true))
             .cloned()
             .collect();
-        for (idx, item) in other.iter().enumerate() {
+        for (idx, item) in diff.iter().enumerate() {
             if !all_items.contains(item) {
                 all_items.insert(idx, item.clone());
             }
@@ -164,6 +169,12 @@ impl<T: DeleteKey> From<IndexMap<T, bool>> for DeleteSet<T> {
 impl<T: DeleteKey> FromIterator<(T, bool)> for DeleteSet<T> {
     fn from_iter<I: IntoIterator<Item = (T, bool)>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
+    }
+}
+
+impl<T: DeleteKey> FromIterator<T> for DeleteSet<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self(iter.into_iter().map(|item| (item, false)).collect())
     }
 }
 
@@ -229,6 +240,28 @@ impl<T: DeleteKey> DeleteSet<T> {
 
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+}
+
+impl<T: DeleteKey> Mergeable for DeleteSet<T> {
+    fn diff(&self, other: &Self) -> Self {
+        other
+            .iter()
+            .filter(|it| !self.contains(*it))
+            .map(|it| (it.clone(), false))
+            .chain(
+                self.iter()
+                    .filter_map(|it| (!other.contains(it)).then(|| (it.clone(), true))),
+            )
+            .collect()
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        self.iter()
+            .interleave(diff.iter())
+            .cloned()
+            .collect::<Self>()
+            .and_delete()
     }
 }
 

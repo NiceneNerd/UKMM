@@ -11,6 +11,7 @@ pub mod eco;
 pub mod event;
 pub mod map;
 pub mod quest;
+pub mod sound;
 pub mod tips;
 pub mod util;
 pub mod worldmgr;
