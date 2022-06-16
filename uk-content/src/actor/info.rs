@@ -1,6 +1,6 @@
 use crate::{
     prelude::*,
-    util::{self, SortedDeleteMap},
+    util::{self, BymlHashValue, SortedDeleteMap},
     Result, UKError,
 };
 use roead::byml::Byml;
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-pub struct ActorInfo(pub SortedDeleteMap<u32, Byml>);
+pub struct ActorInfo(pub SortedDeleteMap<BymlHashValue, Byml>);
 
 impl TryFrom<&Byml> for ActorInfo {
     type Error = UKError;
@@ -32,12 +32,8 @@ impl TryFrom<&Byml> for ActorInfo {
                 actors
                     .iter()
                     .zip(hashes.iter())
-                    .map(|(actor, hash)| -> Result<(u32, Byml)> {
-                        Ok((
-                            hash.as_uint()
-                                .or_else(|_| hash.as_int().map(|i| i as u32))?,
-                            actor.clone(),
-                        ))
+                    .map(|(actor, hash)| -> Result<(BymlHashValue, Byml)> {
+                        Ok((hash.try_into()?, actor.clone()))
                     })
                     .collect::<Result<_>>()?,
             ))
@@ -55,7 +51,7 @@ impl From<ActorInfo> for Byml {
                 ),
                 (
                     "Hashes".to_owned(),
-                    Byml::Array(val.0.keys().map(|k| Byml::UInt(*k)).collect()),
+                    Byml::Array(val.0.keys().map(Byml::from).collect()),
                 ),
             ]
             .into_iter()
@@ -89,7 +85,7 @@ impl Mergeable for ActorInfo {
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        let keys: BTreeSet<u32> = self.0.keys().chain(diff.0.keys()).copied().collect();
+        let keys: BTreeSet<BymlHashValue> = self.0.keys().chain(diff.0.keys()).copied().collect();
         Self(
             keys.into_iter()
                 .map(|hash| {
@@ -111,7 +107,7 @@ impl Mergeable for ActorInfo {
                         )
                     }
                 })
-                .collect::<SortedDeleteMap<u32, Byml>>()
+                .collect::<SortedDeleteMap<BymlHashValue, Byml>>()
                 .and_delete(),
         )
     }

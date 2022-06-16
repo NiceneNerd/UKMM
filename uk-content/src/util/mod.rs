@@ -139,3 +139,100 @@ pub fn simple_index_merge<T: Clone + PartialEq>(
         .map(|(i, body)| (*i, body.clone()))
         .collect()
 }
+
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    Copy,
+    Eq,
+    PartialEq,
+    Hash,
+    Ord,
+    PartialOrd,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+pub struct BymlHashValue(pub u32);
+
+impl TryFrom<Byml> for BymlHashValue {
+    type Error = crate::UKError;
+
+    fn try_from(value: Byml) -> crate::Result<Self> {
+        Ok(match value {
+            Byml::UInt(v) => Self(v),
+            Byml::Int(v) => Self(v as u32),
+            _ => {
+                return Err(crate::UKError::WrongBymlType(
+                    roead::byml::BymlError::TypeError,
+                ))
+            }
+        })
+    }
+}
+
+impl TryFrom<&Byml> for BymlHashValue {
+    type Error = crate::UKError;
+
+    fn try_from(value: &Byml) -> crate::Result<Self> {
+        Ok(match value {
+            Byml::UInt(v) => Self(*v),
+            Byml::Int(v) => Self(*v as u32),
+            _ => {
+                return Err(crate::UKError::WrongBymlType(
+                    roead::byml::BymlError::TypeError,
+                ))
+            }
+        })
+    }
+}
+
+impl From<u32> for BymlHashValue {
+    fn from(val: u32) -> Self {
+        Self(val)
+    }
+}
+
+impl From<i32> for BymlHashValue {
+    fn from(val: i32) -> Self {
+        Self(val as u32)
+    }
+}
+
+impl From<usize> for BymlHashValue {
+    fn from(val: usize) -> Self {
+        Self(val as u32)
+    }
+}
+
+impl From<BymlHashValue> for u32 {
+    fn from(val: BymlHashValue) -> Self {
+        val.0
+    }
+}
+
+impl From<BymlHashValue> for i32 {
+    fn from(val: BymlHashValue) -> Self {
+        val.0 as i32
+    }
+}
+
+impl From<BymlHashValue> for Byml {
+    fn from(val: BymlHashValue) -> Self {
+        if val.0 > 0x80000000 {
+            Byml::Int(val.0 as i32)
+        } else {
+            Byml::UInt(val.0)
+        }
+    }
+}
+
+impl From<&BymlHashValue> for Byml {
+    fn from(val: &BymlHashValue) -> Self {
+        if val.0 > 0x80000000 {
+            Byml::Int(val.0 as i32)
+        } else {
+            Byml::UInt(val.0)
+        }
+    }
+}
