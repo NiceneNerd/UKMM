@@ -1,8 +1,4 @@
-use crate::{
-    prelude::{Mergeable, Resource},
-    util::DeleteMap,
-    Result, UKError,
-};
+use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -98,6 +94,11 @@ impl Resource for ResidentActors {
         path.as_ref().file_name().and_then(|name| name.to_str()) == Some("ResidentActors.byml")
     }
 }
+
+single_path!(
+    ResidentActors,
+    "Pack/TitleBG.pack//Actor/ResidentActors.byml"
+);
 
 #[cfg(test)]
 mod tests {

@@ -58,6 +58,11 @@ impl Resource for QuestProduct {
     }
 }
 
+single_path!(
+    QuestProduct,
+    "Pack/TitleBG.pack//Quest/QuestProduct.sbquestpack"
+);
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

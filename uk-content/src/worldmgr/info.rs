@@ -39,6 +39,8 @@ impl Resource for WorldInfo {
     }
 }
 
+single_path!(WorldInfo, "Pack/TitleBG.pack//World/WorldInfo.bwinfo");
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

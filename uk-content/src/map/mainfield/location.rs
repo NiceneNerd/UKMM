@@ -138,6 +138,8 @@ impl Resource for Location {
     }
 }
 
+single_path!(Location, "Map/MainField/Location.smubin");
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

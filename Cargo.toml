@@ -12,5 +12,6 @@ features = ["with-serde"]
 
 [workspace]
 members = [
-    "uk-content"
+    "uk-content",
+    "uk-mod"
 ]

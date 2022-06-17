@@ -39,6 +39,8 @@ impl Resource for EventInfo {
     }
 }
 
+single_path!(EventInfo, "Pack/Bootup.pack//Event/EventInfo.product.sbyml");
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

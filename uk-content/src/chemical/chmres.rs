@@ -88,6 +88,8 @@ impl Resource for ChemicalRes {
     }
 }
 
+single_path!(ChemicalRes, "Pack/Bootup.pack//Chemical/system.bchmres");
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

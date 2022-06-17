@@ -106,6 +106,8 @@ impl Resource for AreaData {
     }
 }
 
+single_path!(AreaData, "Pack/Bootup.pack//Ecosystem/AreaData.sbyml");
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

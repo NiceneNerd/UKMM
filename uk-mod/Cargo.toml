@@ -1,0 +1,12 @@
+[package]
+name = "uk-mod"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lzma = "0.2.2"
+roead = { version = "0.10.3", features = ["with-serde"] }
+serde = { version = "1.0.137", features = ["derive"] }
+toml = "0.5.9"
+zip = "0.6.2"
+uk-content = { path = "../uk-content" }

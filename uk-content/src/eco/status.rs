@@ -179,6 +179,11 @@ impl Resource for StatusEffectList {
     }
 }
 
+single_path!(
+    StatusEffectList,
+    "Pack/Bootup.pack//Ecosystem/StatusEffectList.sbyml"
+);
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

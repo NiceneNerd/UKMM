@@ -127,6 +127,8 @@ impl Resource for ActorInfo {
     }
 }
 
+single_path!(ActorInfo, "Actor/ActorInfo.product.sbyml");
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

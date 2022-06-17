@@ -62,6 +62,11 @@ impl Resource for BarslistInfo {
     }
 }
 
+single_path!(
+    BarslistInfo,
+    "Pack/Bootup.pack//Sound/ResourceList/BarslistInfo.sbyml"
+);
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

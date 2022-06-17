@@ -336,6 +336,8 @@ impl Resource for GameDataPack {
     }
 }
 
+single_path!(GameDataPack, "Pack/Bootup.pack//GameData/gamedata.ssarc");
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

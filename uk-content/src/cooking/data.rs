@@ -85,6 +85,8 @@ impl Resource for CookData {
     }
 }
 
+single_path!(CookData, "Pack/Bootuo.pack//Cooking/CookData.sbyml");
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
