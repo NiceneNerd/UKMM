@@ -349,12 +349,12 @@ mod tests {
 
     fn load_gamedata() -> Byml {
         let gs = load_gamedata_sarc();
-        Byml::from_binary(&gs.get_file_data("/revival_s32_data_0.bgdata").unwrap()).unwrap()
+        Byml::from_binary(gs.get_file_data("/revival_s32_data_0.bgdata").unwrap()).unwrap()
     }
 
     fn load_mod_gamedata() -> Byml {
         let gs = load_gamedata_sarc();
-        Byml::from_binary(&gs.get_file_data("/revival_s32_data_0.mod.bgdata").unwrap()).unwrap()
+        Byml::from_binary(gs.get_file_data("/revival_s32_data_0.mod.bgdata").unwrap()).unwrap()
     }
 
     #[test]
