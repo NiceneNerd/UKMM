@@ -1,4 +1,5 @@
 pub mod dirs;
+pub(crate) mod resource;
 use uk_content::{prelude::Mergeable, util::SortedDeleteMap};
 pub mod data;
 

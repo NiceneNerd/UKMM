@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.58"
+join_str = "0.1.0"
 lzma = "0.2.2"
 roead = { version = "0.10.3", features = ["with-serde"] }
 serde = { version = "1.0.137", features = ["derive"] }
 toml = "0.5.9"
-zip = "0.6.2"
+trait_enum = "0.5.0"
 uk-content = { path = "../uk-content" }
+zip = "0.6.2"
