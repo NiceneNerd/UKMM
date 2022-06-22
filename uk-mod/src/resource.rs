@@ -1,52 +1,39 @@
-use uk_content::actor::info::ActorInfo;
-use uk_content::actor::params::aiprog::AIProgram;
-use uk_content::actor::params::aischedule::AISchedule;
-use uk_content::actor::params::animinfo::AnimationInfo;
-use uk_content::actor::params::aslist::ASList;
-use uk_content::actor::params::atcl::AttClient;
-use uk_content::actor::params::atcllist::AttClientList;
-use uk_content::actor::params::aware::Awareness;
-use uk_content::actor::params::bonectrl::BoneControl;
-use uk_content::actor::params::chemical::Chemical;
-use uk_content::actor::params::damage::DamageParam;
-use uk_content::actor::params::drop::DropTable;
-use uk_content::actor::params::general::GeneralParamList;
-use uk_content::actor::params::life::LifeCondition;
-use uk_content::actor::params::link::ActorLink;
-use uk_content::actor::params::lod::Lod;
-use uk_content::actor::params::modellist::ModelList;
-use uk_content::actor::params::physics::Physics;
-use uk_content::actor::params::r#as::AS;
-use uk_content::actor::params::recipe::Recipe;
-use uk_content::actor::params::rgbw::RagdollBlendWeight;
-use uk_content::actor::params::rgconfig::RagdollConfig;
-use uk_content::actor::params::rgconfiglist::RagdollConfigList;
-use uk_content::actor::params::shop::ShopData;
-use uk_content::actor::params::umii::UMii;
-use uk_content::actor::residents::ResidentActors;
-use uk_content::actor::Actor;
-use uk_content::chemical::chmres::ChemicalRes;
-use uk_content::cooking::data::CookData;
-use uk_content::data::gamedata::GameDataPack;
-use uk_content::data::savedata::SaveDataPack;
-use uk_content::data::shop::ShopGameDataInfo;
-use uk_content::demo::Demo;
-use uk_content::eco::areadata::AreaData;
-use uk_content::eco::level::LevelSensor;
-use uk_content::eco::status::StatusEffectList;
-use uk_content::event::info::EventInfo;
-use uk_content::event::residents::ResidentEvents;
-use uk_content::map::lazy::LazyTraverseList;
-use uk_content::map::mainfield::location::Location;
-use uk_content::map::static_::Static;
-use uk_content::map::unit::MapUnit;
+use anyhow::{Context, Result};
+use join_str::jstr;
+use roead::sarc::SarcWriter;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::path::Path;
 use uk_content::prelude::*;
-use uk_content::quest::product::QuestProduct;
-use uk_content::sound::barslist::BarslistInfo;
-use uk_content::tips::Tips;
-use uk_content::worldmgr::info::WorldInfo;
+use uk_content::{
+    actor::{
+        info::ActorInfo,
+        params::{
+            aiprog::AIProgram, aischedule::AISchedule, animinfo::AnimationInfo, aslist::ASList,
+            atcl::AttClient, atcllist::AttClientList, aware::Awareness, bonectrl::BoneControl,
+            chemical::Chemical, damage::DamageParam, drop::DropTable, general::GeneralParamList,
+            life::LifeCondition, link::ActorLink, lod::Lod, modellist::ModelList, physics::Physics,
+            r#as::AS, recipe::Recipe, rgbw::RagdollBlendWeight, rgconfig::RagdollConfig,
+            rgconfiglist::RagdollConfigList, shop::ShopData, umii::UMii,
+        },
+        residents::ResidentActors,
+        Actor,
+    },
+    chemical::chmres::ChemicalRes,
+    cooking::data::CookData,
+    data::{gamedata::GameDataPack, savedata::SaveDataPack, shop::ShopGameDataInfo},
+    demo::Demo,
+    eco::{areadata::AreaData, level::LevelSensor, status::StatusEffectList},
+    event::{info::EventInfo, residents::ResidentEvents},
+    map::{lazy::LazyTraverseList, mainfield::location::Location, static_::Static, unit::MapUnit},
+    quest::product::QuestProduct,
+    sound::barslist::BarslistInfo,
+    tips::Tips,
+    util::SortedDeleteMap,
+    worldmgr::info::WorldInfo,
+};
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MergeableResource {
     Actor(Box<Actor>),
     ActorInfo(Box<ActorInfo>),
@@ -322,5 +309,344 @@ impl MergeableResource {
             Self::UMii(v) => v.into_binary(endian),
             Self::WorldInfo(v) => v.into_binary(endian),
         }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SarcMap(pub SortedDeleteMap<String, String>);
+
+impl Mergeable for SarcMap {
+    fn diff(&self, other: &Self) -> Self {
+        Self(self.0.diff(&other.0))
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self(self.0.merge(&diff.0))
+    }
+}
+
+impl SarcMap {
+    pub fn to_binary(
+        &self,
+        endian: uk_content::prelude::Endian,
+        resources: &BTreeMap<String, ResourceData>,
+    ) -> Result<Vec<u8>> {
+        let mut sarc = SarcWriter::new(endian.into());
+        sarc.files = self
+            .0
+            .iter()
+            .map(|(path, canon)| -> Result<(String, Vec<u8>)> {
+                let resource = resources
+                    .get(canon)
+                    .with_context(|| jstr!("Missing resource for SARC: {&canon}"))?;
+                let data = resource.to_binary(endian, resources)?;
+                Ok((path.clone(), data))
+            })
+            .collect::<Result<_>>()?;
+        Ok(sarc.to_binary())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum BinaryResource {
+    Agnostic(Vec<u8>),
+    Platform {
+        wiiu: Option<Vec<u8>>,
+        nx: Option<Vec<u8>>,
+    },
+}
+
+impl BinaryResource {
+    pub fn to_binary(&self, endian: Endian) -> Result<Vec<u8>> {
+        match self {
+            BinaryResource::Agnostic(data) => Ok(data.clone()),
+            BinaryResource::Platform { wiiu, nx } => match endian {
+                Endian::Big => wiiu.as_ref().cloned(),
+                Endian::Little => nx.as_ref().cloned(),
+            }
+            .context("Resource missing binary data for target platform"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ResourceData {
+    Binary(BinaryResource),
+    Mergeable(crate::resource::MergeableResource),
+    Sarc(SarcMap),
+}
+
+impl ResourceData {
+    pub fn from_binary(name: impl AsRef<Path>, data: Vec<u8>) -> Result<Self> {
+        let name = name.as_ref();
+        if Actor::path_matches(name) {
+            Ok(Self::Mergeable(crate::resource::MergeableResource::Actor(
+                Box::new(Actor::from_binary(&data)?),
+            )))
+        } else if ActorInfo::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::ActorInfo(Box::new(ActorInfo::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if ActorLink::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::ActorLink(Box::new(ActorLink::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if AIProgram::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::AIProgram(Box::new(AIProgram::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if AISchedule::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::AISchedule(Box::new(AISchedule::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if AnimationInfo::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::AnimationInfo(Box::new(
+                    AnimationInfo::from_binary(&data)?,
+                )),
+            ))
+        } else if AreaData::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::AreaData(Box::new(AreaData::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if AS::path_matches(name) {
+            Ok(Self::Mergeable(crate::resource::MergeableResource::AS(
+                Box::new(AS::from_binary(&data)?),
+            )))
+        } else if ASList::path_matches(name) {
+            Ok(Self::Mergeable(crate::resource::MergeableResource::ASList(
+                Box::new(ASList::from_binary(&data)?),
+            )))
+        } else if AttClient::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::AttClient(Box::new(AttClient::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if AttClientList::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::AttClientList(Box::new(
+                    AttClientList::from_binary(&data)?,
+                )),
+            ))
+        } else if Awareness::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::Awareness(Box::new(Awareness::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if BarslistInfo::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::BarslistInfo(Box::new(
+                    BarslistInfo::from_binary(&data)?,
+                )),
+            ))
+        } else if BoneControl::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::BoneControl(Box::new(
+                    BoneControl::from_binary(&data)?,
+                )),
+            ))
+        } else if Chemical::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::Chemical(Box::new(Chemical::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if ChemicalRes::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::ChemicalRes(Box::new(
+                    ChemicalRes::from_binary(&data)?,
+                )),
+            ))
+        } else if CookData::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::CookData(Box::new(CookData::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if DamageParam::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::DamageParam(Box::new(
+                    DamageParam::from_binary(&data)?,
+                )),
+            ))
+        } else if Demo::path_matches(name) {
+            Ok(Self::Mergeable(crate::resource::MergeableResource::Demo(
+                Box::new(Demo::from_binary(&data)?),
+            )))
+        } else if DropTable::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::DropTable(Box::new(DropTable::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if EventInfo::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::EventInfo(Box::new(EventInfo::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if GameDataPack::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::GameDataPack(Box::new(
+                    GameDataPack::from_binary(&data)?,
+                )),
+            ))
+        } else if GeneralParamList::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::GeneralParamList(Box::new(
+                    GeneralParamList::from_binary(&data)?,
+                )),
+            ))
+        } else if LazyTraverseList::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::LazyTraverseList(Box::new(
+                    LazyTraverseList::from_binary(&data)?,
+                )),
+            ))
+        } else if LevelSensor::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::LevelSensor(Box::new(
+                    LevelSensor::from_binary(&data)?,
+                )),
+            ))
+        } else if LifeCondition::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::LifeCondition(Box::new(
+                    LifeCondition::from_binary(&data)?,
+                )),
+            ))
+        } else if Location::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::Location(Box::new(Location::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if Lod::path_matches(name) {
+            Ok(Self::Mergeable(crate::resource::MergeableResource::Lod(
+                Box::new(Lod::from_binary(&data)?),
+            )))
+        } else if MapUnit::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::MapUnit(Box::new(MapUnit::from_binary(&data)?)),
+            ))
+        } else if ModelList::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::ModelList(Box::new(ModelList::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if Physics::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::Physics(Box::new(Physics::from_binary(&data)?)),
+            ))
+        } else if QuestProduct::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::QuestProduct(Box::new(
+                    QuestProduct::from_binary(&data)?,
+                )),
+            ))
+        } else if RagdollBlendWeight::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::RagdollBlendWeight(Box::new(
+                    RagdollBlendWeight::from_binary(&data)?,
+                )),
+            ))
+        } else if RagdollConfig::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::RagdollConfig(Box::new(
+                    RagdollConfig::from_binary(&data)?,
+                )),
+            ))
+        } else if RagdollConfigList::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::RagdollConfigList(Box::new(
+                    RagdollConfigList::from_binary(&data)?,
+                )),
+            ))
+        } else if Recipe::path_matches(name) {
+            Ok(Self::Mergeable(crate::resource::MergeableResource::Recipe(
+                Box::new(Recipe::from_binary(&data)?),
+            )))
+        } else if ResidentActors::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::ResidentActors(Box::new(
+                    ResidentActors::from_binary(&data)?,
+                )),
+            ))
+        } else if ResidentEvents::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::ResidentEvents(Box::new(
+                    ResidentEvents::from_binary(&data)?,
+                )),
+            ))
+        } else if SaveDataPack::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::SaveDataPack(Box::new(
+                    SaveDataPack::from_binary(&data)?,
+                )),
+            ))
+        } else if ShopData::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::ShopData(Box::new(ShopData::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else if ShopGameDataInfo::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::ShopGameDataInfo(Box::new(
+                    ShopGameDataInfo::from_binary(&data)?,
+                )),
+            ))
+        } else if Static::path_matches(name) {
+            Ok(Self::Mergeable(crate::resource::MergeableResource::Static(
+                Box::new(Static::from_binary(&data)?),
+            )))
+        } else if StatusEffectList::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::StatusEffectList(Box::new(
+                    StatusEffectList::from_binary(&data)?,
+                )),
+            ))
+        } else if Tips::path_matches(name) {
+            Ok(Self::Mergeable(crate::resource::MergeableResource::Tips(
+                Box::new(Tips::from_binary(&data)?),
+            )))
+        } else if UMii::path_matches(name) {
+            Ok(Self::Mergeable(crate::resource::MergeableResource::UMii(
+                Box::new(UMii::from_binary(&data)?),
+            )))
+        } else if WorldInfo::path_matches(name) {
+            Ok(Self::Mergeable(
+                crate::resource::MergeableResource::WorldInfo(Box::new(WorldInfo::from_binary(
+                    &data,
+                )?)),
+            ))
+        } else {
+            Ok(Self::Binary(BinaryResource::Agnostic(data)))
+        }
+    }
+
+    pub fn to_binary(
+        &self,
+        endian: Endian,
+        resources: &BTreeMap<String, ResourceData>,
+    ) -> Result<Vec<u8>> {
+        Ok(match self {
+            ResourceData::Binary(data) => data.to_binary(endian)?,
+            ResourceData::Mergeable(resource) => resource.clone().into_binary(endian),
+            ResourceData::Sarc(sarc) => sarc.to_binary(endian, resources)?,
+        })
     }
 }
