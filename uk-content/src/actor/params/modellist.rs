@@ -273,7 +273,7 @@ mod tests {
         let modellist = super::ModelList::try_from(&pio).unwrap();
         let mut info = roead::byml::Hash::new();
         modellist.update_info(&mut info).unwrap();
-        assert_eq!(info["cursorOffsetY"], Byml::Float(0.699999988));
+        assert_eq!(info["cursorOffsetY"], Byml::Float(0.699));
         assert_eq!(info["baseScaleY"], Byml::Float(1.0));
         assert_eq!(
             info["mainModel"],

@@ -1,5 +1,7 @@
 use anyhow::{Context, Result};
 use join_str::jstr;
+use roead::aamp::ParameterIO;
+use roead::byml::Byml;
 use roead::sarc::SarcWriter;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -81,6 +83,8 @@ pub enum MergeableResource {
     Tips(Box<Tips>),
     UMii(Box<UMii>),
     WorldInfo(Box<WorldInfo>),
+    GenericAamp(Box<ParameterIO>),
+    GenericByml(Box<Byml>),
 }
 
 impl Mergeable for MergeableResource {
@@ -308,6 +312,8 @@ impl MergeableResource {
             Self::Tips(v) => v.into_binary(endian),
             Self::UMii(v) => v.into_binary(endian),
             Self::WorldInfo(v) => v.into_binary(endian),
+            Self::GenericAamp(v) => v.to_binary(),
+            Self::GenericByml(v) => v.to_binary(endian.into()),
         }
     }
 }
@@ -356,6 +362,34 @@ pub enum BinaryResource {
     },
 }
 
+impl Mergeable for BinaryResource {
+    fn diff(&self, other: &Self) -> Self {
+        match (self, other) {
+            (Self::Agnostic(_), Self::Agnostic(b)) => Self::Agnostic(b.clone()),
+            (Self::Platform { wiiu: u1, nx: nx1 }, Self::Platform { wiiu: u2, nx: nx2 }) => {
+                Self::Platform {
+                    wiiu: (u1 != u2).then(|| u2.as_ref().cloned()).flatten(),
+                    nx: (nx1 != nx2).then(|| nx2.as_ref().cloned()).flatten(),
+                }
+            }
+            _ => panic!("Attempted to diff incompatible binary resource types"),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        match (self, diff) {
+            (Self::Agnostic(_), Self::Agnostic(b)) => Self::Agnostic(b.clone()),
+            (Self::Platform { wiiu: u1, nx: nx1 }, Self::Platform { wiiu: u2, nx: nx2 }) => {
+                Self::Platform {
+                    wiiu: u2.as_ref().or(u1.as_ref()).cloned(),
+                    nx: nx2.as_ref().or(nx1.as_ref()).cloned(),
+                }
+            }
+            _ => panic!("Attempted to merge incompatible binary resource types"),
+        }
+    }
+}
+
 impl BinaryResource {
     pub fn to_binary(&self, endian: Endian) -> Result<Vec<u8>> {
         match self {
@@ -379,6 +413,7 @@ pub enum ResourceData {
 impl ResourceData {
     pub fn from_binary(name: impl AsRef<Path>, data: Vec<u8>) -> Result<Self> {
         let name = name.as_ref();
+        let data = roead::yaz0::decompress_if(data)?;
         if Actor::path_matches(name) {
             Ok(Self::Mergeable(crate::resource::MergeableResource::Actor(
                 Box::new(Actor::from_binary(&data)?),
@@ -633,8 +668,15 @@ impl ResourceData {
                     &data,
                 )?)),
             ))
+        } else if data.len() > 4 && &data[0..4] == b"AAMP" {
+            Ok(Self::Binary(BinaryResource::Agnostic(data.into())))
+        } else if data.len() > 2 && (&data[0..2] == b"BY" || &data[0..2] == b"YB") {
+            Ok(Self::Binary(BinaryResource::Platform {
+                wiiu: (&data[0..2] == b"BY").then(|| data.clone().into()),
+                nx: (&data[0..2] == b"YB").then(|| data.into()),
+            }))
         } else {
-            Ok(Self::Binary(BinaryResource::Agnostic(data)))
+            todo!()
         }
     }
 

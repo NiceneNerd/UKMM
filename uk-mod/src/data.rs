@@ -53,7 +53,7 @@ impl Mergeable for DataTree {
                                     } else {
                                         Some((
                                             name.clone(),
-                                            ResourceData::Binary(self_bytes.clone()),
+                                            ResourceData::Binary(self_bytes.diff(other_bytes)),
                                         ))
                                     }
                                 }
@@ -126,6 +126,9 @@ impl Mergeable for DataTree {
                                 Some(ResourceData::Mergeable(v1)),
                                 Some(ResourceData::Mergeable(v2)),
                             ) => ResourceData::Mergeable(v1.merge(v2)),
+                            (Some(ResourceData::Binary(v1)), Some(ResourceData::Binary(v2))) => {
+                                ResourceData::Binary(v1.merge(v2))
+                            }
                             _ => v2.or(v1).cloned().unwrap(),
                         }
                     })
@@ -182,58 +185,40 @@ impl DataTree {
 #[derive(Debug)]
 struct DataTreeBuilder {
     pub root: PathBuf,
-    pub content: Option<String>,
-    pub aoc: Option<String>,
     pub resources: BTreeMap<String, ResourceData>,
 }
 
 impl DataTreeBuilder {
     pub fn new(dir: impl AsRef<Path>) -> Self {
-        let dir = dir.as_ref();
-        let (content_u, aoc_u) = platform_prefixes(Endian::Big);
-        let (content_nx, aoc_nx) = platform_prefixes(Endian::Little);
         Self {
-            root: dir.to_owned(),
-            content: if dir.join(content_u).exists() {
-                Some(content_u.to_owned())
-            } else if dir.join(content_nx).exists() {
-                Some(content_nx.to_owned())
-            } else {
-                None
-            },
-            aoc: if dir.join(aoc_u).exists() {
-                Some(aoc_u.to_owned())
-            } else if dir.join(aoc_nx).exists() {
-                Some(aoc_nx.to_owned())
-            } else {
-                None
-            },
+            root: dir.as_ref().to_owned(),
             resources: BTreeMap::new(),
         }
     }
 
     pub fn build(self) -> Result<DataTree> {
-        if let Some(content) = self.content.as_ref()
-        // && let Some(aoc) = self.aoc.as_ref()
-        {
-            let mut resources = Arc::new(Mutex::new(&self.resources));
-            let content_files = WalkDir::new(self.root.join(content))
-                .into_iter()
-                .filter_map(|f| f.ok().and_then(|f| f.file_type().is_file().then(|| f)))
-                .map(|path| -> Result<(String, String)> {
-                    dbg!(path);
-                    Ok((Default::default(), Default::default()))
-                })
-                .collect::<Result<BTreeMap<String, String>>>()?;
-            drop(resources);
-            Ok(DataTree {
-                content_files,
-                aoc_files: Default::default(),
-                resources: self.resources,
-            })
-        } else {
-            bail!("No content or aoc directory found")
-        }
+        todo!()
+        // if let Some(content) = self.content.as_ref()
+        // // && let Some(aoc) = self.aoc.as_ref()
+        // {
+        //     let mut resources = Arc::new(Mutex::new(&self.resources));
+        //     let content_files = WalkDir::new(self.root.join(content))
+        //         .into_iter()
+        //         .filter_map(|f| f.ok().and_then(|f| f.file_type().is_file().then(|| f)))
+        //         .map(|path| -> Result<(String, String)> {
+        //             dbg!(path);
+        //             Ok((Default::default(), Default::default()))
+        //         })
+        //         .collect::<Result<BTreeMap<String, String>>>()?;
+        //     drop(resources);
+        //     Ok(DataTree {
+        //         content_files,
+        //         aoc_files: Default::default(),
+        //         resources: self.resources,
+        //     })
+        // } else {
+        //     bail!("No content or aoc directory found")
+        // }
     }
 }
 

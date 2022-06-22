@@ -79,6 +79,19 @@ pub mod prelude {
         };
     }
 
+    impl Mergeable for roead::aamp::ParameterIO {
+        fn diff(&self, other: &Self) -> Self {
+            crate::util::diff_plist(self, other)
+        }
+
+        fn merge(&self, diff: &Self) -> Self {
+            let mut pio = crate::util::merge_plist(self, diff);
+            pio.doc_type = self.doc_type.clone();
+            pio.version = self.version;
+            pio
+        }
+    }
+
     pub(crate) use impl_simple_aamp;
 
     macro_rules! impl_simple_byml {
@@ -93,6 +106,16 @@ pub mod prelude {
                 }
             }
         };
+    }
+
+    impl Mergeable for roead::byml::Byml {
+        fn diff(&self, other: &Self) -> Self {
+            crate::util::diff_byml_shallow(self, other)
+        }
+
+        fn merge(&self, diff: &Self) -> Self {
+            crate::util::merge_byml_shallow(self, diff)
+        }
     }
 
     pub(crate) use impl_simple_byml;

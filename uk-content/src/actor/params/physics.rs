@@ -798,10 +798,7 @@ mod tests {
         let physics = super::Physics::try_from(&pio).unwrap();
         let mut info = roead::byml::Hash::new();
         physics.update_info(&mut info).unwrap();
-        assert_eq!(
-            info["rigidBodyCenterY"],
-            roead::byml::Byml::Float(0.150000006)
-        );
+        assert_eq!(info["rigidBodyCenterY"], roead::byml::Byml::Float(0.15));
     }
 
     #[test]
