@@ -1,4 +1,5 @@
 #![feature(let_chains, type_alias_impl_trait, drain_filter)]
+use std::path::Path;
 use thiserror::Error;
 
 pub mod actor;
@@ -50,6 +51,37 @@ pub enum UKError {
 
 pub type Result<T> = std::result::Result<T, UKError>;
 pub type Assets = util::DeleteMap<String, Vec<u8>>;
+
+pub fn canonicalize(path: impl AsRef<Path>) -> String {
+    let path = path.as_ref().to_str().unwrap();
+    let mut canon = path.replace('\\', "/");
+    for (k, v) in [
+        ("Content/", ""),
+        ("content/", ""),
+        ("atmosphere/titles/", ""),
+        ("atmosphere/contents/", ""),
+        ("01007EF00011E000/romfs/", ""),
+        ("01007ef00011e000/romfs/", ""),
+        ("01007EF00011E001/romfs", "Aoc/0010"),
+        ("01007EF00011E002/romfs", "Aoc/0010"),
+        ("01007EF00011F001/romfs", "Aoc/0010"),
+        ("01007EF00011F002/romfs", "Aoc/0010"),
+        ("01007ef00011e001/romfs", "Aoc/0010"),
+        ("01007ef00011e002/romfs", "Aoc/0010"),
+        ("01007ef00011f001/romfs", "Aoc/0010"),
+        ("01007ef00011f002/romfs", "Aoc/0010"),
+        ("romfs/", ""),
+        ("aoc/content", "Aoc"),
+        ("aoc", "Aoc"),
+    ]
+    .into_iter()
+    {
+        if canon.starts_with(k) {
+            canon = [v, canon.trim_start_matches(k)].concat();
+        }
+    }
+    canon.replace(".s", ".")
+}
 
 pub mod prelude {
     use cow_utils::CowUtils;
@@ -244,6 +276,8 @@ pub mod prelude {
 pub(crate) mod tests {
     use join_str::jstr;
 
+    use crate::canonicalize;
+
     pub fn test_base_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::read(
             roead::yaz0::decompress(
@@ -262,5 +296,35 @@ pub(crate) mod tests {
             .unwrap(),
         )
         .unwrap()
+    }
+
+    #[test]
+    fn canon_names() {
+        assert_eq!(
+            &canonicalize("content\\Actor\\Pack\\Enemy_Lizal_Senior.sbactorpack"),
+            "Actor/Pack/Enemy_Lizal_Senior.bactorpack"
+        );
+        assert_eq!(
+            &canonicalize("aoc/0010/Map/MainField/A-1/A-1_Dynamic.smubin"),
+            "Aoc/0010/Map/MainField/A-1/A-1_Dynamic.mubin"
+        );
+        assert_eq!(
+            &canonicalize(
+                "atmosphere/contents/01007EF00011E000/romfs/Actor/ActorInfo.product.sbyml"
+            ),
+            "Actor/ActorInfo.product.byml"
+        );
+        assert_eq!(
+            &canonicalize("atmosphere/contents/01007EF00011F001/romfs/Pack/AocMainField.pack"),
+            "Aoc/0010/Pack/AocMainField.pack"
+        );
+        assert_eq!(
+            &canonicalize("Hellow/Sweetie.tardis"),
+            "Hellow/Sweetie.tardis"
+        );
+        assert_eq!(
+            &canonicalize("Event/EventInfo.product.sbyml"),
+            "Event/EventInfo.product.byml"
+        )
     }
 }

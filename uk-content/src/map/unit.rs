@@ -117,9 +117,14 @@ impl Resource for MapUnit {
 
     fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
         path.as_ref()
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .map(|ext| ext.ends_with("mubin"))
+            .file_name()
+            .and_then(|name| name.to_str())
+            .map(|name| {
+                (name.starts_with("CDungeon")
+                    || name.contains("Dynamic")
+                    || name.contains("_Static"))
+                    && name.ends_with("mubin")
+            })
             .unwrap_or(false)
     }
 }

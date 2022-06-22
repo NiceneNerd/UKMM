@@ -9,7 +9,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
-use uk_content::prelude::*;
+use uk_content::{canonicalize, prelude::*};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DataTree {
@@ -53,7 +53,7 @@ impl Mergeable for DataTree {
                                     } else {
                                         Some((
                                             name.clone(),
-                                            ResourceData::Binary(self_bytes.diff(other_bytes)),
+                                            ResourceData::Binary(other_bytes.clone()),
                                         ))
                                     }
                                 }
@@ -126,9 +126,6 @@ impl Mergeable for DataTree {
                                 Some(ResourceData::Mergeable(v1)),
                                 Some(ResourceData::Mergeable(v2)),
                             ) => ResourceData::Mergeable(v1.merge(v2)),
-                            (Some(ResourceData::Binary(v1)), Some(ResourceData::Binary(v2))) => {
-                                ResourceData::Binary(v1.merge(v2))
-                            }
                             _ => v2.or(v1).cloned().unwrap(),
                         }
                     })
@@ -196,29 +193,81 @@ impl DataTreeBuilder {
         }
     }
 
-    pub fn build(self) -> Result<DataTree> {
-        todo!()
-        // if let Some(content) = self.content.as_ref()
-        // // && let Some(aoc) = self.aoc.as_ref()
-        // {
-        //     let mut resources = Arc::new(Mutex::new(&self.resources));
-        //     let content_files = WalkDir::new(self.root.join(content))
-        //         .into_iter()
-        //         .filter_map(|f| f.ok().and_then(|f| f.file_type().is_file().then(|| f)))
-        //         .map(|path| -> Result<(String, String)> {
-        //             dbg!(path);
-        //             Ok((Default::default(), Default::default()))
-        //         })
-        //         .collect::<Result<BTreeMap<String, String>>>()?;
-        //     drop(resources);
-        //     Ok(DataTree {
-        //         content_files,
-        //         aoc_files: Default::default(),
-        //         resources: self.resources,
-        //     })
-        // } else {
-        //     bail!("No content or aoc directory found")
-        // }
+    pub fn build(mut self) -> Result<DataTree> {
+        let (content_u, aoc_u) = platform_prefixes(Endian::Big);
+        let (content_nx, aoc_nx) = platform_prefixes(Endian::Little);
+        let content = self
+            .root
+            .join(content_u)
+            .exists()
+            .then(|| content_u)
+            .or_else(|| self.root.join(content_nx).exists().then(|| content_nx));
+        let aoc = self
+            .root
+            .join(aoc_u)
+            .exists()
+            .then(|| aoc_u)
+            .or_else(|| self.root.join(aoc_nx).exists().then(|| aoc_nx));
+        if content.is_none() && aoc.is_none() {
+            bail!("No content or aoc directory found in mod")
+        };
+        let resources = Arc::new(Mutex::new(&mut self.resources));
+        let content_files = if let Some(content) = content {
+            WalkDir::new(self.root.join(content))
+                .into_iter()
+                .filter_map(|f| {
+                    f.ok()
+                        .and_then(|f| f.file_type().is_file().then(|| f.path()))
+                })
+                .map(|path| -> Result<(String, String)> {
+                    let name = path
+                        .strip_prefix(&self.root)
+                        .unwrap()
+                        .to_string_lossy()
+                        .into_owned();
+                    let canon = canonicalize(&name);
+                    let mut resources = resources.lock().unwrap();
+                    let resource =
+                        ResourceData::from_binary(&name, std::fs::read(&path)?, &mut resources)
+                            .with_context(|| jstr!("Error parsing resource at {&name}"))?;
+                    resources.insert(canon.clone(), resource);
+                    Ok((name, canon))
+                })
+                .collect::<Result<BTreeMap<String, String>>>()?
+        } else {
+            Default::default()
+        };
+        let aoc_files = if let Some(aoc) = aoc {
+            WalkDir::new(self.root.join(aoc))
+                .into_iter()
+                .filter_map(|f| {
+                    f.ok()
+                        .and_then(|f| f.file_type().is_file().then(|| f.path()))
+                })
+                .map(|path| -> Result<(String, String)> {
+                    let name = path
+                        .strip_prefix(&self.root)
+                        .unwrap()
+                        .to_string_lossy()
+                        .into_owned();
+                    let canon = canonicalize(&name);
+                    let mut resources = resources.lock().unwrap();
+                    let resource =
+                        ResourceData::from_binary(&name, std::fs::read(&path)?, &mut resources)
+                            .with_context(|| jstr!("Error parsing resource at {&name}"))?;
+                    resources.insert(canon.clone(), resource);
+                    Ok((name, canon))
+                })
+                .collect::<Result<BTreeMap<String, String>>>()?
+        } else {
+            Default::default()
+        };
+        drop(resources);
+        Ok(DataTree {
+            content_files,
+            aoc_files,
+            resources: self.resources,
+        })
     }
 }
 
@@ -227,7 +276,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn read_mod_wiiu() {
-        DataTree::from_files("test").unwrap();
+    fn serde_wiiu() {
+        let tree = DataTree::from_files("test/wiiu").unwrap();
+        dbg!(tree.content_files);
+        dbg!(tree.aoc_files);
+        dbg!(tree.resources.keys().collect::<Vec<&String>>());
     }
 }

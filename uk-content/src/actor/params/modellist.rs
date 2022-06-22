@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 pub struct ModelList {
     pub controller_info: ParameterObject,
     pub attention: ParameterObject,
-    pub model_data: ParameterList,
+    pub model_data: DeleteVec<ParameterList>,
     pub anm_target: BTreeMap<usize, ParameterList>,
 }
 
@@ -34,9 +34,11 @@ impl TryFrom<&ParameterIO> for ModelList {
             model_data: pio
                 .list("ModelData")
                 .ok_or(UKError::MissingAampKey("Model list missing model data"))?
-                .list("ModelData_0")
-                .ok_or(UKError::MissingAampKey("Model list missing model data"))?
-                .clone(),
+                .lists
+                .0
+                .values()
+                .cloned()
+                .collect(),
             anm_target: pio
                 .list("AnmTarget")
                 .ok_or(UKError::MissingAampKey(
@@ -71,7 +73,12 @@ impl From<ModelList> for ParameterIO {
             lists: [
                 (
                     "ModelData",
-                    ParameterList::new().with_list("ModelData_0", val.model_data),
+                    ParameterList::new().with_lists(
+                        val.model_data
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, list)| (jstr!("ModelData_{&lexical::to_string(i)}"), list)),
+                    ),
                 ),
                 (
                     "AnmTarget",
@@ -94,7 +101,7 @@ impl Mergeable for ModelList {
         Self {
             controller_info: diff_pobj(&self.controller_info, &other.controller_info),
             attention: diff_pobj(&self.attention, &other.attention),
-            model_data: diff_plist(&self.model_data, &other.model_data),
+            model_data: self.model_data.diff(&other.model_data),
             anm_target: simple_index_diff(&self.anm_target, &other.anm_target),
         }
     }
@@ -103,7 +110,7 @@ impl Mergeable for ModelList {
         Self {
             controller_info: merge_pobj(&self.controller_info, &diff.controller_info),
             attention: merge_pobj(&self.attention, &diff.attention),
-            model_data: merge_plist(&self.model_data, &diff.model_data),
+            model_data: self.model_data.merge(&diff.model_data),
             anm_target: simple_index_merge(&self.anm_target, &diff.anm_target),
         }
     }
@@ -159,16 +166,15 @@ impl InfoSource for ModelList {
         }
         if let Some(Parameter::String64(bfres)) = self
             .model_data
-            .object("Base")
-            .and_then(|o| o.param("Folder"))
+            .get(0)
+            .and_then(|list| list.object("Base").and_then(|o| o.param("Folder")))
         {
             info.insert("bfres".to_owned(), bfres.clone().into());
         }
-        if let Some(Parameter::String64(model)) = self
-            .model_data
-            .list("Unit")
-            .and_then(|list| list.object("Unit_0").and_then(|obj| obj.param("UnitName")))
-        {
+        if let Some(Parameter::String64(model)) = self.model_data.get(0).and_then(|list| {
+            list.list("Unit")
+                .and_then(|list| list.object("Unit_0").and_then(|obj| obj.param("UnitName")))
+        }) {
             info.insert("mainModel".to_owned(), model.clone().into());
         }
         Ok(())
@@ -273,7 +279,7 @@ mod tests {
         let modellist = super::ModelList::try_from(&pio).unwrap();
         let mut info = roead::byml::Hash::new();
         modellist.update_info(&mut info).unwrap();
-        assert_eq!(info["cursorOffsetY"], Byml::Float(0.699));
+        assert_eq!(info["cursorOffsetY"], Byml::Float(0.7));
         assert_eq!(info["baseScaleY"], Byml::Float(1.0));
         assert_eq!(
             info["mainModel"],

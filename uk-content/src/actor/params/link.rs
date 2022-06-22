@@ -176,7 +176,10 @@ impl Resource for ActorLink {
     }
 
     fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
-        path.as_ref().extension().and_then(|ext| ext.to_str()) == Some("bxml")
+        path.as_ref()
+            .to_str()
+            .map(|path| path.contains("ActorLink") && path.ends_with("bxml"))
+            .unwrap_or(false)
     }
 }
 

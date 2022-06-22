@@ -54,9 +54,9 @@ impl Resource for Tips {
 
     fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
         path.as_ref()
-            .file_stem()
+            .file_name()
             .and_then(|name| name.to_str())
-            .map(|name| name.starts_with("Tips"))
+            .map(|name| name.starts_with("Tips") && name.ends_with("byml"))
             .unwrap_or(false)
     }
 }

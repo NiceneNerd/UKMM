@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use join_str::jstr;
 use roead::aamp::ParameterIO;
 use roead::byml::Byml;
-use roead::sarc::SarcWriter;
+use roead::sarc::{Sarc, SarcWriter};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -332,6 +332,26 @@ impl Mergeable for SarcMap {
 }
 
 impl SarcMap {
+    pub fn from_binary(
+        data: impl AsRef<[u8]>,
+        resources: &mut BTreeMap<String, ResourceData>,
+    ) -> Result<Self> {
+        let sarc = Sarc::read(data.as_ref())?;
+        Ok(Self(
+            sarc.files()
+                .map(|file| -> Result<(String, String)> {
+                    let name = file.name().context("SARC file missing name")?.to_owned();
+                    let canon = name.replace(".s", ".");
+                    let data = roead::yaz0::decompress_if(file.data())?;
+                    let resource = ResourceData::from_binary(&name, data, resources)
+                        .with_context(|| jstr!("Error parsing resource in SARC: {&name}"))?;
+                    resources.insert(canon.clone(), resource);
+                    Ok((name, canon))
+                })
+                .collect::<Result<_>>()?,
+        ))
+    }
+
     pub fn to_binary(
         &self,
         endian: uk_content::prelude::Endian,
@@ -354,329 +374,279 @@ impl SarcMap {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum BinaryResource {
-    Agnostic(Vec<u8>),
-    Platform {
-        wiiu: Option<Vec<u8>>,
-        nx: Option<Vec<u8>>,
-    },
-}
-
-impl Mergeable for BinaryResource {
-    fn diff(&self, other: &Self) -> Self {
-        match (self, other) {
-            (Self::Agnostic(_), Self::Agnostic(b)) => Self::Agnostic(b.clone()),
-            (Self::Platform { wiiu: u1, nx: nx1 }, Self::Platform { wiiu: u2, nx: nx2 }) => {
-                Self::Platform {
-                    wiiu: (u1 != u2).then(|| u2.as_ref().cloned()).flatten(),
-                    nx: (nx1 != nx2).then(|| nx2.as_ref().cloned()).flatten(),
-                }
-            }
-            _ => panic!("Attempted to diff incompatible binary resource types"),
-        }
-    }
-
-    fn merge(&self, diff: &Self) -> Self {
-        match (self, diff) {
-            (Self::Agnostic(_), Self::Agnostic(b)) => Self::Agnostic(b.clone()),
-            (Self::Platform { wiiu: u1, nx: nx1 }, Self::Platform { wiiu: u2, nx: nx2 }) => {
-                Self::Platform {
-                    wiiu: u2.as_ref().or(u1.as_ref()).cloned(),
-                    nx: nx2.as_ref().or(nx1.as_ref()).cloned(),
-                }
-            }
-            _ => panic!("Attempted to merge incompatible binary resource types"),
-        }
-    }
-}
-
-impl BinaryResource {
-    pub fn to_binary(&self, endian: Endian) -> Result<Vec<u8>> {
-        match self {
-            BinaryResource::Agnostic(data) => Ok(data.clone()),
-            BinaryResource::Platform { wiiu, nx } => match endian {
-                Endian::Big => wiiu.as_ref().cloned(),
-                Endian::Little => nx.as_ref().cloned(),
-            }
-            .context("Resource missing binary data for target platform"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ResourceData {
-    Binary(BinaryResource),
-    Mergeable(crate::resource::MergeableResource),
+    Binary(Vec<u8>),
+    Mergeable(MergeableResource),
     Sarc(SarcMap),
 }
 
+const EXCLUDE_EXTS: &[&str] = &["sarc", "blarc", "farc"];
+
 impl ResourceData {
-    pub fn from_binary(name: impl AsRef<Path>, data: Vec<u8>) -> Result<Self> {
+    pub fn from_binary(
+        name: impl AsRef<Path>,
+        data: impl Into<Vec<u8>>,
+        resources: &mut BTreeMap<String, ResourceData>,
+    ) -> Result<Self> {
         let name = name.as_ref();
+        let stem = name.file_stem().unwrap().to_str().unwrap();
+        let ext = name
+            .extension()
+            .with_context(|| jstr!("Missing extension for resource: {&name.to_str().unwrap()}"))?
+            .to_str()
+            .unwrap();
+        let data = data.into();
+        if stem == "Dummy"
+            || (stem == "AocMainField" && data.len() < 0x40)
+            || !EXCLUDE_EXTS.contains(&ext.trim_start_matches('s'))
+        {
+            return Ok(Self::Binary(data));
+        }
         let data = roead::yaz0::decompress_if(data)?;
         if Actor::path_matches(name) {
-            Ok(Self::Mergeable(crate::resource::MergeableResource::Actor(
-                Box::new(Actor::from_binary(&data)?),
-            )))
+            println!("Actor");
+            Ok(Self::Mergeable(MergeableResource::Actor(Box::new(
+                Actor::from_binary(&data)?,
+            ))))
         } else if ActorInfo::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::ActorInfo(Box::new(ActorInfo::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("ActorInfo");
+            Ok(Self::Mergeable(MergeableResource::ActorInfo(Box::new(
+                ActorInfo::from_binary(&data)?,
+            ))))
         } else if ActorLink::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::ActorLink(Box::new(ActorLink::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("ActorLink");
+            Ok(Self::Mergeable(MergeableResource::ActorLink(Box::new(
+                ActorLink::from_binary(&data)?,
+            ))))
         } else if AIProgram::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::AIProgram(Box::new(AIProgram::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("AIProgram");
+            Ok(Self::Mergeable(MergeableResource::AIProgram(Box::new(
+                AIProgram::from_binary(&data)?,
+            ))))
         } else if AISchedule::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::AISchedule(Box::new(AISchedule::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("AISchedule");
+            Ok(Self::Mergeable(MergeableResource::AISchedule(Box::new(
+                AISchedule::from_binary(&data)?,
+            ))))
         } else if AnimationInfo::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::AnimationInfo(Box::new(
-                    AnimationInfo::from_binary(&data)?,
-                )),
-            ))
+            println!("AnimationInfo");
+            Ok(Self::Mergeable(MergeableResource::AnimationInfo(Box::new(
+                AnimationInfo::from_binary(&data)?,
+            ))))
         } else if AreaData::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::AreaData(Box::new(AreaData::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("AreaData");
+            Ok(Self::Mergeable(MergeableResource::AreaData(Box::new(
+                AreaData::from_binary(&data)?,
+            ))))
         } else if AS::path_matches(name) {
-            Ok(Self::Mergeable(crate::resource::MergeableResource::AS(
-                Box::new(AS::from_binary(&data)?),
-            )))
+            println!("AS");
+            Ok(Self::Mergeable(MergeableResource::AS(Box::new(
+                AS::from_binary(&data)?,
+            ))))
         } else if ASList::path_matches(name) {
-            Ok(Self::Mergeable(crate::resource::MergeableResource::ASList(
-                Box::new(ASList::from_binary(&data)?),
-            )))
+            println!("ASList");
+            Ok(Self::Mergeable(MergeableResource::ASList(Box::new(
+                ASList::from_binary(&data)?,
+            ))))
         } else if AttClient::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::AttClient(Box::new(AttClient::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("AttClient");
+            Ok(Self::Mergeable(MergeableResource::AttClient(Box::new(
+                AttClient::from_binary(&data)?,
+            ))))
         } else if AttClientList::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::AttClientList(Box::new(
-                    AttClientList::from_binary(&data)?,
-                )),
-            ))
+            println!("AttClientList");
+            Ok(Self::Mergeable(MergeableResource::AttClientList(Box::new(
+                AttClientList::from_binary(&data)?,
+            ))))
         } else if Awareness::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::Awareness(Box::new(Awareness::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("Awareness");
+            Ok(Self::Mergeable(MergeableResource::Awareness(Box::new(
+                Awareness::from_binary(&data)?,
+            ))))
         } else if BarslistInfo::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::BarslistInfo(Box::new(
-                    BarslistInfo::from_binary(&data)?,
-                )),
-            ))
+            println!("BarslistInfo");
+            Ok(Self::Mergeable(MergeableResource::BarslistInfo(Box::new(
+                BarslistInfo::from_binary(&data)?,
+            ))))
         } else if BoneControl::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::BoneControl(Box::new(
-                    BoneControl::from_binary(&data)?,
-                )),
-            ))
+            println!("BoneControl");
+            Ok(Self::Mergeable(MergeableResource::BoneControl(Box::new(
+                BoneControl::from_binary(&data)?,
+            ))))
         } else if Chemical::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::Chemical(Box::new(Chemical::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("Chemical");
+            Ok(Self::Mergeable(MergeableResource::Chemical(Box::new(
+                Chemical::from_binary(&data)?,
+            ))))
         } else if ChemicalRes::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::ChemicalRes(Box::new(
-                    ChemicalRes::from_binary(&data)?,
-                )),
-            ))
+            println!("ChemicalRes");
+            Ok(Self::Mergeable(MergeableResource::ChemicalRes(Box::new(
+                ChemicalRes::from_binary(&data)?,
+            ))))
         } else if CookData::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::CookData(Box::new(CookData::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("CookData");
+            Ok(Self::Mergeable(MergeableResource::CookData(Box::new(
+                CookData::from_binary(&data)?,
+            ))))
         } else if DamageParam::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::DamageParam(Box::new(
-                    DamageParam::from_binary(&data)?,
-                )),
-            ))
+            println!("DamageParam");
+            Ok(Self::Mergeable(MergeableResource::DamageParam(Box::new(
+                DamageParam::from_binary(&data)?,
+            ))))
         } else if Demo::path_matches(name) {
-            Ok(Self::Mergeable(crate::resource::MergeableResource::Demo(
-                Box::new(Demo::from_binary(&data)?),
-            )))
+            println!("Demo");
+            Ok(Self::Mergeable(MergeableResource::Demo(Box::new(
+                Demo::from_binary(&data)?,
+            ))))
         } else if DropTable::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::DropTable(Box::new(DropTable::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("DropTable");
+            Ok(Self::Mergeable(MergeableResource::DropTable(Box::new(
+                DropTable::from_binary(&data)?,
+            ))))
         } else if EventInfo::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::EventInfo(Box::new(EventInfo::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("EventInfo");
+            Ok(Self::Mergeable(MergeableResource::EventInfo(Box::new(
+                EventInfo::from_binary(&data)?,
+            ))))
         } else if GameDataPack::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::GameDataPack(Box::new(
-                    GameDataPack::from_binary(&data)?,
-                )),
-            ))
+            println!("GameDataPack");
+            Ok(Self::Mergeable(MergeableResource::GameDataPack(Box::new(
+                GameDataPack::from_binary(&data)?,
+            ))))
         } else if GeneralParamList::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::GeneralParamList(Box::new(
-                    GeneralParamList::from_binary(&data)?,
-                )),
-            ))
+            println!("GeneralParamList");
+            Ok(Self::Mergeable(MergeableResource::GeneralParamList(
+                Box::new(GeneralParamList::from_binary(&data)?),
+            )))
         } else if LazyTraverseList::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::LazyTraverseList(Box::new(
-                    LazyTraverseList::from_binary(&data)?,
-                )),
-            ))
+            println!("LazyTraverseList");
+            Ok(Self::Mergeable(MergeableResource::LazyTraverseList(
+                Box::new(LazyTraverseList::from_binary(&data)?),
+            )))
         } else if LevelSensor::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::LevelSensor(Box::new(
-                    LevelSensor::from_binary(&data)?,
-                )),
-            ))
+            println!("LevelSensor");
+            Ok(Self::Mergeable(MergeableResource::LevelSensor(Box::new(
+                LevelSensor::from_binary(&data)?,
+            ))))
         } else if LifeCondition::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::LifeCondition(Box::new(
-                    LifeCondition::from_binary(&data)?,
-                )),
-            ))
+            println!("LifeCondition");
+            Ok(Self::Mergeable(MergeableResource::LifeCondition(Box::new(
+                LifeCondition::from_binary(&data)?,
+            ))))
         } else if Location::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::Location(Box::new(Location::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("Location");
+            Ok(Self::Mergeable(MergeableResource::Location(Box::new(
+                Location::from_binary(&data)?,
+            ))))
         } else if Lod::path_matches(name) {
-            Ok(Self::Mergeable(crate::resource::MergeableResource::Lod(
-                Box::new(Lod::from_binary(&data)?),
-            )))
+            println!("Lod");
+            Ok(Self::Mergeable(MergeableResource::Lod(Box::new(
+                Lod::from_binary(&data)?,
+            ))))
         } else if MapUnit::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::MapUnit(Box::new(MapUnit::from_binary(&data)?)),
-            ))
+            println!("MapUnit");
+            Ok(Self::Mergeable(MergeableResource::MapUnit(Box::new(
+                MapUnit::from_binary(&data)?,
+            ))))
         } else if ModelList::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::ModelList(Box::new(ModelList::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("ModelList");
+            Ok(Self::Mergeable(MergeableResource::ModelList(Box::new(
+                ModelList::from_binary(&data)?,
+            ))))
         } else if Physics::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::Physics(Box::new(Physics::from_binary(&data)?)),
-            ))
+            println!("Physics");
+            Ok(Self::Mergeable(MergeableResource::Physics(Box::new(
+                Physics::from_binary(&data)?,
+            ))))
         } else if QuestProduct::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::QuestProduct(Box::new(
-                    QuestProduct::from_binary(&data)?,
-                )),
-            ))
+            println!("QuestProduct");
+            Ok(Self::Mergeable(MergeableResource::QuestProduct(Box::new(
+                QuestProduct::from_binary(&data)?,
+            ))))
         } else if RagdollBlendWeight::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::RagdollBlendWeight(Box::new(
-                    RagdollBlendWeight::from_binary(&data)?,
-                )),
-            ))
+            println!("RagdollBlendWeight");
+            Ok(Self::Mergeable(MergeableResource::RagdollBlendWeight(
+                Box::new(RagdollBlendWeight::from_binary(&data)?),
+            )))
         } else if RagdollConfig::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::RagdollConfig(Box::new(
-                    RagdollConfig::from_binary(&data)?,
-                )),
-            ))
+            println!("RagdollConfig");
+            Ok(Self::Mergeable(MergeableResource::RagdollConfig(Box::new(
+                RagdollConfig::from_binary(&data)?,
+            ))))
         } else if RagdollConfigList::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::RagdollConfigList(Box::new(
-                    RagdollConfigList::from_binary(&data)?,
-                )),
-            ))
+            println!("RagdollConfigList");
+            Ok(Self::Mergeable(MergeableResource::RagdollConfigList(
+                Box::new(RagdollConfigList::from_binary(&data)?),
+            )))
         } else if Recipe::path_matches(name) {
-            Ok(Self::Mergeable(crate::resource::MergeableResource::Recipe(
-                Box::new(Recipe::from_binary(&data)?),
-            )))
+            println!("Recipe");
+            Ok(Self::Mergeable(MergeableResource::Recipe(Box::new(
+                Recipe::from_binary(&data)?,
+            ))))
         } else if ResidentActors::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::ResidentActors(Box::new(
-                    ResidentActors::from_binary(&data)?,
-                )),
-            ))
+            println!("ResidentActors");
+            Ok(Self::Mergeable(MergeableResource::ResidentActors(
+                Box::new(ResidentActors::from_binary(&data)?),
+            )))
         } else if ResidentEvents::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::ResidentEvents(Box::new(
-                    ResidentEvents::from_binary(&data)?,
-                )),
-            ))
+            println!("ResidentEvents");
+            Ok(Self::Mergeable(MergeableResource::ResidentEvents(
+                Box::new(ResidentEvents::from_binary(&data)?),
+            )))
         } else if SaveDataPack::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::SaveDataPack(Box::new(
-                    SaveDataPack::from_binary(&data)?,
-                )),
-            ))
+            println!("SaveDataPack");
+            Ok(Self::Mergeable(MergeableResource::SaveDataPack(Box::new(
+                SaveDataPack::from_binary(&data)?,
+            ))))
         } else if ShopData::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::ShopData(Box::new(ShopData::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("ShopData");
+            Ok(Self::Mergeable(MergeableResource::ShopData(Box::new(
+                ShopData::from_binary(&data)?,
+            ))))
         } else if ShopGameDataInfo::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::ShopGameDataInfo(Box::new(
-                    ShopGameDataInfo::from_binary(&data)?,
-                )),
-            ))
+            println!("ShopGameDataInfo");
+            Ok(Self::Mergeable(MergeableResource::ShopGameDataInfo(
+                Box::new(ShopGameDataInfo::from_binary(&data)?),
+            )))
         } else if Static::path_matches(name) {
-            Ok(Self::Mergeable(crate::resource::MergeableResource::Static(
-                Box::new(Static::from_binary(&data)?),
-            )))
+            println!("Static");
+            Ok(Self::Mergeable(MergeableResource::Static(Box::new(
+                Static::from_binary(&data)?,
+            ))))
         } else if StatusEffectList::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::StatusEffectList(Box::new(
-                    StatusEffectList::from_binary(&data)?,
-                )),
-            ))
+            println!("StatusEffectList");
+            Ok(Self::Mergeable(MergeableResource::StatusEffectList(
+                Box::new(StatusEffectList::from_binary(&data)?),
+            )))
         } else if Tips::path_matches(name) {
-            Ok(Self::Mergeable(crate::resource::MergeableResource::Tips(
-                Box::new(Tips::from_binary(&data)?),
-            )))
+            println!("Tips");
+            Ok(Self::Mergeable(MergeableResource::Tips(Box::new(
+                Tips::from_binary(&data)?,
+            ))))
         } else if UMii::path_matches(name) {
-            Ok(Self::Mergeable(crate::resource::MergeableResource::UMii(
-                Box::new(UMii::from_binary(&data)?),
-            )))
+            println!("UMii");
+            Ok(Self::Mergeable(MergeableResource::UMii(Box::new(
+                UMii::from_binary(&data)?,
+            ))))
         } else if WorldInfo::path_matches(name) {
-            Ok(Self::Mergeable(
-                crate::resource::MergeableResource::WorldInfo(Box::new(WorldInfo::from_binary(
-                    &data,
-                )?)),
-            ))
+            println!("WorldInfo");
+            Ok(Self::Mergeable(MergeableResource::WorldInfo(Box::new(
+                WorldInfo::from_binary(&data)?,
+            ))))
         } else if data.len() > 4 && &data[0..4] == b"AAMP" {
-            Ok(Self::Binary(BinaryResource::Agnostic(data.into())))
+            println!("GenericAamp");
+            Ok(Self::Mergeable(MergeableResource::GenericAamp(Box::new(
+                roead::aamp::ParameterIO::from_binary(&data)?,
+            ))))
         } else if data.len() > 2 && (&data[0..2] == b"BY" || &data[0..2] == b"YB") {
-            Ok(Self::Binary(BinaryResource::Platform {
-                wiiu: (&data[0..2] == b"BY").then(|| data.clone().into()),
-                nx: (&data[0..2] == b"YB").then(|| data.into()),
-            }))
+            println!("GenericByml");
+            Ok(Self::Mergeable(MergeableResource::GenericByml(Box::new(
+                Byml::from_binary(&data)?,
+            ))))
+        } else if data.len() > 0x40 && &data[0..4] == b"SARC" {
+            Ok(Self::Sarc(SarcMap::from_binary(data, resources)?))
         } else {
-            todo!()
+            Ok(Self::Binary(data.into_owned()))
         }
     }
 
@@ -686,7 +656,7 @@ impl ResourceData {
         resources: &BTreeMap<String, ResourceData>,
     ) -> Result<Vec<u8>> {
         Ok(match self {
-            ResourceData::Binary(data) => data.to_binary(endian)?,
+            ResourceData::Binary(data) => data.clone(),
             ResourceData::Mergeable(resource) => resource.clone().into_binary(endian),
             ResourceData::Sarc(sarc) => sarc.to_binary(endian, resources)?,
         })

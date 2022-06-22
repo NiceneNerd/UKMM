@@ -59,6 +59,14 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
         self.0.len() == 0
     }
 
+    pub fn get(&self, index: usize) -> Option<&T> {
+        if let Some(false) = self.1.get(index) {
+            self.0.get(index)
+        } else {
+            None
+        }
+    }
+
     #[inline]
     pub fn and_delete(mut self) -> Self {
         self.delete();
