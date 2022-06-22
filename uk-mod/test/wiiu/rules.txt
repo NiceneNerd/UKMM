@@ -1,0 +1,6 @@
+[Definition]
+titleIds = 00050000101C9300,00050000101C9400,00050000101C9500
+name = Crafting Project
+path = "The Legend of Zelda: Breath of the Wild/Mods/Crafting Project"
+description = Adds the ability to craft weapons through Anvils that have been placed in every stable and village.
+version = 4
