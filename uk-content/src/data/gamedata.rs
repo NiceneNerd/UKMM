@@ -172,8 +172,9 @@ macro_rules! extract_sarcwriter_gamedata {
                             _key.trim_start_matches("revival_")
                         }.to_owned(),
                         flags: SortedDeleteMap::new(),
-                    }, |acc, val| {
-                        acc.merge(&val)
+                    }, |mut acc, val| {
+                        acc.flags.extend(val.flags.into_iter());
+                        acc
                     })
                 },
             )*

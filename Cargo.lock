@@ -884,24 +884,6 @@ dependencies = [
 
 [[package]]
 name = "roead"
-version = "0.10.2"
-source = "git+https://github.com/NiceneNerd/roead#31818310f894decbaf5c9134cb5dcf1235a5b044"
-dependencies = [
- "cached",
- "crc",
- "cxx",
- "cxx-build",
- "derivative",
- "glob",
- "indexmap",
- "lazy_static",
- "serde",
- "thiserror",
- "unicase",
-]
-
-[[package]]
-name = "roead"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf20802bec3614f716088b098dbc29c77163126e6f48905c67bfd89df2fdd796"
@@ -1132,7 +1114,7 @@ dependencies = [
  "join_str",
  "lexical",
  "pretty_assertions",
- "roead 0.10.3",
+ "roead",
  "serde",
  "serde_json",
  "strum",
@@ -1148,7 +1130,7 @@ dependencies = [
  "join_str",
  "lzma",
  "rayon",
- "roead 0.10.3",
+ "roead",
  "serde",
  "toml",
  "uk-content",
@@ -1160,7 +1142,7 @@ dependencies = [
 name = "ukmm"
 version = "0.1.0"
 dependencies = [
- "roead 0.10.2",
+ "roead",
 ]
 
 [[package]]

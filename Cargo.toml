@@ -4,11 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-
-[dependencies.roead]
-git = "https://github.com/NiceneNerd/roead"
-features = ["with-serde"]
-# rev = "c172ab2941d7a4c8df8930f72a540e25dfcb81fa"
+roead = "0.10.3"
 
 [workspace]
 members = [

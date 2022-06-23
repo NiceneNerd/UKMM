@@ -493,6 +493,13 @@ macro_rules! impl_delete_map {
                 self.0.insert(key.borrow().clone(), value);
                 self.1.insert(key.borrow().clone(), true);
             }
+
+            pub fn extend(&mut self, other: impl IntoIterator<Item = (T, U)>) {
+                for (k, v) in other {
+                    self.0.insert(k.clone(), v);
+                    self.1.insert(k, false);
+                }
+            }
         }
 
         impl<T: $($key)*, U: PartialEq + Clone> crate::prelude::Mergeable for $type<T, U> {
