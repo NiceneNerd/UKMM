@@ -4,6 +4,7 @@ mod prelude;
 pub mod residents;
 
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use anyhow::Context;
 use join_str::jstr;
 pub use prelude::*;
 use roead::{
@@ -163,33 +164,53 @@ impl Actor {
         );
         let actorlink: params::link::ActorLink =
             ParameterIO::from_binary(&link_file.1)?.try_into()?;
+        let name = link_file
+            .0
+            .unwrap()
+            .trim_start_matches("Actor/ActorLink/")
+            .trim_end_matches(".bxml")
+            .to_owned();
         Ok(Self {
-            name: link_file
-                .0
-                .unwrap()
-                .trim_start_matches("Actor/ActorLink/")
-                .trim_end_matches(".bxml")
-                .to_owned(),
-            ai_program: LinkTarget::extract(&actorlink, &mut sarc, "AIProgramUser")?,
-            ai_schedule: LinkTarget::extract(&actorlink, &mut sarc, "AIScheduleUser")?,
-            as_list: LinkTarget::extract(&actorlink, &mut sarc, "ASUser")?,
-            attention: LinkTarget::extract(&actorlink, &mut sarc, "AttentionUser")?,
-            awareness: LinkTarget::extract(&actorlink, &mut sarc, "AwarenessUser")?,
-            bone_control: LinkTarget::extract(&actorlink, &mut sarc, "BoneControlUser")?,
-            chemical: LinkTarget::extract(&actorlink, &mut sarc, "ChemicalUser")?,
-            damage_param: LinkTarget::extract(&actorlink, &mut sarc, "DamageParamUser")?,
-            drop: LinkTarget::extract(&actorlink, &mut sarc, "DropTableUser")?,
-            gparam: LinkTarget::extract(&actorlink, &mut sarc, "GParamUser")?,
-            life_condition: LinkTarget::extract(&actorlink, &mut sarc, "LifeConditionUser")?,
-            lod: LinkTarget::extract(&actorlink, &mut sarc, "LODUser")?,
-            model: LinkTarget::extract(&actorlink, &mut sarc, "ModelUser")?,
-            physics: LinkTarget::extract(&actorlink, &mut sarc, "PhysicsUser")?,
-            rg_blend_weight: LinkTarget::extract(&actorlink, &mut sarc, "RgBlendWeightUser")?,
-            rg_config_list: LinkTarget::extract(&actorlink, &mut sarc, "RgConfigListUser")?,
-            recipe: LinkTarget::extract(&actorlink, &mut sarc, "RecipeUser")?,
-            shop: LinkTarget::extract(&actorlink, &mut sarc, "ShopDataUser")?,
-            umii: LinkTarget::extract(&actorlink, &mut sarc, "UMiiUser")?,
-            anim_info: LinkTarget::extract(&actorlink, &mut sarc, "AnimationInfo")?,
+            ai_program: LinkTarget::extract(&actorlink, &mut sarc, "AIProgramUser")
+                .with_context(|| jstr!("Failed to parse AIProgramUser in actor {&name}"))?,
+            ai_schedule: LinkTarget::extract(&actorlink, &mut sarc, "AIScheduleUser")
+                .with_context(|| jstr!("Failed to parse AIScheduleUser in actor {&name}"))?,
+            as_list: LinkTarget::extract(&actorlink, &mut sarc, "ASUser")
+                .with_context(|| jstr!("Failed to parse ASUser in actor {&name}"))?,
+            attention: LinkTarget::extract(&actorlink, &mut sarc, "AttentionUser")
+                .with_context(|| jstr!("Failed to parse AttentionUser in actor {&name}"))?,
+            awareness: LinkTarget::extract(&actorlink, &mut sarc, "AwarenessUser")
+                .with_context(|| jstr!("Failed to parse AwarenessUser in actor {&name}"))?,
+            bone_control: LinkTarget::extract(&actorlink, &mut sarc, "BoneControlUser")
+                .with_context(|| jstr!("Failed to parse BoneControlUser in actor {&name}"))?,
+            chemical: LinkTarget::extract(&actorlink, &mut sarc, "ChemicalUser")
+                .with_context(|| jstr!("Failed to parse ChemicalUser in actor {&name}"))?,
+            damage_param: LinkTarget::extract(&actorlink, &mut sarc, "DamageParamUser")
+                .with_context(|| jstr!("Failed to parse DamageParamUser in actor {&name}"))?,
+            drop: LinkTarget::extract(&actorlink, &mut sarc, "DropTableUser")
+                .with_context(|| jstr!("Failed to parse DropTableUser in actor {&name}"))?,
+            gparam: LinkTarget::extract(&actorlink, &mut sarc, "GParamUser")
+                .with_context(|| jstr!("Failed to parse GParamUser in actor {&name}"))?,
+            life_condition: LinkTarget::extract(&actorlink, &mut sarc, "LifeConditionUser")
+                .with_context(|| jstr!("Failed to parse LifeConditionUser in actor {&name}"))?,
+            lod: LinkTarget::extract(&actorlink, &mut sarc, "LODUser")
+                .with_context(|| jstr!("Failed to parse LODUser in actor {&name}"))?,
+            model: LinkTarget::extract(&actorlink, &mut sarc, "ModelUser")
+                .with_context(|| jstr!("Failed to parse ModelUser in actor {&name}"))?,
+            physics: LinkTarget::extract(&actorlink, &mut sarc, "PhysicsUser")
+                .with_context(|| jstr!("Failed to parse PhysicsUser in actor {&name}"))?,
+            rg_blend_weight: LinkTarget::extract(&actorlink, &mut sarc, "RgBlendWeightUser")
+                .with_context(|| jstr!("Failed to parse RgBlendWeightUser in actor {&name}"))?,
+            rg_config_list: LinkTarget::extract(&actorlink, &mut sarc, "RgConfigListUser")
+                .with_context(|| jstr!("Failed to parse RgConfigListUser in actor {&name}"))?,
+            recipe: LinkTarget::extract(&actorlink, &mut sarc, "RecipeUser")
+                .with_context(|| jstr!("Failed to parse RecipeUser in actor {&name}"))?,
+            shop: LinkTarget::extract(&actorlink, &mut sarc, "ShopDataUser")
+                .with_context(|| jstr!("Failed to parse ShopDataUser in actor {&name}"))?,
+            umii: LinkTarget::extract(&actorlink, &mut sarc, "UMiiUser")
+                .with_context(|| jstr!("Failed to parse UMiiUser in actor {&name}"))?,
+            anim_info: LinkTarget::extract(&actorlink, &mut sarc, "AnimationInfo")
+                .with_context(|| jstr!("Failed to parse AnimationInfo in actor {&name}"))?,
             link: actorlink,
             as_files: sarc
                 .drain_filter(|(f, _)| f.as_ref().map(|n| n.ends_with(".bas")).unwrap_or(false))
@@ -221,6 +242,7 @@ impl Actor {
                 .into_iter()
                 .filter_map(|(f, d)| f.map(|f| (f, d)))
                 .collect(),
+            name,
         })
     }
 

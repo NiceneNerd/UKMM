@@ -1,65 +1,99 @@
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
+    util::DeleteMap,
     Result, UKError,
 };
-use indexmap::IndexMap;
 use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 
+type RecipeTable = DeleteMap<String, u8>;
+
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-pub struct Recipe(pub IndexMap<String, u8>);
+pub struct Recipe(pub DeleteMap<String, RecipeTable>);
 
 impl TryFrom<&ParameterIO> for Recipe {
     type Error = UKError;
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
-        let table = pio
-            .object("Normal0")
-            .ok_or(UKError::MissingAampKey("Recipe missing table Normal0"))?;
+        let header = pio
+            .object("Header")
+            .ok_or(UKError::MissingAampKey("Recipe missing header"))?;
+        let table_count = header
+            .param("TableNum")
+            .ok_or(UKError::MissingAampKey("Recipe header missing table count"))?
+            .as_int()?;
+        let table_names = (0..table_count)
+            .map(|i| -> Result<&str> {
+                Ok(header
+                    .param(format!("Table{:02}", i + 1).as_str())
+                    .ok_or_else(|| {
+                        UKError::MissingAampKeyD(jstr!(
+                            "Recipe header missing table name {&lexical::to_string(i + 1)}"
+                        ))
+                    })?
+                    .as_string()?)
+            })
+            .collect::<Result<Vec<_>>>()?;
         Ok(Self(
-            (1..=table
-                .param("ColumnNum")
-                .ok_or(UKError::MissingAampKey("Recipe table missing column num"))?
-                .as_int()?)
-                .map(|i| -> Result<(String, u8)> {
+            table_names
+                .into_iter()
+                .map(|name| -> Result<(String, RecipeTable)> {
+                    let table = pio.object(name).ok_or_else(|| {
+                        UKError::MissingAampKeyD(jstr!("Recipe missing table {&name}"))
+                    })?;
                     Ok((
-                        table
-                            .param(&format!("ItemName{:02}", i))
-                            .ok_or(UKError::MissingAampKey("Recipe missing item name"))?
-                            .as_string()?
-                            .to_owned(),
-                        table
-                            .param(&format!("ItemNum{:02}", i))
-                            .ok_or(UKError::MissingAampKey("Recipe missing item count"))?
-                            .as_int()? as u8,
+                        name.to_owned(),
+                        (1..=table
+                            .param("ColumnNum")
+                            .ok_or(UKError::MissingAampKey("Recipe table missing column num"))?
+                            .as_int()?)
+                            .map(|i| -> Result<(String, u8)> {
+                                Ok((
+                                    table
+                                        .param(&format!("ItemName{:02}", i))
+                                        .ok_or(UKError::MissingAampKey("Recipe missing item name"))?
+                                        .as_string()?
+                                        .to_owned(),
+                                    table
+                                        .param(&format!("ItemNum{:02}", i))
+                                        .ok_or(UKError::MissingAampKey(
+                                            "Recipe missing item count",
+                                        ))?
+                                        .as_int()? as u8,
+                                ))
+                            })
+                            .collect::<Result<_>>()?,
                     ))
                 })
-                .collect::<Result<IndexMap<_, _>>>()?,
+                .collect::<Result<_>>()?,
         ))
     }
 }
 
 impl From<Recipe> for ParameterIO {
     fn from(val: Recipe) -> Self {
-        Self {
-            objects: [
-                (
-                    "Header",
-                    [
-                        ("TableNum", Parameter::Int(1)),
-                        ("Table01", Parameter::String64("Normal0".to_owned())),
-                    ]
+        Self::new()
+            .with_object(
+                "Header",
+                [("TableNum".to_owned(), Parameter::Int(val.0.len() as i32))]
                     .into_iter()
+                    .chain(val.0.keys().enumerate().map(|(i, n)| {
+                        (
+                            format!("Table{:02}", i + 1),
+                            Parameter::String64(n.to_owned()),
+                        )
+                    }))
                     .collect(),
-                ),
+            )
+            .with_objects(val.0.into_iter().map(|(name, table)| {
                 (
-                    "Normal0",
-                    [("ColumnNum".to_owned(), Parameter::Int(val.0.len() as i32))]
+                    name,
+                    [("ColumnNum".to_owned(), Parameter::Int(table.len() as i32))]
                         .into_iter()
                         .chain(
-                            val.0
+                            table
                                 .into_iter()
                                 .filter(|(_, count)| *count > 0)
                                 .enumerate()
@@ -77,64 +111,35 @@ impl From<Recipe> for ParameterIO {
                                 }),
                         )
                         .collect(),
-                ),
-            ]
-            .into_iter()
-            .collect(),
-            ..Default::default()
-        }
+                )
+            }))
     }
 }
 
 impl Mergeable for Recipe {
     fn diff(&self, other: &Self) -> Self {
-        Self(
-            other
-                .0
-                .iter()
-                .filter_map(|(name, count)| {
-                    if self.0.get(name.as_str()) != Some(count) {
-                        Some((name.clone(), *count))
-                    } else {
-                        None
-                    }
-                })
-                .chain(self.0.iter().filter_map(|(name, _)| {
-                    if other.0.contains_key(name.as_str()) {
-                        None
-                    } else {
-                        Some((name.clone(), 0))
-                    }
-                }))
-                .collect(),
-        )
+        Self(self.0.deep_diff(&other.0))
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        Self(
-            self.0
-                .iter()
-                .chain(diff.0.iter())
-                .collect::<IndexMap<_, _>>()
-                .into_iter()
-                .filter_map(|(name, count)| (*count > 0).then(|| (name.clone(), *count)))
-                .collect(),
-        )
+        Self(self.0.deep_merge(&diff.0))
     }
 }
 
 impl InfoSource for Recipe {
     fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
-        info.insert("normal0StuffNum".to_owned(), Byml::Int(self.0.len() as i32));
-        for (i, (name, num)) in self.0.iter().enumerate() {
-            info.insert(
-                format!("normal0ItemName{:02}", i + 1),
-                Byml::String(name.clone()),
-            );
-            info.insert(
-                format!("normal0ItemNum{:02}", i + 1),
-                Byml::Int(*num as i32),
-            );
+        if let Some(table) = self.0.get(&String::from("Normal0")) {
+            info.insert("normal0StuffNum".to_owned(), Byml::Int(table.len() as i32));
+            for (i, (name, num)) in table.iter().enumerate() {
+                info.insert(
+                    format!("normal0ItemName{:02}", i + 1),
+                    Byml::String(name.clone()),
+                );
+                info.insert(
+                    format!("normal0ItemNum{:02}", i + 1),
+                    Byml::Int(*num as i32),
+                );
+            }
         }
         Ok(())
     }
@@ -237,11 +242,12 @@ mod tests {
         let recipe = super::Recipe::try_from(&pio).unwrap();
         let mut info = roead::byml::Hash::new();
         recipe.update_info(&mut info).unwrap();
+        let table = recipe.0.get(&String::from("Normal0")).unwrap();
         assert_eq!(
             info["normal0StuffNum"].as_int().unwrap(),
-            recipe.0.len() as i32
+            table.len() as i32
         );
-        for (i, (name, num)) in recipe.0.iter().enumerate() {
+        for (i, (name, num)) in table.iter().enumerate() {
             assert_eq!(
                 info[&format!("normal0ItemName{:02}", i + 1)]
                     .as_string()

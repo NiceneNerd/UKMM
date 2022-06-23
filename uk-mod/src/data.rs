@@ -1,15 +1,15 @@
 use crate::{platform_prefixes, resource::ResourceData};
 use anyhow::{bail, Context, Result};
 use join_str::jstr;
-use jwalk::WalkDir;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
 use uk_content::{canonicalize, prelude::*};
+use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DataTree {
@@ -193,6 +193,35 @@ impl DataTreeBuilder {
         }
     }
 
+    fn collect_resources(&mut self, dir: impl AsRef<Path>) -> Result<BTreeMap<String, String>> {
+        let resources = Arc::new(RwLock::new(&mut self.resources));
+        WalkDir::new(dir.as_ref())
+            .into_iter()
+            .filter_map(|f| {
+                f.ok()
+                    .and_then(|f| f.file_type().is_file().then(|| f.into_path()))
+            })
+            .collect::<BTreeSet<PathBuf>>()
+            .into_par_iter()
+            .map(|path| -> Result<(String, String)> {
+                let name = path
+                    .strip_prefix(&self.root)
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned();
+                let canon = canonicalize(&name);
+                if !resources.read().unwrap().contains_key(&canon) {
+                    let mut resources = resources.write().unwrap();
+                    let resource =
+                        ResourceData::from_binary(&name, std::fs::read(&path)?, &mut resources)
+                            .with_context(|| jstr!("Error parsing resource at {&name}"))?;
+                    resources.insert(canon.clone(), resource);
+                };
+                Ok((name, canon))
+            })
+            .collect::<Result<_>>()
+    }
+
     pub fn build(mut self) -> Result<DataTree> {
         let (content_u, aoc_u) = platform_prefixes(Endian::Big);
         let (content_nx, aoc_nx) = platform_prefixes(Endian::Little);
@@ -211,61 +240,15 @@ impl DataTreeBuilder {
         if content.is_none() && aoc.is_none() {
             bail!("No content or aoc directory found in mod")
         };
-        let resources = Arc::new(Mutex::new(&mut self.resources));
-        let content_files = if let Some(content) = content {
-            WalkDir::new(self.root.join(content))
-                .into_iter()
-                .filter_map(|f| {
-                    f.ok()
-                        .and_then(|f| f.file_type().is_file().then(|| f.path()))
-                })
-                .map(|path| -> Result<(String, String)> {
-                    let name = path
-                        .strip_prefix(&self.root)
-                        .unwrap()
-                        .to_string_lossy()
-                        .into_owned();
-                    let canon = canonicalize(&name);
-                    let mut resources = resources.lock().unwrap();
-                    let resource =
-                        ResourceData::from_binary(&name, std::fs::read(&path)?, &mut resources)
-                            .with_context(|| jstr!("Error parsing resource at {&name}"))?;
-                    resources.insert(canon.clone(), resource);
-                    Ok((name, canon))
-                })
-                .collect::<Result<BTreeMap<String, String>>>()?
-        } else {
-            Default::default()
-        };
-        let aoc_files = if let Some(aoc) = aoc {
-            WalkDir::new(self.root.join(aoc))
-                .into_iter()
-                .filter_map(|f| {
-                    f.ok()
-                        .and_then(|f| f.file_type().is_file().then(|| f.path()))
-                })
-                .map(|path| -> Result<(String, String)> {
-                    let name = path
-                        .strip_prefix(&self.root)
-                        .unwrap()
-                        .to_string_lossy()
-                        .into_owned();
-                    let canon = canonicalize(&name);
-                    let mut resources = resources.lock().unwrap();
-                    let resource =
-                        ResourceData::from_binary(&name, std::fs::read(&path)?, &mut resources)
-                            .with_context(|| jstr!("Error parsing resource at {&name}"))?;
-                    resources.insert(canon.clone(), resource);
-                    Ok((name, canon))
-                })
-                .collect::<Result<BTreeMap<String, String>>>()?
-        } else {
-            Default::default()
-        };
-        drop(resources);
         Ok(DataTree {
-            content_files,
-            aoc_files,
+            content_files: content
+                .map(|content| self.collect_resources(self.root.join(content)))
+                .transpose()?
+                .unwrap_or_default(),
+            aoc_files: aoc
+                .map(|aoc| self.collect_resources(self.root.join(aoc)))
+                .transpose()?
+                .unwrap_or_default(),
             resources: self.resources,
         })
     }

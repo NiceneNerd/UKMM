@@ -342,10 +342,12 @@ impl SarcMap {
                 .map(|file| -> Result<(String, String)> {
                     let name = file.name().context("SARC file missing name")?.to_owned();
                     let canon = name.replace(".s", ".");
-                    let data = roead::yaz0::decompress_if(file.data())?;
-                    let resource = ResourceData::from_binary(&name, data, resources)
-                        .with_context(|| jstr!("Error parsing resource in SARC: {&name}"))?;
-                    resources.insert(canon.clone(), resource);
+                    if !resources.contains_key(&canon) {
+                        let data = roead::yaz0::decompress_if(file.data())?;
+                        let resource = ResourceData::from_binary(&name, data, resources)
+                            .with_context(|| jstr!("Error parsing resource in SARC: {&name}"))?;
+                        resources.insert(canon.clone(), resource);
+                    }
                     Ok((name, canon))
                 })
                 .collect::<Result<_>>()?,
@@ -402,10 +404,14 @@ impl ResourceData {
             .with_context(|| jstr!("Missing extension for resource: {&name.to_str().unwrap()}"))?
             .to_str()
             .unwrap();
-        if stem == "Dummy" || EXCLUDE_NAMES.iter().any(|ex| stem.starts_with(ex)) {
-            return Ok(Self::Binary(data.into()));
+        let data = data.into();
+        if stem == "Dummy"
+            || data.len() < 0x10
+            || EXCLUDE_NAMES.iter().any(|ex| stem.starts_with(ex))
+        {
+            return Ok(Self::Binary(data));
         }
-        let data = roead::yaz0::decompress_if(data.into())?;
+        let data = roead::yaz0::decompress_if(data)?;
         if Actor::path_matches(name) {
             Ok(Self::Mergeable(MergeableResource::Actor(Box::new(
                 Actor::from_binary(&data)?,

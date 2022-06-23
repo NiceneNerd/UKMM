@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.58"
 join_str = "0.1.0"
-jwalk = "0.6.0"
+walkdir = "2.3.2"
 lzma = "0.2.2"
 rayon = "1.5.3"
 roead = { version = "0.10.3", features = ["with-serde"] }
