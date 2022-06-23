@@ -76,16 +76,7 @@ impl Mergeable for AIEntry {
                     Some((*k, v.clone()))
                 } else if &self.children[k] != v {
                     let self_child = &self.children[k];
-                    match (self_child, v) {
-                        (ChildEntry::AI(_), ChildEntry::Action(_))
-                        | (ChildEntry::Action(_), ChildEntry::AI(_)) => Some((*k, v.clone())),
-                        (ChildEntry::AI(self_ai), ChildEntry::AI(other_ai)) => {
-                            Some((*k, ChildEntry::AI(self_ai.diff(other_ai))))
-                        }
-                        (ChildEntry::Action(self_action), ChildEntry::Action(other_action)) => {
-                            Some((*k, ChildEntry::Action(self_action.diff(other_action))))
-                        }
-                    }
+                    Some((*k, self_child.diff(v)))
                 } else {
                     None
                 }
@@ -119,22 +110,7 @@ impl Mergeable for AIEntry {
         }
         for (k, v) in &diff.children {
             if let Some(base_child) = self.children.get(k) {
-                match (base_child, v) {
-                    (ChildEntry::AI(_), ChildEntry::Action(_))
-                    | (ChildEntry::Action(_), ChildEntry::AI(_)) => {
-                        new.children.insert(*k, v.clone());
-                    }
-                    (ChildEntry::AI(base_ai), ChildEntry::AI(diff_ai)) => {
-                        new.children
-                            .insert(*k, ChildEntry::AI(AIEntry::merge(base_ai, diff_ai)));
-                    }
-                    (ChildEntry::Action(base_action), ChildEntry::Action(diff_action)) => {
-                        new.children.insert(
-                            *k,
-                            ChildEntry::Action(ActionEntry::merge(base_action, diff_action)),
-                        );
-                    }
-                }
+                new.children.insert(*k, base_child.merge(v));
             } else {
                 new.children.insert(*k, v.clone());
             }
@@ -241,9 +217,37 @@ pub enum ChildEntry {
     Action(ActionEntry),
 }
 
+impl Mergeable for ChildEntry {
+    fn diff(&self, other: &Self) -> Self {
+        match (self, other) {
+            (ChildEntry::AI(_), ChildEntry::Action(_))
+            | (ChildEntry::Action(_), ChildEntry::AI(_)) => other.clone(),
+            (ChildEntry::AI(base_ai), ChildEntry::AI(diff_ai)) => {
+                ChildEntry::AI(AIEntry::diff(base_ai, diff_ai))
+            }
+            (ChildEntry::Action(base_action), ChildEntry::Action(diff_action)) => {
+                ChildEntry::Action(ActionEntry::diff(base_action, diff_action))
+            }
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        match (self, diff) {
+            (ChildEntry::AI(_), ChildEntry::Action(_))
+            | (ChildEntry::Action(_), ChildEntry::AI(_)) => diff.clone(),
+            (ChildEntry::AI(base_ai), ChildEntry::AI(diff_ai)) => {
+                ChildEntry::AI(AIEntry::merge(base_ai, diff_ai))
+            }
+            (ChildEntry::Action(base_action), ChildEntry::Action(diff_action)) => {
+                ChildEntry::Action(ActionEntry::merge(base_action, diff_action))
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AIProgram {
-    pub demos: IndexMap<u32, ActionEntry>,
+    pub demos: IndexMap<u32, ChildEntry>,
     pub tree: IndexMap<String, AIEntry>,
     pub queries: IndexMap<String, ParameterList>,
 }
@@ -299,7 +303,7 @@ impl Mergeable for AIProgram {
                 let mut new = self.demos.clone();
                 for (k, v) in &diff.demos {
                     let merged = if let Some(entry) = new.get_mut(k) {
-                        ActionEntry::merge(entry, v)
+                        entry.merge(v)
                     } else {
                         v.clone()
                     };
@@ -367,6 +371,7 @@ mod parse {
                                     .values()
                                     .nth(idx)
                                     .ok_or_else(|| {
+                                        dbg!(v);
                                         UKError::MissingAampKeyD(jstr!(
                                             "AI program missing entry at {&lexical::to_string(idx)}"
                                         ))
@@ -383,6 +388,7 @@ mod parse {
                                     .values()
                                     .nth(idx - action_offset)
                                     .ok_or_else(|| {
+                                        dbg!(v);
                                         UKError::MissingAampKeyD(jstr!(
                                             "AI program missing entry at {&lexical::to_string(idx)}"
                                         ))
@@ -516,27 +522,35 @@ mod parse {
                     ))?
                     .0
                     .iter()
-                    .map(|(k, v)| -> Result<(u32, ActionEntry)> {
-                        let idx = v.as_int()? as usize - action_offset;
+                    .map(|(k, v)| -> Result<(u32, ChildEntry)> {
+                        let idx = v.as_int()? as usize;
                         Ok((
                             *k,
-                            plist_to_action(
-                                pio.list("Action")
-                                    .unwrap()
-                                    .lists
-                                    .0
-                                    .values()
-                                    .nth(idx)
-                                    .ok_or_else(|| {
-                                        UKError::MissingAampKeyD(jstr!(
-                                            "AI program missing entry at {&lexical::to_string(idx)}"
-                                        ))
-                                    })?,
-                                pio,
-                            )?,
+                            if idx > action_offset {
+                                ChildEntry::Action(plist_to_action(
+                                    pio.list("Action")
+                                        .unwrap()
+                                        .lists
+                                        .0
+                                        .values()
+                                        .nth(idx - action_offset)
+                                        .ok_or_else(|| {
+                                            UKError::MissingAampKeyD(jstr!(
+                                                "AI program missing entry at {&lexical::to_string(idx - action_offset)}"
+                                            ))
+                                        })?,
+                                    pio,
+                                )?)
+                            } else {
+                                ChildEntry::AI(plist_to_ai(pio.list("AI").unwrap().lists.0.values().nth(idx).ok_or_else(|| {
+                                    UKError::MissingAampKeyD(jstr!(
+                                        "AI program missing entry at {&lexical::to_string(idx)}"
+                                    ))
+                                })?, pio, action_offset)?)
+                            },
                         ))
                     })
-                    .collect::<Result<IndexMap<u32, ActionEntry>>>()?,
+                    .collect::<Result<IndexMap<u32, ChildEntry>>>()?,
                 queries: pio
                     .list("Query")
                     .ok_or(UKError::MissingAampKey("AI program missing Queries list"))?
@@ -693,15 +707,25 @@ mod write {
             for root in roots {
                 self.ai_to_plist(root);
             }
-            let mut demos: IndexMap<u32, ActionEntry> = IndexMap::new();
+            let mut demos: IndexMap<u32, ChildEntry> = IndexMap::new();
             std::mem::swap(&mut self.aiprog.demos, &mut demos);
             pio.object_mut("DemoAIActionIdx")
                 .unwrap()
                 .0
-                .extend(demos.into_iter().map(|(k, action)| {
-                    (k, {
-                        Parameter::Int((self.action_to_plist(action) + self.action_offset) as i32)
-                    })
+                .extend(demos.into_iter().map(|(k, demo_child)| {
+                    (
+                        k,
+                        match demo_child {
+                            ChildEntry::AI(ai) => {
+                                let idx = self.ai_to_plist(ai);
+                                Parameter::Int(idx as i32)
+                            }
+                            ChildEntry::Action(action) => {
+                                let idx = self.action_to_plist(action);
+                                Parameter::Int((idx + self.action_offset) as i32)
+                            }
+                        },
+                    )
                 }));
             pio.set_list(
                 "AI",
