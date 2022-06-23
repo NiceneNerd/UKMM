@@ -380,7 +380,14 @@ pub enum ResourceData {
     Sarc(SarcMap),
 }
 
-const EXCLUDE_EXTS: &[&str] = &["sarc", "blarc", "farc"];
+const EXCLUDE_EXTS: &[&str] = &["beventpack", "blarc", "bfarc", "genvb", "sarc"];
+const EXCLUDE_NAMES: &[&str] = &[
+    "tera_resource.Nin_NX_NVN",
+    "tera_resource.Cafe_Cafe_GX2",
+    "Dungeon",
+    "Bootup_",
+    "AocMainField",
+];
 
 impl ResourceData {
     pub fn from_binary(
@@ -395,14 +402,10 @@ impl ResourceData {
             .with_context(|| jstr!("Missing extension for resource: {&name.to_str().unwrap()}"))?
             .to_str()
             .unwrap();
-        let data = data.into();
-        if stem == "Dummy"
-            || (stem == "AocMainField" && data.len() < 0x40)
-            || !EXCLUDE_EXTS.contains(&ext.trim_start_matches('s'))
-        {
-            return Ok(Self::Binary(data));
+        if stem == "Dummy" || EXCLUDE_NAMES.iter().any(|ex| stem.starts_with(ex)) {
+            return Ok(Self::Binary(data.into()));
         }
-        let data = roead::yaz0::decompress_if(data)?;
+        let data = roead::yaz0::decompress_if(data.into())?;
         if Actor::path_matches(name) {
             Ok(Self::Mergeable(MergeableResource::Actor(Box::new(
                 Actor::from_binary(&data)?,
@@ -595,7 +598,10 @@ impl ResourceData {
             Ok(Self::Mergeable(MergeableResource::GenericByml(Box::new(
                 Byml::from_binary(&data)?,
             ))))
-        } else if data.len() > 0x40 && &data[0..4] == b"SARC" {
+        } else if data.len() > 0x40
+            && &data[0..4] == b"SARC"
+            && !EXCLUDE_EXTS.contains(&ext.strip_prefix('s').unwrap_or(ext))
+        {
             Ok(Self::Sarc(SarcMap::from_binary(data, resources)?))
         } else {
             Ok(Self::Binary(data.into_owned()))
