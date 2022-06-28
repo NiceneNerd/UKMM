@@ -264,7 +264,7 @@ impl Mergeable for MergeableResource {
 }
 
 impl MergeableResource {
-    pub fn into_binary(self, endian: Endian) -> Vec<u8> {
+    pub fn into_binary(self, endian: Endian) -> roead::Bytes {
         match self {
             Self::Actor(v) => v.into_binary(endian),
             Self::ActorInfo(v) => v.into_binary(endian),
@@ -358,7 +358,7 @@ impl SarcMap {
         &self,
         endian: uk_content::prelude::Endian,
         resources: &BTreeMap<String, ResourceData>,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<roead::Bytes> {
         let mut sarc = SarcWriter::new(endian.into());
         sarc.files = self
             .0
@@ -368,7 +368,7 @@ impl SarcMap {
                     .get(canon)
                     .with_context(|| jstr!("Missing resource for SARC: {&canon}"))?;
                 let data = resource.to_binary(endian, resources)?;
-                Ok((path.clone(), data))
+                Ok((path.clone(), data.into()))
             })
             .collect::<Result<_>>()?;
         Ok(sarc.to_binary())
@@ -377,7 +377,7 @@ impl SarcMap {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ResourceData {
-    Binary(Vec<u8>),
+    Binary(Binary),
     Mergeable(MergeableResource),
     Sarc(SarcMap),
 }
@@ -394,7 +394,7 @@ const EXCLUDE_NAMES: &[&str] = &[
 impl ResourceData {
     pub fn from_binary(
         name: impl AsRef<Path>,
-        data: impl Into<Vec<u8>>,
+        data: impl Into<Binary>,
         resources: &mut BTreeMap<String, ResourceData>,
     ) -> Result<Self> {
         let name = name.as_ref();
@@ -404,14 +404,14 @@ impl ResourceData {
             .with_context(|| jstr!("Missing extension for resource: {&name.to_str().unwrap()}"))?
             .to_str()
             .unwrap();
-        let data = data.into();
+        let data: Binary = data.into();
         if stem == "Dummy"
             || data.len() < 0x10
             || EXCLUDE_NAMES.iter().any(|ex| stem.starts_with(ex))
         {
             return Ok(Self::Binary(data));
         }
-        let data = roead::yaz0::decompress_if(data)?;
+        let data: Binary = roead::yaz0::decompress_if(&data)?.into();
         if Actor::path_matches(name) {
             Ok(Self::Mergeable(MergeableResource::Actor(Box::new(
                 Actor::from_binary(&data)?,
@@ -610,7 +610,7 @@ impl ResourceData {
         {
             Ok(Self::Sarc(SarcMap::from_binary(data, resources)?))
         } else {
-            Ok(Self::Binary(data.into_owned()))
+            Ok(Self::Binary(data))
         }
     }
 
@@ -618,11 +618,11 @@ impl ResourceData {
         &self,
         endian: Endian,
         resources: &BTreeMap<String, ResourceData>,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<Binary> {
         Ok(match self {
             ResourceData::Binary(data) => data.clone(),
-            ResourceData::Mergeable(resource) => resource.clone().into_binary(endian),
-            ResourceData::Sarc(sarc) => sarc.to_binary(endian, resources)?,
+            ResourceData::Mergeable(resource) => resource.clone().into_binary(endian).into(),
+            ResourceData::Sarc(sarc) => sarc.to_binary(endian, resources)?.into(),
         })
     }
 }

@@ -12,7 +12,7 @@ join_str = "0.1.0"
 lexical = "6.1.1"
 msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }
 thiserror = "1.0.30"
-roead = { version = "0.10.4", features = ["with-serde"] }
+roead = { version = "0.11.1", features = ["with-serde"] }
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
 strum = "0.24.0"

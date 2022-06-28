@@ -251,7 +251,7 @@ impl Resource for GeneralParamList {
         Ok((&ParameterIO::from_binary(data.as_ref())?).into())
     }
 
-    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+    fn into_binary(self, _endian: Endian) -> roead::Bytes {
         ParameterIO::from(self).to_binary()
     }
 

@@ -79,7 +79,7 @@ impl Resource for ChemicalRes {
         (&ParameterIO::from_binary(data)?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+    fn into_binary(self, _endian: Endian) -> roead::Bytes {
         ParameterIO::from(self).to_binary()
     }
 

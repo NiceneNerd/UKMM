@@ -197,12 +197,117 @@ pub mod prelude {
         }
     }
 
+    #[derive(Debug)]
+    pub enum Binary {
+        Bytes(roead::Bytes),
+        Vec(Vec<u8>),
+    }
+
+    impl PartialEq for Binary {
+        fn eq(&self, other: &Self) -> bool {
+            self.as_ref() == other.as_ref()
+        }
+    }
+
+    impl Clone for Binary {
+        fn clone(&self) -> Self {
+            match self {
+                Binary::Bytes(b) => Binary::Vec(b.to_vec()),
+                Binary::Vec(v) => Binary::Vec(v.clone()),
+            }
+        }
+    }
+
+    impl std::borrow::Borrow<[u8]> for Binary {
+        fn borrow(&self) -> &[u8] {
+            match self {
+                Binary::Bytes(b) => b.as_slice(),
+                Binary::Vec(v) => v.as_slice(),
+            }
+        }
+    }
+
+    impl std::ops::Deref for Binary {
+        type Target = [u8];
+
+        fn deref(&self) -> &Self::Target {
+            match self {
+                Binary::Bytes(b) => b.as_slice(),
+                Binary::Vec(v) => v.as_slice(),
+            }
+        }
+    }
+
+    impl AsRef<[u8]> for Binary {
+        fn as_ref(&self) -> &[u8] {
+            match self {
+                Binary::Bytes(b) => b.as_ref(),
+                Binary::Vec(v) => v.as_slice(),
+            }
+        }
+    }
+
+    impl From<roead::Bytes> for Binary {
+        fn from(b: roead::Bytes) -> Self {
+            Binary::Bytes(b)
+        }
+    }
+
+    impl From<Vec<u8>> for Binary {
+        fn from(vec: Vec<u8>) -> Self {
+            Binary::Vec(vec)
+        }
+    }
+
+    impl From<Binary> for Vec<u8> {
+        fn from(binary: Binary) -> Self {
+            match binary {
+                Binary::Bytes(b) => b.to_vec(),
+                Binary::Vec(v) => v,
+            }
+        }
+    }
+
+    impl From<roead::yaz0::YazData<'_>> for Binary {
+        fn from(data: roead::yaz0::YazData) -> Self {
+            match data {
+                roead::yaz0::YazData::Borrowed(b) => Binary::Vec(b.to_vec()),
+                roead::yaz0::YazData::Owned(b) => Binary::Bytes(b),
+            }
+        }
+    }
+
+    impl From<&[u8]> for Binary {
+        fn from(data: &[u8]) -> Self {
+            Binary::Vec(data.to_vec())
+        }
+    }
+
+    impl serde::Serialize for Binary {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            self.as_ref().serialize(serializer)
+        }
+    }
+
+    impl<'de> serde::Deserialize<'de> for Binary {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            let bytes = <&[u8]>::deserialize(deserializer)?;
+            Ok(Binary::Vec(bytes.to_vec()))
+        }
+    }
+
     pub trait Resource
     where
         Self: std::marker::Sized,
     {
         fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self>;
-        fn into_binary(self, endian: Endian) -> Vec<u8>;
+        fn into_binary(self, endian: Endian) -> roead::Bytes;
         fn path_matches(path: impl AsRef<std::path::Path>) -> bool;
     }
 

@@ -37,7 +37,7 @@ impl Resource for AISchedule {
         Ok((&Byml::from_binary(data.as_ref())?).into())
     }
 
-    fn into_binary(self, endian: Endian) -> Vec<u8> {
+    fn into_binary(self, endian: Endian) -> roead::Bytes {
         Byml::from(self).to_binary(endian.into())
     }
 

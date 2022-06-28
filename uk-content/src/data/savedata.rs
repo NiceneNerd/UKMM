@@ -341,7 +341,7 @@ impl Resource for SaveDataPack {
         Self::from_sarc(&Sarc::read(data.as_ref())?)
     }
 
-    fn into_binary(self, endian: Endian) -> Vec<u8> {
+    fn into_binary(self, endian: Endian) -> roead::Bytes {
         self.into_sarc_writer(endian).to_binary()
     }
 

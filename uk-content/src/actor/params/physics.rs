@@ -115,7 +115,7 @@ impl Resource for Physics {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+    fn into_binary(self, _endian: Endian) -> roead::Bytes {
         ParameterIO::from(self).to_binary()
     }
 

@@ -118,7 +118,7 @@ impl Resource for ActorInfo {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
         Byml::from(self).to_binary(endian.into())
     }
 
