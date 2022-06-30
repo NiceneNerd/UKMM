@@ -1,4 +1,3 @@
-use crate::{platform_prefixes, resource::ResourceData};
 use anyhow::{bail, Context, Result};
 use join_str::jstr;
 use rayon::prelude::*;
@@ -8,7 +7,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
-use uk_content::{canonicalize, prelude::*};
+use uk_content::{canonicalize, platform_prefixes, prelude::*, resource::ResourceData};
 use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

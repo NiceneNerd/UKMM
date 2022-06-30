@@ -14,6 +14,7 @@ pub mod event;
 pub mod map;
 pub mod message;
 pub mod quest;
+pub mod resource;
 pub mod sound;
 pub mod tips;
 pub mod util;
@@ -41,6 +42,8 @@ pub enum UKError {
     InvalidSarc(#[from] roead::sarc::SarcError),
     #[error("Invalid weather value: {0}")]
     InvalidWeatherOrTime(String),
+    #[error("Missing resource at {0}")]
+    MissingResource(String),
     #[error("{0}")]
     Other(&'static str),
     #[error("{0}")]
@@ -53,6 +56,27 @@ pub enum UKError {
 
 pub type Result<T> = std::result::Result<T, UKError>;
 pub type Assets = util::DeleteMap<String, Vec<u8>>;
+
+pub const fn platform_content(endian: prelude::Endian) -> &'static str {
+    match endian {
+        prelude::Endian::Little => "01007EF00011E000/romfs",
+        prelude::Endian::Big => "content",
+    }
+}
+
+pub const fn platform_aoc(endian: prelude::Endian) -> &'static str {
+    match endian {
+        prelude::Endian::Little => "01007EF00011F001/romfs",
+        prelude::Endian::Big => "aoc/0010",
+    }
+}
+
+pub const fn platform_prefixes(endian: prelude::Endian) -> (&'static str, &'static str) {
+    match endian {
+        prelude::Endian::Little => ("01007EF00011E000/romfs", "01007EF00011F001/romfs"),
+        prelude::Endian::Big => ("content", "aoc/0010"),
+    }
+}
 
 pub fn canonicalize(path: impl AsRef<Path>) -> String {
     let path = path.as_ref().to_str().unwrap();

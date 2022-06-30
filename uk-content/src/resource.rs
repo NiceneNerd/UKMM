@@ -1,13 +1,5 @@
-use anyhow::{Context, Result};
-use join_str::jstr;
-use roead::aamp::ParameterIO;
-use roead::byml::Byml;
-use roead::sarc::{Sarc, SarcWriter};
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::path::Path;
-use uk_content::prelude::*;
-use uk_content::{
+use crate::prelude::*;
+use crate::{
     actor::{
         info::ActorInfo,
         params::{
@@ -34,6 +26,14 @@ use uk_content::{
     util::SortedDeleteMap,
     worldmgr::info::WorldInfo,
 };
+use anyhow::{Context, Result};
+use join_str::jstr;
+use roead::aamp::ParameterIO;
+use roead::byml::Byml;
+use roead::sarc::{Sarc, SarcWriter};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MergeableResource {
@@ -356,7 +356,7 @@ impl SarcMap {
 
     pub fn to_binary(
         &self,
-        endian: uk_content::prelude::Endian,
+        endian: crate::prelude::Endian,
         resources: &BTreeMap<String, ResourceData>,
     ) -> Result<roead::Bytes> {
         let mut sarc = SarcWriter::new(endian.into());

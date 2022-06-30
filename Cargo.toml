@@ -9,5 +9,6 @@ edition = "2021"
 [workspace]
 members = [
     "uk-content",
-    "uk-mod"
+    "uk-mod",
+    "uk-reader",
 ]
