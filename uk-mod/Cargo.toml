@@ -6,8 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.58"
 join_str = "0.1.0"
-walkdir = "2.3.2"
-lzma = "0.2.2"
+jwalk = "0.6.0"
 rayon = "1.5.3"
 roead = { version = "0.11.1", features = ["with-serde"] }
 serde = { version = "1.0.137", features = ["derive"] }
@@ -15,3 +14,5 @@ toml = "0.5.9"
 uk-content = { path = "../uk-content" }
 uk-reader = { path = "../uk-reader" }
 zip = { version = "0.6.2", default-features = false, features = ["deflate", "bzip2"] }
+zstd = "0.11.2"
+xxhash-rust = { version = "0.8.5", features = ["xxh3"] }

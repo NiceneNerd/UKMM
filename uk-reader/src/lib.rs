@@ -4,16 +4,17 @@ mod zarchive;
 
 use self::{nsp::Nsp, unpacked::Unpacked, zarchive::ZArchive};
 use enum_dispatch::enum_dispatch;
-use parking_lot::{lock_api::MappedRwLockReadGuard, RwLock, RwLockReadGuard};
+use moka::sync::Cache;
 use std::sync::Arc;
 use uk_content::resource::ResourceData;
 
-pub type ResourceCache =
-    std::collections::HashMap<String, ResourceData, xxhash_rust::xxh3::Xxh3Builder>;
+pub type ResourceCache = Cache<String, Arc<ResourceData>>;
 
 #[enum_dispatch(RomSource)]
 pub trait RomReader {
-    fn get_file(&self, name: &str) -> Option<ResourceData>;
+    fn get_file_data(&self, name: &str) -> Option<ResourceData>;
+    fn get_aoc_file_data(&self, name: &str) -> Option<ResourceData>;
+    fn file_exists(&self, name: &str) -> bool;
 }
 
 #[enum_dispatch]
@@ -26,29 +27,37 @@ enum RomSource {
 
 pub struct GameRomReader {
     source: RomSource,
-    cache: Arc<RwLock<ResourceCache>>,
+    cache: ResourceCache,
 }
 
 impl std::fmt::Debug for GameRomReader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("GameRomReader")
             .field("source", &self.source)
-            .field("cache_len", &self.cache.read().len())
+            .field("cache_len", &self.cache.entry_count())
             .finish()
     }
 }
 
 impl GameRomReader {
-    pub fn get_resource<'a>(
-        &'a self,
-        name: &str,
-    ) -> Option<MappedRwLockReadGuard<'a, parking_lot::RawRwLock, ResourceData>> {
-        if !self.cache.read().contains_key(name) {
-            let res = self.source.get_file(name)?;
-            self.cache.write().insert(name.to_owned(), res);
-        }
-        Some(RwLockReadGuard::map(self.cache.read(), |cache| {
-            cache.get(name).unwrap()
-        }))
+    pub fn get_resource(&self, name: &str) -> Option<Arc<ResourceData>> {
+        self.cache
+            .try_get_with(name.to_owned(), || {
+                self.source.get_file_data(name).map(Arc::new).ok_or(())
+            })
+            .ok()
+    }
+
+    pub fn get_resource_by_path(
+        &self,
+        path: impl AsRef<std::path::Path>,
+    ) -> Option<Arc<ResourceData>> {
+        let canonical = uk_content::canonicalize(path);
+        self.get_resource(&canonical)
+    }
+
+    fn lookup_real_path(&self, name: &str) -> Option<String> {
+        let split = name.split('/');
+        Some("".into())
     }
 }

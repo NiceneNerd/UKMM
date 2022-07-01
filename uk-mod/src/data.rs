@@ -1,5 +1,6 @@
 use anyhow::{bail, Context, Result};
 use join_str::jstr;
+use jwalk::WalkDir;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,7 +9,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 use uk_content::{canonicalize, platform_prefixes, prelude::*, resource::ResourceData};
-use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DataTree {
@@ -198,7 +198,7 @@ impl DataTreeBuilder {
             .into_iter()
             .filter_map(|f| {
                 f.ok()
-                    .and_then(|f| f.file_type().is_file().then(|| f.into_path()))
+                    .and_then(|f| f.file_type().is_file().then(|| f.path()))
             })
             .collect::<BTreeSet<PathBuf>>()
             .into_par_iter()
@@ -262,6 +262,6 @@ mod tests {
         let tree = DataTree::from_files("test/wiiu").unwrap();
         dbg!(tree.content_files);
         dbg!(tree.aoc_files);
-        dbg!(tree.resources.keys().collect::<Vec<&String>>());
+        dbg!(tree.resources.keys().count());
     }
 }

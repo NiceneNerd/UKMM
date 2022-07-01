@@ -1,3 +1,4 @@
+pub mod hashes;
 #![feature(let_chains, type_alias_impl_trait, drain_filter)]
 #![allow(clippy::derive_partial_eq_without_eq)]
 use std::path::Path;
