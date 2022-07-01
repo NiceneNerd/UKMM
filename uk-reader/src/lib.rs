@@ -1,20 +1,54 @@
-use once_cell::sync::{Lazy, OnceCell};
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
-use uk_content::{resource::ResourceData, Result, UKError};
+mod nsp;
+mod unpacked;
+mod zarchive;
 
-type ResourceCache = HashMap<String, Arc<ResourceData>>;
+use self::{nsp::Nsp, unpacked::Unpacked, zarchive::ZArchive};
+use enum_dispatch::enum_dispatch;
+use parking_lot::{lock_api::MappedRwLockReadGuard, RwLock, RwLockReadGuard};
+use std::sync::Arc;
+use uk_content::resource::ResourceData;
 
-pub static RESOURCE_CACHE: Lazy<Arc<RwLock<ResourceCache>>> =
-    Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
-pub static GAME_DUMP_ARCHIVE: OnceCell<Option<zarchive::reader::ZArchiveReader>> = OnceCell::new();
+pub type ResourceCache =
+    std::collections::HashMap<String, ResourceData, xxhash_rust::xxh3::Xxh3Builder>;
 
-pub fn get_resource(name: &str) -> Result<Arc<ResourceData>> {
-    let cache = RESOURCE_CACHE.read().unwrap();
-    Ok(cache
-        .get(name)
-        .ok_or_else(|| UKError::MissingResource(name.to_string()))?
-        .clone())
+#[enum_dispatch(RomSource)]
+pub trait RomReader {
+    fn get_file(&self, name: &str) -> Option<ResourceData>;
+}
+
+#[enum_dispatch]
+#[derive(Debug)]
+enum RomSource {
+    ZArchive,
+    Nsp,
+    Unpacked,
+}
+
+pub struct GameRomReader {
+    source: RomSource,
+    cache: Arc<RwLock<ResourceCache>>,
+}
+
+impl std::fmt::Debug for GameRomReader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GameRomReader")
+            .field("source", &self.source)
+            .field("cache_len", &self.cache.read().len())
+            .finish()
+    }
+}
+
+impl GameRomReader {
+    pub fn get_resource<'a>(
+        &'a self,
+        name: &str,
+    ) -> Option<MappedRwLockReadGuard<'a, parking_lot::RawRwLock, ResourceData>> {
+        if !self.cache.read().contains_key(name) {
+            let res = self.source.get_file(name)?;
+            self.cache.write().insert(name.to_owned(), res);
+        }
+        Some(RwLockReadGuard::map(self.cache.read(), |cache| {
+            cache.get(name).unwrap()
+        }))
+    }
 }
