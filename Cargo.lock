@@ -1410,6 +1410,8 @@ dependencies = [
  "strum",
  "strum_macros",
  "thiserror",
+ "xxhash-rust",
+ "zstd",
 ]
 
 [[package]]

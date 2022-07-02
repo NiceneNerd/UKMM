@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub(crate) struct Nsp;
 
-impl super::RomReader for Nsp {
+impl super::ROMReader for Nsp {
     fn get_file_data(&self, name: &str) -> Option<super::ResourceData> {
         unimplemented!()
     }

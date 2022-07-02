@@ -10,8 +10,8 @@ use uk_content::resource::ResourceData;
 
 pub type ResourceCache = Cache<String, Arc<ResourceData>>;
 
-#[enum_dispatch(RomSource)]
-pub trait RomReader {
+#[enum_dispatch(ROMSource)]
+pub trait ROMReader {
     fn get_file_data(&self, name: &str) -> Option<ResourceData>;
     fn get_aoc_file_data(&self, name: &str) -> Option<ResourceData>;
     fn file_exists(&self, name: &str) -> bool;
@@ -19,27 +19,27 @@ pub trait RomReader {
 
 #[enum_dispatch]
 #[derive(Debug)]
-enum RomSource {
+enum ROMSource {
     ZArchive,
     Nsp,
     Unpacked,
 }
 
-pub struct GameRomReader {
-    source: RomSource,
+pub struct GameROMReader {
+    source: ROMSource,
     cache: ResourceCache,
 }
 
-impl std::fmt::Debug for GameRomReader {
+impl std::fmt::Debug for GameROMReader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("GameRomReader")
+        f.debug_struct("GameROMReader")
             .field("source", &self.source)
             .field("cache_len", &self.cache.entry_count())
             .finish()
     }
 }
 
-impl GameRomReader {
+impl GameROMReader {
     pub fn get_resource(&self, name: &str) -> Option<Arc<ResourceData>> {
         self.cache
             .try_get_with(name.to_owned(), || {

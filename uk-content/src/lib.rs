@@ -1,4 +1,3 @@
-pub mod hashes;
 #![feature(let_chains, type_alias_impl_trait, drain_filter)]
 #![allow(clippy::derive_partial_eq_without_eq)]
 use std::path::Path;
@@ -12,6 +11,7 @@ pub mod data;
 pub mod demo;
 pub mod eco;
 pub mod event;
+pub mod hashes;
 pub mod map;
 pub mod message;
 pub mod quest;

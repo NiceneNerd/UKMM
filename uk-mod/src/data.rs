@@ -1,6 +1,5 @@
 use anyhow::{bail, Context, Result};
 use join_str::jstr;
-use jwalk::WalkDir;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -9,6 +8,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 use uk_content::{canonicalize, platform_prefixes, prelude::*, resource::ResourceData};
+use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DataTree {
@@ -198,7 +198,7 @@ impl DataTreeBuilder {
             .into_iter()
             .filter_map(|f| {
                 f.ok()
-                    .and_then(|f| f.file_type().is_file().then(|| f.path()))
+                    .and_then(|f| f.file_type().is_file().then(|| f.into_path()))
             })
             .collect::<BTreeSet<PathBuf>>()
             .into_par_iter()
