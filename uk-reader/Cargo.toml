@@ -10,6 +10,7 @@ join_str = "0.1.0"
 moka = "0.8.6"
 roead = "0.11.1"
 serde = { version = "1.0.137", features = ["derive"] }
+thiserror = "1.0.31"
 uk-content = { path = "../uk-content" }
 zarchive = "0.1.0"
 xxhash-rust = { version = "0.8.5", features = ["xxh3"]}

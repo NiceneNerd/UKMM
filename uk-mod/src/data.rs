@@ -1,5 +1,6 @@
 use anyhow::{bail, Context, Result};
 use join_str::jstr;
+use jwalk::WalkDir;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,12 +9,11 @@ use std::{
     sync::{Arc, RwLock},
 };
 use uk_content::{canonicalize, platform_prefixes, prelude::*, resource::ResourceData};
-use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DataTree {
-    pub content_files: BTreeMap<String, String>,
-    pub aoc_files: BTreeMap<String, String>,
+    pub content_files: BTreeSet<String>,
+    pub aoc_files: BTreeSet<String>,
     pub resources: BTreeMap<String, ResourceData>,
 }
 
@@ -23,16 +23,14 @@ impl Mergeable for DataTree {
             content_files: other
                 .content_files
                 .iter()
-                .filter_map(|(k, v)| {
-                    (self.content_files.get(k.as_str()) != Some(v)).then(|| (k.clone(), v.clone()))
-                })
+                .filter(|f| !self.content_files.contains(*f))
+                .cloned()
                 .collect(),
             aoc_files: other
                 .aoc_files
                 .iter()
-                .filter_map(|(k, v)| {
-                    (self.aoc_files.get(k.as_str()) != Some(v)).then(|| (k.clone(), v.clone()))
-                })
+                .filter(|f| !self.aoc_files.contains(*f))
+                .cloned()
                 .collect(),
             resources: other
                 .resources
@@ -84,33 +82,15 @@ impl Mergeable for DataTree {
         Self {
             content_files: self
                 .content_files
-                .keys()
-                .chain(diff.content_files.keys())
-                .map(|k| {
-                    (
-                        k.clone(),
-                        diff.content_files
-                            .get(k)
-                            .or_else(|| self.content_files.get(k))
-                            .cloned()
-                            .unwrap(),
-                    )
-                })
+                .iter()
+                .chain(diff.content_files.iter())
+                .cloned()
                 .collect(),
             aoc_files: self
                 .aoc_files
-                .keys()
-                .chain(diff.aoc_files.keys())
-                .map(|k| {
-                    (
-                        k.clone(),
-                        diff.aoc_files
-                            .get(k)
-                            .or_else(|| self.aoc_files.get(k))
-                            .cloned()
-                            .unwrap(),
-                    )
-                })
+                .iter()
+                .chain(diff.aoc_files.iter())
+                .cloned()
                 .collect(),
             resources: self
                 .resources
@@ -140,7 +120,8 @@ impl DataTree {
         let dir = dir.as_ref();
         self.content_files
             .into_par_iter()
-            .try_for_each(|(path, canon)| -> Result<()> {
+            .try_for_each(|path| -> Result<()> {
+                let canon = canonicalize(&path);
                 let out = dir.join(content).join(path);
                 if !out.parent().unwrap().exists() {
                     std::fs::create_dir_all(out.parent().unwrap())?;
@@ -156,7 +137,8 @@ impl DataTree {
             })?;
         self.aoc_files
             .into_par_iter()
-            .try_for_each(|(path, canon)| -> Result<()> {
+            .try_for_each(|path| -> Result<()> {
+                let canon = canonicalize(&path);
                 let out = dir.join(aoc).join(path);
                 if !out.parent().unwrap().exists() {
                     std::fs::create_dir_all(out.parent().unwrap())?;
@@ -192,31 +174,31 @@ impl DataTreeBuilder {
         }
     }
 
-    fn collect_resources(&mut self, dir: impl AsRef<Path>) -> Result<BTreeMap<String, String>> {
+    fn collect_resources(&mut self, dir: impl AsRef<Path>) -> Result<BTreeSet<String>> {
         let resources = Arc::new(RwLock::new(&mut self.resources));
         WalkDir::new(dir.as_ref())
             .into_iter()
             .filter_map(|f| {
                 f.ok()
-                    .and_then(|f| f.file_type().is_file().then(|| f.into_path()))
+                    .and_then(|f| f.file_type().is_file().then(|| f.path()))
             })
             .collect::<BTreeSet<PathBuf>>()
             .into_par_iter()
-            .map(|path| -> Result<(String, String)> {
+            .map(|path| -> Result<String> {
                 let name = path
                     .strip_prefix(&self.root)
                     .unwrap()
                     .to_string_lossy()
-                    .into_owned();
+                    .to_string();
                 let canon = canonicalize(&name);
                 if !resources.read().unwrap().contains_key(&canon) {
                     let mut resources = resources.write().unwrap();
                     let resource =
                         ResourceData::from_binary(&name, std::fs::read(&path)?, &mut resources)
                             .with_context(|| jstr!("Error parsing resource at {&name}"))?;
-                    resources.insert(canon.clone(), resource);
+                    resources.insert(canon, resource);
                 };
-                Ok((name, canon))
+                Ok(name)
             })
             .collect::<Result<_>>()
     }

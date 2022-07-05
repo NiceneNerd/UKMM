@@ -1442,6 +1442,7 @@ dependencies = [
  "moka",
  "roead",
  "serde",
+ "thiserror",
  "uk-content",
  "xxhash-rust",
  "zarchive",

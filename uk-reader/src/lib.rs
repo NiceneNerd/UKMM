@@ -3,18 +3,36 @@ mod unpacked;
 mod zarchive;
 
 use self::{nsp::Nsp, unpacked::Unpacked, zarchive::ZArchive};
+use anyhow::Context;
 use enum_dispatch::enum_dispatch;
 use moka::sync::Cache;
-use std::sync::Arc;
-use uk_content::resource::ResourceData;
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+use uk_content::{
+    canonicalize,
+    prelude::Resource,
+    resource::{MergeableResource, ResourceData},
+};
 
-pub type ResourceCache = Cache<String, Arc<ResourceData>>;
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum ROMError {
+    #[error("File not found in game dump: {0}\n(Using ROM at {1})")]
+    FileNotFound(String, PathBuf),
+    #[error("Invalid resource path: {0}")]
+    InvalidPath(String),
+}
+
+type ResourceCache = Cache<String, Arc<ResourceData>>;
+pub type Result<T> = std::result::Result<T, ROMError>;
 
 #[enum_dispatch(ROMSource)]
 pub trait ROMReader {
-    fn get_file_data(&self, name: &str) -> Option<ResourceData>;
-    fn get_aoc_file_data(&self, name: &str) -> Option<ResourceData>;
-    fn file_exists(&self, name: &str) -> bool;
+    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<ResourceData>;
+    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<ResourceData>;
+    fn file_exists(&self, name: impl AsRef<Path>) -> bool;
+    fn host_path(&self) -> &Path;
 }
 
 #[enum_dispatch]
@@ -40,24 +58,24 @@ impl std::fmt::Debug for GameROMReader {
 }
 
 impl GameROMReader {
-    pub fn get_resource(&self, name: &str) -> Option<Arc<ResourceData>> {
+    pub fn get_resource(&self, name: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
+        let name = name
+            .as_ref()
+            .to_str()
+            .ok_or_else(|| ROMError::InvalidPath(name.as_ref().to_string_lossy().into_owned()))?
+            .to_owned();
         self.cache
-            .try_get_with(name.to_owned(), || {
-                self.source.get_file_data(name).map(Arc::new).ok_or(())
+            .get(&name)
+            .ok_or_else(|| ROMError::FileNotFound(name, self.source.host_path().to_path_buf()))
+    }
+
+    pub fn get_file<T: Resource>(&self, path: impl AsRef<Path>) -> Result<Arc<T>> {
+        let canon = canonicalize(path);
+        self.cache
+            .get_with(canon, || {
+                let data = self.source.get_file_data(path)?;
+                T::from_binary(data.as_slice()).unwrap()
             })
-            .ok()
-    }
-
-    pub fn get_resource_by_path(
-        &self,
-        path: impl AsRef<std::path::Path>,
-    ) -> Option<Arc<ResourceData>> {
-        let canonical = uk_content::canonicalize(path);
-        self.get_resource(&canonical)
-    }
-
-    fn lookup_real_path(&self, name: &str) -> Option<String> {
-        let split = name.split('/');
-        Some("".into())
+            .ok_or_else(|| ROMError::FileNotFound(name, self.source.host_path().to_path_buf()))
     }
 }
