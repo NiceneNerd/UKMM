@@ -5,6 +5,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
+    io::BufWriter,
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
@@ -121,18 +122,29 @@ impl DataTree {
         self.content_files
             .into_par_iter()
             .try_for_each(|path| -> Result<()> {
+                println!("Writing {}", &path);
                 let canon = canonicalize(&path);
                 let out = dir.join(content).join(path);
+                let compress = out
+                    .extension()
+                    .and_then(|ext| ext.to_str().map(|ext| ext.starts_with('s')))
+                    .unwrap_or(false);
                 if !out.parent().unwrap().exists() {
                     std::fs::create_dir_all(out.parent().unwrap())?;
                 }
-                std::fs::write(
-                    out,
-                    self.resources
-                        .get(&canon)
-                        .with_context(|| jstr!("Mod missing needed resource {&canon}"))?
-                        .to_binary(endian, &self.resources)?,
-                )?;
+                let data = self
+                    .resources
+                    .get(&canon)
+                    .with_context(|| jstr!("Mod missing needed resource {&canon}"))?
+                    .to_binary(endian, &self.resources)?;
+                use std::io::Write;
+                let mut writer = BufWriter::new(std::fs::File::create(&out)?);
+                if compress {
+                    let data = Binary::Bytes(roead::yaz0::compress(data));
+                    writer.write_all(&data)?;
+                } else {
+                    writer.write_all(&data)?;
+                };
                 Ok(())
             })?;
         self.aoc_files
@@ -140,16 +152,26 @@ impl DataTree {
             .try_for_each(|path| -> Result<()> {
                 let canon = canonicalize(&path);
                 let out = dir.join(aoc).join(path);
+                let compress = out
+                    .extension()
+                    .and_then(|ext| ext.to_str().map(|ext| ext.starts_with('s')))
+                    .unwrap_or(false);
                 if !out.parent().unwrap().exists() {
                     std::fs::create_dir_all(out.parent().unwrap())?;
                 }
-                std::fs::write(
-                    out,
-                    self.resources
-                        .get(&canon)
-                        .with_context(|| jstr!("Mod missing needed resource {&canon}"))?
-                        .to_binary(endian, &self.resources)?,
-                )?;
+                let data = self
+                    .resources
+                    .get(&canon)
+                    .with_context(|| jstr!("Mod missing needed resource {&canon}"))?
+                    .to_binary(endian, &self.resources)?;
+                use std::io::Write;
+                let mut writer = BufWriter::new(std::fs::File::create(&out)?);
+                if compress {
+                    let data = Binary::Bytes(roead::yaz0::compress(data));
+                    writer.write_all(&data)?;
+                } else {
+                    writer.write_all(&data)?;
+                };
                 Ok(())
             })?;
         Ok(())
@@ -241,9 +263,16 @@ mod tests {
 
     #[test]
     fn serde_wiiu() {
+        println!("Creating tree...");
         let tree = DataTree::from_files("test/wiiu").unwrap();
-        dbg!(tree.content_files);
-        dbg!(tree.aoc_files);
-        dbg!(tree.resources.keys().count());
+        println!("Cloning tree...");
+        let tmp_tree = tree.clone();
+        println!("Writing files...");
+        let ex_dir = tempfile::tempdir().unwrap();
+        tmp_tree.write_files(ex_dir.path(), Endian::Big).unwrap();
+        println!("Creating seconday tree...");
+        let tree2 = DataTree::from_files(ex_dir.path()).unwrap();
+        println!("Comparing...");
+        assert_eq!(tree, tree2);
     }
 }

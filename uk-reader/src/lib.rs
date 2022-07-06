@@ -1,9 +1,9 @@
 #![feature(let_chains)]
-mod nsp;
+// mod nsp;
 mod unpacked;
 mod zarchive;
 
-use self::{nsp::Nsp, unpacked::Unpacked, zarchive::ZArchive};
+use self::{unpacked::Unpacked, zarchive::ZArchive};
 use enum_dispatch::enum_dispatch;
 use moka::sync::Cache;
 use std::{
@@ -52,7 +52,7 @@ pub trait ROMReader {
 #[derive(Debug)]
 enum ROMSource {
     ZArchive,
-    Nsp,
+    // Nsp,
     Unpacked,
 }
 
@@ -71,6 +71,24 @@ impl std::fmt::Debug for GameROMReader {
 }
 
 impl GameROMReader {
+    pub fn from_zarchive(archive_path: impl AsRef<Path>) -> Result<Self> {
+        Ok(Self {
+            source: ROMSource::ZArchive(ZArchive::new(archive_path)?),
+            cache: ResourceCache::new(10_000),
+        })
+    }
+
+    pub fn from_unpacked_dirs(
+        content_dir: impl AsRef<Path>,
+        update_dir: impl AsRef<Path>,
+        aoc_dir: Option<impl AsRef<Path>>,
+    ) -> Result<Self> {
+        Ok(Self {
+            source: ROMSource::Unpacked(Unpacked::new(content_dir, update_dir, aoc_dir)?),
+            cache: ResourceCache::new(10_000),
+        })
+    }
+
     pub fn get_resource(&self, name: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
         let name = name
             .as_ref()
