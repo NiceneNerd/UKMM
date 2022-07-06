@@ -1,6 +1,5 @@
 use crate::{ROMError, Result};
-use join_str::jstr;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Serialize)]
@@ -195,17 +194,15 @@ mod de {
 
 #[cfg(test)]
 mod tests {
+    use crate::ROMReader;
+
     #[test]
     fn test_wua() {
         use super::*;
         let arch = ZArchive::new("/data/Downloads/botw.wua").unwrap();
-        dbg!(arch
-            .archive
-            .get_files()
-            .unwrap()
-            .iter()
-            .take(10)
-            .collect::<Vec<_>>());
-        println!("{:?}", arch.aoc_dir);
+        println!(
+            "{:?}",
+            String::from_utf8(arch.get_file_data("System/Version.txt").unwrap()).unwrap()
+        );
     }
 }
