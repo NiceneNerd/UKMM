@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 mod nsp;
 mod unpacked;
 mod zarchive;
@@ -16,8 +17,12 @@ use uk_content::{canonicalize, resource::ResourceData};
 pub enum ROMError {
     #[error("File not found in game dump: {0}\n(Using ROM at {1})")]
     FileNotFound(String, PathBuf),
+    #[error("Missing required {0} folder in game dump\n(Using ROM at {1})")]
+    MissingDumpDir(&'static str, PathBuf),
     #[error("Invalid resource path: {0}")]
     InvalidPath(String),
+    #[error(transparent)]
+    IOError(#[from] std::io::Error),
     #[error(transparent)]
     WUAError(#[from] ::zarchive::ZArchiveError),
     #[error(transparent)]

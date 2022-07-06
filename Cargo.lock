@@ -245,6 +245,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "common-path"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2382f75942f4b3be3690fe4f86365e9c853c1587d6ee58212cebf6e2a9ccd101"
+
+[[package]]
 name = "cow-utils"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -910,9 +916,9 @@ dependencies = [
 
 [[package]]
 name = "moka"
-version = "0.8.6"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "975fa04238144061e7f8df9746b2e9cd93ef85881da5548d842a7c6a4b614415"
+checksum = "21b3caf8ff6db712c7f7fe018e7fb6d2ddbaf428b74f94a48fe075ef09a6b8a1"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-epoch 0.8.2",
@@ -1437,6 +1443,7 @@ name = "uk-reader"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "common-path",
  "enum_dispatch",
  "join_str",
  "moka",
