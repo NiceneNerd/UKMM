@@ -1,11 +1,10 @@
 use crate::{
     prelude::*,
-    util::{self, BymlHashValue, SortedDeleteMap},
+    util::{BymlHashValue, SortedDeleteMap},
     Result, UKError,
 };
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct ActorInfo(pub SortedDeleteMap<BymlHashValue, Byml>);
@@ -62,54 +61,11 @@ impl From<ActorInfo> for Byml {
 
 impl Mergeable for ActorInfo {
     fn diff(&self, other: &Self) -> Self {
-        Self(
-            other
-                .0
-                .iter()
-                .filter_map(|(hash, other_info)| {
-                    if let Some(self_info) = self.0.get(hash) {
-                        if other_info == self_info {
-                            None
-                        } else {
-                            Some((*hash, util::diff_byml_shallow(self_info, other_info), false))
-                        }
-                    } else {
-                        Some((*hash, other_info.clone(), false))
-                    }
-                })
-                .chain(self.0.keys().filter_map(|hash| {
-                    (!other.0.contains_key(hash)).then(|| (*hash, Byml::Null, true))
-                }))
-                .collect(),
-        )
+        Self(self.0.deep_diff(&other.0))
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        let keys: BTreeSet<BymlHashValue> = self.0.keys().chain(diff.0.keys()).copied().collect();
-        Self(
-            keys.into_iter()
-                .map(|hash| {
-                    if let Some(self_info) = self.0.get(hash) {
-                        if let Some(diff_info) = diff.0.get(hash) {
-                            (
-                                hash,
-                                util::merge_byml_shallow(self_info, diff_info),
-                                diff.0.is_delete(hash).unwrap(),
-                            )
-                        } else {
-                            (hash, self_info.clone(), false)
-                        }
-                    } else {
-                        (
-                            hash,
-                            diff.0.get(hash).unwrap().clone(),
-                            diff.0.is_delete(hash).unwrap(),
-                        )
-                    }
-                })
-                .collect::<SortedDeleteMap<BymlHashValue, Byml>>()
-                .and_delete(),
-        )
+        Self(self.0.deep_merge(&diff.0))
     }
 }
 
@@ -180,6 +136,7 @@ mod tests {
         let diff = actorinfo.diff(&actorinfo2);
         let merged = actorinfo.merge(&diff);
         if merged != actorinfo2 {
+            dbg!(merged.diff(&actorinfo2));
             panic!("merged != actorinfo2");
         }
     }

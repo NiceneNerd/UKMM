@@ -10,30 +10,37 @@ pub trait DeleteKey: Hash + Eq + Clone {}
 impl<T> DeleteKey for T where T: Hash + Eq + Clone {}
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
-pub struct DeleteVec<T: Clone + PartialEq>(Vec<T>, Vec<bool>);
+pub struct DeleteVec<T: Clone + PartialEq>(Vec<(T, bool)>);
 
 impl<T: Clone + PartialEq> FromIterator<(T, bool)> for DeleteVec<T> {
     fn from_iter<I: IntoIterator<Item = (T, bool)>>(iter: I) -> Self {
-        let (vec1, vec2) = iter.into_iter().unzip();
-        Self(vec1, vec2)
+        Self(iter.into_iter().collect())
     }
 }
 
 impl<T: Clone + PartialEq> FromIterator<T> for DeleteVec<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        let (items, dels) = iter.into_iter().map(|item| (item, false)).unzip();
-        Self(items, dels)
+        Self(iter.into_iter().map(|item| (item, false)).collect())
     }
 }
 
 impl<T: Clone + PartialEq> PartialEq for DeleteVec<T> {
     fn eq(&self, other: &Self) -> bool {
-        (self.0.len() == other.0.len() && self.1.len() == other.1.len())
-            && self.0.iter().zip(self.1.iter()).all(|(item, del)| {
-                other.0.iter().position(|it| item == it).map(|i| other.1[i]) == Some(*del)
+        (self.0.len() == other.0.len())
+            && self.0.iter().all(|(item, del)| {
+                other
+                    .0
+                    .iter()
+                    .position(|(it, _)| item == it)
+                    .map(|i| other.0[i].1)
+                    == Some(*del)
             })
-            && other.0.iter().zip(other.1.iter()).all(|(item, del)| {
-                self.0.iter().position(|it| item == it).map(|i| self.1[i]) == Some(*del)
+            && other.0.iter().all(|(item, del)| {
+                self.0
+                    .iter()
+                    .position(|(it, _)| item == it)
+                    .map(|i| self.0[i].1)
+                    == Some(*del)
             })
     }
 }
@@ -43,10 +50,7 @@ impl<T: Clone + PartialEq> IntoIterator for DeleteVec<T> {
     type IntoIter = impl Iterator<Item = T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0
-            .into_iter()
-            .zip(self.1.into_iter())
-            .filter_map(|(k, del)| (!del).then(|| k))
+        self.0.into_iter().filter_map(|(k, del)| (!del).then(|| k))
     }
 }
 
@@ -60,8 +64,8 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
-        if let Some(false) = self.1.get(index) {
-            self.0.get(index)
+        if let Some((val, false)) = self.0.get(index) {
+            Some(val)
         } else {
             None
         }
@@ -74,56 +78,46 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
     }
 
     pub fn delete(&mut self) {
-        self.0 = self
-            .0
-            .iter()
-            .zip(self.1.iter())
-            .filter_map(|(k, del)| (!*del).then(|| k.clone()))
-            .collect()
+        self.0.retain(|(_, del)| !*del);
     }
 
     pub fn deleted(&self) -> Vec<&T> {
         self.0
             .iter()
-            .zip(self.1.iter())
             .filter_map(|(k, del)| (!*del).then(|| k))
             .collect()
     }
 
     pub fn set_delete(&mut self, item: impl Borrow<T>) {
-        if let Some(i) = self.0.iter().position(|it| item.borrow() == it) {
-            self.1[i] = true;
+        if let Some(i) = self.0.iter().position(|(it, _)| item.borrow() == it) {
+            self.0[i].1 = true;
         }
     }
 
     pub fn is_delete(&self, item: impl Borrow<T>) -> Option<bool> {
         self.0
             .iter()
-            .position(|it| item.borrow() == it)
-            .map(|i| self.1[i])
+            .find_map(|(it, del)| (item.borrow() == it).then(|| *del))
     }
 
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.0
-            .iter()
-            .zip(self.1.iter())
-            .filter_map(|(k, del)| (!*del).then(|| k))
+        self.0.iter().filter_map(|(k, del)| (!*del).then(|| k))
     }
 
     #[inline]
     pub fn contains(&self, item: impl Borrow<T>) -> bool {
-        self.0.contains(item.borrow())
+        self.0
+            .iter()
+            .any(|(it, del)| (item.borrow() == it) && !*del)
     }
 
     pub fn push(&mut self, item: T) {
-        self.0.push(item);
-        self.1.push(false);
+        self.0.push((item, false));
     }
 
     pub fn push_del(&mut self, item: T) {
-        self.0.push(item);
-        self.1.push(true);
+        self.0.push((item, true));
     }
 }
 
@@ -141,18 +135,18 @@ impl<T: Clone + PartialEq> Mergeable for DeleteVec<T> {
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        let mut all_items: Vec<T> = self
+        let mut all_items: Vec<(T, bool)> = self
             .iter()
             .filter(|item| diff.is_delete(*item) != Some(true))
             .cloned()
+            .map(|item| (item, false))
             .collect();
         for (idx, item) in diff.iter().enumerate() {
-            if !all_items.contains(item) {
-                all_items.insert(idx, item.clone());
+            if !all_items.iter().any(|(it, _)| it == item) {
+                all_items.insert(idx, (item.clone(), false));
             }
         }
-        let dels = vec![false; all_items.len()];
-        Self(all_items, dels).and_delete()
+        Self(all_items).and_delete()
     }
 }
 
@@ -378,28 +372,19 @@ macro_rules! impl_delete_map {
             type IntoIter = impl Iterator<Item = (T, U)>;
 
             fn into_iter(self) -> Self::IntoIter {
-                let Self(items, dels) = self;
-                items.into_iter().filter(move |(k, _)| !dels[k])
+                self.0.into_iter().filter_map(|(k, (v, del))| (!del).then(|| (k, v)))
             }
         }
 
         impl<T: $($key)*, U: PartialEq + Clone> FromIterator<(T, U, bool)> for $type<T, U> {
             fn from_iter<I: IntoIterator<Item = (T, U, bool)>>(iter: I) -> Self {
-                let (map1, map2) = iter
-                    .into_iter()
-                    .map(|(k, v, del)| ((k.clone(), v), (k, del)))
-                    .unzip();
-                Self(map1, map2)
+                Self(iter.into_iter().map(|(k, v, del)| (k, (v, del))).collect())
             }
         }
 
         impl<T: $($key)*, U: PartialEq + Clone> FromIterator<(T, U)> for $type<T, U> {
             fn from_iter<I: IntoIterator<Item = (T, U)>>(iter: I) -> Self {
-                let (items, dels) = iter
-                    .into_iter()
-                    .map(|(k, v)| ((k.clone(), v), (k, false)))
-                    .unzip();
-                Self(items, dels)
+                Self(iter.into_iter().map(|(k, v)| (k, (v, false))).collect())
             }
         }
 
@@ -411,7 +396,7 @@ macro_rules! impl_delete_map {
 
         impl<T: $($key)*, U: PartialEq + Clone> $type<T, U> {
             pub fn new() -> Self {
-                Self(Default::default(), Default::default())
+                Self(Default::default())
             }
 
             #[inline]
@@ -431,42 +416,41 @@ macro_rules! impl_delete_map {
             }
 
             pub fn delete(&mut self) {
-                self.0.retain(|k, _| !self.1[k]);
-                self.1.retain(|_, v| !*v);
+                self.0.retain(|_, (_, del)| !*del);
             }
 
-            pub fn deleted(&self) -> IndexMap<T, U> {
-                self.0
-                    .iter()
-                    .filter_map(|(k, v)| (!self.1[k]).then(|| (k.clone(), v.clone())))
-                    .collect()
-            }
+            // pub fn deleted(&self) -> IndexMap<T, U> {
+            //     self.0
+            //         .iter()
+            //         .filter_map(|(k, v)| (!self.1[k]).then(|| (k.clone(), v.clone())))
+            //         .collect()
+            // }
 
             pub fn set_delete(&mut self, key: impl Borrow<T>) {
-                if let Some(del_val) = self.1.get_mut(key.borrow()) {
-                    *del_val = true;
+                if let Some((_, del)) = self.0.get_mut(key.borrow()) {
+                    *del = true;
                 }
             }
 
             pub fn is_delete(&self, key: impl Borrow<T>) -> Option<bool> {
-                self.1.get(key.borrow()).copied()
+                self.0.get(key.borrow()).map(|(_, del)| del).copied()
             }
 
             #[inline]
             pub fn iter(&self) -> impl Iterator<Item = (&T, &U)> {
-                self.0.iter().filter(|(k, _)| !self.1[*k])
+                self.0.iter().filter_map(|(k, (v, del))| (!*del).then(|| (k, v)))
             }
 
             #[inline]
             pub fn keys(&self) -> impl Iterator<Item = &T> {
-                self.0.keys().filter(|k| !self.1[*k])
+                self.0.iter().filter_map(|(k, (_, del))| (!*del).then(|| k))
             }
 
             #[inline]
             pub fn values(&self) -> impl Iterator<Item = &U> {
                 self.0
-                    .iter()
-                    .filter_map(|(k, v)| (!self.1.get(k).unwrap()).then(|| v))
+                    .values()
+                    .filter_map(|(v, del)| (!*del).then(|| v))
             }
 
             #[inline]
@@ -476,28 +460,25 @@ macro_rules! impl_delete_map {
 
             #[inline]
             pub fn get(&self, key: impl Borrow<T>) -> Option<&U> {
-                self.0.get(key.borrow())
+                self.0.get(key.borrow()).and_then(|(v, del)| (!*del).then(|| v))
             }
 
             #[inline]
             pub fn get_mut(&mut self, key: impl Borrow<T>) -> Option<&mut U> {
-                self.0.get_mut(key.borrow())
+                self.0.get_mut(key.borrow()).and_then(|(v, del)| (!*del).then(|| v))
             }
 
             pub fn insert(&mut self, key: impl Borrow<T>, value: U) {
-                self.0.insert(key.borrow().clone(), value);
-                self.1.insert(key.borrow().clone(), false);
+                self.0.insert(key.borrow().clone(), (value, false));
             }
 
             pub fn insert_del(&mut self, key: impl Borrow<T>, value: U) {
-                self.0.insert(key.borrow().clone(), value);
-                self.1.insert(key.borrow().clone(), true);
+                self.0.insert(key.borrow().clone(), (value, true));
             }
 
             pub fn extend(&mut self, other: impl IntoIterator<Item = (T, U)>) {
                 for (k, v) in other {
-                    self.0.insert(k.clone(), v);
-                    self.1.insert(k, false);
+                    self.0.insert(k.clone(), (v, false));
                 }
             }
         }
@@ -507,8 +488,8 @@ macro_rules! impl_delete_map {
                 other
                     .0
                     .iter()
-                    .filter_map(|(k, v)| (self.get(k) != Some(v)).then(|| (k.clone(), v.clone(), false)))
-                    .chain(self.0.iter().filter_map(|(k, v)| {
+                    .filter_map(|(k, (v, del))| (self.get(k) != Some(v) && !*del).then(|| (k.clone(), v.clone(), false)))
+                    .chain(self.0.iter().filter_map(|(k, (v, _))| {
                         (!other.contains_key(k)).then(|| (k.clone(), v.clone(), true))
                     }))
                     .collect()
@@ -521,24 +502,16 @@ macro_rules! impl_delete_map {
                         .chain(other.0.iter())
                         .collect::<IndexMap<_, _>>()
                         .into_iter()
-                        .map(|(k, v)| (k.clone(), v.clone()))
-                        .collect(),
-                    self.1
-                        .iter()
-                        .chain(other.1.iter())
-                        .collect::<IndexMap<_, _>>()
-                        .into_iter()
-                        .map(|(k, v)| (k.clone(), *v))
+                        .filter_map(|(k, (v, del))| (!*del).then(|| (k.clone(), (v.clone(), false))))
                         .collect(),
                 )
-                .and_delete()
             }
         }
 
         impl<T: $($key)*, U: crate::prelude::Mergeable + Clone + PartialEq + Default> $type<T, U> {
             pub fn deep_diff(&self, other: &Self) -> Self {
                 other
-                    .0
+                    // .0
                     .iter()
                     .filter_map(|(k, other_map)| {
                         if let Some(self_map) = self.get(k) {
@@ -576,14 +549,10 @@ macro_rules! impl_delete_map {
 }
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
-pub struct DeleteMap<T: DeleteKey, U: PartialEq + Clone>(IndexMap<T, U>, IndexMap<T, bool>);
+pub struct DeleteMap<T: DeleteKey, U: PartialEq + Clone>(IndexMap<T, (U, bool)>);
 
 impl_delete_map!(DeleteMap, DeleteKey);
-
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
-pub struct SortedDeleteMap<T: DeleteKey + Ord, U: PartialEq + Clone>(
-    BTreeMap<T, U>,
-    BTreeMap<T, bool>,
-);
+pub struct SortedDeleteMap<T: DeleteKey + Ord, U: PartialEq + Clone>(BTreeMap<T, (U, bool)>);
 
 impl_delete_map!(SortedDeleteMap, DeleteKey + Ord);
