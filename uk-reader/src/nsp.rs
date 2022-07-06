@@ -5,11 +5,11 @@ use std::path::Path;
 pub(crate) struct Nsp;
 
 impl super::ROMReader for Nsp {
-    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<super::ResourceData> {
+    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
         todo!()
     }
 
-    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<super::ResourceData> {
+    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
         todo!()
     }
 

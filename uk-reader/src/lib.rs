@@ -3,25 +3,33 @@ mod unpacked;
 mod zarchive;
 
 use self::{nsp::Nsp, unpacked::Unpacked, zarchive::ZArchive};
-use anyhow::Context;
 use enum_dispatch::enum_dispatch;
 use moka::sync::Cache;
 use std::{
+    collections::BTreeMap,
     path::{Path, PathBuf},
     sync::Arc,
 };
-use uk_content::{
-    canonicalize,
-    prelude::Resource,
-    resource::{MergeableResource, ResourceData},
-};
+use uk_content::{canonicalize, resource::ResourceData};
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ROMError {
     #[error("File not found in game dump: {0}\n(Using ROM at {1})")]
     FileNotFound(String, PathBuf),
     #[error("Invalid resource path: {0}")]
     InvalidPath(String),
+    #[error(transparent)]
+    WUAError(#[from] ::zarchive::ZArchiveError),
+    #[error(transparent)]
+    UKError(#[from] uk_content::UKError),
+    #[error("{0}")]
+    OtherMessage(&'static str),
+}
+
+impl From<ROMError> for uk_content::UKError {
+    fn from(err: ROMError) -> Self {
+        Self::Any(err.into())
+    }
 }
 
 type ResourceCache = Cache<String, Arc<ResourceData>>;
@@ -29,8 +37,8 @@ pub type Result<T> = std::result::Result<T, ROMError>;
 
 #[enum_dispatch(ROMSource)]
 pub trait ROMReader {
-    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<ResourceData>;
-    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<ResourceData>;
+    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>>;
+    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>>;
     fn file_exists(&self, name: impl AsRef<Path>) -> bool;
     fn host_path(&self) -> &Path;
 }
@@ -69,13 +77,28 @@ impl GameROMReader {
             .ok_or_else(|| ROMError::FileNotFound(name, self.source.host_path().to_path_buf()))
     }
 
-    pub fn get_file<T: Resource>(&self, path: impl AsRef<Path>) -> Result<Arc<T>> {
-        let canon = canonicalize(path);
-        self.cache
-            .get_with(canon, || {
-                let data = self.source.get_file_data(path)?;
-                T::from_binary(data.as_slice()).unwrap()
+    pub fn get_file<T: Into<ResourceData> + TryFrom<ResourceData>>(
+        &self,
+        path: impl AsRef<Path>,
+    ) -> Result<Arc<ResourceData>> {
+        let canon = canonicalize(path.as_ref());
+        let mut processed = BTreeMap::new();
+        let resource = self
+            .cache
+            .try_get_with(canon.clone(), || -> uk_content::Result<_> {
+                let data = self.source.get_file_data(path.as_ref())?;
+                let resource = ResourceData::from_binary(&canon, data, &mut processed)?;
+                Ok(Arc::new(resource))
             })
-            .ok_or_else(|| ROMError::FileNotFound(name, self.source.host_path().to_path_buf()))
+            .map_err(|_| {
+                ROMError::FileNotFound(
+                    path.as_ref().to_string_lossy().to_string(),
+                    self.source.host_path().to_path_buf(),
+                )
+            })?;
+        processed.into_iter().for_each(|(k, v)| {
+            self.cache.insert(k, Arc::new(v));
+        });
+        Ok(resource)
     }
 }

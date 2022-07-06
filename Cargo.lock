@@ -1672,9 +1672,9 @@ dependencies = [
 
 [[package]]
 name = "zarchive"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e7629d4222105f1f6b65b21957416d3f9faf5556f7e260057988007872ac962"
+checksum = "13ff1ea46fe07231b62cb568948ced6953f7be558e081649f21d1d22d7c39955"
 dependencies = [
  "cxx",
  "cxx-build",

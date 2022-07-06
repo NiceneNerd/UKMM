@@ -6,11 +6,11 @@ use crate::Result;
 pub(crate) struct Unpacked;
 
 impl super::ROMReader for Unpacked {
-    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<super::ResourceData> {
+    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
         todo!()
     }
 
-    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<super::ResourceData> {
+    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
         todo!()
     }
 

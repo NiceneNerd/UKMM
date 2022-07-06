@@ -87,6 +87,91 @@ pub enum MergeableResource {
     GenericByml(Box<Byml>),
 }
 
+macro_rules! impl_from_res {
+    ($type:ident) => {
+        impl From<$type> for MergeableResource {
+            fn from(res: $type) -> Self {
+                MergeableResource::$type(Box::new(res))
+            }
+        }
+
+        impl From<$type> for ResourceData {
+            fn from(res: $type) -> Self {
+                ResourceData::Mergeable(res.into())
+            }
+        }
+
+        impl TryFrom<MergeableResource> for $type {
+            type Error = anyhow::Error;
+
+            fn try_from(res: MergeableResource) -> Result<Self> {
+                match res {
+                    MergeableResource::$type(res) => Ok(*res),
+                    _ => Err(anyhow::anyhow!("Expected {}", stringify!($type))),
+                }
+            }
+        }
+
+        impl TryFrom<ResourceData> for $type {
+            type Error = anyhow::Error;
+
+            fn try_from(res: ResourceData) -> Result<Self> {
+                match res {
+                    ResourceData::Mergeable(MergeableResource::$type(res)) => Ok(*res),
+                    _ => Err(anyhow::anyhow!("Expected {}", stringify!($type))),
+                }
+            }
+        }
+    };
+}
+
+impl_from_res!(Actor);
+impl_from_res!(ActorInfo);
+impl_from_res!(ActorLink);
+impl_from_res!(AIProgram);
+impl_from_res!(AISchedule);
+impl_from_res!(AnimationInfo);
+impl_from_res!(AreaData);
+impl_from_res!(AS);
+impl_from_res!(ASList);
+impl_from_res!(AttClient);
+impl_from_res!(AttClientList);
+impl_from_res!(Awareness);
+impl_from_res!(BarslistInfo);
+impl_from_res!(BoneControl);
+impl_from_res!(Chemical);
+impl_from_res!(ChemicalRes);
+impl_from_res!(CookData);
+impl_from_res!(DamageParam);
+impl_from_res!(Demo);
+impl_from_res!(DropTable);
+impl_from_res!(EventInfo);
+impl_from_res!(GameDataPack);
+impl_from_res!(GeneralParamList);
+impl_from_res!(LazyTraverseList);
+impl_from_res!(LevelSensor);
+impl_from_res!(LifeCondition);
+impl_from_res!(Location);
+impl_from_res!(Lod);
+impl_from_res!(MapUnit);
+impl_from_res!(ModelList);
+impl_from_res!(Physics);
+impl_from_res!(QuestProduct);
+impl_from_res!(RagdollBlendWeight);
+impl_from_res!(RagdollConfig);
+impl_from_res!(RagdollConfigList);
+impl_from_res!(Recipe);
+impl_from_res!(ResidentActors);
+impl_from_res!(ResidentEvents);
+impl_from_res!(SaveDataPack);
+impl_from_res!(ShopData);
+impl_from_res!(ShopGameDataInfo);
+impl_from_res!(Static);
+impl_from_res!(StatusEffectList);
+impl_from_res!(Tips);
+impl_from_res!(UMii);
+impl_from_res!(WorldInfo);
+
 impl Mergeable for MergeableResource {
     fn diff(&self, other: &Self) -> Self {
         match (self, other) {
@@ -380,6 +465,18 @@ pub enum ResourceData {
     Binary(Binary),
     Mergeable(MergeableResource),
     Sarc(SarcMap),
+}
+
+impl From<Vec<u8>> for ResourceData {
+    fn from(data: Vec<u8>) -> Self {
+        Self::Binary(Binary::Vec(data))
+    }
+}
+
+impl From<roead::Bytes> for ResourceData {
+    fn from(data: roead::Bytes) -> Self {
+        Self::Binary(Binary::Bytes(data))
+    }
 }
 
 const EXCLUDE_EXTS: &[&str] = &["beventpack", "blarc", "bfarc", "genvb", "sarc"];
