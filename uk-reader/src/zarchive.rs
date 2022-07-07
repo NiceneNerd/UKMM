@@ -199,9 +199,12 @@ mod tests {
     #[test]
     fn test_wua() {
         use super::*;
-        let arch = ZArchive::new("/data/Downloads/botw.wua").unwrap();
-        println!(
-            "{:?}",
+        let arch = ZArchive::new("test/test.wua").unwrap();
+        for dir in arch.archive.iter().unwrap() {
+            println!("{}", dir.name());
+        }
+        assert_eq!(
+            "0.9.0".to_owned(),
             String::from_utf8(arch.get_file_data("System/Version.txt").unwrap()).unwrap()
         );
     }
