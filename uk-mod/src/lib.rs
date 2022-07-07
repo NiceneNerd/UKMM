@@ -1,5 +1,18 @@
 #![feature(let_chains, seek_stream_len)]
-pub mod data;
+
+use std::collections::BTreeSet;
+
+use serde::{Deserialize, Serialize};
+pub mod reader;
+pub mod writer;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Manifest {
+    pub content_files: BTreeSet<String>,
+    pub aoc_files: BTreeSet<String>,
+}
+
+// pub mod data;
 
 // #[cfg(test)]
 // mod tests {
