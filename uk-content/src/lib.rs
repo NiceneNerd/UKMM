@@ -52,6 +52,8 @@ pub enum UKError {
     #[error(transparent)]
     _Infallible(#[from] std::convert::Infallible),
     #[error(transparent)]
+    Yaz0Error(#[from] roead::yaz0::Yaz0Error),
+    #[error(transparent)]
     Any(#[from] anyhow::Error),
 }
 

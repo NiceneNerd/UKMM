@@ -1,3 +1,5 @@
+use crate::hashes::get_hash_table;
+use crate::message::MessagePack;
 use crate::prelude::*;
 use crate::{
     actor::{
@@ -66,6 +68,7 @@ pub enum MergeableResource {
     Location(Box<Location>),
     Lod(Box<Lod>),
     MapUnit(Box<MapUnit>),
+    MessagePack(Box<MessagePack>),
     ModelList(Box<ModelList>),
     Physics(Box<Physics>),
     QuestProduct(Box<QuestProduct>),
@@ -154,6 +157,7 @@ impl_from_res!(LifeCondition);
 impl_from_res!(Location);
 impl_from_res!(Lod);
 impl_from_res!(MapUnit);
+impl_from_res!(MessagePack);
 impl_from_res!(ModelList);
 impl_from_res!(Physics);
 impl_from_res!(QuestProduct);
@@ -218,6 +222,7 @@ impl Mergeable for MergeableResource {
             (Self::Location(a), Self::Location(b)) => Self::Location(Box::new(a.diff(b))),
             (Self::Lod(a), Self::Lod(b)) => Self::Lod(Box::new(a.diff(b))),
             (Self::MapUnit(a), Self::MapUnit(b)) => Self::MapUnit(Box::new(a.diff(b))),
+            (Self::MessagePack(a), Self::MessagePack(b)) => Self::MessagePack(Box::new(a.diff(b))),
             (Self::ModelList(a), Self::ModelList(b)) => Self::ModelList(Box::new(a.diff(b))),
             (Self::Physics(a), Self::Physics(b)) => Self::Physics(Box::new(a.diff(b))),
             (Self::QuestProduct(a), Self::QuestProduct(b)) => {
@@ -305,6 +310,7 @@ impl Mergeable for MergeableResource {
             (Self::Location(a), Self::Location(b)) => Self::Location(Box::new(a.merge(b))),
             (Self::Lod(a), Self::Lod(b)) => Self::Lod(Box::new(a.merge(b))),
             (Self::MapUnit(a), Self::MapUnit(b)) => Self::MapUnit(Box::new(a.merge(b))),
+            (Self::MessagePack(a), Self::MessagePack(b)) => Self::MessagePack(Box::new(a.merge(b))),
             (Self::ModelList(a), Self::ModelList(b)) => Self::ModelList(Box::new(a.merge(b))),
             (Self::Physics(a), Self::Physics(b)) => Self::Physics(Box::new(a.merge(b))),
             (Self::QuestProduct(a), Self::QuestProduct(b)) => {
@@ -380,6 +386,7 @@ impl MergeableResource {
             Self::Location(v) => v.into_binary(endian),
             Self::Lod(v) => v.into_binary(endian),
             Self::MapUnit(v) => v.into_binary(endian),
+            Self::MessagePack(v) => v.into_binary(endian),
             Self::ModelList(v) => v.into_binary(endian),
             Self::Physics(v) => v.into_binary(endian),
             Self::QuestProduct(v) => v.into_binary(endian),
@@ -405,12 +412,13 @@ impl MergeableResource {
 
 pub trait ResourceRegister {
     fn contains_resource(&self, canon: &str) -> bool;
-    fn add_resource(&self, canon: &str, resource: ResourceData);
+    fn add_resource(&self, canon: &str, resource: ResourceData) -> anyhow::Result<()>;
 }
 
 impl ResourceRegister for std::cell::RefCell<BTreeMap<String, ResourceData>> {
-    fn add_resource(&self, canon: &str, resource: ResourceData) {
+    fn add_resource(&self, canon: &str, resource: ResourceData) -> anyhow::Result<()> {
         self.borrow_mut().insert(canon.to_owned(), resource);
+        Ok(())
     }
 
     fn contains_resource(&self, canon: &str) -> bool {
@@ -434,6 +442,7 @@ impl Mergeable for SarcMap {
 impl SarcMap {
     pub fn from_binary<R: ResourceRegister>(data: impl AsRef<[u8]>, resources: &R) -> Result<Self> {
         let sarc = Sarc::read(data.as_ref())?;
+        let table = get_hash_table(sarc.endian().into());
         Ok(Self(
             sarc.files()
                 .map(|file| -> Result<(String, String)> {
@@ -441,9 +450,13 @@ impl SarcMap {
                     let canon = name.replace(".s", ".");
                     if !resources.contains_resource(&canon) {
                         let data = roead::yaz0::decompress_if(file.data())?;
-                        let resource = ResourceData::from_binary(&name, data, resources)
-                            .with_context(|| jstr!("Error parsing resource in SARC: {&name}"))?;
-                        resources.add_resource(&canon, resource);
+                        if table.is_modified(&canon, &*data) {
+                            let resource = ResourceData::from_binary(&name, data, resources)
+                                .with_context(|| {
+                                    jstr!("Error parsing resource in SARC: {&name}")
+                                })?;
+                            resources.add_resource(&canon, resource)?;
+                        }
                     }
                     Ok((name, canon))
                 })
@@ -496,7 +509,7 @@ const EXCLUDE_NAMES: &[&str] = &[
     "tera_resource.Nin_NX_NVN",
     "tera_resource.Cafe_Cafe_GX2",
     "Dungeon",
-    "Bootup_",
+    // "Bootup_",
     "AocMainField",
 ];
 
@@ -520,7 +533,6 @@ impl ResourceData {
         {
             return Ok(Self::Binary(data));
         }
-        let data: Binary = roead::yaz0::decompress_if(&data)?.into();
         if Actor::path_matches(name) {
             Ok(Self::Mergeable(MergeableResource::Actor(Box::new(
                 Actor::from_binary(&data)?,
@@ -636,6 +648,10 @@ impl ResourceData {
         } else if MapUnit::path_matches(name) {
             Ok(Self::Mergeable(MergeableResource::MapUnit(Box::new(
                 MapUnit::from_binary(&data)?,
+            ))))
+        } else if MessagePack::path_matches(name) {
+            Ok(Self::Mergeable(MergeableResource::MessagePack(Box::new(
+                MessagePack::from_binary(&data)?,
             ))))
         } else if ModelList::path_matches(name) {
             Ok(Self::Mergeable(MergeableResource::ModelList(Box::new(

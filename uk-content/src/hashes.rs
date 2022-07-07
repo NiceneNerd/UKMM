@@ -1,4 +1,5 @@
 use crate::prelude::Endian;
+use once_cell::sync::Lazy;
 use xxhash_rust::xxh3::xxh3_64;
 
 static HASH_BIN_U: &[u8] = include_bytes!("../data/hashes_u.bin");
@@ -43,6 +44,17 @@ impl ROMHashTable {
             }
             Err(_) => true,
         }
+    }
+}
+
+static HASH_TABLE_U: Lazy<ROMHashTable> = Lazy::new(|| ROMHashTable::new(Endian::Big));
+static HASH_TABLE_NX: Lazy<ROMHashTable> = Lazy::new(|| ROMHashTable::new(Endian::Little));
+
+#[inline]
+pub fn get_hash_table(endian: Endian) -> &'static ROMHashTable {
+    match endian {
+        Endian::Big => &HASH_TABLE_U,
+        Endian::Little => &HASH_TABLE_NX,
     }
 }
 

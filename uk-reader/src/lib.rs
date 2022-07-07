@@ -12,10 +12,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use uk_content::{
-    canonicalize,
-    resource::{ResourceData, ResourceRegister},
-};
+use uk_content::{canonicalize, resource::ResourceData};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ROMError {
@@ -114,6 +111,7 @@ impl GameROMReader {
             .cache
             .try_get_with(canon.clone(), || -> uk_content::Result<_> {
                 let data = self.source.get_file_data(path.as_ref())?;
+                let data = roead::yaz0::decompress_if(data.as_slice())?;
                 let resource = ResourceData::from_binary(&canon, data, &processed)?;
                 Ok(Arc::new(resource))
             })

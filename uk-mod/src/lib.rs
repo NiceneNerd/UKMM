@@ -8,8 +8,19 @@ pub mod writer;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Manifest {
+    #[serde(rename = "content")]
     pub content_files: BTreeSet<String>,
+    #[serde(rename = "aoc")]
     pub aoc_files: BTreeSet<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct Meta {
+    pub name: String,
+    pub version: f32,
+    pub author: String,
+    pub description: String,
+    pub url: Option<String>,
 }
 
 // pub mod data;
