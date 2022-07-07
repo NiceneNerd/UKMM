@@ -1,5 +1,5 @@
 #![feature(let_chains)]
-mod nsp;
+// mod nsp;
 mod unpacked;
 mod zarchive;
 
@@ -7,11 +7,15 @@ use self::{unpacked::Unpacked, zarchive::ZArchive};
 use enum_dispatch::enum_dispatch;
 use moka::sync::Cache;
 use std::{
+    cell::RefCell,
     collections::BTreeMap,
     path::{Path, PathBuf},
     sync::Arc,
 };
-use uk_content::{canonicalize, resource::ResourceData};
+use uk_content::{
+    canonicalize,
+    resource::{ResourceData, ResourceRegister},
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ROMError {
@@ -105,12 +109,12 @@ impl GameROMReader {
         path: impl AsRef<Path>,
     ) -> Result<Arc<ResourceData>> {
         let canon = canonicalize(path.as_ref());
-        let mut processed = BTreeMap::new();
+        let processed = RefCell::new(BTreeMap::new());
         let resource = self
             .cache
             .try_get_with(canon.clone(), || -> uk_content::Result<_> {
                 let data = self.source.get_file_data(path.as_ref())?;
-                let resource = ResourceData::from_binary(&canon, data, &mut processed)?;
+                let resource = ResourceData::from_binary(&canon, data, &processed)?;
                 Ok(Arc::new(resource))
             })
             .map_err(|_| {
@@ -119,7 +123,7 @@ impl GameROMReader {
                     self.source.host_path().to_path_buf(),
                 )
             })?;
-        processed.into_iter().for_each(|(k, v)| {
+        processed.take().into_iter().for_each(|(k, v)| {
             self.cache.insert(k, Arc::new(v));
         });
         Ok(resource)

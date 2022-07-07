@@ -9,13 +9,19 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
-use uk_content::{canonicalize, prelude::Endian, resource::ResourceData};
+use uk_content::{
+    canonicalize,
+    prelude::Endian,
+    resource::{ResourceData, ResourceRegister},
+};
+
+pub type TarWriter<'a> = Arc<Mutex<tar::Builder<zstd::Encoder<'a, fs::File>>>>;
 
 pub struct ModBuilder<'a> {
     source_dir: PathBuf,
     dest_file: PathBuf,
     endian: Endian,
-    tar: Arc<Mutex<tar::Builder<zstd::Encoder<'a, fs::File>>>>,
+    tar: TarWriter<'a>,
     built_resources: Arc<Mutex<BTreeSet<String>>>,
 }
 
@@ -60,7 +66,7 @@ impl ModBuilder<'_> {
                 .with_context(|| jstr!("Error parsing resource at {&name}"))?;
             self.tar.lock().unwrap().append_data(
                 &mut tar::Header::new_gnu(),
-                &name,
+                &canon,
                 &*resource.to_binary(self.endian, todo!())?,
             )?;
             self.built_resources.lock().unwrap().insert(canon);

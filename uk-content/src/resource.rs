@@ -403,6 +403,21 @@ impl MergeableResource {
     }
 }
 
+pub trait ResourceRegister {
+    fn contains_resource(&self, canon: &str) -> bool;
+    fn add_resource(&self, canon: &str, resource: ResourceData);
+}
+
+impl ResourceRegister for std::cell::RefCell<BTreeMap<String, ResourceData>> {
+    fn add_resource(&self, canon: &str, resource: ResourceData) {
+        self.borrow_mut().insert(canon.to_owned(), resource);
+    }
+
+    fn contains_resource(&self, canon: &str) -> bool {
+        self.borrow().contains_key(canon)
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct SarcMap(pub SortedDeleteMap<String, String>);
 
@@ -417,21 +432,18 @@ impl Mergeable for SarcMap {
 }
 
 impl SarcMap {
-    pub fn from_binary(
-        data: impl AsRef<[u8]>,
-        resources: &mut BTreeMap<String, ResourceData>,
-    ) -> Result<Self> {
+    pub fn from_binary<R: ResourceRegister>(data: impl AsRef<[u8]>, resources: &R) -> Result<Self> {
         let sarc = Sarc::read(data.as_ref())?;
         Ok(Self(
             sarc.files()
                 .map(|file| -> Result<(String, String)> {
                     let name = file.name().context("SARC file missing name")?.to_owned();
                     let canon = name.replace(".s", ".");
-                    if !resources.contains_key(&canon) {
+                    if !resources.contains_resource(&canon) {
                         let data = roead::yaz0::decompress_if(file.data())?;
                         let resource = ResourceData::from_binary(&name, data, resources)
                             .with_context(|| jstr!("Error parsing resource in SARC: {&name}"))?;
-                        resources.insert(canon.clone(), resource);
+                        resources.add_resource(&canon, resource);
                     }
                     Ok((name, canon))
                 })
@@ -489,10 +501,10 @@ const EXCLUDE_NAMES: &[&str] = &[
 ];
 
 impl ResourceData {
-    pub fn from_binary(
+    pub fn from_binary<R: ResourceRegister>(
         name: impl AsRef<Path>,
         data: impl Into<Binary>,
-        resources: &mut BTreeMap<String, ResourceData>,
+        resources: &R,
     ) -> Result<Self> {
         let name = name.as_ref();
         let stem = name.file_stem().unwrap().to_str().unwrap();

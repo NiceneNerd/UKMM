@@ -22,10 +22,8 @@ impl Nsp {
             let size = pfs0.get_file_size(i)?;
             println!("{} is {} bytes", file, size);
             if file == "861707001401bbce36c7e421efac76d4.nca" {
-                let mut data = vec![0; size];
-                pfs0.read_file(i, 0, &mut data)?;
-                let mut nca =
-                    cntx::nca::NCA::new(Arc::new(Mutex::new(Cursor::new(data))), &keys, None)?;
+                let nca_reader = pfs0.get_file_reader(i)?;
+                let mut nca = cntx::nca::NCA::new(Arc::new(Mutex::new(nca_reader)), &keys, None)?;
                 let fs_count = nca.get_filesystem_count();
                 println!("NCA has {} filesystems", fs_count);
                 for i in 0..fs_count {

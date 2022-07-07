@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.58"
-cntx = { git = "https://github.com/XorTroll/cntx" }
+# cntx = { path = "../../cntx" } #git = "https://github.com/XorTroll/cntx" }
 common-path = "1.0.0"
 enum_dispatch = "0.3.8"
 fs-err = "2.7.0"
