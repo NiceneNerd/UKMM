@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
+use minicbor_ser::cbor::encode::Write;
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::yaz0::decompress_if;
@@ -18,21 +19,20 @@ use uk_content::{
     prelude::Endian,
     resource::{ResourceData, ResourceRegister},
 };
+use zip::{write::FileOptions, ZipWriter as ZipW};
 
-pub type TarWriter<'a> = Arc<Mutex<tar::Builder<zstd::Encoder<'a, fs::File>>>>;
-struct TarManager<'a>(TarWriter<'a>, Arc<RwLock<BTreeSet<String>>>);
+pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
+struct ZipManager(ZipWriter, Arc<RwLock<BTreeSet<String>>>);
 
-impl ResourceRegister for TarManager<'_> {
+impl ResourceRegister for ZipManager {
     fn add_resource(&self, canon: &str, resource: ResourceData) -> Result<()> {
         let data = minicbor_ser::to_vec(&resource)?;
-        let mut header = tar::Header::new_gnu();
-        header.set_path(&canon)?;
-        header.set_size(data.len() as u64);
-        header.set_mode(0o664);
-        self.0
-            .lock()
-            .unwrap()
-            .append_data(&mut header, canon, data.as_slice())?;
+        let mut zip = self.0.lock().unwrap();
+        zip.start_file(
+            canon,
+            FileOptions::default().compression_method(zip::CompressionMethod::Stored),
+        )?;
+        zip.write_all(&zstd::encode_all(&*data, 3)?)?;
         Ok(())
     }
 
@@ -41,16 +41,16 @@ impl ResourceRegister for TarManager<'_> {
     }
 }
 
-pub struct ModBuilder<'a> {
+pub struct ModBuilder {
     source_dir: PathBuf,
     content_dir: Option<PathBuf>,
     aoc_dir: Option<PathBuf>,
-    tar: TarWriter<'a>,
+    zip: ZipWriter,
     endian: Endian,
     built_resources: Arc<RwLock<BTreeSet<String>>>,
 }
 
-impl ModBuilder<'_> {
+impl ModBuilder {
     #[allow(irrefutable_let_patterns)]
     pub fn new(source: impl AsRef<Path>, dest: impl AsRef<Path>) -> Result<Self> {
         let source_dir = source.as_ref().to_path_buf();
@@ -106,22 +106,21 @@ impl ModBuilder<'_> {
         if dest_file.exists() {
             fs::remove_file(&dest_file)?;
         }
-        let tar = Arc::new(Mutex::new(tar::Builder::new(zstd::Encoder::new(
-            fs::File::create(&dest_file)?,
-            3,
-        )?)));
+        let zip = Arc::new(Mutex::new(ZipW::new(fs::File::create(&dest_file)?)));
         Ok(Self {
             source_dir,
             content_dir,
             aoc_dir,
             endian: endian.unwrap(),
-            tar,
+            zip,
             built_resources: Arc::new(RwLock::new(BTreeSet::new())),
         })
     }
 
     fn collect_resources(&self, dir: impl AsRef<Path>) -> Result<BTreeSet<String>> {
-        let files = WalkDir::new(dir.as_ref())
+        let dir = dir.as_ref();
+        let opts = FileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        let files = WalkDir::new(dir)
             .into_iter()
             .filter_map(|f| {
                 f.ok()
@@ -132,7 +131,7 @@ impl ModBuilder<'_> {
         Ok(files
             .into_par_iter()
             .map(|path| -> Result<Option<String>> {
-                let manager = TarManager(self.tar.clone(), self.built_resources.clone());
+                let manager = ZipManager(self.zip.clone(), self.built_resources.clone());
                 let name = path
                     .strip_prefix(&self.source_dir)
                     .unwrap()
@@ -147,16 +146,13 @@ impl ModBuilder<'_> {
                 let resource = ResourceData::from_binary(&name, file_data, &manager)
                     .with_context(|| jstr!("Error parsing resource at {&name}"))?;
                 let data = minicbor_ser::to_vec(&resource)?; //bincode::serialize(&resource)?;
-                let mut header = tar::Header::new_gnu();
-                header.set_path(&canon)?;
-                header.set_size(data.as_slice().len() as u64);
-                header.set_mode(0o664);
-                self.tar
-                    .lock()
-                    .unwrap()
-                    .append_data(&mut header, &canon, data.as_slice())?;
+                let mut zip = self.zip.lock().unwrap();
+                zip.start_file(&canon, opts)?;
+                zip.write_all(&zstd::encode_all(&*data, 3)?)?;
                 self.built_resources.write().unwrap().insert(canon);
-                Ok(Some(name))
+                Ok(Some(
+                    path.strip_prefix(dir).unwrap().to_slash_lossy().to_string(),
+                ))
             })
             .collect::<Result<Vec<Option<_>>>>()?
             .into_par_iter()
@@ -180,24 +176,16 @@ impl ModBuilder<'_> {
                 .unwrap_or_default(),
         })?;
         {
-            let mut tar = self.tar.lock().unwrap();
-            let mut header = tar::Header::new_gnu();
-            header.set_mode(0o664);
-            header.set_path("manifest.yml")?;
-            header.set_size(manifest.as_bytes().len() as u64);
-            tar.append_data(&mut header, "manifest.yml", manifest.as_bytes())?;
+            let opts = FileOptions::default().compression_method(zip::CompressionMethod::Stored);
+            let mut zip = self.zip.lock().unwrap();
+            zip.start_file("manifest.yml", opts)?;
+            zip.write_all(manifest.as_bytes())?;
             let meta = toml::to_string_pretty(&Meta::default())?;
-            header.set_path("meta.toml")?;
-            header.set_size(meta.as_bytes().len() as u64);
-            tar.append_data(&mut header, "meta.toml", meta.as_bytes())?;
+            zip.start_file("meta.toml", opts)?;
+            zip.write_all(meta.as_bytes())?;
         }
-        match Arc::try_unwrap(self.tar) {
-            Ok(tar) => tar
-                .into_inner()
-                .unwrap()
-                .into_inner()?
-                .finish()?
-                .sync_all()?,
+        match Arc::try_unwrap(self.zip) {
+            Ok(zip) => zip.into_inner().unwrap().finish()?,
             Err(_) => panic!("Uh oh"),
         };
         Ok(())
@@ -206,13 +194,11 @@ impl ModBuilder<'_> {
 
 #[cfg(test)]
 mod tests {
-    use uk_content::prelude::Resource;
-
     use super::*;
     #[test]
     fn pack_mod() {
         let source = Path::new("test/wiiu");
-        let dest = Path::new("test/wiiu.tar.zst");
+        let dest = Path::new("test/wiiu.zip");
         let builder = ModBuilder::new(source, dest).unwrap();
         builder.build().unwrap();
     }

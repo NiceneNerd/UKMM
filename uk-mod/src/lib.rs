@@ -14,6 +14,19 @@ pub struct Manifest {
     pub aoc_files: BTreeSet<String>,
 }
 
+impl Manifest {
+    pub fn resources(&self) -> impl Iterator<Item = String> + '_ {
+        self.content_files
+            .iter()
+            .map(|s| s.replace(".s", "."))
+            .chain(
+                self.aoc_files
+                    .iter()
+                    .map(|s| ["Aoc/0010/", &s.replace(".s", ".")].join("")),
+            )
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Meta {
     pub name: String,
