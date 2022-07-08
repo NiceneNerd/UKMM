@@ -25,11 +25,7 @@ struct TarManager<'a>(TarWriter<'a>, Arc<RwLock<BTreeSet<String>>>);
 
 impl ResourceRegister for TarManager<'_> {
     fn add_resource(&self, canon: &str, resource: ResourceData) -> Result<()> {
-        let data = if canon.starts_with("Msg_") {
-            serde_json::to_string(&resource)?.into_bytes()
-        } else {
-            bincode::serialize(&resource)?
-        };
+        let data = minicbor_ser::to_vec(&resource)?;
         let mut header = tar::Header::new_gnu();
         header.set_path(&canon)?;
         header.set_size(data.len() as u64);
@@ -151,7 +147,7 @@ impl ModBuilder<'_> {
                 }
                 let resource = ResourceData::from_binary(&name, file_data, &manager)
                     .with_context(|| jstr!("Error parsing resource at {&name}"))?;
-                let data = bincode::serialize(&resource)?;
+                let data = minicbor_ser::to_vec(&resource)?; //bincode::serialize(&resource)?;
                 let mut header = tar::Header::new_gnu();
                 header.set_path(&canon)?;
                 header.set_size(data.as_slice().len() as u64);
@@ -211,6 +207,8 @@ impl ModBuilder<'_> {
 
 #[cfg(test)]
 mod tests {
+    use uk_content::prelude::Resource;
+
     use super::*;
     #[test]
     fn pack_mod() {
