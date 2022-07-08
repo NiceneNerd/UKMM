@@ -1,3 +1,4 @@
+use crate::{Manifest, Meta};
 use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
@@ -17,8 +18,6 @@ use uk_content::{
     prelude::Endian,
     resource::{ResourceData, ResourceRegister},
 };
-
-use crate::{Manifest, Meta};
 
 pub type TarWriter<'a> = Arc<Mutex<tar::Builder<zstd::Encoder<'a, fs::File>>>>;
 struct TarManager<'a>(TarWriter<'a>, Arc<RwLock<BTreeSet<String>>>);
