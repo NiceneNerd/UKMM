@@ -1489,6 +1489,7 @@ dependencies = [
  "enum_dispatch",
  "fs-err",
  "join_str",
+ "minicbor-ser",
  "moka",
  "roead",
  "serde",

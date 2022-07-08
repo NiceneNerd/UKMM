@@ -40,7 +40,7 @@ impl ZArchive {
     }
 }
 
-impl super::ROMReader for ZArchive {
+impl super::ResourceLoader for ZArchive {
     fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
         self.archive
             .read_file(&self.update_dir.join(name.as_ref()))
@@ -194,7 +194,7 @@ mod de {
 
 #[cfg(test)]
 mod tests {
-    use crate::ROMReader;
+    use crate::ResourceLoader;
 
     #[test]
     fn test_wua() {

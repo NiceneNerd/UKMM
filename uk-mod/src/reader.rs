@@ -7,7 +7,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use uk_content::canonicalize;
-use uk_reader::ROMReader;
+use uk_reader::ResourceLoader;
 use zip::ZipArchive;
 
 type ZipReader = Arc<Mutex<ZipArchive<BufReader<File>>>>;

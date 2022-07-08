@@ -26,7 +26,8 @@ struct ZipManager(ZipWriter, Arc<RwLock<BTreeSet<String>>>);
 
 impl ResourceRegister for ZipManager {
     fn add_resource(&self, canon: &str, resource: ResourceData) -> Result<()> {
-        let data = minicbor_ser::to_vec(&resource)?;
+        let data = minicbor_ser::to_vec(&resource)
+            .with_context(|| jstr!("Failed to serialize {canon}"))?;
         let mut zip = self.0.lock().unwrap();
         zip.start_file(
             canon,
@@ -40,19 +41,40 @@ impl ResourceRegister for ZipManager {
         self.1.read().unwrap().contains(canon)
     }
 }
-
-pub struct ModBuilder {
+pub struct ModPacker {
     source_dir: PathBuf,
     content_dir: Option<PathBuf>,
     aoc_dir: Option<PathBuf>,
     zip: ZipWriter,
     endian: Endian,
     built_resources: Arc<RwLock<BTreeSet<String>>>,
+    masters: Vec<Arc<uk_reader::ResourceReader>>,
+    _out_file: PathBuf,
 }
 
-impl ModBuilder {
+impl std::fmt::Debug for ModPacker {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ModBuilder")
+            .field("source_dir", &self.source_dir)
+            .field("content_dir", &self.content_dir)
+            .field("aoc_dir", &self.aoc_dir)
+            .field(
+                "zip",
+                &jstr!("zip::ZipWriter at {&self._out_file.to_string_lossy()}"),
+            )
+            .field("endian", &self.endian)
+            .field("built_resources", &self.built_resources)
+            .finish()
+    }
+}
+
+impl ModPacker {
     #[allow(irrefutable_let_patterns)]
-    pub fn new(source: impl AsRef<Path>, dest: impl AsRef<Path>) -> Result<Self> {
+    pub fn new(
+        source: impl AsRef<Path>,
+        dest: impl AsRef<Path>,
+        masters: Vec<Arc<uk_reader::ResourceReader>>,
+    ) -> Result<Self> {
         let source_dir = source.as_ref().to_path_buf();
         if !source_dir.exists() {
             anyhow::bail!("Source directory does not exist: {}", source_dir.display());
@@ -113,7 +135,9 @@ impl ModBuilder {
             aoc_dir,
             endian: endian.unwrap(),
             zip,
+            masters,
             built_resources: Arc::new(RwLock::new(BTreeSet::new())),
+            _out_file: dest_file,
         })
     }
 
@@ -139,13 +163,16 @@ impl ModBuilder {
                     .to_string();
                 let canon = canonicalize(&name);
                 let file_data = fs::read(&path)?;
-                let file_data = decompress_if(&file_data)?;
+                let file_data = decompress_if(&file_data)
+                    .with_context(|| jstr!("Failed to decompress {&name}"))?;
                 if !table.is_modified(&canon, &*file_data) {
                     return Ok(None);
                 }
-                let resource = ResourceData::from_binary(&name, file_data, &manager)
+                let mut resource = ResourceData::from_binary(&name, file_data, &manager)
                     .with_context(|| jstr!("Error parsing resource at {&name}"))?;
-                let data = minicbor_ser::to_vec(&resource)?; //bincode::serialize(&resource)?;
+                // for master in self.masters.iter().find_map(|m| )
+                let data = minicbor_ser::to_vec(&resource)
+                    .with_context(|| jstr!("Failed to serialize {&name}"))?;
                 let mut zip = self.zip.lock().unwrap();
                 zip.start_file(&canon, opts)?;
                 zip.write_all(&zstd::encode_all(&*data, 3)?)?;
@@ -160,7 +187,7 @@ impl ModBuilder {
             .collect())
     }
 
-    pub fn build(self) -> Result<()> {
+    pub fn pack(self) -> Result<()> {
         let manifest = yaml_peg::serde::to_string(&Manifest {
             aoc_files: self
                 .aoc_dir
@@ -194,12 +221,18 @@ impl ModBuilder {
 
 #[cfg(test)]
 mod tests {
+    use uk_reader::ResourceReader;
+
     use super::*;
     #[test]
     fn pack_mod() {
         let source = Path::new("test/wiiu");
         let dest = Path::new("test/wiiu.zip");
-        let builder = ModBuilder::new(source, dest).unwrap();
-        builder.build().unwrap();
+        let rom_reader: ResourceReader =
+            yaml_peg::serde::from_str(&std::fs::read_to_string("../.vscode/dump.yml").unwrap())
+                .unwrap()
+                .swap_remove(0);
+        let builder = ModPacker::new(source, dest, vec![Arc::new(rom_reader)]).unwrap();
+        builder.pack().unwrap();
     }
 }

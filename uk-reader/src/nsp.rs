@@ -44,7 +44,7 @@ impl Nsp {
     }
 }
 
-impl super::ROMReader for Nsp {
+impl super::ResourceLoader for Nsp {
     fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
         todo!()
     }

@@ -50,7 +50,7 @@ impl Unpacked {
     }
 }
 
-impl super::ROMReader for Unpacked {
+impl super::ResourceLoader for Unpacked {
     #[allow(irrefutable_let_patterns)]
     fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
         let dest_file = self.update_dir.join(name.as_ref());
