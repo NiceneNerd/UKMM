@@ -12,3 +12,6 @@ members = [
     "uk-mod",
     "uk-reader",
 ]
+
+[profile.dev]
+opt-level = 2

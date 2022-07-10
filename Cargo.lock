@@ -1466,6 +1466,7 @@ dependencies = [
  "join_str",
  "jwalk",
  "minicbor-ser",
+ "parking_lot",
  "path-slash",
  "rayon",
  "roead",

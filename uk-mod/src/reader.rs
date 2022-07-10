@@ -1,10 +1,12 @@
 use crate::{Manifest, Meta};
 use anyhow::{Context, Result};
 use fs_err::File;
+use join_str::jstr;
+use parking_lot::Mutex;
 use std::{
     io::{BufReader, Read},
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 use uk_content::canonicalize;
 use uk_reader::ResourceLoader;
@@ -18,6 +20,44 @@ pub struct ModReader {
     meta: Meta,
     manifest: Manifest,
     zip: ZipReader,
+}
+
+impl ResourceLoader for ModReader {
+    fn file_exists(&self, name: impl AsRef<Path>) -> bool {
+        let name = name.as_ref().to_string_lossy();
+        self.manifest.content_files.contains(name.as_ref())
+            || self.manifest.aoc_files.contains(name.as_ref())
+    }
+
+    fn get_file_data(&self, name: impl AsRef<Path>) -> uk_reader::Result<Vec<u8>> {
+        let canon = canonicalize(name);
+        Ok(self
+            .zip
+            .lock()
+            .by_name(&canon)
+            .map_err(anyhow::Error::from)?
+            .bytes()
+            .map(|b| b.map_err(anyhow::Error::from))
+            .into_iter()
+            .collect::<Result<_>>()?)
+    }
+
+    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> uk_reader::Result<Vec<u8>> {
+        let canon = canonicalize(jstr!("Aoc/0010/{name.as_ref().to_str().unwrap()}"));
+        Ok(self
+            .zip
+            .lock()
+            .by_name(&canon)
+            .map_err(anyhow::Error::from)?
+            .bytes()
+            .map(|b| b.map_err(anyhow::Error::from))
+            .into_iter()
+            .collect::<Result<_>>()?)
+    }
+
+    fn host_path(&self) -> &Path {
+        &self.path
+    }
 }
 
 impl ModReader {

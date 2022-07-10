@@ -1,50 +1,65 @@
 use crate::{ROMError, Result};
+use fs_err as fs;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Unpacked {
     host_path: PathBuf,
-    content_dir: PathBuf,
-    update_dir: PathBuf,
+    content_dir: Option<PathBuf>,
+    update_dir: Option<PathBuf>,
     aoc_dir: Option<PathBuf>,
 }
 
 impl Unpacked {
     pub(crate) fn new(
-        content_dir: impl AsRef<Path>,
-        update_dir: impl AsRef<Path>,
+        content_dir: Option<impl AsRef<Path>>,
+        update_dir: Option<impl AsRef<Path>>,
         aoc_dir: Option<impl AsRef<Path>>,
     ) -> Result<Self> {
-        let content_dir = content_dir.as_ref();
-        let update_dir = update_dir.as_ref();
-        if !content_dir
-            .join("Map/MainField/A-1/A-1.00_Clustering.sblwp")
-            .exists()
+        let content_dir = content_dir.as_ref().map(|c| c.as_ref());
+        let update_dir = update_dir.as_ref().map(|d| d.as_ref());
+        let aoc_dir = aoc_dir.as_ref().map(|a| a.as_ref());
+        if let Some(content_dir) = content_dir.as_ref()
+            && !content_dir
+                .join("Map/MainField/A-1/A-1.00_Clustering.sblwp")
+                .exists()
         {
             Err(ROMError::MissingDumpDir(
                 "base game",
                 content_dir.to_path_buf(),
             ))
-        } else if !update_dir
-            .join("Actor/Pack/Enemy_Lynel_Dark.sbactorpack")
-            .exists()
+        } else if let Some(update_dir) = update_dir.as_ref()
+            && !update_dir
+                .join("Actor/Pack/Enemy_Lynel_Dark.sbactorpack")
+                .exists()
         {
-            Err(ROMError::MissingDumpDir("update", update_dir.to_path_buf()))
+            Err(ROMError::MissingDumpDir(
+                "update",
+                update_dir.to_path_buf(),
+            ))
         } else if let Some(aoc_dir) =
-            aoc_dir.as_ref() && !aoc_dir.as_ref().join("Pack/AocMainField.pack").exists()
+            aoc_dir.as_ref() && !aoc_dir.join("Pack/AocMainField.pack").exists()
         {
             Err(ROMError::MissingDumpDir(
                 "DLC",
-                aoc_dir.as_ref().to_path_buf(),
+                aoc_dir.to_path_buf(),
             ))
+        } else if content_dir.is_none() && update_dir.is_none() && aoc_dir.is_none() {
+            Err(ROMError::OtherMessage("No base game, update, or DLC files found"))
         } else {
             Ok(Self {
-                host_path: common_path::common_path_all([content_dir, update_dir].into_iter())
-                    .unwrap_or_else(|| content_dir.to_path_buf()),
-                content_dir: content_dir.to_path_buf(),
-                update_dir: update_dir.to_path_buf(),
-                aoc_dir: aoc_dir.map(|d| d.as_ref().to_path_buf()),
+                host_path: common_path::common_path_all(
+                    content_dir.as_ref()
+                        .iter()
+                        .chain(update_dir.as_ref().iter())
+                        .chain(aoc_dir.as_ref().iter())
+                        .map(|d| **d),
+                )
+                .or_else(|| content_dir.or(update_dir).or(aoc_dir).map(|d| d.to_path_buf())).unwrap(),
+                content_dir: content_dir.map(|content| content.to_path_buf()),
+                update_dir: update_dir.map(|update| update.to_path_buf()),
+                aoc_dir: aoc_dir.map(|aoc| aoc.to_path_buf()),
             })
         }
     }
@@ -53,17 +68,19 @@ impl Unpacked {
 impl super::ResourceLoader for Unpacked {
     #[allow(irrefutable_let_patterns)]
     fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
-        let dest_file = self.update_dir.join(name.as_ref());
-        if dest_file.exists() {
-            Ok(std::fs::read(dest_file)?)
-        } else if let dest_file = self.content_dir.join(name.as_ref()) && dest_file.exists() {
-            Ok(std::fs::read(dest_file)?)
-        } else {
-            Err(ROMError::FileNotFound(
-                name.as_ref().to_string_lossy().to_string(),
-                self.host_path.to_owned(),
-            ))
-        }
+        self.update_dir
+            .iter()
+            .chain(self.content_dir.iter())
+            .chain(self.aoc_dir.iter())
+            .map(|dir| dir.join(name.as_ref()))
+            .find_map(|path| path.exists().then(|| fs::read(path).ok()))
+            .flatten()
+            .ok_or_else(|| {
+                ROMError::FileNotFound(
+                    name.as_ref().to_string_lossy().to_string(),
+                    self.host_path.to_owned(),
+                )
+            })
     }
 
     fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
@@ -85,13 +102,12 @@ impl super::ResourceLoader for Unpacked {
 
     fn file_exists(&self, name: impl AsRef<Path>) -> bool {
         let name = name.as_ref();
-        self.update_dir.join(name).exists()
-            || self.content_dir.join(name).exists()
-            || self
-                .aoc_dir
-                .as_ref()
-                .map(|dir| dir.join(name).exists())
-                .unwrap_or(false)
+        self.update_dir
+            .iter()
+            .chain(self.content_dir.iter())
+            .chain(self.aoc_dir.iter())
+            .map(|dir| dir.join(name))
+            .any(|path| path.exists())
     }
 
     fn host_path(&self) -> &std::path::Path {

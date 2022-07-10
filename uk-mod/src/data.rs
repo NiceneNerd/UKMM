@@ -1,13 +1,14 @@
 use anyhow::{bail, Context, Result};
 use join_str::jstr;
 use jwalk::WalkDir;
+use parking_lot::RwLock;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::BufWriter,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock},
+    sync::Arc,
 };
 use uk_content::{canonicalize, platform_prefixes, prelude::*, resource::ResourceData};
 

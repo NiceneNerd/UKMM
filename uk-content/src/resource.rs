@@ -1,7 +1,5 @@
-use crate::hashes::get_hash_table;
-use crate::message::MessagePack;
 use crate::prelude::*;
-use crate::{
+pub use crate::{
     actor::{
         info::ActorInfo,
         params::{
@@ -22,6 +20,7 @@ use crate::{
     eco::{areadata::AreaData, level::LevelSensor, status::StatusEffectList},
     event::{info::EventInfo, residents::ResidentEvents},
     map::{lazy::LazyTraverseList, mainfield::location::Location, static_::Static, unit::MapUnit},
+    message::MessagePack,
     quest::product::QuestProduct,
     sound::barslist::BarslistInfo,
     tips::Tips,
@@ -88,6 +87,63 @@ pub enum MergeableResource {
     WorldInfo(Box<WorldInfo>),
     GenericAamp(Box<ParameterIO>),
     GenericByml(Box<Byml>),
+}
+
+impl std::fmt::Display for MergeableResource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Actor(_) => "Actor",
+            Self::ActorInfo(_) => "ActorInfo",
+            Self::ActorLink(_) => "ActorLink",
+            Self::AIProgram(_) => "AIProgram",
+            Self::AISchedule(_) => "AISchedule",
+            Self::AnimationInfo(_) => "AnimationInfo",
+            Self::AreaData(_) => "AreaData",
+            Self::AS(_) => "AS",
+            Self::ASList(_) => "ASList",
+            Self::AttClient(_) => "AttClient",
+            Self::AttClientList(_) => "AttClientList",
+            Self::Awareness(_) => "Awareness",
+            Self::BarslistInfo(_) => "BarslistInfo",
+            Self::BoneControl(_) => "BoneControl",
+            Self::Chemical(_) => "Chemical",
+            Self::ChemicalRes(_) => "ChemicalRes",
+            Self::CookData(_) => "CookData",
+            Self::DamageParam(_) => "DamageParam",
+            Self::Demo(_) => "Demo",
+            Self::DropTable(_) => "DropTable",
+            Self::EventInfo(_) => "EventInfo",
+            Self::GameDataPack(_) => "GameDataPack",
+            Self::GeneralParamList(_) => "GeneralParamList",
+            Self::LazyTraverseList(_) => "LazyTraverseList",
+            Self::LevelSensor(_) => "LevelSensor",
+            Self::LifeCondition(_) => "LifeCondition",
+            Self::Location(_) => "Location",
+            Self::Lod(_) => "Lod",
+            Self::MapUnit(_) => "MapUnit",
+            Self::MessagePack(_) => "MessagePack",
+            Self::ModelList(_) => "ModelList",
+            Self::Physics(_) => "Physics",
+            Self::QuestProduct(_) => "QuestProduct",
+            Self::RagdollBlendWeight(_) => "RagdollBlendWeight",
+            Self::RagdollConfig(_) => "RagdollConfig",
+            Self::RagdollConfigList(_) => "RagdollConfigList",
+            Self::Recipe(_) => "Recipe",
+            Self::ResidentActors(_) => "ResidentActors",
+            Self::ResidentEvents(_) => "ResidentEvents",
+            Self::SaveDataPack(_) => "SaveDataPack",
+            Self::ShopData(_) => "ShopData",
+            Self::ShopGameDataInfo(_) => "ShopGameDataInfo",
+            Self::Static(_) => "Static",
+            Self::StatusEffectList(_) => "StatusEffectList",
+            Self::Tips(_) => "Tips",
+            Self::UMii(_) => "UMii",
+            Self::WorldInfo(_) => "WorldInfo",
+            Self::GenericAamp(_) => "GenericAamp",
+            Self::GenericByml(_) => "GenericByml",
+        }
+        .fmt(f)
+    }
 }
 
 macro_rules! impl_from_res {
@@ -258,8 +314,10 @@ impl Mergeable for MergeableResource {
             (Self::Tips(a), Self::Tips(b)) => Self::Tips(Box::new(a.diff(b))),
             (Self::UMii(a), Self::UMii(b)) => Self::UMii(Box::new(a.diff(b))),
             (Self::WorldInfo(a), Self::WorldInfo(b)) => Self::WorldInfo(Box::new(a.diff(b))),
+            (Self::GenericByml(a), Self::GenericByml(b)) => Self::GenericByml(Box::new(a.diff(b))),
+            (Self::GenericAamp(a), Self::GenericAamp(b)) => Self::GenericAamp(Box::new(a.diff(b))),
             _ => panic!(
-                "Tried to diff incompatible resources: {:?} and {:?}",
+                "Tried to diff incompatible resources: {} and {}",
                 &self, &other
             ),
         }
@@ -346,8 +404,10 @@ impl Mergeable for MergeableResource {
             (Self::Tips(a), Self::Tips(b)) => Self::Tips(Box::new(a.merge(b))),
             (Self::UMii(a), Self::UMii(b)) => Self::UMii(Box::new(a.merge(b))),
             (Self::WorldInfo(a), Self::WorldInfo(b)) => Self::WorldInfo(Box::new(a.merge(b))),
+            (Self::GenericByml(a), Self::GenericByml(b)) => Self::GenericByml(Box::new(a.merge(b))),
+            (Self::GenericAamp(a), Self::GenericAamp(b)) => Self::GenericAamp(Box::new(a.merge(b))),
             _ => panic!(
-                "Tried to merge incompatible resources: {:?} and {:?}",
+                "Tried to merge incompatible resources: {} and {}",
                 &self, &diff
             ),
         }
@@ -440,28 +500,19 @@ impl Mergeable for SarcMap {
 }
 
 impl SarcMap {
-    pub fn from_binary<R: ResourceRegister>(data: impl AsRef<[u8]>, resources: &R) -> Result<Self> {
+    pub fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
         let sarc = Sarc::read(data.as_ref())?;
-        let table = get_hash_table(sarc.endian().into());
-        Ok(Self(
+        let sarc_map = Self(
             sarc.files()
                 .map(|file| -> Result<(String, String)> {
-                    let name = file.name().context("SARC file missing name")?.to_owned();
-                    let canon = name.replace(".s", ".");
-                    if !resources.contains_resource(&canon) {
-                        let data = roead::yaz0::decompress_if(file.data())?;
-                        if table.is_modified(&canon, &*data) {
-                            let resource = ResourceData::from_binary(&name, data, resources)
-                                .with_context(|| {
-                                    jstr!("Error parsing resource in SARC: {&name}")
-                                })?;
-                            resources.add_resource(&canon, resource)?;
-                        }
-                    }
-                    Ok((name, canon))
+                    Ok((
+                        file.name().context("SARC file missing name")?.to_owned(),
+                        file.name_unchecked().replace(".s", "."),
+                    ))
                 })
                 .collect::<Result<_>>()?,
-        ))
+        );
+        Ok(sarc_map)
     }
 
     pub fn to_binary(
@@ -504,8 +555,8 @@ impl From<roead::Bytes> for ResourceData {
     }
 }
 
-const EXCLUDE_EXTS: &[&str] = &["beventpack", "blarc", "bfarc", "genvb", "sarc"];
-const EXCLUDE_NAMES: &[&str] = &[
+pub const EXCLUDE_EXTS: &[&str] = &["beventpack", "blarc", "bfarc", "genvb", "sarc"];
+pub const EXCLUDE_NAMES: &[&str] = &[
     "tera_resource.Nin_NX_NVN",
     "tera_resource.Cafe_Cafe_GX2",
     "Dungeon",
@@ -513,12 +564,29 @@ const EXCLUDE_NAMES: &[&str] = &[
     "AocMainField",
 ];
 
+#[inline]
+pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool {
+    let name = name.as_ref();
+    let data = data.as_ref();
+    data.len() >= 0x40
+        && &data[..4] == b"SARC"
+        && !EXCLUDE_EXTS.contains(
+            &name
+                .extension()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .as_ref(),
+        )
+        && !EXCLUDE_NAMES.iter().any(|n| {
+            name.file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .starts_with(n)
+        })
+}
+
 impl ResourceData {
-    pub fn from_binary<R: ResourceRegister>(
-        name: impl AsRef<Path>,
-        data: impl Into<Binary>,
-        resources: &R,
-    ) -> Result<Self> {
+    pub fn from_binary(name: impl AsRef<Path>, data: impl Into<Binary>) -> Result<Self> {
         let name = name.as_ref();
         let stem = name.file_stem().unwrap().to_str().unwrap();
         let ext = name
@@ -733,7 +801,7 @@ impl ResourceData {
             && &data[0..4] == b"SARC"
             && !EXCLUDE_EXTS.contains(&ext.strip_prefix('s').unwrap_or(ext))
         {
-            Ok(Self::Sarc(SarcMap::from_binary(data, resources)?))
+            Ok(Self::Sarc(SarcMap::from_binary(data)?))
         } else {
             Ok(Self::Binary(data))
         }

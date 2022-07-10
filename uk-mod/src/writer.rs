@@ -4,51 +4,37 @@ use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
 use minicbor_ser::cbor::encode::Write;
+use parking_lot::{Mutex, RwLock};
 use path_slash::PathExt;
 use rayon::prelude::*;
-use roead::yaz0::decompress_if;
+use roead::{sarc::Sarc, yaz0::decompress_if};
 use std::{
     collections::BTreeSet,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, RwLock},
+    sync::Arc,
 };
 use uk_content::{
     canonicalize,
-    hashes::get_hash_table,
+    hashes::{get_hash_table, ROMHashTable},
     platform_prefixes,
-    prelude::Endian,
-    resource::{ResourceData, ResourceRegister},
+    prelude::{Endian, Mergeable},
+    resource::{is_mergeable_sarc, ResourceData},
 };
 use zip::{write::FileOptions, ZipWriter as ZipW};
 
 pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
-struct ZipManager(ZipWriter, Arc<RwLock<BTreeSet<String>>>);
 
-impl ResourceRegister for ZipManager {
-    fn add_resource(&self, canon: &str, resource: ResourceData) -> Result<()> {
-        let data = minicbor_ser::to_vec(&resource)
-            .with_context(|| jstr!("Failed to serialize {canon}"))?;
-        let mut zip = self.0.lock().unwrap();
-        zip.start_file(
-            canon,
-            FileOptions::default().compression_method(zip::CompressionMethod::Stored),
-        )?;
-        zip.write_all(&zstd::encode_all(&*data, 3)?)?;
-        Ok(())
-    }
-
-    fn contains_resource(&self, canon: &str) -> bool {
-        self.1.read().unwrap().contains(canon)
-    }
-}
 pub struct ModPacker {
     source_dir: PathBuf,
     content_dir: Option<PathBuf>,
     aoc_dir: Option<PathBuf>,
+    meta: Meta,
     zip: ZipWriter,
     endian: Endian,
     built_resources: Arc<RwLock<BTreeSet<String>>>,
     masters: Vec<Arc<uk_reader::ResourceReader>>,
+    hash_table: &'static ROMHashTable,
+    _zip_opts: FileOptions,
     _out_file: PathBuf,
 }
 
@@ -73,6 +59,7 @@ impl ModPacker {
     pub fn new(
         source: impl AsRef<Path>,
         dest: impl AsRef<Path>,
+        meta: Meta,
         masters: Vec<Arc<uk_reader::ResourceReader>>,
     ) -> Result<Self> {
         let source_dir = source.as_ref().to_path_buf();
@@ -136,14 +123,16 @@ impl ModPacker {
             endian: endian.unwrap(),
             zip,
             masters,
+            meta,
             built_resources: Arc::new(RwLock::new(BTreeSet::new())),
+            hash_table: get_hash_table(endian.unwrap()),
+            _zip_opts: FileOptions::default().compression_method(zip::CompressionMethod::Stored),
             _out_file: dest_file,
         })
     }
 
     fn collect_resources(&self, dir: impl AsRef<Path>) -> Result<BTreeSet<String>> {
         let dir = dir.as_ref();
-        let opts = FileOptions::default().compression_method(zip::CompressionMethod::Stored);
         let files = WalkDir::new(dir)
             .into_iter()
             .filter_map(|f| {
@@ -151,11 +140,9 @@ impl ModPacker {
                     .and_then(|f| f.file_type().is_file().then(|| f.path()))
             })
             .collect::<Vec<PathBuf>>();
-        let table = get_hash_table(self.endian);
         Ok(files
             .into_par_iter()
             .map(|path| -> Result<Option<String>> {
-                let manager = ZipManager(self.zip.clone(), self.built_resources.clone());
                 let name = path
                     .strip_prefix(&self.source_dir)
                     .unwrap()
@@ -165,18 +152,17 @@ impl ModPacker {
                 let file_data = fs::read(&path)?;
                 let file_data = decompress_if(&file_data)
                     .with_context(|| jstr!("Failed to decompress {&name}"))?;
-                if !table.is_modified(&canon, &*file_data) {
+
+                if !self.hash_table.is_modified(&canon, &*file_data) {
                     return Ok(None);
                 }
-                let mut resource = ResourceData::from_binary(&name, file_data, &manager)
-                    .with_context(|| jstr!("Error parsing resource at {&name}"))?;
-                // for master in self.masters.iter().find_map(|m| )
-                let data = minicbor_ser::to_vec(&resource)
-                    .with_context(|| jstr!("Failed to serialize {&name}"))?;
-                let mut zip = self.zip.lock().unwrap();
-                zip.start_file(&canon, opts)?;
-                zip.write_all(&zstd::encode_all(&*data, 3)?)?;
-                self.built_resources.write().unwrap().insert(canon);
+
+                let resource = ResourceData::from_binary(&name, &*file_data)?;
+                self.process_resource(name, canon.clone(), resource)?;
+                if is_mergeable_sarc(&canon, file_data.as_ref()) {
+                    self.process_sarc(Sarc::read(file_data.as_ref())?)?;
+                }
+
                 Ok(Some(
                     path.strip_prefix(dir).unwrap().to_slash_lossy().to_string(),
                 ))
@@ -185,6 +171,70 @@ impl ModPacker {
             .into_par_iter()
             .filter_map(|x| x)
             .collect())
+    }
+
+    fn process_resource(
+        &self,
+        name: String,
+        canon: String,
+        mut resource: ResourceData,
+    ) -> Result<()> {
+        let prefixes = platform_prefixes(self.endian);
+        let ref_name = name
+            .trim_start_matches(prefixes.0)
+            .trim_start_matches(prefixes.1)
+            .trim_start_matches('/');
+        let reference: Option<ResourceData> = self
+            .masters
+            .iter()
+            .filter_map(|master| {
+                master
+                    .get_resource(&canon)
+                    .or_else(|_| master.get_file(ref_name))
+                    .ok()
+            })
+            .fold(None, |acc, res| match (acc, res.as_ref()) {
+                (Some(ResourceData::Mergeable(acc)), ResourceData::Mergeable(next)) => {
+                    Some(ResourceData::Mergeable(acc.merge(next)))
+                }
+                _ => Some((*res).clone()),
+            });
+        if let Some(ResourceData::Mergeable(ref_res)) =
+            reference && let ResourceData::Mergeable(res) = &resource
+        {
+            resource = ResourceData::Mergeable(ref_res.diff(res));
+        }
+
+        let data = minicbor_ser::to_vec(&resource)
+            .with_context(|| jstr!("Failed to serialize {&name}"))?;
+        let mut zip = self.zip.lock();
+        zip.start_file(&canon, self._zip_opts)?;
+        zip.write_all(&zstd::encode_all(&*data, 3)?)?;
+        self.built_resources.write().insert(canon);
+
+        Ok(())
+    }
+
+    fn process_sarc(&self, sarc: Sarc) -> Result<()> {
+        for file in sarc.files() {
+            let name = file
+                .name()
+                .with_context(|| jstr!("File in SARC missing name"))?;
+            let canon = canonicalize(&name);
+            let file_data = decompress_if(file.data())
+                .with_context(|| jstr!("Failed to decompress {&name}"))?;
+
+            if !self.hash_table.is_modified(&canon, &*file_data) {
+                continue;
+            }
+
+            let resource = ResourceData::from_binary(&name, &*file_data)?;
+            self.process_resource(name.to_owned(), canon.clone(), resource)?;
+            if is_mergeable_sarc(&canon, file_data.as_ref()) {
+                self.process_sarc(Sarc::read(file_data.as_ref())?)?;
+            }
+        }
+        Ok(())
     }
 
     pub fn pack(self) -> Result<()> {
@@ -203,16 +253,18 @@ impl ModPacker {
                 .unwrap_or_default(),
         })?;
         {
-            let opts = FileOptions::default().compression_method(zip::CompressionMethod::Stored);
-            let mut zip = self.zip.lock().unwrap();
-            zip.start_file("manifest.yml", opts)?;
+            let mut zip = self.zip.lock();
+            zip.start_file("manifest.yml", self._zip_opts)?;
             zip.write_all(manifest.as_bytes())?;
-            let meta = toml::to_string_pretty(&Meta::default())?;
-            zip.start_file("meta.toml", opts)?;
-            zip.write_all(meta.as_bytes())?;
+            let mut meta = self.meta;
+            meta.id = Some(xxhash_rust::xxh3::xxh3_64(
+                jstr!("{&meta.name} === {&meta.version.to_string()}").as_bytes(),
+            ));
+            zip.start_file("meta.toml", self._zip_opts)?;
+            zip.write_all(toml::to_string_pretty(&meta)?.as_bytes())?;
         }
         match Arc::try_unwrap(self.zip) {
-            Ok(zip) => zip.into_inner().unwrap().finish()?,
+            Ok(zip) => zip.into_inner().finish()?,
             Err(_) => panic!("Uh oh"),
         };
         Ok(())
@@ -232,7 +284,22 @@ mod tests {
             yaml_peg::serde::from_str(&std::fs::read_to_string("../.vscode/dump.yml").unwrap())
                 .unwrap()
                 .swap_remove(0);
-        let builder = ModPacker::new(source, dest, vec![Arc::new(rom_reader)]).unwrap();
+        let builder = ModPacker::new(
+            source,
+            dest,
+            Meta {
+                platform: Endian::Big,
+                name: "Test Mod".to_string(),
+                version: 0.1,
+                author: "Lord Caleb".to_string(),
+                description: "A test mod".to_string(),
+                id: None,
+                masters: vec![],
+                url: None,
+            },
+            vec![Arc::new(rom_reader)],
+        )
+        .unwrap();
         builder.pack().unwrap();
     }
 }

@@ -4,16 +4,16 @@ mod unpacked;
 mod zarchive;
 
 use self::{unpacked::Unpacked, zarchive::ZArchive};
+use anyhow::Context;
 use enum_dispatch::enum_dispatch;
 use moka::sync::Cache;
+use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use std::{
-    cell::RefCell,
-    collections::BTreeMap,
     path::{Path, PathBuf},
     sync::Arc,
 };
-use uk_content::{canonicalize, resource::ResourceData};
+use uk_content::{canonicalize, platform_prefixes, prelude::Endian, resource::*};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ROMError {
@@ -31,6 +31,8 @@ pub enum ROMError {
     UKError(#[from] uk_content::UKError),
     #[error("{0}")]
     OtherMessage(&'static str),
+    #[error(transparent)]
+    Any(#[from] anyhow::Error),
 }
 
 impl From<ROMError> for uk_content::UKError {
@@ -40,6 +42,7 @@ impl From<ROMError> for uk_content::UKError {
 }
 
 type ResourceCache = Cache<String, Arc<ResourceData>>;
+const CACHE_SIZE: u64 = 10_000;
 pub type Result<T> = std::result::Result<T, ROMError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -65,7 +68,7 @@ enum ResourceProvider {
 }
 
 fn construct_cache() -> ResourceCache {
-    ResourceCache::new(10_000)
+    ResourceCache::new(CACHE_SIZE)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -89,19 +92,49 @@ impl ResourceReader {
     pub fn from_zarchive(archive_path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
             source: ResourceProvider::ZArchive(ZArchive::new(archive_path)?),
-            cache: ResourceCache::new(10_000),
+            cache: ResourceCache::new(CACHE_SIZE),
             bin_type: BinType::Nintendo,
         })
     }
 
     pub fn from_unpacked_dirs(
-        content_dir: impl AsRef<Path>,
-        update_dir: impl AsRef<Path>,
+        content_dir: Option<impl AsRef<Path>>,
+        update_dir: Option<impl AsRef<Path>>,
         aoc_dir: Option<impl AsRef<Path>>,
     ) -> Result<Self> {
         Ok(Self {
             source: ResourceProvider::Unpacked(Unpacked::new(content_dir, update_dir, aoc_dir)?),
-            cache: ResourceCache::new(10_000),
+            cache: ResourceCache::new(CACHE_SIZE),
+            bin_type: BinType::Nintendo,
+        })
+    }
+
+    #[allow(irrefutable_let_patterns)]
+    pub fn from_unpacked_mod(mod_dir: impl AsRef<Path>) -> Result<Self> {
+        let mod_dir = mod_dir.as_ref();
+        let (content_u, aoc_u) = platform_prefixes(Endian::Big);
+        let (content_nx, aoc_nx) = platform_prefixes(Endian::Little);
+        let content_dir = if let content_u = mod_dir.join(content_u) && content_u.exists() {
+            Some(content_u)
+        } else if let content_nx = mod_dir.join(content_nx) && content_nx.exists() {
+            Some(content_nx)
+        } else {
+            None
+        };
+        let aoc_dir = if let aoc_u = mod_dir.join(aoc_u) && aoc_u.exists() {
+            Some(aoc_u)
+        } else if let aoc_nx = mod_dir.join(aoc_nx) && aoc_nx.exists() {
+            Some(aoc_nx)
+        } else {
+            None
+        };
+        Ok(Self {
+            source: ResourceProvider::Unpacked(Unpacked::new(
+                content_dir,
+                None::<PathBuf>,
+                aoc_dir,
+            )?),
+            cache: ResourceCache::new(500),
             bin_type: BinType::Nintendo,
         })
     }
@@ -117,12 +150,16 @@ impl ResourceReader {
             .ok_or_else(|| ROMError::FileNotFound(name, self.source.host_path().to_path_buf()))
     }
 
-    pub fn get_file<T: Into<ResourceData> + TryFrom<ResourceData>>(
+    pub fn get_file(&self, path: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
+        let canon = canonicalize(path.as_ref());
+        Ok(self.get_or_add_resource(path, canon)?)
+    }
+
+    fn get_or_add_resource(
         &self,
         path: impl AsRef<Path>,
-    ) -> Result<Arc<ResourceData>> {
-        let canon = canonicalize(path.as_ref());
-        let processed = RefCell::new(BTreeMap::new());
+        canon: String,
+    ) -> uk_content::Result<Arc<ResourceData>> {
         let resource =
             self.cache
                 .try_get_with(canon.clone(), || -> uk_content::Result<_> {
@@ -130,7 +167,11 @@ impl ResourceReader {
                     let resource = match self.bin_type {
                         BinType::Nintendo => {
                             let data = roead::yaz0::decompress_if(data.as_slice())?;
-                            ResourceData::from_binary(&canon, data, &processed)?
+                            let res = ResourceData::from_binary(canon.clone(), data.as_ref())?;
+                            if is_mergeable_sarc(&canon, data.as_ref()) {
+                                self.process_sarc(Sarc::read(data.as_ref())?)?;
+                            }
+                            res
                         }
                         BinType::MiniCbor => minicbor_ser::from_slice(data.as_slice())
                             .map_err(anyhow::Error::from)?,
@@ -143,9 +184,23 @@ impl ResourceReader {
                         self.source.host_path().to_path_buf(),
                     )
                 })?;
-        processed.take().into_iter().for_each(|(k, v)| {
-            self.cache.insert(k, Arc::new(v));
-        });
         Ok(resource)
+    }
+
+    fn process_sarc(&self, sarc: roead::sarc::Sarc) -> uk_content::Result<()> {
+        for file in sarc.files() {
+            let name = file.name().context("SARC file missing name")?.to_string();
+            let canon = canonicalize(&name);
+            if !self.cache.contains_key(&canon) {
+                let data = file.data();
+                let data = roead::yaz0::decompress_if(data)?;
+                let resource = ResourceData::from_binary(&name, data.as_ref())?;
+                if is_mergeable_sarc(&canon, data.as_ref()) {
+                    self.process_sarc(Sarc::read(data.as_ref())?)?;
+                }
+                self.cache.insert(canon, Arc::new(resource));
+            }
+        }
+        Ok(())
     }
 }
