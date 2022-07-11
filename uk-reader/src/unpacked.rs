@@ -52,21 +52,24 @@ impl Unpacked {
             }
         }
         Ok(Self {
-            host_path: common_path::common_path_all(
-                content_dir
-                    .as_ref()
-                    .iter()
-                    .chain(update_dir.as_ref().iter())
-                    .chain(aoc_dir.as_ref().iter())
-                    .map(|d| **d),
-            )
-            .or_else(|| {
-                content_dir
-                    .or(update_dir)
-                    .or(aoc_dir)
-                    .map(|d| d.to_path_buf())
-            })
-            .unwrap(),
+            host_path: unsafe {
+                common_path::common_path_all(
+                    content_dir
+                        .as_ref()
+                        .iter()
+                        .chain(update_dir.as_ref().iter())
+                        .chain(aoc_dir.as_ref().iter())
+                        .map(|d| **d),
+                )
+                .or_else(|| {
+                    content_dir
+                        .or(update_dir)
+                        .or(aoc_dir)
+                        .map(|d| d.to_path_buf())
+                })
+                // We know this is sound because we provided an infallible `or_else()`.
+                .unwrap_unchecked()
+            },
             content_dir: content_dir.map(|content| content.to_path_buf()),
             update_dir: update_dir.map(|update| update.to_path_buf()),
             aoc_dir: aoc_dir.map(|aoc| aoc.to_path_buf()),

@@ -1,5 +1,4 @@
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
-use indexmap::IndexSet;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -284,25 +283,7 @@ impl Mergeable for LevelSensor {
             enemy: self.enemy.deep_diff(&other.enemy),
             flag: self.flag.diff(&other.flag),
             setting: self.setting.diff(&other.setting),
-            weapon: other
-                .weapon
-                .iter()
-                .filter_map(|(key, diff_series)| {
-                    if let Some(self_series) = self.weapon.get(key) {
-                        if self_series != diff_series {
-                            Some((key.clone(), self_series.diff(diff_series), false))
-                        } else {
-                            None
-                        }
-                    } else {
-                        Some((key.clone(), diff_series.clone(), false))
-                    }
-                })
-                .chain(self.weapon.iter().filter_map(|(key, _)| {
-                    (!other.weapon.contains_key(key))
-                        .then(|| (key.clone(), Default::default(), true))
-                }))
-                .collect(),
+            weapon: self.weapon.deep_diff(&other.weapon),
         }
     }
 
@@ -311,28 +292,7 @@ impl Mergeable for LevelSensor {
             enemy: self.enemy.deep_merge(&diff.enemy),
             flag: self.flag.merge(&diff.flag),
             setting: self.setting.merge(&diff.setting),
-            weapon: {
-                let key: IndexSet<_> = self
-                    .weapon
-                    .keys()
-                    .chain(diff.weapon.keys())
-                    .cloned()
-                    .collect();
-                key.into_iter()
-                    .map(|key| {
-                        let (self_series, diff_series) =
-                            (self.weapon.get(&key), diff.weapon.get(&key));
-                        if let Some(self_series) = self_series
-                        && let Some(diff_series) = diff_series
-                    {
-                        (key, self_series.merge(diff_series))
-                    } else {
-                        (key, diff_series.or(self_series).cloned().unwrap())
-                    }
-                    })
-                    .collect::<DeleteMap<_, _>>()
-            }
-            .and_delete(),
+            weapon: self.weapon.deep_merge(&diff.weapon),
         }
     }
 }

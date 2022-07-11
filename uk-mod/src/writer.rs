@@ -101,7 +101,8 @@ impl ModPacker {
                     .unwrap()
                     .to_slash_lossy()
                     .to_string();
-                let canon = canonicalize(&path.strip_prefix(root).unwrap());
+                // We know this is sound because we got `path` by iterating the contents of `root`.
+                let canon = canonicalize(unsafe { &path.strip_prefix(root).unwrap_unchecked() });
                 let file_data = fs::read(&path)?;
                 let file_data = decompress_if(&file_data)
                     .with_context(|| jstr!("Failed to decompress {&name}"))?;

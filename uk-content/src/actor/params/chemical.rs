@@ -32,25 +32,22 @@ impl TryFrom<ParameterIO> for Chemical {
 
 impl TryFrom<&ParameterIO> for Chemical {
     type Error = UKError;
-    fn try_from(value: &ParameterIO) -> Result<Self> {
-        let shape_num = value
+    fn try_from(pio: &ParameterIO) -> Result<Self> {
+        let chem_root = pio
             .list("chemical_root")
-            .ok_or(UKError::MissingAampKey("Chemical missing chemical_root"))?
+            .ok_or(UKError::MissingAampKey("Chemical missing chemical_root"))?;
+        let shape_num = chem_root
             .object("chemical_header")
             .ok_or(UKError::MissingAampKey("Chemical missing chemical_header"))?
             .param("res_shape_num")
             .ok_or(UKError::MissingAampKey("Chemical missing shape count"))?
             .as_u32()? as usize;
-        let chemical_body = value
-            .list("chemical_root")
-            .unwrap()
+        let chemical_body = chem_root
             .list("chemical_body")
             .ok_or(UKError::MissingAampKey("Chemical missing chemical_body"))?;
         Ok(Self {
             unknown: Some(
-                value
-                    .list("chemical_root")
-                    .ok_or(UKError::MissingAampKey("Chemical missing chemical_root"))?
+                chem_root
                     .object("chemical_header")
                     .ok_or(UKError::MissingAampKey("Chemical missing chemical_header"))?
                     .0

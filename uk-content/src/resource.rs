@@ -586,12 +586,16 @@ pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool
 impl ResourceData {
     pub fn from_binary(name: impl AsRef<Path>, data: impl Into<Binary>) -> Result<Self> {
         let name = name.as_ref();
-        let stem = name.file_stem().unwrap_or_default().to_str().unwrap();
+        let stem = name
+            .file_stem()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default();
         let ext = name
             .extension()
             .with_context(|| jstr!("Missing extension for resource: {&name.to_str().unwrap()}"))?
             .to_str()
-            .unwrap();
+            .unwrap_or_default();
         let data: Binary = data.into();
         if stem == "Dummy"
             || data.len() < 0x10

@@ -1,11 +1,6 @@
-use crate::{
-    prelude::*,
-    util::{self, SortedDeleteMap},
-    Result, UKError,
-};
+use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct AreaData(pub SortedDeleteMap<usize, Byml>);
@@ -41,54 +36,11 @@ impl From<AreaData> for Byml {
 
 impl Mergeable for AreaData {
     fn diff(&self, other: &Self) -> Self {
-        Self(
-            other
-                .0
-                .iter()
-                .filter_map(|(num, diff_area)| {
-                    if let Some(self_area) = self.0.get(num) {
-                        if self_area != diff_area {
-                            Some((*num, util::diff_byml_shallow(self_area, diff_area), false))
-                        } else {
-                            None
-                        }
-                    } else {
-                        Some((*num, diff_area.clone(), false))
-                    }
-                })
-                .chain(self.0.keys().filter_map(|num| {
-                    (!other.0.contains_key(num)).then(|| (*num, Byml::Null, true))
-                }))
-                .collect(),
-        )
+        Self(self.0.deep_diff(&other.0))
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        let keys: BTreeSet<usize> = self.0.keys().chain(diff.0.keys()).copied().collect();
-        Self(
-            keys.into_iter()
-                .map(|hash| {
-                    if let Some(self_info) = self.0.get(hash) {
-                        if let Some(diff_info) = diff.0.get(hash) {
-                            (
-                                hash,
-                                util::merge_byml_shallow(self_info, diff_info),
-                                diff.0.is_delete(hash).unwrap(),
-                            )
-                        } else {
-                            (hash, self_info.clone(), false)
-                        }
-                    } else {
-                        (
-                            hash,
-                            diff.0.get(hash).unwrap().clone(),
-                            diff.0.is_delete(hash).unwrap(),
-                        )
-                    }
-                })
-                .collect::<SortedDeleteMap<usize, Byml>>()
-                .and_delete(),
-        )
+        Self(self.0.deep_merge(&diff.0))
     }
 }
 

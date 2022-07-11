@@ -46,7 +46,7 @@ impl ResourceLoader for ModReader {
     }
 
     fn get_aoc_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
-        let canon = canonicalize(jstr!("Aoc/0010/{name.to_str().unwrap()}"));
+        let canon = canonicalize(jstr!("Aoc/0010/{name.to_str().unwrap_or_default()}"));
         Ok(self
             .zip
             .lock()

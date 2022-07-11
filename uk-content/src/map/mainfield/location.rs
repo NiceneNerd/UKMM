@@ -5,7 +5,6 @@ use crate::{
 };
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct LocationEntry {
@@ -88,39 +87,11 @@ impl From<Location> for Byml {
 
 impl Mergeable for Location {
     fn diff(&self, other: &Self) -> Self {
-        Self(
-            other
-                .0
-                .iter()
-                .filter_map(|(message, other_entries)| {
-                    if let Some(self_entries) = self.0.get(message) {
-                        if self_entries != other_entries {
-                            Some((message.clone(), self_entries.diff(other_entries), false))
-                        } else {
-                            None
-                        }
-                    } else {
-                        Some((message.clone(), other_entries.clone(), false))
-                    }
-                })
-                .chain(self.0.keys().filter_map(|message| {
-                    (!other.0.contains_key(message))
-                        .then(|| (message.clone(), Default::default(), true))
-                }))
-                .collect(),
-        )
+        Self(self.0.deep_diff(&other.0))
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        let messages: BTreeSet<&String> = self.0.keys().chain(diff.0.keys()).collect();
-        Self(messages.into_iter().map(|message| {
-            let (self_entries, diff_entries) = (self.0.get(message), diff.0.get(message));
-            if let Some(self_entries) = self_entries && let Some(diff_entries) = diff_entries {
-                (message.clone(), self_entries.merge(diff_entries), diff.0.is_delete(message).unwrap_or_default())
-            } else {
-                (message.clone(), diff_entries.or(self_entries).cloned().unwrap(), diff.0.is_delete(message).unwrap_or_default())
-            }
-        }).collect())
+        Self(self.0.deep_merge(&diff.0))
     }
 }
 

@@ -15,12 +15,16 @@ pub struct BodyParam {
     pub buoyancy_scale: f32,
 }
 
-impl TryFrom<&ParameterObject> for BodyParam {
-    type Error = UKError;
-
-    fn try_from(obj: &ParameterObject) -> Result<Self> {
+impl BodyParam {
+    pub(crate) fn try_from(obj: &ParameterObject) -> Result<Self> {
         Ok(Self {
-            name: obj.param("RigidName").unwrap().as_string()?.to_owned(),
+            name: unsafe {
+                // This is sound because this function is never
+                // called until the name has already been checked.
+                obj.param("RigidName").unwrap_unchecked()
+            }
+            .as_string()?
+            .to_owned(),
             friction_scale: obj
                 .param("FrictionScale")
                 .ok_or(UKError::MissingAampKey(
@@ -90,7 +94,7 @@ impl TryFrom<&ParameterIO> for RagdollConfigList {
                             ))?
                             .as_string()?
                             .to_string(),
-                        body_param.try_into()?,
+                        BodyParam::try_from(body_param)?,
                     ))
                 })
                 .collect::<Result<_>>()?,

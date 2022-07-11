@@ -536,9 +536,17 @@ macro_rules! impl_delete_map {
                     .map(|key| {
                         let (self_map, diff_map) = (self.get(&key), diff.get(&key));
                         if let Some(self_map) = self_map && let Some(diff_map) = diff_map {
-                            (key.clone(), self_map.merge(diff_map), diff.is_delete(&key).unwrap())
+                            (key.clone(), self_map.merge(diff_map), unsafe {
+                                // We know this is sound because we just checked that `key`
+                                // is in `diff`.
+                                diff.is_delete(&key).unwrap_unchecked()
+                            })
                         } else {
-                            (key.clone(), diff_map.or(self_map).cloned().unwrap(), diff.is_delete(&key).unwrap_or_default())
+                            (key.clone(), unsafe {
+                                // We know this is sound because the key had to come from
+                                // one of these two maps.
+                                diff_map.or(self_map).cloned().unwrap_unchecked()
+                            }, diff.is_delete(&key).unwrap_or_default())
                         }
                     })
                     .collect::<$type<_, _>>()

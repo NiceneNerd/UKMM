@@ -80,7 +80,11 @@ impl Mergeable for MessagePack {
                     (Some(self_text), Some(diff_text)) => {
                         (file.clone(), self_text.merge(diff_text))
                     }
-                    (v1, v2) => (file.clone(), v2.or(v1).cloned().unwrap()),
+                    (v1, v2) => (file.clone(), unsafe {
+                        // We know this is sound because the key came from an entry
+                        // in one of these two maps.
+                        v2.or(v1).cloned().unwrap_unchecked()
+                    }),
                 })
                 .collect(),
         )

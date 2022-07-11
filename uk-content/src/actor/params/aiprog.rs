@@ -347,6 +347,11 @@ mod parse {
         pio: &ParameterIO,
         action_offset: usize,
     ) -> Result<AIEntry> {
+        // These are all sound because this function is never called until these all
+        // have been verified to exist (and of course the ParameterIO is immutable).
+        let ai_list = unsafe { pio.list("AI").unwrap_unchecked() };
+        let action_list = unsafe { pio.list("Action").unwrap_unchecked() };
+        let behavior_list = unsafe { pio.list("Behavior").unwrap_unchecked() };
         Ok(AIEntry {
             def: list
                 .object("Def")
@@ -359,36 +364,27 @@ mod parse {
                 .0
                 .iter()
                 .map(|(k, v)| -> Result<(u32, ChildEntry)> {
-                    let idx = v.as_int().unwrap() as usize;
+                    let idx = v.as_int()? as usize;
                     Ok((
                         *k,
                         if idx < action_offset {
                             ChildEntry::AI(plist_to_ai(
-                                pio.list("AI")
-                                    .unwrap()
-                                    .lists
-                                    .0
-                                    .values()
-                                    .nth(idx)
-                                    .ok_or_else(|| {
-                                        dbg!(v);
-                                        UKError::MissingAampKeyD(jstr!(
-                                            "AI program missing entry at {&lexical::to_string(idx)}"
-                                        ))
-                                    })?,
+                                ai_list.lists.0.values().nth(idx).ok_or_else(|| {
+                                    UKError::MissingAampKeyD(jstr!(
+                                        "AI program missing entry at {&lexical::to_string(idx)}"
+                                    ))
+                                })?,
                                 pio,
                                 action_offset,
                             )?)
                         } else {
                             ChildEntry::Action(plist_to_action(
-                                pio.list("Action")
-                                    .unwrap()
+                                action_list
                                     .lists
                                     .0
                                     .values()
                                     .nth(idx - action_offset)
                                     .ok_or_else(|| {
-                                        dbg!(v);
                                         UKError::MissingAampKeyD(jstr!(
                                             "AI program missing entry at {&lexical::to_string(idx)}"
                                         ))
@@ -407,8 +403,7 @@ mod parse {
                         .map(|(k, v)| -> Result<(u32, ParameterList)> {
                             Ok((
                                 *k,
-                                pio.list("Behavior")
-                                    .unwrap()
+                                behavior_list
                                     .lists
                                     .0
                                     .values()
@@ -429,6 +424,9 @@ mod parse {
     }
 
     fn plist_to_action(list: &ParameterList, pio: &ParameterIO) -> Result<ActionEntry> {
+        // This is sound because this function is never called until the behavior list
+        // has been verified to exist (and of course the ParameterIO is immutable).
+        let behavior_list = unsafe { pio.list("Behavior").unwrap_unchecked() };
         Ok(ActionEntry {
             def: list
                 .object("Def")
@@ -443,8 +441,7 @@ mod parse {
                         .map(|(k, v)| -> Result<(u32, ParameterList)> {
                             Ok((
                                 *k,
-                                pio.list("Behavior")
-                                    .unwrap()
+                                behavior_list
                                     .lists
                                     .0
                                     .values()
@@ -469,51 +466,59 @@ mod parse {
 
         fn try_from(pio: &ParameterIO) -> Result<Self> {
             let action_offset;
+            let ai_list = pio
+                .list("AI")
+                .ok_or(UKError::MissingAampKey("AI program missing AI list"))?;
+            let action_list = pio
+                .list("Action")
+                .ok_or(UKError::MissingAampKey("AI program missing Action list"))?;
+            if pio.list("Behavior").is_none() {
+                return Err(UKError::MissingAampKey("AI program missing Behavior list"));
+            }
+            let query_list = pio
+                .list("Query")
+                .ok_or(UKError::MissingAampKey("AI program missing Query list"))?;
             Ok(Self {
                 tree: {
-                    if let Some(ai_list) = pio.list("AI") {
-                        let child_indexes: HashSet<usize> = ai_list
-                            .lists
-                            .0
-                            .values()
-                            .filter_map(|ai| {
-                                ai.object("ChildIdx").map(|ci| {
-                                    ci.params()
-                                        .values()
-                                        .flat_map(|i| i.as_int().map(|i| i as usize).ok())
-                                })
+                    let child_indexes: HashSet<usize> = ai_list
+                        .lists
+                        .0
+                        .values()
+                        .filter_map(|ai| {
+                            ai.object("ChildIdx").map(|ci| {
+                                ci.params()
+                                    .values()
+                                    .flat_map(|i| i.as_int().map(|i| i as usize).ok())
                             })
-                            .flatten()
-                            .collect();
-                        let roots: Vec<ParameterList> = ai_list
-                            .lists
-                            .0
-                            .values()
-                            .enumerate()
-                            .filter(|(i, _)| !child_indexes.contains(i))
-                            .map(|(_, ai)| ai)
-                            .cloned()
-                            .collect();
-                        action_offset = ai_list.lists.len();
-                        roots
-                            .iter()
-                            .map(|root| -> Result<(String, AIEntry)> {
-                                Ok((
-                                    root.object("Def")
-                                        .ok_or(UKError::MissingAampKey(
-                                            "AI entry missing Def object",
-                                        ))?
-                                        .param("ClassName")
-                                        .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
-                                        .as_string()?
-                                        .to_owned(),
-                                    plist_to_ai(root, pio, action_offset)?,
-                                ))
-                            })
-                            .collect::<Result<IndexMap<_, _>>>()?
-                    } else {
-                        return Err(UKError::MissingAampKey("AI program missing AI list"));
-                    }
+                        })
+                        .flatten()
+                        .collect();
+                    let roots: Vec<ParameterList> = ai_list
+                        .lists
+                        .0
+                        .values()
+                        .enumerate()
+                        .filter(|(i, _)| !child_indexes.contains(i))
+                        .map(|(_, ai)| ai)
+                        .cloned()
+                        .collect();
+                    action_offset = ai_list.lists.len();
+                    roots
+                        .iter()
+                        .map(|root| -> Result<(String, AIEntry)> {
+                            Ok((
+                                root.object("Def")
+                                    .ok_or(UKError::MissingAampKey(
+                                        "AI entry missing Def object",
+                                    ))?
+                                    .param("ClassName")
+                                    .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
+                                    .as_string()?
+                                    .to_owned(),
+                                plist_to_ai(root, pio, action_offset)?,
+                            ))
+                        })
+                        .collect::<Result<IndexMap<_, _>>>()?
                 },
                 demos: pio
                     .object("DemoAIActionIdx")
@@ -528,8 +533,7 @@ mod parse {
                             *k,
                             if idx > action_offset {
                                 ChildEntry::Action(plist_to_action(
-                                    pio.list("Action")
-                                        .unwrap()
+                                    action_list
                                         .lists
                                         .0
                                         .values()
@@ -542,7 +546,7 @@ mod parse {
                                     pio,
                                 )?)
                             } else {
-                                ChildEntry::AI(plist_to_ai(pio.list("AI").unwrap().lists.0.values().nth(idx).ok_or_else(|| {
+                                ChildEntry::AI(plist_to_ai(ai_list.lists.0.values().nth(idx).ok_or_else(|| {
                                     UKError::MissingAampKeyD(jstr!(
                                         "AI program missing entry at {&lexical::to_string(idx)}"
                                     ))
@@ -551,9 +555,7 @@ mod parse {
                         ))
                     })
                     .collect::<Result<IndexMap<u32, ChildEntry>>>()?,
-                queries: pio
-                    .list("Query")
-                    .ok_or(UKError::MissingAampKey("AI program missing Queries list"))?
+                queries: query_list
                     .lists
                     .0
                     .values()

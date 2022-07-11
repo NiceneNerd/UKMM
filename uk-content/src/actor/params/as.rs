@@ -13,6 +13,9 @@ pub struct Element {
 
 impl Element {
     fn try_from_plist(list: &ParameterList, pio: &ParameterIO) -> Result<Self> {
+        // This is sound because this function is never called until this list
+        // is confirmed to exist.
+        let element_list = unsafe { pio.list("Elements").unwrap_unchecked() };
         Ok(Self {
             params: list
                 .object("Parameters")
@@ -29,8 +32,7 @@ impl Element {
                             Ok((
                                 idx,
                                 Element::try_from_plist(
-                                    pio.list("Elements")
-                                        .unwrap()
+                                    element_list
                                         .lists
                                         .0
                                         .values()
