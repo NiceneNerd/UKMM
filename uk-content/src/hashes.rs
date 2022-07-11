@@ -16,20 +16,26 @@ impl ROMHashTable {
     }
 
     fn parse(data: &[u8]) -> Self {
-        let data = zstd::decode_all(std::io::Cursor::new(data)).unwrap();
+        // We know for sure this can't fail on any supported system because we made and included the data ourselves.
+        let data = unsafe { zstd::decode_all(std::io::Cursor::new(data)).unwrap_unchecked() };
         let count = (data.len() as f64 / 2. / 8.) as usize;
         let value_offset = (data.len() as f64 / 2.) as usize;
         Self(
             (0..count)
                 .into_iter()
                 .map(|i| {
-                    let file = u64::from_be_bytes(data[i * 8..(i * 8 + 8)].try_into().unwrap());
-                    let hash = u64::from_be_bytes(
-                        data[i * 8 + value_offset..(i * 8 + 8 + value_offset)]
-                            .try_into()
-                            .unwrap(),
-                    );
-                    (file, hash)
+                    // As above.
+                    unsafe {
+                        let file = u64::from_be_bytes(
+                            data[i * 8..(i * 8 + 8)].try_into().unwrap_unchecked(),
+                        );
+                        let hash = u64::from_be_bytes(
+                            data[i * 8 + value_offset..(i * 8 + 8 + value_offset)]
+                                .try_into()
+                                .unwrap_unchecked(),
+                        );
+                        (file, hash)
+                    }
                 })
                 .collect(),
         )
