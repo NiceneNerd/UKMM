@@ -45,15 +45,15 @@ impl Nsp {
 }
 
 impl super::ResourceLoader for Nsp {
-    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
+    fn get_file_data(&self, name: &Path) -> Result<Vec<u8>> {
         todo!()
     }
 
-    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
+    fn get_aoc_file_data(&self, name: &Path) -> Result<Vec<u8>> {
         todo!()
     }
 
-    fn file_exists(&self, name: impl AsRef<Path>) -> bool {
+    fn file_exists(&self, name: &Path) -> bool {
         todo!()
     }
 

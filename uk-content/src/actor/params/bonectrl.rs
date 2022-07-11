@@ -237,8 +237,7 @@ mod tests {
         )
         .unwrap();
         let bonectrl2 = super::BoneControl::try_from(&pio2).unwrap();
-        let diff = bonectrl.diff(&bonectrl2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = bonectrl.diff(&bonectrl2);
     }
 
     #[test]

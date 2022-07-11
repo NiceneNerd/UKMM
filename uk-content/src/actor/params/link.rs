@@ -221,8 +221,7 @@ mod tests {
         )
         .unwrap();
         let actorlink2 = super::ActorLink::try_from(&pio2).unwrap();
-        let diff = actorlink.diff(&actorlink2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = actorlink.diff(&actorlink2);
     }
 
     #[test]

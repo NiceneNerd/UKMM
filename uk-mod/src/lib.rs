@@ -1,7 +1,11 @@
 #![feature(let_chains, seek_stream_len)]
 
-use std::collections::BTreeSet;
+use std::{
+    collections::{BTreeSet, HashSet},
+    path::PathBuf,
+};
 
+use indexmap::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 use uk_content::prelude::Endian;
 pub mod reader;
@@ -28,6 +32,69 @@ impl Manifest {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ModOption {
+    pub name: String,
+    pub description: String,
+    pub path: PathBuf,
+    pub requires: Vec<PathBuf>,
+}
+
+#[enum_dispatch::enum_dispatch(OptionGroup)]
+pub trait ModOptionGroup {
+    fn name(&self) -> &str;
+    fn description(&self) -> &str;
+    fn options(&self) -> &IndexSet<ModOption>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ExclusiveOptionGroup {
+    pub name: String,
+    pub description: String,
+    pub default: Option<PathBuf>,
+    pub options: IndexSet<ModOption>,
+}
+
+impl ModOptionGroup for ExclusiveOptionGroup {
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn description(&self) -> &str {
+        &self.description
+    }
+    fn options(&self) -> &IndexSet<ModOption> {
+        &self.options
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MultipleOptionGroup {
+    pub name: String,
+    pub description: String,
+    pub defaults: HashSet<PathBuf>,
+    pub options: IndexSet<ModOption>,
+}
+
+impl ModOptionGroup for MultipleOptionGroup {
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn description(&self) -> &str {
+        &self.description
+    }
+    fn options(&self) -> &IndexSet<ModOption> {
+        &self.options
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[enum_dispatch::enum_dispatch]
+#[serde(tag = "type")]
+pub enum OptionGroup {
+    Exclusive(ExclusiveOptionGroup),
+    Multiple(MultipleOptionGroup),
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Meta {
     pub name: String,
@@ -36,6 +103,25 @@ pub struct Meta {
     pub description: String,
     pub platform: Endian,
     pub url: Option<String>,
-    pub id: Option<u64>,
-    pub masters: Vec<u64>,
+    #[serde(rename = "option_groups")]
+    pub options: Vec<OptionGroup>,
+    pub masters: IndexMap<String, f32>,
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn save_dump() {
+        let reader = uk_reader::ResourceReader::from_unpacked_dirs(
+            Some("/games/Cemu/mlc01/usr/title/00050000/101C9400/content"),
+            Some("/games/Cemu/mlc01/usr/title/0005000E/101C9400/content"),
+            Some("/games/Cemu/mlc01/usr/title/0005000C/101C9400/content/0010"),
+        )
+        .unwrap();
+        std::fs::write(
+            "../.vscode/dump.yml",
+            yaml_peg::serde::to_string(&reader).unwrap(),
+        )
+        .unwrap();
+    }
 }

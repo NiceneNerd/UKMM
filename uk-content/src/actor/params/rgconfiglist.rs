@@ -193,8 +193,7 @@ mod tests {
         )
         .unwrap();
         let rgconfiglist2 = super::RagdollConfigList::try_from(&pio2).unwrap();
-        let diff = rgconfiglist.diff(&rgconfiglist2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = rgconfiglist.diff(&rgconfiglist2);
     }
 
     #[test]

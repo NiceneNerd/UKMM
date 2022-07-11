@@ -438,8 +438,7 @@ mod tests {
         )
         .unwrap();
         let lifecondition2 = super::LifeCondition::try_from(&pio2).unwrap();
-        let diff = lifecondition.diff(&lifecondition2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = lifecondition.diff(&lifecondition2);
     }
 
     #[test]
@@ -462,7 +461,6 @@ mod tests {
         let lifecondition2 = super::LifeCondition::try_from(&pio2).unwrap();
         let diff = lifecondition.diff(&lifecondition2);
         let merged = lifecondition.merge(&diff);
-        println!("{}", serde_json::to_string_pretty(&merged).unwrap());
         assert_eq!(lifecondition2, merged);
     }
 

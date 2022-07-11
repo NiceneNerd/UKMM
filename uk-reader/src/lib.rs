@@ -5,7 +5,6 @@ mod zarchive;
 
 use self::{unpacked::Unpacked, zarchive::ZArchive};
 use anyhow::Context;
-use enum_dispatch::enum_dispatch;
 use moka::sync::Cache;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
@@ -51,20 +50,12 @@ pub enum BinType {
     MiniCbor,
 }
 
-#[enum_dispatch(ResourceProvider)]
-pub trait ResourceLoader {
-    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>>;
-    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>>;
-    fn file_exists(&self, name: impl AsRef<Path>) -> bool;
+#[typetag::serde(tag = "type")]
+pub trait ResourceLoader: std::fmt::Debug + Send + Sync {
+    fn get_file_data(&self, name: &Path) -> Result<Vec<u8>>;
+    fn get_aoc_file_data(&self, name: &Path) -> Result<Vec<u8>>;
+    fn file_exists(&self, name: &Path) -> bool;
     fn host_path(&self) -> &Path;
-}
-
-#[enum_dispatch]
-#[derive(Debug, Serialize, Deserialize)]
-enum ResourceProvider {
-    ZArchive,
-    // Nsp,
-    Unpacked,
 }
 
 fn construct_cache() -> ResourceCache {
@@ -73,8 +64,8 @@ fn construct_cache() -> ResourceCache {
 
 #[derive(Serialize, Deserialize)]
 pub struct ResourceReader {
-    source: ResourceProvider,
     bin_type: BinType,
+    source: Box<dyn ResourceLoader>,
     #[serde(skip, default = "construct_cache")]
     cache: ResourceCache,
 }
@@ -91,7 +82,7 @@ impl std::fmt::Debug for ResourceReader {
 impl ResourceReader {
     pub fn from_zarchive(archive_path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
-            source: ResourceProvider::ZArchive(ZArchive::new(archive_path)?),
+            source: Box::new(ZArchive::new(archive_path)?),
             cache: ResourceCache::new(CACHE_SIZE),
             bin_type: BinType::Nintendo,
         })
@@ -103,7 +94,7 @@ impl ResourceReader {
         aoc_dir: Option<impl AsRef<Path>>,
     ) -> Result<Self> {
         Ok(Self {
-            source: ResourceProvider::Unpacked(Unpacked::new(content_dir, update_dir, aoc_dir)?),
+            source: Box::new(Unpacked::new(content_dir, update_dir, aoc_dir, true)?),
             cache: ResourceCache::new(CACHE_SIZE),
             bin_type: BinType::Nintendo,
         })
@@ -129,11 +120,7 @@ impl ResourceReader {
             None
         };
         Ok(Self {
-            source: ResourceProvider::Unpacked(Unpacked::new(
-                content_dir,
-                None::<PathBuf>,
-                aoc_dir,
-            )?),
+            source: Box::new(Unpacked::new(content_dir, None::<PathBuf>, aoc_dir, false)?),
             cache: ResourceCache::new(500),
             bin_type: BinType::Nintendo,
         })

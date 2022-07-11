@@ -203,8 +203,7 @@ mod tests {
         )
         .unwrap();
         let recipe2 = super::Recipe::try_from(&pio2).unwrap();
-        let diff = recipe.diff(&recipe2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = recipe.diff(&recipe2);
     }
 
     #[test]

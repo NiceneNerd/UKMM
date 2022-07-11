@@ -5,20 +5,23 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.58"
-minicbor-ser = "0.1.3"
+enum_dispatch = "0.3.8"
 fs-err = "2.7.0"
+indexmap = "1.8.0"
 join_str = "0.1.0"
 jwalk = "0.6.0"
-path-slash = "0.2.0"
+minicbor-ser = "0.1.3"
 parking_lot = "0.12.1"
+path-slash = "0.2.0"
 rayon = "1.5.3"
 roead = { version = "0.11.1", features = ["with-serde"] }
 serde = { version = "1.0.137", features = ["derive"] }
+typetag = "0.2.1"
 tempfile = "3.3.0"
 toml = "0.5.9"
 uk-content = { path = "../uk-content" }
 uk-reader = { path = "../uk-reader" }
-zstd = "0.11.2"
 xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
 yaml-peg = { version = "1.0.4", features = ["serde"] }
 zip = { version = "0.6.2", default-features = false, features = ["deflate"]}
+zstd = "0.11.2"

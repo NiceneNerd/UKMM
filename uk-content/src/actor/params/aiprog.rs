@@ -846,8 +846,7 @@ mod tests {
         )
         .unwrap();
         let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
-        let diff = aiprog.diff(&aiprog2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = aiprog.diff(&aiprog2);
     }
 
     #[test]

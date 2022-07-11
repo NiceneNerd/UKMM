@@ -84,8 +84,7 @@ mod tests {
         )
         .unwrap();
         let umii2 = super::UMii::try_from(&pio2).unwrap();
-        let diff = umii.diff(&umii2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = umii.diff(&umii2);
     }
 
     #[test]

@@ -232,7 +232,6 @@ impl Resource for AS {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use pretty_assertions::assert_eq;
     use roead::aamp::*;
 
     #[test]
@@ -269,8 +268,7 @@ mod tests {
         )
         .unwrap();
         let as_data2 = super::AS::try_from(&pio2).unwrap();
-        let diff = as_data.diff(&as_data2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = as_data.diff(&as_data2);
     }
 
     #[test]

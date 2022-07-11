@@ -84,8 +84,7 @@ mod tests {
         )
         .unwrap();
         let dmgparam2 = super::DamageParam::try_from(&pio2).unwrap();
-        let diff = dmgparam.diff(&dmgparam2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = dmgparam.diff(&dmgparam2);
     }
 
     #[test]

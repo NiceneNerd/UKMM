@@ -235,7 +235,7 @@ impl Resource for ASList {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use pretty_assertions::assert_eq;
+
     use roead::aamp::*;
 
     #[test]
@@ -272,8 +272,7 @@ mod tests {
         )
         .unwrap();
         let aslist2 = super::ASList::try_from(&pio2).unwrap();
-        let diff = aslist.diff(&aslist2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = aslist.diff(&aslist2);
     }
 
     #[test]

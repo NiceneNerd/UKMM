@@ -40,34 +40,30 @@ impl ZArchive {
     }
 }
 
+#[typetag::serde]
 impl super::ResourceLoader for ZArchive {
-    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
+    fn get_file_data(&self, name: &Path) -> Result<Vec<u8>> {
         self.archive
-            .read_file(&self.update_dir.join(name.as_ref()))
-            .or_else(|| {
-                self.archive
-                    .read_file(&self.content_dir.join(name.as_ref()))
-            })
+            .read_file(&self.update_dir.join(name))
+            .or_else(|| self.archive.read_file(&self.content_dir.join(name)))
             .ok_or_else(|| {
                 crate::ROMError::FileNotFound(
-                    name.as_ref().to_string_lossy().to_string(),
+                    name.to_string_lossy().to_string(),
                     self.host_path.to_owned(),
                 )
             })
     }
 
-    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
+    fn get_aoc_file_data(&self, name: &Path) -> Result<Vec<u8>> {
         self.aoc_dir
             .as_ref()
             .map(|dir| {
-                self.archive
-                    .read_file(&dir.join(name.as_ref()))
-                    .ok_or_else(|| {
-                        crate::ROMError::FileNotFound(
-                            name.as_ref().to_string_lossy().to_string(),
-                            self.host_path.to_owned(),
-                        )
-                    })
+                self.archive.read_file(&dir.join(name)).ok_or_else(|| {
+                    crate::ROMError::FileNotFound(
+                        name.to_string_lossy().to_string(),
+                        self.host_path.to_owned(),
+                    )
+                })
             })
             .unwrap_or_else(|| {
                 Err(crate::ROMError::MissingDumpDir(
@@ -77,7 +73,7 @@ impl super::ResourceLoader for ZArchive {
             })
     }
 
-    fn file_exists(&self, name: impl AsRef<Path>) -> bool {
+    fn file_exists(&self, name: &Path) -> bool {
         self.archive.file_size(name).is_some()
     }
 
@@ -205,7 +201,7 @@ mod tests {
         }
         assert_eq!(
             "0.9.0".to_owned(),
-            String::from_utf8(arch.get_file_data("System/Version.txt").unwrap()).unwrap()
+            String::from_utf8(arch.get_file_data("System/Version.txt".as_ref()).unwrap()).unwrap()
         );
     }
 }

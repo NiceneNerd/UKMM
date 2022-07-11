@@ -228,8 +228,7 @@ mod tests {
         )
         .unwrap();
         let chemical2 = super::Chemical::try_from(&pio2).unwrap();
-        let diff = chemical.diff(&chemical2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = chemical.diff(&chemical2);
     }
 
     #[test]

@@ -84,8 +84,7 @@ mod tests {
         )
         .unwrap();
         let awareness2 = super::Awareness::try_from(&pio2).unwrap();
-        let diff = awareness.diff(&awareness2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = awareness.diff(&awareness2);
     }
 
     #[test]

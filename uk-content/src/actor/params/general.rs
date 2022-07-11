@@ -298,8 +298,7 @@ mod tests {
         )
         .unwrap();
         let gparamlist2 = super::GeneralParamList::try_from(&pio2).unwrap();
-        let diff = gparamlist.diff(&gparamlist2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = gparamlist.diff(&gparamlist2);
     }
 
     #[test]

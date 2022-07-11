@@ -184,7 +184,9 @@ pub mod prelude {
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
     pub enum Endian {
+        #[serde(rename = "Switch")]
         Little,
+        #[serde(rename = "Wii U")]
         Big,
     }
 

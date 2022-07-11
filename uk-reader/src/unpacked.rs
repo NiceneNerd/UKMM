@@ -16,83 +16,93 @@ impl Unpacked {
         content_dir: Option<impl AsRef<Path>>,
         update_dir: Option<impl AsRef<Path>>,
         aoc_dir: Option<impl AsRef<Path>>,
+        test_valid: bool,
     ) -> Result<Self> {
         let content_dir = content_dir.as_ref().map(|c| c.as_ref());
         let update_dir = update_dir.as_ref().map(|d| d.as_ref());
         let aoc_dir = aoc_dir.as_ref().map(|a| a.as_ref());
-        if let Some(content_dir) = content_dir.as_ref()
-            && !content_dir
-                .join("Map/MainField/A-1/A-1.00_Clustering.sblwp")
-                .exists()
-        {
-            Err(ROMError::MissingDumpDir(
-                "base game",
-                content_dir.to_path_buf(),
-            ))
-        } else if let Some(update_dir) = update_dir.as_ref()
-            && !update_dir
-                .join("Actor/Pack/Enemy_Lynel_Dark.sbactorpack")
-                .exists()
-        {
-            Err(ROMError::MissingDumpDir(
-                "update",
-                update_dir.to_path_buf(),
-            ))
-        } else if let Some(aoc_dir) =
-            aoc_dir.as_ref() && !aoc_dir.join("Pack/AocMainField.pack").exists()
-        {
-            Err(ROMError::MissingDumpDir(
-                "DLC",
-                aoc_dir.to_path_buf(),
-            ))
-        } else if content_dir.is_none() && update_dir.is_none() && aoc_dir.is_none() {
-            Err(ROMError::OtherMessage("No base game, update, or DLC files found"))
-        } else {
-            Ok(Self {
-                host_path: common_path::common_path_all(
-                    content_dir.as_ref()
-                        .iter()
-                        .chain(update_dir.as_ref().iter())
-                        .chain(aoc_dir.as_ref().iter())
-                        .map(|d| **d),
-                )
-                .or_else(|| content_dir.or(update_dir).or(aoc_dir).map(|d| d.to_path_buf())).unwrap(),
-                content_dir: content_dir.map(|content| content.to_path_buf()),
-                update_dir: update_dir.map(|update| update.to_path_buf()),
-                aoc_dir: aoc_dir.map(|aoc| aoc.to_path_buf()),
-            })
+        if test_valid {
+            if let Some(content_dir) = content_dir.as_ref()
+                && !content_dir
+                    .join("Map/MainField/A-1/A-1.00_Clustering.sblwp")
+                    .exists()
+            {
+                return Err(ROMError::MissingDumpDir(
+                    "base game",
+                    content_dir.to_path_buf(),
+                ));
+            } else if let Some(update_dir) = update_dir.as_ref()
+                && !update_dir
+                    .join("Actor/Pack/Enemy_Lynel_Dark.sbactorpack")
+                    .exists()
+            {
+                return Err(ROMError::MissingDumpDir(
+                    "update",
+                    update_dir.to_path_buf(),
+                ));
+            } else if let Some(aoc_dir) =
+                aoc_dir.as_ref() && !aoc_dir.join("Pack/AocMainField.pack").exists()
+            {
+                return Err(ROMError::MissingDumpDir(
+                    "DLC",
+                    aoc_dir.to_path_buf(),
+                ));
+            } else if content_dir.is_none() && update_dir.is_none() && aoc_dir.is_none() {
+                return Err(ROMError::OtherMessage("No base game, update, or DLC files found"));
+            }
         }
+        Ok(Self {
+            host_path: common_path::common_path_all(
+                content_dir
+                    .as_ref()
+                    .iter()
+                    .chain(update_dir.as_ref().iter())
+                    .chain(aoc_dir.as_ref().iter())
+                    .map(|d| **d),
+            )
+            .or_else(|| {
+                content_dir
+                    .or(update_dir)
+                    .or(aoc_dir)
+                    .map(|d| d.to_path_buf())
+            })
+            .unwrap(),
+            content_dir: content_dir.map(|content| content.to_path_buf()),
+            update_dir: update_dir.map(|update| update.to_path_buf()),
+            aoc_dir: aoc_dir.map(|aoc| aoc.to_path_buf()),
+        })
     }
 }
 
+#[typetag::serde]
 impl super::ResourceLoader for Unpacked {
     #[allow(irrefutable_let_patterns)]
-    fn get_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
+    fn get_file_data(&self, name: &Path) -> Result<Vec<u8>> {
         self.update_dir
             .iter()
             .chain(self.content_dir.iter())
             .chain(self.aoc_dir.iter())
-            .map(|dir| dir.join(name.as_ref()))
+            .map(|dir| dir.join(name))
             .find_map(|path| path.exists().then(|| fs::read(path).ok()))
             .flatten()
             .ok_or_else(|| {
                 ROMError::FileNotFound(
-                    name.as_ref().to_string_lossy().to_string(),
+                    name.to_string_lossy().to_string(),
                     self.host_path.to_owned(),
                 )
             })
     }
 
-    fn get_aoc_file_data(&self, name: impl AsRef<Path>) -> Result<Vec<u8>> {
+    fn get_aoc_file_data(&self, name: &Path) -> Result<Vec<u8>> {
         self.aoc_dir
             .as_ref()
             .map(|dir| {
-                let dest_file = dir.join(name.as_ref());
+                let dest_file = dir.join(name);
                 if dest_file.exists() {
                     Ok(std::fs::read(dest_file)?)
                 } else {
                     Err(ROMError::FileNotFound(
-                        name.as_ref().to_string_lossy().to_string(),
+                        name.to_string_lossy().to_string(),
                         self.host_path.to_owned(),
                     ))
                 }
@@ -100,8 +110,7 @@ impl super::ResourceLoader for Unpacked {
             .unwrap_or_else(|| Err(ROMError::MissingDumpDir("DLC", self.host_path.to_owned())))
     }
 
-    fn file_exists(&self, name: impl AsRef<Path>) -> bool {
-        let name = name.as_ref();
+    fn file_exists(&self, name: &Path) -> bool {
         self.update_dir
             .iter()
             .chain(self.content_dir.iter())

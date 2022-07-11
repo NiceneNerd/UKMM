@@ -324,8 +324,7 @@ mod tests {
         )
         .unwrap();
         let shop2 = super::ShopData::try_from(&pio2).unwrap();
-        let diff = shop.diff(&shop2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = shop.diff(&shop2);
     }
 
     #[test]

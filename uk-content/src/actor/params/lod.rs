@@ -84,8 +84,7 @@ mod tests {
         )
         .unwrap();
         let lod2 = super::Lod::try_from(&pio2).unwrap();
-        let diff = lod.diff(&lod2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = lod.diff(&lod2);
     }
 
     #[test]

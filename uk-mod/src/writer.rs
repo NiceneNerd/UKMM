@@ -1,15 +1,15 @@
-use crate::{Manifest, Meta};
+use crate::{Manifest, Meta, ModOptionGroup};
 use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
-use minicbor_ser::cbor::encode::Write;
 use parking_lot::{Mutex, RwLock};
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{sarc::Sarc, yaz0::decompress_if};
 use std::{
     collections::BTreeSet,
+    io::Write,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -26,8 +26,7 @@ pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
 
 pub struct ModPacker {
     source_dir: PathBuf,
-    content_dir: Option<PathBuf>,
-    aoc_dir: Option<PathBuf>,
+    current_root: PathBuf,
     meta: Meta,
     zip: ZipWriter,
     endian: Endian,
@@ -42,20 +41,20 @@ impl std::fmt::Debug for ModPacker {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ModBuilder")
             .field("source_dir", &self.source_dir)
-            .field("content_dir", &self.content_dir)
-            .field("aoc_dir", &self.aoc_dir)
+            .field("current_root", &self.current_root)
+            .field("meta", &self.meta)
+            .field("endian", &self.endian)
+            .field("masters", &self.masters)
             .field(
                 "zip",
                 &jstr!("zip::ZipWriter at {&self._out_file.to_string_lossy()}"),
             )
-            .field("endian", &self.endian)
             .field("built_resources", &self.built_resources)
             .finish()
     }
 }
 
 impl ModPacker {
-    #[allow(irrefutable_let_patterns)]
     pub fn new(
         source: impl AsRef<Path>,
         dest: impl AsRef<Path>,
@@ -63,53 +62,8 @@ impl ModPacker {
         masters: Vec<Arc<uk_reader::ResourceReader>>,
     ) -> Result<Self> {
         let source_dir = source.as_ref().to_path_buf();
-        if !source_dir.exists() {
+        if !(source_dir.exists() && source_dir.is_dir()) {
             anyhow::bail!("Source directory does not exist: {}", source_dir.display());
-        }
-
-        let (content_u, aoc_u) = platform_prefixes(Endian::Big);
-        let (content_nx, aoc_nx) = platform_prefixes(Endian::Little);
-        let mut endian: Option<Endian> = None;
-        let content_dir = if let content_dir = source_dir.join(content_u) && content_dir.exists() {
-            endian = Some(Endian::Big);
-            Some(content_dir)
-        } else if let content_dir = source_dir.join(content_nx) && content_dir.exists() {
-            endian = Some(Endian::Little);
-            Some(content_dir)
-        } else {
-            None
-        };
-        let aoc_dir = if let aoc_dir = source_dir.join(aoc_u) && aoc_dir.exists() {
-            if let Some(endian) = endian {
-                if endian != Endian::Big {
-                    anyhow::bail!(
-                        "Content and DLC folder platforms do not match: {} and {}",
-                        content_dir.unwrap().display(),
-                        aoc_dir.display()
-                    );
-                }
-            } else {
-                endian = Some(Endian::Big);
-            }
-            Some(aoc_dir)
-        } else if let aoc_dir = source_dir.join(aoc_nx) && aoc_dir.exists() {
-            if let Some(endian) = endian {
-                if endian != Endian::Little {
-                    anyhow::bail!(
-                        "Content and DLC folder platforms do not match: {} and {}",
-                        content_dir.unwrap().display(),
-                        aoc_dir.display()
-                    );
-                }
-            } else {
-                endian = Some(Endian::Little);
-            }
-            Some(aoc_dir)
-        } else {
-            None
-        };
-        if content_dir.is_none() && aoc_dir.is_none() {
-            anyhow::bail!("No content or DLC folder found in {}", source_dir.display());
         }
         let dest_file = dest.as_ref().to_path_buf();
         if dest_file.exists() {
@@ -117,23 +71,22 @@ impl ModPacker {
         }
         let zip = Arc::new(Mutex::new(ZipW::new(fs::File::create(&dest_file)?)));
         Ok(Self {
+            current_root: source_dir.clone(),
             source_dir,
-            content_dir,
-            aoc_dir,
-            endian: endian.unwrap(),
+            endian: meta.platform,
             zip,
             masters,
+            hash_table: get_hash_table(meta.platform),
             meta,
             built_resources: Arc::new(RwLock::new(BTreeSet::new())),
-            hash_table: get_hash_table(endian.unwrap()),
             _zip_opts: FileOptions::default().compression_method(zip::CompressionMethod::Stored),
             _out_file: dest_file,
         })
     }
 
-    fn collect_resources(&self, dir: impl AsRef<Path>) -> Result<BTreeSet<String>> {
-        let dir = dir.as_ref();
-        let files = WalkDir::new(dir)
+    fn collect_resources(&self, root: impl AsRef<Path>) -> Result<BTreeSet<String>> {
+        let root = root.as_ref();
+        let files = WalkDir::new(root)
             .into_iter()
             .filter_map(|f| {
                 f.ok()
@@ -144,11 +97,11 @@ impl ModPacker {
             .into_par_iter()
             .map(|path| -> Result<Option<String>> {
                 let name = path
-                    .strip_prefix(&self.source_dir)
+                    .strip_prefix(&self.current_root)
                     .unwrap()
                     .to_slash_lossy()
                     .to_string();
-                let canon = canonicalize(&name);
+                let canon = canonicalize(&path.strip_prefix(root).unwrap());
                 let file_data = fs::read(&path)?;
                 let file_data = decompress_if(&file_data)
                     .with_context(|| jstr!("Failed to decompress {&name}"))?;
@@ -164,7 +117,10 @@ impl ModPacker {
                 }
 
                 Ok(Some(
-                    path.strip_prefix(dir).unwrap().to_slash_lossy().to_string(),
+                    path.strip_prefix(root)
+                        .unwrap()
+                        .to_slash_lossy()
+                        .to_string(),
                 ))
             })
             .collect::<Result<Vec<Option<_>>>>()?
@@ -208,7 +164,12 @@ impl ModPacker {
         let data = minicbor_ser::to_vec(&resource)
             .with_context(|| jstr!("Failed to serialize {&name}"))?;
         let mut zip = self.zip.lock();
-        zip.start_file(&canon, self._zip_opts)?;
+        let zip_path = self
+            .current_root
+            .strip_prefix(&self.source_dir)
+            .unwrap()
+            .join(&canon);
+        zip.start_file(zip_path.to_slash_lossy(), self._zip_opts)?;
         zip.write_all(&zstd::encode_all(&*data, 3)?)?;
         self.built_resources.write().insert(canon);
 
@@ -237,35 +198,71 @@ impl ModPacker {
         Ok(())
     }
 
-    pub fn pack(self) -> Result<()> {
+    #[allow(irrefutable_let_patterns)]
+    fn pack_root(&self, root: impl AsRef<Path>) -> Result<()> {
+        self.built_resources.write().clear();
+        let (content, aoc) = platform_prefixes(self.endian);
+        let content_dir = if let content_dir = root.as_ref().join(content) && content_dir.exists() {
+            Some(content_dir)
+        } else {
+            None
+        };
+        let aoc_dir = if let aoc_dir = root.as_ref().join(aoc) && aoc_dir.exists() {
+            Some(aoc_dir)
+        } else {
+            None
+        };
         let manifest = yaml_peg::serde::to_string(&Manifest {
-            aoc_files: self
-                .aoc_dir
-                .as_ref()
+            aoc_files: aoc_dir
                 .map(|aoc| self.collect_resources(&aoc))
                 .transpose()?
                 .unwrap_or_default(),
-            content_files: self
-                .content_dir
-                .as_ref()
+            content_files: content_dir
                 .map(|content| self.collect_resources(&content))
                 .transpose()?
                 .unwrap_or_default(),
         })?;
-        {
-            let mut zip = self.zip.lock();
-            zip.start_file("manifest.yml", self._zip_opts)?;
-            zip.write_all(manifest.as_bytes())?;
-            let mut meta = self.meta;
-            meta.id = Some(xxhash_rust::xxh3::xxh3_64(
-                jstr!("{&meta.name} === {&meta.version.to_string()}").as_bytes(),
-            ));
-            zip.start_file("meta.toml", self._zip_opts)?;
-            zip.write_all(toml::to_string_pretty(&meta)?.as_bytes())?;
+        let mut zip = self.zip.lock();
+        zip.start_file(
+            root.as_ref()
+                .strip_prefix(&self.source_dir)
+                .unwrap()
+                .join("manifest.yml")
+                .to_slash_lossy(),
+            self._zip_opts,
+        )?;
+        zip.write_all(manifest.as_bytes())?;
+        Ok(())
+    }
+
+    fn collect_roots(&self) -> Vec<PathBuf> {
+        let opt_root = self.source_dir.join("options");
+        let mut roots = Vec::new();
+        for group in &self.meta.options {
+            roots.extend(group.options().iter().map(|opt| opt_root.join(&opt.path)))
         }
-        match Arc::try_unwrap(self.zip) {
-            Ok(zip) => zip.into_inner().finish()?,
-            Err(_) => panic!("Uh oh"),
+        roots
+    }
+
+    pub fn pack(mut self) -> Result<()> {
+        self.pack_root(&self.source_dir)?;
+        if self.source_dir.join("options").exists() {
+            self.masters
+                .push(Arc::new(uk_reader::ResourceReader::from_unpacked_mod(
+                    &self.source_dir,
+                )?));
+            for root in self.collect_roots() {
+                self.current_root = root.clone();
+                self.pack_root(root)?;
+            }
+        }
+        match Arc::try_unwrap(self.zip).map(|z| z.into_inner()) {
+            Ok(mut zip) => {
+                zip.start_file("meta.toml", self._zip_opts)?;
+                zip.write_all(toml::to_string_pretty(&self.meta)?.as_bytes())?;
+                zip.finish()?
+            }
+            Err(_) => panic!("Failed to finish writing zip, this is probably a big deal"),
         };
         Ok(())
     }
@@ -273,6 +270,8 @@ impl ModPacker {
 
 #[cfg(test)]
 mod tests {
+    use crate::{ModOption, MultipleOptionGroup, OptionGroup};
+    use indexmap::IndexMap;
     use uk_reader::ResourceReader;
 
     use super::*;
@@ -293,9 +292,21 @@ mod tests {
                 version: 0.1,
                 author: "Lord Caleb".to_string(),
                 description: "A test mod".to_string(),
-                id: None,
-                masters: vec![],
+                masters: IndexMap::new(),
                 url: None,
+                options: vec![OptionGroup::Multiple(MultipleOptionGroup {
+                    name: "Test Option Group".to_string(),
+                    description: "A test option group".to_string(),
+                    defaults: ["option1".into()].into_iter().collect(),
+                    options: [ModOption {
+                        name: "Test Option".to_string(),
+                        description: "An option".to_string(),
+                        path: "option1".into(),
+                        requires: vec![],
+                    }]
+                    .into_iter()
+                    .collect(),
+                })],
             },
             vec![Arc::new(rom_reader)],
         )

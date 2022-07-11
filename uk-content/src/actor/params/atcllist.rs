@@ -146,8 +146,7 @@ mod tests {
         )
         .unwrap();
         let atcllist2 = super::AttClientList::try_from(&pio2).unwrap();
-        let diff = atcllist.diff(&atcllist2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = atcllist.diff(&atcllist2);
     }
 
     #[test]

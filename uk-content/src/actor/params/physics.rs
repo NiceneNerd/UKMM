@@ -759,8 +759,7 @@ mod tests {
         )
         .unwrap();
         let physics2 = super::Physics::try_from(&pio2).unwrap();
-        let diff = physics.diff(&physics2);
-        println!("{}", serde_json::to_string_pretty(&diff).unwrap());
+        let _diff = physics.diff(&physics2);
     }
 
     #[test]
