@@ -584,6 +584,7 @@ pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool
 }
 
 impl ResourceData {
+    #[allow(irrefutable_let_patterns)]
     pub fn from_binary(name: impl AsRef<Path>, data: impl Into<Binary>) -> Result<Self> {
         let name = name.as_ref();
         let stem = name
@@ -796,7 +797,7 @@ impl ResourceData {
             Ok(Self::Mergeable(MergeableResource::GenericAamp(Box::new(
                 roead::aamp::ParameterIO::from_binary(&data)?,
             ))))
-        } else if &data[0..2] == b"BY" || &data[0..2] == b"YB" {
+        } else if let magic = &data[0..2] && (magic == b"BY" || magic == b"YB") {
             Ok(Self::Mergeable(MergeableResource::GenericByml(Box::new(
                 Byml::from_binary(&data)?,
             ))))
