@@ -555,13 +555,11 @@ impl From<roead::Bytes> for ResourceData {
     }
 }
 
-pub const EXCLUDE_EXTS: &[&str] = &["beventpack", "blarc", "bfarc", "genvb", "sarc"];
+pub const EXCLUDE_EXTS: &[&str] = &["blarc", "bfarc", "genvb", "sarc"];
 pub const EXCLUDE_NAMES: &[&str] = &[
     "tera_resource.Nin_NX_NVN",
     "tera_resource.Cafe_Cafe_GX2",
     "Dungeon",
-    // "Bootup_",
-    "AocMainField",
 ];
 
 #[inline]
@@ -601,11 +599,12 @@ impl ResourceData {
         {
             return Ok(Self::Binary(data));
         }
-        if Actor::path_matches(name) {
-            Ok(Self::Mergeable(MergeableResource::Actor(Box::new(
-                Actor::from_binary(&data)?,
-            ))))
-        } else if ActorInfo::path_matches(name) {
+        if ActorInfo::path_matches(name) {
+            //Actor::path_matches(name) {
+            //Ok(Self::Mergeable(MergeableResource::Actor(Box::new(
+            //   Actor::from_binary(&data)?,
+            //))))
+            //} else if ActorInfo::path_matches(name) {
             Ok(Self::Mergeable(MergeableResource::ActorInfo(Box::new(
                 ActorInfo::from_binary(&data)?,
             ))))
@@ -789,16 +788,15 @@ impl ResourceData {
             Ok(Self::Mergeable(MergeableResource::WorldInfo(Box::new(
                 WorldInfo::from_binary(&data)?,
             ))))
-        } else if data.len() > 4 && &data[0..4] == b"AAMP" {
+        } else if &data[0..4] == b"AAMP" {
             Ok(Self::Mergeable(MergeableResource::GenericAamp(Box::new(
                 roead::aamp::ParameterIO::from_binary(&data)?,
             ))))
-        } else if data.len() > 2 && (&data[0..2] == b"BY" || &data[0..2] == b"YB") {
+        } else if &data[0..2] == b"BY" || &data[0..2] == b"YB" {
             Ok(Self::Mergeable(MergeableResource::GenericByml(Box::new(
                 Byml::from_binary(&data)?,
             ))))
-        } else if data.len() > 0x40
-            && &data[0..4] == b"SARC"
+        } else if &data[0..4] == b"SARC"
             && !EXCLUDE_EXTS.contains(&ext.strip_prefix('s').unwrap_or(ext))
         {
             Ok(Self::Sarc(SarcMap::from_binary(data)?))

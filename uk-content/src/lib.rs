@@ -335,8 +335,8 @@ pub mod prelude {
         where
             D: serde::Deserializer<'de>,
         {
-            let bytes = <&[u8]>::deserialize(deserializer)?;
-            Ok(Binary::Vec(bytes.to_vec()))
+            let bytes = Vec::<u8>::deserialize(deserializer)?;
+            Ok(Binary::Vec(bytes))
         }
     }
 
