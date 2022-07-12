@@ -8,10 +8,10 @@ use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 
-type RecipeTable = DeleteMap<String, u8>;
+type RecipeTable = DeleteMap<String64, u8>;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-pub struct Recipe(pub DeleteMap<String, RecipeTable>);
+pub struct Recipe(pub DeleteMap<String64, RecipeTable>);
 
 impl TryFrom<&ParameterIO> for Recipe {
     type Error = UKError;
@@ -25,7 +25,7 @@ impl TryFrom<&ParameterIO> for Recipe {
             .ok_or(UKError::MissingAampKey("Recipe header missing table count"))?
             .as_int()?;
         let table_names = (0..table_count)
-            .map(|i| -> Result<&str> {
+            .map(|i| -> Result<&String64> {
                 Ok(header
                     .param(format!("Table{:02}", i + 1).as_str())
                     .ok_or_else(|| {
@@ -33,29 +33,28 @@ impl TryFrom<&ParameterIO> for Recipe {
                             "Recipe header missing table name {&lexical::to_string(i + 1)}"
                         ))
                     })?
-                    .as_string()?)
+                    .as_string64()?)
             })
             .collect::<Result<Vec<_>>>()?;
         Ok(Self(
             table_names
                 .into_iter()
-                .map(|name| -> Result<(String, RecipeTable)> {
+                .map(|name| -> Result<(String64, RecipeTable)> {
                     let table = pio.object(name).ok_or_else(|| {
                         UKError::MissingAampKeyD(jstr!("Recipe missing table {&name}"))
                     })?;
                     Ok((
-                        name.into(),
+                        *name,
                         (1..=table
                             .param("ColumnNum")
                             .ok_or(UKError::MissingAampKey("Recipe table missing column num"))?
                             .as_int()?)
-                            .map(|i| -> Result<(String, u8)> {
+                            .map(|i| -> Result<(String64, u8)> {
                                 Ok((
-                                    table
+                                    *table
                                         .param(&format!("ItemName{:02}", i))
                                         .ok_or(UKError::MissingAampKey("Recipe missing item name"))?
-                                        .as_string()?
-                                        .into(),
+                                        .as_string64()?,
                                     table
                                         .param(&format!("ItemNum{:02}", i))
                                         .ok_or(UKError::MissingAampKey(
@@ -79,12 +78,12 @@ impl From<Recipe> for ParameterIO {
                 "Header",
                 [("TableNum".to_owned(), Parameter::Int(val.0.len() as i32))]
                     .into_iter()
-                    .chain(val.0.keys().enumerate().map(|(i, n)| {
-                        (
-                            format!("Table{:02}", i + 1),
-                            Parameter::String64(n.to_owned().into()),
-                        )
-                    }))
+                    .chain(
+                        val.0
+                            .keys()
+                            .enumerate()
+                            .map(|(i, n)| (format!("Table{:02}", i + 1), Parameter::String64(*n))),
+                    )
                     .collect(),
             )
             .with_objects(val.0.into_iter().map(|(name, table)| {
@@ -101,7 +100,7 @@ impl From<Recipe> for ParameterIO {
                                     [
                                         (
                                             format!("ItemName{:02}", i + 1),
-                                            Parameter::String64(name.into()),
+                                            Parameter::String64(name),
                                         ),
                                         (
                                             format!("ItemNum{:02}", i + 1),
@@ -128,7 +127,7 @@ impl Mergeable for Recipe {
 
 impl InfoSource for Recipe {
     fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
-        if let Some(table) = self.0.get(&String::from("Normal0")) {
+        if let Some(table) = self.0.get(&"Normal0".into()) {
             info.insert("normal0StuffNum".to_owned(), Byml::Int(table.len() as i32));
             for (i, (name, num)) in table.iter().enumerate() {
                 info.insert(
@@ -241,7 +240,7 @@ mod tests {
         let recipe = super::Recipe::try_from(&pio).unwrap();
         let mut info = roead::byml::Hash::new();
         recipe.update_info(&mut info).unwrap();
-        let table = recipe.0.get(&String::from("Normal0")).unwrap();
+        let table = recipe.0.get(&"Normal0".into()).unwrap();
         assert_eq!(
             info["normal0StuffNum"].as_int().unwrap(),
             table.len() as i32
@@ -251,7 +250,7 @@ mod tests {
                 info[&format!("normal0ItemName{:02}", i + 1)]
                     .as_string()
                     .unwrap(),
-                name
+                name.as_str()
             );
             assert_eq!(
                 info[&format!("normal0ItemNum{:02}", i + 1)]

@@ -5,27 +5,26 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ChemicalRes {
-    pub world: DeleteMap<String, ParameterObject>,
-    pub material: DeleteMap<String, ParameterObject>,
-    pub element: DeleteMap<String, ParameterObject>,
+    pub world: DeleteMap<String256, ParameterObject>,
+    pub material: DeleteMap<String256, ParameterObject>,
+    pub element: DeleteMap<String256, ParameterObject>,
 }
 
 impl TryFrom<&ParameterIO> for ChemicalRes {
     type Error = UKError;
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
-        let parse_res = |key| -> Result<DeleteMap<String, ParameterObject>> {
+        let parse_res = |key| -> Result<DeleteMap<String256, ParameterObject>> {
             pio.list(key)
                 .ok_or_else(|| UKError::MissingAampKeyD(jstr!("Chemical res missing {key}")))?
                 .objects
                 .0
                 .values()
-                .map(|obj| -> Result<(String, ParameterObject)> {
+                .map(|obj| -> Result<(String256, ParameterObject)> {
                     Ok((
-                        obj.param("label")
+                        *obj.param("label")
                             .ok_or(UKError::MissingAampKey("Chemical res entry missing label"))?
-                            .as_string()?
-                            .into(),
+                            .as_string256()?,
                         obj.clone(),
                     ))
                 })
@@ -42,7 +41,7 @@ impl TryFrom<&ParameterIO> for ChemicalRes {
 
 impl From<ChemicalRes> for ParameterIO {
     fn from(val: ChemicalRes) -> Self {
-        let gen_res = |res: DeleteMap<String, ParameterObject>| -> ParameterList {
+        let gen_res = |res: DeleteMap<String256, ParameterObject>| -> ParameterList {
             ParameterList::new().with_objects(
                 res.into_iter()
                     .enumerate()

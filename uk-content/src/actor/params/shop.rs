@@ -21,12 +21,12 @@ impl ShopItem {
     }
 }
 
-pub type ShopTable = IndexMap<String, ShopItem>;
+pub type ShopTable = IndexMap<String64, ShopItem>;
 
 fn merge_table(base: &ShopTable, diff: &ShopTable) -> ShopTable {
     base.iter()
         .chain(diff.iter())
-        .map(|(name, item)| (name.clone(), *item))
+        .map(|(name, item)| (*name, *item))
         .collect::<IndexMap<_, _>>()
         .into_iter()
         .filter(|(_, item)| !item.delete)
@@ -34,7 +34,7 @@ fn merge_table(base: &ShopTable, diff: &ShopTable) -> ShopTable {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-pub struct ShopData(pub IndexMap<String, Option<ShopTable>>);
+pub struct ShopData(pub IndexMap<String64, Option<ShopTable>>);
 
 impl TryFrom<ParameterIO> for ShopData {
     type Error = UKError;
@@ -55,11 +55,11 @@ impl TryFrom<&ParameterIO> for ShopData {
             .param("TableNum")
             .ok_or(UKError::MissingAampKey("Shop data missing table count"))?
             .as_int()? as usize;
-        let tables: Vec<String> = (1..=table_count)
+        let tables: Vec<_> = (1..=table_count)
             .filter_map(|i| {
                 header
                     .param(&format!("Table{:02}", i))
-                    .and_then(|p| p.as_string().ok().map(|s| s.into()))
+                    .and_then(|p| p.as_string64().ok().copied())
             })
             .collect();
         let mut shop_tables = IndexMap::with_capacity(table_count);
@@ -77,13 +77,13 @@ impl TryFrom<&ParameterIO> for ShopData {
                 table_name,
                 Some(
                     (1..=column_num)
-                        .map(|i| -> Result<(String, ShopItem)> {
+                        .map(|i| -> Result<(String64, ShopItem)> {
                             let item_name = table_obj
                                 .param(&format!("ItemName{:03}", i))
                                 .ok_or(UKError::MissingAampKey("Shop table missing item name"))?
-                                .as_string()?;
+                                .as_string64()?;
                             Ok((
-                                item_name.into(),
+                                *item_name,
                                 ShopItem {
                                     sort: table_obj
                                         .param(&format!("ItemSort{:03}", i))
@@ -136,12 +136,11 @@ impl From<ShopData> for ParameterIO {
             "Header",
             [("TableNum".to_owned(), Parameter::Int(val.0.len() as i32))]
                 .into_iter()
-                .chain(val.0.keys().enumerate().map(|(i, name)| {
-                    (
-                        format!("Table{:02}", i + 1),
-                        Parameter::String64(name.to_owned().into()),
-                    )
-                }))
+                .chain(
+                    val.0.keys().enumerate().map(|(i, name)| {
+                        (format!("Table{:02}", i + 1), Parameter::String64(*name))
+                    }),
+                )
                 .collect(),
         );
         val.0
@@ -164,10 +163,7 @@ impl From<ShopData> for ParameterIO {
                                             format!("ItemSort{:03}", i),
                                             Parameter::Int(data.sort as i32),
                                         ),
-                                        (
-                                            format!("ItemName{:03}", i),
-                                            Parameter::String64(name.into()),
-                                        ),
+                                        (format!("ItemName{:03}", i), Parameter::String64(name)),
                                         (
                                             format!("ItemNum{:03}", i),
                                             Parameter::Int(data.num as i32),
@@ -201,28 +197,28 @@ impl Mergeable for ShopData {
                 .0
                 .iter()
                 .filter_map(|(name, table)| {
-                    if let Some(Some(self_table)) = self.0.get(name.as_str()) {
+                    if let Some(Some(self_table)) = self.0.get(name) {
                         if let Some(other_table) = table {
                             if self_table != other_table {
                                 Some((
-                                    name.clone(),
+                                    *name,
                                     Some(
                                         other_table
                                             .iter()
                                             .filter_map(|(item, data)| {
                                                 if let Some(self_data) =
-                                                    self_table.get(item.as_str()) && self_data == data
+                                                    self_table.get(item) && self_data == data
                                                 {
                                                     None
                                                 } else {
-                                                    Some((item.clone(), *data))
+                                                    Some((*item, *data))
                                                 }
                                             })
                                             .chain(self_table.iter().filter_map(|(item, data)| {
-                                                if other_table.contains_key(item.as_str()) {
+                                                if other_table.contains_key(item) {
                                                     None
                                                 } else {
-                                                    Some((item.clone(), (*data).with_delete()))
+                                                    Some((*item, (*data).with_delete()))
                                                 }
                                             }))
                                             .collect(),
@@ -232,10 +228,10 @@ impl Mergeable for ShopData {
                                 None
                             }
                         } else {
-                            Some((name.clone(), None))
+                            Some((*name, None))
                         }
                     } else {
-                        Some((name.clone(), table.clone()))
+                        Some((*name, table.clone()))
                     }
                 })
                 .collect(),
@@ -248,21 +244,17 @@ impl Mergeable for ShopData {
                 .iter()
                 .filter_map(|(base_name, base_table)| {
                     if let Some(base_table) = base_table {
-                        if let Some(Some(diff_table)) = diff.0.get(base_name.as_str()) {
-                            Some((base_name.clone(), Some(merge_table(base_table, diff_table))))
+                        if let Some(Some(diff_table)) = diff.0.get(base_name) {
+                            Some((*base_name, Some(merge_table(base_table, diff_table))))
                         } else {
                             None
                         }
                     } else {
-                        Some((
-                            base_name.clone(),
-                            diff.0.get(base_name.as_str()).cloned().flatten(),
-                        ))
+                        Some((*base_name, diff.0.get(base_name).cloned().flatten()))
                     }
                 })
                 .chain(diff.0.iter().filter_map(|(diff_name, diff_table)| {
-                    (!self.0.contains_key(diff_name.as_str()))
-                        .then(|| (diff_name.clone(), diff_table.clone()))
+                    (!self.0.contains_key(diff_name)).then(|| (*diff_name, diff_table.clone()))
                 }))
                 .collect(),
         )

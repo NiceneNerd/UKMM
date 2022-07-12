@@ -10,8 +10,8 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ContactInfoItem {
-    pub name: String,
-    pub info_type: String,
+    pub name: String32,
+    pub info_type: String32,
     pub num: Option<i32>,
 }
 
@@ -19,16 +19,14 @@ impl TryFrom<&ParameterObject> for ContactInfoItem {
     type Error = UKError;
     fn try_from(obj: &ParameterObject) -> Result<Self> {
         Ok(Self {
-            name: obj
+            name: *obj
                 .param("name")
                 .ok_or(UKError::MissingAampKey("Contact info item missing name"))?
-                .as_string()?
-                .into(),
-            info_type: obj
+                .as_string32()?,
+            info_type: *obj
                 .param("type")
                 .ok_or(UKError::MissingAampKey("Contact info item missing type"))?
-                .as_string()?
-                .into(),
+                .as_string32()?,
             num: obj.param("num").map(|p| p.as_int()).transpose()?,
         })
     }
@@ -37,8 +35,8 @@ impl TryFrom<&ParameterObject> for ContactInfoItem {
 impl From<ContactInfoItem> for ParameterObject {
     fn from(val: ContactInfoItem) -> Self {
         [
-            ("name", Parameter::String32(val.name.into())),
-            ("type", Parameter::String32(val.info_type.into())),
+            ("name", Parameter::String32(val.name)),
+            ("type", Parameter::String32(val.info_type)),
         ]
         .into_iter()
         .chain(

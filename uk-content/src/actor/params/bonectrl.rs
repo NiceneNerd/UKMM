@@ -8,7 +8,7 @@ use std::collections::HashSet;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct BoneControl {
     pub objects: ParameterObjectMap,
-    pub bone_groups: IndexMap<String, DeleteSet<String>>,
+    pub bone_groups: IndexMap<String64, DeleteSet<String64>>,
 }
 
 impl TryFrom<ParameterIO> for BoneControl {
@@ -31,23 +31,23 @@ impl TryFrom<&ParameterIO> for BoneControl {
                 .lists
                 .0
                 .values()
-                .map(|list| -> Result<(String, DeleteSet<String>)> {
+                .map(|list| -> Result<(String64, DeleteSet<String64>)> {
                     Ok((
-                        list.object("Param")
+                        *list
+                            .object("Param")
                             .ok_or(UKError::MissingAampKey("Bone control group missing param"))?
                             .param("GroupName")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing group name",
                             ))?
-                            .as_string()?
-                            .into(),
+                            .as_string64()?,
                         list.object("Bones")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing bone list",
                             ))?
                             .params()
                             .values()
-                            .filter_map(|v| v.as_string().ok().map(|s| (s.into(), false)))
+                            .filter_map(|v| v.as_string64().ok().map(|s| (*s, false)))
                             .collect(),
                     ))
                 })
@@ -74,7 +74,7 @@ impl From<BoneControl> for ParameterIO {
                                     objects: [
                                         (
                                             "Param",
-                                            [("GroupName", Parameter::String64(group.into()))]
+                                            [("GroupName", Parameter::String64(group))]
                                                 .into_iter()
                                                 .collect(),
                                         ),
@@ -86,7 +86,7 @@ impl From<BoneControl> for ParameterIO {
                                                 .map(|(i, bone)| {
                                                     (
                                                         jstr!("Bone_{&lexical::to_string(i)}"),
-                                                        Parameter::String64(bone.into()),
+                                                        Parameter::String64(bone),
                                                     )
                                                 })
                                                 .collect(),
@@ -127,14 +127,14 @@ impl Mergeable for BoneControl {
                 .bone_groups
                 .iter()
                 .filter_map(|(group, other_bones)| {
-                    if let Some(self_bones) = self.bone_groups.get(group.as_str()) {
+                    if let Some(self_bones) = self.bone_groups.get(group) {
                         if self_bones == other_bones {
                             None
                         } else {
-                            Some((group.clone(), self_bones.diff(other_bones)))
+                            Some((*group, self_bones.diff(other_bones)))
                         }
                     } else {
-                        Some((group.clone(), other_bones.clone()))
+                        Some((*group, other_bones.clone()))
                     }
                 })
                 .collect(),
@@ -158,11 +158,11 @@ impl Mergeable for BoneControl {
                 .bone_groups
                 .keys()
                 .chain(diff.bone_groups.keys())
-                .collect::<HashSet<&String>>()
+                .collect::<HashSet<&String64>>()
                 .into_iter()
                 .map(|group| {
                     (
-                        group.clone(),
+                        *group,
                         diff.bone_groups
                             .get(group)
                             .map(|diff_bones| {

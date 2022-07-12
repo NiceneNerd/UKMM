@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct BodyParam {
-    pub name: String,
+    pub name: String64,
     pub friction_scale: f32,
     pub buoyancy_scale: f32,
 }
@@ -18,13 +18,12 @@ pub struct BodyParam {
 impl BodyParam {
     pub(crate) fn try_from(obj: &ParameterObject) -> Result<Self> {
         Ok(Self {
-            name: unsafe {
+            name: *unsafe {
                 // This is sound because this function is never
                 // called until the name has already been checked.
                 obj.param("RigidName").unwrap_unchecked()
             }
-            .as_string()?
-            .into(),
+            .as_string64()?,
             friction_scale: obj
                 .param("FrictionScale")
                 .ok_or(UKError::MissingAampKey(
@@ -44,7 +43,7 @@ impl BodyParam {
 impl From<BodyParam> for ParameterObject {
     fn from(val: BodyParam) -> Self {
         [
-            ("RigidName", Parameter::String64(val.name.into())),
+            ("RigidName", Parameter::String64(val.name)),
             ("FrictionScale", Parameter::F32(val.friction_scale)),
             ("BuoyancyScale", Parameter::F32(val.buoyancy_scale)),
         ]
@@ -57,7 +56,7 @@ impl From<BodyParam> for ParameterObject {
 pub struct RagdollConfigList {
     pub common_data: ParameterObject,
     pub impulse_params: ParameterList,
-    pub body_param_list: DeleteMap<String, BodyParam>,
+    pub body_param_list: DeleteMap<String64, BodyParam>,
 }
 
 impl TryFrom<&ParameterIO> for RagdollConfigList {
@@ -85,15 +84,14 @@ impl TryFrom<&ParameterIO> for RagdollConfigList {
                 .objects
                 .0
                 .values()
-                .map(|body_param| -> Result<(String, BodyParam)> {
+                .map(|body_param| -> Result<(String64, BodyParam)> {
                     Ok((
-                        body_param
+                        *body_param
                             .param("RigidName")
                             .ok_or(UKError::MissingAampKey(
                                 "Ragdoll config list missing body param name",
                             ))?
-                            .as_string()?
-                            .into(),
+                            .as_string64()?,
                         BodyParam::try_from(body_param)?,
                     ))
                 })

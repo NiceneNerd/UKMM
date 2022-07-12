@@ -5,7 +5,6 @@ use join_str::jstr;
 use parking_lot::Mutex;
 use serde::Serialize;
 use std::{
-    collections::BTreeSet,
     io::{BufReader, Read},
     path::{Path, PathBuf},
     sync::Arc,

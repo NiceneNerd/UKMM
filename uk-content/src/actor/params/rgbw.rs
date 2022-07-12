@@ -7,8 +7,8 @@ use std::collections::HashSet;
 
 #[derive(Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Serialize, Deserialize)]
 pub struct Key {
-    pub state_key: String,
-    pub system_key: String,
+    pub state_key: String32,
+    pub system_key: String32,
 }
 
 impl TryFrom<&ParameterObject> for Key {
@@ -16,20 +16,18 @@ impl TryFrom<&ParameterObject> for Key {
 
     fn try_from(obj: &ParameterObject) -> Result<Self> {
         Ok(Self {
-            state_key: obj
+            state_key: *obj
                 .param("StateKey")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll blend weight state header missing state key",
                 ))?
-                .as_string()?
-                .into(),
-            system_key: obj
+                .as_string32()?,
+            system_key: *obj
                 .param("SystemKey")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll blend weight state header missing system key",
                 ))?
-                .as_string()?
-                .into(),
+                .as_string32()?,
         })
     }
 }
@@ -37,8 +35,8 @@ impl TryFrom<&ParameterObject> for Key {
 impl From<Key> for ParameterObject {
     fn from(key: Key) -> Self {
         [
-            ("StateKey", Parameter::String32(key.state_key.into())),
-            ("SystemKey", Parameter::String32(key.system_key.into())),
+            ("StateKey", Parameter::String32(key.state_key)),
+            ("SystemKey", Parameter::String32(key.system_key)),
         ]
         .into_iter()
         .collect()
@@ -46,7 +44,7 @@ impl From<Key> for ParameterObject {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RagdollBlendWeight(IndexMap<Key, DeleteMap<String, f32>>);
+pub struct RagdollBlendWeight(IndexMap<Key, DeleteMap<String32, f32>>);
 
 impl TryFrom<&ParameterIO> for RagdollBlendWeight {
     type Error = UKError;
@@ -56,7 +54,7 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
             pio.lists
                 .0
                 .values()
-                .map(|list| -> Result<(Key, DeleteMap<String, f32>)> {
+                .map(|list| -> Result<(Key, DeleteMap<String32, f32>)> {
                     Ok((
                         list.object("Setting")
                             .ok_or(UKError::MissingAampKey(
@@ -70,14 +68,13 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
                             .objects
                             .0
                             .values()
-                            .map(|obj| -> Result<(String, f32)> {
+                            .map(|obj| -> Result<(String32, f32)> {
                                 Ok((
-                                    obj.param("RigidName")
+                                    *obj.param("RigidName")
                                         .ok_or(UKError::MissingAampKey(
                                             "Ragdoll blend weight state input missing rigid name",
                                         ))?
-                                        .as_string()?
-                                        .into(),
+                                        .as_string32()?,
                                     obj.param("BlendRate")
                                         .ok_or(UKError::MissingAampKey(
                                             "Ragdoll blend weight state input missing blend rate",
@@ -112,7 +109,7 @@ impl From<RagdollBlendWeight> for ParameterIO {
                                         (
                                             jstr!("InputWeight_{&lexical::to_string(i + 1)}"),
                                             [
-                                                ("RigidName", Parameter::String32(name.into())),
+                                                ("RigidName", Parameter::String32(name)),
                                                 ("BlendRate", Parameter::F32(rate)),
                                             ]
                                             .into_iter()

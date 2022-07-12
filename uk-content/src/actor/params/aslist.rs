@@ -1,6 +1,6 @@
 use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
 use join_str::jstr;
-use roead::{aamp::*, types::FixedSafeString};
+use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

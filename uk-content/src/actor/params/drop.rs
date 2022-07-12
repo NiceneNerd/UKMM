@@ -9,7 +9,7 @@ use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-pub struct DropTable(pub IndexMap<String, ParameterObject>);
+pub struct DropTable(pub IndexMap<String64, ParameterObject>);
 
 impl From<DropTable> for ParameterIO {
     fn from(drop: DropTable) -> Self {
@@ -21,10 +21,7 @@ impl From<DropTable> for ParameterIO {
                     [("TableNum".to_owned(), Parameter::Int(drop.0.len() as i32))]
                         .into_iter()
                         .chain(drop.0.keys().enumerate().map(|(i, name)| {
-                            (
-                                format!("Table{:02}", i + 1),
-                                Parameter::StringRef(name.to_string()),
-                            )
+                            (format!("Table{:02}", i + 1), Parameter::String64(*name))
                         }))
                         .collect(),
                 );
@@ -59,10 +56,8 @@ impl TryFrom<&ParameterIO> for DropTable {
                 .filter_map(|i| {
                     header
                         .param(&format!("Table{:02}", i))
-                        .and_then(|name| name.as_string().ok())
-                        .and_then(|name| {
-                            list.object(name).map(|table| (name.into(), table.clone()))
-                        })
+                        .and_then(|name| name.as_string64().ok())
+                        .and_then(|name| list.object(name).map(|table| (*name, table.clone())))
                 })
                 .collect(),
         ))
@@ -78,12 +73,12 @@ impl Mergeable for DropTable {
                 .filter_map(|(name, table)| {
                     if let Some(self_table) = self.0.get(name) {
                         if self_table != table {
-                            Some((name.clone(), table.clone()))
+                            Some((*name, table.clone()))
                         } else {
                             None
                         }
                     } else {
-                        Some((name.clone(), table.clone()))
+                        Some((*name, table.clone()))
                     }
                 })
                 .collect(),
@@ -95,7 +90,7 @@ impl Mergeable for DropTable {
             self.0
                 .iter()
                 .chain(diff.0.iter())
-                .map(|(k, v)| (k.clone(), v.clone()))
+                .map(|(k, v)| (*k, v.clone()))
                 .collect(),
         )
     }
