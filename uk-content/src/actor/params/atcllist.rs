@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct AttClientList {
     pub att_pos: ParameterObject,
-    pub att_clients: DeleteMap<String, String>,
+    pub att_clients: DeleteMap<String64, String64>,
 }
 
 impl TryFrom<&ParameterIO> for AttClientList {
@@ -33,20 +33,18 @@ impl TryFrom<&ParameterIO> for AttClientList {
                 .objects
                 .0
                 .values()
-                .map(|obj| -> Result<(String, String)> {
+                .map(|obj| -> Result<(String64, String64)> {
                     Ok((
-                        obj.param("Name")
+                        *obj.param("Name")
                             .ok_or(UKError::MissingAampKey(
                                 "Attention client list client missing name",
                             ))?
-                            .as_string64()?
-                            .into(),
-                        obj.param("FileName")
+                            .as_string64()?,
+                        *obj.param("FileName")
                             .ok_or(UKError::MissingAampKey(
                                 "Attention client list client missing filename",
                             ))?
-                            .as_string64()?
-                            .into(),
+                            .as_string64()?,
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -63,8 +61,8 @@ impl From<AttClientList> for ParameterIO {
                     (
                         jstr!("AttClient_{&lexical::to_string(i)}"),
                         ParameterObject::new()
-                            .with_param("Name", Parameter::String64(name.into()))
-                            .with_param("FileName", Parameter::String64(filename.into())),
+                            .with_param("Name", Parameter::String64(name))
+                            .with_param("FileName", Parameter::String64(filename)),
                     )
                 },
             )),

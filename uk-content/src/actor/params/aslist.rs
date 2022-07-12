@@ -1,12 +1,12 @@
 use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
 use join_str::jstr;
-use roead::aamp::*;
+use roead::{aamp::*, types::FixedSafeString};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct AddRes {
-    pub anim: String,
-    pub retarget_model: Option<String>,
+    pub anim: String64,
+    pub retarget_model: Option<String64>,
     pub retarget_nocorrect: Option<bool>,
 }
 
@@ -15,15 +15,15 @@ impl TryFrom<&ParameterObject> for AddRes {
 
     fn try_from(value: &ParameterObject) -> Result<Self> {
         Ok(Self {
-            anim: value
+            anim: *value
                 .param("Anim")
                 .ok_or(UKError::MissingAampKey("AS list add res missing anim"))?
-                .as_string64()?
-                .into(),
+                .as_string64()?,
             retarget_model: value
                 .param("RetargetModel")
-                .map(|v| v.as_string64().map(|s| s.into()))
-                .transpose()?,
+                .map(|v| v.as_string64())
+                .transpose()?
+                .copied(),
             retarget_nocorrect: value
                 .param("RetargetNoCorrect")
                 .map(|v| v.as_bool())
@@ -35,10 +35,10 @@ impl TryFrom<&ParameterObject> for AddRes {
 impl From<AddRes> for ParameterObject {
     fn from(value: AddRes) -> Self {
         [
-            ("Anim", Some(Parameter::String64(value.anim.into()))),
+            ("Anim", Some(Parameter::String64(value.anim))),
             (
                 "RetargetModel",
-                value.retarget_model.map(|s| Parameter::String64(s.into())),
+                value.retarget_model.map(Parameter::String64),
             ),
             (
                 "RetargetNoCorrect",
@@ -55,7 +55,7 @@ impl From<AddRes> for ParameterObject {
 pub struct ASList {
     pub common: Option<ParameterObject>,
     pub add_reses: DeleteMap<String, AddRes>,
-    pub as_defines: DeleteMap<String, String>,
+    pub as_defines: DeleteMap<String64, String64>,
     pub cf_defines: Option<DeleteMap<String, ParameterList>>,
 }
 
@@ -73,7 +73,7 @@ impl TryFrom<&ParameterIO> for ASList {
                 .values()
                 .map(|obj| -> Result<(String, AddRes)> {
                     let res: AddRes = obj.try_into()?;
-                    Ok((res.anim.clone(), res))
+                    Ok((res.anim.into(), res))
                 })
                 .collect::<Result<_>>()?,
             as_defines: pio
@@ -82,18 +82,16 @@ impl TryFrom<&ParameterIO> for ASList {
                 .objects
                 .0
                 .values()
-                .map(|obj| -> Result<(String, String)> {
+                .map(|obj| -> Result<(String64, String64)> {
                     Ok((
-                        obj.param("Name")
+                        *obj.param("Name")
                             .ok_or(UKError::MissingAampKey("AS list AS define missing name"))?
-                            .as_string64()?
-                            .into(),
-                        obj.param("Filename")
+                            .as_string64()?,
+                        *obj.param("Filename")
                             .ok_or(UKError::MissingAampKey(
                                 "AS list AS define missing filename",
                             ))?
-                            .as_string64()?
-                            .into(),
+                            .as_string64()?,
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -147,11 +145,8 @@ impl From<ASList> for ParameterIO {
                                     (
                                         jstr!("ASDefine_{&lexical::to_string(i)}"),
                                         ParameterObject::new()
-                                            .with_param("Name", Parameter::String64(name.into()))
-                                            .with_param(
-                                                "Filename",
-                                                Parameter::String64(filename.into()),
-                                            ),
+                                            .with_param("Name", Parameter::String64(name))
+                                            .with_param("Filename", Parameter::String64(filename)),
                                     )
                                 }),
                         ),

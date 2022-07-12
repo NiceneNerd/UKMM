@@ -115,6 +115,9 @@ pub fn canonicalize(path: impl AsRef<Path>) -> String {
 pub mod prelude {
     use cow_utils::CowUtils;
     pub(crate) use smartstring::alias::String;
+    pub type String32 = roead::types::FixedSafeString<32>;
+    pub type String64 = roead::types::FixedSafeString<64>;
+    pub type String256 = roead::types::FixedSafeString<256>;
     use std::borrow::Cow;
 
     pub trait Mergeable {

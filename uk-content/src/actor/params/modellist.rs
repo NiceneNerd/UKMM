@@ -169,13 +169,13 @@ impl InfoSource for ModelList {
             .get(0)
             .and_then(|list| list.object("Base").and_then(|o| o.param("Folder")))
         {
-            info.insert("bfres".to_owned(), bfres.clone().into());
+            info.insert("bfres".to_owned(), bfres.to_string().into());
         }
         if let Some(Parameter::String64(model)) = self.model_data.get(0).and_then(|list| {
             list.list("Unit")
                 .and_then(|list| list.object("Unit_0").and_then(|obj| obj.param("UnitName")))
         }) {
-            info.insert("mainModel".to_owned(), model.clone().into());
+            info.insert("mainModel".to_owned(), model.to_string().into());
         }
         Ok(())
     }

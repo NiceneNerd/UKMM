@@ -160,7 +160,7 @@ impl InfoSource for Chemical {
             .values()
             .next()
             .and_then(|body| body.shape.param("name"))
-            && name == "WeaponFire"
+            && name.as_str() == "WeaponFire"
         {
             chem_info.insert("Burnable".into(), Byml::Int(1));
         }
