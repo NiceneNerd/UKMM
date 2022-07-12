@@ -27,7 +27,7 @@ impl From<Awareness> for ParameterIO {
 impl_simple_aamp!(Awareness, 0);
 
 impl ParameterResource for Awareness {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/Awareness/{name}.bawareness")
     }
 }

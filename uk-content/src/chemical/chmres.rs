@@ -25,7 +25,7 @@ impl TryFrom<&ParameterIO> for ChemicalRes {
                         obj.param("label")
                             .ok_or(UKError::MissingAampKey("Chemical res entry missing label"))?
                             .as_string()?
-                            .to_owned(),
+                            .into(),
                         obj.clone(),
                     ))
                 })

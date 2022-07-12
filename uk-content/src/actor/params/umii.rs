@@ -27,7 +27,7 @@ impl From<UMii> for ParameterIO {
 impl_simple_aamp!(UMii, 0);
 
 impl ParameterResource for UMii {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/UMii/{name}.bumii")
     }
 }

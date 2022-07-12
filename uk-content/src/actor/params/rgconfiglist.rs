@@ -24,7 +24,7 @@ impl BodyParam {
                 obj.param("RigidName").unwrap_unchecked()
             }
             .as_string()?
-            .to_owned(),
+            .into(),
             friction_scale: obj
                 .param("FrictionScale")
                 .ok_or(UKError::MissingAampKey(
@@ -44,7 +44,7 @@ impl BodyParam {
 impl From<BodyParam> for ParameterObject {
     fn from(val: BodyParam) -> Self {
         [
-            ("RigidName", Parameter::String64(val.name)),
+            ("RigidName", Parameter::String64(val.name.into())),
             ("FrictionScale", Parameter::F32(val.friction_scale)),
             ("BuoyancyScale", Parameter::F32(val.buoyancy_scale)),
         ]
@@ -93,7 +93,7 @@ impl TryFrom<&ParameterIO> for RagdollConfigList {
                                 "Ragdoll config list missing body param name",
                             ))?
                             .as_string()?
-                            .to_string(),
+                            .into(),
                         BodyParam::try_from(body_param)?,
                     ))
                 })
@@ -140,7 +140,7 @@ impl Mergeable for RagdollConfigList {
 }
 
 impl ParameterResource for RagdollConfigList {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/RagdollConfigList/{name}.brgconfiglist")
     }
 }

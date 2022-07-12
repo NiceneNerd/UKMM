@@ -116,7 +116,7 @@ impl TryFrom<&Byml> for StatusEffectList {
                 .as_hash()?
                 .iter()
                 .map(|(effect, values)| -> Result<(String, StatusEffectValues)> {
-                    Ok((effect.clone(), values.try_into()?))
+                    Ok((effect.into(), values.try_into()?))
                 })
                 .collect::<Result<_>>()?,
         ))
@@ -128,7 +128,7 @@ impl From<StatusEffectList> for Byml {
         Self::Array(vec![val
             .0
             .into_iter()
-            .map(|(effect, values)| (effect, values.into()))
+            .map(|(effect, values)| (effect.to_string(), values.into()))
             .collect::<Byml>()])
     }
 }

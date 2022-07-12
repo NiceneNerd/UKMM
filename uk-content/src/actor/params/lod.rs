@@ -27,7 +27,7 @@ impl From<Lod> for ParameterIO {
 impl_simple_aamp!(Lod, 0);
 
 impl ParameterResource for Lod {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/LOD/{name}.blod")
     }
 }

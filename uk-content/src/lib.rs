@@ -114,6 +114,7 @@ pub fn canonicalize(path: impl AsRef<Path>) -> String {
 
 pub mod prelude {
     use cow_utils::CowUtils;
+    pub(crate) use smartstring::alias::String;
     use std::borrow::Cow;
 
     pub trait Mergeable {

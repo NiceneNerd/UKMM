@@ -27,7 +27,7 @@ impl From<DamageParam> for ParameterIO {
 impl_simple_aamp!(DamageParam, 0);
 
 impl ParameterResource for DamageParam {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/DamageParam/{name}.bdmgparam")
     }
 }

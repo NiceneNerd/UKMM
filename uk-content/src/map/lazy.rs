@@ -14,7 +14,7 @@ impl TryFrom<&Byml> for LazyTraverseList {
                 .map(
                     |(key, list)| -> Result<(String, SortedDeleteMap<u32, String>)> {
                         Ok((
-                            key.to_owned(),
+                            key.into(),
                             list.as_array()?
                                 .iter()
                                 .map(|unit| -> Result<(u32, String)> {
@@ -31,7 +31,7 @@ impl TryFrom<&Byml> for LazyTraverseList {
                                             "Lazy traverse list unit missing unit name",
                                         ))?
                                         .as_string()?;
-                                    Ok((id, name.to_owned()))
+                                    Ok((id, name.into()))
                                 })
                                 .collect::<Result<_>>()?,
                         ))
@@ -48,12 +48,12 @@ impl From<LazyTraverseList> for Byml {
             .into_iter()
             .map(|(key, list)| {
                 (
-                    key,
+                    key.to_string(),
                     list.into_iter()
                         .map(|(id, name)| -> Byml {
                             [
                                 ("HashId", Byml::UInt(id)),
-                                ("UnitConfigName", Byml::String(name)),
+                                ("UnitConfigName", Byml::String(name.into())),
                             ]
                             .into_iter()
                             .collect()

@@ -40,14 +40,14 @@ impl TryFrom<&ParameterIO> for BoneControl {
                                 "Bone control group missing group name",
                             ))?
                             .as_string()?
-                            .to_owned(),
+                            .into(),
                         list.object("Bones")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing bone list",
                             ))?
                             .params()
                             .values()
-                            .filter_map(|v| v.as_string().ok().map(|s| (s.to_owned(), false)))
+                            .filter_map(|v| v.as_string().ok().map(|s| (s.into(), false)))
                             .collect(),
                     ))
                 })
@@ -74,7 +74,7 @@ impl From<BoneControl> for ParameterIO {
                                     objects: [
                                         (
                                             "Param",
-                                            [("GroupName", Parameter::String64(group))]
+                                            [("GroupName", Parameter::String64(group.into()))]
                                                 .into_iter()
                                                 .collect(),
                                         ),
@@ -86,7 +86,7 @@ impl From<BoneControl> for ParameterIO {
                                                 .map(|(i, bone)| {
                                                     (
                                                         jstr!("Bone_{&lexical::to_string(i)}"),
-                                                        Parameter::String64(bone),
+                                                        Parameter::String64(bone.into()),
                                                     )
                                                 })
                                                 .collect(),
@@ -180,7 +180,7 @@ impl Mergeable for BoneControl {
 }
 
 impl ParameterResource for BoneControl {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/BoneControl/{name}.bbonectrl")
     }
 }

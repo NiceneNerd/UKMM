@@ -44,7 +44,7 @@ impl TryFrom<&ParameterIO> for Recipe {
                         UKError::MissingAampKeyD(jstr!("Recipe missing table {&name}"))
                     })?;
                     Ok((
-                        name.to_owned(),
+                        name.into(),
                         (1..=table
                             .param("ColumnNum")
                             .ok_or(UKError::MissingAampKey("Recipe table missing column num"))?
@@ -55,7 +55,7 @@ impl TryFrom<&ParameterIO> for Recipe {
                                         .param(&format!("ItemName{:02}", i))
                                         .ok_or(UKError::MissingAampKey("Recipe missing item name"))?
                                         .as_string()?
-                                        .to_owned(),
+                                        .into(),
                                     table
                                         .param(&format!("ItemNum{:02}", i))
                                         .ok_or(UKError::MissingAampKey(
@@ -82,7 +82,7 @@ impl From<Recipe> for ParameterIO {
                     .chain(val.0.keys().enumerate().map(|(i, n)| {
                         (
                             format!("Table{:02}", i + 1),
-                            Parameter::String64(n.to_owned()),
+                            Parameter::String64(n.to_owned().into()),
                         )
                     }))
                     .collect(),
@@ -101,7 +101,7 @@ impl From<Recipe> for ParameterIO {
                                     [
                                         (
                                             format!("ItemName{:02}", i + 1),
-                                            Parameter::String64(name),
+                                            Parameter::String64(name.into()),
                                         ),
                                         (
                                             format!("ItemNum{:02}", i + 1),
@@ -133,7 +133,7 @@ impl InfoSource for Recipe {
             for (i, (name, num)) in table.iter().enumerate() {
                 info.insert(
                     format!("normal0ItemName{:02}", i + 1),
-                    Byml::String(name.clone()),
+                    Byml::String(name.to_string()),
                 );
                 info.insert(
                     format!("normal0ItemNum{:02}", i + 1),
@@ -146,7 +146,7 @@ impl InfoSource for Recipe {
 }
 
 impl ParameterResource for Recipe {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/Recipe/{name}.brecipe")
     }
 }

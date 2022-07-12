@@ -11,7 +11,7 @@ pub use crate::{
             rgconfiglist::RagdollConfigList, shop::ShopData, umii::UMii,
         },
         residents::ResidentActors,
-        Actor,
+        // Actor,
     },
     chemical::chmres::ChemicalRes,
     cooking::data::CookData,
@@ -38,7 +38,7 @@ use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MergeableResource {
-    Actor(Box<Actor>),
+    // Actor(Box<Actor>),
     ActorInfo(Box<ActorInfo>),
     ActorLink(Box<ActorLink>),
     AIProgram(Box<AIProgram>),
@@ -92,7 +92,7 @@ pub enum MergeableResource {
 impl std::fmt::Display for MergeableResource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Actor(_) => "Actor",
+            // Self::Actor(_) => "Actor",
             Self::ActorInfo(_) => "ActorInfo",
             Self::ActorLink(_) => "ActorLink",
             Self::AIProgram(_) => "AIProgram",
@@ -184,7 +184,7 @@ macro_rules! impl_from_res {
     };
 }
 
-impl_from_res!(Actor);
+// impl_from_res!(Actor);
 impl_from_res!(ActorInfo);
 impl_from_res!(ActorLink);
 impl_from_res!(AIProgram);
@@ -235,7 +235,7 @@ impl_from_res!(WorldInfo);
 impl Mergeable for MergeableResource {
     fn diff(&self, other: &Self) -> Self {
         match (self, other) {
-            (Self::Actor(a), Self::Actor(b)) => Self::Actor(Box::new(a.diff(b))),
+            // (Self::Actor(a), Self::Actor(b)) => Self::Actor(Box::new(a.diff(b))),
             (Self::ActorInfo(a), Self::ActorInfo(b)) => Self::ActorInfo(Box::new(a.diff(b))),
             (Self::ActorLink(a), Self::ActorLink(b)) => Self::ActorLink(Box::new(a.diff(b))),
             (Self::AIProgram(a), Self::AIProgram(b)) => Self::AIProgram(Box::new(a.diff(b))),
@@ -325,7 +325,7 @@ impl Mergeable for MergeableResource {
 
     fn merge(&self, diff: &Self) -> Self {
         match (self, diff) {
-            (Self::Actor(a), Self::Actor(b)) => Self::Actor(Box::new(a.merge(b))),
+            // (Self::Actor(a), Self::Actor(b)) => Self::Actor(Box::new(a.merge(b))),
             (Self::ActorInfo(a), Self::ActorInfo(b)) => Self::ActorInfo(Box::new(a.merge(b))),
             (Self::ActorLink(a), Self::ActorLink(b)) => Self::ActorLink(Box::new(a.merge(b))),
             (Self::AIProgram(a), Self::AIProgram(b)) => Self::AIProgram(Box::new(a.merge(b))),
@@ -417,7 +417,7 @@ impl Mergeable for MergeableResource {
 impl MergeableResource {
     pub fn into_binary(self, endian: Endian) -> roead::Bytes {
         match self {
-            Self::Actor(v) => v.into_binary(endian),
+            // Self::Actor(v) => v.into_binary(endian),
             Self::ActorInfo(v) => v.into_binary(endian),
             Self::ActorLink(v) => v.into_binary(endian),
             Self::AIProgram(v) => v.into_binary(endian),
@@ -477,7 +477,7 @@ pub trait ResourceRegister {
 
 impl ResourceRegister for std::cell::RefCell<BTreeMap<String, ResourceData>> {
     fn add_resource(&self, canon: &str, resource: ResourceData) -> anyhow::Result<()> {
-        self.borrow_mut().insert(canon.to_owned(), resource);
+        self.borrow_mut().insert(canon.into(), resource);
         Ok(())
     }
 
@@ -506,8 +506,8 @@ impl SarcMap {
             sarc.files()
                 .map(|file| -> Result<(String, String)> {
                     Ok((
-                        file.name().context("SARC file missing name")?.to_owned(),
-                        file.name_unchecked().replace(".s", "."),
+                        file.name().context("SARC file missing name")?.into(),
+                        file.name_unchecked().replace(".s", ".").into(),
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -524,12 +524,12 @@ impl SarcMap {
         sarc.files = self
             .0
             .iter()
-            .map(|(path, canon)| -> Result<(String, Vec<u8>)> {
+            .map(|(path, canon)| -> Result<(std::string::String, Vec<u8>)> {
                 let resource = resources
                     .get(canon)
                     .with_context(|| jstr!("Missing resource for SARC: {&canon}"))?;
                 let data = resource.to_binary(endian, resources)?;
-                Ok((path.clone(), data.into()))
+                Ok((path.to_string(), data.into()))
             })
             .collect::<Result<_>>()?;
         Ok(sarc.to_binary())

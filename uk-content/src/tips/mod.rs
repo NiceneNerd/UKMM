@@ -18,7 +18,7 @@ impl TryFrom<&Byml> for Tips {
                         hash.get("MessageId")
                             .ok_or(UKError::MissingBymlKey("Tips file entry missing MessageId"))?
                             .as_string()?
-                            .to_owned(),
+                            .into(),
                         entry.clone(),
                     ))
                 })

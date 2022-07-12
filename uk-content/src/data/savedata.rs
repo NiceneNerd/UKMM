@@ -43,7 +43,7 @@ impl TryFrom<&Byml> for SaveDataHeader {
                 .get("file_name")
                 .ok_or(UKError::MissingBymlKey("bgsvdata header missing file_name"))?
                 .as_string()?
-                .to_owned(),
+                .into(),
         })
     }
 }
@@ -57,7 +57,7 @@ impl From<SaveDataHeader> for Byml {
                 Byml::Bool(val.is_common_at_same_account),
             ),
             ("IsSaveSecureCode", Byml::Bool(val.is_save_secure_code)),
-            ("file_name", Byml::String(val.file_name)),
+            ("file_name", Byml::String(val.file_name.into())),
         ]
         .into_iter()
         .collect()
@@ -77,7 +77,7 @@ impl From<String> for Flag {
 impl From<&str> for Flag {
     fn from(string: &str) -> Self {
         let hash = hash_name(string) as i32;
-        Self(string.to_owned(), hash)
+        Self(string.into(), hash)
     }
 }
 
@@ -116,7 +116,7 @@ impl TryFrom<&Byml> for Flag {
                 .get("DataName")
                 .ok_or(UKError::MissingBymlKey("bgsvdata missing DataName"))?
                 .as_string()?
-                .to_owned(),
+                .into(),
             byml.as_hash()?
                 .get("HashValue")
                 .ok_or(UKError::MissingBymlKey("bgsvdata missing HashValue"))?
@@ -129,7 +129,7 @@ impl TryFrom<&Byml> for Flag {
 impl From<Flag> for Byml {
     fn from(val: Flag) -> Self {
         [
-            ("DataName", Byml::String(val.0)),
+            ("DataName", Byml::String(val.0.into())),
             ("HashValue", Byml::Int(val.1)),
         ]
         .into_iter()
@@ -307,7 +307,7 @@ impl Mergeable for SaveDataPack {
                 .into_iter()
                 .map(|key| {
                     (
-                        key.to_owned(),
+                        key.into(),
                         self.0
                             .get(key)
                             .unwrap_or(&Default::default())
@@ -324,7 +324,7 @@ impl Mergeable for SaveDataPack {
                 .into_iter()
                 .map(|key| {
                     (
-                        key.to_owned(),
+                        key.into(),
                         self.0
                             .get(key)
                             .unwrap_or(&Default::default())

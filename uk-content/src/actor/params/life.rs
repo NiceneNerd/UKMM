@@ -70,7 +70,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                         "Life condition display distance missing item",
                     ))?
                     .as_string()?
-                    .to_owned(),
+                    .into(),
             ),
             y_limit_algo: Some(
                 pio.object("YLimitAlgorithm")
@@ -82,7 +82,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                         "Life condition display distance missing item",
                     ))?
                     .as_string()?
-                    .to_owned(),
+                    .into(),
             ),
             delete_weathers: pio
                 .object("DeleteWeathers")
@@ -164,7 +164,7 @@ impl From<LifeCondition> for ParameterIO {
         if let Some(auto_display_dist_algo) = val.auto_disp_dist_algo {
             pio.set_object(
                 "AutoDisplayDistanceAlgorithm",
-                [("Item", Parameter::StringRef(auto_display_dist_algo))]
+                [("Item", Parameter::StringRef(auto_display_dist_algo.into()))]
                     .into_iter()
                     .collect(),
             );
@@ -172,7 +172,7 @@ impl From<LifeCondition> for ParameterIO {
         if let Some(y_limit_algo) = val.y_limit_algo {
             pio.set_object(
                 "YLimitAlgorithm",
-                [("Item", Parameter::StringRef(y_limit_algo))]
+                [("Item", Parameter::StringRef(y_limit_algo.into()))]
                     .into_iter()
                     .collect(),
             );
@@ -356,7 +356,7 @@ impl InfoSource for LifeCondition {
             info.insert("traverseDist".into(), display_dist.into());
         }
         if let Some(limit) = &self.y_limit_algo {
-            info.insert("yLimitAlgo".into(), limit.clone().into());
+            info.insert("yLimitAlgo".into(), limit.to_string().into());
         }
         if let Some(invalid_times) = &self.invalid_times && !invalid_times.is_empty() {
             info.insert(
@@ -381,7 +381,7 @@ impl InfoSource for LifeCondition {
 }
 
 impl ParameterResource for LifeCondition {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/LifeCondition/{name}.blifecondition")
     }
 }

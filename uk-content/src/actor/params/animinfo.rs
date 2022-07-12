@@ -25,7 +25,7 @@ impl From<AnimationInfo> for Byml {
 }
 
 impl ParameterResource for AnimationInfo {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/AnimationInfo/{name}.baniminfo")
     }
 }

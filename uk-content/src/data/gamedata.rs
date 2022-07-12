@@ -21,7 +21,7 @@ impl TryFrom<&Byml> for GameData {
                 .keys()
                 .next()
                 .ok_or(UKError::MissingBymlKey("bgdata file missing data type key"))?
-                .to_owned(),
+                .into(),
             flags: hash
                 .values()
                 .next()
@@ -46,9 +46,12 @@ impl TryFrom<&Byml> for GameData {
 
 impl From<GameData> for Byml {
     fn from(val: GameData) -> Self {
-        [(val.data_type, val.flags.values().cloned().collect())]
-            .into_iter()
-            .collect()
+        [(
+            val.data_type.to_string(),
+            val.flags.values().cloned().collect(),
+        )]
+        .into_iter()
+        .collect()
     }
 }
 
@@ -137,7 +140,7 @@ macro_rules! extract_sarc_gamedata {
                             "string_data"
                         } else {
                             _key.trim_start_matches("revival_")
-                        }.to_owned(),
+                        }.into(),
                         flags: SortedDeleteMap::new(),
                     }, |acc, val| {
                         acc.merge(&val)
@@ -170,7 +173,7 @@ macro_rules! extract_sarcwriter_gamedata {
                             "string_data"
                         } else {
                             _key.trim_start_matches("revival_")
-                        }.to_owned(),
+                        }.into(),
                         flags: SortedDeleteMap::new(),
                     }, |mut acc, val| {
                         acc.flags.extend(val.flags.into_iter());

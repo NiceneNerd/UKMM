@@ -30,7 +30,7 @@ impl TryFrom<&Byml> for Location {
                         "Main field location entry missing message ID",
                     ))?
                     .as_string()?
-                    .to_owned();
+                    .into();
                 let pos = LocationEntry {
                     show_level: loc
                         .get("ShowLevel")
@@ -71,7 +71,7 @@ impl From<Location> for Byml {
                     .into_iter()
                     .map(|pos| -> Byml {
                         [
-                            ("MessageID", Byml::String(message.clone())),
+                            ("MessageID", Byml::String(message.to_string())),
                             ("ShowLevel", Byml::Int(pos.show_level as i32)),
                             ("Translate", pos.translate),
                             ("Type", Byml::Int(pos.ltype as i32)),

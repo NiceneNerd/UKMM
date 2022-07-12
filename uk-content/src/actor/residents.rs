@@ -29,7 +29,7 @@ impl TryFrom<&Byml> for ResidentActors {
                                         "Resident actors entry missing name",
                                     ))?
                                     .as_string()?
-                                    .to_owned(),
+                                    .into(),
                                 ResidentActorData {
                                     only_res: actor
                                         .get("only_res")
@@ -57,7 +57,7 @@ impl From<ResidentActors> for Byml {
                 .map(|(name, data)| {
                     Byml::Hash(
                         [
-                            ("name", Some(Byml::String(name))),
+                            ("name", Some(Byml::String(name.into()))),
                             ("only_res", Some(Byml::Bool(data.only_res))),
                             ("scale", data.scale),
                         ]

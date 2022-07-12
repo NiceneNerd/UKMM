@@ -59,7 +59,7 @@ impl TryFrom<&ParameterIO> for ShopData {
             .filter_map(|i| {
                 header
                     .param(&format!("Table{:02}", i))
-                    .and_then(|p| p.as_string().ok().map(|s| s.to_owned()))
+                    .and_then(|p| p.as_string().ok().map(|s| s.into()))
             })
             .collect();
         let mut shop_tables = IndexMap::with_capacity(table_count);
@@ -83,7 +83,7 @@ impl TryFrom<&ParameterIO> for ShopData {
                                 .ok_or(UKError::MissingAampKey("Shop table missing item name"))?
                                 .as_string()?;
                             Ok((
-                                item_name.to_owned(),
+                                item_name.into(),
                                 ShopItem {
                                     sort: table_obj
                                         .param(&format!("ItemSort{:03}", i))
@@ -139,7 +139,7 @@ impl From<ShopData> for ParameterIO {
                 .chain(val.0.keys().enumerate().map(|(i, name)| {
                     (
                         format!("Table{:02}", i + 1),
-                        Parameter::String64(name.to_owned()),
+                        Parameter::String64(name.to_owned().into()),
                     )
                 }))
                 .collect(),
@@ -164,7 +164,10 @@ impl From<ShopData> for ParameterIO {
                                             format!("ItemSort{:03}", i),
                                             Parameter::Int(data.sort as i32),
                                         ),
-                                        (format!("ItemName{:03}", i), Parameter::String64(name)),
+                                        (
+                                            format!("ItemName{:03}", i),
+                                            Parameter::String64(name.into()),
+                                        ),
                                         (
                                             format!("ItemNum{:03}", i),
                                             Parameter::Int(data.num as i32),
@@ -267,7 +270,7 @@ impl Mergeable for ShopData {
 }
 
 impl ParameterResource for ShopData {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/ShopData/{name}.bshop")
     }
 }

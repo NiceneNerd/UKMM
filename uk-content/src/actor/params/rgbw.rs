@@ -22,14 +22,14 @@ impl TryFrom<&ParameterObject> for Key {
                     "Ragdoll blend weight state header missing state key",
                 ))?
                 .as_string()?
-                .to_owned(),
+                .into(),
             system_key: obj
                 .param("SystemKey")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll blend weight state header missing system key",
                 ))?
                 .as_string()?
-                .to_owned(),
+                .into(),
         })
     }
 }
@@ -37,8 +37,8 @@ impl TryFrom<&ParameterObject> for Key {
 impl From<Key> for ParameterObject {
     fn from(key: Key) -> Self {
         [
-            ("StateKey", Parameter::String32(key.state_key)),
-            ("SystemKey", Parameter::String32(key.system_key)),
+            ("StateKey", Parameter::String32(key.state_key.into())),
+            ("SystemKey", Parameter::String32(key.system_key.into())),
         ]
         .into_iter()
         .collect()
@@ -77,7 +77,7 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
                                             "Ragdoll blend weight state input missing rigid name",
                                         ))?
                                         .as_string()?
-                                        .to_owned(),
+                                        .into(),
                                     obj.param("BlendRate")
                                         .ok_or(UKError::MissingAampKey(
                                             "Ragdoll blend weight state input missing blend rate",
@@ -112,7 +112,7 @@ impl From<RagdollBlendWeight> for ParameterIO {
                                         (
                                             jstr!("InputWeight_{&lexical::to_string(i + 1)}"),
                                             [
-                                                ("RigidName", Parameter::String32(name)),
+                                                ("RigidName", Parameter::String32(name.into())),
                                                 ("BlendRate", Parameter::F32(rate)),
                                             ]
                                             .into_iter()
@@ -180,7 +180,7 @@ impl Mergeable for RagdollBlendWeight {
 }
 
 impl ParameterResource for RagdollBlendWeight {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/RagdollBlendWeight/{name}.brgbw")
     }
 }

@@ -212,7 +212,7 @@ impl Mergeable for AS {
 }
 
 impl ParameterResource for AS {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/AS/{name}.bas")
     }
 }

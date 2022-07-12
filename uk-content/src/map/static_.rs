@@ -43,7 +43,7 @@ impl TryFrom<&Byml> for Static {
                                 "CDungeon static entry missing Map name",
                             ))?
                             .as_string()?
-                            .to_owned();
+                            .into();
                         let pos_name = match entry.get("PosName") {
                             Some(pos_name) => pos_name.as_string()?.to_owned(),
                             _ => return Ok(entry_map),
@@ -62,11 +62,11 @@ impl TryFrom<&Byml> for Static {
                             .clone();
                         let player_state = entry
                             .get("PlayerState")
-                            .map(|state| -> Result<String> { Ok(state.as_string()?.to_owned()) })
+                            .map(|state| -> Result<String> { Ok(state.as_string()?.into()) })
                             .transpose()?;
                         if let Some(map_entries) = entry_map.get_mut(&map) {
                             map_entries.insert(
-                                pos_name,
+                                String::from(pos_name),
                                 EntryPos {
                                     rotate,
                                     translate,
@@ -77,7 +77,7 @@ impl TryFrom<&Byml> for Static {
                             entry_map.insert(
                                 map,
                                 [(
-                                    pos_name,
+                                    pos_name.into(),
                                     EntryPos {
                                         rotate,
                                         translate,
@@ -96,7 +96,7 @@ impl TryFrom<&Byml> for Static {
                 .iter()
                 .filter(|(k, _)| k.as_str() != "StartPos")
                 .map(|(key, array)| -> Result<(String, DeleteVec<Byml>)> {
-                    Ok((key.to_owned(), array.as_array()?.iter().cloned().collect()))
+                    Ok((key.into(), array.as_array()?.iter().cloned().collect()))
                 })
                 .collect::<Result<_>>()?,
         })
@@ -114,15 +114,15 @@ impl From<Static> for Byml {
                         .into_iter()
                         .map(|(pos_name, pos)| {
                             [
-                                ("Map", Byml::String(map.clone())),
-                                ("PosName", Byml::String(pos_name)),
+                                ("Map", Byml::String(map.to_string())),
+                                ("PosName", Byml::String(pos_name.into())),
                                 ("Rotate", pos.rotate),
                                 ("Translate", pos.translate),
                             ]
                             .into_iter()
                             .chain(
                                 pos.player_state
-                                    .map(|state| ("PlayerState", Byml::String(state))),
+                                    .map(|state| ("PlayerState", Byml::String(state.into()))),
                             )
                             .collect()
                         })
@@ -134,7 +134,7 @@ impl From<Static> for Byml {
         .chain(
             val.general
                 .into_iter()
-                .map(|(key, array)| (key, array.into_iter().collect())),
+                .map(|(key, array)| (key.into(), array.into_iter().collect())),
         )
         .collect()
     }

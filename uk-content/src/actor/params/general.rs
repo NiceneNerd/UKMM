@@ -41,7 +41,7 @@ impl InfoSource for GeneralParamList {
         if let Some(obj) = self.0.object("Armor") {
             crate::actor::info_params!(obj, info, {
                 ("armorDefenceAddLevel", "DefenceAddLevel", i32),
-                ("armorNextRankName", "NextRankName", String),
+                ("armorNextRankName", "NextRankName", std::string::String),
                 ("armorStarNum", "StarNum", i32),
             });
         };
@@ -49,7 +49,7 @@ impl InfoSource for GeneralParamList {
             crate::actor::info_params!(obj, info, {
                 ("armorEffectAncientPowUp", "AncientPowUp", bool),
                 ("armorEffectEffectLevel", "EffectLevel", i32),
-                ("armorEffectEffectType", "EffectType", String),
+                ("armorEffectEffectType", "EffectType", std::string::String),
                 ("armorEffectEnableClimbWaterfall", "EnableClimbWaterfall", bool),
                 ("armorEffectEnableSpinAttack", "EnableSpinAttack", bool),
             });
@@ -79,7 +79,7 @@ impl InfoSource for GeneralParamList {
         };
         if let Some(obj) = self.0.object("Bow") {
             crate::actor::info_params!(obj, info, {
-                ("bowArrowName", "ArrowName", String),
+                ("bowArrowName", "ArrowName", std::string::String),
                 ("bowIsLeadShot", "IsLeadShot", bool),
                 ("bowIsRapidFire", "IsRapidFire", bool),
                 ("bowLeadShotNum", "LeadShotNum", i32),
@@ -116,7 +116,7 @@ impl InfoSource for GeneralParamList {
         };
         if let Some(obj) = self.0.object("Horse") {
             crate::actor::info_params!(obj, info, {
-                ("horseASVariation", "ASVariation", String),
+                ("horseASVariation", "ASVariation", std::string::String),
                 ("horseGearTopChargeNum", "GearTopChargeNum", i32),
                 ("horseNature", "Nature", i32),
             });
@@ -133,14 +133,14 @@ impl InfoSource for GeneralParamList {
                 ("itemSaleRevivalCount", "SaleRevivalCount", i32),
                 ("itemSellingPrice", "SellingPrice", i32),
                 ("itemStainColor", "StainColor", i32),
-                ("itemUseIconActorName", "UseIconActorName", String),
+                ("itemUseIconActorName", "UseIconActorName", std::string::String),
             });
         };
         if let Some(obj) = self.0.object("MasterSword") {
             crate::actor::info_params!(obj, info, {
                 ("masterSwordSearchEvilDist", "SearchEvilDist", f32),
-                ("masterSwordSleepActorName", "SleepActorName", String),
-                ("masterSwordTrueFormActorName", "TrueFormActorName", String),
+                ("masterSwordSleepActorName", "SleepActorName", std::string::String),
+                ("masterSwordTrueFormActorName", "TrueFormActorName", std::string::String),
                 ("masterSwordTrueFormAttackPower", "TrueFormAttackPower", i32),
             });
         };
@@ -165,13 +165,13 @@ impl InfoSource for GeneralParamList {
         if let Some(obj) = self.0.object("SeriesArmor") {
             crate::actor::info_params!(obj, info, {
                 ("seriesArmorEnableCompBonus", "EnableCompBonus", bool),
-                ("seriesArmorSeriesType", "SeriesType", String),
+                ("seriesArmorSeriesType", "SeriesType", std::string::String),
             });
         };
         if let Some(obj) = self.0.object("System") {
             crate::actor::info_params!(obj, info, {
                 ("systemIsGetItemSelf", "IsGetItemSelf", bool),
-                ("systemSameGroupActorName", "SameGroupActorName", String),
+                ("systemSameGroupActorName", "SameGroupActorName", std::string::String),
             });
         };
         if let Some(obj) = self.0.object("Traveler") {
@@ -184,7 +184,7 @@ impl InfoSource for GeneralParamList {
             .into_iter()
             .chain((0..30).map(|i| format!("RoutePoint{}Name", i)))
             .try_for_each(|param| -> Result<()> {
-                if let Some(val) = extract_info_param::<String>(obj, &param)?
+                if let Some(val) = extract_info_param::<std::string::String>(obj, &param)?
                     && val.as_string().map(|v| !v.is_empty()).unwrap_or_default()
                 {
                     info.insert(jstr!("traveler{&param}"), val);
@@ -241,7 +241,7 @@ impl InfoSource for GeneralParamList {
 }
 
 impl ParameterResource for GeneralParamList {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/GeneralParamList/{name}.bgparamlist")
     }
 }

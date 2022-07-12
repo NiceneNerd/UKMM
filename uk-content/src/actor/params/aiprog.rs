@@ -514,7 +514,7 @@ mod parse {
                                     .param("ClassName")
                                     .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
                                     .as_string()?
-                                    .to_owned(),
+                                    .into(),
                                 plist_to_ai(root, pio, action_offset)?,
                             ))
                         })
@@ -567,8 +567,7 @@ mod parse {
                                 .ok_or(UKError::MissingAampKey("Query missing Def object"))?
                                 .param("ClassName")
                                 .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
-                                .as_string()?
-                                .to_owned(),
+                                .as_string()?.into(),
                             query,
                         ))
                     })
@@ -790,7 +789,7 @@ mod write {
 }
 
 impl ParameterResource for AIProgram {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/AIProgram/{name}.baiprog")
     }
 }

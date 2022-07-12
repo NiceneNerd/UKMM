@@ -58,7 +58,7 @@ impl Mergeable for AttClient {
 }
 
 impl ParameterResource for AttClient {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/AttClient/{name}.batcl")
     }
 }

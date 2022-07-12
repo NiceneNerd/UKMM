@@ -23,7 +23,7 @@ impl From<DropTable> for ParameterIO {
                         .chain(drop.0.keys().enumerate().map(|(i, name)| {
                             (
                                 format!("Table{:02}", i + 1),
-                                Parameter::StringRef(name.to_owned()),
+                                Parameter::StringRef(name.to_string()),
                             )
                         }))
                         .collect(),
@@ -61,8 +61,7 @@ impl TryFrom<&ParameterIO> for DropTable {
                         .param(&format!("Table{:02}", i))
                         .and_then(|name| name.as_string().ok())
                         .and_then(|name| {
-                            list.object(name)
-                                .map(|table| (name.to_owned(), table.clone()))
+                            list.object(name).map(|table| (name.into(), table.clone()))
                         })
                 })
                 .collect(),
@@ -108,8 +107,8 @@ impl InfoSource for DropTable {
             "drops".to_owned(),
             self.0
                 .iter()
-                .map(|(name, table)| -> Result<(String, Byml)> {
-                    Ok((name.clone(), {
+                .map(|(name, table)| -> Result<(std::string::String, Byml)> {
+                    Ok((name.to_string(), {
                         let count = table
                             .param("ColumnNum")
                             .ok_or(UKError::MissingAampKey("Drop table missing column count"))?
@@ -120,7 +119,7 @@ impl InfoSource for DropTable {
                                     .param(&format!("ItemName{:02}", i))
                                     .ok_or(UKError::MissingAampKey("Drop table missing item name"))?
                                     .as_string()?
-                                    .to_owned()
+                                    .to_string()
                                     .into())
                             })
                             .collect::<Result<_>>()
@@ -133,7 +132,7 @@ impl InfoSource for DropTable {
 }
 
 impl ParameterResource for DropTable {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/DropTable/{name}.bdrop")
     }
 }

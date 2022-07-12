@@ -27,7 +27,7 @@ impl From<AISchedule> for Byml {
 impl_simple_byml!(AISchedule, 0);
 
 impl ParameterResource for AISchedule {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/AISchedule/{name}.baischedule")
     }
 }

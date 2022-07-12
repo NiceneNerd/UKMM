@@ -19,7 +19,7 @@ impl TryFrom<&Byml> for QuestProduct {
                             .get("Name")
                             .ok_or(UKError::MissingBymlKey("Quest entry missing name"))?
                             .as_string()?
-                            .to_owned(),
+                            .into(),
                         quest.clone(),
                     ))
                 })

@@ -26,7 +26,7 @@ impl TryFrom<&ParameterIO> for ActorLink {
             tags: pio.object("Tags").map(|tags| {
                 tags.0
                     .values()
-                    .filter_map(|v| v.as_string().ok().map(|s| (s.to_owned(), false)))
+                    .filter_map(|v| v.as_string().ok().map(|s| (s.into(), false)))
                     .collect()
             }),
         })
@@ -55,7 +55,7 @@ impl From<ActorLink> for ParameterIO {
                             .map(|(i, tag)| {
                                 (
                                     jstr!("Tag{&lexical::to_string(i)}"),
-                                    Parameter::StringRef(tag),
+                                    Parameter::StringRef(tag.into()),
                                 )
                             })
                             .collect(),
@@ -129,10 +129,10 @@ impl InfoSource for ActorLink {
             info,
             {
                 ("actorScale", "ActorScale",  f32),
-                ("elink", "ElinkUser",  String),
-                ("profile", "ProfileUser",  String),
-                ("slink", "SlinkUser",  String),
-                ("xlink", "XlinkUser",  String),
+                ("elink", "ElinkUser", std::string::String),
+                ("profile", "ProfileUser", std::string::String),
+                ("slink", "SlinkUser", std::string::String),
+                ("xlink", "XlinkUser", std::string::String),
             }
         );
         if self.targets.param("SlinkUser") != Some(&Parameter::StringRef("Dummy".to_owned())) {
@@ -142,7 +142,7 @@ impl InfoSource for ActorLink {
             info.insert(
                 "tags".to_owned(),
                 tags.iter()
-                    .map(|tag| -> (String, Byml) {
+                    .map(|tag| -> (std::string::String, Byml) {
                         let hash = roead::aamp::hash_name(tag.as_str());
                         (
                             format!("tag{:08x}", hash),
@@ -161,7 +161,7 @@ impl InfoSource for ActorLink {
 }
 
 impl ParameterResource for ActorLink {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/ActorLink/{name}.bxml")
     }
 }

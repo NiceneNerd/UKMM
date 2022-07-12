@@ -122,7 +122,7 @@ impl InfoSource for ModelList {
             ("cursorOffsetY", "CursorOffsetY", f32)
         });
         info_params_filtered!(&self.controller_info, info, {
-            ("variationMatAnim", "VariationMatAnim", String),
+            ("variationMatAnim", "VariationMatAnim", std::string::String),
             ("variationMatAnimFrame", "VariationMatAnimFrame", i32)
         });
         if let Some(Parameter::Vec3(lookat)) = self.attention.param("LookAtOffset") {
@@ -182,7 +182,7 @@ impl InfoSource for ModelList {
 }
 
 impl ParameterResource for ModelList {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/ModelList/{name}.bmodellist")
     }
 }

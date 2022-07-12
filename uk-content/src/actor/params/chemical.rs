@@ -172,7 +172,7 @@ impl InfoSource for Chemical {
 }
 
 impl ParameterResource for Chemical {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/Chemical/{name}.bchemical")
     }
 }

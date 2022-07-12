@@ -23,7 +23,7 @@ impl Mergeable for Msyt {
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        let entries: indexmap::IndexMap<String, Entry> = self
+        let entries: indexmap::IndexMap<std::string::String, Entry> = self
             .entries
             .iter()
             .chain(diff.entries.iter())
@@ -99,7 +99,7 @@ impl TryFrom<&'_ Sarc<'_>> for MessagePack {
             sarc.files()
                 .map(|file| -> Result<(String, Msyt)> {
                     let name = file.name_unchecked().trim_end_matches(".msbt").to_owned();
-                    Ok((name, Msyt::from_msbt_bytes(file.data())?))
+                    Ok((name.into(), Msyt::from_msbt_bytes(file.data())?))
                 })
                 .collect::<Result<_>>()?,
         ))

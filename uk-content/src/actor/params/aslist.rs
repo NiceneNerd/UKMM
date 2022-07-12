@@ -19,10 +19,10 @@ impl TryFrom<&ParameterObject> for AddRes {
                 .param("Anim")
                 .ok_or(UKError::MissingAampKey("AS list add res missing anim"))?
                 .as_string64()?
-                .to_owned(),
+                .into(),
             retarget_model: value
                 .param("RetargetModel")
-                .map(|v| v.as_string64().map(|s| s.to_owned()))
+                .map(|v| v.as_string64().map(|s| s.into()))
                 .transpose()?,
             retarget_nocorrect: value
                 .param("RetargetNoCorrect")
@@ -35,10 +35,10 @@ impl TryFrom<&ParameterObject> for AddRes {
 impl From<AddRes> for ParameterObject {
     fn from(value: AddRes) -> Self {
         [
-            ("Anim", Some(Parameter::String64(value.anim))),
+            ("Anim", Some(Parameter::String64(value.anim.into()))),
             (
                 "RetargetModel",
-                value.retarget_model.map(Parameter::String64),
+                value.retarget_model.map(|s| Parameter::String64(s.into())),
             ),
             (
                 "RetargetNoCorrect",
@@ -87,13 +87,13 @@ impl TryFrom<&ParameterIO> for ASList {
                         obj.param("Name")
                             .ok_or(UKError::MissingAampKey("AS list AS define missing name"))?
                             .as_string64()?
-                            .to_owned(),
+                            .into(),
                         obj.param("Filename")
                             .ok_or(UKError::MissingAampKey(
                                 "AS list AS define missing filename",
                             ))?
                             .as_string64()?
-                            .to_owned(),
+                            .into(),
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -113,7 +113,7 @@ impl TryFrom<&ParameterIO> for ASList {
                                     "AS list CF define missing CFPre name",
                                 ))?
                                 .as_string()?
-                                .to_owned();
+                                .into();
                             Ok((pre_name, list.clone()))
                         })
                         .collect::<Result<_>>()
@@ -147,8 +147,11 @@ impl From<ASList> for ParameterIO {
                                     (
                                         jstr!("ASDefine_{&lexical::to_string(i)}"),
                                         ParameterObject::new()
-                                            .with_param("Name", Parameter::String64(name))
-                                            .with_param("Filename", Parameter::String64(filename)),
+                                            .with_param("Name", Parameter::String64(name.into()))
+                                            .with_param(
+                                                "Filename",
+                                                Parameter::String64(filename.into()),
+                                            ),
                                     )
                                 }),
                         ),
@@ -213,7 +216,7 @@ impl Mergeable for ASList {
 }
 
 impl ParameterResource for ASList {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/ASList/{name}.baslist")
     }
 }

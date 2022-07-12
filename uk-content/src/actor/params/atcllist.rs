@@ -40,13 +40,13 @@ impl TryFrom<&ParameterIO> for AttClientList {
                                 "Attention client list client missing name",
                             ))?
                             .as_string64()?
-                            .to_owned(),
+                            .into(),
                         obj.param("FileName")
                             .ok_or(UKError::MissingAampKey(
                                 "Attention client list client missing filename",
                             ))?
                             .as_string64()?
-                            .to_owned(),
+                            .into(),
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -63,8 +63,8 @@ impl From<AttClientList> for ParameterIO {
                     (
                         jstr!("AttClient_{&lexical::to_string(i)}"),
                         ParameterObject::new()
-                            .with_param("Name", Parameter::String64(name))
-                            .with_param("FileName", Parameter::String64(filename)),
+                            .with_param("Name", Parameter::String64(name.into()))
+                            .with_param("FileName", Parameter::String64(filename.into())),
                     )
                 },
             )),
@@ -89,7 +89,7 @@ impl Mergeable for AttClientList {
 }
 
 impl ParameterResource for AttClientList {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/AttClientList/{name}.batcllist")
     }
 }

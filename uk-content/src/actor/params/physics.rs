@@ -23,12 +23,12 @@ impl TryFrom<&ParameterObject> for ContactInfoItem {
                 .param("name")
                 .ok_or(UKError::MissingAampKey("Contact info item missing name"))?
                 .as_string()?
-                .to_owned(),
+                .into(),
             info_type: obj
                 .param("type")
                 .ok_or(UKError::MissingAampKey("Contact info item missing type"))?
                 .as_string()?
-                .to_owned(),
+                .into(),
             num: obj.param("num").map(|p| p.as_int()).transpose()?,
         })
     }
@@ -37,8 +37,8 @@ impl TryFrom<&ParameterObject> for ContactInfoItem {
 impl From<ContactInfoItem> for ParameterObject {
     fn from(val: ContactInfoItem) -> Self {
         [
-            ("name", Parameter::String32(val.name)),
-            ("type", Parameter::String32(val.info_type)),
+            ("name", Parameter::String32(val.name.into())),
+            ("type", Parameter::String32(val.info_type.into())),
         ]
         .into_iter()
         .chain(
@@ -105,7 +105,7 @@ impl TryFrom<&ParameterList> for ContactInfo {
 }
 
 impl ParameterResource for Physics {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/Physics/{name}.bphysics")
     }
 }
@@ -268,7 +268,7 @@ impl TryFrom<&ParameterList> for Cloth {
                         "Physics cloth header missing setup file path",
                     ))?
                     .as_string()?
-                    .to_owned(),
+                    .into(),
             ),
             subwind: list
                 .object("ClothSubWind")
@@ -309,7 +309,7 @@ impl From<Cloth> for ParameterList {
                     [
                         (
                             "cloth_setup_file_path",
-                            Parameter::String256(val.setup_file_path.unwrap_or_default()),
+                            Parameter::String256(val.setup_file_path.unwrap_or_default().into()),
                         ),
                         ("cloth_num", Parameter::Int(val.cloths.len() as i32)),
                     ]
@@ -393,7 +393,7 @@ impl TryFrom<&ParameterIO> for Physics {
                             "Physics ragdoll header missing setup file path",
                         ))?
                         .as_string()?
-                        .to_owned())
+                        .into())
                 })
                 .transpose()?,
             support_bone: header
@@ -413,7 +413,7 @@ impl TryFrom<&ParameterIO> for Physics {
                             "Physics support bone header missing setup file path",
                         ))?
                         .as_string()?
-                        .to_owned())
+                        .into())
                 })
                 .transpose()?,
             rigid_contact_info: header
@@ -552,7 +552,12 @@ impl From<Physics> for ParameterIO {
                         ]
                         .into_iter()
                         .filter_map(|(k, p, v)| {
-                            v.map(|s| (k, [(p, Parameter::String256(s))].into_iter().collect()))
+                            v.map(|s| {
+                                (
+                                    k,
+                                    [(p, Parameter::String256(s.into()))].into_iter().collect(),
+                                )
+                            })
                         }),
                     )
                     .collect(),

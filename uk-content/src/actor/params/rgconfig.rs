@@ -73,7 +73,7 @@ impl Mergeable for RagdollConfig {
 }
 
 impl ParameterResource for RagdollConfig {
-    fn path(name: &str) -> String {
+    fn path(name: &str) -> std::string::String {
         jstr!("Actor/RagdollConfig/{name}.brgconfig")
     }
 }

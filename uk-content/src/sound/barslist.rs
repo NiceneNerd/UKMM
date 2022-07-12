@@ -17,10 +17,10 @@ impl TryFrom<&Byml> for BarslistInfo {
             hash.iter()
                 .map(|(k, v)| -> Result<(String, DeleteSet<String>)> {
                     Ok((
-                        k.to_owned(),
+                        k.into(),
                         v.as_array()?
                             .iter()
-                            .filter_map(|v| v.as_string().ok().map(|s| s.to_owned()))
+                            .filter_map(|v| v.as_string().ok().map(String::from))
                             .collect(),
                     ))
                 })
@@ -33,7 +33,12 @@ impl From<BarslistInfo> for Byml {
     fn from(val: BarslistInfo) -> Self {
         val.0
             .into_iter()
-            .map(|(k, v)| (k, v.into_iter().map(Byml::from).collect()))
+            .map(|(k, v)| {
+                (
+                    k.to_string(),
+                    v.into_iter().map(|s| Byml::from(s.to_string())).collect(),
+                )
+            })
             .collect()
     }
 }
