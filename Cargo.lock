@@ -1454,6 +1454,7 @@ dependencies = [
  "lexical",
  "msyt",
  "once_cell",
+ "path-slash",
  "roead",
  "serde",
  "smartstring",

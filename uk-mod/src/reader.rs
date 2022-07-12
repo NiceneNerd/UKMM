@@ -1,10 +1,11 @@
-use crate::{Manifest, Meta};
+use crate::{Manifest, Meta, ModOption};
 use anyhow::{Context, Result};
 use fs_err::File;
 use join_str::jstr;
 use parking_lot::Mutex;
 use serde::Serialize;
 use std::{
+    collections::BTreeSet,
     io::{BufReader, Read},
     path::{Path, PathBuf},
     sync::Arc,
@@ -34,28 +35,40 @@ impl ResourceLoader for ModReader {
 
     fn get_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
         let canon = canonicalize(name);
-        Ok(self
-            .zip
-            .lock()
-            .by_name(&canon)
-            .map_err(anyhow::Error::from)?
-            .bytes()
-            .map(|b| b.map_err(anyhow::Error::from))
-            .into_iter()
-            .collect::<Result<_>>()?)
+        let mut zip = self.zip.lock();
+        let mut file = zip.by_name(&canon).map_err(anyhow::Error::from)?;
+        let size = file.size() as usize;
+        let mut buffer = vec![0; size];
+        let read = file.read(buffer.as_mut_slice())?;
+        if read == size {
+            Ok(buffer)
+        } else {
+            Err(anyhow::anyhow!(
+                "Failed to read file {} (canonical path {}) from mod",
+                name.display(),
+                canon
+            )
+            .into())
+        }
     }
 
     fn get_aoc_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
         let canon = canonicalize(jstr!("Aoc/0010/{name.to_str().unwrap_or_default()}"));
-        Ok(self
-            .zip
-            .lock()
-            .by_name(&canon)
-            .map_err(anyhow::Error::from)?
-            .bytes()
-            .map(|b| b.map_err(anyhow::Error::from))
-            .into_iter()
-            .collect::<Result<_>>()?)
+        let mut zip = self.zip.lock();
+        let mut file = zip.by_name(&canon).map_err(anyhow::Error::from)?;
+        let size = file.size() as usize;
+        let mut buffer = vec![0; size];
+        let read = file.read(buffer.as_mut_slice())?;
+        if read == size {
+            Ok(buffer)
+        } else {
+            Err(anyhow::anyhow!(
+                "Failed to read file {} (canonical path {}) from mod",
+                name.display(),
+                canon
+            )
+            .into())
+        }
     }
 
     fn host_path(&self) -> &Path {
@@ -67,21 +80,20 @@ impl ModReader {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref().to_path_buf();
         let mut zip = ZipArchive::new(BufReader::new(File::open(&path)?))?;
-        let manifest: Manifest = yaml_peg::serde::from_str(std::str::from_utf8(
-            &zip.by_name("manifest.yml")
-                .context("Mod missing manifest")?
-                .bytes()
-                .map(|b| b.map_err(anyhow::Error::from))
-                .collect::<Result<Vec<u8>>>()?,
-        )?)?
-        .swap_remove(0);
-        let meta: Meta = toml::from_slice(
-            &zip.by_name("meta.toml")
-                .context("Mod missing meta")?
-                .bytes()
-                .map(|b| b.map_err(anyhow::Error::from))
-                .collect::<Result<Vec<u8>>>()?,
-        )?;
+        let mut buffer = vec![0; zip.len() * 1024];
+        let mut read;
+        let manifest = {
+            let mut manifest = zip
+                .by_name("manifest.yml")
+                .context("Mod missing manifest")?;
+            read = manifest.read(&mut buffer)?;
+            yaml_peg::serde::from_str(std::str::from_utf8(&buffer[..read])?)?.swap_remove(0)
+        };
+        let meta = {
+            let mut meta = zip.by_name("meta.yml").context("Mod missing meta")?;
+            read = meta.read(&mut buffer)?;
+            toml::from_slice(&buffer[..read])?
+        };
         Ok(Self {
             path,
             meta,
@@ -92,6 +104,39 @@ impl ModReader {
 
     pub fn meta(&self) -> &Meta {
         &self.meta
+    }
+
+    pub fn manifest(&self) -> &Manifest {
+        &self.manifest
+    }
+
+    pub fn option_manifest(&self, option: &ModOption) -> Result<Manifest> {
+        let path = option.manifest_path();
+        let mut zip = self.zip.lock();
+        let mut file = zip
+            .by_name(&path.display().to_string())
+            .with_context(|| jstr!("Mod missing manifest for option {&option.name}"))?;
+        let size = file.size() as usize;
+        let mut buffer = vec![0; size];
+        let read = file.read(buffer.as_mut_slice())?;
+        if read == size {
+            Ok(yaml_peg::serde::from_str(std::str::from_utf8(&buffer[..read])?)?.swap_remove(0))
+        } else {
+            Err(anyhow::anyhow!(
+                "Failed to read manifest for option {} from mod",
+                &option.name
+            ))
+        }
+    }
+
+    pub fn combined_manifest(&self, options: &[ModOption]) -> Result<Manifest> {
+        let mut manifest = self.manifest.clone();
+        for option in options {
+            let opt_manifest = self.option_manifest(option)?;
+            manifest.content_files.extend(opt_manifest.content_files);
+            manifest.aoc_files.extend(opt_manifest.aoc_files);
+        }
+        Ok(manifest)
     }
 }
 mod de {

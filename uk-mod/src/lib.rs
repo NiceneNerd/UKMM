@@ -2,7 +2,7 @@
 
 use std::{
     collections::{BTreeSet, HashSet},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use indexmap::{IndexMap, IndexSet};
@@ -38,6 +38,13 @@ pub struct ModOption {
     pub description: String,
     pub path: PathBuf,
     pub requires: Vec<PathBuf>,
+}
+
+impl ModOption {
+    #[inline(always)]
+    pub fn manifest_path(&self) -> PathBuf {
+        Path::new("options").join(&self.path).join("manifest.yml")
+    }
 }
 
 #[enum_dispatch::enum_dispatch(OptionGroup)]
