@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 use uk_content::canonicalize;
-use uk_reader::ResourceLoader;
+use uk_reader::{ResourceLoader, ResourceReader};
 use zip::ZipArchive;
 
 type ZipReader = Arc<Mutex<ZipArchive<BufReader<File>>>>;
@@ -18,7 +18,7 @@ type ZipReader = Arc<Mutex<ZipArchive<BufReader<File>>>>;
 #[derive(Debug, Serialize)]
 pub struct ModReader {
     path: PathBuf,
-    meta: Meta,
+    enabled_opts: Vec<ModOption>,
     manifest: Manifest,
     #[serde(skip_serializing)]
     zip: ZipReader,
@@ -76,68 +76,46 @@ impl ResourceLoader for ModReader {
 }
 
 impl ModReader {
-    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+    pub fn open(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
         let path = path.as_ref().to_path_buf();
         let mut zip = ZipArchive::new(BufReader::new(File::open(&path)?))?;
-        let mut buffer = vec![0; zip.len() * 1024];
-        let mut read;
-        let manifest = {
-            let mut manifest = zip
-                .by_name("manifest.yml")
-                .context("Mod missing manifest")?;
-            read = manifest.read(&mut buffer)?;
-            yaml_peg::serde::from_str(std::str::from_utf8(&buffer[..read])?)?.swap_remove(0)
-        };
-        let meta = {
-            let mut meta = zip.by_name("meta.yml").context("Mod missing meta")?;
-            read = meta.read(&mut buffer)?;
-            toml::from_slice(&buffer[..read])?
-        };
+        let mut manifest = zip
+            .by_name("manifest.toml")
+            .context("Mod missing manifest file")?;
+        let mut buffer = vec![0; manifest.size() as usize];
+        let read = manifest.read(&mut buffer)?;
+        if read != buffer.len() {
+            anyhow::bail!("Failed to read manifest file from mod")
+        }
+        drop(manifest);
+        let manifest: Manifest = toml::from_slice(&buffer)?;
+        let zip = Arc::new(Mutex::new(zip));
         Ok(Self {
             path,
-            meta,
+            enabled_opts: options.into(),
             manifest,
-            zip: Arc::new(Mutex::new(zip)),
+            zip,
         })
-    }
-
-    pub fn meta(&self) -> &Meta {
-        &self.meta
     }
 
     pub fn manifest(&self) -> &Manifest {
         &self.manifest
     }
+}
 
-    pub fn option_manifest(&self, option: &ModOption) -> Result<Manifest> {
-        let path = option.manifest_path();
-        let mut zip = self.zip.lock();
-        let mut file = zip
-            .by_name(&path.display().to_string())
-            .with_context(|| jstr!("Mod missing manifest for option {&option.name}"))?;
-        let size = file.size() as usize;
-        let mut buffer = vec![0; size];
-        let read = file.read(buffer.as_mut_slice())?;
-        if read == size {
-            Ok(yaml_peg::serde::from_str(std::str::from_utf8(&buffer[..read])?)?.swap_remove(0))
-        } else {
-            Err(anyhow::anyhow!(
-                "Failed to read manifest for option {} from mod",
-                &option.name
-            ))
-        }
-    }
+#[derive(Debug)]
+pub struct ModUnpacker {
+    dump: ResourceReader,
+    mods: Vec<(ModReader, Vec<ModOption>)>,
+}
 
-    pub fn combined_manifest(&self, options: &[ModOption]) -> Result<Manifest> {
-        let mut manifest = self.manifest.clone();
-        for option in options {
-            let opt_manifest = self.option_manifest(option)?;
-            manifest.content_files.extend(opt_manifest.content_files);
-            manifest.aoc_files.extend(opt_manifest.aoc_files);
-        }
-        Ok(manifest)
+impl ModUnpacker {
+    pub fn unpack(self) -> Result<()> {
+        Ok(())
     }
 }
+
+#[doc(hidden)]
 mod de {
     use super::*;
     use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
@@ -220,7 +198,7 @@ mod de {
                     let manifest =
                         manifest.ok_or_else(|| serde::de::Error::missing_field("manifest"))?;
                     Ok(ModReader {
-                        meta,
+                        enabled_opts: todo!(),
                         manifest,
                         zip: Arc::new(Mutex::new(
                             ZipArchive::new(BufReader::new(
@@ -242,11 +220,10 @@ mod de {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ModOptionGroup;
     #[test]
     fn open_mod() {
-        let mod_reader = ModReader::open("test/wiiu.zip").unwrap();
+        let mod_reader = ModReader::open("test/wiiu.zip", vec![]).unwrap();
         dbg!(&mod_reader.manifest);
-        dbg!(mod_reader.meta);
-        dbg!(mod_reader.manifest.resources().collect::<Vec<String>>());
     }
 }

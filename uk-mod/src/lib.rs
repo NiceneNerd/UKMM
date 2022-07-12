@@ -1,15 +1,15 @@
 #![feature(let_chains, seek_stream_len)]
 
+use anyhow::Context;
+use indexmap::{IndexMap, IndexSet};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeSet, HashSet},
     path::{Path, PathBuf},
 };
-
-use indexmap::{IndexMap, IndexSet};
-use serde::{Deserialize, Serialize};
 use uk_content::prelude::Endian;
-pub mod reader;
-pub mod writer;
+pub mod pack;
+pub mod unpack;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Manifest {
@@ -115,8 +115,25 @@ pub struct Meta {
     pub masters: IndexMap<String, f32>,
 }
 
+impl Meta {
+    pub fn read(mod_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+        use std::io::Read;
+        let mod_path = mod_path.as_ref();
+        let mut zip = zip::ZipArchive::new(std::io::BufReader::new(fs_err::File::open(mod_path)?))?;
+        let mut meta = zip.by_name("meta.toml").context("Mod missing meta file")?;
+        let mut buffer = vec![0; meta.size() as usize];
+        let read = meta.read(&mut buffer)?;
+        if read != meta.size() as usize {
+            anyhow::bail!("Failed to read meta file")
+        } else {
+            Ok(toml::from_slice(&buffer).context("Failed to parse meta file")?)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[test]
     fn save_dump() {
         let reader = uk_reader::ResourceReader::from_unpacked_dirs(
@@ -130,5 +147,10 @@ mod tests {
             yaml_peg::serde::to_string(&reader).unwrap(),
         )
         .unwrap();
+    }
+
+    #[test]
+    fn read_meta() {
+        dbg!(Meta::read("test/wiiu.zip").unwrap());
     }
 }
