@@ -1,4 +1,4 @@
-use crate::{Manifest, ModOption};
+use crate::{Manifest, Meta, ModOption};
 use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
@@ -27,6 +27,7 @@ type ZipReader = Arc<Mutex<ZipArchive<BufReader<fs::File>>>>;
 pub struct ModReader {
     path: PathBuf,
     options: Vec<ModOption>,
+    meta: Meta,
     manifest: Manifest,
     #[serde(skip_serializing)]
     zip: ZipReader,
@@ -41,16 +42,6 @@ impl ResourceLoader for ModReader {
     }
 
     fn get_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
-        if !self
-            .manifest
-            .content_files
-            .contains(name.to_slash_lossy().as_ref())
-        {
-            return Err(uk_reader::ROMError::FileNotFound(
-                name.to_slash_lossy().to_string(),
-                self.path.clone(),
-            ));
-        }
         let canon = canonicalize(name);
         if let Ok(mut file) = self.zip.lock().by_name(&canon) {
             let size = file.size() as usize;
@@ -80,16 +71,6 @@ impl ResourceLoader for ModReader {
     }
 
     fn get_aoc_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
-        if !self
-            .manifest
-            .aoc_files
-            .contains(name.to_slash_lossy().as_ref())
-        {
-            return Err(uk_reader::ROMError::FileNotFound(
-                name.to_slash_lossy().to_string(),
-                self.path.clone(),
-            ));
-        }
         let canon = canonicalize(jstr!("Aoc/0010/{name.to_str().unwrap_or_default()}"));
         if let Ok(mut file) = self.zip.lock().by_name(&canon) {
             let size = file.size() as usize;
@@ -131,6 +112,15 @@ impl ModReader {
         let mut buffer = vec![0; 524288]; // 512kb
         let mut read;
         let mut size;
+        let meta: Meta = {
+            let mut meta = zip.by_name("meta.toml").context("Mod missing meta file")?;
+            size = meta.size() as usize;
+            read = meta.read(buffer.as_mut_slice())?;
+            if read != size {
+                anyhow::bail!("Failed to read meta file from mod {}", path.display());
+            }
+            toml::from_slice(&buffer[..read]).context("Failed to parse meta file from mod")?
+        };
         let mut manifest: Manifest = {
             let mut manifest = zip
                 .by_name("manifest.yml")
@@ -163,6 +153,7 @@ impl ModReader {
         Ok(Self {
             path,
             options,
+            meta,
             manifest,
             zip: Arc::new(Mutex::new(zip)),
         })
@@ -205,8 +196,8 @@ impl ModUnpacker {
             let data = self.build_file(file.as_str())?;
             let out_file = dir.join(file);
             if let parent = out_file.parent().unwrap() && !parent.exists() {
-                    fs::create_dir_all(parent)?;
-                }
+                fs::create_dir_all(parent)?;
+            }
             fs::write(&out_file, compress_if(data.as_ref(), &out_file))?;
             Ok(())
         })?;
@@ -217,17 +208,23 @@ impl ModUnpacker {
         let mut versions = std::collections::VecDeque::with_capacity(
             (self.mods.len() as f32 / 2.).ceil() as usize,
         );
-        if let Ok(ref_res) = self.dump.get_file(file) {
+        if let Ok(ref_res) = self
+            .dump
+            .get_file(file)
+            .or_else(|_| self.dump.get_resource(file))
+        {
             versions.push_back((*ref_res).clone());
         }
         for (data, mod_) in self.mods.iter().filter_map(|mod_| {
             mod_.get_file_data(file.as_ref())
                 .ok()
-                .map(|d| (d, &mod_.path))
+                .map(|d| (d, &mod_.meta.name))
         }) {
-            versions.push_back(minicbor_ser::from_slice(&data).with_context(|| {
-                jstr!("Failed to parse mod resource {&file} in mod at {&mod_.to_string_lossy()}")
-            })?);
+            versions.push_back(
+                minicbor_ser::from_slice(&data).with_context(|| {
+                    jstr!("Failed to parse mod resource {&file} in mod at {mod_}")
+                })?,
+            );
         }
         let base_version = versions
             .pop_front()
@@ -288,6 +285,7 @@ mod de {
             enum Field {
                 path,
                 options,
+                meta,
                 manifest,
             }
 
@@ -302,7 +300,7 @@ mod de {
                         type Value = Field;
 
                         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                            write!(f, "`path`, `options`, or `manifest`")
+                            write!(f, "`path`, `options`, `meta`, or `manifest`")
                         }
 
                         fn visit_str<E>(self, v: &str) -> std::result::Result<Self::Value, E>
@@ -312,6 +310,7 @@ mod de {
                             match v {
                                 "path" => Ok(Field::path),
                                 "options" => Ok(Field::options),
+                                "meta" => Ok(Field::meta),
                                 "manifest" => Ok(Field::manifest),
                                 _ => Err(serde::de::Error::custom(format!("unknown field: {}", v))),
                             }
@@ -336,6 +335,7 @@ mod de {
                 {
                     let mut path: Option<PathBuf> = None;
                     let mut options: Option<Vec<ModOption>> = None;
+                    let mut meta: Option<Meta> = None;
                     let mut manifest: Option<Manifest> = None;
                     while let Some(key) = map.next_key()? {
                         match key {
@@ -345,6 +345,9 @@ mod de {
                             Field::options => {
                                 options = Some(map.next_value()?);
                             }
+                            Field::meta => {
+                                meta = Some(map.next_value()?);
+                            }
                             Field::manifest => {
                                 manifest = Some(map.next_value()?);
                             }
@@ -353,9 +356,11 @@ mod de {
                     let path = path.ok_or_else(|| serde::de::Error::missing_field("path"))?;
                     let options =
                         options.ok_or_else(|| serde::de::Error::missing_field("options"))?;
+                    let meta = meta.ok_or_else(|| serde::de::Error::missing_field("meta"))?;
                     let manifest =
                         manifest.ok_or_else(|| serde::de::Error::missing_field("manifest"))?;
                     Ok(ModReader {
+                        meta,
                         manifest,
                         options,
                         zip: Arc::new(Mutex::new(
@@ -369,7 +374,7 @@ mod de {
                 }
             }
 
-            const FIELDS: &[&str] = &["path", "options", "manifest"];
+            const FIELDS: &[&str] = &["path", "options", "manifest", "meta"];
             deserializer.deserialize_struct("ModReader", FIELDS, ModReaderVisitor)
         }
     }
@@ -379,9 +384,12 @@ mod de {
 mod tests {
     use super::*;
     #[test]
-    fn open_mod() {
+    fn read_mod() {
         let mod_reader = ModReader::open("test/wiiu.zip", vec![]).unwrap();
         dbg!(&mod_reader.manifest);
+        mod_reader
+            .get_file_data("Message/Msg_EUen.product.ssarc".as_ref())
+            .unwrap();
     }
 
     #[test]
