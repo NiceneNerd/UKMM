@@ -111,8 +111,10 @@ impl ModPacker {
                     return Ok(None);
                 }
 
-                let resource = ResourceData::from_binary(&name, &*file_data)?;
-                self.process_resource(name, canon.clone(), resource)?;
+                let resource = ResourceData::from_binary(&name, &*file_data)
+                    .with_context(|| jstr!("Failed to parse resouece {&name}"))?;
+                self.process_resource(name, canon.clone(), resource, false)
+                    .with_context(|| jstr!("Failed to process resouece {&canon}"))?;
                 if is_mergeable_sarc(&canon, file_data.as_ref()) {
                     self.process_sarc(
                         Sarc::read(file_data.as_ref())?,
@@ -138,6 +140,7 @@ impl ModPacker {
         name: String,
         canon: String,
         mut resource: ResourceData,
+        in_new_sarc: bool,
     ) -> Result<()> {
         let prefixes = platform_prefixes(self.endian);
         let ref_name = name
@@ -162,6 +165,9 @@ impl ModPacker {
         if let Some(ResourceData::Mergeable(ref_res)) = reference
             && let ResourceData::Mergeable(res) = &resource
         {
+            if res == &ref_res && !in_new_sarc {
+                return Ok(());
+            }
             resource = ResourceData::Mergeable(ref_res.diff(res));
         }
 
@@ -195,8 +201,9 @@ impl ModPacker {
                 continue;
             }
 
-            let resource = ResourceData::from_binary(&name, &*file_data)?;
-            self.process_resource(name.to_owned(), canon.clone(), resource)?;
+            let resource = ResourceData::from_binary(&name, &*file_data)
+                .with_context(|| jstr!("Failed to parse resource {&canon}"))?;
+            self.process_resource(name.to_owned(), canon.clone(), resource, is_new_sarc)?;
             if is_mergeable_sarc(&canon, file_data.as_ref()) {
                 self.process_sarc(Sarc::read(file_data.as_ref())?, is_new_sarc)?;
             }

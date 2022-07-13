@@ -213,32 +213,35 @@ impl ModUnpacker {
             .get_file(file)
             .or_else(|_| self.dump.get_resource(file))
         {
-            versions.push_back((*ref_res).clone());
+            versions.push_back(ref_res);
         }
         for (data, mod_) in self.mods.iter().filter_map(|mod_| {
             mod_.get_file_data(file.as_ref())
                 .ok()
                 .map(|d| (d, &mod_.meta.name))
         }) {
-            versions.push_back(minicbor_ser::from_slice(&data).with_context(|| {
-                jstr!(r#"Failed to parse mod resource {&file} in mod '{mod_}'"#)
-            })?);
+            versions.push_back(Arc::new(minicbor_ser::from_slice(&data).with_context(
+                || jstr!(r#"Failed to parse mod resource {&file} in mod '{mod_}'"#),
+            )?));
         }
         let base_version = versions
             .pop_front()
             .expect(&jstr!("No base version for file {&file}"));
-        let data: Binary = match base_version {
-            ResourceData::Binary(_) => versions
-                .pop_back()
-                .unwrap_or(base_version)
-                .take_binary()
-                .unwrap(),
+        let data: Binary = match base_version.as_ref() {
+            ResourceData::Binary(_) => {
+                let res = versions.pop_back().unwrap_or(base_version);
+                match Arc::try_unwrap(res) {
+                    Ok(res) => res.take_binary().unwrap(),
+                    Err(res) => res.as_binary().cloned().unwrap(),
+                }
+            }
             ResourceData::Mergeable(base_res) => {
                 let merged = versions
                     .into_iter()
-                    .filter_map(ResourceData::take_mergeable)
-                    .fold(base_res, |mut res, version| {
-                        res = res.merge(&version);
+                    .fold(base_res.clone(), |mut res, version| {
+                        if let Some(mergeable) = version.as_mergeable() {
+                            res = res.merge(mergeable);
+                        }
                         res
                     });
                 Binary::Bytes(merged.into_binary(self.endian))
@@ -246,9 +249,10 @@ impl ModUnpacker {
             ResourceData::Sarc(base_sarc) => {
                 let merged = versions
                     .into_iter()
-                    .filter_map(ResourceData::take_sarc)
-                    .fold(base_sarc, |mut res, version| {
-                        res = res.merge(&version);
+                    .fold(base_sarc.clone(), |mut res, version| {
+                        if let Some(sarc) = version.as_sarc() {
+                            res = res.merge(sarc);
+                        }
                         res
                     });
                 self.build_sarc(merged)?

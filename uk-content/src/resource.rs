@@ -556,11 +556,7 @@ impl From<roead::Bytes> for ResourceData {
 }
 
 pub const EXCLUDE_EXTS: &[&str] = &["blarc", "bfarc", "genvb", "sarc"];
-pub const EXCLUDE_NAMES: &[&str] = &[
-    "tera_resource.Nin_NX_NVN",
-    "tera_resource.Cafe_Cafe_GX2",
-    "Dungeon",
-];
+pub const EXCLUDE_NAMES: &[&str] = &["tera_resource.Nin_NX_NVN", "tera_resource.Cafe_Cafe_GX2"];
 
 #[inline]
 pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool {
@@ -829,6 +825,13 @@ impl ResourceData {
         }
     }
 
+    pub fn as_mergeable(&self) -> Option<&MergeableResource> {
+        match self {
+            ResourceData::Mergeable(resource) => Some(resource),
+            _ => None,
+        }
+    }
+
     pub fn take_binary(self) -> Option<Binary> {
         match self {
             ResourceData::Binary(data) => Some(data),
@@ -836,7 +839,21 @@ impl ResourceData {
         }
     }
 
+    pub fn as_binary(&self) -> Option<&Binary> {
+        match self {
+            ResourceData::Binary(data) => Some(data),
+            _ => None,
+        }
+    }
+
     pub fn take_sarc(self) -> Option<SarcMap> {
+        match self {
+            ResourceData::Sarc(sarc) => Some(sarc),
+            _ => None,
+        }
+    }
+
+    pub fn as_sarc(&self) -> Option<&SarcMap> {
         match self {
             ResourceData::Sarc(sarc) => Some(sarc),
             _ => None,
