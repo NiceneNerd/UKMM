@@ -46,15 +46,14 @@ impl TryFrom<&ParameterIO> for Chemical {
             .list("chemical_body")
             .ok_or(UKError::MissingAampKey("Chemical missing chemical_body"))?;
         Ok(Self {
-            unknown: Some(
-                chem_root
-                    .object("chemical_header")
-                    .ok_or(UKError::MissingAampKey("Chemical missing chemical_header"))?
-                    .0
-                    .get(&3635073347)
-                    .ok_or(UKError::MissingAampKey("Chemical missing 3635073347"))?
-                    .as_u32()? as usize,
-            ),
+            unknown: chem_root
+                .object("chemical_header")
+                .ok_or(UKError::MissingAampKey("Chemical missing chemical_header"))?
+                .0
+                .get(&3635073347)
+                // .ok_or(UKError::MissingAampKey("Chemical missing 3635073347"))?
+                .map(|x| x.as_u32().map(|x| x as usize))
+                .transpose()?,
             body: (0..shape_num)
                 .map(|i| -> Result<(usize, ChemicalBody)> {
                     Ok((
@@ -84,14 +83,16 @@ impl From<Chemical> for ParameterIO {
                 ParameterList {
                     objects: [(
                         "chemical_header",
-                        [
-                            (
-                                hash_name("res_shape_num"),
-                                Parameter::U32(val.body.len() as u32),
-                            ),
-                            (3635073347, Parameter::U32(val.unknown.unwrap() as u32)),
-                        ]
+                        [(
+                            hash_name("res_shape_num"),
+                            Parameter::U32(val.body.len() as u32),
+                        )]
                         .into_iter()
+                        .chain(
+                            val.unknown
+                                .into_iter()
+                                .map(|v| (3635073347, Parameter::U32(v as u32))),
+                        )
                         .collect(),
                     )]
                     .into_iter()
