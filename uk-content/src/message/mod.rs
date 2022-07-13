@@ -1,3 +1,4 @@
+mod deser;
 use crate::{prelude::*, Result, UKError};
 use join_str::jstr;
 use msyt::{
@@ -42,7 +43,7 @@ impl Mergeable for Msyt {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct MessagePack(pub BTreeMap<String, Msyt>);
 
 impl Mergeable for MessagePack {

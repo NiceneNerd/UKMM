@@ -167,14 +167,16 @@ impl ModPacker {
 
         let data = minicbor_ser::to_vec(&resource)
             .with_context(|| jstr!("Failed to serialize {&name}"))?;
-        let mut zip = self.zip.lock();
         let zip_path = self
             .current_root
             .strip_prefix(&self.source_dir)
             .unwrap()
             .join(&canon);
-        zip.start_file(zip_path.to_slash_lossy(), self._zip_opts)?;
-        zip.write_all(&zstd::encode_all(&*data, 3)?)?;
+        {
+            let mut zip = self.zip.lock();
+            zip.start_file(zip_path.to_slash_lossy(), self._zip_opts)?;
+            zip.write_all(&zstd::encode_all(&*data, 3)?)?;
+        }
         self.built_resources.write().insert(canon);
 
         Ok(())

@@ -220,11 +220,9 @@ impl ModUnpacker {
                 .ok()
                 .map(|d| (d, &mod_.meta.name))
         }) {
-            versions.push_back(
-                minicbor_ser::from_slice(&data).with_context(|| {
-                    jstr!("Failed to parse mod resource {&file} in mod at {mod_}")
-                })?,
-            );
+            versions.push_back(minicbor_ser::from_slice(&data).with_context(|| {
+                jstr!(r#"Failed to parse mod resource {&file} in mod '{mod_}'"#)
+            })?);
         }
         let base_version = versions
             .pop_front()
@@ -387,9 +385,6 @@ mod tests {
     fn read_mod() {
         let mod_reader = ModReader::open("test/wiiu.zip", vec![]).unwrap();
         dbg!(&mod_reader.manifest);
-        mod_reader
-            .get_file_data("Message/Msg_EUen.product.ssarc".as_ref())
-            .unwrap();
     }
 
     #[test]
