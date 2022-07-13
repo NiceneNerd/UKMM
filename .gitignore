@@ -1,6 +1,5 @@
 /target
 /.vscode
-/uk-mod/test/wiiu
 /.cargo
 tmp.txt
-/uk-mod/test/wiiu.zip
+/uk-mod/test
