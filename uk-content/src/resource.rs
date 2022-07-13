@@ -821,4 +821,25 @@ impl ResourceData {
             ResourceData::Sarc(sarc) => sarc.to_binary(endian, resources)?.into(),
         })
     }
+
+    pub fn take_mergeable(self) -> Option<MergeableResource> {
+        match self {
+            ResourceData::Mergeable(resource) => Some(resource),
+            _ => None,
+        }
+    }
+
+    pub fn take_binary(self) -> Option<Binary> {
+        match self {
+            ResourceData::Binary(data) => Some(data),
+            _ => None,
+        }
+    }
+
+    pub fn take_sarc(self) -> Option<SarcMap> {
+        match self {
+            ResourceData::Sarc(sarc) => Some(sarc),
+            _ => None,
+        }
+    }
 }

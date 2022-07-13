@@ -16,7 +16,7 @@ use uk_content::{canonicalize, platform_prefixes, prelude::Endian, resource::*};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ROMError {
-    #[error("File not found in game dump: {0}\n(Using ROM at {1})")]
+    #[error("File not found in game dump: {0}\n(Using source at {1})")]
     FileNotFound(String, PathBuf),
     #[error("Missing required {0} folder in game dump\n(Using ROM at {1})")]
     MissingDumpDir(&'static str, PathBuf),
