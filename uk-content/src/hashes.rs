@@ -51,6 +51,11 @@ impl ROMHashTable {
             Err(_) => true,
         }
     }
+
+    pub fn contains(&self, file: impl AsRef<str>) -> bool {
+        let file = xxh3_64(file.as_ref().as_bytes());
+        self.0.contains_key(&file)
+    }
 }
 
 static HASH_TABLE_U: Lazy<ROMHashTable> = Lazy::new(|| ROMHashTable::new(Endian::Big));

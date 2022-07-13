@@ -114,7 +114,10 @@ impl ModPacker {
                 let resource = ResourceData::from_binary(&name, &*file_data)?;
                 self.process_resource(name, canon.clone(), resource)?;
                 if is_mergeable_sarc(&canon, file_data.as_ref()) {
-                    self.process_sarc(Sarc::read(file_data.as_ref())?)?;
+                    self.process_sarc(
+                        Sarc::read(file_data.as_ref())?,
+                        !self.hash_table.contains(&canon),
+                    )?;
                 }
 
                 Ok(Some(
@@ -156,8 +159,8 @@ impl ModPacker {
                 }
                 _ => Some((*res).clone()),
             });
-        if let Some(ResourceData::Mergeable(ref_res)) =
-            reference && let ResourceData::Mergeable(res) = &resource
+        if let Some(ResourceData::Mergeable(ref_res)) = reference
+            && let ResourceData::Mergeable(res) = &resource
         {
             resource = ResourceData::Mergeable(ref_res.diff(res));
         }
@@ -177,7 +180,7 @@ impl ModPacker {
         Ok(())
     }
 
-    fn process_sarc(&self, sarc: Sarc) -> Result<()> {
+    fn process_sarc(&self, sarc: Sarc, is_new_sarc: bool) -> Result<()> {
         for file in sarc.files() {
             let name = file
                 .name()
@@ -186,14 +189,14 @@ impl ModPacker {
             let file_data = decompress_if(file.data())
                 .with_context(|| jstr!("Failed to decompress {&name}"))?;
 
-            if !self.hash_table.is_modified(&canon, &*file_data) {
+            if !self.hash_table.is_modified(&canon, &*file_data) && !is_new_sarc {
                 continue;
             }
 
             let resource = ResourceData::from_binary(&name, &*file_data)?;
             self.process_resource(name.to_owned(), canon.clone(), resource)?;
             if is_mergeable_sarc(&canon, file_data.as_ref()) {
-                self.process_sarc(Sarc::read(file_data.as_ref())?)?;
+                self.process_sarc(Sarc::read(file_data.as_ref())?, is_new_sarc)?;
             }
         }
         Ok(())
