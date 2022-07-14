@@ -142,12 +142,15 @@ impl ModPacker {
         mut resource: ResourceData,
         in_new_sarc: bool,
     ) -> Result<()> {
+        if self.built_resources.read().contains(&canon) {
+            return Ok(());
+        }
         let prefixes = platform_prefixes(self.endian);
         let ref_name = name
             .trim_start_matches(prefixes.0)
             .trim_start_matches(prefixes.1)
             .trim_start_matches('/');
-        let reference: Option<ResourceData> = self
+        let reference = self
             .masters
             .iter()
             .filter_map(|master| {
@@ -156,16 +159,18 @@ impl ModPacker {
                     .or_else(|_| master.get_file(ref_name))
                     .ok()
             })
-            .fold(None, |acc, res| match (acc, res.as_ref()) {
-                (Some(ResourceData::Mergeable(acc)), ResourceData::Mergeable(next)) => {
-                    Some(ResourceData::Mergeable(acc.merge(next)))
-                }
-                _ => Some((*res).clone()),
-            });
-        if let Some(ResourceData::Mergeable(ref_res)) = reference
+            .last();
+        // .fold(None, |acc, res| match (acc, res.as_ref()) {
+        //     (Some(ResourceData::Mergeable(acc)), ResourceData::Mergeable(next)) => {
+        //         Some(ResourceData::Mergeable(acc.merge(next)))
+        //     }
+        //     _ => Some((*res).clone()),
+        // });
+        if let Some(ref_res_data) = reference
+            && let Some(ref_res) = ref_res_data.as_mergeable()
             && let ResourceData::Mergeable(res) = &resource
         {
-            if res == &ref_res && !in_new_sarc {
+            if ref_res == res && !in_new_sarc {
                 return Ok(());
             }
             resource = ResourceData::Mergeable(ref_res.diff(res));

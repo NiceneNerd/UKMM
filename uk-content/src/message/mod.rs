@@ -55,7 +55,8 @@ impl Mergeable for MessagePack {
                 .filter_map(|(file, text)| {
                     if let Some(self_text) = self.0.get(file) {
                         if self_text != text {
-                            Some((file.clone(), self_text.diff(text)))
+                            let diff = self_text.diff(text);
+                            (!diff.entries.is_empty()).then(|| (file.clone(), diff))
                         } else {
                             None
                         }

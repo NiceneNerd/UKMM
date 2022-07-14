@@ -1,4 +1,3 @@
-use crate::prelude::*;
 pub use crate::{
     actor::{
         info::ActorInfo,
@@ -27,11 +26,12 @@ pub use crate::{
     util::SortedDeleteMap,
     worldmgr::info::WorldInfo,
 };
+use crate::{prelude::*, util::SortedDeleteSet};
 use anyhow::{Context, Result};
 use join_str::jstr;
 use roead::aamp::ParameterIO;
 use roead::byml::Byml;
-use roead::sarc::{Sarc, SarcWriter};
+use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -487,7 +487,7 @@ impl ResourceRegister for std::cell::RefCell<BTreeMap<String, ResourceData>> {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-pub struct SarcMap(pub SortedDeleteMap<String, String>);
+pub struct SarcMap(pub SortedDeleteSet<String>);
 
 impl Mergeable for SarcMap {
     fn diff(&self, other: &Self) -> Self {
@@ -504,36 +504,33 @@ impl SarcMap {
         let sarc = Sarc::read(data.as_ref())?;
         let sarc_map = Self(
             sarc.files()
-                .map(|file| -> Result<(String, String)> {
-                    Ok((
-                        file.name().context("SARC file missing name")?.into(),
-                        file.name_unchecked().replace(".s", ".").into(),
-                    ))
+                .map(|file| -> Result<String> {
+                    Ok(file.name().context("SARC file missing name")?.into())
                 })
                 .collect::<Result<_>>()?,
         );
         Ok(sarc_map)
     }
 
-    pub fn to_binary(
-        &self,
-        endian: crate::prelude::Endian,
-        resources: &BTreeMap<String, ResourceData>,
-    ) -> Result<roead::Bytes> {
-        let mut sarc = SarcWriter::new(endian.into());
-        sarc.files = self
-            .0
-            .iter()
-            .map(|(path, canon)| -> Result<(std::string::String, Vec<u8>)> {
-                let resource = resources
-                    .get(canon)
-                    .with_context(|| jstr!("Missing resource for SARC: {&canon}"))?;
-                let data = resource.to_binary(endian, resources)?;
-                Ok((path.to_string(), data.into()))
-            })
-            .collect::<Result<_>>()?;
-        Ok(sarc.to_binary())
-    }
+    // pub fn to_binary(
+    //     &self,
+    //     endian: crate::prelude::Endian,
+    //     resources: &BTreeMap<String, ResourceData>,
+    // ) -> Result<roead::Bytes> {
+    //     let mut sarc = SarcWriter::new(endian.into());
+    //     sarc.files = self
+    //         .0
+    //         .iter()
+    //         .map(|(path, canon)| -> Result<(std::string::String, Vec<u8>)> {
+    //             let resource = resources
+    //                 .get(canon)
+    //                 .with_context(|| jstr!("Missing resource for SARC: {&canon}"))?;
+    //             let data = resource.to_binary(endian, resources)?;
+    //             Ok((path.to_string(), data.into()))
+    //         })
+    //         .collect::<Result<_>>()?;
+    //     Ok(sarc.to_binary())
+    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -806,17 +803,17 @@ impl ResourceData {
         }
     }
 
-    pub fn to_binary(
-        &self,
-        endian: Endian,
-        resources: &BTreeMap<String, ResourceData>,
-    ) -> Result<Binary> {
-        Ok(match self {
-            ResourceData::Binary(data) => data.clone(),
-            ResourceData::Mergeable(resource) => resource.clone().into_binary(endian).into(),
-            ResourceData::Sarc(sarc) => sarc.to_binary(endian, resources)?.into(),
-        })
-    }
+    // pub fn to_binary(
+    //     &self,
+    //     endian: Endian,
+    //     resources: &BTreeMap<String, ResourceData>,
+    // ) -> Result<Binary> {
+    //     Ok(match self {
+    //         ResourceData::Binary(data) => data.clone(),
+    //         ResourceData::Mergeable(resource) => resource.clone().into_binary(endian).into(),
+    //         ResourceData::Sarc(sarc) => sarc.to_binary(endian, resources)?.into(),
+    //     })
+    // }
 
     pub fn take_mergeable(self) -> Option<MergeableResource> {
         match self {
