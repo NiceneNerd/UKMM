@@ -263,7 +263,7 @@ impl ModUnpacker {
 
     fn build_sarc(&self, sarc: SarcMap) -> Result<Binary> {
         let mut writer = SarcWriter::new(self.endian.into());
-        for (file, _) in sarc.0.into_iter() {
+        for file in sarc.0.into_iter() {
             let data = self.build_file(&file)?;
             writer.add_file(&file, compress_if(data.as_ref(), file.as_str()).as_ref());
         }
@@ -384,11 +384,42 @@ mod de {
 
 #[cfg(test)]
 mod tests {
+    use uk_content::resource::{GameDataPack, MergeableResource};
+
     use super::*;
     #[test]
     fn read_mod() {
         let mod_reader = ModReader::open("test/wiiu.zip", vec![]).unwrap();
         dbg!(&mod_reader.manifest);
+        let data = mod_reader
+            .get_file_data("GameData/gamedata.ssarc".as_ref())
+            .unwrap();
+        dbg!(unsafe { std::str::from_utf8_unchecked(&data[..64]) });
+        if let MergeableResource::GameDataPack(gdata) =
+            minicbor_ser::from_slice::<ResourceData>(&data)
+                .unwrap()
+                .as_mergeable()
+                .unwrap()
+        {
+            dbg!(gdata.bool_array_data.flags.len());
+            dbg!(gdata.bool_data.flags.len());
+            dbg!(gdata.f32_data.flags.len());
+            dbg!(gdata.f32_array_data.flags.len());
+            dbg!(gdata.revival_bool_data.flags.len());
+            dbg!(gdata.revival_s32_data.flags.len());
+            dbg!(gdata.s32_array_data.flags.len());
+            dbg!(gdata.s32_data.flags.len());
+            dbg!(gdata.string256_array_data.flags.len());
+            dbg!(gdata.string256_data.flags.len());
+            dbg!(&gdata.string32_data.flags);
+            dbg!(gdata.string64_array_data.flags.len());
+            dbg!(gdata.string64_data.flags.len());
+            dbg!(gdata.vector2f_array_data.flags.len());
+            dbg!(gdata.vector2f_data.flags.len());
+            dbg!(gdata.vector3f_array_data.flags.len());
+            dbg!(gdata.vector3f_data.flags.len());
+            dbg!(gdata.vector4f_data.flags.len());
+        }
     }
 
     #[test]
