@@ -10,7 +10,7 @@ use roead::{sarc::SarcWriter, yaz0::compress_if};
 use serde::Serialize;
 use std::{
     collections::BTreeSet,
-    io::{BufReader, Read},
+    io::{BufReader, Read, Write},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -199,7 +199,8 @@ impl ModUnpacker {
             if let parent = out_file.parent().unwrap() && !parent.exists() {
                 fs::create_dir_all(parent)?;
             }
-            fs::write(&out_file, compress_if(data.as_ref(), &out_file))?;
+            let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
+            writer.write_all(&compress_if(data.as_ref(), &out_file))?;
             Ok(())
         })?;
         Ok(())
