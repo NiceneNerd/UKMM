@@ -1,14 +1,15 @@
-use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
+use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use roead::{
     byml::Byml,
     sarc::{Sarc, SarcWriter},
 };
 use serde::{Deserialize, Serialize};
+use std::hint::unreachable_unchecked;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct GameData {
     pub data_type: String,
-    pub flags: SortedDeleteMap<u32, Byml>,
+    pub flags: DeleteMap<u32, Byml>,
 }
 
 impl TryFrom<&Byml> for GameData {
@@ -118,33 +119,67 @@ pub struct GameDataPack {
     pub vector4f_data: GameData,
 }
 
+#[inline(always)]
+fn flag_alloc_count(data_type: &str) -> usize {
+    match data_type {
+        "bool_data" => 9564,
+        "f32_data" => 46,
+        "s32_data" => 2709,
+        "string32_data" => 6,
+        "string64_data" => 16,
+        "string256_data" => 3,
+        "vector2f_data" => 1,
+        "vector3f_data" => 44,
+        "vector4f_data" => 1,
+        "bool_array_data" => 5,
+        "f32_array_data" => 3,
+        "s32_array_data" => 35,
+        "string64_array_data" => 28,
+        "string256_array_data" => 4,
+        "vector2f_array_data" => 3,
+        "vector3f_array_data" => 3,
+        "revival_bool_data" => 32461,
+        "revival_s32_data" => 83,
+        _ => unsafe { unreachable_unchecked() },
+    }
+}
+
 macro_rules! extract_sarc_gamedata {
     ($sarc:expr, $($type:ident),*) => {
         Self {
             $(
                 $type: {
                     let _key = stringify!($type);
-                    $sarc.files().filter_map(|file| -> Option<Result<GameData>> {
+                    let _data_type =  if _key == "string32_data" {
+                        "string_data"
+                    } else {
+                        _key.trim_start_matches("revival_")
+                    };
+                    let mut flags =
+                        DeleteMap::with_capacity(flag_alloc_count(stringify!($type)));
+                    for file in $sarc.files() {
                         if file.name().map(|n| n.trim_start_matches('/').starts_with(_key)).unwrap_or(false) {
-                            Some(Byml::from_binary(file.data())
-                                .map_err(UKError::from)
-                                .and_then(|byml: Byml| -> Result<GameData> { (&byml).try_into() }))
-                        } else {
-                            None
+                            let mut byml = Byml::from_binary(file.data())?;
+                            let hash = byml.as_mut_hash()?;
+                            if let Some(Byml::Array(arr)) = hash.remove(_data_type) {
+                                for item in arr {
+                                    flags.insert(
+                                        item.as_hash()?
+                                            .get("HashValue")
+                                            .ok_or(UKError::MissingBymlKey(
+                                                "bgdata file entry missing HashValue",
+                                            ))?
+                                            .as_int()? as u32,
+                                        item
+                                    );
+                                }
+                            }
                         }
-                    })
-                    .collect::<Result<Vec<GameData>>>()?
-                    .into_iter()
-                    .fold(GameData {
-                        data_type: if _key == "string32_data" {
-                            "string_data"
-                        } else {
-                            _key.trim_start_matches("revival_")
-                        }.into(),
-                        flags: SortedDeleteMap::new(),
-                    }, |acc, val| {
-                        acc.merge(&val)
-                    })
+                    }
+                    GameData {
+                        data_type: _data_type.into(),
+                        flags
+                    }
                 },
             )*
         }
@@ -157,28 +192,36 @@ macro_rules! extract_sarcwriter_gamedata {
             $(
                 $type: {
                     let _key = stringify!($type);
-                    $sarc.files.iter().filter_map(|(file, data)| -> Option<Result<GameData>> {
+                    let _data_type =  if _key == "string32_data" {
+                        "string_data"
+                    } else {
+                        _key.trim_start_matches("revival_")
+                    };
+                    let mut flags =
+                        DeleteMap::with_capacity(flag_alloc_count(stringify!($type)));
+                    for (file, data) in $sarc.files.iter() {
                         if file.trim_start_matches('/').starts_with(_key) {
-                            Some(Byml::from_binary(&data)
-                                .map_err(UKError::from)
-                                .and_then(|byml: Byml| -> Result<GameData> { (&byml).try_into() }))
-                        } else {
-                            None
+                            let mut byml = Byml::from_binary(data)?;
+                            let hash = byml.as_mut_hash()?;
+                            if let Some(Byml::Array(arr)) = hash.remove(_data_type) {
+                                for item in arr {
+                                    flags.insert(
+                                        item.as_hash()?
+                                            .get("HashValue")
+                                            .ok_or(UKError::MissingBymlKey(
+                                                "bgdata file entry missing HashValue",
+                                            ))?
+                                            .as_int()? as u32,
+                                        item
+                                    );
+                                }
+                            }
                         }
-                    })
-                    .collect::<Result<Vec<GameData>>>()?
-                    .into_iter()
-                    .fold(GameData {
-                        data_type: if _key == "string32_data" {
-                            "string_data"
-                        } else {
-                            _key.trim_start_matches("revival_")
-                        }.into(),
-                        flags: SortedDeleteMap::new(),
-                    }, |mut acc, val| {
-                        acc.flags.extend(val.flags.into_iter());
-                        acc
-                    })
+                    }
+                    GameData {
+                        data_type: _data_type.into(),
+                        flags
+                    }
                 },
             )*
         }
@@ -353,12 +396,12 @@ mod tests {
 
     fn load_gamedata() -> Byml {
         let gs = load_gamedata_sarc();
-        Byml::from_binary(gs.get_file_data("/revival_s32_data_0.bgdata").unwrap()).unwrap()
+        Byml::from_binary(gs.get_file_data("/string32_data_0.bgdata").unwrap()).unwrap()
     }
 
     fn load_mod_gamedata() -> Byml {
         let gs = load_gamedata_sarc();
-        Byml::from_binary(gs.get_file_data("/revival_s32_data_0.mod.bgdata").unwrap()).unwrap()
+        Byml::from_binary(gs.get_file_data("/string32_data_0.mod.bgdata").unwrap()).unwrap()
     }
 
     #[test]

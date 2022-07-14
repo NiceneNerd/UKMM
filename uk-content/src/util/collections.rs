@@ -560,6 +560,13 @@ macro_rules! impl_delete_map {
 pub struct DeleteMap<T: DeleteKey, U: PartialEq + Clone>(IndexMap<T, (U, bool)>);
 
 impl_delete_map!(DeleteMap, DeleteKey);
+
+impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self(IndexMap::with_capacity(capacity))
+    }
+}
+
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SortedDeleteMap<T: DeleteKey + Ord, U: PartialEq + Clone>(BTreeMap<T, (U, bool)>);
 
