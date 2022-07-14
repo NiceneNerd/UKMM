@@ -172,7 +172,7 @@ fn extract_gamedata_by_type(sarc: &SarcSource, key: &str) -> Result<GameData> {
     let data_type = if key == "string32_data" {
         "string_data"
     } else {
-        key.trim_start_matches("revival")
+        key.trim_start_matches("revival_")
     };
     let mut flags = DeleteMap::with_capacity(flag_alloc_count(key));
     for (file, data) in sarc.iter() {
@@ -219,50 +219,178 @@ macro_rules! build_gamedata_pack {
 impl GameDataPack {
     pub fn from_sarc_writer(sarc: &SarcWriter) -> Result<Self> {
         let source = SarcSource::Writer(sarc);
+        if sarc
+            .files
+            .keys()
+            .any(|f| f.trim_start_matches('/').starts_with("revival"))
+        {
+            Ok(GameDataPack {
+                bool_array_data: extract_gamedata_by_type(&source, "bool_array_data")?,
+                bool_data: extract_gamedata_by_type(&source, "bool_data")?,
+                f32_array_data: extract_gamedata_by_type(&source, "f32_array_data")?,
+                f32_data: extract_gamedata_by_type(&source, "f32_data")?,
+                revival_bool_data: extract_gamedata_by_type(&source, "revival_bool_data")?,
+                revival_s32_data: extract_gamedata_by_type(&source, "revival_s32_data")?,
+                s32_array_data: extract_gamedata_by_type(&source, "s32_array_data")?,
+                s32_data: extract_gamedata_by_type(&source, "s32_data")?,
+                string32_data: extract_gamedata_by_type(&source, "string32_data")?,
+                string64_array_data: extract_gamedata_by_type(&source, "string64_array_data")?,
+                string64_data: extract_gamedata_by_type(&source, "string64_data")?,
+                string256_array_data: extract_gamedata_by_type(&source, "string256_array_data")?,
+                string256_data: extract_gamedata_by_type(&source, "string256_data")?,
+                vector2f_array_data: extract_gamedata_by_type(&source, "vector2f_array_data")?,
+                vector2f_data: extract_gamedata_by_type(&source, "vector2f_data")?,
+                vector3f_array_data: extract_gamedata_by_type(&source, "vector3f_array_data")?,
+                vector3f_data: extract_gamedata_by_type(&source, "vector3f_data")?,
+                vector4f_data: extract_gamedata_by_type(&source, "vector4f_data")?,
+            })
+        } else {
+            Self::from_bcml_sarc(&source)
+        }
+    }
+
+    const STAGES: &'static [&'static str] =
+        &["MainField", "AocField", "CDungeon", "MainFieldDungeon"];
+
+    fn from_bcml_sarc(sarc: &SarcSource) -> Result<Self> {
+        let mut revival_bool_data = DeleteMap::with_capacity(32461);
+        let mut bool_data = DeleteMap::with_capacity(9564);
+        let mut revival_s32_data = DeleteMap::with_capacity(83);
+        let mut s32_data = DeleteMap::with_capacity(2709);
+        let mut string32_data = DeleteMap::with_capacity(6);
+        for (file, data) in sarc.iter() {
+            let file_name = file.trim_start_matches('/');
+            let mut byml = Byml::from_binary(data)?;
+            let hash = byml.as_mut_hash()?;
+            if file_name.starts_with("bool_data") {
+                if let Some(Byml::Array(arr)) = hash.remove("bool_data") {
+                    for item in arr {
+                        let name = item
+                            .as_hash()?
+                            .get("DataName")
+                            .ok_or(UKError::MissingBymlKey("Game data entry missing DataName"))?
+                            .as_string()?;
+                        let parts = name.split('_').collect::<Vec<_>>();
+                        let hash_value = item
+                            .as_hash()?
+                            .get("HashValue")
+                            .ok_or(UKError::MissingBymlKey(
+                                "bgdata file entry missing HashValue",
+                            ))?
+                            .as_int()? as u32;
+                        if Self::STAGES.contains(&parts[0]) && !name.contains("HiddenKorok") {
+                            revival_bool_data.insert(hash_value, item);
+                        } else {
+                            bool_data.insert(hash_value, item);
+                        }
+                    }
+                }
+            } else if file_name.starts_with("s32_data") {
+                if let Some(Byml::Array(arr)) = hash.remove("s32_data") {
+                    for item in arr {
+                        let name = item
+                            .as_hash()?
+                            .get("DataName")
+                            .ok_or(UKError::MissingBymlKey("Game data entry missing DataName"))?
+                            .as_string()?;
+                        let parts = name.split('_').collect::<Vec<_>>();
+                        let hash_value = item
+                            .as_hash()?
+                            .get("HashValue")
+                            .ok_or(UKError::MissingBymlKey(
+                                "bgdata file entry missing HashValue",
+                            ))?
+                            .as_int()? as u32;
+                        if Self::STAGES.contains(&parts[0]) {
+                            revival_s32_data.insert(hash_value, item);
+                        } else {
+                            s32_data.insert(hash_value, item);
+                        }
+                    }
+                }
+            } else if file_name.starts_with("string_data") {
+                if let Some(Byml::Array(arr)) = hash.remove("string_data") {
+                    for item in arr {
+                        let hash_value = item
+                            .as_hash()?
+                            .get("HashValue")
+                            .ok_or(UKError::MissingBymlKey(
+                                "bgdata file entry missing HashValue",
+                            ))?
+                            .as_int()? as u32;
+                        string32_data.insert(hash_value, item);
+                    }
+                }
+            }
+        }
         Ok(GameDataPack {
-            bool_array_data: extract_gamedata_by_type(&source, "bool_array_data")?,
-            bool_data: extract_gamedata_by_type(&source, "bool_data")?,
-            f32_array_data: extract_gamedata_by_type(&source, "f32_array_data")?,
-            f32_data: extract_gamedata_by_type(&source, "f32_data")?,
-            revival_bool_data: extract_gamedata_by_type(&source, "revival_bool_data")?,
-            revival_s32_data: extract_gamedata_by_type(&source, "revival_s32_data")?,
-            s32_array_data: extract_gamedata_by_type(&source, "s32_array_data")?,
-            s32_data: extract_gamedata_by_type(&source, "s32_data")?,
-            string32_data: extract_gamedata_by_type(&source, "string32_data")?,
-            string64_array_data: extract_gamedata_by_type(&source, "string64_array_data")?,
-            string64_data: extract_gamedata_by_type(&source, "string64_data")?,
-            string256_array_data: extract_gamedata_by_type(&source, "string256_array_data")?,
-            string256_data: extract_gamedata_by_type(&source, "string256_data")?,
-            vector2f_array_data: extract_gamedata_by_type(&source, "vector2f_array_data")?,
-            vector2f_data: extract_gamedata_by_type(&source, "vector2f_data")?,
-            vector3f_array_data: extract_gamedata_by_type(&source, "vector3f_array_data")?,
-            vector3f_data: extract_gamedata_by_type(&source, "vector3f_data")?,
-            vector4f_data: extract_gamedata_by_type(&source, "vector4f_data")?,
+            bool_data: GameData {
+                data_type: "bool_data".into(),
+                flags: bool_data,
+            },
+            revival_bool_data: GameData {
+                data_type: "bool_data".into(),
+                flags: revival_bool_data,
+            },
+            s32_data: GameData {
+                data_type: "s32_data".into(),
+                flags: s32_data,
+            },
+            revival_s32_data: GameData {
+                data_type: "s32_data".into(),
+                flags: revival_s32_data,
+            },
+            string32_data: GameData {
+                data_type: "string_data".into(),
+                flags: string32_data,
+            },
+            bool_array_data: extract_gamedata_by_type(sarc, "bool_array_data")?,
+            s32_array_data: extract_gamedata_by_type(sarc, "s32_array_data")?,
+            f32_array_data: extract_gamedata_by_type(sarc, "f32_array_data")?,
+            f32_data: extract_gamedata_by_type(sarc, "f32_data")?,
+            string64_data: extract_gamedata_by_type(sarc, "string64_data")?,
+            string64_array_data: extract_gamedata_by_type(sarc, "string64_array_data")?,
+            string256_data: extract_gamedata_by_type(sarc, "string256_data")?,
+            string256_array_data: extract_gamedata_by_type(sarc, "string256_array_data")?,
+            vector2f_array_data: extract_gamedata_by_type(sarc, "vector2f_array_data")?,
+            vector2f_data: extract_gamedata_by_type(sarc, "vector2f_data")?,
+            vector3f_array_data: extract_gamedata_by_type(sarc, "vector3f_array_data")?,
+            vector3f_data: extract_gamedata_by_type(sarc, "vector3f_data")?,
+            vector4f_data: extract_gamedata_by_type(sarc, "vector4f_data")?,
         })
     }
 
     pub fn from_sarc(sarc: &Sarc<'_>) -> Result<Self> {
         let source = SarcSource::Reader(sarc);
-        Ok(GameDataPack {
-            bool_array_data: extract_gamedata_by_type(&source, "bool_array_data")?,
-            bool_data: extract_gamedata_by_type(&source, "bool_data")?,
-            f32_array_data: extract_gamedata_by_type(&source, "f32_array_data")?,
-            f32_data: extract_gamedata_by_type(&source, "f32_data")?,
-            revival_bool_data: extract_gamedata_by_type(&source, "revival_bool_data")?,
-            revival_s32_data: extract_gamedata_by_type(&source, "revival_s32_data")?,
-            s32_array_data: extract_gamedata_by_type(&source, "s32_array_data")?,
-            s32_data: extract_gamedata_by_type(&source, "s32_data")?,
-            string32_data: extract_gamedata_by_type(&source, "string32_data")?,
-            string64_array_data: extract_gamedata_by_type(&source, "string64_array_data")?,
-            string64_data: extract_gamedata_by_type(&source, "string64_data")?,
-            string256_array_data: extract_gamedata_by_type(&source, "string256_array_data")?,
-            string256_data: extract_gamedata_by_type(&source, "string256_data")?,
-            vector2f_array_data: extract_gamedata_by_type(&source, "vector2f_array_data")?,
-            vector2f_data: extract_gamedata_by_type(&source, "vector2f_data")?,
-            vector3f_array_data: extract_gamedata_by_type(&source, "vector3f_array_data")?,
-            vector3f_data: extract_gamedata_by_type(&source, "vector3f_data")?,
-            vector4f_data: extract_gamedata_by_type(&source, "vector4f_data")?,
-        })
+        if sarc.files().any(|f| {
+            f.name()
+                .unwrap_or("")
+                .trim_start_matches('/')
+                .starts_with("revival")
+        }) {
+            Ok(GameDataPack {
+                bool_array_data: extract_gamedata_by_type(&source, "bool_array_data")?,
+                bool_data: extract_gamedata_by_type(&source, "bool_data")?,
+                f32_array_data: extract_gamedata_by_type(&source, "f32_array_data")?,
+                f32_data: extract_gamedata_by_type(&source, "f32_data")?,
+                revival_bool_data: extract_gamedata_by_type(&source, "revival_bool_data")?,
+                revival_s32_data: extract_gamedata_by_type(&source, "revival_s32_data")?,
+                s32_array_data: extract_gamedata_by_type(&source, "s32_array_data")?,
+                s32_data: extract_gamedata_by_type(&source, "s32_data")?,
+                string32_data: extract_gamedata_by_type(&source, "string32_data")?,
+                string64_array_data: extract_gamedata_by_type(&source, "string64_array_data")?,
+                string64_data: extract_gamedata_by_type(&source, "string64_data")?,
+                string256_array_data: extract_gamedata_by_type(&source, "string256_array_data")?,
+                string256_data: extract_gamedata_by_type(&source, "string256_data")?,
+                vector2f_array_data: extract_gamedata_by_type(&source, "vector2f_array_data")?,
+                vector2f_data: extract_gamedata_by_type(&source, "vector2f_data")?,
+                vector3f_array_data: extract_gamedata_by_type(&source, "vector3f_array_data")?,
+                vector3f_data: extract_gamedata_by_type(&source, "vector3f_data")?,
+                vector4f_data: extract_gamedata_by_type(&source, "vector4f_data")?,
+            })
+        } else {
+            Self::from_bcml_sarc(&source)
+        }
     }
 
     pub fn into_sarc_writer(self, endian: Endian) -> SarcWriter {
