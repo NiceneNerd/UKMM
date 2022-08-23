@@ -100,7 +100,7 @@ impl TryFrom<&'_ Sarc<'_>> for MessagePack {
         Ok(Self(
             sarc.files()
                 .map(|file| -> Result<(String, Msyt)> {
-                    let name = file.name_unchecked().trim_end_matches(".msbt").to_owned();
+                    let name = file.unwrap_name().trim_end_matches(".msbt");
                     Ok((name.into(), Msyt::from_msbt_bytes(file.data())?))
                 })
                 .collect::<Result<_>>()?,
@@ -125,10 +125,10 @@ impl MessagePack {
 
 impl Resource for MessagePack {
     fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
-        (&Sarc::read(data.as_ref())?).try_into()
+        (&Sarc::new(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: Endian) -> roead::Bytes {
+    fn into_binary(self, endian: Endian) -> Vec<u8> {
         self.into_sarc_writer(endian).to_binary()
     }
 

@@ -20,14 +20,14 @@ impl TryFrom<&ParameterObject> for ContactInfoItem {
     fn try_from(obj: &ParameterObject) -> Result<Self> {
         Ok(Self {
             name: *obj
-                .param("name")
+                .get("name")
                 .ok_or(UKError::MissingAampKey("Contact info item missing name"))?
                 .as_string32()?,
             info_type: *obj
-                .param("type")
+                .get("type")
                 .ok_or(UKError::MissingAampKey("Contact info item missing type"))?
                 .as_string32()?,
-            num: obj.param("num").map(|p| p.as_int()).transpose()?,
+            num: obj.get("num").map(|p| p.as_int()).transpose()?,
         })
     }
 }
@@ -64,13 +64,13 @@ impl TryFrom<&ParameterList> for ContactInfo {
             .ok_or(UKError::MissingAampKey(
                 "Physics rigid contact info missing header",
             ))?
-            .param("contact_point_info_num")
+            .get("contact_point_info_num")
             .ok_or(UKError::MissingAampKey(
                 "Physics rigid contact info header missing contact point info count",
             ))?
             .as_int()? as usize;
         let collision_count = list.objects.0[&3387849585]
-            .param("collision_info_num")
+            .get("collision_info_num")
             .ok_or(UKError::MissingAampKey(
                 "Physics rigid contact info header missing collision info count",
             ))?
@@ -113,7 +113,7 @@ impl Resource for Physics {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -206,7 +206,7 @@ impl TryFrom<&ParameterList> for CharacterController {
         Ok(Self {
             header: list
                 .objects
-                .get(&2311816730)
+                .get(2311816730)
                 .ok_or(UKError::MissingAampKey(
                     "Physics character controller missing header",
                 ))?
@@ -261,11 +261,11 @@ impl TryFrom<&ParameterList> for Cloth {
         Ok(Self {
             setup_file_path: Some(
                 header
-                    .param("cloth_setup_file_path")
+                    .get("cloth_setup_file_path")
                     .ok_or(UKError::MissingAampKey(
                         "Physics cloth header missing setup file path",
                     ))?
-                    .as_string()?
+                    .as_str()?
                     .into(),
             ),
             subwind: list
@@ -273,7 +273,7 @@ impl TryFrom<&ParameterList> for Cloth {
                 .ok_or(UKError::MissingAampKey("Physics cloth missing subwind"))?
                 .clone(),
             cloths: header
-                .param("cloth_num")
+                .get("cloth_num")
                 .ok_or(UKError::MissingAampKey(
                     "Physics cloth header missing cloth count",
                 ))?
@@ -303,7 +303,7 @@ impl From<Cloth> for ParameterList {
         Self {
             objects: [
                 (
-                    "ClothHeader".to_owned(),
+                    "ClothHeader".into(),
                     [
                         (
                             "cloth_setup_file_path",
@@ -314,7 +314,7 @@ impl From<Cloth> for ParameterList {
                     .into_iter()
                     .collect(),
                 ),
-                ("ClothSubWind".to_owned(), val.subwind),
+                ("ClothSubWind".into(), val.subwind),
             ]
             .into_iter()
             .chain(
@@ -373,11 +373,11 @@ impl TryFrom<&ParameterIO> for Physics {
             .ok_or(UKError::MissingAampKey("Physics missing param set"))?;
         let header = param_set
             .objects
-            .get(&1258832850)
+            .get(1258832850)
             .ok_or(UKError::MissingAampKey("Physics missing header"))?;
         Ok(Self {
             ragdoll: header
-                .param("use_ragdoll")
+                .get("use_ragdoll")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_ragdoll",
                 ))?
@@ -386,16 +386,16 @@ impl TryFrom<&ParameterIO> for Physics {
                     Ok(param_set
                         .object("Ragdoll")
                         .ok_or(UKError::MissingAampKey("Physics missing ragdoll header"))?
-                        .param("ragdoll_setup_file_path")
+                        .get("ragdoll_setup_file_path")
                         .ok_or(UKError::MissingAampKey(
                             "Physics ragdoll header missing setup file path",
                         ))?
-                        .as_string()?
+                        .as_str()?
                         .into())
                 })
                 .transpose()?,
             support_bone: header
-                .param("use_support_bone")
+                .get("use_support_bone")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_support_bone",
                 ))?
@@ -406,16 +406,16 @@ impl TryFrom<&ParameterIO> for Physics {
                         .ok_or(UKError::MissingAampKey(
                             "Physics missing support bone header",
                         ))?
-                        .param("support_bone_setup_file_path")
+                        .get("support_bone_setup_file_path")
                         .ok_or(UKError::MissingAampKey(
                             "Physics support bone header missing setup file path",
                         ))?
-                        .as_string()?
+                        .as_str()?
                         .into())
                 })
                 .transpose()?,
             rigid_contact_info: header
-                .param("use_contact_info")
+                .get("use_contact_info")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_contact_info",
                 ))?
@@ -430,7 +430,7 @@ impl TryFrom<&ParameterIO> for Physics {
                 })
                 .transpose()?,
             rigid_body_set: header
-                .param("use_rigid_body_set_num")
+                .get("use_rigid_body_set_num")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_rigid_body_set_num",
                 ))?
@@ -460,7 +460,7 @@ impl TryFrom<&ParameterIO> for Physics {
                 })?
                 .transpose()?,
             character_controller: header
-                .param("use_character_controller")
+                .get("use_character_controller")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_character_controller",
                 ))?
@@ -475,7 +475,7 @@ impl TryFrom<&ParameterIO> for Physics {
                 })
                 .transpose()?,
             cloth: header
-                .param("use_cloth")
+                .get("use_cloth")
                 .ok_or(UKError::MissingAampKey("Physics header missing use_cloth"))?
                 .as_bool()?
                 .then(|| -> Result<Cloth> {
@@ -487,7 +487,7 @@ impl TryFrom<&ParameterIO> for Physics {
                 .transpose()?,
             use_system_group_handler: Some(
                 header
-                    .param("use_system_group_handler")
+                    .get("use_system_group_handler")
                     .ok_or(UKError::MissingAampKey(
                         "Physics missing use_system_group_handler",
                     ))?
@@ -499,8 +499,8 @@ impl TryFrom<&ParameterIO> for Physics {
 
 impl From<Physics> for ParameterIO {
     fn from(val: Physics) -> Self {
-        Self {
-            lists: [(
+        Self::new().with_lists(
+            [(
                 "ParamSet",
                 ParameterList {
                     objects: [(
@@ -587,10 +587,8 @@ impl From<Physics> for ParameterIO {
                     .collect(),
                 },
             )]
-            .into_iter()
-            .collect(),
-            ..Default::default()
-        }
+            .into_iter(),
+        )
     }
 }
 
@@ -714,11 +712,11 @@ impl InfoSource for Physics {
                 list.lists.0.values().next().and_then(|list| {
                     list.objects()
                         .get(948250248)
-                        .and_then(|obj| obj.param("center_of_mass"))
+                        .and_then(|obj| obj.get("center_of_mass"))
                 })
             })
         }) {
-            info.insert("rigidBodyCenterY".to_owned(), center.y.into());
+            info.insert("rigidBodyCenterY".into(), center.y.into());
         }
         Ok(())
     }
@@ -733,7 +731,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .get_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -749,7 +748,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .get_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -757,7 +757,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .get_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -770,7 +771,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .get_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -778,7 +780,8 @@ mod tests {
         let physics = super::Physics::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .get_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -793,12 +796,13 @@ mod tests {
         let actor = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .get_data("Actor/Physics/Npc_TripMaster_00.bphysics")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
         let physics = super::Physics::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::new();
+        let mut info = roead::byml::Hash::default();
         physics.update_info(&mut info).unwrap();
         assert_eq!(info["rigidBodyCenterY"], roead::byml::Byml::Float(0.15));
     }

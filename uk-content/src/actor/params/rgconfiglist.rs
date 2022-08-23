@@ -21,17 +21,17 @@ impl BodyParam {
             name: *unsafe {
                 // This is sound because this function is never
                 // called until the name has already been checked.
-                obj.param("RigidName").unwrap_unchecked()
+                obj.get("RigidName").unwrap_unchecked()
             }
             .as_string64()?,
             friction_scale: obj
-                .param("FrictionScale")
+                .get("FrictionScale")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll config list body param entry missing friction scale",
                 ))?
                 .as_f32()?,
             buoyancy_scale: obj
-                .param("BuoyancyScale")
+                .get("BuoyancyScale")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll config list body param entry missing buoyancy scale",
                 ))?
@@ -87,7 +87,7 @@ impl TryFrom<&ParameterIO> for RagdollConfigList {
                 .map(|body_param| -> Result<(String64, BodyParam)> {
                     Ok((
                         *body_param
-                            .param("RigidName")
+                            .get("RigidName")
                             .ok_or(UKError::MissingAampKey(
                                 "Ragdoll config list missing body param name",
                             ))?
@@ -148,7 +148,7 @@ impl Resource for RagdollConfigList {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -166,7 +166,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .get_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -182,7 +183,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .get_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -190,7 +192,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Moriblin_Junior");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .get_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -203,7 +206,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .get_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -211,7 +215,8 @@ mod tests {
         let rgconfiglist = super::RagdollConfigList::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .get_data("Actor/RagdollConfigList/Moriblin_Blue.brgconfiglist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

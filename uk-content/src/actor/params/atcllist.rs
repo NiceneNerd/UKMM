@@ -35,12 +35,12 @@ impl TryFrom<&ParameterIO> for AttClientList {
                 .values()
                 .map(|obj| -> Result<(String64, String64)> {
                     Ok((
-                        *obj.param("Name")
+                        *obj.get("Name")
                             .ok_or(UKError::MissingAampKey(
                                 "Attention client list client missing name",
                             ))?
                             .as_string64()?,
-                        *obj.param("FileName")
+                        *obj.get("FileName")
                             .ok_or(UKError::MissingAampKey(
                                 "Attention client list client missing filename",
                             ))?
@@ -61,8 +61,8 @@ impl From<AttClientList> for ParameterIO {
                     (
                         jstr!("AttClient_{&lexical::to_string(i)}"),
                         ParameterObject::new()
-                            .with_param("Name", Parameter::String64(name))
-                            .with_param("FileName", Parameter::String64(filename)),
+                            .with_parameter("Name", Parameter::String64(name))
+                            .with_parameter("FileName", Parameter::String64(filename)),
                     )
                 },
             )),
@@ -97,7 +97,7 @@ impl Resource for AttClientList {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -115,7 +115,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AttClientList/Guardian_A.batcllist")
+                .get_data("Actor/AttClientList/Guardian_A.batcllist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -131,7 +132,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AttClientList/Guardian_A.batcllist")
+                .get_data("Actor/AttClientList/Guardian_A.batcllist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -139,7 +141,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/AttClientList/Guardian_A.batcllist")
+                .get_data("Actor/AttClientList/Guardian_A.batcllist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -152,7 +155,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AttClientList/Guardian_A.batcllist")
+                .get_data("Actor/AttClientList/Guardian_A.batcllist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -160,7 +164,8 @@ mod tests {
         let atcllist = super::AttClientList::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/AttClientList/Guardian_A.batcllist")
+                .get_data("Actor/AttClientList/Guardian_A.batcllist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

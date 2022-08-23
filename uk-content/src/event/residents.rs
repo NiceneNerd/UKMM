@@ -21,14 +21,14 @@ impl TryFrom<&Byml> for ResidentEvents {
                                 "Resident events entry missing entry name",
                             ))?
                             .as_string()?
-                            .into(),
+                            .clone(),
                         event
                             .get("file")
                             .ok_or(UKError::MissingBymlKey(
                                 "Resident events entry missing file name",
                             ))?
                             .as_string()?
-                            .into(),
+                            .clone(),
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -41,12 +41,9 @@ impl From<ResidentEvents> for Byml {
         val.0
             .into_iter()
             .map(|(entry, file)| -> Byml {
-                [
-                    ("entry", Byml::String(entry.into())),
-                    ("file", Byml::String(file.into())),
-                ]
-                .into_iter()
-                .collect()
+                [("entry", Byml::String(entry)), ("file", Byml::String(file))]
+                    .into_iter()
+                    .collect()
             })
             .collect()
     }
@@ -67,7 +64,7 @@ impl Resource for ResidentEvents {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

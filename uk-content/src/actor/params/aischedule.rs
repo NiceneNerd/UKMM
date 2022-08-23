@@ -37,7 +37,7 @@ impl Resource for AISchedule {
         Ok((&Byml::from_binary(data.as_ref())?).into())
     }
 
-    fn into_binary(self, endian: Endian) -> roead::Bytes {
+    fn into_binary(self, endian: Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 
@@ -55,7 +55,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let byml = roead::byml::Byml::from_binary(
             actor
-                .get_file_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .get_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -71,7 +72,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let byml = roead::byml::Byml::from_binary(
             actor
-                .get_file_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .get_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -79,7 +81,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let byml2 = roead::byml::Byml::from_binary(
             actor2
-                .get_file_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .get_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -93,7 +96,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let byml = roead::byml::Byml::from_binary(
             actor
-                .get_file_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .get_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -101,7 +105,8 @@ mod tests {
         let aischedule = super::AISchedule::from(&byml);
         let byml2 = roead::byml::Byml::from_binary(
             actor2
-                .get_file_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .get_data("Actor/AISchedule/Npc_TripMaster_00.baischedule")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

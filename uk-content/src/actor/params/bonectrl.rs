@@ -24,7 +24,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         Ok(Self {
-            objects: pio.objects.clone(),
+            objects: pio.objects().clone(),
             bone_groups: pio
                 .list("BoneGroups")
                 .ok_or(UKError::MissingAampKey("Bone control missing BoneGroups"))?
@@ -36,7 +36,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
                         *list
                             .object("Param")
                             .ok_or(UKError::MissingAampKey("Bone control group missing param"))?
-                            .param("GroupName")
+                            .get("GroupName")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing group name",
                             ))?
@@ -45,7 +45,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing bone list",
                             ))?
-                            .params()
+                            .0
                             .values()
                             .filter_map(|v| v.as_string64().ok().map(|s| (*s, false)))
                             .collect(),
@@ -59,51 +59,53 @@ impl TryFrom<&ParameterIO> for BoneControl {
 impl From<BoneControl> for ParameterIO {
     fn from(val: BoneControl) -> Self {
         Self {
-            objects: val.objects,
-            lists: [(
-                "BoneGroups",
-                ParameterList {
-                    lists: val
-                        .bone_groups
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, (group, bones))| {
-                            (
-                                jstr!("Bone_{&lexical::to_string(i)}"),
-                                ParameterList {
-                                    objects: [
-                                        (
-                                            "Param",
-                                            [("GroupName", Parameter::String64(group))]
-                                                .into_iter()
-                                                .collect(),
-                                        ),
-                                        (
-                                            "Bones",
-                                            bones
-                                                .into_iter()
-                                                .enumerate()
-                                                .map(|(i, bone)| {
-                                                    (
-                                                        jstr!("Bone_{&lexical::to_string(i)}"),
-                                                        Parameter::String64(bone),
-                                                    )
-                                                })
-                                                .collect(),
-                                        ),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    ..Default::default()
-                                },
-                            )
-                        })
-                        .collect(),
-                    ..Default::default()
-                },
-            )]
-            .into_iter()
-            .collect(),
+            param_root: ParameterList {
+                objects: val.objects,
+                lists: [(
+                    "BoneGroups",
+                    ParameterList {
+                        lists: val
+                            .bone_groups
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, (group, bones))| {
+                                (
+                                    jstr!("Bone_{&lexical::to_string(i)}"),
+                                    ParameterList {
+                                        objects: [
+                                            (
+                                                "Param",
+                                                [("GroupName", Parameter::String64(group))]
+                                                    .into_iter()
+                                                    .collect(),
+                                            ),
+                                            (
+                                                "Bones",
+                                                bones
+                                                    .into_iter()
+                                                    .enumerate()
+                                                    .map(|(i, bone)| {
+                                                        (
+                                                            jstr!("Bone_{&lexical::to_string(i)}"),
+                                                            Parameter::String64(bone),
+                                                        )
+                                                    })
+                                                    .collect(),
+                                            ),
+                                        ]
+                                        .into_iter()
+                                        .collect(),
+                                        ..Default::default()
+                                    },
+                                )
+                            })
+                            .collect(),
+                        ..Default::default()
+                    },
+                )]
+                .into_iter()
+                .collect(),
+            },
             ..Default::default()
         }
     }
@@ -190,7 +192,7 @@ impl Resource for BoneControl {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -208,7 +210,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .get_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -224,7 +227,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .get_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -232,7 +236,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .get_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -245,7 +250,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .get_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -253,7 +259,8 @@ mod tests {
         let bonectrl = super::BoneControl::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .get_data("Actor/BoneControl/Npc_TripMaster_00.bbonectrl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

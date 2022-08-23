@@ -21,13 +21,13 @@ impl TryFrom<&ParameterIO> for Recipe {
             .object("Header")
             .ok_or(UKError::MissingAampKey("Recipe missing header"))?;
         let table_count = header
-            .param("TableNum")
+            .get("TableNum")
             .ok_or(UKError::MissingAampKey("Recipe header missing table count"))?
             .as_int()?;
         let table_names = (0..table_count)
             .map(|i| -> Result<&String64> {
                 Ok(header
-                    .param(format!("Table{:02}", i + 1).as_str())
+                    .get(format!("Table{:02}", i + 1).as_str())
                     .ok_or_else(|| {
                         UKError::MissingAampKeyD(jstr!(
                             "Recipe header missing table name {&lexical::to_string(i + 1)}"
@@ -40,23 +40,23 @@ impl TryFrom<&ParameterIO> for Recipe {
             table_names
                 .into_iter()
                 .map(|name| -> Result<(String64, RecipeTable)> {
-                    let table = pio.object(name).ok_or_else(|| {
+                    let table = pio.object(name.as_str()).ok_or_else(|| {
                         UKError::MissingAampKeyD(jstr!("Recipe missing table {&name}"))
                     })?;
                     Ok((
                         *name,
                         (1..=table
-                            .param("ColumnNum")
+                            .get("ColumnNum")
                             .ok_or(UKError::MissingAampKey("Recipe table missing column num"))?
                             .as_int()?)
                             .map(|i| -> Result<(String64, u8)> {
                                 Ok((
                                     *table
-                                        .param(&format!("ItemName{:02}", i))
+                                        .get(&format!("ItemName{:02}", i))
                                         .ok_or(UKError::MissingAampKey("Recipe missing item name"))?
                                         .as_string64()?,
                                     table
-                                        .param(&format!("ItemNum{:02}", i))
+                                        .get(&format!("ItemNum{:02}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Recipe missing item count",
                                         ))?
@@ -76,7 +76,7 @@ impl From<Recipe> for ParameterIO {
         Self::new()
             .with_object(
                 "Header",
-                [("TableNum".to_owned(), Parameter::Int(val.0.len() as i32))]
+                [("TableNum".into(), Parameter::Int(val.0.len() as i32))]
                     .into_iter()
                     .chain(
                         val.0
@@ -89,7 +89,7 @@ impl From<Recipe> for ParameterIO {
             .with_objects(val.0.into_iter().map(|(name, table)| {
                 (
                     name,
-                    [("ColumnNum".to_owned(), Parameter::Int(table.len() as i32))]
+                    [("ColumnNum".into(), Parameter::Int(table.len() as i32))]
                         .into_iter()
                         .chain(
                             table
@@ -128,15 +128,15 @@ impl Mergeable for Recipe {
 impl InfoSource for Recipe {
     fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
         if let Some(table) = self.0.get(&"Normal0".into()) {
-            info.insert("normal0StuffNum".to_owned(), Byml::Int(table.len() as i32));
+            info.insert("normal0StuffNum".into(), Byml::I32(table.len() as i32));
             for (i, (name, num)) in table.iter().enumerate() {
                 info.insert(
-                    format!("normal0ItemName{:02}", i + 1),
-                    Byml::String(name.to_string()),
+                    format!("normal0ItemName{:02}", i + 1).into(),
+                    Byml::String(name.as_str().into()),
                 );
                 info.insert(
-                    format!("normal0ItemNum{:02}", i + 1),
-                    Byml::Int(*num as i32),
+                    format!("normal0ItemNum{:02}", i + 1).into(),
+                    Byml::I32(*num as i32),
                 );
             }
         }
@@ -155,7 +155,7 @@ impl Resource for Recipe {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -173,7 +173,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Armor_151_Upper");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .get_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -189,7 +190,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Armor_151_Upper");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .get_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -197,7 +199,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Armor_151_Upper");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .get_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -210,7 +213,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Armor_151_Upper");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .get_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -218,7 +222,8 @@ mod tests {
         let recipe = super::Recipe::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .get_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -233,28 +238,29 @@ mod tests {
         let actor = crate::tests::test_mod_actorpack("Armor_151_Upper");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .get_data("Actor/Recipe/Armor_151_Upper.brecipe")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
         let recipe = super::Recipe::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::new();
+        let mut info = roead::byml::Hash::default();
         recipe.update_info(&mut info).unwrap();
         let table = recipe.0.get(&"Normal0".into()).unwrap();
         assert_eq!(
-            info["normal0StuffNum"].as_int().unwrap(),
+            info["normal0StuffNum"].as_i32().unwrap(),
             table.len() as i32
         );
         for (i, (name, num)) in table.iter().enumerate() {
             assert_eq!(
-                info[&format!("normal0ItemName{:02}", i + 1)]
+                info[format!("normal0ItemName{:02}", i + 1).as_str()]
                     .as_string()
                     .unwrap(),
                 name.as_str()
             );
             assert_eq!(
-                info[&format!("normal0ItemNum{:02}", i + 1)]
-                    .as_int()
+                info[format!("normal0ItemNum{:02}", i + 1).as_str()]
+                    .as_i32()
                     .unwrap(),
                 *num as i32
             );

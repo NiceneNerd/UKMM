@@ -22,7 +22,7 @@ impl TryFrom<&Byml> for GameData {
                 .keys()
                 .next()
                 .ok_or(UKError::MissingBymlKey("bgdata file missing data type key"))?
-                .into(),
+                .clone(),
             flags: hash
                 .values()
                 .next()
@@ -36,7 +36,7 @@ impl TryFrom<&Byml> for GameData {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_int()? as u32,
+                            .as_i32()? as u32,
                         item.clone(),
                     ))
                 })
@@ -153,9 +153,9 @@ impl SarcSource<'_> {
     fn iter(&self) -> Box<dyn Iterator<Item = (&str, &[u8])> + '_> {
         match self {
             Self::Reader(sarc) => Box::new(
-                sarc.list_filenames()
+                sarc.files()
                     .into_iter()
-                    .map(|f| (f, sarc.get_file_data(f).unwrap())),
+                    .filter_map(|f| f.name.map(|n| (n, f.data))),
             ),
             Self::Writer(sarcwriter) => Box::new(
                 sarcwriter
@@ -187,7 +187,7 @@ fn extract_gamedata_by_type(sarc: &SarcSource, key: &str) -> Result<GameData> {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_int()? as u32,
+                            .as_i32()? as u32,
                         item,
                     );
                 }
@@ -277,7 +277,7 @@ impl GameDataPack {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_int()? as u32;
+                            .as_i32()? as u32;
                         if Self::STAGES.contains(&parts[0]) && !name.contains("HiddenKorok") {
                             revival_bool_data.insert(hash_value, item);
                         } else {
@@ -300,7 +300,7 @@ impl GameDataPack {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_int()? as u32;
+                            .as_i32()? as u32;
                         if Self::STAGES.contains(&parts[0]) {
                             revival_s32_data.insert(hash_value, item);
                         } else {
@@ -317,7 +317,7 @@ impl GameDataPack {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_int()? as u32;
+                            .as_i32()? as u32;
                         string32_data.insert(hash_value, item);
                     }
                 }
@@ -471,10 +471,10 @@ impl Mergeable for GameDataPack {
 
 impl Resource for GameDataPack {
     fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
-        Self::from_sarc(&Sarc::read(data.as_ref())?)
+        Self::from_sarc(&Sarc::new(data.as_ref())?)
     }
 
-    fn into_binary(self, endian: Endian) -> roead::Bytes {
+    fn into_binary(self, endian: Endian) -> Vec<u8> {
         self.into_sarc_writer(endian).to_binary()
     }
 
@@ -491,17 +491,22 @@ mod tests {
     use roead::{byml::Byml, sarc::Sarc};
 
     fn load_gamedata_sarc() -> Sarc<'static> {
-        Sarc::read(std::fs::read("test/GameData/gamedata.ssarc").unwrap()).unwrap()
+        Sarc::new(std::fs::read("test/GameData/gamedata.ssarc").unwrap()).unwrap()
     }
 
     fn load_gamedata() -> Byml {
         let gs = load_gamedata_sarc();
-        Byml::from_binary(gs.get_file_data("/string32_data_0.bgdata").unwrap()).unwrap()
+        Byml::from_binary(gs.get_data("/revival_s32_data_0.bgdata").unwrap().unwrap()).unwrap()
     }
 
     fn load_mod_gamedata() -> Byml {
         let gs = load_gamedata_sarc();
-        Byml::from_binary(gs.get_file_data("/string32_data_0.mod.bgdata").unwrap()).unwrap()
+        Byml::from_binary(
+            gs.get_data("/revival_s32_data_0.mod.bgdata")
+                .unwrap()
+                .unwrap(),
+        )
+        .unwrap()
     }
 
     #[test]

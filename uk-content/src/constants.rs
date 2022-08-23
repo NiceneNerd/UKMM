@@ -29,7 +29,7 @@ impl TryFrom<&str> for Weather {
             "ThunderStorm" => Ok(Weather::ThunderStorm),
             "ThunderRain" => Ok(Weather::ThunderRain),
             "BlueskyRain" => Ok(Weather::BlueskyRain),
-            _ => Err(UKError::InvalidWeatherOrTime(val.to_owned())),
+            _ => Err(UKError::InvalidWeatherOrTime(val.into())),
         }
     }
 }
@@ -37,6 +37,22 @@ impl TryFrom<&str> for Weather {
 impl<const N: usize> From<Weather> for roead::types::FixedSafeString<N> {
     fn from(w: Weather) -> Self {
         match w {
+            Weather::Bluesky => "Bluesky".into(),
+            Weather::Cloudy => "Cloudy".into(),
+            Weather::Rain => "Rain".into(),
+            Weather::HeavyRain => "HeavyRain".into(),
+            Weather::Snow => "Snow".into(),
+            Weather::HeavySnow => "HeavySnow".into(),
+            Weather::ThunderStorm => "ThunderStorm".into(),
+            Weather::ThunderRain => "ThunderRain".into(),
+            Weather::BlueskyRain => "BlueskyRain".into(),
+        }
+    }
+}
+
+impl From<&Weather> for smartstring::alias::String {
+    fn from(w: &Weather) -> Self {
+        match *w {
             Weather::Bluesky => "Bluesky".into(),
             Weather::Cloudy => "Cloudy".into(),
             Weather::Rain => "Rain".into(),
@@ -92,7 +108,7 @@ impl TryFrom<&str> for Time {
             "Night_B" => Ok(Time::Night_B),
             "Morning_A1" => Ok(Time::Morning_A1),
             "Morning_A2" => Ok(Time::Morning_A2),
-            _ => Err(UKError::InvalidWeatherOrTime(val.to_owned())),
+            _ => Err(UKError::InvalidWeatherOrTime(val.into())),
         }
     }
 }
@@ -100,6 +116,23 @@ impl TryFrom<&str> for Time {
 impl<const N: usize> From<Time> for roead::types::FixedSafeString<N> {
     fn from(t: Time) -> Self {
         match t {
+            Time::Morning_A => "Morning_A".into(),
+            Time::Morning_B => "Morning_B".into(),
+            Time::Noon_A => "Noon_A".into(),
+            Time::Noon_B => "Noon_B".into(),
+            Time::Evening_A => "Evening_A".into(),
+            Time::Evening_B => "Evening_B".into(),
+            Time::Night_A => "Night_A".into(),
+            Time::Night_B => "Night_B".into(),
+            Time::Morning_A1 => "Morning_A1".into(),
+            Time::Morning_A2 => "Morning_A2".into(),
+        }
+    }
+}
+
+impl From<&Time> for smartstring::alias::String {
+    fn from(t: &Time) -> Self {
+        match *t {
             Time::Morning_A => "Morning_A".into(),
             Time::Morning_B => "Morning_B".into(),
             Time::Noon_A => "Noon_A".into(),

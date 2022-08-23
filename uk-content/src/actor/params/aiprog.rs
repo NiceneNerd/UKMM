@@ -9,8 +9,8 @@ use std::collections::HashSet;
 pub struct AIEntry {
     pub def: ParameterObject,
     pub params: Option<ParameterObject>,
-    pub children: IndexMap<u32, ChildEntry>,
-    pub behaviors: Option<IndexMap<u32, ParameterList>>,
+    pub children: IndexMap<Name, ChildEntry>,
+    pub behaviors: Option<IndexMap<Name, ParameterList>>,
 }
 
 impl AIEntry {
@@ -18,7 +18,7 @@ impl AIEntry {
         self.def
             .0
             .values()
-            .filter_map(|p| p.as_string().ok())
+            .filter_map(|p| p.as_str().ok())
             .collect()
     }
 }
@@ -123,7 +123,7 @@ impl Mergeable for AIEntry {
 pub struct ActionEntry {
     pub def: ParameterObject,
     pub params: Option<ParameterObject>,
-    pub behaviors: Option<IndexMap<u32, ParameterList>>,
+    pub behaviors: Option<IndexMap<Name, ParameterList>>,
 }
 
 impl ActionEntry {
@@ -131,7 +131,7 @@ impl ActionEntry {
         self.def
             .0
             .values()
-            .filter_map(|p| p.as_string().ok())
+            .filter_map(|p| p.as_str().ok())
             .collect()
     }
 }
@@ -247,7 +247,7 @@ impl Mergeable for ChildEntry {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AIProgram {
-    pub demos: IndexMap<u32, ChildEntry>,
+    pub demos: IndexMap<Name, ChildEntry>,
     pub tree: IndexMap<String, AIEntry>,
     pub queries: IndexMap<String, ParameterList>,
 }
@@ -363,7 +363,7 @@ mod parse {
                 .ok_or(UKError::MissingAampKey("AI entry missing ChildIdx object"))?
                 .0
                 .iter()
-                .map(|(k, v)| -> Result<(u32, ChildEntry)> {
+                .map(|(k, v)| -> Result<(Name, ChildEntry)> {
                     let idx = v.as_int()? as usize;
                     Ok((
                         *k,
@@ -397,10 +397,9 @@ mod parse {
                 .collect::<Result<IndexMap<_, _>>>()?,
             behaviors: list
                 .object("BehaviorIdx")
-                .map(|obj| -> Result<IndexMap<u32, ParameterList>> {
-                    obj.params()
-                        .iter()
-                        .map(|(k, v)| -> Result<(u32, ParameterList)> {
+                .map(|obj| -> Result<IndexMap<Name, ParameterList>> {
+                    obj.iter()
+                        .map(|(k, v)| -> Result<(Name, ParameterList)> {
                             Ok((
                                 *k,
                                 behavior_list
@@ -435,10 +434,9 @@ mod parse {
             params: list.object("SInst").cloned(),
             behaviors: list
                 .object("BehaviorIdx")
-                .map(|obj| -> Result<IndexMap<u32, ParameterList>> {
-                    obj.params()
-                        .iter()
-                        .map(|(k, v)| -> Result<(u32, ParameterList)> {
+                .map(|obj| -> Result<IndexMap<Name, ParameterList>> {
+                    obj.iter()
+                        .map(|(k, v)| -> Result<(Name, ParameterList)> {
                             Ok((
                                 *k,
                                 behavior_list
@@ -486,7 +484,7 @@ mod parse {
                         .values()
                         .filter_map(|ai| {
                             ai.object("ChildIdx").map(|ci| {
-                                ci.params()
+                                ci.0
                                     .values()
                                     .flat_map(|i| i.as_int().map(|i| i as usize).ok())
                             })
@@ -511,9 +509,9 @@ mod parse {
                                     .ok_or(UKError::MissingAampKey(
                                         "AI entry missing Def object",
                                     ))?
-                                    .param("ClassName")
+                                    .get("ClassName")
                                     .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
-                                    .as_string()?
+                                    .as_str()?
                                     .into(),
                                 plist_to_ai(root, pio, action_offset)?,
                             ))
@@ -527,7 +525,7 @@ mod parse {
                     ))?
                     .0
                     .iter()
-                    .map(|(k, v)| -> Result<(u32, ChildEntry)> {
+                    .map(|(k, v)| -> Result<(Name, ChildEntry)> {
                         let idx = v.as_int()? as usize;
                         Ok((
                             *k,
@@ -554,7 +552,7 @@ mod parse {
                             },
                         ))
                     })
-                    .collect::<Result<IndexMap<u32, ChildEntry>>>()?,
+                    .collect::<Result<IndexMap<Name, ChildEntry>>>()?,
                 queries: query_list
                     .lists
                     .0
@@ -565,9 +563,9 @@ mod parse {
                             query
                                 .object("Def")
                                 .ok_or(UKError::MissingAampKey("Query missing Def object"))?
-                                .param("ClassName")
+                                .get("ClassName")
                                 .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
-                                .as_string()?.into(),
+                                .as_str()?.into(),
                             query,
                         ))
                     })
@@ -625,9 +623,9 @@ mod write {
             let mut list = ParameterList::new();
             let idx = self.ais.len();
             self.ais.insert(idx, ParameterList::new());
-            list.set_object("Def", ai.def);
+            list.objects_mut().insert("Def", ai.def);
             if let Some(params) = ai.params {
-                list.set_object("SInst", params);
+                list.objects_mut().insert("SInst", params);
             };
             if !ai.children.is_empty() {
                 let mut children = ParameterObject::new();
@@ -640,7 +638,7 @@ mod write {
                     };
                     children.0.insert(key, Parameter::Int(idx as i32));
                 }
-                list.set_object("ChildIdx", children);
+                list.objects_mut().insert("ChildIdx", children);
             }
             if let Some(behaviors) = ai.behaviors {
                 let mut behavior_indexes = ParameterObject::new();
@@ -658,7 +656,7 @@ mod write {
                         } as i32),
                     );
                 }
-                list.set_object("BehaviorIdx", behavior_indexes);
+                list.objects_mut().insert("BehaviorIdx", behavior_indexes);
             };
             self.done_ais.insert(name, idx);
             std::mem::swap(&mut list, self.ais.get_mut(idx).unwrap());
@@ -671,9 +669,9 @@ mod write {
                 return *idx;
             }
             let mut list = ParameterList::new();
-            list.set_object("Def", action.def);
+            list.objects_mut().insert("Def", action.def);
             if let Some(params) = action.params {
-                list.set_object("SInst", params);
+                list.objects_mut().insert("SInst", params);
             }
             if let Some(behaviors) = action.behaviors {
                 let mut behavior_indexes = ParameterObject::new();
@@ -691,7 +689,7 @@ mod write {
                         } as i32),
                     );
                 }
-                list.set_object("BehaviorIdx", behavior_indexes);
+                list.objects_mut().insert("BehaviorIdx", behavior_indexes);
             };
             let idx = self.actions.len();
             self.done_actions.insert(name, idx);
@@ -701,14 +699,15 @@ mod write {
 
         fn build(mut self) -> ParameterIO {
             let mut pio = ParameterIO::new();
-            pio.set_object("DemoAIActionIdx", ParameterObject::new());
+            pio.objects_mut()
+                .insert("DemoAIActionIdx", ParameterObject::new());
             let mut tree: IndexMap<String, AIEntry> = IndexMap::new();
             std::mem::swap(&mut tree, &mut self.aiprog.tree);
             let roots: Vec<AIEntry> = tree.into_iter().map(|(_, root)| root).collect();
             for root in roots {
                 self.ai_to_plist(root);
             }
-            let mut demos: IndexMap<u32, ChildEntry> = IndexMap::new();
+            let mut demos: IndexMap<Name, ChildEntry> = IndexMap::new();
             std::mem::swap(&mut self.aiprog.demos, &mut demos);
             pio.object_mut("DemoAIActionIdx")
                 .unwrap()
@@ -799,7 +798,7 @@ impl Resource for AIProgram {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -818,7 +817,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
+                .get_data("Actor/AIProgram/Guardian_A.baiprog")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -834,7 +834,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
+                .get_data("Actor/AIProgram/Guardian_A.baiprog")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -842,7 +843,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
+                .get_data("Actor/AIProgram/Guardian_A.baiprog")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -855,7 +857,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
+                .get_data("Actor/AIProgram/Guardian_A.baiprog")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -863,7 +866,8 @@ mod tests {
         let aiprog = super::AIProgram::try_from(&pio).unwrap();
         let pio2 = ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/AIProgram/Guardian_A.baiprog")
+                .get_data("Actor/AIProgram/Guardian_A.baiprog")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

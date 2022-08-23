@@ -92,9 +92,9 @@ pub use prelude::*;
 //     ) -> Result<Self> {
 //         let name = actorlink
 //             .targets
-//             .param(user_name)
+//             .get(user_name)
 //             .ok_or_else(|| UKError::MissingAampKeyD(jstr!("Actor link missing {user_name}")))?
-//             .as_string()?;
+//             .as_str()?;
 //         if name == "Dummy" {
 //             Ok(Self::Dummy)
 //         } else {
@@ -106,7 +106,7 @@ pub use prelude::*;
 //             {
 //                 let target = T::from_binary(data)?;
 //                 Ok(Self::Included {
-//                     path: name.to_owned(),
+//                     path: name.into(),
 //                     params: target,
 //                 })
 //             } else {
@@ -169,7 +169,7 @@ pub use prelude::*;
 //             .unwrap()
 //             .trim_start_matches("Actor/ActorLink/")
 //             .trim_end_matches(".bxml")
-//             .to_owned();
+//             .into();
 //         Ok(Self {
 //             ai_program: LinkTarget::extract(&actorlink, &mut sarc, "AIProgramUser")
 //                 .with_context(|| jstr!("Failed to parse AIProgramUser in actor {&name}"))?,
@@ -365,10 +365,10 @@ pub use prelude::*;
 
 // impl Resource for Actor {
 //     fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
-//         Self::from_sarc(&Sarc::read(data.as_ref())?)
+//         Self::from_sarc(&Sarc::new(data.as_ref())?)
 //     }
 
-//     fn into_binary(self, endian: Endian) -> roead::Bytes {
+//     fn into_binary(self, endian: Endian) -> Vec<u8> {
 //         self.into_sarc(endian).to_binary()
 //     }
 
@@ -389,7 +389,7 @@ pub use prelude::*;
 //     fn serde() {
 //         let pack1 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
 //         let actor1 = Actor::from_sarc(&pack1).unwrap();
-//         let pack2 = Sarc::read(
+//         let pack2 = Sarc::new(
 //             actor1
 //                 .clone()
 //                 .into_sarc(crate::prelude::Endian::Big)

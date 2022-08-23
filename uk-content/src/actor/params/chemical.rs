@@ -39,7 +39,7 @@ impl TryFrom<&ParameterIO> for Chemical {
         let shape_num = chem_root
             .object("chemical_header")
             .ok_or(UKError::MissingAampKey("Chemical missing chemical_header"))?
-            .param("res_shape_num")
+            .get("res_shape_num")
             .ok_or(UKError::MissingAampKey("Chemical missing shape count"))?
             .as_u32()? as usize;
         let chemical_body = chem_root
@@ -77,8 +77,8 @@ impl TryFrom<&ParameterIO> for Chemical {
 
 impl From<Chemical> for ParameterIO {
     fn from(val: Chemical) -> Self {
-        ParameterIO {
-            lists: [(
+        ParameterIO::new().with_lists(
+            [(
                 "chemical_root",
                 ParameterList {
                     objects: [(
@@ -117,10 +117,8 @@ impl From<Chemical> for ParameterIO {
                     .collect(),
                 },
             )]
-            .into_iter()
-            .collect(),
-            ..Default::default()
-        }
+            .into_iter(),
+        )
     }
 }
 
@@ -146,27 +144,27 @@ impl Mergeable for Chemical {
 
 impl InfoSource for Chemical {
     fn update_info(&self, info: &mut Hash) -> crate::Result<()> {
-        let mut chem_info = Hash::new();
+        let mut chem_info = Hash::default();
         if let Some(Parameter::U32(attribute)) = self
             .body
             .values()
             .next()
-            .and_then(|body| body.rigid_c.param("attribute"))
+            .and_then(|body| body.rigid_c.get("attribute"))
             && *attribute == 650
         {
-            chem_info.insert("Capaciter".into(), Byml::Int(1));
+            chem_info.insert("Capaciter".into(), Byml::I32(1));
         }
         if let Some(Parameter::String32(name)) = self
             .body
             .values()
             .next()
-            .and_then(|body| body.shape.param("name"))
+            .and_then(|body| body.shape.get("name"))
             && name.as_str() == "WeaponFire"
         {
-            chem_info.insert("Burnable".into(), Byml::Int(1));
+            chem_info.insert("Burnable".into(), Byml::I32(1));
         }
         if !chem_info.is_empty() {
-            info.insert("Chemical".to_owned(), Byml::Hash(chem_info));
+            info.insert("Chemical".into(), Byml::Hash(chem_info));
         }
         Ok(())
     }
@@ -183,7 +181,7 @@ impl Resource for Chemical {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -200,7 +198,10 @@ mod tests {
     fn serde() {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor.get_file_data("Actor/Chemical/NPC.bchemical").unwrap(),
+            actor
+                .get_data("Actor/Chemical/NPC.bchemical")
+                .unwrap()
+                .unwrap(),
         )
         .unwrap();
         let chemical = super::Chemical::try_from(&pio).unwrap();
@@ -214,14 +215,18 @@ mod tests {
     fn diff() {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor.get_file_data("Actor/Chemical/NPC.bchemical").unwrap(),
+            actor
+                .get_data("Actor/Chemical/NPC.bchemical")
+                .unwrap()
+                .unwrap(),
         )
         .unwrap();
         let chemical = super::Chemical::try_from(&pio).unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/Chemical/NPC.bchemical")
+                .get_data("Actor/Chemical/NPC.bchemical")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -233,14 +238,18 @@ mod tests {
     fn merge() {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor.get_file_data("Actor/Chemical/NPC.bchemical").unwrap(),
+            actor
+                .get_data("Actor/Chemical/NPC.bchemical")
+                .unwrap()
+                .unwrap(),
         )
         .unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let chemical = super::Chemical::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/Chemical/NPC.bchemical")
+                .get_data("Actor/Chemical/NPC.bchemical")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -254,14 +263,17 @@ mod tests {
     fn info() {
         let actor = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor.get_file_data("Actor/Chemical/NPC.bchemical").unwrap(),
+            actor
+                .get_data("Actor/Chemical/NPC.bchemical")
+                .unwrap()
+                .unwrap(),
         )
         .unwrap();
         let chemical = super::Chemical::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::new();
+        let mut info = roead::byml::Hash::default();
         chemical.update_info(&mut info).unwrap();
-        assert_eq!(info["Chemical"]["Capaciter"], roead::byml::Byml::Int(1));
-        assert_eq!(info["Chemical"]["Burnable"], roead::byml::Byml::Int(1));
+        assert_eq!(info["Chemical"]["Capaciter"], roead::byml::Byml::I32(1));
+        assert_eq!(info["Chemical"]["Burnable"], roead::byml::Byml::I32(1));
     }
 
     #[test]

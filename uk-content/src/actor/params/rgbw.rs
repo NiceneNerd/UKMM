@@ -17,13 +17,13 @@ impl TryFrom<&ParameterObject> for Key {
     fn try_from(obj: &ParameterObject) -> Result<Self> {
         Ok(Self {
             state_key: *obj
-                .param("StateKey")
+                .get("StateKey")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll blend weight state header missing state key",
                 ))?
                 .as_string32()?,
             system_key: *obj
-                .param("SystemKey")
+                .get("SystemKey")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll blend weight state header missing system key",
                 ))?
@@ -51,7 +51,7 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         Ok(Self(
-            pio.lists
+            pio.lists()
                 .0
                 .values()
                 .map(|list| -> Result<(Key, DeleteMap<String32, f32>)> {
@@ -70,12 +70,12 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
                             .values()
                             .map(|obj| -> Result<(String32, f32)> {
                                 Ok((
-                                    *obj.param("RigidName")
+                                    *obj.get("RigidName")
                                         .ok_or(UKError::MissingAampKey(
                                             "Ragdoll blend weight state input missing rigid name",
                                         ))?
                                         .as_string32()?,
-                                    obj.param("BlendRate")
+                                    obj.get("BlendRate")
                                         .ok_or(UKError::MissingAampKey(
                                             "Ragdoll blend weight state input missing blend rate",
                                         ))?
@@ -92,40 +92,32 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
 
 impl From<RagdollBlendWeight> for ParameterIO {
     fn from(val: RagdollBlendWeight) -> Self {
-        Self {
-            lists: val
-                .0
-                .into_iter()
-                .enumerate()
-                .map(|(idx, (key, state))| {
-                    (
-                        jstr!("State_{&lexical::to_string(idx + 1)}"),
-                        ParameterList {
-                            objects: [("Setting", key.into())].into_iter().collect(),
-                            lists: [(
-                                "InputWeightList",
-                                ParameterList::new().with_objects(
-                                    state.into_iter().enumerate().map(|(i, (name, rate))| {
-                                        (
-                                            jstr!("InputWeight_{&lexical::to_string(i + 1)}"),
-                                            [
-                                                ("RigidName", Parameter::String32(name)),
-                                                ("BlendRate", Parameter::F32(rate)),
-                                            ]
-                                            .into_iter()
-                                            .collect(),
-                                        )
-                                    }),
-                                ),
-                            )]
-                            .into_iter()
-                            .collect(),
-                        },
-                    )
-                })
-                .collect(),
-            ..Default::default()
-        }
+        Self::new().with_lists(val.0.into_iter().enumerate().map(|(idx, (key, state))| {
+            (
+                jstr!("State_{&lexical::to_string(idx + 1)}"),
+                ParameterList {
+                    objects: [("Setting", key.into())].into_iter().collect(),
+                    lists: [(
+                        "InputWeightList",
+                        ParameterList::new().with_objects(state.into_iter().enumerate().map(
+                            |(i, (name, rate))| {
+                                (
+                                    jstr!("InputWeight_{&lexical::to_string(i + 1)}"),
+                                    [
+                                        ("RigidName", Parameter::String32(name)),
+                                        ("BlendRate", Parameter::F32(rate)),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                )
+                            },
+                        )),
+                    )]
+                    .into_iter()
+                    .collect(),
+                },
+            )
+        }))
     }
 }
 
@@ -142,7 +134,7 @@ impl Mergeable for RagdollBlendWeight {
                     key.clone(),
                     self_list.diff(other_list)
                 ))
-            } else if self_list == None {
+            } else if self_list.is_none() {
                 Some(( key.clone(), other_list.clone() ))
             } else {
                 None
@@ -187,7 +179,7 @@ impl Resource for RagdollBlendWeight {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -205,7 +197,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -221,7 +214,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -229,7 +223,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Moriblin_Junior");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -243,7 +238,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Moriblin_Junior");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -251,7 +247,8 @@ mod tests {
         let rgbw = super::RagdollBlendWeight::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

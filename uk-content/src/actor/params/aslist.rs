@@ -16,16 +16,16 @@ impl TryFrom<&ParameterObject> for AddRes {
     fn try_from(value: &ParameterObject) -> Result<Self> {
         Ok(Self {
             anim: *value
-                .param("Anim")
+                .get("Anim")
                 .ok_or(UKError::MissingAampKey("AS list add res missing anim"))?
                 .as_string64()?,
             retarget_model: value
-                .param("RetargetModel")
+                .get("RetargetModel")
                 .map(|v| v.as_string64())
                 .transpose()?
                 .copied(),
             retarget_nocorrect: value
-                .param("RetargetNoCorrect")
+                .get("RetargetNoCorrect")
                 .map(|v| v.as_bool())
                 .transpose()?,
         })
@@ -84,10 +84,10 @@ impl TryFrom<&ParameterIO> for ASList {
                 .values()
                 .map(|obj| -> Result<(String64, String64)> {
                     Ok((
-                        *obj.param("Name")
+                        *obj.get("Name")
                             .ok_or(UKError::MissingAampKey("AS list AS define missing name"))?
                             .as_string64()?,
-                        *obj.param("Filename")
+                        *obj.get("Filename")
                             .ok_or(UKError::MissingAampKey(
                                 "AS list AS define missing filename",
                             ))?
@@ -106,11 +106,11 @@ impl TryFrom<&ParameterIO> for ASList {
                             let pre_name = list
                                 .object("CFPre")
                                 .ok_or(UKError::MissingAampKey("AS list CF define missing CFPre"))?
-                                .param("Name")
+                                .get("Name")
                                 .ok_or(UKError::MissingAampKey(
                                     "AS list CF define missing CFPre name",
                                 ))?
-                                .as_string()?
+                                .as_str()?
                                 .into();
                             Ok((pre_name, list.clone()))
                         })
@@ -123,49 +123,50 @@ impl TryFrom<&ParameterIO> for ASList {
 
 impl From<ASList> for ParameterIO {
     fn from(val: ASList) -> Self {
-        Self {
-            objects: val.common.into_iter().map(|c| ("Common", c)).collect(),
-            lists: [
-                (
-                    "AddReses",
-                    Some(ParameterList::new().with_objects(
-                        val.add_reses.into_iter().enumerate().map(|(i, (_, res))| {
-                            (jstr!("AddRes_{&lexical::to_string(i)}"), res.into())
-                        }),
-                    )),
-                ),
-                (
-                    "ASDefines",
-                    Some(
-                        ParameterList::new().with_objects(
-                            val.as_defines
-                                .into_iter()
-                                .enumerate()
-                                .map(|(i, (name, filename))| {
-                                    (
-                                        jstr!("ASDefine_{&lexical::to_string(i)}"),
-                                        ParameterObject::new()
-                                            .with_param("Name", Parameter::String64(name))
-                                            .with_param("Filename", Parameter::String64(filename)),
-                                    )
-                                }),
+        Self::new()
+            .with_objects(val.common.into_iter().map(|c| ("Common", c)))
+            .with_lists(
+                [
+                    (
+                        "AddReses",
+                        Some(ParameterList::new().with_objects(
+                            val.add_reses.into_iter().enumerate().map(|(i, (_, res))| {
+                                (jstr!("AddRes_{&lexical::to_string(i)}"), res.into())
+                            }),
+                        )),
+                    ),
+                    (
+                        "ASDefines",
+                        Some(
+                            ParameterList::new().with_objects(
+                                val.as_defines.into_iter().enumerate().map(
+                                    |(i, (name, filename))| {
+                                        (
+                                            jstr!("ASDefine_{&lexical::to_string(i)}"),
+                                            ParameterObject::new()
+                                                .with_parameter("Name", Parameter::String64(name))
+                                                .with_parameter(
+                                                    "Filename",
+                                                    Parameter::String64(filename),
+                                                ),
+                                        )
+                                    },
+                                ),
+                            ),
                         ),
                     ),
-                ),
-                (
-                    "CFDefines",
-                    val.cf_defines.map(|defines| {
-                        ParameterList::new().with_lists(defines.into_iter().enumerate().map(
-                            |(i, (_, list))| (jstr!("CFDefine_{&lexical::to_string(i)}"), list),
-                        ))
-                    }),
-                ),
-            ]
-            .into_iter()
-            .filter_map(|(k, v)| v.map(|v| (k, v)))
-            .collect(),
-            ..Default::default()
-        }
+                    (
+                        "CFDefines",
+                        val.cf_defines.map(|defines| {
+                            ParameterList::new().with_lists(defines.into_iter().enumerate().map(
+                                |(i, (_, list))| (jstr!("CFDefine_{&lexical::to_string(i)}"), list),
+                            ))
+                        }),
+                    ),
+                ]
+                .into_iter()
+                .filter_map(|(k, v)| v.map(|v| (k, v))),
+            )
     }
 }
 
@@ -221,7 +222,7 @@ impl Resource for ASList {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -241,7 +242,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -257,7 +259,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -265,7 +268,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio2 = ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -278,7 +282,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -286,7 +291,8 @@ mod tests {
         let aslist = super::ASList::try_from(&pio).unwrap();
         let pio2 = ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

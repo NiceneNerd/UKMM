@@ -192,7 +192,7 @@ struct DataTreeBuilder {
 impl DataTreeBuilder {
     pub fn new(dir: impl AsRef<Path>) -> Self {
         Self {
-            root: dir.as_ref().to_owned(),
+            root: dir.as_ref().into(),
             resources: BTreeMap::new(),
         }
     }

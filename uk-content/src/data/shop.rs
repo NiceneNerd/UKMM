@@ -126,7 +126,7 @@ impl Resource for ShopGameDataInfo {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: Endian) -> roead::Bytes {
+    fn into_binary(self, endian: Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

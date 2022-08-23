@@ -42,14 +42,14 @@ impl ZArchive {
 
 #[typetag::serde]
 impl super::ResourceLoader for ZArchive {
-    fn get_file_data(&self, name: &Path) -> Result<Vec<u8>> {
+    fn get_data(&self, name: &Path) -> Result<Vec<u8>> {
         self.archive
             .read_file(&self.update_dir.join(name))
             .or_else(|| self.archive.read_file(&self.content_dir.join(name)))
             .ok_or_else(|| {
                 crate::ROMError::FileNotFound(
                     name.to_string_lossy().to_string(),
-                    self.host_path.to_owned(),
+                    self.host_path.clone(),
                 )
             })
     }
@@ -61,14 +61,14 @@ impl super::ResourceLoader for ZArchive {
                 self.archive.read_file(&dir.join(name)).ok_or_else(|| {
                     crate::ROMError::FileNotFound(
                         name.to_string_lossy().to_string(),
-                        self.host_path.to_owned(),
+                        self.host_path.clone(),
                     )
                 })
             })
             .unwrap_or_else(|| {
                 Err(crate::ROMError::MissingDumpDir(
                     "DLC",
-                    self.host_path.to_owned(),
+                    self.host_path.clone(),
                 ))
             })
     }
@@ -200,8 +200,8 @@ mod tests {
             println!("{}", dir.name());
         }
         assert_eq!(
-            "0.9.0".to_owned(),
-            String::from_utf8(arch.get_file_data("System/Version.txt".as_ref()).unwrap()).unwrap()
+            "0.9.0".into(),
+            String::from_utf8(arch.get_data("System/Version.txt".as_ref()).unwrap()).unwrap()
         );
     }
 }

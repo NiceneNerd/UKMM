@@ -19,7 +19,7 @@ impl TryFrom<&Byml> for AreaData {
                             .ok_or(UKError::MissingBymlKey(
                                 "Area data entry missing area number",
                             ))?
-                            .as_int()? as usize,
+                            .as_i32()? as usize,
                         area.clone(),
                     ))
                 })
@@ -49,7 +49,7 @@ impl Resource for AreaData {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

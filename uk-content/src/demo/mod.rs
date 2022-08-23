@@ -30,7 +30,7 @@ impl Resource for Demo {
         Ok((&ParameterIO::from_binary(data)?).into())
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 

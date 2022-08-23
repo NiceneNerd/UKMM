@@ -45,11 +45,11 @@ impl From<ActorInfo> for Byml {
         Byml::Hash(
             [
                 (
-                    "Actors".to_owned(),
+                    "Actors".into(),
                     Byml::Array(val.0.values().cloned().collect()),
                 ),
                 (
-                    "Hashes".to_owned(),
+                    "Hashes".into(),
                     Byml::Array(val.0.keys().map(Byml::from).collect()),
                 ),
             ]
@@ -74,7 +74,7 @@ impl Resource for ActorInfo {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

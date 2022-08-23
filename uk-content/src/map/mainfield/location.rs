@@ -30,14 +30,14 @@ impl TryFrom<&Byml> for Location {
                         "Main field location entry missing message ID",
                     ))?
                     .as_string()?
-                    .into();
+                    .clone();
                 let pos = LocationEntry {
                     show_level: loc
                         .get("ShowLevel")
                         .ok_or(UKError::MissingBymlKey(
                             "Main field location entry missing ShowLevel",
                         ))?
-                        .as_int()? as usize,
+                        .as_i32()? as usize,
                     translate: loc
                         .get("Translate")
                         .ok_or(UKError::MissingBymlKey(
@@ -49,7 +49,7 @@ impl TryFrom<&Byml> for Location {
                         .ok_or(UKError::MissingBymlKey(
                             "Main field location entry missing Type",
                         ))?
-                        .as_int()? as usize,
+                        .as_i32()? as usize,
                 };
                 if let Some(message_locs) = locs.get_mut(&message) {
                     message_locs.push(pos);
@@ -71,10 +71,10 @@ impl From<Location> for Byml {
                     .into_iter()
                     .map(|pos| -> Byml {
                         [
-                            ("MessageID", Byml::String(message.to_string())),
-                            ("ShowLevel", Byml::Int(pos.show_level as i32)),
+                            ("MessageID", Byml::String(message.clone())),
+                            ("ShowLevel", Byml::I32(pos.show_level as i32)),
                             ("Translate", pos.translate),
-                            ("Type", Byml::Int(pos.ltype as i32)),
+                            ("Type", Byml::I32(pos.ltype as i32)),
                         ]
                         .into_iter()
                         .collect()
@@ -100,7 +100,7 @@ impl Resource for Location {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

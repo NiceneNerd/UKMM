@@ -222,7 +222,7 @@ impl Resource for AS {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -241,7 +241,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AS/Guardian_MaterialTargetFound.bas")
+                .get_data("Actor/AS/Guardian_MaterialTargetFound.bas")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -257,7 +258,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AS/Guardian_MaterialDefault.bas")
+                .get_data("Actor/AS/Guardian_MaterialTargetFound.bas")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -265,7 +267,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/AS/Guardian_MaterialDefault.bas")
+                .get_data("Actor/AS/Guardian_MaterialTargetFound.bas")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -278,7 +281,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AS/Guardian_MaterialDefault.bas")
+                .get_data("Actor/AS/Guardian_MaterialTargetFound.bas")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -286,7 +290,8 @@ mod tests {
         let as_data = super::AS::try_from(&pio).unwrap();
         let pio2 = ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/AS/Guardian_MaterialDefault.bas")
+                .get_data("Actor/AS/Guardian_MaterialTargetFound.bas")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

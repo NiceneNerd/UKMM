@@ -23,7 +23,7 @@ impl TryFrom<&ParameterIO> for AttClient {
                 .object("AttClientParams")
                 .ok_or(UKError::MissingAampKey("Attention client missing params"))?
                 .clone(),
-            checks: pio.lists.0.values().cloned().collect(),
+            checks: pio.lists().0.values().cloned().collect(),
         })
     }
 }
@@ -68,7 +68,7 @@ impl Resource for AttClient {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -86,7 +86,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .get_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -102,7 +103,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .get_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -110,7 +112,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .get_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -123,7 +126,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .get_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -131,7 +135,8 @@ mod tests {
         let atcl = super::AttClient::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .get_data("Actor/AttClient/Enemy_Guardian_LockOn.batcl")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

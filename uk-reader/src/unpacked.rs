@@ -80,7 +80,7 @@ impl Unpacked {
 #[typetag::serde]
 impl super::ResourceLoader for Unpacked {
     #[allow(irrefutable_let_patterns)]
-    fn get_file_data(&self, name: &Path) -> Result<Vec<u8>> {
+    fn get_data(&self, name: &Path) -> Result<Vec<u8>> {
         self.update_dir
             .iter()
             .chain(self.content_dir.iter())
@@ -89,10 +89,7 @@ impl super::ResourceLoader for Unpacked {
             .find_map(|path| path.exists().then(|| fs::read(path).ok()))
             .flatten()
             .ok_or_else(|| {
-                ROMError::FileNotFound(
-                    name.to_string_lossy().to_string(),
-                    self.host_path.to_owned(),
-                )
+                ROMError::FileNotFound(name.to_string_lossy().to_string(), self.host_path.clone())
             })
     }
 
@@ -106,11 +103,11 @@ impl super::ResourceLoader for Unpacked {
                 } else {
                     Err(ROMError::FileNotFound(
                         name.to_string_lossy().to_string(),
-                        self.host_path.to_owned(),
+                        self.host_path.clone(),
                     ))
                 }
             })
-            .unwrap_or_else(|| Err(ROMError::MissingDumpDir("DLC", self.host_path.to_owned())))
+            .unwrap_or_else(|| Err(ROMError::MissingDumpDir("DLC", self.host_path.clone())))
     }
 
     fn file_exists(&self, name: &Path) -> bool {

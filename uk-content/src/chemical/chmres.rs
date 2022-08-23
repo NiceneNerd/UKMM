@@ -22,7 +22,7 @@ impl TryFrom<&ParameterIO> for ChemicalRes {
                 .values()
                 .map(|obj| -> Result<(String256, ParameterObject)> {
                     Ok((
-                        *obj.param("label")
+                        *obj.get("label")
                             .ok_or(UKError::MissingAampKey("Chemical res entry missing label"))?
                             .as_string256()?,
                         obj.clone(),
@@ -78,7 +78,7 @@ impl Resource for ChemicalRes {
         (&ParameterIO::from_binary(data)?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 

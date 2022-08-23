@@ -116,7 +116,7 @@ impl TryFrom<&Byml> for StatusEffectList {
                 .as_hash()?
                 .iter()
                 .map(|(effect, values)| -> Result<(String, StatusEffectValues)> {
-                    Ok((effect.into(), values.try_into()?))
+                    Ok((effect.clone(), values.try_into()?))
                 })
                 .collect::<Result<_>>()?,
         ))
@@ -170,7 +170,7 @@ impl Resource for StatusEffectList {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

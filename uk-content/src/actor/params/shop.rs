@@ -52,23 +52,23 @@ impl TryFrom<&ParameterIO> for ShopData {
             .object("Header")
             .ok_or(UKError::MissingAampKey("Shop data missing header"))?;
         let table_count = header
-            .param("TableNum")
+            .get("TableNum")
             .ok_or(UKError::MissingAampKey("Shop data missing table count"))?
             .as_int()? as usize;
         let tables: Vec<_> = (1..=table_count)
             .filter_map(|i| {
                 header
-                    .param(&format!("Table{:02}", i))
+                    .get(&format!("Table{:02}", i))
                     .and_then(|p| p.as_string64().ok().copied())
             })
             .collect();
         let mut shop_tables = IndexMap::with_capacity(table_count);
         for table_name in tables {
-            let table_obj = pio.object(&table_name).ok_or_else(|| {
+            let table_obj = pio.object(table_name.as_str()).ok_or_else(|| {
                 UKError::MissingAampKeyD(jstr!("Table {&table_name} in shop data missing"))
             })?;
             let column_num = table_obj
-                .param("ColumnNum")
+                .get("ColumnNum")
                 .ok_or(UKError::MissingAampKey(
                     "Shop data table missing column count",
                 ))?
@@ -79,39 +79,39 @@ impl TryFrom<&ParameterIO> for ShopData {
                     (1..=column_num)
                         .map(|i| -> Result<(String64, ShopItem)> {
                             let item_name = table_obj
-                                .param(&format!("ItemName{:03}", i))
+                                .get(&format!("ItemName{:03}", i))
                                 .ok_or(UKError::MissingAampKey("Shop table missing item name"))?
                                 .as_string64()?;
                             Ok((
                                 *item_name,
                                 ShopItem {
                                     sort: table_obj
-                                        .param(&format!("ItemSort{:03}", i))
+                                        .get(&format!("ItemSort{:03}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Shop table missing item name",
                                         ))?
                                         .as_int()? as u8,
                                     num: table_obj
-                                        .param(&format!("ItemNum{:03}", i))
+                                        .get(&format!("ItemNum{:03}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Shop table missing item num",
                                         ))?
                                         .as_int()? as u8,
                                     adjust_price: table_obj
-                                        .param(&format!("ItemAdjustPrice{:03}", i))
+                                        .get(&format!("ItemAdjustPrice{:03}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Shop table missing adjust price",
                                         ))?
                                         .as_int()?
                                         as u8,
                                     look_get_flag: table_obj
-                                        .param(&format!("ItemLookGetFlg{:03}", i))
+                                        .get(&format!("ItemLookGetFlg{:03}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Shop table missing look get flag",
                                         ))?
                                         .as_bool()?,
                                     amount: table_obj
-                                        .param(&format!("ItemAdjustPrice{:03}", i))
+                                        .get(&format!("ItemAdjustPrice{:03}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Shop table missing item amount",
                                         ))?
@@ -132,9 +132,9 @@ impl TryFrom<&ParameterIO> for ShopData {
 impl From<ShopData> for ParameterIO {
     fn from(val: ShopData) -> ParameterIO {
         let mut pio = ParameterIO::new();
-        pio.set_object(
+        pio.objects_mut().insert(
             "Header",
-            [("TableNum".to_owned(), Parameter::Int(val.0.len() as i32))]
+            [("TableNum".into(), Parameter::Int(val.0.len() as i32))]
                 .into_iter()
                 .chain(
                     val.0.keys().enumerate().map(|(i, name)| {
@@ -147,9 +147,9 @@ impl From<ShopData> for ParameterIO {
             .into_iter()
             .filter_map(|(name, table)| table.map(|t| (name, t)))
             .for_each(|(name, table)| {
-                pio.set_object(
-                    &name,
-                    [("ColumnNum".to_owned(), Parameter::Int(table.len() as i32))]
+                pio.objects_mut().insert(
+                    name.as_str(),
+                    [("ColumnNum".into(), Parameter::Int(table.len() as i32))]
                         .into_iter()
                         .chain(
                             table
@@ -272,7 +272,7 @@ impl Resource for ShopData {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -290,7 +290,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .get_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -306,7 +307,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .get_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -314,7 +316,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .get_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -327,7 +330,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .get_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -335,7 +339,8 @@ mod tests {
         let shop = super::ShopData::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .get_data("Actor/ShopData/Npc_TripMaster_00.bshop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

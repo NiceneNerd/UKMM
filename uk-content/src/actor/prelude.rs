@@ -6,11 +6,11 @@ pub(crate) fn extract_info_param<T: TryFrom<Parameter> + Into<Byml> + Clone>(
     key: &str,
 ) -> Result<Option<Byml>> {
     Ok(obj
-        .param(key)
+        .get(key)
         .map(|v| -> Result<T> {
             v.clone()
                 .try_into()
-                .map_err(|_| crate::UKError::WrongAampType(AampError::TypeError))
+                .map_err(|_| crate::UKError::OtherD(format!("Wrong AAMP type for {:?}", v)))
         })
         .transpose()?
         .map(|v| v.into()))
@@ -31,7 +31,7 @@ macro_rules! info_params {
                 )*
             ]
                 .into_iter()
-                .filter_map(|(k, v)| v.map(|v| (k.to_owned(), v))),
+                .filter_map(|(k, v)| v.map(|v| (k.into(), v))),
         );
     };
 }
@@ -52,7 +52,7 @@ macro_rules! info_params_filtered {
             ]
                 .into_iter()
                 .filter_map(|(k, v)| {
-                    v.and_then(|v| (!crate::actor::is_byml_null(&v)).then(|| (k.to_owned(), v)))
+                    v.and_then(|v| (!crate::actor::is_byml_null(&v)).then(|| (k.into(), v)))
                 }),
         );
     };
@@ -61,7 +61,7 @@ macro_rules! info_params_filtered {
 pub(crate) fn is_byml_null(byml: &Byml) -> bool {
     match byml {
         Byml::Float(v) => *v == 0.0,
-        Byml::Int(v) => *v == 0,
+        Byml::I32(v) => *v == 0,
         Byml::String(v) => v.is_empty(),
         _ => true,
     }

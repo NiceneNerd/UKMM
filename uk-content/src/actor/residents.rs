@@ -29,15 +29,14 @@ impl TryFrom<&Byml> for ResidentActors {
                                         "Resident actors entry missing name",
                                     ))?
                                     .as_string()?
-                                    .into(),
+                                    .clone(),
                                 ResidentActorData {
                                     only_res: actor
                                         .get("only_res")
                                         .ok_or(UKError::MissingBymlKey(
                                             "Resident actors entry missing only_res",
                                         ))?
-                                        .as_bool()?
-                                        .to_owned(),
+                                        .as_bool()?,
                                     scale: actor.get("scale").cloned(),
                                 },
                             ))
@@ -57,12 +56,12 @@ impl From<ResidentActors> for Byml {
                 .map(|(name, data)| {
                     Byml::Hash(
                         [
-                            ("name", Some(Byml::String(name.into()))),
+                            ("name", Some(Byml::String(name))),
                             ("only_res", Some(Byml::Bool(data.only_res))),
                             ("scale", data.scale),
                         ]
                         .into_iter()
-                        .filter_map(|(k, v)| v.map(|v| (k.to_owned(), v)))
+                        .filter_map(|(k, v)| v.map(|v| (k.into(), v)))
                         .collect(),
                     )
                 })
@@ -86,7 +85,7 @@ impl Resource for ResidentActors {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

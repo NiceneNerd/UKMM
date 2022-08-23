@@ -43,9 +43,9 @@ impl TryFrom<&Byml> for Static {
                                 "CDungeon static entry missing Map name",
                             ))?
                             .as_string()?
-                            .into();
+                            .clone();
                         let pos_name = match entry.get("PosName") {
-                            Some(pos_name) => pos_name.as_string()?.to_owned(),
+                            Some(pos_name) => pos_name.as_string()?.clone(),
                             _ => return Ok(entry_map),
                         };
                         let rotate = entry
@@ -62,11 +62,11 @@ impl TryFrom<&Byml> for Static {
                             .clone();
                         let player_state = entry
                             .get("PlayerState")
-                            .map(|state| -> Result<String> { Ok(state.as_string()?.into()) })
+                            .map(|state| -> Result<String> { Ok(state.as_string()?.clone()) })
                             .transpose()?;
                         if let Some(map_entries) = entry_map.get_mut(&map) {
                             map_entries.insert(
-                                String::from(pos_name),
+                                pos_name,
                                 EntryPos {
                                     rotate,
                                     translate,
@@ -77,7 +77,7 @@ impl TryFrom<&Byml> for Static {
                             entry_map.insert(
                                 map,
                                 [(
-                                    pos_name.into(),
+                                    pos_name,
                                     EntryPos {
                                         rotate,
                                         translate,
@@ -96,7 +96,7 @@ impl TryFrom<&Byml> for Static {
                 .iter()
                 .filter(|(k, _)| k.as_str() != "StartPos")
                 .map(|(key, array)| -> Result<(String, DeleteVec<Byml>)> {
-                    Ok((key.into(), array.as_array()?.iter().cloned().collect()))
+                    Ok((key.clone(), array.as_array()?.iter().cloned().collect()))
                 })
                 .collect::<Result<_>>()?,
         })
@@ -106,7 +106,7 @@ impl TryFrom<&Byml> for Static {
 impl From<Static> for Byml {
     fn from(val: Static) -> Self {
         [(
-            "StartPos".to_owned(),
+            "StartPos".into(),
             val.start_pos
                 .into_iter()
                 .flat_map(|(map, entries): (String, DeleteMap<String, EntryPos>)| {
@@ -114,15 +114,15 @@ impl From<Static> for Byml {
                         .into_iter()
                         .map(|(pos_name, pos)| {
                             [
-                                ("Map", Byml::String(map.to_string())),
-                                ("PosName", Byml::String(pos_name.into())),
+                                ("Map", Byml::String(map.clone())),
+                                ("PosName", Byml::String(pos_name)),
                                 ("Rotate", pos.rotate),
                                 ("Translate", pos.translate),
                             ]
                             .into_iter()
                             .chain(
                                 pos.player_state
-                                    .map(|state| ("PlayerState", Byml::String(state.into()))),
+                                    .map(|state| ("PlayerState", Byml::String(state))),
                             )
                             .collect()
                         })
@@ -134,7 +134,7 @@ impl From<Static> for Byml {
         .chain(
             val.general
                 .into_iter()
-                .map(|(key, array)| (key.into(), array.into_iter().collect())),
+                .map(|(key, array)| (key, array.into_iter().collect())),
         )
         .collect()
     }
@@ -185,7 +185,7 @@ impl Resource for Static {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

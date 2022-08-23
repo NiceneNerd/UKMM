@@ -33,8 +33,8 @@ use roead::aamp::ParameterIO;
 use roead::byml::Byml;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use std::path::Path;
+use std::{borrow::Cow, collections::BTreeMap};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MergeableResource {
@@ -415,7 +415,7 @@ impl Mergeable for MergeableResource {
 }
 
 impl MergeableResource {
-    pub fn into_binary(self, endian: Endian) -> roead::Bytes {
+    pub fn into_binary(self, endian: Endian) -> Vec<u8> {
         match self {
             // Self::Actor(v) => v.into_binary(endian),
             Self::ActorInfo(v) => v.into_binary(endian),
@@ -501,7 +501,7 @@ impl Mergeable for SarcMap {
 
 impl SarcMap {
     pub fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
-        let sarc = Sarc::read(data.as_ref())?;
+        let sarc = Sarc::new(data.as_ref())?;
         let sarc_map = Self(
             sarc.files()
                 .map(|file| -> Result<String> {
@@ -535,20 +535,14 @@ impl SarcMap {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ResourceData {
-    Binary(Binary),
+    Binary(Vec<u8>),
     Mergeable(MergeableResource),
     Sarc(SarcMap),
 }
 
 impl From<Vec<u8>> for ResourceData {
     fn from(data: Vec<u8>) -> Self {
-        Self::Binary(Binary::Vec(data))
-    }
-}
-
-impl From<roead::Bytes> for ResourceData {
-    fn from(data: roead::Bytes) -> Self {
-        Self::Binary(Binary::Bytes(data))
+        Self::Binary(data)
     }
 }
 
@@ -578,7 +572,7 @@ pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool
 
 impl ResourceData {
     #[allow(irrefutable_let_patterns)]
-    pub fn from_binary(name: impl AsRef<Path>, data: impl Into<Binary>) -> Result<Self> {
+    pub fn from_binary<'a>(name: impl AsRef<Path>, data: impl Into<Cow<'a, [u8]>>) -> Result<Self> {
         let name = name.as_ref();
         let stem = name
             .file_stem()
@@ -590,12 +584,12 @@ impl ResourceData {
             .with_context(|| jstr!("Missing extension for resource: {&name.to_str().unwrap()}"))?
             .to_str()
             .unwrap_or_default();
-        let data: Binary = data.into();
+        let data = data.into();
         if stem == "Dummy"
             || data.len() < 0x10
             || EXCLUDE_NAMES.iter().any(|ex| stem.starts_with(ex))
         {
-            return Ok(Self::Binary(data));
+            return Ok(Self::Binary(data.into()));
         }
         if ActorInfo::path_matches(name) {
             //Actor::path_matches(name) {
@@ -799,7 +793,7 @@ impl ResourceData {
         {
             Ok(Self::Sarc(SarcMap::from_binary(data)?))
         } else {
-            Ok(Self::Binary(data))
+            Ok(Self::Binary(data.to_vec()))
         }
     }
 
@@ -829,14 +823,14 @@ impl ResourceData {
         }
     }
 
-    pub fn take_binary(self) -> Option<Binary> {
+    pub fn take_binary(self) -> Option<Vec<u8>> {
         match self {
             ResourceData::Binary(data) => Some(data),
             _ => None,
         }
     }
 
-    pub fn as_binary(&self) -> Option<&Binary> {
+    pub fn as_binary(&self) -> Option<&[u8]> {
         match self {
             ResourceData::Binary(data) => Some(data),
             _ => None,

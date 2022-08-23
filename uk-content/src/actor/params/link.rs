@@ -26,7 +26,7 @@ impl TryFrom<&ParameterIO> for ActorLink {
             tags: pio.object("Tags").map(|tags| {
                 tags.0
                     .values()
-                    .filter_map(|v| v.as_string().ok().map(|s| (s.into(), false)))
+                    .filter_map(|v| v.as_str().ok().map(|s| (s.into(), false)))
                     .collect()
             }),
         })
@@ -44,24 +44,27 @@ impl TryFrom<ParameterIO> for ActorLink {
 impl From<ActorLink> for ParameterIO {
     fn from(val: ActorLink) -> Self {
         ParameterIO {
-            objects: {
-                let mut objects = ParameterObjectMap::default();
-                objects.0.insert(hash_name("LinkTarget"), val.targets);
-                if let Some(tags) = val.tags {
-                    objects.0.insert(
-                        hash_name("Tags"),
-                        tags.into_iter()
-                            .enumerate()
-                            .map(|(i, tag)| {
-                                (
-                                    jstr!("Tag{&lexical::to_string(i)}"),
-                                    Parameter::StringRef(tag.into()),
-                                )
-                            })
-                            .collect(),
-                    );
-                }
-                objects
+            param_root: ParameterList {
+                objects: {
+                    let mut objects = ParameterObjectMap::default();
+                    objects.insert(hash_name("LinkTarget"), val.targets);
+                    if let Some(tags) = val.tags {
+                        objects.insert(
+                            hash_name("Tags"),
+                            tags.into_iter()
+                                .enumerate()
+                                .map(|(i, tag)| {
+                                    (
+                                        jstr!("Tag{&lexical::to_string(i)}"),
+                                        Parameter::StringRef(tag),
+                                    )
+                                })
+                                .collect(),
+                        );
+                    }
+                    objects
+                },
+                ..Default::default()
             },
             ..Default::default()
         }
@@ -129,27 +132,27 @@ impl InfoSource for ActorLink {
             info,
             {
                 ("actorScale", "ActorScale",  f32),
-                ("elink", "ElinkUser", std::string::String),
-                ("profile", "ProfileUser", std::string::String),
-                ("slink", "SlinkUser", std::string::String),
-                ("xlink", "XlinkUser", std::string::String),
+                ("elink", "ElinkUser", smartstring::alias::String),
+                ("profile", "ProfileUser", smartstring::alias::String),
+                ("slink", "SlinkUser", smartstring::alias::String),
+                ("xlink", "XlinkUser", smartstring::alias::String),
             }
         );
-        if self.targets.param("SlinkUser") != Some(&Parameter::StringRef("Dummy".to_owned())) {
-            info.insert("bugMask".to_owned(), Byml::Int(2));
+        if self.targets.get("SlinkUser") != Some(&Parameter::StringRef("Dummy".into())) {
+            info.insert("bugMask".into(), Byml::I32(2));
         }
         if let Some(tags) = &self.tags && !tags.is_empty() {
             info.insert(
-                "tags".to_owned(),
+                "tags".into(),
                 tags.iter()
                     .map(|tag| -> (std::string::String, Byml) {
                         let hash = roead::aamp::hash_name(tag.as_str());
                         (
                             format!("tag{:08x}", hash),
                             if hash > 2147483647 {
-                                Byml::UInt(hash)
+                                Byml::U32(hash)
                             } else {
-                                Byml::Int(hash as i32)
+                                Byml::I32(hash as i32)
                             },
                         )
                     })
@@ -171,7 +174,7 @@ impl Resource for ActorLink {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -192,7 +195,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .get_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -208,7 +212,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .get_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -216,7 +221,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .get_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -229,7 +235,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .get_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -237,7 +244,8 @@ mod tests {
         let actorlink = super::ActorLink::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .get_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -253,20 +261,21 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .get_data("Actor/ActorLink/Enemy_Guardian_A.bxml")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
         let actorlink = super::ActorLink::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::new();
+        let mut info = roead::byml::Hash::default();
         actorlink.update_info(&mut info).unwrap();
         assert_eq!(info["actorScale"], Byml::Float(1.0));
-        assert_eq!(info["elink"], Byml::String("Guardian_A".to_owned()));
-        assert_eq!(info["profile"], Byml::String("Guardian".to_owned()));
-        assert_eq!(info["slink"], Byml::String("Guardian".to_owned()));
-        assert_eq!(info["xlink"], Byml::String("Guardian".to_owned()));
-        assert_eq!(info["tags"]["tag3a61e2a9"], Byml::Int(979493545));
-        assert_eq!(info["tags"]["tag994aef4b"], Byml::UInt(0x994aef4b));
+        assert_eq!(info["elink"], Byml::String("Guardian_A".into()));
+        assert_eq!(info["profile"], Byml::String("Guardian".into()));
+        assert_eq!(info["slink"], Byml::String("Guardian".into()));
+        assert_eq!(info["xlink"], Byml::String("Guardian".into()));
+        assert_eq!(info["tags"]["tag3a61e2a9"], Byml::I32(979493545));
+        assert_eq!(info["tags"]["tag994aef4b"], Byml::U32(0x994aef4b));
     }
 
     #[test]

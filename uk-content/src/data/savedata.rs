@@ -43,7 +43,7 @@ impl TryFrom<&Byml> for SaveDataHeader {
                 .get("file_name")
                 .ok_or(UKError::MissingBymlKey("bgsvdata header missing file_name"))?
                 .as_string()?
-                .into(),
+                .clone(),
         })
     }
 }
@@ -57,7 +57,7 @@ impl From<SaveDataHeader> for Byml {
                 Byml::Bool(val.is_common_at_same_account),
             ),
             ("IsSaveSecureCode", Byml::Bool(val.is_save_secure_code)),
-            ("file_name", Byml::String(val.file_name.into())),
+            ("file_name", Byml::String(val.file_name)),
         ]
         .into_iter()
         .collect()
@@ -116,12 +116,11 @@ impl TryFrom<&Byml> for Flag {
                 .get("DataName")
                 .ok_or(UKError::MissingBymlKey("bgsvdata missing DataName"))?
                 .as_string()?
-                .into(),
+                .clone(),
             byml.as_hash()?
                 .get("HashValue")
                 .ok_or(UKError::MissingBymlKey("bgsvdata missing HashValue"))?
-                .as_int()?
-                .to_owned(),
+                .as_i32()?,
         ))
     }
 }
@@ -129,8 +128,8 @@ impl TryFrom<&Byml> for Flag {
 impl From<Flag> for Byml {
     fn from(val: Flag) -> Self {
         [
-            ("DataName", Byml::String(val.0.into())),
-            ("HashValue", Byml::Int(val.1)),
+            ("DataName", Byml::String(val.0)),
+            ("HashValue", Byml::I32(val.1)),
         ]
         .into_iter()
         .collect()
@@ -183,9 +182,9 @@ impl From<SaveData> for Byml {
             (
                 "save_info",
                 Byml::Array(vec![[
-                    ("directory_num", Byml::Int(8)),
+                    ("directory_num", Byml::I32(8)),
                     ("is_build_machine", Byml::Bool(true)),
-                    ("revision", Byml::Int(18203)),
+                    ("revision", Byml::I32(18203)),
                 ]
                 .into_iter()
                 .collect::<Byml>()]),
@@ -338,10 +337,10 @@ impl Mergeable for SaveDataPack {
 
 impl Resource for SaveDataPack {
     fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
-        Self::from_sarc(&Sarc::read(data.as_ref())?)
+        Self::from_sarc(&Sarc::new(data.as_ref())?)
     }
 
-    fn into_binary(self, endian: Endian) -> roead::Bytes {
+    fn into_binary(self, endian: Endian) -> Vec<u8> {
         self.into_sarc_writer(endian).to_binary()
     }
 
@@ -361,17 +360,17 @@ mod tests {
     use roead::{byml::Byml, sarc::Sarc};
 
     fn load_savedata_sarc() -> Sarc<'static> {
-        Sarc::read(std::fs::read("test/GameData/savedataformat.ssarc").unwrap()).unwrap()
+        Sarc::new(std::fs::read("test/GameData/savedataformat.ssarc").unwrap()).unwrap()
     }
 
     fn load_savedata() -> Byml {
         let sv = load_savedata_sarc();
-        Byml::from_binary(sv.get_file_data("/saveformat_0.bgsvdata").unwrap()).unwrap()
+        Byml::from_binary(sv.get_data("/saveformat_0.bgsvdata").unwrap().unwrap()).unwrap()
     }
 
     fn load_mod_savedata() -> Byml {
         let sv = load_savedata_sarc();
-        Byml::from_binary(sv.get_file_data("/saveformat_0.mod.bgsvdata").unwrap()).unwrap()
+        Byml::from_binary(sv.get_data("/saveformat_0.mod.bgsvdata").unwrap().unwrap()).unwrap()
     }
 
     #[test]

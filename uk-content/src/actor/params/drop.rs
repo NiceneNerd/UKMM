@@ -14,24 +14,27 @@ pub struct DropTable(pub IndexMap<String64, ParameterObject>);
 impl From<DropTable> for ParameterIO {
     fn from(drop: DropTable) -> Self {
         Self {
-            objects: ParameterObjectMap({
-                let mut objs: IndexMap<u32, ParameterObject> = IndexMap::new();
-                objs.insert(
-                    hash_name("Header"),
-                    [("TableNum".to_owned(), Parameter::Int(drop.0.len() as i32))]
-                        .into_iter()
-                        .chain(drop.0.keys().enumerate().map(|(i, name)| {
-                            (format!("Table{:02}", i + 1), Parameter::String64(*name))
-                        }))
-                        .collect(),
-                );
-                objs.extend(
-                    drop.0
-                        .into_iter()
-                        .map(|(name, table)| (hash_name(&name), table)),
-                );
-                objs
-            }),
+            param_root: ParameterList {
+                objects: {
+                    let mut objs = ParameterObjectMap::default();
+                    objs.insert(
+                        hash_name("Header"),
+                        [("TableNum".into(), Parameter::Int(drop.0.len() as i32))]
+                            .into_iter()
+                            .chain(drop.0.keys().enumerate().map(|(i, name)| {
+                                (format!("Table{:02}", i + 1), Parameter::String64(*name))
+                            }))
+                            .collect(),
+                    );
+                    objs.extend(
+                        drop.0
+                            .into_iter()
+                            .map(|(name, table)| (hash_name(&name).into(), table)),
+                    );
+                    objs
+                },
+                lists: Default::default(),
+            },
             ..Default::default()
         }
     }
@@ -45,7 +48,7 @@ impl TryFrom<&ParameterIO> for DropTable {
             .object("Header")
             .ok_or(UKError::MissingAampKey("Drop table missing header"))?;
         let table_count = header
-            .param("TableNum")
+            .get("TableNum")
             .ok_or(UKError::MissingAampKey(
                 "Drop table header missing table count",
             ))?
@@ -55,9 +58,12 @@ impl TryFrom<&ParameterIO> for DropTable {
                 .into_iter()
                 .filter_map(|i| {
                     header
-                        .param(&format!("Table{:02}", i))
+                        .get(&format!("Table{:02}", i))
                         .and_then(|name| name.as_string64().ok())
-                        .and_then(|name| list.object(name).map(|table| (*name, table.clone())))
+                        .and_then(|name| {
+                            list.object(name.as_str())
+                                .map(|table| (*name, table.clone()))
+                        })
                 })
                 .collect(),
         ))
@@ -99,23 +105,26 @@ impl Mergeable for DropTable {
 impl InfoSource for DropTable {
     fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
         info.insert(
-            "drops".to_owned(),
+            "drops".into(),
             self.0
                 .iter()
                 .map(|(name, table)| -> Result<(std::string::String, Byml)> {
                     Ok((name.to_string(), {
                         let count = table
-                            .param("ColumnNum")
+                            .get("ColumnNum")
                             .ok_or(UKError::MissingAampKey("Drop table missing column count"))?
                             .as_int()?;
                         (1..=count)
                             .map(|i| -> Result<Byml> {
-                                Ok(table
-                                    .param(&format!("ItemName{:02}", i))
-                                    .ok_or(UKError::MissingAampKey("Drop table missing item name"))?
-                                    .as_string()?
-                                    .to_string()
-                                    .into())
+                                Ok(Byml::String(
+                                    table
+                                        .get(&format!("ItemName{:02}", i))
+                                        .ok_or(UKError::MissingAampKey(
+                                            "Drop table missing item name",
+                                        ))?
+                                        .as_str()?
+                                        .into(),
+                                ))
                             })
                             .collect::<Result<_>>()
                     }?))
@@ -137,7 +146,7 @@ impl Resource for DropTable {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -155,7 +164,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .get_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -171,7 +181,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .get_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -179,7 +190,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .get_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -192,7 +204,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .get_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -200,7 +213,8 @@ mod tests {
         let drop = super::DropTable::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .get_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -215,24 +229,25 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .get_data("Actor/DropTable/Enemy_Guardian_A.bdrop")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
         let drop = super::DropTable::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::new();
+        let mut info = roead::byml::Hash::default();
         drop.update_info(&mut info).unwrap();
         assert_eq!(
             info["drops"].as_hash().unwrap()["Normal"]
                 .as_array()
                 .unwrap(),
             vec![
-                roead::byml::Byml::String("Item_Enemy_27".to_owned()),
-                roead::byml::Byml::String("Item_Enemy_28".to_owned()),
-                roead::byml::Byml::String("Item_Enemy_26".to_owned()),
-                roead::byml::Byml::String("Item_Enemy_29".to_owned()),
-                roead::byml::Byml::String("Item_Enemy_30".to_owned()),
-                roead::byml::Byml::String("Item_Enemy_31".to_owned()),
+                roead::byml::Byml::String("Item_Enemy_27".into()),
+                roead::byml::Byml::String("Item_Enemy_28".into()),
+                roead::byml::Byml::String("Item_Enemy_26".into()),
+                roead::byml::Byml::String("Item_Enemy_29".into()),
+                roead::byml::Byml::String("Item_Enemy_30".into()),
+                roead::byml::Byml::String("Item_Enemy_31".into()),
             ]
             .as_slice()
         );

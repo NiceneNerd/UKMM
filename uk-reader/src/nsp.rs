@@ -28,7 +28,7 @@ impl Nsp {
                 println!("NCA has {} filesystems", fs_count);
                 for i in 0..fs_count {
                     if let Ok(mut romfs) = nca.open_romfs_filesystem(i) {
-                        let mut dir_iterator = romfs.open_dir_iterator("".to_owned())?;
+                        let mut dir_iterator = romfs.open_dir_iterator("".into())?;
                         let file_count = dir_iterator.get_file_count();
                         for _ in 0..file_count {
                             let (name, subsize) = dir_iterator.next_file()?;
@@ -45,7 +45,7 @@ impl Nsp {
 }
 
 impl super::ResourceLoader for Nsp {
-    fn get_file_data(&self, name: &Path) -> Result<Vec<u8>> {
+    fn get_data(&self, name: &Path) -> Result<Vec<u8>> {
         todo!()
     }
 

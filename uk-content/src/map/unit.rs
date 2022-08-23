@@ -39,7 +39,7 @@ impl TryFrom<&Byml> for MapUnit {
                     let id = hash
                         .get("HashId")
                         .ok_or(UKError::MissingBymlKey("Map unit object missing hash ID"))?
-                        .as_uint()?;
+                        .as_u32()?;
                     Ok((id, obj.clone()))
                 })
                 .collect::<Result<_>>()?,
@@ -53,7 +53,7 @@ impl TryFrom<&Byml> for MapUnit {
                     let id = hash
                         .get("HashId")
                         .ok_or(UKError::MissingBymlKey("Map unit rail missing hash ID"))?
-                        .as_uint()?;
+                        .as_u32()?;
                     Ok((id, obj.clone()))
                 })
                 .collect::<Result<_>>()?,
@@ -111,7 +111,7 @@ impl Resource for MapUnit {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

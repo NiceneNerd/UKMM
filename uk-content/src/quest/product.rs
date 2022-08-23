@@ -19,7 +19,7 @@ impl TryFrom<&Byml> for QuestProduct {
                             .get("Name")
                             .ok_or(UKError::MissingBymlKey("Quest entry missing name"))?
                             .as_string()?
-                            .into(),
+                            .clone(),
                         quest.clone(),
                     ))
                 })
@@ -49,7 +49,7 @@ impl Resource for QuestProduct {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

@@ -64,33 +64,32 @@ impl TryFrom<ParameterIO> for ModelList {
 impl From<ModelList> for ParameterIO {
     fn from(val: ModelList) -> Self {
         Self {
-            objects: [
-                ("ControllerInfo", val.controller_info),
-                ("Attention", val.attention),
-            ]
-            .into_iter()
-            .collect(),
-            lists: [
-                (
-                    "ModelData",
-                    ParameterList::new().with_lists(
-                        val.model_data
-                            .into_iter()
-                            .enumerate()
-                            .map(|(i, list)| (jstr!("ModelData_{&lexical::to_string(i)}"), list)),
+            param_root: ParameterList {
+                objects: [
+                    ("ControllerInfo", val.controller_info),
+                    ("Attention", val.attention),
+                ]
+                .into_iter()
+                .collect(),
+                lists: [
+                    (
+                        "ModelData",
+                        ParameterList::new().with_lists(
+                            val.model_data.into_iter().enumerate().map(|(i, list)| {
+                                (jstr!("ModelData_{&lexical::to_string(i)}"), list)
+                            }),
+                        ),
                     ),
-                ),
-                (
-                    "AnmTarget",
-                    ParameterList::new().with_lists(
-                        val.anm_target.into_iter().map(|(i, target)| {
-                            (jstr!("AnmTarget_{&lexical::to_string(i)}"), target)
-                        }),
+                    (
+                        "AnmTarget",
+                        ParameterList::new().with_lists(val.anm_target.into_iter().map(
+                            |(i, target)| (jstr!("AnmTarget_{&lexical::to_string(i)}"), target),
+                        )),
                     ),
-                ),
-            ]
-            .into_iter()
-            .collect(),
+                ]
+                .into_iter()
+                .collect(),
+            },
             ..Default::default()
         }
     }
@@ -122,30 +121,34 @@ impl InfoSource for ModelList {
             ("cursorOffsetY", "CursorOffsetY", f32)
         });
         info_params_filtered!(&self.controller_info, info, {
-            ("variationMatAnim", "VariationMatAnim", std::string::String),
             ("variationMatAnimFrame", "VariationMatAnimFrame", i32)
         });
-        if let Some(Parameter::Vec3(lookat)) = self.attention.param("LookAtOffset") {
-            info.insert("lookAtOffsetY".to_string(), lookat.y.into());
+        if let Some(Parameter::String64(mat_anim)) = self.controller_info.get("VariationMatAnim")
+            && !mat_anim.is_empty()
+        {
+            info.insert("variationMatAnim".into(), mat_anim.as_str().into());
         }
-        if let Some(Parameter::Color(add_color)) = self.controller_info.param("AddColor") && add_color.a + add_color.r + add_color.g + add_color.b > 0.0 {
-            info.insert("addColorR".to_string(), add_color.r.into());
-            info.insert("addColorG".to_string(), add_color.g.into());
-            info.insert("addColorB".to_string(), add_color.b.into());
-            info.insert("addColorA".to_string(), add_color.a.into());
+        if let Some(Parameter::Vec3(lookat)) = self.attention.get("LookAtOffset") {
+            info.insert("lookAtOffsetY".into(), lookat.y.into());
         }
-        if let Some(Parameter::Vec3(base_scale)) = self.controller_info.param("BaseScale") {
-            info.insert("baseScaleX".to_string(), base_scale.x.into());
-            info.insert("baseScaleY".to_string(), base_scale.y.into());
-            info.insert("baseScaleZ".to_string(), base_scale.z.into());
+        if let Some(Parameter::Color(add_color)) = self.controller_info.get("AddColor") && add_color.a + add_color.r + add_color.g + add_color.b > 0.0 {
+            info.insert("addColorR".into(), add_color.r.into());
+            info.insert("addColorG".into(), add_color.g.into());
+            info.insert("addColorB".into(), add_color.b.into());
+            info.insert("addColorA".into(), add_color.a.into());
         }
-        if let Some(Parameter::Vec3(fm_center)) = self.controller_info.param("FarModelCullingCenter")
-            && let Some(Parameter::F32(fm_height)) = self.controller_info.param("FarModelCullingHeight")
-            && let Some(Parameter::F32(fm_radius)) = self.controller_info.param("FarModelCullingRadius")
+        if let Some(Parameter::Vec3(base_scale)) = self.controller_info.get("BaseScale") {
+            info.insert("baseScaleX".into(), base_scale.x.into());
+            info.insert("baseScaleY".into(), base_scale.y.into());
+            info.insert("baseScaleZ".into(), base_scale.z.into());
+        }
+        if let Some(Parameter::Vec3(fm_center)) = self.controller_info.get("FarModelCullingCenter")
+            && let Some(Parameter::F32(fm_height)) = self.controller_info.get("FarModelCullingHeight")
+            && let Some(Parameter::F32(fm_radius)) = self.controller_info.get("FarModelCullingRadius")
             && fm_center.x + fm_center.y + fm_center.z + fm_height + fm_radius > 0.0
         {
             info.insert(
-                "farModelCulling".to_owned(),
+                "farModelCulling".into(),
                 [
                     (
                         "center",
@@ -167,15 +170,15 @@ impl InfoSource for ModelList {
         if let Some(Parameter::String64(bfres)) = self
             .model_data
             .get(0)
-            .and_then(|list| list.object("Base").and_then(|o| o.param("Folder")))
+            .and_then(|list| list.object("Base").and_then(|o| o.get("Folder")))
         {
-            info.insert("bfres".to_owned(), bfres.to_string().into());
+            info.insert("bfres".into(), bfres.as_str().into());
         }
         if let Some(Parameter::String64(model)) = self.model_data.get(0).and_then(|list| {
             list.list("Unit")
-                .and_then(|list| list.object("Unit_0").and_then(|obj| obj.param("UnitName")))
+                .and_then(|list| list.object("Unit_0").and_then(|obj| obj.get("UnitName")))
         }) {
-            info.insert("mainModel".to_owned(), model.to_string().into());
+            info.insert("mainModel".into(), model.as_str().into());
         }
         Ok(())
     }
@@ -192,7 +195,7 @@ impl Resource for ModelList {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -210,7 +213,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -226,7 +230,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -234,7 +239,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -247,7 +253,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -255,7 +262,8 @@ mod tests {
         let modellist = super::ModelList::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -271,19 +279,17 @@ mod tests {
         let actor = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
         let modellist = super::ModelList::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::new();
+        let mut info = roead::byml::Hash::default();
         modellist.update_info(&mut info).unwrap();
         assert_eq!(info["cursorOffsetY"], Byml::Float(0.7));
         assert_eq!(info["baseScaleY"], Byml::Float(1.0));
-        assert_eq!(
-            info["mainModel"],
-            Byml::String("Npc_Hylia_Jonathan".to_owned())
-        );
+        assert_eq!(info["mainModel"], Byml::String("Npc_Hylia_Jonathan".into()));
         assert!(!info.contains_key("variationMatAnim"));
     }
 

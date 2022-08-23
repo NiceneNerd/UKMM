@@ -14,7 +14,7 @@ impl TryFrom<&Byml> for LazyTraverseList {
                 .map(
                     |(key, list)| -> Result<(String, SortedDeleteMap<u32, String>)> {
                         Ok((
-                            key.into(),
+                            key.clone(),
                             list.as_array()?
                                 .iter()
                                 .map(|unit| -> Result<(u32, String)> {
@@ -24,14 +24,14 @@ impl TryFrom<&Byml> for LazyTraverseList {
                                         .ok_or(UKError::MissingBymlKey(
                                             "Lazy traverse list unit missing hash ID",
                                         ))?
-                                        .as_uint()?;
+                                        .as_u32()?;
                                     let name = unit
                                         .get("UnitConfigName")
                                         .ok_or(UKError::MissingBymlKey(
                                             "Lazy traverse list unit missing unit name",
                                         ))?
                                         .as_string()?;
-                                    Ok((id, name.into()))
+                                    Ok((id, name.clone()))
                                 })
                                 .collect::<Result<_>>()?,
                         ))
@@ -52,8 +52,8 @@ impl From<LazyTraverseList> for Byml {
                     list.into_iter()
                         .map(|(id, name)| -> Byml {
                             [
-                                ("HashId", Byml::UInt(id)),
-                                ("UnitConfigName", Byml::String(name.into())),
+                                ("HashId", Byml::U32(id)),
+                                ("UnitConfigName", Byml::String(name)),
                             ]
                             .into_iter()
                             .collect()
@@ -80,7 +80,7 @@ impl Resource for LazyTraverseList {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

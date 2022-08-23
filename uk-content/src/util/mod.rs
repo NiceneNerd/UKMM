@@ -5,7 +5,7 @@ use roead::aamp::*;
 use roead::byml::Byml;
 use std::collections::BTreeMap;
 
-pub fn diff_plist<P: ParamList + From<ParameterList>>(base: &P, other: &P) -> P {
+pub fn diff_plist<P: ParameterListing + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
         lists: other
             .lists()
@@ -53,7 +53,7 @@ pub fn diff_pobj(base: &ParameterObject, other: &ParameterObject) -> ParameterOb
         .collect()
 }
 
-pub fn merge_plist<P: ParamList + From<ParameterList>>(base: &P, diff: &P) -> P {
+pub fn merge_plist<P: ParameterListing + From<ParameterList>>(base: &P, diff: &P) -> P {
     ParameterList {
         objects: {
             let mut new = base.objects().clone();
@@ -110,7 +110,7 @@ pub fn merge_byml_shallow(base: &Byml, diff: &Byml) -> Byml {
         (Byml::Hash(base), Byml::Hash(diff)) => Byml::Hash(
             base.iter()
                 .chain(diff.iter())
-                .map(|(k, v)| (k.to_owned(), v.clone()))
+                .map(|(k, v)| (k.clone(), v.clone()))
                 .collect(),
         ),
         (Byml::Hash(base), Byml::Null) => Byml::Hash(base.clone()),
@@ -160,11 +160,12 @@ impl TryFrom<Byml> for BymlHashValue {
 
     fn try_from(value: Byml) -> crate::Result<Self> {
         Ok(match value {
-            Byml::UInt(v) => Self(v),
-            Byml::Int(v) => Self(v as u32),
+            Byml::U32(v) => Self(v),
+            Byml::I32(v) => Self(v as u32),
             _ => {
                 return Err(crate::UKError::WrongBymlType(
-                    roead::byml::BymlError::TypeError,
+                    "not an integer".into(),
+                    "an integer",
                 ))
             }
         })
@@ -176,11 +177,12 @@ impl TryFrom<&Byml> for BymlHashValue {
 
     fn try_from(value: &Byml) -> crate::Result<Self> {
         Ok(match value {
-            Byml::UInt(v) => Self(*v),
-            Byml::Int(v) => Self(*v as u32),
+            Byml::U32(v) => Self(*v),
+            Byml::I32(v) => Self(*v as u32),
             _ => {
                 return Err(crate::UKError::WrongBymlType(
-                    roead::byml::BymlError::TypeError,
+                    "not an integer".into(),
+                    "an integer",
                 ))
             }
         })
@@ -220,9 +222,9 @@ impl From<BymlHashValue> for i32 {
 impl From<BymlHashValue> for Byml {
     fn from(val: BymlHashValue) -> Self {
         if val.0 > 0x80000000 {
-            Byml::Int(val.0 as i32)
+            Byml::I32(val.0 as i32)
         } else {
-            Byml::UInt(val.0)
+            Byml::U32(val.0)
         }
     }
 }
@@ -230,9 +232,9 @@ impl From<BymlHashValue> for Byml {
 impl From<&BymlHashValue> for Byml {
     fn from(val: &BymlHashValue) -> Self {
         if val.0 > 0x80000000 {
-            Byml::Int(val.0 as i32)
+            Byml::I32(val.0 as i32)
         } else {
-            Byml::UInt(val.0)
+            Byml::U32(val.0)
         }
     }
 }

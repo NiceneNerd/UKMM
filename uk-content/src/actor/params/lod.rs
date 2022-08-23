@@ -37,7 +37,7 @@ impl Resource for Lod {
         Ok((&ParameterIO::from_binary(data.as_ref())?).into())
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -55,7 +55,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -71,7 +72,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -79,7 +81,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -92,7 +95,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -100,7 +104,8 @@ mod tests {
         let lod = super::Lod::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();

@@ -1,4 +1,4 @@
-#![feature(let_chains, seek_stream_len)]
+#![feature(seek_stream_len)]
 use anyhow::Context;
 use indexmap::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};

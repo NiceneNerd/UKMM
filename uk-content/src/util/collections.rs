@@ -1,11 +1,11 @@
-use indexmap::{IndexMap, IndexSet};
+use crate::prelude::Mergeable;
 use itertools::Itertools;
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::hash::Hash;
 
-use crate::prelude::Mergeable;
-
+type IndexMap<K, V> = indexmap::IndexMap<K, V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
+type IndexSet<V> = indexmap::IndexSet<V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
 pub trait DeleteKey: Hash + Eq + Clone {}
 impl<T> DeleteKey for T where T: Hash + Eq + Clone {}
 
@@ -50,7 +50,9 @@ impl<T: Clone + PartialEq> IntoIterator for DeleteVec<T> {
     type IntoIter = impl Iterator<Item = T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter().filter_map(|(k, del)| (!del).then(|| k))
+        self.0
+            .into_iter()
+            .filter_map(|(k, del)| (!del).then_some(k))
     }
 }
 
@@ -84,7 +86,7 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
     pub fn deleted(&self) -> Vec<&T> {
         self.0
             .iter()
-            .filter_map(|(k, del)| (!*del).then(|| k))
+            .filter_map(|(k, del)| (!*del).then_some(k))
             .collect()
     }
 
@@ -97,12 +99,12 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
     pub fn is_delete(&self, item: impl Borrow<T>) -> Option<bool> {
         self.0
             .iter()
-            .find_map(|(it, del)| (item.borrow() == it).then(|| *del))
+            .find_map(|(it, del)| (item.borrow() == it).then_some(*del))
     }
 
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.0.iter().filter_map(|(k, del)| (!*del).then(|| k))
+        self.0.iter().filter_map(|(k, del)| (!*del).then_some(k))
     }
 
     #[inline]
@@ -158,7 +160,9 @@ impl<T: DeleteKey> IntoIterator for DeleteSet<T> {
     type IntoIter = impl Iterator<Item = T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter().filter_map(|(k, del)| (!del).then(|| k))
+        self.0
+            .into_iter()
+            .filter_map(|(k, del)| (!del).then_some(k))
     }
 }
 
@@ -194,7 +198,7 @@ impl<T: DeleteKey> DeleteSet<T> {
     pub fn deleted(&self) -> Vec<&T> {
         self.0
             .iter()
-            .filter_map(|(k, del)| (!*del).then(|| k))
+            .filter_map(|(k, del)| (!*del).then_some(k))
             .collect()
     }
 
@@ -206,7 +210,7 @@ impl<T: DeleteKey> DeleteSet<T> {
 
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.0.iter().filter_map(|(k, del)| (!*del).then(|| k))
+        self.0.iter().filter_map(|(k, del)| (!*del).then_some(k))
     }
 
     #[inline]
@@ -275,7 +279,9 @@ impl<T: DeleteKey + Ord> IntoIterator for SortedDeleteSet<T> {
     type IntoIter = impl Iterator<Item = T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter().filter_map(|(k, del)| (!del).then(|| k))
+        self.0
+            .into_iter()
+            .filter_map(|(k, del)| (!del).then_some(k))
     }
 }
 
@@ -311,7 +317,7 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
     pub fn deleted(&self) -> Vec<&T> {
         self.0
             .iter()
-            .filter_map(|(k, del)| (!*del).then(|| k))
+            .filter_map(|(k, del)| (!*del).then_some(k))
             .collect()
     }
 
@@ -333,7 +339,7 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
 
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.0.iter().filter_map(|(k, del)| (!*del).then(|| k))
+        self.0.iter().filter_map(|(k, del)| (!*del).then_some(k))
     }
 
     #[inline]
@@ -563,7 +569,9 @@ impl_delete_map!(DeleteMap, DeleteKey);
 
 impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
     pub fn with_capacity(capacity: usize) -> Self {
-        Self(IndexMap::with_capacity(capacity))
+        let mut map = IndexMap::default();
+        map.reserve(capacity);
+        Self(map)
     }
 }
 

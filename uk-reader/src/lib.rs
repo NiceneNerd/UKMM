@@ -1,4 +1,3 @@
-#![feature(let_chains)]
 // mod nsp;
 mod unpacked;
 mod zarchive;
@@ -52,7 +51,7 @@ pub enum BinType {
 
 #[typetag::serde(tag = "type")]
 pub trait ResourceLoader: std::fmt::Debug + Send + Sync {
-    fn get_file_data(&self, name: &Path) -> Result<Vec<u8>>;
+    fn get_data(&self, name: &Path) -> Result<Vec<u8>>;
     fn get_aoc_file_data(&self, name: &Path) -> Result<Vec<u8>>;
     fn file_exists(&self, name: &Path) -> bool;
     fn host_path(&self) -> &Path;
@@ -130,14 +129,14 @@ impl ResourceReader {
         let name = name
             .as_ref()
             .to_str()
-            .ok_or_else(|| ROMError::InvalidPath(name.as_ref().to_string_lossy().into_owned()))?
-            .to_owned();
+            .ok_or_else(|| ROMError::InvalidPath(name.as_ref().to_string_lossy().into()))?
+            .into();
         self.cache
             .get(&name)
             .ok_or_else(|| ROMError::FileNotFound(name, self.source.host_path().to_path_buf()))
     }
 
-    pub fn get_file(&self, path: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
+    pub fn get_data(&self, path: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
         let canon = canonicalize(path.as_ref());
         Ok(self.get_or_add_resource(path, canon)?)
     }
@@ -150,13 +149,13 @@ impl ResourceReader {
         let resource =
             self.cache
                 .try_get_with(canon.clone(), || -> uk_content::Result<_> {
-                    let data = self.source.get_file_data(path.as_ref())?;
+                    let data = self.source.get_data(path.as_ref())?;
                     let resource = match self.bin_type {
                         BinType::Nintendo => {
-                            let data = roead::yaz0::decompress_if(data.as_slice())?;
+                            let data = roead::yaz0::decompress_if(data.as_slice());
                             let res = ResourceData::from_binary(canon.clone(), data.as_ref())?;
                             if is_mergeable_sarc(&canon, data.as_ref()) {
-                                self.process_sarc(Sarc::read(data.as_ref())?)?;
+                                self.process_sarc(Sarc::new(data.as_ref())?)?;
                             }
                             res
                         }
@@ -179,11 +178,11 @@ impl ResourceReader {
             let name = file.name().context("SARC file missing name")?.to_string();
             let canon = canonicalize(&name);
             if !self.cache.contains_key(&canon) {
-                let data = file.data();
-                let data = roead::yaz0::decompress_if(data)?;
+                let data = file.data;
+                let data = roead::yaz0::decompress_if(data);
                 let resource = ResourceData::from_binary(&name, data.as_ref())?;
                 if is_mergeable_sarc(&canon, data.as_ref()) {
-                    self.process_sarc(Sarc::read(data.as_ref())?)?;
+                    self.process_sarc(Sarc::new(data.as_ref())?)?;
                 }
                 self.cache.insert(canon, Arc::new(resource));
             }

@@ -17,10 +17,10 @@ impl TryFrom<&Byml> for BarslistInfo {
             hash.iter()
                 .map(|(k, v)| -> Result<(String, DeleteSet<String>)> {
                     Ok((
-                        k.into(),
+                        k.clone(),
                         v.as_array()?
                             .iter()
-                            .filter_map(|v| v.as_string().ok().map(String::from))
+                            .filter_map(|v| v.as_string().ok().cloned())
                             .collect(),
                     ))
                 })
@@ -58,7 +58,7 @@ impl Resource for BarslistInfo {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> roead::Bytes {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

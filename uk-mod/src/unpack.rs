@@ -16,7 +16,7 @@ use std::{
 };
 use uk_content::{
     canonicalize, platform_prefixes,
-    prelude::{Binary, Endian, Mergeable},
+    prelude::{Endian, Mergeable},
     resource::{ResourceData, SarcMap},
 };
 use uk_reader::{ResourceLoader, ResourceReader};
@@ -42,7 +42,7 @@ impl ResourceLoader for ModReader {
             || self.manifest.aoc_files.contains(name.as_ref())
     }
 
-    fn get_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
+    fn get_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
         let canon = canonicalize(name);
         if let Ok(mut file) = self.zip.lock().by_name(&canon) {
             let size = file.size() as usize;
@@ -206,19 +206,19 @@ impl ModUnpacker {
         Ok(())
     }
 
-    fn build_file(&self, file: &str) -> Result<Binary> {
+    fn build_file(&self, file: &str) -> Result<Vec<u8>> {
         let mut versions = std::collections::VecDeque::with_capacity(
             (self.mods.len() as f32 / 2.).ceil() as usize,
         );
         if let Ok(ref_res) = self
             .dump
-            .get_file(file)
+            .get_data(file)
             .or_else(|_| self.dump.get_resource(file))
         {
             versions.push_back(ref_res);
         }
         for (data, mod_) in self.mods.iter().filter_map(|mod_| {
-            mod_.get_file_data(file.as_ref())
+            mod_.get_data(file.as_ref())
                 .ok()
                 .map(|d| (d, &mod_.meta.name))
         }) {
@@ -229,12 +229,12 @@ impl ModUnpacker {
         let base_version = versions
             .pop_front()
             .expect(&jstr!("No base version for file {&file}"));
-        let data: Binary = match base_version.as_ref() {
+        let data = match base_version.as_ref() {
             ResourceData::Binary(_) => {
                 let res = versions.pop_back().unwrap_or(base_version);
                 match Arc::try_unwrap(res) {
                     Ok(res) => res.take_binary().unwrap(),
-                    Err(res) => res.as_binary().cloned().unwrap(),
+                    Err(res) => res.as_binary().map(|b| b.to_vec()).unwrap(),
                 }
             }
             ResourceData::Mergeable(base_res) => {
@@ -246,7 +246,7 @@ impl ModUnpacker {
                         }
                         res
                     });
-                Binary::Bytes(merged.into_binary(self.endian))
+                merged.into_binary(self.endian)
             }
             ResourceData::Sarc(base_sarc) => {
                 let merged = versions
@@ -263,13 +263,16 @@ impl ModUnpacker {
         Ok(data)
     }
 
-    fn build_sarc(&self, sarc: SarcMap) -> Result<Binary> {
+    fn build_sarc(&self, sarc: SarcMap) -> Result<Vec<u8>> {
         let mut writer = SarcWriter::new(self.endian.into());
         for file in sarc.0.into_iter() {
             let data = self.build_file(&file)?;
-            writer.add_file(&file, compress_if(data.as_ref(), file.as_str()).as_ref());
+            writer.add_file(
+                file.as_str(),
+                compress_if(data.as_ref(), file.as_str()).as_ref(),
+            );
         }
-        Ok(Binary::Bytes(writer.to_binary()))
+        Ok(writer.to_binary())
     }
 }
 

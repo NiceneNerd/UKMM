@@ -41,7 +41,7 @@ impl InfoSource for GeneralParamList {
         if let Some(obj) = self.0.object("Armor") {
             crate::actor::info_params!(obj, info, {
                 ("armorDefenceAddLevel", "DefenceAddLevel", i32),
-                ("armorNextRankName", "NextRankName", std::string::String),
+                ("armorNextRankName", "NextRankName", smartstring::alias::String),
                 ("armorStarNum", "StarNum", i32),
             });
         };
@@ -49,7 +49,7 @@ impl InfoSource for GeneralParamList {
             crate::actor::info_params!(obj, info, {
                 ("armorEffectAncientPowUp", "AncientPowUp", bool),
                 ("armorEffectEffectLevel", "EffectLevel", i32),
-                ("armorEffectEffectType", "EffectType", std::string::String),
+                ("armorEffectEffectType", "EffectType", smartstring::alias::String),
                 ("armorEffectEnableClimbWaterfall", "EnableClimbWaterfall", bool),
                 ("armorEffectEnableSpinAttack", "EnableSpinAttack", bool),
             });
@@ -79,7 +79,7 @@ impl InfoSource for GeneralParamList {
         };
         if let Some(obj) = self.0.object("Bow") {
             crate::actor::info_params!(obj, info, {
-                ("bowArrowName", "ArrowName", std::string::String),
+                ("bowArrowName", "ArrowName", smartstring::alias::String),
                 ("bowIsLeadShot", "IsLeadShot", bool),
                 ("bowIsRapidFire", "IsRapidFire", bool),
                 ("bowLeadShotNum", "LeadShotNum", i32),
@@ -116,7 +116,7 @@ impl InfoSource for GeneralParamList {
         };
         if let Some(obj) = self.0.object("Horse") {
             crate::actor::info_params!(obj, info, {
-                ("horseASVariation", "ASVariation", std::string::String),
+                ("horseASVariation", "ASVariation", smartstring::alias::String),
                 ("horseGearTopChargeNum", "GearTopChargeNum", i32),
                 ("horseNature", "Nature", i32),
             });
@@ -133,14 +133,14 @@ impl InfoSource for GeneralParamList {
                 ("itemSaleRevivalCount", "SaleRevivalCount", i32),
                 ("itemSellingPrice", "SellingPrice", i32),
                 ("itemStainColor", "StainColor", i32),
-                ("itemUseIconActorName", "UseIconActorName", std::string::String),
+                ("itemUseIconActorName", "UseIconActorName", smartstring::alias::String),
             });
         };
         if let Some(obj) = self.0.object("MasterSword") {
             crate::actor::info_params!(obj, info, {
                 ("masterSwordSearchEvilDist", "SearchEvilDist", f32),
-                ("masterSwordSleepActorName", "SleepActorName", std::string::String),
-                ("masterSwordTrueFormActorName", "TrueFormActorName", std::string::String),
+                ("masterSwordSleepActorName", "SleepActorName", smartstring::alias::String),
+                ("masterSwordTrueFormActorName", "TrueFormActorName", smartstring::alias::String),
                 ("masterSwordTrueFormAttackPower", "TrueFormAttackPower", i32),
             });
         };
@@ -165,29 +165,29 @@ impl InfoSource for GeneralParamList {
         if let Some(obj) = self.0.object("SeriesArmor") {
             crate::actor::info_params!(obj, info, {
                 ("seriesArmorEnableCompBonus", "EnableCompBonus", bool),
-                ("seriesArmorSeriesType", "SeriesType", std::string::String),
+                ("seriesArmorSeriesType", "SeriesType", smartstring::alias::String),
             });
         };
         if let Some(obj) = self.0.object("System") {
             crate::actor::info_params!(obj, info, {
                 ("systemIsGetItemSelf", "IsGetItemSelf", bool),
-                ("systemSameGroupActorName", "SameGroupActorName", std::string::String),
+                ("systemSameGroupActorName", "SameGroupActorName", smartstring::alias::String),
             });
         };
         if let Some(obj) = self.0.object("Traveler") {
             [
-                "AppearGameDataName".to_owned(),
-                "DeleteGameDataName".to_owned(),
-                "RideHorseName".to_owned(),
-                "RouteType".to_owned(),
+                "AppearGameDataName".into(),
+                "DeleteGameDataName".into(),
+                "RideHorseName".into(),
+                "RouteType".into(),
             ]
             .into_iter()
             .chain((0..30).map(|i| format!("RoutePoint{}Name", i)))
             .try_for_each(|param| -> Result<()> {
-                if let Some(val) = extract_info_param::<std::string::String>(obj, &param)?
+                if let Some(val) = extract_info_param::<smartstring::alias::String>(obj, &param)?
                     && val.as_string().map(|v| !v.is_empty()).unwrap_or_default()
                 {
-                    info.insert(jstr!("traveler{&param}"), val);
+                    info.insert(jstr!("traveler{&param}").into(), val);
                 }
                 Ok(())
             })?;
@@ -251,7 +251,7 @@ impl Resource for GeneralParamList {
         Ok((&ParameterIO::from_binary(data.as_ref())?).into())
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -269,7 +269,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .get_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -285,7 +286,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .get_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -293,7 +295,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .get_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -306,7 +309,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .get_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -314,7 +318,8 @@ mod tests {
         let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .get_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -330,29 +335,30 @@ mod tests {
         let actor = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .get_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
         let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::new();
+        let mut info = roead::byml::Hash::default();
         gparamlist.update_info(&mut info).unwrap();
         assert_eq!(info["systemIsGetItemSelf"], Byml::Bool(false));
         assert_eq!(
             info["systemSameGroupActorName"],
-            Byml::String("Enemy_Guardian_A_Mod".to_owned())
+            Byml::String("Enemy_Guardian_A_Mod".into())
         );
-        assert_eq!(info["generalLife"], Byml::Int(1500000));
-        assert_eq!(info["enemyRank"], Byml::Int(15));
-        assert_eq!(info["attackPower"], Byml::Int(0));
-        assert_eq!(info["pictureBookLiveSpot1"], Byml::Int(27));
+        assert_eq!(info["generalLife"], Byml::I32(1500000));
+        assert_eq!(info["enemyRank"], Byml::I32(15));
+        assert_eq!(info["attackPower"], Byml::I32(0));
+        assert_eq!(info["pictureBookLiveSpot1"], Byml::I32(27));
         assert_eq!(
             info["travelerAppearGameDataName"],
-            Byml::String("Testing".to_owned())
+            Byml::String("Testing".into())
         );
         assert_eq!(
             info["travelerRoutePoint24Name"],
-            Byml::String("SomePoint".to_owned())
+            Byml::String("SomePoint".into())
         );
     }
 

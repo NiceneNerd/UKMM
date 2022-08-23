@@ -29,10 +29,10 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                 .object("InvalidWeathers")
                 .map(|weathers| -> Result<DeleteSet<Weather>> {
                     weathers
-                        .params()
+                        .0
                         .values()
                         .map(|w| -> Result<(Weather, bool)> {
-                            Ok((w.as_string()?.try_into()?, false))
+                            Ok((w.as_str()?.try_into()?, false))
                         })
                         .collect::<Result<_>>()
                 })
@@ -41,11 +41,9 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                 .object("InvalidTimes")
                 .map(|times| -> Result<DeleteSet<Time>> {
                     times
-                        .params()
+                        .0
                         .values()
-                        .map(|w| -> Result<(Time, bool)> {
-                            Ok((w.as_string()?.try_into()?, false))
-                        })
+                        .map(|w| -> Result<(Time, bool)> { Ok((w.as_str()?.try_into()?, false)) })
                         .collect::<Result<_>>()
                 })
                 .transpose()?,
@@ -54,7 +52,7 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                     .ok_or(UKError::MissingAampKey(
                         "Life condition missing display distance",
                     ))?
-                    .param("Item")
+                    .get("Item")
                     .ok_or(UKError::MissingAampKey(
                         "Life condition display distance missing item",
                     ))?
@@ -65,11 +63,11 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                     .ok_or(UKError::MissingAampKey(
                         "Life condition missing display distance",
                     ))?
-                    .param("Item")
+                    .get("Item")
                     .ok_or(UKError::MissingAampKey(
                         "Life condition display distance missing item",
                     ))?
-                    .as_string()?
+                    .as_str()?
                     .into(),
             ),
             y_limit_algo: Some(
@@ -77,21 +75,21 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                     .ok_or(UKError::MissingAampKey(
                         "Life condition missing display distance",
                     ))?
-                    .param("Item")
+                    .get("Item")
                     .ok_or(UKError::MissingAampKey(
                         "Life condition display distance missing item",
                     ))?
-                    .as_string()?
+                    .as_str()?
                     .into(),
             ),
             delete_weathers: pio
                 .object("DeleteWeathers")
                 .map(|weathers| -> Result<DeleteSet<Weather>> {
                     weathers
-                        .params()
+                        .0
                         .values()
                         .map(|w| -> Result<(Weather, bool)> {
-                            Ok((w.as_string()?.try_into()?, false))
+                            Ok((w.as_str()?.try_into()?, false))
                         })
                         .collect::<Result<_>>()
                 })
@@ -100,11 +98,9 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                 .object("DeleteTimes")
                 .map(|times| -> Result<DeleteSet<Time>> {
                     times
-                        .params()
+                        .0
                         .values()
-                        .map(|w| -> Result<(Time, bool)> {
-                            Ok((w.as_string()?.try_into()?, false))
-                        })
+                        .map(|w| -> Result<(Time, bool)> { Ok((w.as_str()?.try_into()?, false)) })
                         .collect::<Result<_>>()
                 })
                 .transpose()?,
@@ -124,7 +120,7 @@ impl From<LifeCondition> for ParameterIO {
     fn from(val: LifeCondition) -> ParameterIO {
         let mut pio = ParameterIO::new();
         if let Some(weathers) = val.invalid_weathers {
-            pio.set_object(
+            pio.objects_mut().insert(
                 "InvalidWeathers",
                 weathers
                     .into_iter()
@@ -136,7 +132,7 @@ impl From<LifeCondition> for ParameterIO {
             );
         }
         if let Some(times) = val.invalid_times {
-            pio.set_object(
+            pio.objects_mut().insert(
                 "InvalidTimes",
                 times
                     .into_iter()
@@ -146,7 +142,7 @@ impl From<LifeCondition> for ParameterIO {
             );
         }
         if let Some(display_dist) = val.display_dist {
-            pio.set_object(
+            pio.objects_mut().insert(
                 "DisplayDistance",
                 [("Item", Parameter::F32(display_dist))]
                     .into_iter()
@@ -154,23 +150,23 @@ impl From<LifeCondition> for ParameterIO {
             )
         }
         if let Some(auto_display_dist_algo) = val.auto_disp_dist_algo {
-            pio.set_object(
+            pio.objects_mut().insert(
                 "AutoDisplayDistanceAlgorithm",
-                [("Item", Parameter::StringRef(auto_display_dist_algo.into()))]
+                [("Item", Parameter::StringRef(auto_display_dist_algo))]
                     .into_iter()
                     .collect(),
             );
         }
         if let Some(y_limit_algo) = val.y_limit_algo {
-            pio.set_object(
+            pio.objects_mut().insert(
                 "YLimitAlgorithm",
-                [("Item", Parameter::StringRef(y_limit_algo.into()))]
+                [("Item", Parameter::StringRef(y_limit_algo))]
                     .into_iter()
                     .collect(),
             );
         }
         if let Some(weathers) = val.delete_weathers {
-            pio.set_object(
+            pio.objects_mut().insert(
                 "DeleteWeathers",
                 weathers
                     .into_iter()
@@ -182,7 +178,7 @@ impl From<LifeCondition> for ParameterIO {
             );
         }
         if let Some(times) = val.delete_times {
-            pio.set_object(
+            pio.objects_mut().insert(
                 "DeleteTimes",
                 times
                     .into_iter()
@@ -206,10 +202,10 @@ impl Mergeable for LifeCondition {
                         other_weathers
                             .iter()
                             .filter_map(|weather| {
-                                (!self_weathers.contains(weather)).then(|| (*weather, false))
+                                (!self_weathers.contains(weather)).then_some((*weather, false))
                             })
                             .chain(self_weathers.iter().filter_map(|weather| {
-                                (!other_weathers.contains(weather)).then(|| (*weather, true))
+                                (!other_weathers.contains(weather)).then_some((*weather, true))
                             }))
                             .collect()
                     })
@@ -222,16 +218,18 @@ impl Mergeable for LifeCondition {
                     other.invalid_times.as_ref().map(|other_times| {
                         other_times
                             .iter()
-                            .filter_map(|time| (!self_times.contains(time)).then(|| (*time, false)))
+                            .filter_map(|time| {
+                                (!self_times.contains(time)).then_some((*time, false))
+                            })
                             .chain(self_times.iter().filter_map(|time| {
-                                (!other_times.contains(time)).then(|| (*time, true))
+                                (!other_times.contains(time)).then_some((*time, true))
                             }))
                             .collect()
                     })
                 })
                 .or_else(|| other.invalid_times.clone()),
             display_dist: (self.display_dist != other.display_dist)
-                .then(|| other.display_dist)
+                .then_some(other.display_dist)
                 .flatten(),
             auto_disp_dist_algo: (self.auto_disp_dist_algo != other.auto_disp_dist_algo)
                 .then(|| other.auto_disp_dist_algo.clone())
@@ -247,10 +245,10 @@ impl Mergeable for LifeCondition {
                         other_weathers
                             .iter()
                             .filter_map(|weather| {
-                                (!self_weathers.contains(weather)).then(|| (*weather, false))
+                                (!self_weathers.contains(weather)).then_some((*weather, false))
                             })
                             .chain(self_weathers.iter().filter_map(|weather| {
-                                (!other_weathers.contains(weather)).then(|| (*weather, true))
+                                (!other_weathers.contains(weather)).then_some((*weather, true))
                             }))
                             .collect()
                     })
@@ -263,9 +261,11 @@ impl Mergeable for LifeCondition {
                     other.delete_times.as_ref().map(|other_times| {
                         other_times
                             .iter()
-                            .filter_map(|time| (!self_times.contains(time)).then(|| (*time, false)))
+                            .filter_map(|time| {
+                                (!self_times.contains(time)).then_some((*time, false))
+                            })
                             .chain(self_times.iter().filter_map(|time| {
-                                (!other_times.contains(time)).then(|| (*time, true))
+                                (!other_times.contains(time)).then_some((*time, true))
                             }))
                             .collect()
                     })
@@ -340,14 +340,14 @@ impl InfoSource for LifeCondition {
             info.insert("traverseDist".into(), display_dist.into());
         }
         if let Some(limit) = &self.y_limit_algo {
-            info.insert("yLimitAlgo".into(), limit.to_string().into());
+            info.insert("yLimitAlgo".into(), limit.into());
         }
         if let Some(invalid_times) = &self.invalid_times && !invalid_times.is_empty() {
             info.insert(
                 "invalidTimes".into(),
                 invalid_times
                     .iter()
-                    .map(|t| Byml::String(t.to_string()))
+                    .map(|t| Byml::String(t.into()))
                     .collect(),
             );
         }
@@ -356,7 +356,7 @@ impl InfoSource for LifeCondition {
                 "invalidWeathers".into(),
                 invalid_weathers
                     .iter()
-                    .map(|w| Byml::String(w.to_string()))
+                    .map(|w| Byml::String(w.into()))
                     .collect(),
             );
         }
@@ -375,7 +375,7 @@ impl Resource for LifeCondition {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, _endian: Endian) -> roead::Bytes {
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
         ParameterIO::from(self).to_binary()
     }
 
@@ -393,7 +393,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .get_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -409,7 +410,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .get_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -417,7 +419,8 @@ mod tests {
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .get_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -430,7 +433,8 @@ mod tests {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .get_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -438,7 +442,8 @@ mod tests {
         let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
-                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .get_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -454,12 +459,13 @@ mod tests {
         let actor = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
-                .get_file_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .get_data("Actor/LifeCondition/Enemy_Guardian_A.blifecondition")
+                .unwrap()
                 .unwrap(),
         )
         .unwrap();
         let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::new();
+        let mut info = roead::byml::Hash::default();
         lifecondition.update_info(&mut info).unwrap();
         assert!(info["invalidTimes"]
             .as_array()

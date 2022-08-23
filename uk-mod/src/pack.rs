@@ -104,8 +104,7 @@ impl ModPacker {
                 // We know this is sound because we got `path` by iterating the contents of `root`.
                 let canon = canonicalize(unsafe { &path.strip_prefix(root).unwrap_unchecked() });
                 let file_data = fs::read(&path)?;
-                let file_data = decompress_if(&file_data)
-                    .with_context(|| jstr!("Failed to decompress {&name}"))?;
+                let file_data = decompress_if(&file_data);
 
                 if !self.hash_table.is_modified(&canon, &*file_data) {
                     return Ok(None);
@@ -117,7 +116,7 @@ impl ModPacker {
                     .with_context(|| jstr!("Failed to process resouece {&canon}"))?;
                 if is_mergeable_sarc(&canon, file_data.as_ref()) {
                     self.process_sarc(
-                        Sarc::read(file_data.as_ref())?,
+                        Sarc::new(file_data.as_ref())?,
                         !self.hash_table.contains(&canon),
                     )?;
                 }
@@ -156,7 +155,7 @@ impl ModPacker {
             .filter_map(|master| {
                 master
                     .get_resource(&canon)
-                    .or_else(|_| master.get_file(ref_name))
+                    .or_else(|_| master.get_data(ref_name))
                     .ok()
             })
             .last();
@@ -199,8 +198,7 @@ impl ModPacker {
                 .name()
                 .with_context(|| jstr!("File in SARC missing name"))?;
             let canon = canonicalize(&name);
-            let file_data = decompress_if(file.data())
-                .with_context(|| jstr!("Failed to decompress {&name}"))?;
+            let file_data = decompress_if(file.data);
 
             if !self.hash_table.is_modified(&canon, &*file_data) && !is_new_sarc {
                 continue;
@@ -208,9 +206,9 @@ impl ModPacker {
 
             let resource = ResourceData::from_binary(&name, &*file_data)
                 .with_context(|| jstr!("Failed to parse resource {&canon}"))?;
-            self.process_resource(name.to_owned(), canon.clone(), resource, is_new_sarc)?;
+            self.process_resource(name.into(), canon.clone(), resource, is_new_sarc)?;
             if is_mergeable_sarc(&canon, file_data.as_ref()) {
-                self.process_sarc(Sarc::read(file_data.as_ref())?, is_new_sarc)?;
+                self.process_sarc(Sarc::new(file_data.as_ref())?, is_new_sarc)?;
             }
         }
         Ok(())

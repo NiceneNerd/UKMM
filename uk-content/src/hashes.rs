@@ -26,9 +26,7 @@ impl ROMHashTable {
                 .map(|i| {
                     // As above.
                     unsafe {
-                        let file = u64::from_be_bytes(
-                            data[i * 8..(i * 8 + 8)].try_into().unwrap_unchecked(),
-                        );
+                        let file = u64::from_be_bytes(data[i * 8..(i * 8 + 8)].try_into().unwrap());
                         let hash = u64::from_be_bytes(
                             data[i * 8 + value_offset..(i * 8 + 8 + value_offset)]
                                 .try_into()
@@ -42,14 +40,10 @@ impl ROMHashTable {
     }
 
     pub fn is_modified(&self, file: impl AsRef<str>, data: impl AsRef<[u8]>) -> bool {
-        match roead::yaz0::decompress_if(data.as_ref()) {
-            Ok(data) => {
-                let file = xxh3_64(file.as_ref().as_bytes());
-                let hash = xxh3_64(data.as_ref());
-                self.0.get(&file) != Some(&hash)
-            }
-            Err(_) => true,
-        }
+        let data = roead::yaz0::decompress_if(data.as_ref());
+        let file = xxh3_64(file.as_ref().as_bytes());
+        let hash = xxh3_64(data.as_ref());
+        self.0.get(&file) != Some(&hash)
     }
 
     pub fn contains(&self, file: impl AsRef<str>) -> bool {
