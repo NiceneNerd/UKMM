@@ -200,7 +200,7 @@ mod tests {
             println!("{}", dir.name());
         }
         assert_eq!(
-            "0.9.0".into(),
+            "0.9.0".to_string(),
             String::from_utf8(arch.get_data("System/Version.txt".as_ref()).unwrap()).unwrap()
         );
     }

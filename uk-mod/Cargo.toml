@@ -16,7 +16,7 @@ parking_lot = "0.12.1"
 path-slash = "0.2.0"
 piz = "0.4.0"
 rayon = "1.5.3"
-roead = { path = "../../roead", features = ["with-serde"] }
+roead = { version = "0.16.0", features = ["with-serde"] }
 serde = { version = "1.0.137", features = ["derive"] }
 typetag = "0.2.1"
 tempfile = "3.3.0"
