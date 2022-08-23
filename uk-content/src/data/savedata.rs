@@ -1,6 +1,8 @@
-use std::collections::HashMap;
-
-use crate::{prelude::*, util::SortedDeleteSet, Result, UKError};
+use crate::{
+    prelude::*,
+    util::{HashMap, SortedDeleteSet},
+    Result, UKError,
+};
 use join_str::jstr;
 use roead::{
     aamp::hash_name,
@@ -243,7 +245,7 @@ impl SaveDataPack {
     pub fn from_sarc(sarc: &Sarc<'_>) -> Result<SaveDataPack> {
         sarc.files()
             .filter(|f| f.name().map(|n| n.ends_with(".bgsvdata")).unwrap_or(false))
-            .try_fold(Self(HashMap::new()), |mut acc, file| {
+            .try_fold(Self(HashMap::default()), |mut acc, file| {
                 let byml = Byml::from_binary(file.data())?;
                 let savedata = SaveData::try_from(&byml)?;
                 let save_file = &savedata.header.file_name;
@@ -260,7 +262,7 @@ impl SaveDataPack {
         sarc.files
             .iter()
             .filter(|(f, _)| f.ends_with(".bgsvdata"))
-            .try_fold(Self(HashMap::new()), |mut acc, (_, data)| {
+            .try_fold(Self(HashMap::default()), |mut acc, (_, data)| {
                 let byml = Byml::from_binary(data)?;
                 let savedata = SaveData::try_from(&byml)?;
                 let save_file = &savedata.header.file_name;

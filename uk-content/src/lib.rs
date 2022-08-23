@@ -1,5 +1,6 @@
 #![feature(type_alias_impl_trait, drain_filter, arbitrary_self_types)]
 #![allow(clippy::derive_partial_eq_without_eq)]
+use smartstring::alias::String;
 use std::path::Path;
 use thiserror::Error;
 
@@ -26,25 +27,25 @@ pub enum UKError {
     #[error("Parameter file missing key: {0}")]
     MissingAampKey(&'static str),
     #[error("Parameter file missing key: {0}")]
-    MissingAampKeyD(String),
+    MissingAampKeyD(std::string::String),
     #[error("BYML file missing key: {0}")]
     MissingBymlKey(&'static str),
     #[error("BYML file missing key: {0}")]
-    MissingBymlKeyD(String),
+    MissingBymlKeyD(std::string::String),
     #[error("Wrong type for BYML value: found {0}, expected {1}")]
-    WrongBymlType(String, &'static str),
+    WrongBymlType(std::string::String, &'static str),
     #[error("{0} missing from SARC")]
     MissingSarcFile(&'static str),
     #[error("{0} missing from SARC")]
-    MissingSarcFileD(String),
+    MissingSarcFileD(std::string::String),
     #[error("Invalid weather value: {0}")]
-    InvalidWeatherOrTime(String),
+    InvalidWeatherOrTime(std::string::String),
     #[error("Missing resource at {0}")]
-    MissingResource(String),
+    MissingResource(std::string::String),
     #[error("{0}")]
     Other(&'static str),
     #[error("{0}")]
-    OtherD(String),
+    OtherD(std::string::String),
     #[error(transparent)]
     _Infallible(#[from] std::convert::Infallible),
     #[error(transparent)]
@@ -105,7 +106,7 @@ pub fn canonicalize(path: impl AsRef<Path>) -> String {
             canon = [v, canon.trim_start_matches(k)].concat();
         }
     }
-    canon.replace(".s", ".")
+    canon.replace(".s", ".").into()
 }
 
 pub mod prelude {

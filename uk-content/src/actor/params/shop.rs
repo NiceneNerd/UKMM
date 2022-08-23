@@ -1,5 +1,4 @@
-use crate::{actor::ParameterResource, prelude::*, Result, UKError};
-use indexmap::IndexMap;
+use crate::{actor::ParameterResource, prelude::*, util::IndexMap, Result, UKError};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -62,7 +61,8 @@ impl TryFrom<&ParameterIO> for ShopData {
                     .and_then(|p| p.as_string64().ok().copied())
             })
             .collect();
-        let mut shop_tables = IndexMap::with_capacity(table_count);
+        let mut shop_tables = IndexMap::default();
+        shop_tables.reserve(table_count);
         for table_name in tables {
             let table_obj = pio.object(table_name.as_str()).ok_or_else(|| {
                 UKError::MissingAampKeyD(jstr!("Table {&table_name} in shop data missing"))

@@ -1,5 +1,9 @@
-use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
-use indexmap::IndexMap;
+use crate::{
+    actor::ParameterResource,
+    prelude::*,
+    util::{self, IndexMap},
+    Result, UKError,
+};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -577,7 +581,7 @@ mod parse {
 
 mod write {
     use super::*;
-    use std::collections::HashMap;
+    use crate::util::HashMap;
 
     fn count_ais(ai: &AIEntry) -> usize {
         1 + ai
@@ -608,9 +612,13 @@ mod write {
                 action_offset,
                 aiprog,
                 ais: Vec::with_capacity(action_offset),
-                done_ais: HashMap::with_capacity(action_offset),
+                done_ais: {
+                    let mut map = HashMap::default();
+                    map.reserve(action_offset);
+                    map
+                },
                 actions: vec![],
-                done_actions: HashMap::new(),
+                done_actions: HashMap::default(),
                 behaviors: vec![],
             }
         }
@@ -701,13 +709,13 @@ mod write {
             let mut pio = ParameterIO::new();
             pio.objects_mut()
                 .insert("DemoAIActionIdx", ParameterObject::new());
-            let mut tree: IndexMap<String, AIEntry> = IndexMap::new();
+            let mut tree: IndexMap<String, AIEntry> = IndexMap::default();
             std::mem::swap(&mut tree, &mut self.aiprog.tree);
             let roots: Vec<AIEntry> = tree.into_iter().map(|(_, root)| root).collect();
             for root in roots {
                 self.ai_to_plist(root);
             }
-            let mut demos: IndexMap<Name, ChildEntry> = IndexMap::new();
+            let mut demos: IndexMap<Name, ChildEntry> = IndexMap::default();
             std::mem::swap(&mut self.aiprog.demos, &mut demos);
             pio.object_mut("DemoAIActionIdx")
                 .unwrap()

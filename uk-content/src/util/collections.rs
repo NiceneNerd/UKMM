@@ -4,8 +4,10 @@ use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::hash::Hash;
 
-type IndexMap<K, V> = indexmap::IndexMap<K, V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
-type IndexSet<V> = indexmap::IndexSet<V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
+pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
+pub type IndexMap<K, V> =
+    indexmap::IndexMap<K, V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
+pub type IndexSet<V> = indexmap::IndexSet<V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
 pub trait DeleteKey: Hash + Eq + Clone {}
 impl<T> DeleteKey for T where T: Hash + Eq + Clone {}
 

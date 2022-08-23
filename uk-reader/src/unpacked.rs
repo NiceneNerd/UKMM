@@ -89,7 +89,7 @@ impl super::ResourceLoader for Unpacked {
             .find_map(|path| path.exists().then(|| fs::read(path).ok()))
             .flatten()
             .ok_or_else(|| {
-                ROMError::FileNotFound(name.to_string_lossy().to_string(), self.host_path.clone())
+                ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
             })
     }
 
@@ -102,7 +102,7 @@ impl super::ResourceLoader for Unpacked {
                     Ok(std::fs::read(dest_file)?)
                 } else {
                     Err(ROMError::FileNotFound(
-                        name.to_string_lossy().to_string(),
+                        name.to_string_lossy().into(),
                         self.host_path.clone(),
                     ))
                 }

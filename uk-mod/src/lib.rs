@@ -1,12 +1,13 @@
 #![feature(seek_stream_len)]
 use anyhow::Context;
-use indexmap::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
+use smartstring::alias::String;
 use std::{
     collections::{BTreeSet, HashSet},
     path::{Path, PathBuf},
 };
 use uk_content::prelude::Endian;
+use uk_content::util::{IndexMap, IndexSet};
 pub mod pack;
 pub mod unpack;
 
@@ -22,11 +23,11 @@ impl Manifest {
     pub fn resources(&self) -> impl Iterator<Item = String> + '_ {
         self.content_files
             .iter()
-            .map(|s| s.replace(".s", "."))
+            .map(|s| s.replace(".s", ".").into())
             .chain(
                 self.aoc_files
                     .iter()
-                    .map(|s| ["Aoc/0010/", &s.replace(".s", ".")].join("")),
+                    .map(|s| ["Aoc/0010/", &s.replace(".s", ".")].join("").into()),
             )
     }
 }
@@ -143,7 +144,7 @@ mod tests {
         .unwrap();
         std::fs::write(
             "../.vscode/dump.yml",
-            yaml_peg::serde::to_string(&reader).unwrap(),
+            serde_yaml::to_string(&reader).unwrap(),
         )
         .unwrap();
     }

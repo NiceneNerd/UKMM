@@ -18,12 +18,13 @@ piz = "0.4.0"
 rayon = "1.5.3"
 roead = { version = "0.16.0", features = ["with-serde"] }
 serde = { version = "1.0.137", features = ["derive"] }
+serde_yaml = "0.9.10"
+smartstring = "1.0.1"
 typetag = "0.2.1"
 tempfile = "3.3.0"
 toml = "0.5.9"
 uk-content = { path = "../uk-content" }
 uk-reader = { path = "../uk-reader" }
 xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
-yaml-peg = { version = "1.0.4", features = ["serde"] }
 zip = { version = "0.6.2", default-features = false, features = ["deflate"]}
 zstd = "0.11.2"

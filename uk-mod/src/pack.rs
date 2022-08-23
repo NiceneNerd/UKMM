@@ -7,6 +7,7 @@ use parking_lot::{Mutex, RwLock};
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{sarc::Sarc, yaz0::decompress_if};
+use smartstring::alias::String;
 use std::{
     collections::BTreeSet,
     io::Write,
@@ -96,11 +97,11 @@ impl ModPacker {
         Ok(files
             .into_par_iter()
             .map(|path| -> Result<Option<String>> {
-                let name = path
+                let name: String = path
                     .strip_prefix(&self.current_root)
                     .unwrap()
                     .to_slash_lossy()
-                    .to_string();
+                    .into();
                 // We know this is sound because we got `path` by iterating the contents of `root`.
                 let canon = canonicalize(unsafe { &path.strip_prefix(root).unwrap_unchecked() });
                 let file_data = fs::read(&path)?;
@@ -110,11 +111,11 @@ impl ModPacker {
                     return Ok(None);
                 }
 
-                let resource = ResourceData::from_binary(&name, &*file_data)
+                let resource = ResourceData::from_binary(name.as_str(), &*file_data)
                     .with_context(|| jstr!("Failed to parse resouece {&name}"))?;
                 self.process_resource(name, canon.clone(), resource, false)
                     .with_context(|| jstr!("Failed to process resouece {&canon}"))?;
-                if is_mergeable_sarc(&canon, file_data.as_ref()) {
+                if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                     self.process_sarc(
                         Sarc::new(file_data.as_ref())?,
                         !self.hash_table.contains(&canon),
@@ -122,10 +123,7 @@ impl ModPacker {
                 }
 
                 Ok(Some(
-                    path.strip_prefix(root)
-                        .unwrap()
-                        .to_slash_lossy()
-                        .to_string(),
+                    path.strip_prefix(root).unwrap().to_slash_lossy().into(),
                 ))
             })
             .collect::<Result<Vec<Option<_>>>>()?
@@ -154,7 +152,7 @@ impl ModPacker {
             .iter()
             .filter_map(|master| {
                 master
-                    .get_resource(&canon)
+                    .get_resource(canon.as_str())
                     .or_else(|_| master.get_data(ref_name))
                     .ok()
             })
@@ -181,7 +179,7 @@ impl ModPacker {
             .current_root
             .strip_prefix(&self.source_dir)
             .unwrap()
-            .join(&canon);
+            .join(canon.as_str());
         {
             let mut zip = self.zip.lock();
             zip.start_file(zip_path.to_slash_lossy(), self._zip_opts)?;
@@ -207,7 +205,7 @@ impl ModPacker {
             let resource = ResourceData::from_binary(&name, &*file_data)
                 .with_context(|| jstr!("Failed to parse resource {&canon}"))?;
             self.process_resource(name.into(), canon.clone(), resource, is_new_sarc)?;
-            if is_mergeable_sarc(&canon, file_data.as_ref()) {
+            if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                 self.process_sarc(Sarc::new(file_data.as_ref())?, is_new_sarc)?;
             }
         }
@@ -228,7 +226,7 @@ impl ModPacker {
         } else {
             None
         };
-        let manifest = yaml_peg::serde::to_string(&Manifest {
+        let manifest = serde_yaml::to_string(&Manifest {
             aoc_files: aoc_dir
                 .map(|aoc| self.collect_resources(&aoc))
                 .transpose()?
@@ -295,28 +293,28 @@ mod tests {
     fn pack_mod() {
         let source = Path::new("test/wiiu");
         let dest = Path::new("test/wiiu.zip");
-        let rom_reader: ResourceReader =
-            yaml_peg::serde::from_str(&std::fs::read_to_string("../.vscode/dump.yml").unwrap())
-                .unwrap()
-                .swap_remove(0);
+        let rom_reader = serde_yaml::from_str::<ResourceReader>(
+            &std::fs::read_to_string("../.vscode/dump.yml").unwrap(),
+        )
+        .unwrap();
         let builder = ModPacker::new(
             source,
             dest,
             Meta {
                 platform: Endian::Big,
-                name: "Test Mod".to_string(),
+                name: "Test Mod".into(),
                 version: 0.1,
-                author: "Lord Caleb".to_string(),
-                description: "A test mod".to_string(),
-                masters: IndexMap::new(),
+                author: "Lord Caleb".into(),
+                description: "A test mod".into(),
+                masters: IndexMap::default(),
                 url: None,
                 options: vec![OptionGroup::Multiple(MultipleOptionGroup {
-                    name: "Test Option Group".to_string(),
-                    description: "A test option group".to_string(),
+                    name: "Test Option Group".into(),
+                    description: "A test option group".into(),
                     defaults: ["option1".into()].into_iter().collect(),
                     options: [ModOption {
-                        name: "Test Option".to_string(),
-                        description: "An option".to_string(),
+                        name: "Test Option".into(),
+                        description: "An option".into(),
                         path: "option1".into(),
                         requires: vec![],
                     }]

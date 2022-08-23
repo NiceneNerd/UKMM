@@ -8,6 +8,7 @@ use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{sarc::SarcWriter, yaz0::compress_if};
 use serde::Serialize;
+use smartstring::alias::String;
 use std::{
     collections::BTreeSet,
     io::{BufReader, Read, Write},
@@ -53,7 +54,7 @@ impl ResourceLoader for ModReader {
             }
         }
         for opt in &self.options {
-            let path = Path::new("options").join(&opt.path).join(&canon);
+            let path = Path::new("options").join(&opt.path).join(canon.as_str());
             if let Ok(mut file) = self.zip.lock().by_name(path.to_slash_lossy().as_ref()) {
                 let size = file.size() as usize;
                 let mut buffer = vec![0; size];
@@ -82,7 +83,7 @@ impl ResourceLoader for ModReader {
             }
         }
         for opt in &self.options {
-            let path = Path::new("options").join(&opt.path).join(&canon);
+            let path = Path::new("options").join(&opt.path).join(canon.as_str());
             if let Ok(mut file) = self.zip.lock().by_name(path.to_slash_lossy().as_ref()) {
                 let size = file.size() as usize;
                 let mut buffer = vec![0; size];
@@ -122,7 +123,7 @@ impl ModReader {
             }
             toml::from_slice(&buffer[..read]).context("Failed to parse meta file from mod")?
         };
-        let mut manifest: Manifest = {
+        let mut manifest = {
             let mut manifest = zip
                 .by_name("manifest.yml")
                 .context("Mod missing manifest file")?;
@@ -131,9 +132,8 @@ impl ModReader {
             if read != size {
                 anyhow::bail!("Failed to read manifest file from mod")
             }
-            yaml_peg::serde::from_str(std::str::from_utf8(&buffer[..read])?)
+            serde_yaml::from_str::<Manifest>(std::str::from_utf8(&buffer[..read])?)
                 .context("Failed to parse manifest file")?
-                .swap_remove(0)
         };
         for opt in &options {
             let mut opt_manifest = zip
@@ -144,10 +144,9 @@ impl ModReader {
             if read != size {
                 anyhow::bail!("Failed to read option manifest file from mod")
             }
-            let opt_manifest: Manifest =
-                yaml_peg::serde::from_str(std::str::from_utf8(&buffer[..read])?)
-                    .context("Failed to parse option manifest file")?
-                    .swap_remove(0);
+            let opt_manifest =
+                serde_yaml::from_str::<Manifest>(std::str::from_utf8(&buffer[..read])?)
+                    .context("Failed to parse option manifest file")?;
             manifest.content_files.extend(opt_manifest.content_files);
             manifest.aoc_files.extend(opt_manifest.aoc_files);
         }
@@ -195,7 +194,7 @@ impl ModUnpacker {
     fn unpack_files(&self, files: BTreeSet<&String>, dir: PathBuf) -> Result<()> {
         files.into_par_iter().try_for_each(|file| -> Result<()> {
             let data = self.build_file(file.as_str())?;
-            let out_file = dir.join(file);
+            let out_file = dir.join(file.as_str());
             if let parent = out_file.parent().unwrap() && !parent.exists() {
                 fs::create_dir_all(parent)?;
             }
@@ -289,10 +288,10 @@ mod tests {
     #[test]
     fn unpack_mod() {
         let mod_reader = ModReader::open("test/wiiu.zip", vec![]).unwrap();
-        let dump: ResourceReader =
-            yaml_peg::serde::from_str(&std::fs::read_to_string("../.vscode/dump.yml").unwrap())
-                .unwrap()
-                .swap_remove(0);
+        let dump = serde_yaml::from_str::<ResourceReader>(
+            &std::fs::read_to_string("../.vscode/dump.yml").unwrap(),
+        )
+        .unwrap();
         ModUnpacker {
             dump,
             endian: Endian::Big,

@@ -7,6 +7,7 @@ use anyhow::Context;
 use moka::sync::Cache;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
+use smartstring::alias::String;
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
@@ -153,8 +154,8 @@ impl ResourceReader {
                     let resource = match self.bin_type {
                         BinType::Nintendo => {
                             let data = roead::yaz0::decompress_if(data.as_slice());
-                            let res = ResourceData::from_binary(canon.clone(), data.as_ref())?;
-                            if is_mergeable_sarc(&canon, data.as_ref()) {
+                            let res = ResourceData::from_binary(canon.as_str(), data.as_ref())?;
+                            if is_mergeable_sarc(canon.as_str(), data.as_ref()) {
                                 self.process_sarc(Sarc::new(data.as_ref())?)?;
                             }
                             res
@@ -166,7 +167,7 @@ impl ResourceReader {
                 })
                 .map_err(|_| {
                     ROMError::FileNotFound(
-                        path.as_ref().to_string_lossy().to_string(),
+                        path.as_ref().to_string_lossy().into(),
                         self.source.host_path().to_path_buf(),
                     )
                 })?;
@@ -181,7 +182,7 @@ impl ResourceReader {
                 let data = file.data;
                 let data = roead::yaz0::decompress_if(data);
                 let resource = ResourceData::from_binary(&name, data.as_ref())?;
-                if is_mergeable_sarc(&canon, data.as_ref()) {
+                if is_mergeable_sarc(canon.as_str(), data.as_ref()) {
                     self.process_sarc(Sarc::new(data.as_ref())?)?;
                 }
                 self.cache.insert(canon, Arc::new(resource));

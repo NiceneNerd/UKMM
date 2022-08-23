@@ -9,17 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
-name = "ahash"
-version = "0.7.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcb51a0695d8f838b1ee009b3fbf66bda078cd64590202a864a8f3e8c4315c47"
-dependencies = [
- "getrandom",
- "once_cell",
- "version_check",
-]
-
-[[package]]
 name = "almost"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -167,7 +156,7 @@ dependencies = [
  "cached_proc_macro",
  "cached_proc_macro_types",
  "futures",
- "hashbrown 0.12.1",
+ "hashbrown",
  "instant",
  "lazy_static",
  "once_cell",
@@ -745,25 +734,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 
 [[package]]
-name = "griddle"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bb81d22191b89b117cd12d6549544bfcba0da741efdcec7c7d2fd06a0f56363"
-dependencies = [
- "ahash",
- "hashbrown 0.11.2",
-]
-
-[[package]]
-name = "hashbrown"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
-dependencies = [
- "ahash",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -791,7 +761,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
 dependencies = [
  "autocfg",
- "hashbrown 0.12.1",
+ "hashbrown",
  "serde",
 ]
 
@@ -1108,7 +1078,7 @@ dependencies = [
  "rayon",
  "serde",
  "serde_derive",
- "serde_yaml",
+ "serde_yaml 0.8.24",
 ]
 
 [[package]]
@@ -1311,17 +1281,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ritelinked"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98f2771d255fd99f0294f13249fecd0cae6e074f86b4197ec1f1689d537b44d3"
-dependencies = [
- "ahash",
- "griddle",
- "hashbrown 0.11.2",
-]
-
-[[package]]
 name = "roead"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1438,6 +1397,19 @@ dependencies = [
  "ryu",
  "serde",
  "yaml-rust",
+]
+
+[[package]]
+name = "serde_yaml"
+version = "0.9.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a09f551ccc8210268ef848f0bab37b306e87b85b2e017b899e7fb815f5aed62"
+dependencies = [
+ "indexmap",
+ "itoa 1.0.2",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
 ]
 
 [[package]]
@@ -1689,13 +1661,14 @@ dependencies = [
  "rayon",
  "roead",
  "serde",
+ "serde_yaml 0.9.10",
+ "smartstring",
  "tempfile",
  "toml",
  "typetag",
  "uk-content",
  "uk-reader",
  "xxhash-rust",
- "yaml-peg",
  "zip",
  "zstd",
 ]
@@ -1712,6 +1685,7 @@ dependencies = [
  "moka",
  "roead",
  "serde",
+ "smartstring",
  "thiserror",
  "typetag",
  "uk-content",
@@ -1749,6 +1723,12 @@ name = "unicode-width"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ed742d4ea2bd1176e236172c8429aaf54486e7ac098db29ffe6529e0ce50973"
+
+[[package]]
+name = "unsafe-libyaml"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "931179334a56395bcf64ba5e0ff56781381c1a5832178280c7d7f91d1679aeb0"
 
 [[package]]
 name = "uuid"
@@ -1937,16 +1917,6 @@ name = "xxhash-rust"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "074914ea4eec286eb8d1fd745768504f420a1f7b7919185682a4a267bed7d2e7"
-
-[[package]]
-name = "yaml-peg"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d30a19658121819bb01728a3056a0c1f17b1f03cc932705e9bebd86b922a5be0"
-dependencies = [
- "ritelinked",
- "serde",
-]
 
 [[package]]
 name = "yaml-rust"
