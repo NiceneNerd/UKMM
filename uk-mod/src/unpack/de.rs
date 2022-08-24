@@ -90,12 +90,12 @@ impl<'de> Deserialize<'de> for ModReader {
                     meta,
                     manifest,
                     options,
-                    zip: Arc::new(Mutex::new(
+                    zip: Some(Arc::new(Mutex::new(
                         ZipArchive::new(BufReader::new(
                             fs::File::open(&path).map_err(serde::de::Error::custom)?,
                         ))
                         .map_err(serde::de::Error::custom)?,
-                    )),
+                    ))),
                     path,
                 })
             }

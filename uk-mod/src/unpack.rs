@@ -3,6 +3,7 @@ use crate::{Manifest, Meta, ModOption};
 use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
+use jwalk::WalkDir;
 use parking_lot::Mutex;
 use path_slash::PathExt;
 use rayon::prelude::*;
@@ -32,7 +33,7 @@ pub struct ModReader {
     meta: Meta,
     manifest: Manifest,
     #[serde(skip_serializing)]
-    zip: ZipReader,
+    zip: Option<ZipReader>,
 }
 
 #[typetag::serde]
@@ -43,25 +44,34 @@ impl ResourceLoader for ModReader {
             || self.manifest.aoc_files.contains(name.as_ref())
     }
 
+    #[allow(irrefutable_let_patterns)]
     fn get_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
         let canon = canonicalize(name);
-        if let Ok(mut file) = self.zip.lock().by_name(&canon) {
-            let size = file.size() as usize;
-            let mut buffer = vec![0; size];
-            let read = file.read(buffer.as_mut_slice())?;
-            if read == size {
-                return Ok(zstd::decode_all(buffer.as_slice())?);
-            }
-        }
-        for opt in &self.options {
-            let path = Path::new("options").join(&opt.path).join(canon.as_str());
-            if let Ok(mut file) = self.zip.lock().by_name(path.to_slash_lossy().as_ref()) {
+        if let Some(zip) = self.zip.as_ref() {
+            if let Ok(mut file) = zip.lock().by_name(&canon) {
                 let size = file.size() as usize;
                 let mut buffer = vec![0; size];
                 let read = file.read(buffer.as_mut_slice())?;
                 if read == size {
                     return Ok(zstd::decode_all(buffer.as_slice())?);
                 }
+            }
+        } else if let path = self.path.join(canon.as_str()) && path.exists() {
+            return Ok(fs::read(path)?);
+        }
+        for opt in &self.options {
+            let path = Path::new("options").join(&opt.path).join(canon.as_str());
+            if let Some(zip) = self.zip.as_ref() {
+                if let Ok(mut file) = zip.lock().by_name(path.to_slash_lossy().as_ref()) {
+                    let size = file.size() as usize;
+                    let mut buffer = vec![0; size];
+                    let read = file.read(buffer.as_mut_slice())?;
+                    if read == size {
+                        return Ok(zstd::decode_all(buffer.as_slice())?);
+                    }
+                } 
+            } else if let path = self.path.join(path) && path.exists() {
+                return Ok(fs::read(path)?);
             }
         }
         Err(anyhow::anyhow!(
@@ -72,25 +82,34 @@ impl ResourceLoader for ModReader {
         .into())
     }
 
+    #[allow(irrefutable_let_patterns)]
     fn get_aoc_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
         let canon = canonicalize(jstr!("Aoc/0010/{name.to_str().unwrap_or_default()}"));
-        if let Ok(mut file) = self.zip.lock().by_name(&canon) {
-            let size = file.size() as usize;
-            let mut buffer = vec![0; size];
-            let read = file.read(buffer.as_mut_slice())?;
-            if read == size {
-                return Ok(zstd::decode_all(buffer.as_slice())?);
-            }
-        }
-        for opt in &self.options {
-            let path = Path::new("options").join(&opt.path).join(canon.as_str());
-            if let Ok(mut file) = self.zip.lock().by_name(path.to_slash_lossy().as_ref()) {
+        if let Some(zip) = self.zip.as_ref() {
+            if let Ok(mut file) = zip.lock().by_name(&canon) {
                 let size = file.size() as usize;
                 let mut buffer = vec![0; size];
                 let read = file.read(buffer.as_mut_slice())?;
                 if read == size {
                     return Ok(zstd::decode_all(buffer.as_slice())?);
                 }
+            }
+        } else if let path = self.path.join(canon.as_str()) && path.exists() {
+            return Ok(fs::read(path)?);
+        }
+        for opt in &self.options {
+            let path = Path::new("options").join(&opt.path).join(canon.as_str());
+            if let Some(zip) = self.zip.as_ref() {
+                if let Ok(mut file) = zip.lock().by_name(path.to_slash_lossy().as_ref()) {
+                    let size = file.size() as usize;
+                    let mut buffer = vec![0; size];
+                    let read = file.read(buffer.as_mut_slice())?;
+                    if read == size {
+                        return Ok(zstd::decode_all(buffer.as_slice())?);
+                    }
+                }
+            }  else if let path = self.path.join(path) && path.exists() {
+                return Ok(fs::read(path)?);
             }
         }
         Err(anyhow::anyhow!(
@@ -110,6 +129,31 @@ impl ModReader {
     pub fn open(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
         let path = path.as_ref().to_path_buf();
         let options = options.into();
+        if path.is_file() {
+            Self::open_zipped(path, options)
+        } else {
+            Self::open_unzipped(path, options)
+        }
+    }
+
+    fn open_unzipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
+        let meta: Meta = toml::from_str(&fs::read_to_string(path.join("meta.toml"))?)?;
+        let mut manifest: Manifest = serde_yaml::from_str(&fs::read_to_string(path.join("manifest.yml"))?)?;
+        for option in &options {
+            let opt_manifest: Manifest = serde_yaml::from_str(&fs::read_to_string(path.join(option.manifest_path()))?)?;
+            manifest.content_files.extend(opt_manifest.content_files);
+            manifest.aoc_files.extend(opt_manifest.aoc_files);
+        }
+        Ok(Self {
+            path,
+            options,
+            meta,
+            manifest,
+            zip: None,
+        })
+    }
+
+    fn open_zipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
         let mut zip = ZipArchive::new(BufReader::new(fs::File::open(&path)?))?;
         let mut buffer = vec![0; 524288]; // 512kb
         let mut read;
@@ -155,7 +199,7 @@ impl ModReader {
             options,
             meta,
             manifest,
-            zip: Arc::new(Mutex::new(zip)),
+            zip: Some(Arc::new(Mutex::new(zip))),
         })
     }
 
@@ -301,6 +345,26 @@ impl ModUnpacker {
         }
         Ok(writer.to_binary())
     }
+}
+
+/// Extract a zipped mod, decompressing the binary files, but otherwise
+/// leaving the format intact.
+pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow::Result<()> {
+    let mut zip = ZipArchive::new(BufReader::new(fs::File::open(&mod_path)?))
+        .context("Failed to open mod ZIP")?;
+    zip.extract(&out_path)?;
+    WalkDir::new(out_path).into_iter().filter_map(std::result::Result::ok).filter(|f| {
+        f.file_type.is_file() && {
+            let file_name = f.file_name().to_str().unwrap();
+            !file_name.ends_with(".yml") && !file_name.ends_with(".toml")
+        }
+    }).par_bridge().try_for_each(|f| -> anyhow::Result<()> {
+        let f = f.path();
+        let data = zstd::decode_all(fs::read(&f)?.as_slice())?;
+        fs::write(f, data)?;
+        Ok(())
+    })?;
+    Ok(())
 }
 
 #[cfg(test)]

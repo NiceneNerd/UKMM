@@ -33,6 +33,24 @@ impl From<Platform> for roead::Endian {
     }
 }
 
+impl From<uk_content::prelude::Endian> for Platform {
+    fn from(e: uk_content::prelude::Endian) -> Self {
+        match e {
+            uk_content::prelude::Endian::Big => Self::WiiU,
+            uk_content::prelude::Endian::Little => Self::Switch,
+        }
+    }
+}
+
+impl From<Platform> for uk_content::prelude::Endian {
+    fn from(p: Platform) -> Self {
+        match p {
+            Platform::WiiU => Self::Big,
+            Platform::Switch => Self::Little,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Language {
     USen,
@@ -76,6 +94,7 @@ pub struct PlatformSettings {
 pub struct Settings {
     pub current_mode: Platform,
     pub storage_dir: PathBuf,
+    pub unpack_mods: bool,
     pub wiiu_config: Option<PlatformSettings>,
     pub switch_config: Option<PlatformSettings>,
     pub check_updates: bool,
@@ -87,6 +106,7 @@ impl Default for Settings {
         Self {
             current_mode: Platform::WiiU,
             storage_dir: dirs2::config_dir().unwrap(),
+            unpack_mods: false,
             wiiu_config: None,
             switch_config: None,
             check_updates: true,
@@ -125,6 +145,13 @@ impl Settings {
 
     pub fn mods_dir(&self) -> PathBuf {
         self.platform_dir().join("mods")
+    }
+
+    pub fn dump(&self) -> Option<&ResourceReader> {
+        match self.current_mode {
+            Platform::Switch => self.switch_config.as_ref().map(|c| &c.dump),
+            Platform::WiiU => self.wiiu_config.as_ref().map(|c| &c.dump),
+        }
     }
 }
 

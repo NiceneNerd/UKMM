@@ -1,6 +1,7 @@
 use anyhow::{Error, Result};
 mod mods;
 mod settings;
+mod util;
 
 fn main() -> Result<()> {
     env_logger::init();

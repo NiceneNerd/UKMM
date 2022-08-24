@@ -115,6 +115,17 @@ pub struct Meta {
     pub masters: IndexMap<String, f32>,
 }
 
+#[allow(clippy::derive_hash_xor_eq)]
+impl std::hash::Hash for Meta {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.version.to_bits().hash(state);
+        self.author.hash(state);
+        self.platform.hash(state);
+        self.description.hash(state);
+    }
+}
+
 impl Meta {
     pub fn read(mod_path: impl AsRef<Path>) -> anyhow::Result<Self> {
         use std::io::Read;

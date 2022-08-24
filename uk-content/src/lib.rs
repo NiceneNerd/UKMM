@@ -198,7 +198,7 @@ pub mod prelude {
     pub(crate) use impl_simple_byml;
     use join_str::jstr;
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
     pub enum Endian {
         #[serde(rename = "Switch")]
         Little,
