@@ -167,23 +167,51 @@ impl ModReader {
 #[derive(Debug)]
 pub struct ModUnpacker {
     dump: ResourceReader,
+    manifest: Option<Manifest>,
     mods: Vec<ModReader>,
     endian: Endian,
     out_dir: PathBuf,
 }
 
 impl ModUnpacker {
+    pub fn new(
+        dump: ResourceReader,
+        endian: Endian,
+        mods: Vec<ModReader>,
+        out_dir: PathBuf,
+    ) -> Self {
+        Self {
+            dump,
+            manifest: None,
+            mods,
+            endian,
+            out_dir,
+        }
+    }
+
+    pub fn with_manifest(mut self, manifest: Manifest) -> Self {
+        self.manifest = Some(manifest);
+        self
+    }
+
     pub fn unpack(self) -> Result<()> {
-        let content_files: BTreeSet<&String> = self
-            .mods
-            .iter()
-            .flat_map(|mod_| mod_.manifest.content_files.iter())
-            .collect();
-        let aoc_files: BTreeSet<&String> = self
-            .mods
-            .iter()
-            .flat_map(|mod_| mod_.manifest.aoc_files.iter())
-            .collect();
+        let content_files: BTreeSet<&String>;
+        let aoc_files: BTreeSet<&String>;
+        if let Some(manifest) = self.manifest.as_ref() {
+            content_files = manifest.content_files.iter().collect();
+            aoc_files = manifest.aoc_files.iter().collect();
+        } else {
+            content_files = self
+                .mods
+                .iter()
+                .flat_map(|mod_| mod_.manifest.content_files.iter())
+                .collect();
+            aoc_files = self
+                .mods
+                .iter()
+                .flat_map(|mod_| mod_.manifest.aoc_files.iter())
+                .collect();
+        }
         let (content, aoc) = platform_prefixes(self.endian);
         self.unpack_files(content_files, self.out_dir.join(content))?;
         self.unpack_files(aoc_files, self.out_dir.join(aoc))?;
@@ -292,12 +320,12 @@ mod tests {
             &std::fs::read_to_string("../.vscode/dump.yml").unwrap(),
         )
         .unwrap();
-        ModUnpacker {
+        ModUnpacker::new(
             dump,
-            endian: Endian::Big,
-            mods: vec![mod_reader],
-            out_dir: "test/wiiu_unpack".into(),
-        }
+            Endian::Big,
+            vec![mod_reader],
+            "test/wiiu_unpack".into(),
+        )
         .unpack()
         .unwrap();
     }

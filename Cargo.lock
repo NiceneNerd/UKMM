@@ -509,6 +509,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "dirs-sys"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b1d1d91c932ef41c0f2663aa8b0ca0342d444d842c06914aa0a7e352d0bada6"
+dependencies = [
+ "libc",
+ "redox_users",
+ "winapi",
+]
+
+[[package]]
+name = "dirs2"
+version = "3.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4049c5941d42b500fab4dbe85341aa7eb7b533e2c678529db3c1e88ed1aba8b5"
+dependencies = [
+ "cfg-if 0.1.10",
+ "dirs-sys",
+]
+
+[[package]]
 name = "either"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1112,9 +1133,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.13.0"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
+checksum = "074864da206b4973b84eb91683020dbefd6a8c3f0f38e054d93954e891935e4e"
 
 [[package]]
 name = "owo-colors"
@@ -1266,6 +1287,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "redox_users"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b033d837a7cf162d7993aded9304e30a83213c648b6e389db233191f891e5c2b"
+dependencies = [
+ "getrandom",
+ "redox_syscall",
+ "thiserror",
+]
+
+[[package]]
 name = "regex-automata"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1358,18 +1390,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.140"
+version = "1.0.144"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc855a42c7967b7c369eb5860f7164ef1f6f81c20c7cc1141f2a604e18723b03"
+checksum = "0f747710de3dcd43b88c9168773254e809d8ddbdf9653b84e2554ab219f17860"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.140"
+version = "1.0.144"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f2122636b9fe3b81f1cb25099fcf2d3f542cdb1d45940d56c713158884a05da"
+checksum = "94ed3a816fb1d101812f83e789f888322c34e291f894f19590dc310963e87a00"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1683,6 +1715,7 @@ dependencies = [
  "join_str",
  "minicbor-ser",
  "moka",
+ "once_cell",
  "roead",
  "serde",
  "smartstring",
@@ -1696,6 +1729,15 @@ dependencies = [
 [[package]]
 name = "ukmm"
 version = "0.1.0"
+dependencies = [
+ "dirs2",
+ "once_cell",
+ "serde",
+ "toml",
+ "uk-content",
+ "uk-mod",
+ "uk-reader",
+]
 
 [[package]]
 name = "unchecked-index"

@@ -4,7 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-
+dirs2 = "3.0.1"
+once_cell = "1.13.1"
+serde = { version = "1.0.144", features = ["derive"] }
+toml = "0.5.9"
+uk-content = { path = "./uk-content" }
+uk-mod = { path = "./uk-mod" }
+uk-reader = { path = "./uk-reader" }
 
 [workspace]
 members = [

@@ -11,6 +11,7 @@ fs-err = "2.7.0"
 join_str = "0.1.0"
 moka = "0.9.0"
 minicbor-ser = "0.1.3"
+once_cell = "1.13.1"
 roead = { version = "0.16.0" }
 serde = { version = "1.0.137", features = ["derive"] }
 smartstring = { version = "1.0.1", features = ["serde"] }

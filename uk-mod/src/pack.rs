@@ -157,12 +157,6 @@ impl ModPacker {
                     .ok()
             })
             .last();
-        // .fold(None, |acc, res| match (acc, res.as_ref()) {
-        //     (Some(ResourceData::Mergeable(acc)), ResourceData::Mergeable(next)) => {
-        //         Some(ResourceData::Mergeable(acc.merge(next)))
-        //     }
-        //     _ => Some((*res).clone()),
-        // });
         if let Some(ref_res_data) = reference
             && let Some(ref_res) = ref_res_data.as_mergeable()
             && let ResourceData::Mergeable(res) = &resource
