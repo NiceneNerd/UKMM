@@ -28,10 +28,10 @@ type ZipReader = Arc<Mutex<ZipArchive<BufReader<fs::File>>>>;
 
 #[derive(Debug, Serialize)]
 pub struct ModReader {
-    path: PathBuf,
+    pub path: PathBuf,
     options: Vec<ModOption>,
-    meta: Meta,
-    manifest: Manifest,
+    pub meta: Meta,
+    pub manifest: Manifest,
     #[serde(skip_serializing)]
     zip: Option<ZipReader>,
 }
@@ -392,5 +392,12 @@ mod tests {
         )
         .unpack()
         .unwrap();
+    }
+
+    #[test]
+    fn unzip_mod() {
+        let mod_path = "test/wiiu.zip";
+        let out_path = "test/wiiu_unzip";
+        super::unzip_mod(mod_path.as_ref(), out_path.as_ref()).unwrap();
     }
 }

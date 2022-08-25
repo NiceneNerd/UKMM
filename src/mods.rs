@@ -9,6 +9,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
+    hash::{Hash, Hasher},
     io::BufReader,
     path::{Path, PathBuf},
 };
@@ -34,17 +35,33 @@ impl std::hash::Hash for Mod {
     }
 }
 
+impl Mod {
+    pub fn from_reader(reader: ModReader) -> Self {
+        let mut hasher = rustc_hash::FxHasher::default();
+        reader.meta.hash(&mut hasher);
+        Self {
+            hash: hasher.finish() as usize,
+            meta: reader.meta,
+            manifest: reader.manifest,
+            enabled_options: vec![],
+            path: reader.path,
+            enabled: false,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Manager {
     dir: PathBuf,
     mods: HashMap<usize, Mod>,
-    load_order: BTreeMap<usize, usize>,
+    load_order: Vec<usize>,
 }
 
 impl Manager {
     pub fn load_from(mod_dir: &Path) -> Result<Self> {
         if !mod_dir.exists() {
             fs::create_dir_all(&mod_dir)?;
+            log::info!("Created mod directory at {}", mod_dir.display());
             return Ok(Self {
                 dir: mod_dir.to_path_buf(),
                 mods: Default::default(),
@@ -53,13 +70,31 @@ impl Manager {
         }
         let mods = serde_yaml::from_str(&fs::read_to_string(mod_dir.join("mods.yml"))?)
             .context("Failed to parse mod database")?;
+        log::debug!("{:?}", &mods);
         let load_order = serde_yaml::from_str(&fs::read_to_string(mod_dir.join("load.yml"))?)
             .context("Failed to parse load order table")?;
+        log::debug!("{:?}", &load_order);
         Ok(Self {
             dir: mod_dir.to_path_buf(),
             mods,
             load_order,
         })
+    }
+
+    pub fn save(&self) -> Result<()> {
+        fs::write(
+            self.dir.join("mods.yml"),
+            serde_yaml::to_string(&self.mods)?,
+        )?;
+        log::info!("Saved mod list");
+        log::debug!("{:?}", &self.mods);
+        fs::write(
+            self.dir.join("loads.yml"),
+            serde_yaml::to_string(&self.load_order)?,
+        )?;
+        log::info!("Saved load order");
+        log::debug!("{:?}", &self.load_order);
+        Ok(())
     }
 
     pub fn load() -> Result<Self> {
@@ -68,7 +103,7 @@ impl Manager {
 
     /// Iterate all enabled mods in load order
     pub fn mods(&self) -> impl Iterator<Item = &Mod> {
-        self.load_order.values().filter_map(|h| {
+        self.load_order.iter().filter_map(|h| {
             let mod_ = &self.mods[h];
             mod_.enabled.then_some(mod_)
         })
@@ -76,7 +111,7 @@ impl Manager {
 
     /// Iterate all mods, including disabled, in load order
     pub fn all_mods(&self) -> impl Iterator<Item = &Mod> {
-        self.load_order.values().map(|h| &self.mods[h])
+        self.load_order.iter().map(|h| &self.mods[h])
     }
 
     /// Add a mod to the list of installed mods. This function assumes that the
@@ -94,6 +129,13 @@ impl Manager {
             dircpy::copy_dir(mod_path, &stored_path)
                 .context("Failed to copy mod to storage folder")?;
         }
-        Ok(todo!())
+        let reader = ModReader::open(&stored_path, vec![])?;
+        let mod_ = Mod::from_reader(reader);
+        self.load_order.push(mod_.hash);
+        let mod_: &Mod = unsafe { &*(self.mods.entry(mod_.hash).or_insert(mod_) as *const _) };
+        self.save()?;
+        log::info!("Added mod {}", mod_.meta.name);
+        log::debug!("{:?}", mod_);
+        Ok(mod_)
     }
 }

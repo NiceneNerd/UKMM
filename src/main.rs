@@ -1,3 +1,4 @@
+#![feature(entry_insert)]
 use anyhow::{Error, Result};
 mod mods;
 mod settings;
