@@ -19,7 +19,7 @@ use std::{
 use uk_content::{
     canonicalize, platform_prefixes,
     prelude::{Endian, Mergeable},
-    resource::{ResourceData, SarcMap},
+    resource::{ResourceData, SarcMap}, util::HashMap,
 };
 use uk_reader::{ResourceLoader, ResourceReader};
 use zip::ZipArchive;
@@ -210,7 +210,7 @@ impl ModReader {
 
 #[derive(Debug)]
 pub struct ModUnpacker {
-    dump: ResourceReader,
+    dump: Arc<ResourceReader>,
     manifest: Option<Manifest>,
     mods: Vec<ModReader>,
     endian: Endian,
@@ -219,7 +219,7 @@ pub struct ModUnpacker {
 
 impl ModUnpacker {
     pub fn new(
-        dump: ResourceReader,
+        dump: Arc<ResourceReader>,
         endian: Endian,
         mods: Vec<ModReader>,
         out_dir: PathBuf,
@@ -238,7 +238,10 @@ impl ModUnpacker {
         self
     }
 
-    pub fn unpack(self) -> Result<()> {
+    pub fn unpack(self) -> Result<HashMap<String, Option<u32>>> {
+        if !self.out_dir.exists() {
+            fs::create_dir_all(&self.out_dir)?;
+        }
         let content_files: BTreeSet<&String>;
         let aoc_files: BTreeSet<&String>;
         if let Some(manifest) = self.manifest.as_ref() {
@@ -257,14 +260,16 @@ impl ModUnpacker {
                 .collect();
         }
         let (content, aoc) = platform_prefixes(self.endian);
-        self.unpack_files(content_files, self.out_dir.join(content))?;
-        self.unpack_files(aoc_files, self.out_dir.join(aoc))?;
-        Ok(())
+        let rstb_vals = self.unpack_files(content_files, self.out_dir.join(content))?
+            .into_iter()
+            .chain(self.unpack_files(aoc_files, self.out_dir.join(aoc))?.into_iter())
+            .collect();
+        Ok(rstb_vals)
     }
 
     #[allow(irrefutable_let_patterns)]
-    fn unpack_files(&self, files: BTreeSet<&String>, dir: PathBuf) -> Result<()> {
-        files.into_par_iter().try_for_each(|file| -> Result<()> {
+    fn unpack_files(&self, files: BTreeSet<&String>, dir: PathBuf) -> Result<HashMap<String, Option<u32>>> {
+        files.into_par_iter().map(|file| -> Result<(String, Option<u32>)> {
             let data = self.build_file(file.as_str())?;
             let out_file = dir.join(file.as_str());
             if let parent = out_file.parent().unwrap() && !parent.exists() {
@@ -272,9 +277,10 @@ impl ModUnpacker {
             }
             let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
             writer.write_all(&compress_if(data.as_ref(), &out_file))?;
-            Ok(())
-        })?;
-        Ok(())
+            let canon = canonicalize(out_file.strip_prefix(&self.out_dir).unwrap());
+            let size = rstb::calc::calc_from_slice_and_name(&data, &canon, self.endian.into());
+            Ok((canon, size))
+        }).collect()
     }
 
     fn build_file(&self, file: &str) -> Result<Vec<u8>> {
@@ -385,7 +391,7 @@ mod tests {
         )
         .unwrap();
         ModUnpacker::new(
-            dump,
+            Arc::new(dump),
             Endian::Big,
             vec![mod_reader],
             "test/wiiu_unpack".into(),

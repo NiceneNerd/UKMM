@@ -251,6 +251,24 @@ pub mod prelude {
         }
     }
 
+    impl From<rstb::Endian> for Endian {
+        fn from(endian: rstb::Endian) -> Self {
+            match endian {
+                rstb::Endian::Little => Self::Little,
+                rstb::Endian::Big => Self::Big,
+            }
+        }
+    }
+
+    impl From<Endian> for rstb::Endian {
+        fn from(endian: Endian) -> Self {
+            match endian {
+                Endian::Little => Self::Little,
+                Endian::Big => Self::Big,
+            }
+        }
+    }
+
     pub trait Resource
     where
         Self: std::marker::Sized,

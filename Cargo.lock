@@ -269,6 +269,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "79bb3adfaf5f75d24b01aee375f7555907840fa2800e5ec8fa3b9e2031830173"
 
 [[package]]
+name = "crc"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49fc9a695bca7f35f5f4c15cddc84415f66a74ea78eef08e90c5024f2b540e23"
+dependencies = [
+ "crc-catalog",
+]
+
+[[package]]
+name = "crc-catalog"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccaeedb56da03b09f598226e25e80088cb4cd25f316e6e4df7d695f0feeb1403"
+
+[[package]]
 name = "crc32fast"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1012,6 +1027,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "minimal-lexical"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
+
+[[package]]
 name = "miniz_oxide"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1067,6 +1088,16 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_yaml 0.8.24",
+]
+
+[[package]]
+name = "nom"
+version = "7.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8903e5a29a317527874d0402f867152a3d21c908bb0b933e416c65e301d4c36"
+dependencies = [
+ "memchr",
+ "minimal-lexical",
 ]
 
 [[package]]
@@ -1310,6 +1341,20 @@ dependencies = [
  "serde",
  "serde_json",
  "smartstring",
+ "thiserror",
+]
+
+[[package]]
+name = "rstb"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6327dd01f888376271da32535b0acaa4de10363ab60a56faa9b602c2e9b00a31"
+dependencies = [
+ "crc",
+ "lazy_static",
+ "nom",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -1622,6 +1667,7 @@ dependencies = [
  "once_cell",
  "path-slash",
  "roead",
+ "rstb",
  "rustc-hash",
  "serde",
  "serde_json",
@@ -1646,6 +1692,7 @@ dependencies = [
  "path-slash",
  "rayon",
  "roead",
+ "rstb",
  "serde",
  "serde_yaml 0.9.10",
  "smartstring",
@@ -1689,17 +1736,19 @@ dependencies = [
  "dirs2",
  "env_logger",
  "fs-err",
- "glob",
  "join_str",
+ "jwalk",
  "log",
  "once_cell",
  "parking_lot",
  "rayon",
  "remove_dir_all 0.7.0",
  "roead",
+ "rstb",
  "rustc-hash",
  "serde",
  "serde_yaml 0.9.10",
+ "smartstring",
  "toml",
  "uk-content",
  "uk-mod",

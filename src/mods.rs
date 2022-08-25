@@ -111,7 +111,7 @@ impl Manager {
         Self::load_from(&settings().mods_dir())
     }
 
-    /// Iterate all enabled mods in load order
+    /// Iterate all enabled mods in load order.
     pub fn mods(&self) -> impl Iterator<Item = &Mod> {
         self.load_order.iter().filter_map(|h| {
             let mod_ = &self.mods[h];
@@ -119,9 +119,29 @@ impl Manager {
         })
     }
 
-    /// Iterate all mods, including disabled, in load order
+    /// Iterate all mods, including disabled, in load order.
     pub fn all_mods(&self) -> impl Iterator<Item = &Mod> {
         self.load_order.iter().map(|h| &self.mods[h])
+    }
+
+    /// Iterate all mods which modify any files in the given manifest.
+    pub fn mods_by_manifest<'a: 'm, 'm>(
+        &'a self,
+        manifest: &'m Manifest,
+    ) -> impl Iterator<Item = &'a Mod> + 'm {
+        self.load_order.iter().filter_map(|h| {
+            let mod_ = &self.mods[h];
+            if !mod_
+                .manifest
+                .content_files
+                .is_disjoint(&manifest.content_files)
+                || !mod_.manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+            {
+                Some(mod_)
+            } else {
+                None
+            }
+        })
     }
 
     /// Add a mod to the list of installed mods. This function assumes that the

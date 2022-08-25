@@ -51,6 +51,24 @@ impl From<Platform> for uk_content::prelude::Endian {
     }
 }
 
+impl From<rstb::Endian> for Platform {
+    fn from(e: rstb::Endian) -> Self {
+        match e {
+            rstb::Endian::Big => Self::WiiU,
+            rstb::Endian::Little => Self::Switch,
+        }
+    }
+}
+
+impl From<Platform> for rstb::Endian {
+    fn from(p: Platform) -> Self {
+        match p {
+            Platform::WiiU => Self::Big,
+            Platform::Switch => Self::Little,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Language {
     USen,
@@ -76,7 +94,7 @@ pub struct DeployConfig {
     pub auto: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DeployMethod {
     Copy,
     HardLink,
@@ -85,7 +103,7 @@ pub enum DeployMethod {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlatformSettings {
-    pub dump: ResourceReader,
+    pub dump: Arc<ResourceReader>,
     pub deploy_config: Option<DeployConfig>,
     pub language: Language,
 }
@@ -143,15 +161,38 @@ impl Settings {
         }
     }
 
+    #[inline]
     pub fn mods_dir(&self) -> PathBuf {
         self.platform_dir().join("mods")
     }
 
-    pub fn dump(&self) -> Option<&ResourceReader> {
+    #[inline]
+    pub fn dump(&self) -> Option<Arc<ResourceReader>> {
         match self.current_mode {
-            Platform::Switch => self.switch_config.as_ref().map(|c| &c.dump),
-            Platform::WiiU => self.wiiu_config.as_ref().map(|c| &c.dump),
+            Platform::Switch => self.switch_config.as_ref().map(|c| c.dump.clone()),
+            Platform::WiiU => self.wiiu_config.as_ref().map(|c| c.dump.clone()),
         }
+    }
+
+    #[inline(always)]
+    pub fn platform_config(&self) -> Option<&PlatformSettings> {
+        match self.current_mode {
+            Platform::Switch => self.switch_config.as_ref(),
+            Platform::WiiU => self.wiiu_config.as_ref(),
+        }
+    }
+
+    #[inline]
+    pub fn merged_dir(&self) -> PathBuf {
+        self.platform_dir().join("merged")
+    }
+
+    #[inline]
+    pub fn deploy_dir(&self) -> Option<&Path> {
+        let config = self.platform_config();
+        config
+            .and_then(|c| c.deploy_config.as_ref())
+            .map(|c| c.output.as_ref())
     }
 }
 

@@ -30,6 +30,17 @@ impl Manifest {
                     .map(|s| ["Aoc/0010/", &s.replace(".s", ".")].join("").into()),
             )
     }
+
+    pub fn extend(&mut self, other: &Manifest) {
+        self.content_files
+            .extend(other.content_files.iter().cloned());
+        self.aoc_files.extend(other.aoc_files.iter().cloned());
+    }
+
+    pub fn clear(&mut self) {
+        self.content_files.clear();
+        self.aoc_files.clear();
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

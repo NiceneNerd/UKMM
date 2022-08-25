@@ -1,5 +1,5 @@
 use anyhow::Result;
-mod install;
+mod deploy;
 mod mods;
 mod settings;
 mod util;
