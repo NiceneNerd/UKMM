@@ -1,23 +1,15 @@
 use crate::{
-    settings::{settings, Platform},
-    util::HashMap,
+    settings::settings,
+    util::{self, HashMap},
 };
 use anyhow::{Context, Result};
 use fs_err as fs;
-use join_str::jstr;
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
     hash::{Hash, Hasher},
-    io::BufReader,
     path::{Path, PathBuf},
 };
-use uk_mod::{
-    unpack::{ModReader, ModUnpacker},
-    Manifest, Meta, ModOption,
-};
-use zip::ZipArchive;
+use uk_mod::{unpack::ModReader, Manifest, Meta, ModOption};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Mod {
@@ -47,6 +39,24 @@ impl Mod {
             path: reader.path,
             enabled: false,
         }
+    }
+}
+
+pub trait LookupMod {
+    fn as_hash_id(&self) -> usize;
+}
+
+impl LookupMod for Mod {
+    #[inline(always)]
+    fn as_hash_id(&self) -> usize {
+        self.hash
+    }
+}
+
+impl LookupMod for usize {
+    #[inline(always)]
+    fn as_hash_id(&self) -> usize {
+        *self
     }
 }
 
@@ -132,10 +142,60 @@ impl Manager {
         let reader = ModReader::open(&stored_path, vec![])?;
         let mod_ = Mod::from_reader(reader);
         self.load_order.push(mod_.hash);
+        // Convince the compiler that this does not leave us with an outstanding mutable reference
         let mod_: &Mod = unsafe { &*(self.mods.entry(mod_.hash).or_insert(mod_) as *const _) };
         self.save()?;
         log::info!("Added mod {}", mod_.meta.name);
         log::debug!("{:?}", mod_);
         Ok(mod_)
+    }
+
+    pub fn del(&mut self, mod_: impl LookupMod) -> Result<Manifest> {
+        let hash = mod_.as_hash_id();
+        if let Some(mod_) = self.mods.remove(&hash) {
+            let manifest = mod_.manifest;
+            if mod_.path.is_dir() {
+                util::remove_dir_all(&mod_.path)?;
+            } else {
+                fs::remove_file(&mod_.path)?;
+            }
+            self.load_order.retain(|m| m != &hash);
+            self.save()?;
+            log::info!("Deleted mod {}", mod_.meta.name);
+            Ok(manifest)
+        } else {
+            log::warn!("Mod with ID {} does not exist, doing nothing", hash);
+            Ok(Default::default())
+        }
+    }
+
+    pub fn disable(&mut self, mod_: impl LookupMod) -> Result<Manifest> {
+        let hash = mod_.as_hash_id();
+        let manifest;
+        if let Some(mod_) = self.mods.get_mut(&hash) {
+            mod_.enabled = false;
+            manifest = mod_.manifest.clone();
+            log::info!("Disabled mod {}", mod_.meta.name);
+        } else {
+            log::warn!("Mod with ID {} does not exist, doing nothing", hash);
+            return Ok(Default::default());
+        }
+        self.save()?;
+        Ok(manifest)
+    }
+
+    pub fn enable(&mut self, mod_: impl LookupMod) -> Result<Manifest> {
+        let hash = mod_.as_hash_id();
+        let manifest;
+        if let Some(mod_) = self.mods.get_mut(&hash) {
+            mod_.enabled = true;
+            manifest = mod_.manifest.clone();
+            log::info!("Enabled mod {}", mod_.meta.name);
+        } else {
+            log::warn!("Mod with ID {} does not exist, doing nothing", hash);
+            return Ok(Default::default());
+        }
+        self.save()?;
+        Ok(manifest)
     }
 }

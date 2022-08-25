@@ -11,7 +11,7 @@ use uk_content::util::{IndexMap, IndexSet};
 pub mod pack;
 pub mod unpack;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Manifest {
     #[serde(rename = "content")]
     pub content_files: BTreeSet<String>,

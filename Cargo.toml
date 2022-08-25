@@ -25,6 +25,8 @@ uk-mod = { path = "./uk-mod" }
 uk-reader = { path = "./uk-reader" }
 zip = { version = "0.6.2", default-features = false, features = ["deflate"]}
 
+[target.'cfg(windows)'.dependencies]
+remove_dir_all = "0.7.0"
 
 [workspace]
 members = [

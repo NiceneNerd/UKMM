@@ -1,5 +1,5 @@
-#![feature(entry_insert)]
-use anyhow::{Error, Result};
+use anyhow::Result;
+mod install;
 mod mods;
 mod settings;
 mod util;
