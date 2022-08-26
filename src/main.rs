@@ -34,5 +34,7 @@ fn main() -> Result<()> {
     env_logger::init();
     log::debug!("Logger initialized");
     log::info!("Started ukmm");
+    let core_state = CoreState::init()?;
+    log::debug!("{:?}", core_state);
     Ok(())
 }

@@ -123,7 +123,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             current_mode: Platform::WiiU,
-            storage_dir: dirs2::config_dir().unwrap(),
+            storage_dir: dirs2::config_dir().unwrap().join("ukmm"),
             unpack_mods: false,
             wiiu_config: None,
             switch_config: None,
@@ -141,7 +141,7 @@ impl Settings {
                 settings
             }
             Err(e) => {
-                log::error!("Failed to read settings file: {}", e);
+                log::error!("Failed to read settings file:\n{}", e);
                 log::info!("Loading default settings instead");
                 Settings::default()
             }
@@ -216,17 +216,4 @@ static SETTINGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
     } else {
         dirs2::config_dir().unwrap().join("ukmm/settings.toml")
     }
-});
-static SETTINGS: Lazy<Arc<RwLock<Settings>>> = Lazy::new(|| {
-    Arc::new(RwLock::new(match Settings::read(&SETTINGS_PATH) {
-        Ok(settings) => {
-            log::debug!("{:?}", settings);
-            settings
-        }
-        Err(e) => {
-            log::error!("Failed to read settings file: {}", e);
-            log::info!("Loading default settings instead");
-            Settings::default()
-        }
-    }))
 });

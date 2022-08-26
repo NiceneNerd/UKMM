@@ -54,9 +54,11 @@ impl Manager {
         settings: &Arc<RwLock<Settings>>,
         mod_manager: &Arc<mods::Manager>,
     ) -> Result<Self> {
-        let pending = match serde_yaml::from_str::<PendingLog>(&fs::read_to_string(
-            Self::log_path(&settings.read()),
-        )?) {
+        log::info!("Initializing deployment manager");
+        let pending = match fs::read_to_string(Self::log_path(&settings.read()))
+            .map_err(anyhow::Error::from)
+            .and_then(|text| Ok(serde_yaml::from_str::<PendingLog>(&text)?))
+        {
             Ok(log) => {
                 if !log.files.is_empty() || !log.delete.is_empty() {
                     log::info!("Pending deployment data found");
@@ -67,7 +69,7 @@ impl Manager {
                 log
             }
             Err(e) => {
-                log::warn!("Could not load pending deployment data: {}", &e);
+                log::warn!("Could not load pending deployment data:\n{}", &e);
                 log::info!("No files pending deployment");
                 Default::default()
             }

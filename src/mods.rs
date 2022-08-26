@@ -64,18 +64,21 @@ impl LookupMod for usize {
 }
 
 pub struct ModIterator<'a> {
-    load_order: MappedRwLockReadGuard<'a, std::slice::Iter<'static, usize>>,
-    mods: RwLockReadGuard<'a, HashMap<usize, Mod>>,
-    filter: bool,
+    manager: &'a Manager,
+    index: usize,
 }
 
 impl<'a> Iterator for ModIterator<'a> {
-    type Item = &'a Mod;
+    type Item = MappedRwLockReadGuard<'a, Mod>;
     fn next(&mut self) -> Option<Self::Item> {
-        self.load_order
-            .next()
-            .map(|h| &self.mods[h])
-            .filter(|m| !self.filter || m.enabled)
+        let mods = self.manager.mods.read();
+        let loads = self.manager.load_order.read();
+        if self.index < loads.len() {
+            let hash = loads[self.index];
+            Some(RwLockReadGuard::map(mods, |m| &m[&hash]))
+        } else {
+            None
+        }
     }
 }
 
@@ -89,22 +92,25 @@ pub struct Manager {
 
 impl Manager {
     pub fn init_from(mod_dir: &Path, settings: &Arc<RwLock<Settings>>) -> Result<Self> {
+        log::info!("Initializing mod manager");
         if !mod_dir.exists() {
             fs::create_dir_all(&mod_dir)?;
             log::info!("Created mod directory at {}", mod_dir.display());
-            return Ok(Self {
+            let self_ = Self {
                 dir: mod_dir.to_path_buf(),
                 mods: Default::default(),
                 load_order: Default::default(),
                 settings: Arc::downgrade(settings),
-            });
+            };
+            self_.save()?;
+            return Ok(self_);
         }
         let mods = serde_yaml::from_str(&fs::read_to_string(mod_dir.join("mods.yml"))?)
             .context("Failed to parse mod database")?;
-        log::debug!("{:?}", &mods);
+        log::debug!("Mods:\n{:?}", &mods);
         let load_order = serde_yaml::from_str(&fs::read_to_string(mod_dir.join("load.yml"))?)
             .context("Failed to parse load order table")?;
-        log::debug!("{:?}", &load_order);
+        log::debug!("Load order:\n{:?}", &load_order);
         Ok(Self {
             dir: mod_dir.to_path_buf(),
             mods: RwLock::new(mods),
@@ -121,7 +127,7 @@ impl Manager {
         log::info!("Saved mod list");
         log::debug!("{:?}", &self.mods);
         fs::write(
-            self.dir.join("loads.yml"),
+            self.dir.join("load.yml"),
             serde_yaml::to_string(self.load_order.read().deref())?,
         )?;
         log::info!("Saved load order");
@@ -136,38 +142,31 @@ impl Manager {
     /// Iterate all enabled mods in load order.
     pub fn mods(&self) -> ModIterator<'_> {
         ModIterator {
-            load_order: RwLockReadGuard::map(self.load_order.read(), |l| &l.iter()),
-            mods: self.mods.read(),
-            filter: true,
+            index: 0,
+            manager: self,
         }
     }
 
     /// Iterate all mods, including disabled, in load order.
-    pub fn all_mods(&self) -> ModIterator<'_> {
+    pub fn all_mods(&self) -> impl Iterator<Item = MappedRwLockReadGuard<'_, Mod>> {
         ModIterator {
-            load_order: RwLockReadGuard::map(self.load_order.read(), |l| &l.iter()),
-            mods: self.mods.read(),
-            filter: false,
+            index: 0,
+            manager: self,
         }
+        .filter(|m| m.enabled)
     }
 
     /// Iterate all mods which modify any files in the given manifest.
     pub fn mods_by_manifest<'a: 'm, 'm>(
         &'a self,
         manifest: &'m Manifest,
-    ) -> impl Iterator<Item = &'a Mod> + 'm {
-        self.load_order.iter().filter_map(|h| {
-            let mod_ = &self.mods[h];
-            if !mod_
+    ) -> impl Iterator<Item = MappedRwLockReadGuard<'_, Mod>> + 'm {
+        self.mods().filter(|mod_| {
+            !mod_
                 .manifest
                 .content_files
                 .is_disjoint(&manifest.content_files)
                 || !mod_.manifest.aoc_files.is_disjoint(&manifest.aoc_files)
-            {
-                Some(mod_)
-            } else {
-                None
-            }
         })
     }
 
