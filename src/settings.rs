@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use fs_err as fs;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
@@ -13,6 +13,18 @@ use uk_reader::ResourceReader;
 pub enum Platform {
     WiiU,
     Switch,
+}
+
+impl std::str::FromStr for Platform {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s.to_lowercase().as_str() {
+            "wiiu" | "be" | "wii u" => Ok(Self::WiiU),
+            "switch" | "nx" => Ok(Self::Switch),
+            _ => anyhow::bail!("Invalid platform"),
+        }
+    }
 }
 
 impl From<roead::Endian> for Platform {
@@ -150,6 +162,12 @@ impl Settings {
 
     pub fn read(path: &Path) -> Result<Self> {
         Ok(toml::from_str(&fs::read_to_string(path)?)?)
+    }
+
+    pub fn apply(&mut self, apply_fn: impl Fn(&mut Self)) -> Result<()> {
+        apply_fn(self);
+        self.save().context("Failed to save settings file")?;
+        Ok(())
     }
 
     pub fn save(&self) -> Result<()> {

@@ -1,40 +1,43 @@
-use anyhow::{Context, Result};
-use parking_lot::RwLock;
-use settings::Settings;
-use std::sync::Arc;
+mod cli;
+mod core;
 mod deploy;
 mod mods;
 mod settings;
 mod util;
 
-#[derive(Debug)]
-pub struct CoreState {
-    mod_manager: Arc<mods::Manager>,
-    deploy_manager: Arc<deploy::Manager>,
-    settings: Arc<RwLock<Settings>>,
+use anyhow::Result;
+use clap::{Parser, Subcommand};
+use std::path::PathBuf;
+
+#[derive(Debug, Subcommand)]
+pub enum Commands {
+    /// Install a mod
+    Install { path: PathBuf },
+    /// Uninstall a mod
+    Uninstall,
+    /// Deploy mods
+    Deploy,
+    /// Change current mode (Switch or Wii U)
+    Mode { platform: settings::Platform },
 }
 
-impl CoreState {
-    pub fn init() -> Result<Self> {
-        let settings = Settings::load();
-        let mod_manager =
-            Arc::new(mods::Manager::init(&settings).context("Failed to initialize mod manager")?);
-        Ok(Self {
-            deploy_manager: Arc::new(
-                deploy::Manager::init(&settings, &mod_manager)
-                    .context("Failed to initialize deployment manager")?,
-            ),
-            mod_manager,
-            settings,
-        })
-    }
+#[derive(Debug, Parser)]
+#[clap(author, version, about, long_about = None)]
+pub struct Cli {
+    #[clap(subcommand)]
+    command: Option<Commands>,
 }
 
 fn main() -> Result<()> {
     env_logger::init();
     log::debug!("Logger initialized");
     log::info!("Started ukmm");
-    let core_state = CoreState::init()?;
-    log::debug!("{:?}", core_state);
+    let core_manager = core::Manager::init()?;
+    let cli = Cli::parse();
+    if let Some(command) = cli.command {
+        cli::process_command(&core_manager, command)?;
+    } else {
+        todo!("Let's make a GUI");
+    }
     Ok(())
 }
