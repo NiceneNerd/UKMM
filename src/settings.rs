@@ -134,6 +134,20 @@ impl Default for Settings {
 }
 
 impl Settings {
+    pub fn load() -> Arc<RwLock<Settings>> {
+        Arc::new(RwLock::new(match Settings::read(&SETTINGS_PATH) {
+            Ok(settings) => {
+                log::debug!("{:?}", settings);
+                settings
+            }
+            Err(e) => {
+                log::error!("Failed to read settings file: {}", e);
+                log::info!("Loading default settings instead");
+                Settings::default()
+            }
+        }))
+    }
+
     pub fn read(path: &Path) -> Result<Self> {
         Ok(toml::from_str(&fs::read_to_string(path)?)?)
     }
@@ -216,15 +230,3 @@ static SETTINGS: Lazy<Arc<RwLock<Settings>>> = Lazy::new(|| {
         }
     }))
 });
-
-#[inline]
-pub fn settings(
-) -> parking_lot::lock_api::RwLockReadGuard<'static, parking_lot::RawRwLock, Settings> {
-    SETTINGS.read()
-}
-
-#[inline]
-pub fn settings_mut(
-) -> parking_lot::lock_api::RwLockWriteGuard<'static, parking_lot::RawRwLock, Settings> {
-    SETTINGS.write()
-}

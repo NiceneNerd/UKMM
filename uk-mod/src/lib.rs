@@ -41,6 +41,10 @@ impl Manifest {
         self.content_files.clear();
         self.aoc_files.clear();
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.content_files.is_empty() && self.aoc_files.is_empty()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

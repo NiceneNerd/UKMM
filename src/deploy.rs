@@ -1,22 +1,20 @@
 use crate::{
     mods,
-    settings::{DeployConfig, DeployMethod, Platform, Settings},
+    settings::{DeployMethod, Platform, Settings},
     util::{self, HashMap},
 };
 use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
-use jwalk::WalkDir;
 use parking_lot::RwLock;
-use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
+use rayon::prelude::*;
 use roead::yaz0::{compress, decompress};
 use rstb::ResourceSizeTable;
+use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use std::{
-    ops::DerefMut,
     path::{Path, PathBuf},
-    sync::Weak,
-    time::SystemTime,
+    sync::{Arc, Weak},
 };
 use uk_mod::{
     unpack::{ModReader, ModUnpacker},
@@ -32,20 +30,73 @@ fn create_symlink(link: &Path, target: &Path) -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct PendingLog {
+    files: Manifest,
+    delete: Manifest,
+}
+
+#[derive(Debug)]
 pub struct Manager {
-    settings: Weak<Settings>,
+    settings: Weak<RwLock<Settings>>,
     mod_manager: Weak<mods::Manager>,
     pending_files: RwLock<Manifest>,
     pending_delete: RwLock<Manifest>,
-    last_deploy: RwLock<SystemTime>,
 }
 
 impl Manager {
+    #[inline(always)]
+    fn log_path(settings: &Settings) -> PathBuf {
+        settings.platform_dir().join("pending.yml")
+    }
+
+    pub fn init(
+        settings: &Arc<RwLock<Settings>>,
+        mod_manager: &Arc<mods::Manager>,
+    ) -> Result<Self> {
+        let pending = match serde_yaml::from_str::<PendingLog>(&fs::read_to_string(
+            Self::log_path(&settings.read()),
+        )?) {
+            Ok(log) => {
+                if !log.files.is_empty() || !log.delete.is_empty() {
+                    log::info!("Pending deployment data found");
+                    log::debug!("{:?}", &log);
+                } else {
+                    log::info!("No files pending deployment");
+                }
+                log
+            }
+            Err(e) => {
+                log::warn!("Could not load pending deployment data: {}", &e);
+                log::info!("No files pending deployment");
+                Default::default()
+            }
+        };
+        Ok(Self {
+            settings: Arc::downgrade(settings),
+            mod_manager: Arc::downgrade(mod_manager),
+            pending_files: RwLock::new(pending.files),
+            pending_delete: RwLock::new(pending.delete),
+        })
+    }
+
+    fn save(&self) -> Result<()> {
+        fs::write(
+            Self::log_path(&self.settings.upgrade().unwrap().read()),
+            &serde_yaml::to_string(&PendingLog {
+                delete: self.pending_delete.read().clone(),
+                files: self.pending_files.read().clone(),
+            })?,
+        )?;
+        Ok(())
+    }
+
     pub fn deploy(&self) -> Result<()> {
         let settings = self
             .settings
             .upgrade()
             .expect("YIKES, the settings manager is gone");
+        let settings = settings.read();
         let config = settings
             .platform_config()
             .and_then(|c| c.deploy_config.as_ref())
@@ -54,11 +105,53 @@ impl Manager {
         if config.method == DeployMethod::Symlink {
             log::info!("Depoyment method is symlink, no action needed");
         } else {
-            let mut deletes = self.pending_delete.write();
+            let (content, aoc) = uk_content::platform_prefixes(settings.current_mode.into());
+            let deletes = self.pending_delete.read();
+            log::debug!("Deployed files to delete:\n{:?}", &deletes);
+            let syncs = self.pending_files.read();
+            log::debug!("Files to deploy\n{:?}", &syncs);
+            for (dir, dels, syncs) in [
+                (content, &deletes.content_files, &syncs.content_files),
+                (aoc, &deletes.aoc_files, &syncs.aoc_files),
+            ] {
+                let dest = config.output.join(dir);
+                let source = settings.merged_dir().join(dir);
+                dels.par_iter().try_for_each(|f| -> Result<()> {
+                    fs::remove_file(dest.join(f.as_str()))?;
+                    Ok(())
+                })?;
+                match config.method {
+                    DeployMethod::Copy => {
+                        log::info!("Deploying by copy");
+                        syncs.par_iter().try_for_each(|f: &String| -> Result<()> {
+                            let out = dest.join(f.as_str());
+                            fs::create_dir_all(out.parent().unwrap())?;
+                            fs::copy(source.join(f.as_str()), &out).with_context(|| {
+                                format!("Failed to deploy {} to {}", f, out.display())
+                            })?;
+                            Ok(())
+                        })?;
+                    }
+                    DeployMethod::HardLink => {
+                        log::info!("Deploying by hard links");
+                        syncs.par_iter().try_for_each(|f: &String| -> Result<()> {
+                            let out = dest.join(f.as_str());
+                            fs::create_dir_all(out.parent().unwrap())?;
+                            fs::hard_link(source.join(f.as_str()), dest.join(f.as_str()))
+                                .with_context(|| {
+                                    format!("Failed to deploy {} to {}", f, out.display())
+                                })?;
+                            Ok(())
+                        })?;
+                    }
+                    DeployMethod::Symlink => unreachable!(),
+                }
+            }
             todo!()
         }
-
-        *self.last_deploy.write() = std::time::SystemTime::now();
+        self.pending_delete.write().clear();
+        self.pending_files.write().clear();
+        self.save()?;
         Ok(())
     }
 
@@ -156,6 +249,7 @@ impl Manager {
             .settings
             .upgrade()
             .expect("YIKES, the settings manager is gone");
+        let settings = settings.read();
         let dump = settings
             .dump()
             .context("No dump available for current platform")?;
@@ -197,6 +291,7 @@ impl Manager {
         log::info!("Applying changes");
         let rstb_updates = unpacker.unpack()?;
         self.apply_rstb(&out_dir, settings.current_mode, rstb_updates)?;
+        self.save()?;
         Ok(())
     }
 }
