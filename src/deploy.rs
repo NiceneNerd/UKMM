@@ -154,7 +154,7 @@ impl Manager {
                     DeployMethod::Symlink => unreachable!(),
                 }
             }
-            todo!()
+            log::info!("Deployment complete");
         }
         self.pending_delete.write().clear();
         self.pending_files.write().clear();
@@ -216,7 +216,7 @@ impl Manager {
         platform: Platform,
         updates: HashMap<String, Option<u32>>,
     ) -> Result<()> {
-        const RSTB_PATH: &str = "ResourceSizeTable.product.srsizetable";
+        const RSTB_PATH: &str = "System/Resource/ResourceSizeTable.product.srsizetable";
         log::debug!("RSTB updates:\n{:?}", &updates);
         let content = uk_content::platform_content(platform.into());
         let table_path = merged.join(content).join(RSTB_PATH);
@@ -256,13 +256,14 @@ impl Manager {
             .settings
             .upgrade()
             .expect("YIKES, the settings manager is gone");
-        let settings = settings.read();
+        let settings = settings.try_read().unwrap();
         let dump = settings
             .dump()
             .context("No dump available for current platform")?;
         let endian = settings.current_mode.into();
         let out_dir = settings.merged_dir();
         let unpacker = if let Some(mut manifest) = manifest {
+            log::info!("Manifest provided, applying limited changes");
             let mut total_manifest = Manifest::default();
             let mods = mod_manager
                 .mods_by_manifest(&manifest)
@@ -285,6 +286,7 @@ impl Manager {
             self.pending_files.write().extend(&manifest);
             ModUnpacker::new(dump, endian, mods, out_dir.clone()).with_manifest(manifest)
         } else {
+            log::info!("Manifest not provided, remerging all mods");
             let mods = mod_manager
                 .mods()
                 .map(|m| {

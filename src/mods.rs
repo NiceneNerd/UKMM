@@ -56,6 +56,13 @@ impl LookupMod for Mod {
     }
 }
 
+impl LookupMod for &Mod {
+    #[inline(always)]
+    fn as_hash_id(&self) -> usize {
+        self.hash
+    }
+}
+
 impl LookupMod for usize {
     #[inline(always)]
     fn as_hash_id(&self) -> usize {
@@ -75,6 +82,7 @@ impl<'a> Iterator for ModIterator<'a> {
         let loads = self.manager.load_order.read();
         if self.index < loads.len() {
             let hash = loads[self.index];
+            self.index += 1;
             Some(RwLockReadGuard::map(mods, |m| &m[&hash]))
         } else {
             None
@@ -187,7 +195,9 @@ impl Manager {
         }
         let reader = ModReader::open(&stored_path, vec![])?;
         let mod_ = Mod::from_reader(reader);
-        self.load_order.write().push(mod_.hash);
+        {
+            self.load_order.write().push(mod_.hash);
+        }
         // Convince the compiler that this does not leave us with an outstanding mutable reference
         let mod_: &Mod =
             unsafe { &*(self.mods.write().entry(mod_.hash).or_insert(mod_) as *const _) };

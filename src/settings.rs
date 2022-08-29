@@ -115,9 +115,9 @@ pub enum DeployMethod {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlatformSettings {
+    pub language: Language,
     pub dump: Arc<ResourceReader>,
     pub deploy_config: Option<DeployConfig>,
-    pub language: Language,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -125,10 +125,10 @@ pub struct Settings {
     pub current_mode: Platform,
     pub storage_dir: PathBuf,
     pub unpack_mods: bool,
-    pub wiiu_config: Option<PlatformSettings>,
-    pub switch_config: Option<PlatformSettings>,
     pub check_updates: bool,
     pub show_changelog: bool,
+    pub wiiu_config: Option<PlatformSettings>,
+    pub switch_config: Option<PlatformSettings>,
 }
 
 impl Default for Settings {
@@ -235,3 +235,31 @@ static SETTINGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
         dirs2::config_dir().unwrap().join("ukmm/settings.toml")
     }
 });
+
+/*
+SAMPLE SETTINGS
+
+current_mode = "WiiU"
+storage_dir = "/home/nn/.config/ukmm"
+unpack_mods = false
+check_updates = true
+show_changelog = true
+
+[wiiu_config]
+language = "USen"
+
+[wiiu_config.dump]
+bin_type = "Nintendo"
+
+[wiiu_config.dump.source]
+type = "Unpacked"
+host_path = "/games/Cemu/mlc01/usr/title"
+content_dir = "/games/Cemu/mlc01/usr/title/00050000/101C9400/content"
+update_dir = "/games/Cemu/mlc01/usr/title/0005000E/101C9400/content"
+aoc_dir = "/games/Cemu/mlc01/usr/title/0005000C/101C9400/content/0010"
+
+[wiiu_config.deploy_config]
+output = "/tmp/BreathOfTheWild_UKMM"
+method = "Copy"
+auto = false
+*/

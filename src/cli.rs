@@ -91,6 +91,7 @@ impl<'a> Runner<'a> {
                 }
                 let mods = self.core.mod_manager();
                 let mod_ = mods.add(path)?;
+                mods.enable(mod_)?;
                 println!("Applying mod to load order...");
                 let deployer = self.core.deploy_manager();
                 deployer.apply(Some(mod_.manifest.clone()))?;
@@ -111,5 +112,41 @@ impl<'a> Runner<'a> {
             }
         };
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use uk_reader::ResourceReader;
+
+    use crate::settings::{DeployConfig, Platform};
+
+    #[test]
+    fn settings() {
+        let mut settings = crate::settings::Settings::default();
+        settings.current_mode = Platform::WiiU;
+        settings.wiiu_config = Some(crate::settings::PlatformSettings {
+            language: crate::settings::Language::USen,
+            dump: Arc::new(
+                ResourceReader::from_unpacked_dirs(
+                    Some("/games/Cemu/mlc01/usr/title/00050000/101C9400/content"),
+                    Some("/games/Cemu/mlc01/usr/title/0005000E/101C9400/content"),
+                    Some("/games/Cemu/mlc01/usr/title/0005000C/101C9400/content/0010"),
+                )
+                .unwrap(),
+            ),
+            deploy_config: Some(DeployConfig {
+                auto: false,
+                method: crate::settings::DeployMethod::HardLink,
+                output: "/tmp/BreathOfTheWild_UKMM".into(),
+            }),
+        });
+        std::fs::write(
+            "/home/nn/.config/ukmm/settings.toml",
+            toml::to_string(&settings).unwrap(),
+        )
+        .unwrap();
     }
 }
