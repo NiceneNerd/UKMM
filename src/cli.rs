@@ -58,7 +58,7 @@ impl<'a> Runner<'a> {
             // );
         }
         println!(
-            "Identified mod: {} (v. {}) by {}",
+            "Identified mod: {} (v{}) by {}",
             &mod_.meta.name, &mod_.meta.version, &mod_.meta.author
         );
         print!("Do you want to continue installing? [Y/n] ");
@@ -115,7 +115,7 @@ impl<'a> Runner<'a> {
                 let mods = mod_manager.mods().map(|m| m.clone()).collect::<Vec<_>>();
                 for (i, mod_) in mods.iter().enumerate() {
                     println!(
-                        "{}. {} (v. {}) by {}",
+                        "{}. {} (v{}) by {}",
                         i + 1,
                         &mod_.meta.name,
                         &mod_.meta.version,
