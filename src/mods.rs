@@ -209,14 +209,15 @@ impl Manager {
 
     pub fn del(&self, mod_: impl LookupMod) -> Result<Manifest> {
         let hash = mod_.as_hash_id();
-        if let Some(mod_) = self.mods.write().remove(&hash) {
+        let mod_ = self.mods.write().remove(&hash);
+        if let Some(mod_) = mod_ {
             let manifest = mod_.manifest;
             if mod_.path.is_dir() {
                 util::remove_dir_all(&mod_.path)?;
             } else {
                 fs::remove_file(&mod_.path)?;
             }
-            self.load_order.write().retain(|m| m != &hash);
+            self.load_order.try_write().unwrap().retain(|m| m != &hash);
             self.save()?;
             log::info!("Deleted mod {}", mod_.meta.name);
             Ok(manifest)

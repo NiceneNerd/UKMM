@@ -92,6 +92,7 @@ impl<'a> Runner<'a> {
                 if self.cli.deploy {
                     self.deploy()?;
                 }
+                println!("Done!");
             }
             Commands::Install { path } => {
                 if !self.check_mod(path)? {
@@ -106,25 +107,29 @@ impl<'a> Runner<'a> {
                 if self.cli.deploy {
                     self.deploy()?;
                 }
+                println!("Done!");
             }
             Commands::Uninstall => {
                 println!("Installed mods:");
                 let mod_manager = self.core.mod_manager();
-                let mods = mod_manager.mods().collect::<Vec<_>>();
+                let mods = mod_manager.mods().map(|m| m.clone()).collect::<Vec<_>>();
                 for (i, mod_) in mods.iter().enumerate() {
                     println!(
                         "{}. {} (v. {}) by {}",
-                        i, &mod_.meta.name, &mod_.meta.version, &mod_.meta.author
+                        i + 1,
+                        &mod_.meta.name,
+                        &mod_.meta.version,
+                        &mod_.meta.author
                     );
                 }
                 print!("Enter mod(s) to uninstall, separated by commas: ");
                 let mut manifests = Manifest::default();
                 for id in input!().replace(' ', "").split(',') {
                     let mod_ = mods
-                        .get(id.parse::<usize>().context("Invalid mod number")?)
+                        .get(id.trim().parse::<usize>().context("Invalid mod number")? - 1)
                         .with_context(|| format!("Mod {} does not exist", id))?;
                     println!("Removing mod {}...", &mod_.meta.name);
-                    mod_manager.del(mod_.deref())?;
+                    mod_manager.del(mod_)?;
                     manifests.extend(&mod_.manifest);
                 }
                 println!("Applying changes to merge...");
@@ -132,6 +137,7 @@ impl<'a> Runner<'a> {
                 if self.cli.deploy {
                     self.deploy()?;
                 }
+                println!("Done!");
             }
             Commands::Deploy => self.deploy()?,
         };
