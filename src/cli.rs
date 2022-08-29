@@ -1,10 +1,11 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::{
     io::{stdin, stdout, Write},
+    ops::Deref,
     path::{Path, PathBuf},
 };
-use uk_mod::unpack::ModReader;
+use uk_mod::{unpack::ModReader, Manifest};
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
@@ -68,6 +69,18 @@ impl<'a> Runner<'a> {
         Ok(cont)
     }
 
+    fn deploy(&self) -> Result<()> {
+        let deployer = self.core.deploy_manager();
+        if deployer.pending() {
+            println!("Deploying changes...");
+            deployer.deploy()?;
+            println!("Deployment complete");
+        } else {
+            println!("No changes pending deployment");
+        };
+        Ok(())
+    }
+
     pub fn run(self) -> Result<()> {
         match self.cli.command.as_ref().unwrap() {
             Commands::Mode { platform } => {
@@ -75,14 +88,9 @@ impl<'a> Runner<'a> {
                     .settings_mut()
                     .apply(|s| s.current_mode = *platform)?;
                 self.core.reload()?;
+                println!("Mode changed to {:?}", platform);
                 if self.cli.deploy {
-                    let deployer = self.core.deploy_manager();
-                    if deployer.pending() {
-                        println!("Deploying changes...");
-                        deployer.deploy()?;
-                    } else {
-                        println!("No changes pending deployment");
-                    }
+                    self.deploy()?;
                 }
             }
             Commands::Install { path } => {
@@ -96,20 +104,36 @@ impl<'a> Runner<'a> {
                 let deployer = self.core.deploy_manager();
                 deployer.apply(Some(mod_.manifest.clone()))?;
                 if self.cli.deploy {
-                    println!("Deploying changes...");
-                    deployer.deploy()?;
+                    self.deploy()?;
                 }
             }
-            Commands::Uninstall => todo!(),
-            Commands::Deploy => {
-                let deployer = self.core.deploy_manager();
-                if deployer.pending() {
-                    println!("Deploying changes...");
-                    deployer.deploy()?;
-                } else {
-                    println!("No changes pending deployment");
+            Commands::Uninstall => {
+                println!("Installed mods:");
+                let mod_manager = self.core.mod_manager();
+                let mods = mod_manager.mods().collect::<Vec<_>>();
+                for (i, mod_) in mods.iter().enumerate() {
+                    println!(
+                        "{}. {} (v. {}) by {}",
+                        i, &mod_.meta.name, &mod_.meta.version, &mod_.meta.author
+                    );
+                }
+                print!("Enter mod(s) to uninstall, separated by commas: ");
+                let mut manifests = Manifest::default();
+                for id in input!().replace(' ', "").split(',') {
+                    let mod_ = mods
+                        .get(id.parse::<usize>().context("Invalid mod number")?)
+                        .with_context(|| format!("Mod {} does not exist", id))?;
+                    println!("Removing mod {}...", &mod_.meta.name);
+                    mod_manager.del(mod_.deref())?;
+                    manifests.extend(&mod_.manifest);
+                }
+                println!("Applying changes to merge...");
+                self.core.deploy_manager().apply(Some(manifests))?;
+                if self.cli.deploy {
+                    self.deploy()?;
                 }
             }
+            Commands::Deploy => self.deploy()?,
         };
         Ok(())
     }
