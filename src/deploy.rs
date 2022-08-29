@@ -82,6 +82,11 @@ impl Manager {
         })
     }
 
+    #[inline]
+    pub fn pending(&self) -> bool {
+        !(self.pending_delete.read().is_empty() && self.pending_files.read().is_empty())
+    }
+
     fn save(&self) -> Result<()> {
         fs::write(
             Self::log_path(&self.settings.upgrade().unwrap().read()),

@@ -26,11 +26,24 @@ impl Manager {
         })
     }
 
+    pub fn reload(&mut self) -> Result<()> {
+        *self = Self::init()?;
+        Ok(())
+    }
+
     pub fn settings(&self) -> RwLockReadGuard<Settings> {
         self.settings.read()
     }
 
     pub fn settings_mut(&self) -> RwLockWriteGuard<Settings> {
         self.settings.write()
+    }
+
+    pub fn mod_manager(&self) -> Arc<mods::Manager> {
+        self.mod_manager.clone()
+    }
+
+    pub fn deploy_manager(&self) -> Arc<deploy::Manager> {
+        self.deploy_manager.clone()
     }
 }

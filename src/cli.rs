@@ -1,42 +1,115 @@
-use crate::Commands;
 use anyhow::Result;
-use std::io::{stdin, stdout};
+use clap::{Parser, Subcommand};
+use std::{
+    io::{stdin, stdout, Write},
+    path::{Path, PathBuf},
+};
 use uk_mod::unpack::ModReader;
+
+#[derive(Debug, Subcommand)]
+pub enum Commands {
+    /// Install a mod
+    Install { path: PathBuf },
+    /// Uninstall a mod
+    Uninstall,
+    /// Deploy mods
+    Deploy,
+    /// Change current mode (Switch or Wii U)
+    Mode { platform: crate::settings::Platform },
+}
+
+#[derive(Debug, Parser)]
+#[clap(author, version, about, long_about = None)]
+pub struct Cli {
+    #[clap(subcommand)]
+    pub command: Option<Commands>,
+    /// Automatically deploy after running command (redunant with `deploy` command)
+    #[clap(short, long)]
+    pub deploy: bool,
+}
 
 macro_rules! input {
     () => {{
+        stdout().flush()?;
         let mut _input = String::new();
         stdin().read_line(&mut _input).unwrap();
         _input
     }};
 }
 
-pub fn process_command(core: &crate::core::Manager, command: Commands) -> Result<()> {
-    match command {
-        Commands::Mode { platform } => {
-            core.settings_mut().apply(|s| s.current_mode = platform)?;
+#[derive(Debug)]
+pub struct Runner<'a> {
+    core: &'a mut crate::core::Manager,
+    cli: Cli,
+}
+
+impl<'a> Runner<'a> {
+    pub fn new(core: &'a mut crate::core::Manager, cli: Cli) -> Self {
+        Self { core, cli }
+    }
+
+    fn check_mod(&self, path: &Path) -> Result<bool> {
+        println!("Opening mod at {}...", path.display());
+        let mod_ = ModReader::open(path, vec![])?;
+        if !mod_.meta.options.is_empty() {
+            // anyhow::bail!(
+            //     "This mod contains configuration options and should be installed via the GUI."
+            // );
         }
-        Commands::Install { path } => {
-            println!("Opening mod at {}", path.display());
-            let mod_ = ModReader::open(path, vec![])?;
-            if !mod_.meta.options.is_empty() {
-                println!(
-                    "This mod contains configuration options and should be installed via the GUI."
-                );
-                return Ok(());
-            }
-            println!(
-                "Identified mod: {} (v. {}) by {}",
-                &mod_.meta.name, &mod_.meta.version, &mod_.meta.author
-            );
-            println!("Do you want to continue installing? [Y/n]");
-            if input!().to_lowercase().starts_with('n') {
-                return Ok(());
-            }
-            println!("Installing {}", &mod_.meta.name);
+        println!(
+            "Identified mod: {} (v. {}) by {}",
+            &mod_.meta.name, &mod_.meta.version, &mod_.meta.author
+        );
+        print!("Do you want to continue installing? [Y/n] ");
+        let cont = !input!().to_lowercase().starts_with('n');
+        if cont {
+            println!("Installing {}...", mod_.meta.name);
         }
-        Commands::Uninstall => todo!(),
-        Commands::Deploy => todo!(),
-    };
-    Ok(())
+        Ok(cont)
+    }
+
+    pub fn run(self) -> Result<()> {
+        match self.cli.command.as_ref().unwrap() {
+            Commands::Mode { platform } => {
+                self.core
+                    .settings_mut()
+                    .apply(|s| s.current_mode = *platform)?;
+                self.core.reload()?;
+                if self.cli.deploy {
+                    let deployer = self.core.deploy_manager();
+                    if deployer.pending() {
+                        println!("Deploying changes...");
+                        deployer.deploy()?;
+                    } else {
+                        println!("No changes pending deployment");
+                    }
+                }
+            }
+            Commands::Install { path } => {
+                if !self.check_mod(path)? {
+                    return Ok(());
+                }
+                let mods = self.core.mod_manager();
+                let mod_ = mods.add(path)?;
+                println!("Applying mod to load order...");
+                let deployer = self.core.deploy_manager();
+                deployer.apply(Some(mod_.manifest.clone()))?;
+                if self.cli.deploy {
+                    println!("Deploying changes...");
+                    deployer.deploy()?;
+                }
+            }
+            Commands::Uninstall => todo!(),
+            Commands::Deploy => {
+                let deployer = self.core.deploy_manager();
+                if deployer.pending() {
+                    println!("Deploying changes...");
+                    deployer.deploy()?;
+                } else {
+                    println!("No changes pending deployment");
+                }
+            }
+        };
+        Ok(())
+    }
 }
