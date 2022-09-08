@@ -1,6 +1,7 @@
 mod cli;
 mod core;
 mod deploy;
+mod gui;
 mod mods;
 mod settings;
 mod util;
@@ -18,7 +19,7 @@ fn main() -> Result<()> {
     if cli.command.is_some() {
         cli::Runner::new(&mut core_manager, cli).run()?;
     } else {
-        todo!("Let's make a GUI");
+        gui::main();
     }
     Ok(())
 }

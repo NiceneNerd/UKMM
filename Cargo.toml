@@ -19,6 +19,8 @@ rayon = "1.5.3"
 roead = "0.16.1"
 rustc-hash = "1.1.0"
 rstb = { version= "0.3.2", features = ["botw-data"] }
+sciter-rs = "0.5.58"
+sciter-serde = "0.3.2"
 serde = { version = "1.0.144", features = ["derive", "rc"] }
 serde_yaml = "0.9.10"
 smartstring = { version = "1.0.1", features = ["serde"] }
