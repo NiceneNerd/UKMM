@@ -1,9 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
+<html window-resizeable theme="dark">
 <head>
     <title>U-King Mod Manager</title>
     <link rel="stylesheet" href="App.css" />
-    <script src="App.js"></script>
+    <script type="module">
+        import { App } from "App.js";
+        document.body.patch(<App />);
+    </script>
 </head>
 <body>
 </body>

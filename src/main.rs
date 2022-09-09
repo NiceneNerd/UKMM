@@ -14,10 +14,9 @@ fn main() -> Result<()> {
     env_logger::init();
     log::debug!("Logger initialized");
     log::info!("Started ukmm");
-    let mut core_manager = core::Manager::init()?;
     let cli = Cli::parse();
     if cli.command.is_some() {
-        cli::Runner::new(&mut core_manager, cli).run()?;
+        cli::Runner::new(cli).run()?;
     } else {
         gui::main();
     }

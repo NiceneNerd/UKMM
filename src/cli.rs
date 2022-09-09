@@ -39,14 +39,17 @@ macro_rules! input {
 }
 
 #[derive(Debug)]
-pub struct Runner<'a> {
-    core: &'a mut crate::core::Manager,
+pub struct Runner {
+    core: crate::core::Manager,
     cli: Cli,
 }
 
-impl<'a> Runner<'a> {
-    pub fn new(core: &'a mut crate::core::Manager, cli: Cli) -> Self {
-        Self { core, cli }
+impl Runner {
+    pub fn new(cli: Cli) -> Self {
+        Self {
+            core: crate::core::Manager::init().unwrap(),
+            cli,
+        }
     }
 
     fn check_mod(&self, path: &Path) -> Result<bool> {
@@ -81,7 +84,7 @@ impl<'a> Runner<'a> {
         Ok(())
     }
 
-    pub fn run(self) -> Result<()> {
+    pub fn run(mut self) -> Result<()> {
         match self.cli.command.as_ref().unwrap() {
             Commands::Mode { platform } => {
                 self.core
