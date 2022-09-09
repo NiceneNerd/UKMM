@@ -1,0 +1,14 @@
+@set virtual-select {
+  :root {
+    behavior: virtual-list;
+    display:block;
+    flow:vertical;
+    size:*;
+    overflow-x:none; 
+    overflow-y:scroll-indicator;
+  }
+ 
+  :root > :current { background-color:color(highlight-nf); color:color(highlight-text); }
+  :root:focus > :current { background-color:color(highlight-focus); }
+  :root > option:hover { background-color:color(highlight-hover); }
+}

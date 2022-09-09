@@ -1,0 +1,39 @@
+@set ModList {
+  th {
+    background-color: color(back);
+  }
+
+  tr:nth-child(even) {
+    background-color: morph(color(panel-back), lightness: 16.67%);
+  }
+
+  tr:nth-child(even):hover {
+    background-color: color(highlight-hover);
+  }
+
+  td,
+  th {
+    padding: 4dip 8dip;
+  }
+
+  td:first-child {
+    // width: @SMALL-ICON-SIZE;
+    // height: @SMALL-ICON-SIZE;
+  }
+
+  .resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: black;
+    opacity: 0;
+    width: 3px;
+    cursor: col-resize;
+  }
+
+  .resize-handle:hover,
+  .header--being-resized .resize-handle {
+    opacity: 0.5;
+  }
+}

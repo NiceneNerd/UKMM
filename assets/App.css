@@ -16,7 +16,7 @@ html:theme(dark) {
   var(panel-back): #383838; //#3f3834;
   var(popup-panel-back): #555;
   var(panel-text): #eee;
-  var(back): #000;
+  var(back): #202020;
   var(text): #fff;
   var(border): #aaa;
   var(button-back): #555;
@@ -47,7 +47,6 @@ html:not(:theme(dark)) {
 }
 
 html {
-  font-family: "Segoe UI", Helvetica, sans-serif;
   font-size: 11pt;
 
   var(border-width): 0.14em;
@@ -277,24 +276,24 @@ radio {
 /* checkbox button */
 @set std-checkbox < std-checkbox-base {
   :root {
-    height: @SMALL-ICON-SIZE;
-    width: @SMALL-ICON-SIZE;
+    height: 1.05em;
+    width: 1.05em;
     vertical-align: middle;
   }
 
   :root:not(input) {
     white-space: nowrap;
-    line-height: 1.4em;
+    line-height: 1.05em;
     padding: 0.25em 0.25em 0.25em 1.82em;
     width: max-content;
     height: 1.4em;
   }
 
   :root::marker {
-    size: 1.05em;
+    size: 0.75em;
     margin: *;
     background: color(back) no-repeat 60% 50%;
-    border: 0.14em solid color(border);
+    border: 0.1em solid color(border);
   }
 
   :root:not(input)::marker {

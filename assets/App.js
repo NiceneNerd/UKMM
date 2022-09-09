@@ -1,23 +1,31 @@
 import { ModList } from "./components/ModList";
 
 export class App extends Element {
-    constructor(props, kids) {
+    constructor(props) {
         super(props);
         this.props = props;
         this.api = Window.this.xcall("GetApi");
+        this.mods = [];
+        this.handleToggle = this.handleToggle.bind(this);
     }
 
-    handleClick() {
-        let mods = this.api.mods();
-        this.api.check_hash(mods[0].hash);
+    componentDidMount() {
+        this.componentUpdate({ mods: this.api.mods() });
     }
 
-    render(props, kids) {
+    handleToggle(mod) {
+        console.log(`Toggling ${mod.meta.name}`);
+        // let mod = this.mods.find(m => m == mod);
+        mod.enabled = !mod.enabled;
+        this.componentUpdate({ mods: this.mods });
+    }
+
+    render() {
         return (
             <div>
                 <p>Hello world</p>
-                <ModList />
-                <button onClick={() => this.handleClick()}>Testing a button</button>
+                <ModList mods={this.mods} onToggle={this.handleToggle} />
+                <button>Testing a button</button>
             </div>
         );
     }
