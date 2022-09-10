@@ -10,7 +10,7 @@ html {
 */
 
 html:theme(dark) {
-  var(accent): morph(window-accent-color, lightness: 40%);
+  var(accent): morph(window-accent-color, lightness: 33.33%);
   var(accent-text): highlighttext;
 
   var(panel-back): #383838; //#3f3834;

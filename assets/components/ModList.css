@@ -1,14 +1,23 @@
 @set ModList {
   th {
     background-color: color(back);
+    position: relative;
   }
 
   tr:nth-child(even) {
     background-color: morph(color(panel-back), lightness: 16.67%);
   }
 
-  tr:nth-child(even):hover {
+  tr:not(:first-child):hover {
     background-color: color(highlight-hover);
+  }
+
+  tr.selected {
+    background-color: color(accent);
+  }
+
+  tr.disabled {
+    color: color(disabled-text);
   }
 
   td,
@@ -16,9 +25,8 @@
     padding: 4dip 8dip;
   }
 
-  td:first-child {
-    // width: @SMALL-ICON-SIZE;
-    // height: @SMALL-ICON-SIZE;
+  td.numeric {
+    text-align: center;
   }
 
   .resize-handle {
@@ -28,8 +36,8 @@
     bottom: 0;
     background: black;
     opacity: 0;
-    width: 3px;
-    cursor: col-resize;
+    width: 3dip;
+    cursor: ew-resize;
   }
 
   .resize-handle:hover,
