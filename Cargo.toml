@@ -21,7 +21,9 @@ rustc-hash = "1.1.0"
 rstb = { version= "0.3.2", features = ["botw-data"] }
 serde = { version = "1.0.144", features = ["derive", "rc"] }
 serde_yaml = "0.9.10"
+sevenz-rust = "0.1.1"
 smartstring = { version = "1.0.1", features = ["serde"] }
+tempfile = "3.3.0"
 toml = "0.5.9"
 uk-content = { path = "./uk-content" }
 uk-mod = { path = "./uk-mod" }

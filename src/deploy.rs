@@ -201,8 +201,15 @@ impl Manager {
         for (dir, orphans) in [(content, orphans_content), (dlc, orphans_aoc)] {
             let out_dir = out_dir.join(dir);
             orphans.into_par_iter().try_for_each(|f| -> Result<()> {
-                fs::remove_file(&out_dir.join(f.as_str()))
-                    .with_context(|| jstr!("Failed to delete orphan file {f.as_str()}"))?;
+                let file = out_dir.join(f.as_str());
+                if file.exists() {
+                    fs::remove_file(&file)
+                        .with_context(|| jstr!("Failed to delete orphan file {f.as_str()}"))?;
+                }
+                let parent = file.parent().unwrap();
+                if std::fs::read_dir(parent).unwrap().next().is_none() {
+                    util::remove_dir_all(parent).unwrap_or(())
+                }
                 Ok(())
             })?;
         }

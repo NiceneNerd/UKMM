@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.58"
+configparser = "3.0.1"
 enum_dispatch = "0.3.8"
 fs-err = "2.7.0"
 indexmap = "1.8.0"
@@ -17,6 +18,7 @@ rayon = "1.5.3"
 roead = { version = "0.16.1", features = ["with-serde"] }
 rstb = "0.3.2"
 serde = { version = "1.0.137", features = ["derive"] }
+serde_json = "1.0.85"
 serde_yaml = "0.9.10"
 smartstring = "1.0.1"
 typetag = "0.2.1"
