@@ -8,11 +8,12 @@ use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use serde::{Deserialize, Serialize};
 use std::{
     hash::{Hash, Hasher},
+    io::BufReader,
     ops::Deref,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
 };
-use uk_mod::{unpack::ModReader, Manifest, Meta, ModOption};
+use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Mod {
@@ -27,6 +28,12 @@ pub struct Mod {
 impl std::hash::Hash for Mod {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         state.write_usize(self.hash)
+    }
+}
+
+impl PartialEq for Mod {
+    fn eq(&self, other: &Self) -> bool {
+        self.hash == other.hash
     }
 }
 
@@ -256,4 +263,52 @@ impl Manager {
         self.save()?;
         Ok(manifest)
     }
+}
+
+pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
+    log::info!("Attempting to convert mod at {}", path.display());
+    let path = if path.is_file() {
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_uppercase();
+
+        let find_rules = |path: &Path| -> Option<PathBuf> {
+            jwalk::WalkDir::new(path)
+                .into_iter()
+                .filter_map(std::result::Result::ok)
+                .find_map(|f| {
+                    (f.file_name().to_str() == Some("rules.txt")).then(|| f.parent_path().into())
+                })
+        };
+
+        if ext == "ZIP" {
+            log::info!("Extracting ZIP file...");
+            let tmpdir = tempfile::tempdir()?.into_path();
+            zip::ZipArchive::new(BufReader::new(fs::File::open(path)?))
+                .context("Failed to open ZIP")?
+                .extract(&tmpdir)
+                .context("Failed to extract ZIP")?;
+            find_rules(&tmpdir).context("Could not find rules.txt in extracted")?
+        } else if ext == "7Z" {
+            log::info!("Extracting 7Z file...");
+            let tmpdir = tempfile::tempdir()?.into_path();
+            sevenz_rust::decompress_file(path, &tmpdir).context("Failed to extract 7Z file")?;
+            find_rules(&tmpdir).context("Could not find rules.txt in extracted")?
+        } else {
+            log::error!("{} is not a supported mod archive", path.display());
+            anyhow::bail!("{} files are not supported", ext)
+        }
+    } else {
+        log::info!("Unpacked mod, that's easy");
+        path.to_path_buf()
+    };
+    let (_, temp) = tempfile::NamedTempFile::new()?.keep()?;
+    log::debug!("Temp file: {}", temp.display());
+    log::info!("Attempting to convert mod...");
+    let packer = ModPacker::new(&path, &temp, None, vec![])?;
+    packer.pack()?;
+    log::info!("Conversion complete");
+    Ok(temp)
 }

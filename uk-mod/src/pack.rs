@@ -7,6 +7,7 @@ use parking_lot::{Mutex, RwLock};
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{sarc::Sarc, yaz0::decompress_if};
+use serde::Deserialize;
 use smartstring::alias::String;
 use std::{
     collections::BTreeSet,
@@ -55,11 +56,62 @@ impl std::fmt::Debug for ModPacker {
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct InfoJson {
+    name: String,
+    desc: String,
+    version: String,
+    platform: String,
+}
+
 impl ModPacker {
+    fn parse_rules(path: PathBuf) -> Result<Meta> {
+        use configparser::ini::Ini;
+        let mut rules = Ini::new();
+        rules.load(path).map_err(|e| anyhow::anyhow!(e))?;
+        Ok(Meta {
+            name: rules
+                .get("Definition", "name")
+                .context("rules.txt missing mod name")?
+                .trim_matches('"')
+                .into(),
+            description: rules
+                .get("Definition", "description")
+                .context("rules.txt missing mod description")?
+                .trim_matches('"')
+                .into(),
+            author: Default::default(),
+            masters: Default::default(),
+            options: vec![],
+            platform: Endian::Big,
+            url: Default::default(),
+            version: 0.1,
+        })
+    }
+
+    fn parse_info(path: PathBuf) -> Result<Meta> {
+        let info: InfoJson = serde_json::from_reader(fs::File::open(path)?)?;
+        Ok(Meta {
+            name: info.name,
+            description: info.desc,
+            author: Default::default(),
+            masters: Default::default(),
+            options: vec![],
+            platform: match info.platform.as_str() {
+                "wiiu" => Endian::Big,
+                "switch" => Endian::Little,
+                _ => anyhow::bail!("Invalid platform value in info.json"),
+            },
+            url: Default::default(),
+            version: info.version[0..3].parse::<f32>()?,
+        })
+    }
+
+    #[allow(irrefutable_let_patterns)]
     pub fn new(
         source: impl AsRef<Path>,
         dest: impl AsRef<Path>,
-        meta: Meta,
+        meta: Option<Meta>,
         masters: Vec<Arc<uk_reader::ResourceReader>>,
     ) -> Result<Self> {
         let source_dir = source.as_ref().to_path_buf();
@@ -70,6 +122,15 @@ impl ModPacker {
         if dest_file.exists() {
             fs::remove_file(&dest_file)?;
         }
+        let meta = if let Some(meta) = meta {
+            meta
+        } else if let rules = source.as_ref().join("rules.txt") && rules.exists() {
+            Self::parse_rules(rules)?
+        } else if let info = source.as_ref().join("info.json") && info.exists() {
+            Self::parse_info(info)?
+        } else {
+            anyhow::bail!("No meta info provided or meta file available");
+        };
         let zip = Arc::new(Mutex::new(ZipW::new(fs::File::create(&dest_file)?)));
         Ok(Self {
             current_root: source_dir.clone(),
@@ -294,7 +355,7 @@ mod tests {
         let builder = ModPacker::new(
             source,
             dest,
-            Meta {
+            Some(Meta {
                 platform: Endian::Big,
                 name: "Test Mod".into(),
                 version: 0.1,
@@ -315,7 +376,7 @@ mod tests {
                     .into_iter()
                     .collect(),
                 })],
-            },
+            }),
             vec![Arc::new(rom_reader)],
         )
         .unwrap();

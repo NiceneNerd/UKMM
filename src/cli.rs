@@ -1,11 +1,11 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use fs_err as fs;
 use std::{
     io::{stdin, stdout, Write},
-    ops::Deref,
     path::{Path, PathBuf},
 };
-use uk_mod::{unpack::ModReader, Manifest};
+use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest};
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
@@ -52,9 +52,24 @@ impl Runner {
         }
     }
 
-    fn check_mod(&self, path: &Path) -> Result<bool> {
+    fn check_mod(&self, path: &Path) -> Result<Option<PathBuf>> {
         println!("Opening mod at {}...", path.display());
-        let mod_ = ModReader::open(path, vec![])?;
+        let (mod_, path) = match ModReader::open(path, vec![]) {
+            Ok(mod_) => (mod_, path.to_path_buf()),
+            Err(e) => {
+                match crate::mods::convert_gfx(path) {
+                    Ok(path) => {
+                        log::info!("Opening mod at {}", path.display());
+                        (ModReader::open(&path, vec![]).context("Failed to open converted mod")?, path)
+                    },
+                    Err(e2) => anyhow::bail!(
+                        "Could not open mod. Error when attempting to open as UKMM mod: {}. Error when attempting to open as legacy mod: {}.",
+                        e,
+                        e2
+                    )
+                }
+            }
+        };
         if !mod_.meta.options.is_empty() {
             // anyhow::bail!(
             //     "This mod contains configuration options and should be installed via the GUI."
@@ -68,8 +83,10 @@ impl Runner {
         let cont = !input!().to_lowercase().starts_with('n');
         if cont {
             println!("Installing {}...", mod_.meta.name);
+            Ok(Some(path))
+        } else {
+            Ok(None)
         }
-        Ok(cont)
     }
 
     fn deploy(&self) -> Result<()> {
@@ -98,19 +115,18 @@ impl Runner {
                 println!("Done!");
             }
             Commands::Install { path } => {
-                if !self.check_mod(path)? {
-                    return Ok(());
+                if let Some(path) = self.check_mod(path)? {
+                    let mods = self.core.mod_manager();
+                    let mod_ = mods.add(&path)?;
+                    mods.enable(mod_)?;
+                    println!("Applying mod to load order...");
+                    let deployer = self.core.deploy_manager();
+                    deployer.apply(Some(mod_.manifest.clone()))?;
+                    if self.cli.deploy {
+                        self.deploy()?;
+                    }
+                    println!("Done!");
                 }
-                let mods = self.core.mod_manager();
-                let mod_ = mods.add(path)?;
-                mods.enable(mod_)?;
-                println!("Applying mod to load order...");
-                let deployer = self.core.deploy_manager();
-                deployer.apply(Some(mod_.manifest.clone()))?;
-                if self.cli.deploy {
-                    self.deploy()?;
-                }
-                println!("Done!");
             }
             Commands::Uninstall => {
                 println!("Installed mods:");
