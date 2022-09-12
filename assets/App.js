@@ -2,6 +2,7 @@ import { ModList } from "./components/ModList";
 import { Log } from "./components/Log";
 import { MenuBar } from "./components/MenuBar";
 import { Tabs, Tab } from "./components/Tabs";
+import { ProfileMenu } from "./components/ProfileMenu";
 
 export class App extends Element {
   constructor(props) {
@@ -9,6 +10,8 @@ export class App extends Element {
     this.props = props;
     this.api = Window.this.xcall("GetApi");
     this.mods = [];
+    this.profiles = [];
+    this.currentProfile = "Default";
     this.handleToggle = this.handleToggle.bind(this);
     this.handleReorder = this.handleReorder.bind(this);
     this.handleLog = this.handleLog.bind(this);
@@ -18,7 +21,10 @@ export class App extends Element {
   }
 
   componentDidMount() {
-    this.componentUpdate({ mods: this.api.mods() });
+    const mods = this.api.mods();
+    const profiles = this.api.profiles();
+    const currentProfile = this.api.current_profile();
+    this.componentUpdate({ mods, profiles, currentProfile });
   }
 
   handleToggle(mod) {
@@ -50,6 +56,7 @@ export class App extends Element {
         <MenuBar />
         <frameset cols="*,33.33%" style="size: *;">
           <div style="size: *;">
+            <ProfileMenu currentProfile={this.currentProfile} profiles={this.profiles} />
             <frameset rows="*,15%" style="size: *;">
               <ModList
                 mods={this.mods}

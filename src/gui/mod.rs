@@ -39,12 +39,30 @@ impl EventHandler {
             mods
         };
 
+        let profiles = |_args: &[Value]| -> Value {
+            self.core
+                .settings()
+                .profiles()
+                .map(|p| Value::from(p.as_str()))
+                .collect()
+        };
+
+        let current_profile = |_args: &[Value]| -> Value {
+            self.core
+                .settings()
+                .platform_config()
+                .map(|config| Value::from(config.profile.as_str()))
+                .unwrap_or_else(|| Value::from("Default"))
+        };
+
         let check_hash = |args: &[Value]| {
             println!("{}", args[0].to_float().unwrap());
         };
 
         let mut api = Value::new();
         api.set_item("mods", mods);
+        api.set_item("profiles", profiles);
+        api.set_item("current_profile", current_profile);
         api.set_item("check_hash", check_hash);
         api
     }
