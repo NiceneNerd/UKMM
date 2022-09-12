@@ -1,34 +1,36 @@
 @set Tabs {
-    :root {
-        background-color: color(back);
-        flow: vertical;
-        size: *;
-    }
+  :root {
+    background-color: color(back);
+    flow: vertical;
+    size: *;
+  }
 
-    .strip {
-        flow: horizontal;
-        height: min-content;
-    }
+  .strip {
+    flow: horizontal;
+    height: min-content;
+  }
 
-    .strip .tab-button {
-        box-sizing: border-box;
-        background-color: color(back);
-        font-size: 14dip;
-        padding: 4dip 8dip;
-        white-space: nowrap;
-        width: auto;
-    }
+  .strip .tab-button {
+    box-sizing: border-box;
+    border-radius: 4dip;
+    background-color: color(back);
+    font-size: 14dip;
+    margin: 1dip;
+    padding: 4dip 8dip;
+    white-space: nowrap;
+    width: auto;
+  }
 
-    .strip .tab-button.active {
-        background-color: color(panel-back);
-    }
+  .strip .tab-button.active {
+    background-color: color(panel-back);
+  }
 
-    .strip .tab-button:hover {
-        background: color(button-pressed-back);
-    }
+  .strip .tab-button:hover {
+    background: color(button-pressed-back);
+  }
 
-    .tab {
-        background-color: color(panel-back);
-        height: *;
-    }
+  .tab {
+    background-color: color(back);
+    height: *;
+  }
 }

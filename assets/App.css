@@ -1,9 +1,8 @@
 html, body {
-  font: system;
+  font: system; font-rendering-mode:classic;
   size: *;
   overflow: none;
 }
-
 
 splitter {
     border: 2dip solid color(button-pressed-back);
@@ -30,7 +29,7 @@ html:theme(dark) {
   var(accent): morph(window-accent-color, lightness: 33.33%);
   var(accent-text): highlighttext;
 
-  var(panel-back): #383838; //#3f3834;
+  var(panel-back): #303030; //#3f3834;
   var(popup-panel-back): #555;
   var(panel-text): #eee;
   var(back): #202020;
@@ -52,8 +51,8 @@ html:not(:theme(dark)) {
   var(panel-back): #efefef;
   var(popup-panel-back): #f7f7f7;
   var(panel-text): #333;
-  var(back): #fff;
-  var(text): #000;
+  var(back): #ffffff;
+  var(text): #202020;
   var(border): #888;
   var(button-back): #d7d7d7;
   var(button-pressed-back): #bbb;

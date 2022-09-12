@@ -9,6 +9,7 @@
     margin: 0;
     behavior: virtual-list;
     overflow-y: auto;
+    height: *;
   }
 
   table,
@@ -16,8 +17,12 @@
     width: *;
   }
 
+  thead {
+    background-color: color(back);
+  }
+
   tbody {
-    background-color: color(panel-back);
+    //background-color: color(panel-back);
   }
 
   th {
@@ -25,8 +30,8 @@
     border-right: 1dip color(panel-back) solid;
   }
 
-  tr:nth-child(even) {
-    background-color: morph(color(panel-back), darken: 10%);
+  tbody tr:nth-child(odd) {
+    background-color: color(panel-back);
   }
 
   .checkbox {
@@ -42,12 +47,12 @@
     background-color: color(highlight-hover);
   }
 
-  tr.selected {
+  tbody tr.selected {
     background-color: color(accent);
     color: color(accent-text);
   }
 
-  tr.disabled {
+  tbody tr.disabled {
     color: color(disabled-text);
   }
 

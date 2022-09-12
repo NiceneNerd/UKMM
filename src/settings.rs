@@ -121,6 +121,17 @@ pub struct PlatformSettings {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct UiSettings {
+    pub dark: bool,
+}
+
+impl Default for UiSettings {
+    fn default() -> Self {
+        Self { dark: true }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Settings {
     pub current_mode: Platform,
     pub storage_dir: PathBuf,
@@ -129,6 +140,8 @@ pub struct Settings {
     pub show_changelog: bool,
     pub wiiu_config: Option<PlatformSettings>,
     pub switch_config: Option<PlatformSettings>,
+    #[serde(rename = "ui")]
+    pub ui_config: UiSettings,
 }
 
 impl Default for Settings {
@@ -141,6 +154,7 @@ impl Default for Settings {
             switch_config: None,
             check_updates: true,
             show_changelog: true,
+            ui_config: Default::default(),
         }
     }
 }

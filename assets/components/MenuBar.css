@@ -3,174 +3,154 @@
  */
 
 @set menu-bar {
-
-  :root /*top level menu*/
-  {
-    font: system; font-rendering-mode:classic;
-    behavior:menu-bar;
+  :root /*top level menu*/ {
+    font: system;
+    font-rendering-mode: classic;
+    behavior: menu-bar;
     flow: horizontal;
     height: auto;
     background: var(panel-back);
-    color:var(text); 
-    margin:0;
-    padding:0;
+    color: color(text);
+    margin: 0;
+    padding: 0;
   }
 
-  :root > li /* menu item in menu bar */ 
-  {  
-    padding:2px 8px;
-    margin:0;
-    white-space:nowrap;
-    width:max-intrinsic;
-    display:block;
-    flow:horizontal;
+  :root > li /* menu item in menu bar */ {
+    padding: 2dip 8dip;
+    margin: 0;
+    white-space: nowrap;
+    width: max-intrinsic;
+    display: block;
+    flow: horizontal;
   }
 
-  :root > li:current /* current menu item in menu bar */ 
-  {  
-    background-color:highlight; color:highlighttext; 
+  :root > li:current /* current menu item in menu bar */ {
+    background-color: color(highlight-hover);
+    color: highlighttext;
   }
 
-  button[type="menu"]
-  {
-    behavior:button popup-menu; 
+  button[type="menu"] {
+    behavior: button popup-menu;
   }
 
-  button[type="menu"]:owns-popup /* button when popup is shown */
-  {
-  	background-image:url(theme:button-pressed); /* ?? */  
+  button[type="menu"]:owns-popup /* button when popup is shown */ {
+    background-image: url(theme:button-pressed); /* ?? */
   }
 
-  menu  /* popup menu */
-  {
-    font: system; font-rendering-mode:classic;
-    behavior:menu; /*is a menu*/
+  menu  /* popup menu */ {
+    font: system;
+    font-rendering-mode: classic;
+    behavior: menu; /*is a menu*/
     flow: vertical;
-    display:none; 
-    margin:0;  
-    padding:1px;
-    max-width:max-intrinsic;
+    display: none;
+    margin: 0;
+    padding: 1dip;
+    max-width: max-intrinsic;
     /*min-width: max-intrinsic;*/
-    border:1px solid threedshadow;
-    background-color: window;
-    color:windowtext;
-    margin:0 1px; /* to offset it from parent li */    
+    border: 0;
+    background-color: color(panel-back);
+    color: color(text);
+    margin: 0 1dip; /* to offset it from parent li */
   }
 
-  menu menu /* secondary popup menu */
-  {
+  menu menu /* secondary popup menu */ {
     max-width: max-intrinsic;
   }
 
   /* menu item in popup menus */
-  menu li
-  {  
-    width:*;
-    flow:horizontal;
-    padding-left:24px; /* room for icon */
-    padding-right:12px; /* room for the arrow */
-    padding-top:4px; 
-    padding-bottom:4px; 
+  menu li {
+    width: *;
+    flow: horizontal;
+    padding-left: 24dip; /* room for icon */
+    padding-right: 12dip; /* room for the arrow */
+    padding-top: 4dip;
+    padding-bottom: 4dip;
     foreground-repeat: no-repeat;
-    foreground-position: 2px 50%;
-    color:windowtext;
+    foreground-position: 2dip 50%;
+    color: color(text);
   }
 
-  menu li:rtl 
-  {  
-    width:*;
-    padding-right:24px; /* room for icon */
-    padding-left:12px; /* room for the arrow */
+  menu li:rtl {
+    width: *;
+    padding-right: 24dip; /* room for icon */
+    padding-left: 12dip; /* room for the arrow */
     foreground-repeat: no-repeat;
-    foreground-position-right: 2px;
+    foreground-position-right: 2dip;
     foreground-position-top: 50%;
-    text-align:right;
-    color:windowtext;
+    text-align: right;
+    color: color(text);
   }
 
-
-  menu li:disabled { color:graytext; foreground-image: none; }
+  menu li:disabled {
+    color: color(disabled-text);
+    foreground-image: none;
+  }
 
   /* accesskey label (span) */
-  menu li span.accesskey
-  {
-    display:block;
-    width:max-intrinsic;
-    white-space:nowrap;
-    margin-left:*; /* spring to attach it to the right */
-    padding-left:1em;
-    color:threedshadow;
+  menu li span.accesskey {
+    display: block;
+    width: max-intrinsic;
+    white-space: nowrap;
+    margin-left: *; /* spring to attach it to the right */
+    padding-left: 1em;
+    color: threedshadow;
   }
 
-
-  menu li:current span.accesskey
-  {
-    color:#FFD700;
+  menu li:current span.accesskey {
+    color: color(disabled-text);
   }
-
 
   /* menu with single <menu> inside - submenu */
-  menu li:has-child-of-type(menu)
-  {
-    foreground-image:url(stock:arrow-right); /* that arrow */
+  menu li:has-child-of-type(menu) {
+    foreground-image: url(stock:arrow-right); /* that arrow */
     foreground-repeat: no-repeat;
     foreground-position: 100% 50%;
   }
 
-  menu li:has-child-of-type(menu):rtl
-  {
-    foreground-image:url(stock:arrow-left); /* that arrow */
+  menu li:has-child-of-type(menu):rtl {
+    foreground-image: url(stock:arrow-left); /* that arrow */
     foreground-repeat: no-repeat;
     foreground-position: 0% 50%;
   }
 
-
   /* current menu item */
   menu li:hover:owns-popup,
-  menu li:current
-  { 
-    background-color:highlight; color:highlighttext; 
+  menu li:current {
+    background-color: color(highlight-hover);
+    color: highlighttext;
   }
 
   /* menu separator */
-  menu hr 
-  {
-    margin:2px; 
+  menu hr {
+    margin: 2dip;
   }
-
 
   /* radio menu item */
-  menu li[type="radio"]
-  { 
-  	behavior:radio; 
-  	foreground-repeat:no-repeat; 
-  	foreground-position:3px 50%;
-  	foreground-image:url(stock:circle);
-    foreground-size: 7px;
+  menu li[type="radio"] {
+    behavior: radio;
+    foreground-repeat: no-repeat;
+    foreground-position: 3dip 50%;
+    foreground-image: url(stock:circle);
+    foreground-size: 7dip;
     stroke: var(accent);
   }
-  menu li[type="radio"]:checked
-  { 
-  	foreground-image:url(stock:disk);  
+  menu li[type="radio"]:checked {
+    foreground-image: url(stock:disk);
     fill: var(accent);
   }
 
   /* checkmark menu item */
-  menu li[type="check"]
-  { 
-  	behavior:check; 
-  	foreground-repeat:no-repeat; 
-  	foreground-position:left 7px top 50%;
-    foreground-size: 9px;
+  menu li[type="check"] {
+    behavior: check;
+    foreground-repeat: no-repeat;
+    foreground-position: left 7dip top 50%;
+    foreground-size: 9dip;
   }
-  menu li[type="check"]:checked
-  { 
-    foreground-image:url(stock:checkmark);
+  menu li[type="check"]:checked {
+    foreground-image: url(stock:checkmark);
     fill: var(accent);
   }
-  menu li[type="check"]:disabled
-  { 
-  	fill:grey;  
+  menu li[type="check"]:disabled {
+    fill: grey;
   }
-
 }

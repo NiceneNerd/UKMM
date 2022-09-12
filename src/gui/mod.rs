@@ -55,9 +55,19 @@ impl sciter::EventHandler for EventHandler {
         fn GetApi();
     }
 
-    fn document_complete(&mut self, root: HELEMENT, target: HELEMENT) {
+    fn document_complete(&mut self, root: HELEMENT, _target: HELEMENT) {
         if self.root.is_none() {
-            let root = Arc::new(root.into());
+            let mut root: Element = root.into();
+            root.set_attribute(
+                "theme",
+                if self.core.settings().ui_config.dark {
+                    "dark"
+                } else {
+                    "light"
+                },
+            )
+            .unwrap_or_default();
+            let root = Arc::new(root);
             crate::logger::LOGGER.set_root(Arc::clone(&root));
             self.root = Some(root);
             log::info!("Logger UI connected");
