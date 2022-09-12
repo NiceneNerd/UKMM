@@ -9,6 +9,8 @@
         padding: 4dip;
         behavior: virtual-list;
         overflow: scroll;
+        overflow-x: scroll;
+        white-space: nowrap;
     }
 
     .time {

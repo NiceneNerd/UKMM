@@ -9,7 +9,7 @@ export class Log extends Element {
             case "WARN":
                 return "gold";
             case "INFO":
-                return "gold";
+                return "forestgreen";
             case "DEBUG":
                 return "royalblue";
             case "ERROR":
@@ -19,9 +19,12 @@ export class Log extends Element {
         }
     }
 
+    componentDidMount() {
+        this.vlist = document.querySelector("#Log").vlist;
+    }
+
     componentDidUpdate() {
-        let logBox = document.querySelector("#Log");
-        logBox.vlist.advanceTo(this.props.logs.length - 1);
+        this.vlist.advanceTo(this.props.logs.length - 1);
     }
 
     render() {

@@ -49,7 +49,7 @@ html:not(:theme(dark)) {
   var(accent): window-accent-color;
   var(accent-text): highlighttext;
 
-  var(panel-back): #f8f8f8;
+  var(panel-back): #efefef;
   var(popup-panel-back): #f7f7f7;
   var(panel-text): #333;
   var(back): #fff;

@@ -109,11 +109,11 @@ export class ModList extends Element {
         <table #ModList >
           <thead>
             <tr>
-              <th class="numeric">
+              <th class="checkbox">
                 {" "}
               </th>
-              <th class="ellipsis">
-                <span class="text">Mod Name</span>
+              <th>{/* <th class="ellipsis"> */}
+                Mod Name
               </th>
               <th>
                 Author
@@ -139,15 +139,15 @@ export class ModList extends Element {
                   " " +
                   (!mod.enabled && "disabled")
                 }>
-                <td class="numeric">
+                <td class="checkbox">
                   <input
                     type="checkbox"
                     checked={mod.enabled}
                     onClick={() => this.props.onToggle(mod)}
                   />
                 </td>
-                <td class="ellipsis longer"><span class="text">{mod.meta.name}</span></td>
-                <td class="ellipsis"><span class="text">{mod.meta.author}</span></td>
+                <td class="longer">{mod.meta.name}</td>
+                <td class="medium">{mod.meta.author}</td>
                 <td class="numeric">{mod.meta.version.toFixed(1)}</td>
                 <td class="numeric">{i + 1}</td>
               </tr>
