@@ -255,7 +255,7 @@ impl Settings {
 
     #[inline]
     pub fn merged_dir(&self) -> PathBuf {
-        self.platform_dir().join("merged")
+        self.mods_dir().join("merged")
     }
 
     #[inline]
