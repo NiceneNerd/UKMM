@@ -200,7 +200,18 @@ impl Manager {
     /// Add a mod to the list of installed mods. This function assumes that the
     /// mod at the provided path has already been validated.
     pub fn add<'a, 'b>(&'a self, mod_path: &'b Path) -> Result<&'a Mod> {
-        let stored_path = self.dir.join(mod_path.file_name().unwrap());
+        let mut san_opts = sanitise_file_name::Options::DEFAULT;
+        san_opts.url_safe = true;
+        let sanitized = sanitise_file_name::sanitise_with_options(
+            mod_path
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .trim_start_matches('.'),
+            &san_opts,
+        );
+        let stored_path = self.dir.join(sanitized);
         if mod_path.is_file() {
             if self.settings.upgrade().unwrap().read().unpack_mods {
                 uk_mod::unpack::unzip_mod(mod_path, &stored_path)
@@ -316,11 +327,11 @@ pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
         log::info!("Unpacked mod, that's easy");
         path.to_path_buf()
     };
-    let (_, temp) = tempfile::NamedTempFile::new()?.keep()?;
-    log::debug!("Temp file: {}", temp.display());
+    let temp = tempfile::tempdir()?.into_path();
+    log::debug!("Temp folder: {}", temp.display());
     log::info!("Attempting to convert mod...");
     let packer = ModPacker::new(&path, &temp, None, vec![])?;
-    packer.pack()?;
+    let result_path = packer.pack()?;
     log::info!("Conversion complete");
-    Ok(temp)
+    Ok(result_path)
 }

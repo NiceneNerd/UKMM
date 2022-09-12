@@ -118,10 +118,6 @@ impl ModPacker {
         if !(source_dir.exists() && source_dir.is_dir()) {
             anyhow::bail!("Source directory does not exist: {}", source_dir.display());
         }
-        let dest_file = dest.as_ref().to_path_buf();
-        if dest_file.exists() {
-            fs::remove_file(&dest_file)?;
-        }
         let meta = if let Some(meta) = meta {
             meta
         } else if let rules = source.as_ref().join("rules.txt") && rules.exists() {
@@ -131,6 +127,16 @@ impl ModPacker {
         } else {
             anyhow::bail!("No meta info provided or meta file available");
         };
+        let dest = dest.as_ref();
+        let dest_file = if dest.is_file() {
+            dest.to_path_buf()
+        } else {
+            dest.join(sanitise_file_name::sanitise(&meta.name))
+                .with_extension(".zip")
+        };
+        if dest_file.exists() {
+            fs::remove_file(&dest_file)?;
+        }
         let zip = Arc::new(Mutex::new(ZipW::new(fs::File::create(&dest_file)?)));
         Ok(Self {
             current_root: source_dir.clone(),
@@ -313,7 +319,7 @@ impl ModPacker {
         roots
     }
 
-    pub fn pack(mut self) -> Result<()> {
+    pub fn pack(mut self) -> Result<PathBuf> {
         self.pack_root(&self.source_dir)?;
         if self.source_dir.join("options").exists() {
             self.masters
@@ -333,7 +339,7 @@ impl ModPacker {
             }
             Err(_) => panic!("Failed to finish writing zip, this is probably a big deal"),
         };
-        Ok(())
+        Ok(self._out_file)
     }
 }
 

@@ -3,6 +3,7 @@ use fs_err as fs;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use smartstring::alias::String;
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
@@ -116,6 +117,7 @@ pub enum DeployMethod {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlatformSettings {
     pub language: Language,
+    pub profile: String,
     pub dump: Arc<ResourceReader>,
     pub deploy_config: Option<DeployConfig>,
 }
@@ -208,8 +210,31 @@ impl Settings {
     }
 
     #[inline]
+    pub fn profiles_dir(&self) -> PathBuf {
+        self.platform_dir().join("profiles")
+    }
+
+    #[inline]
+    pub fn profiles(&self) -> impl Iterator<Item = String> {
+        fs::read_dir(self.profiles_dir())
+            .into_iter()
+            .flat_map(|entries| {
+                entries
+                    .filter_map(std::result::Result::ok)
+                    .filter_map(|entry| {
+                        entry
+                            .path()
+                            .is_dir()
+                            .then(|| entry.file_name().to_string_lossy().into())
+                    })
+            })
+    }
+
+    #[inline]
     pub fn mods_dir(&self) -> PathBuf {
-        self.platform_dir().join("mods")
+        self.platform_config()
+            .map(|config| self.profiles_dir().join(config.profile.as_str()))
+            .unwrap_or_else(|| self.profiles_dir().join("Default"))
     }
 
     #[inline]

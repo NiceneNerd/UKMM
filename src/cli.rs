@@ -191,6 +191,7 @@ mod tests {
                 method: crate::settings::DeployMethod::HardLink,
                 output: "/tmp/BreathOfTheWild_UKMM".into(),
             }),
+            profile: "Default".into(),
         });
         std::fs::write(
             "/home/nn/.config/ukmm/settings.toml",
