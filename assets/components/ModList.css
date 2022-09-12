@@ -1,0 +1,77 @@
+@set ModList {
+  :root {
+    size: *;
+  }
+
+  table {
+    background-color: color(back);
+    padding: 0;
+    margin: 0;
+    behavior: virtual-list;
+    overflow-y: auto;
+  }
+
+  table,
+  tr {
+    width: *;
+  }
+
+  tbody {
+    background-color: color(panel-back);
+  }
+
+  th {
+    text-align: center;
+    border-right: 1dip color(panel-back) solid;
+  }
+
+  tr:nth-child(even) {
+    background-color: morph(color(panel-back), darken: 10%);
+  }
+
+  .checkbox {
+    width: 1.05em;
+  }
+
+  .numeric {
+    width: 2em;
+    text-align: center;
+  }
+
+  tbody tr:hover {
+    background-color: color(highlight-hover);
+  }
+
+  tr.selected {
+    background-color: color(accent);
+    color: color(accent-text);
+  }
+
+  tr.disabled {
+    color: color(disabled-text);
+  }
+
+  tr.dragging {
+    opacity: 0.3;
+  }
+
+  td,
+  th {
+    padding: 4dip 8dip;
+  }
+
+  td {
+    height: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .longer {
+    width: 3*;
+  }
+
+  .medium {
+    width: 1*;
+  }
+}

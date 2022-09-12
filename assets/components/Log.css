@@ -1,0 +1,27 @@
+@set Log {
+    :root {
+        background-color: color(back);
+        font-family: ui-monospace, Menlo, Monaco, "Cascadia Mono",
+            "Segoe UI Mono", "Fira Code", "Roboto Mono", "Oxygen Mono",
+            "Ubuntu Monospace", "Source Code Pro", "Droid Sans Mono",
+            "Courier New", monospace;
+        font-size: 12dip;
+        padding: 4dip;
+        behavior: virtual-list;
+        overflow: scroll;
+        overflow-x: scroll;
+        white-space: nowrap;
+    }
+
+    .time {
+        color: color(disabled-text);
+    }
+
+    .level {
+        color: blue;
+    }
+
+    .msg {
+        color: color(text);
+    }
+}
