@@ -1,7 +1,11 @@
 export class Log extends Element {
+    constructor(props) {
+        super(props);
+        this.levelColor = this.levelColor.bind(this);
+    }
+
     this(props) {
         this.props = props;
-        this.levelColor = this.levelColor.bind(this);
     }
 
     levelColor(level) {

@@ -3,6 +3,7 @@ import { Log } from "./components/Log";
 import { MenuBar } from "./components/MenuBar";
 import { Tabs, Tab } from "./components/Tabs";
 import { ProfileMenu } from "./components/ProfileMenu";
+import { ModInfo } from "./components/ModInfo";
 
 export class App extends Element {
   constructor(props) {
@@ -10,11 +11,13 @@ export class App extends Element {
     this.props = props;
     this.api = Window.this.xcall("GetApi");
     this.mods = [];
+    this.currentMod = 0;
     this.profiles = [];
     this.currentProfile = "Default";
     this.handleToggle = this.handleToggle.bind(this);
     this.handleReorder = this.handleReorder.bind(this);
     this.handleLog = this.handleLog.bind(this);
+    this.handleSelect = this.handleSelect.bind(this);
     Window.this.log = this.handleLog;
     this.dirty = false;
     this.log = [];
@@ -44,6 +47,10 @@ export class App extends Element {
     this.componentUpdate({ mods });
   }
 
+  handleSelect(index) {
+    this.componentUpdate({ currentMod: index });
+  }
+
   handleLog(record) {
     let log = this.log;
     log.push(record);
@@ -54,14 +61,18 @@ export class App extends Element {
     return (
       <div style="flow: vertical; size: *;">
         <MenuBar />
-        <frameset cols="*,33.33%" style="size: *;">
+        <frameset cols="*,36%" style="size: *;">
           <div style="size: *;">
-            <ProfileMenu currentProfile={this.currentProfile} profiles={this.profiles} />
+            <ProfileMenu
+              currentProfile={this.currentProfile}
+              profiles={this.profiles}
+            />
             <frameset rows="*,15%" style="size: *;">
               <ModList
                 mods={this.mods}
                 onToggle={this.handleToggle}
                 onReorder={this.handleReorder}
+                onSelect={this.handleSelect}
               />
               <splitter />
               <Log logs={this.log} />
@@ -73,7 +84,7 @@ export class App extends Element {
               <p>todo</p>
             </Tab>
             <Tab label="Mod Info">
-              <p>Hiro</p>
+              <ModInfo mod={this.mods[this.currentMod]} />
             </Tab>
           </Tabs>
         </frameset>

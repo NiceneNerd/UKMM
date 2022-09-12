@@ -1,0 +1,32 @@
+@set ModInfo {
+    :root {
+        flow: vertical;
+        border-spacing: 4dip;
+        size: *;
+        padding: 16dip;
+    }
+
+    .row {
+        flow: horizontal;
+        margin: 4dip 0;
+    }
+
+    .label {
+        font-weight: bold;
+    }
+    
+    .row .label {
+        width: 1*;
+    }
+
+    .row .data {
+        width: 3*;
+        text-align: right;
+    }
+
+    .long {
+        flow: vertical;
+        border-spacing: 4dip;
+        margin: 4dip 0;
+    }
+}

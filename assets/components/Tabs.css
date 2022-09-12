@@ -2,6 +2,7 @@
   :root {
     background-color: color(back);
     flow: vertical;
+    padding: 2dip;
     size: *;
   }
 

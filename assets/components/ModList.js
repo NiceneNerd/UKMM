@@ -1,6 +1,6 @@
 export class ModList extends Element {
-  this(props) {
-    this.props = props;
+  constructor(props) {
+    super(props);
     this.selectedIndicies = [];
     this.handleRowClick = this.handleRowClick.bind(this);
     this.handleDragStart = this.handleDragStart.bind(this);
@@ -11,6 +11,10 @@ export class ModList extends Element {
     this.dragPlaceholder = null;
     this.coords = { x: 0, y: 0 };
     this.table = false;
+  }
+
+  this(props) {
+    this.props = props;
   }
 
   componentDidMount() {
@@ -91,10 +95,9 @@ export class ModList extends Element {
 
   handleRowClick(e, index) {
     if (!e.ctrlKey) {
+      this.props.onSelect(index);
       this.componentUpdate({ selectedIndicies: [index] });
-      return;
-    }
-    if (!this.selectedIndicies.includes(index)) {
+    } else if (!this.selectedIndicies.includes(index)) {
       this.componentUpdate({ selectedIndicies: [index, ...this.selectedIndicies] });
     } else {
       this.componentUpdate({
