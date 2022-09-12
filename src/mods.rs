@@ -15,7 +15,7 @@ use std::{
 };
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Mod {
     pub meta: Meta,
     pub manifest: Manifest,
@@ -23,6 +23,18 @@ pub struct Mod {
     pub enabled: bool,
     pub path: PathBuf,
     hash: usize,
+}
+
+impl std::fmt::Debug for Mod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Mod")
+            .field("meta", &self.meta)
+            .field("enabled_options", &self.enabled_options)
+            .field("enabled", &self.enabled)
+            .field("path", &self.path)
+            .field("hash", &self.hash)
+            .finish()
+    }
 }
 
 impl std::hash::Hash for Mod {

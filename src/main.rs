@@ -2,6 +2,7 @@ mod cli;
 mod core;
 mod deploy;
 mod gui;
+mod logger;
 mod mods;
 mod settings;
 mod util;
@@ -11,9 +12,6 @@ use clap::Parser;
 use cli::Cli;
 
 fn main() -> Result<()> {
-    env_logger::init();
-    log::debug!("Logger initialized");
-    log::info!("Started ukmm");
     let cli = Cli::parse();
     if cli.command.is_some() {
         cli::Runner::new(cli).run()?;

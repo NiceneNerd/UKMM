@@ -1,4 +1,6 @@
 import { ModList } from "./components/ModList";
+import { Log } from "./components/Log";
+import { Tabs, Tab } from "./components/Tabs";
 
 export class App extends Element {
     constructor(props) {
@@ -8,6 +10,10 @@ export class App extends Element {
         this.mods = [];
         this.handleToggle = this.handleToggle.bind(this);
         this.handleReorder = this.handleReorder.bind(this);
+        this.handleLog = this.handleLog.bind(this);
+        Window.this.log = this.handleLog;
+        this.dirty = false;
+        this.log = [];
     }
 
     componentDidMount() {
@@ -15,10 +21,8 @@ export class App extends Element {
     }
 
     handleToggle(mod) {
-        console.log(`Toggling ${mod.meta.name}`);
-        // let mod = this.mods.find(m => m == mod);
         mod.enabled = !mod.enabled;
-        this.componentUpdate({ mods: this.mods });
+        this.componentUpdate({ mods: this.mods, dirty: true });
     }
 
     handleReorder(oldIdxs, newIdx) {
@@ -30,24 +34,43 @@ export class App extends Element {
             newIdx == 0
                 ? [...modsToMove, ...this.mods]
                 : [
-                      ...this.mods.slice(0, newIdx),
-                      ...modsToMove,
-                      ...this.mods.slice(newIdx)
-                  ];
+                    ...this.mods.slice(0, newIdx),
+                    ...modsToMove,
+                    ...this.mods.slice(newIdx)
+                ];
         this.componentUpdate({ mods });
+    }
+
+    handleLog(record) {
+        let log = this.log;
+        log.push(record);
+        this.componentUpdate({ log });
     }
 
     render() {
         return (
-            <div>
-                <p>Hello world</p>
-                <ModList
-                    mods={this.mods}
-                    onToggle={this.handleToggle}
-                    onReorder={this.handleReorder}
-                />
-                <button>Testing a button</button>
-            </div>
+            <frameset cols="*,33.33%" style="size: *;">
+                <div style="size: *;">
+                    <frameset rows="*,15%" style="size: *;">
+                        <ModList
+                            mods={this.mods}
+                            onToggle={this.handleToggle}
+                            onReorder={this.handleReorder}
+                        />
+                        <splitter />
+                        <Log logs={this.log} />
+                    </frameset>
+                </div>
+                <splitter />
+                <Tabs>
+                    <Tab label="Install">
+                        <p>todo</p>
+                    </Tab>
+                    <Tab label="Mod Info">
+                        <p>Hiro</p>
+                    </Tab>
+                </Tabs>
+            </frameset >
         );
     }
 }

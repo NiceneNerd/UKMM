@@ -1,5 +1,22 @@
-html {
+html, body {
   font: system;
+  size: *;
+  overflow: none;
+}
+
+
+splitter {
+    border: 2dip solid color(button-pressed-back);
+}
+
+frameset[rows] > splitter {
+    width: 100%;
+    height: 0;
+}
+
+frameset[cols] > splitter {
+    width: 0;
+    height: 100%;
 }
 
 /*

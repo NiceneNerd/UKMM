@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.62"
+chrono = "0.4.22"
 clap = { version = "3.2.17", features = ["derive"] }
 dircpy = "0.3.12"
 dirs2 = "3.0.1"

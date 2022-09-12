@@ -1,47 +1,102 @@
 @set ModList {
-  th {
-    background-color: color(back);
-    position: relative;
-  }
+    :root {
+        size: *;
+    }
 
-  tr:nth-child(even) {
-    background-color: morph(color(panel-back), lightness: 16.67%);
-  }
+    table,
+    tr {
+        max-width: 100%;
+        width: 100%;
+        min-width: 100%;
+    }
 
-  tr:not(:first-child):hover {
-    background-color: color(highlight-hover);
-  }
+    th {
+        background-color: color(back);
+        position: relative;
+        text-align: center;
+    }
 
-  tr.selected {
-    background-color: color(accent);
-  }
+    tr:nth-child(even) {
+        background-color: morph(color(panel-back), lightness: 16.67%);
+    }
 
-  tr.disabled {
-    color: color(disabled-text);
-  }
+    .numeric {
+        width: 2em;
+        text-align: center;
+    }
 
-  td,
-  th {
-    padding: 4dip 8dip;
-  }
+    th:first-child, td:first-child {
+        box-sizing: border-box;
+        max-width: 1.05em !important;
+        min-width: 1.05em !important;
+        width: 1.05em !important;
+    }
 
-  td.numeric {
-    text-align: center;
-  }
+    // th:not(:first-child) {
+    //   width: 1*;
+    // }
+    //
+    // th.ellipsis {
+    //     width: 3*;
+    // }
 
-  .resize-handle {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    background: black;
-    opacity: 0;
-    width: 3dip;
-    cursor: ew-resize;
-  }
+    tbody tr:hover {
+        background-color: color(highlight-hover);
+    }
 
-  .resize-handle:hover,
-  .header--being-resized .resize-handle {
-    opacity: 0.5;
-  }
+    tr.selected {
+        background-color: color(accent);
+    }
+
+    tr.disabled {
+        color: color(disabled-text);
+    }
+
+    tr.dragging {
+      opacity: 0.3;
+    }
+
+    td,
+    th {
+        padding: 4dip 8dip;
+    }
+
+    .ellipsis {
+        position: relative;
+        width: max-content;
+    }
+
+    .longer.ellipsis {
+      width: *;
+    }
+
+    .ellipsis:before {
+        content: "&nbsp;";
+        visibility: "hidden";
+    }
+
+    .ellipsis .text {
+        position: absolute;
+        left: 0;
+        right: 0;
+        white-space: nowrap;
+        //overflow: hidden;
+        //text-overflow: ellipsis;
+    }
+
+    .resize-handle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        background: black;
+        opacity: 0;
+        width: 4dip;
+        cursor: ew-resize;
+    }
+
+    .resize-handle:hover,
+    .header--being-resized .resize-handle {
+        opacity: 0.5;
+    }
 }

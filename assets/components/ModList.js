@@ -1,5 +1,3 @@
-import { enableResize, enableReorder } from "../util/table";
-
 export class ModList extends Element {
   this(props) {
     this.props = props;
@@ -7,8 +5,6 @@ export class ModList extends Element {
     this.handleRowClick = this.handleRowClick.bind(this);
     this.handleDragStart = this.handleDragStart.bind(this);
     this.updateColumns = this.updateColumns.bind(this);
-    this.columns = false;
-    this.resizingHeader = false;
     this.isDragging = false;
     this.draggingRow = false;
     this.shadowList = [];
@@ -20,8 +16,6 @@ export class ModList extends Element {
   componentDidMount() {
     this.table = document.querySelector("#ModList");
     this.updateColumns();
-    document.body.on("mouseup", this.handleMouseUp.bind(this));
-    document.body.on("mousemove", this.handleMouseMove.bind(this));
   }
 
   updateColumns() {
@@ -40,58 +34,18 @@ export class ModList extends Element {
     }
   }
 
-  ["on mousedown at .resize-handle"](e, header) {
-    if (!this.isDragging && !this.resizingHeader) {
-      if (!this.columns) {
-        this.updateColumns();
-      }
-      this.resizingHeader = header.parentNode;
-      header.classList.add("header--being-resized");
-    }
-  }
-
-  ["on dblclick at .resize-handle"](e, header) {
-    header.parentNode.style.maxWidth = "min-content";
-    header.parentNode.style.minWidth = undefined;
-    header.parentNode.style.width = undefined;
-  }
-
-  handleMouseMove(e) {
-    if (this.resizingHeader) {
-      requestAnimationFrame(() => {
-        const horizontalScrollOffset = document.documentElement.scrollLeft;
-        const width =
-          horizontalScrollOffset +
-          e.clientX -
-          this.resizingHeader.offsetLeft;
-        this.resizingHeader.style.minWidth = Math.max(16, width) + "dip";
-        Object.entries(this.columns).forEach(([i, column]) => {
-          if (!column.header.style.width) {
-            column.header.style.width = parseInt(column.header.clientWidth) + "dip";
-          }
-        });
-      });
-    } else if (this.isDragging) {
-      return;
-    }
-  }
-
-  handleMouseUp(e) {
-    if (this.resizingHeader) {
-      this.resizingHeader.classList.remove("header--being-resized");
-      this.resizingHeader = null;
-    }
-  }
-
   handleDragStart(evt, index) {
     let { clientX: x, clientY: y } = evt;
     let lasttarget = null;
-    let element = evt.target.parentNode;
+    let element = evt.target.closest("tr");
     if (!element.attributes["class"].includes("selected")) {
       element.classList.add("selected");
       if (evt.ctrlKey) {
         this.selectedIndicies.push(index);
       } else {
+        for (const idx of this.selectedIndicies) {
+          element.parentNode.children[idx].classList.remove("selected");
+        }
         this.selectedIndicies = [index];
       }
     }
@@ -103,7 +57,8 @@ export class ModList extends Element {
       let image = new Graphics.Image(element);
       document.style.setCursor(image, x, 0);
       for (let el of document.querySelectorAll("tr.selected")) {
-        el.style.visibility = "hidden";
+        el.classList.add("disabled");
+        el.classList.remove("selected");
       }
 
       document.state.capture(true);
@@ -115,17 +70,19 @@ export class ModList extends Element {
       document.off(onmove);
       document.style.setCursor(null);
       for (let el of document.querySelectorAll("tr.selected")) {
-        el.style.visibility = undefined;
+        el.classList.remove("disabled");
+        el.classList.add("selected");
       }
       document.attributes["dnd"] = undefined;
 
       if (r && lasttarget) {
-        const parent = lasttarget.parentNode;
-        if (parent && parent.nodeName == "tr") {
+        // const parent = lasttarget.parentNode;
+        const parent = lasttarget.closest("tr");
+        if (parent) {
           const newIdx = parent.attributes["index"] || 0;
           this.props.onReorder(selectedIndicies, newIdx);
           this.selectedIndicies = [...Array(this.selectedIndicies).keys()].map(i => i + newIdx);
-          this.componentUpdate({ selectedIndicies: this.selectedIndicies  });
+          this.componentUpdate({ selectedIndicies: this.selectedIndicies });
         }
       }
     });
@@ -152,21 +109,20 @@ export class ModList extends Element {
         <table #ModList >
           <thead>
             <tr>
-              <th>
+              <th class="numeric">
                 {" "}
-                <span class="resize-handle" style="display: none;"></span>
+              </th>
+              <th class="ellipsis">
+                <span class="text">Mod Name</span>
               </th>
               <th>
-                Mod Name <span class="resize-handle"></span>
+                Author
               </th>
-              <th>
-                Author <span class="resize-handle"></span>
+              <th class="numeric">
+                Version
               </th>
-              <th>
-                Version <span class="resize-handle"></span>
-              </th>
-              <th>
-                Priority <span class="resize-handle"></span>
+              <th class="numeric">
+                Priority
               </th>
             </tr>
           </thead>
@@ -183,15 +139,15 @@ export class ModList extends Element {
                   " " +
                   (!mod.enabled && "disabled")
                 }>
-                <td>
+                <td class="numeric">
                   <input
                     type="checkbox"
                     checked={mod.enabled}
                     onClick={() => this.props.onToggle(mod)}
                   />
                 </td>
-                <td>{mod.meta.name}</td>
-                <td>{mod.meta.author}</td>
+                <td class="ellipsis longer"><span class="text">{mod.meta.name}</span></td>
+                <td class="ellipsis"><span class="text">{mod.meta.author}</span></td>
                 <td class="numeric">{mod.meta.version.toFixed(1)}</td>
                 <td class="numeric">{i + 1}</td>
               </tr>
