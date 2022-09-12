@@ -122,6 +122,7 @@ pub struct Meta {
     pub name: String,
     pub version: f32,
     pub author: String,
+    pub category: String,
     pub description: String,
     pub platform: Endian,
     pub url: Option<String>,

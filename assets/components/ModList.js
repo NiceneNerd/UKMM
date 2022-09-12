@@ -116,7 +116,7 @@ export class ModList extends Element {
                 Mod Name
               </th>
               <th>
-                Author
+                Category
               </th>
               <th class="numeric">
                 Version
@@ -147,7 +147,7 @@ export class ModList extends Element {
                   />
                 </td>
                 <td class="longer">{mod.meta.name}</td>
-                <td class="medium">{mod.meta.author}</td>
+                <td class="medium">{mod.meta.category}</td>
                 <td class="numeric">{mod.meta.version.toFixed(1)}</td>
                 <td class="numeric">{i + 1}</td>
               </tr>

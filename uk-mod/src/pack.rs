@@ -80,6 +80,7 @@ impl ModPacker {
                 .context("rules.txt missing mod description")?
                 .trim_matches('"')
                 .into(),
+            category: Default::default(),
             author: Default::default(),
             masters: Default::default(),
             options: vec![],
@@ -94,6 +95,7 @@ impl ModPacker {
         Ok(Meta {
             name: info.name,
             description: info.desc,
+            category: Default::default(),
             author: Default::default(),
             masters: Default::default(),
             options: vec![],
@@ -365,6 +367,7 @@ mod tests {
                 platform: Endian::Big,
                 name: "Test Mod".into(),
                 version: 0.1,
+                category: "Overhaul".into(),
                 author: "Lord Caleb".into(),
                 description: "A test mod".into(),
                 masters: IndexMap::default(),
