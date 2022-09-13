@@ -7,7 +7,6 @@
     background-color: color(back);
     padding: 0;
     margin: 0;
-    behavior: virtual-list;
     overflow-y: auto;
     height: *;
   }

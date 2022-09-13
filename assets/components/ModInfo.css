@@ -4,6 +4,7 @@
         border-spacing: 4dip;
         size: *;
         padding: 16dip;
+        overflow-y: hidden;
     }
 
     .row {
@@ -28,5 +29,25 @@
         flow: vertical;
         border-spacing: 4dip;
         margin: 4dip 0;
+    }
+
+    .pill {
+        font-size: smaller;
+        background-color: color(panel-popup-back);
+        border-radius: 16dip;
+        color: color(text);
+        margin: 4dip;
+        padding: 6dip 12dip;
+        white-space: nowrap;
+    }
+
+    .pill.disabled {
+        background-color: color(disabled-back);
+        color: color(disabled-text);
+    }
+
+    img.preview {
+        width: *;
+        margin-bottom: 16dip;
     }
 }

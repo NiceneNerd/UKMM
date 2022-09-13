@@ -10,6 +10,7 @@ export class App extends Element {
     super(props);
     this.props = props;
     this.api = Window.this.xcall("GetApi");
+    Window.this.api = this.api;
     this.mods = [];
     this.currentMod = 0;
     this.profiles = [];

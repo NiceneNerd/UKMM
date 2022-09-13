@@ -8,7 +8,7 @@ use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use serde::{Deserialize, Serialize};
 use std::{
     hash::{Hash, Hasher},
-    io::BufReader,
+    io::{BufReader, Read},
     ops::Deref,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
@@ -22,7 +22,7 @@ pub struct Mod {
     pub enabled_options: Vec<ModOption>,
     pub enabled: bool,
     pub path: PathBuf,
-    hash: usize,
+    pub(crate) hash: usize,
 }
 
 impl std::fmt::Debug for Mod {
@@ -61,6 +61,21 @@ impl Mod {
             path: reader.path,
             enabled: false,
         }
+    }
+
+    pub fn preview(&self) -> Result<Option<Vec<u8>>> {
+        let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&self.path)?))?;
+        if let Ok(mut file) = zip.by_name("thumb.jpg") {
+            let mut vec = vec![0; file.size() as usize];
+            file.read_exact(&mut vec)?;
+            return Ok(Some(vec));
+        }
+        if let Ok(mut file) = zip.by_name("thumb.png") {
+            let mut vec = vec![0; file.size() as usize];
+            file.read_exact(&mut vec)?;
+            return Ok(Some(vec));
+        }
+        Ok(None)
     }
 }
 
@@ -285,6 +300,14 @@ impl Manager {
         }
         self.save()?;
         Ok(manifest)
+    }
+
+    pub fn get_mod(&self, hash: usize) -> Option<MappedRwLockReadGuard<'_, Mod>> {
+        if !self.mods.read().contains_key(&hash) {
+            None
+        } else {
+            Some(RwLockReadGuard::map(self.mods.read(), |mods| &mods[&hash]))
+        }
     }
 }
 

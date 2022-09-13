@@ -1,14 +1,18 @@
 export class ModInfo extends Element {
+  image = null;
+
   this(props) {
     this.props = props;
+    this.image = Window.this.api.preview(this.props.mod.hash);
   }
 
   render() {
     const mod = this.props.mod?.meta;
     return mod ? (
       <div styleset={__DIR__ + "ModInfo.css#ModInfo"}>
+        {this.image ? <img class="preview" src={this.image} /> : []}
         <Row key="Name" val={mod.name} />
-        <Row key="Version" val={mod.version.toFixed(2)} />
+        <Row key="Version" val={mod.version.toPrecision(1)} />
         <Row key="Category" val={mod.category} />
         <Row key="Author" val={mod.author} />
         {mod.url ? <Row key="Webpage" val={mod.url} /> : []}
@@ -16,20 +20,22 @@ export class ModInfo extends Element {
         {mod.option_groups?.length > 0 ? (
           <Long
             key="Options"
-            val={mod.option_groups.flatMap((group) =>
-              group.options.map((opt) => (
-                <div>
-                  <input
-                    key={opt.name}
-                    state-disabled={true}
-                    type="checkbox"
-                    checked={this.props.mod.enabled_options.includes(opt.name)}
-                  />
-                  {" "}
-                  {opt.name}
-                </div>
-              ))
-            )}
+            val={
+              <div class="hbox">
+                {mod.option_groups.flatMap(group =>
+                  group.options.map(opt => (
+                    <div
+                      class={
+                        "pill " +
+                        (!this.props.mod.enabled_options.includes(opt.name) &&
+                          "disabled")
+                      }>
+                      {opt.name}
+                    </div>
+                  ))
+                )}
+              </div>
+            }
           />
         ) : (
           []

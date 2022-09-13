@@ -2,7 +2,7 @@ use sciter::{dispatch_script_call, types::HWINDOW, Element, Value, Window, HELEM
 use std::str::FromStr;
 use std::sync::Arc;
 
-use crate::mods::LookupMod;
+use crate::mods::{LookupMod, Mod};
 
 impl crate::mods::Mod {
     pub fn to_value(&self) -> Value {
@@ -15,7 +15,7 @@ impl crate::mods::Mod {
         );
         val.set_item("enabled", Value::from(self.enabled));
         val.set_item("path", Value::from(self.path.to_str().unwrap()));
-        val.set_item("hash", Value::from(self.as_hash_id() as f64));
+        val.set_item("hash", Value::from(self.as_hash_id().to_string()));
         val
     }
 }
@@ -55,6 +55,25 @@ impl EventHandler {
                 .unwrap_or_else(|| Value::from("Default"))
         };
 
+        let preview = |args: &[Value]| -> Value {
+            let mod_manager = self.core.mod_manager();
+            let hash = args[0].as_string().unwrap().parse::<usize>().unwrap();
+            let mod_ = mod_manager.get_mod(hash).unwrap();
+            if let Ok(Some(data)) = mod_.preview() {
+                match &data[..4] {
+                    [0xff, 0xd8, 0xff, 0xe0] => {
+                        Value::from(format!("data:image/jpeg;base64,{}", base64::encode(&data)))
+                    }
+                    [0x89, 0x50, 0x4e, 0x47] => {
+                        Value::from(format!("data:image/png;base64,{}", base64::encode(&data)))
+                    }
+                    _ => Value::null(),
+                }
+            } else {
+                Value::null()
+            }
+        };
+
         let check_hash = |args: &[Value]| {
             println!("{}", args[0].to_float().unwrap());
         };
@@ -62,6 +81,7 @@ impl EventHandler {
         let mut api = Value::new();
         api.set_item("mods", mods);
         api.set_item("profiles", profiles);
+        api.set_item("preview", preview);
         api.set_item("current_profile", current_profile);
         api.set_item("check_hash", check_hash);
         api

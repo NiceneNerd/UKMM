@@ -13,11 +13,11 @@
 
   .strip .tab-button {
     box-sizing: border-box;
-    border-radius: 4dip;
+    border-radius: 6dip;
     background-color: color(back);
     font-size: 14dip;
-    margin: 1dip;
-    padding: 4dip 8dip;
+    margin: 2dip;
+    padding: 8dip 12dip;
     white-space: nowrap;
     width: auto;
   }

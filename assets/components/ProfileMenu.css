@@ -1,0 +1,13 @@
+@set ProfileMenu {
+    :root {
+        border-spacing: 8dip;
+        font-size: smaller;
+        flow: horizontal;
+        padding: 4dip 8dip;
+    }
+
+    select {
+        padding: 2dip;
+        font-size: 9pt;
+    }
+}

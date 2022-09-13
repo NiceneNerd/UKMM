@@ -92,6 +92,23 @@ export class ModList extends Element {
     });
   }
 
+  ["on keyup at #ModList"](e) {
+    if (this.selectedIndicies.length == 0) return;
+    let selectedIdx = this.selectedIndicies[this.selectedIndicies.length - 1];
+    let newIdx;
+    if (e.code == "ArrowUp") {
+      newIdx = Math.max(0, selectedIdx - 1);
+    } else if (e.code == "ArrowDown") {
+      newIdx = Math.min(this.props.mods.length - 1, selectedIdx + 1);
+    } else {
+      return;
+    }
+    this.componentUpdate({ selectedIndicies: [newIdx] });
+    this.props.onSelect(newIdx);
+    e.preventDefault();
+    return false;
+  }
+
 
   handleRowClick(e, index) {
     if (!e.ctrlKey) {
