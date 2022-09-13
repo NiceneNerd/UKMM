@@ -11,10 +11,12 @@ export class ModList extends Element {
     this.dragPlaceholder = null;
     this.coords = { x: 0, y: 0 };
     this.table = false;
+    this.filtered = [];
   }
 
   this(props) {
     this.props = props;
+    this.filtered = props.mods.map(mod => mod.hash);
   }
 
   componentDidMount() {
@@ -123,6 +125,10 @@ export class ModList extends Element {
     }
   }
 
+  handleSort(key) {
+    throw "todo";
+  }
+
   render() {
     return (
       <div styleset={__DIR__ + "ModList.css#ModList"}>
@@ -147,31 +153,35 @@ export class ModList extends Element {
             </tr>
           </thead>
           <tbody>
-
-            {this.props.mods.map((mod, i) => (
-              <tr
-                index={i}
-                key={mod.hash}
-                onClick={e => this.handleRowClick(e, i)}
-                onMouseDragRequest={e => this.handleDragStart(e, i)}
-                class={
-                  (this.selectedIndicies.includes(i) && "selected") +
-                  " " +
-                  (!mod.enabled && "disabled")
-                }>
-                <td class="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={mod.enabled}
-                    onClick={() => this.props.onToggle(mod)}
-                  />
-                </td>
-                <td class="longer">{mod.meta.name}</td>
-                <td class="medium">{mod.meta.category}</td>
-                <td class="numeric">{mod.meta.version.toFixed(1)}</td>
-                <td class="numeric">{i + 1}</td>
-              </tr>
-            ))}
+            {this.filtered.map(hash => {
+              let [mod, i] = this.props.mods
+                .map((m, i) => [m, i])
+                .find(([m, i]) => m.hash == hash);
+              return (
+                <tr
+                  index={i}
+                  key={mod.hash}
+                  onClick={e => this.handleRowClick(e, i)}
+                  onMouseDragRequest={e => this.handleDragStart(e, i)}
+                  class={
+                    (this.selectedIndicies.includes(i) && "selected") +
+                    " " +
+                    (!mod.enabled && "disabled")
+                  }>
+                  <td class="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={mod.enabled}
+                      onClick={() => this.props.onToggle(mod)}
+                    />
+                  </td>
+                  <td class="longer">{mod.meta.name}</td>
+                  <td class="medium">{mod.meta.category}</td>
+                  <td class="numeric">{mod.meta.version.toFixed(1)}</td>
+                  <td class="numeric">{i}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
