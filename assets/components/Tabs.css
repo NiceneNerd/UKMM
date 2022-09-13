@@ -1,8 +1,9 @@
 @set Tabs {
   :root {
-    background-color: color(back);
+    background-color: color(panel-back);
     flow: vertical;
     padding: 2dip;
+    min-width: min-content;
     size: *;
   }
 
@@ -14,7 +15,7 @@
   .strip .tab-button {
     box-sizing: border-box;
     border-radius: 6dip;
-    background-color: color(back);
+    background-color: color(panel-back);
     font-size: 14dip;
     margin: 2dip;
     padding: 8dip 12dip;
@@ -23,7 +24,7 @@
   }
 
   .strip .tab-button.active {
-    background-color: color(panel-back);
+    background-color: color(back);
   }
 
   .strip .tab-button:hover {
@@ -31,7 +32,7 @@
   }
 
   .tab {
-    background-color: color(back);
+    background-color: color(panel-back);
     height: *;
   }
 }

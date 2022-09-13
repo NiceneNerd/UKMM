@@ -26,8 +26,31 @@
 
   th {
     text-align: center;
+    border: 1dip dashed transparent;
     border-right: 1dip color(panel-back) solid;
   }
+
+  th:hover {
+    border: 1dip dashed morph(color(back), darken: 2%);
+  }
+
+  th:active {
+    background-color: morph(color(back), darken: 5%);
+    border: 1dip dashed color(back);
+  }
+
+  td,
+  th {
+    padding: 4dip 8dip;
+  }
+
+  td {
+    height: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
 
   tbody tr:nth-child(odd) {
     background-color: color(panel-back);
@@ -58,19 +81,6 @@
   tr.dragging {
     opacity: 0.3;
   }
-
-  td,
-  th {
-    padding: 4dip 8dip;
-  }
-
-  td {
-    height: auto;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .longer {
     width: 3*;
   }

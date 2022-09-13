@@ -4,6 +4,7 @@ import { MenuBar } from "./components/MenuBar";
 import { Tabs, Tab } from "./components/Tabs";
 import { ProfileMenu } from "./components/ProfileMenu";
 import { ModInfo } from "./components/ModInfo";
+import { Toolbar } from "./components/Toolbar";
 
 export class App extends Element {
   constructor(props) {
@@ -33,7 +34,7 @@ export class App extends Element {
 
   handleToggle(mod) {
     mod.enabled = !mod.enabled;
-    this.componentUpdate({ mods: this.mods, dirty: true });
+    this.componentUpdate({ mods: this.mods.slice(), dirty: true });
   }
 
   handleReorder(oldIdxs, newIdx) {
@@ -64,10 +65,18 @@ export class App extends Element {
         <MenuBar />
         <frameset cols="*,36%" style="size: *;">
           <div style="size: *;">
-            <ProfileMenu
-              currentProfile={this.currentProfile}
-              profiles={this.profiles}
-            />
+            <Toolbar>
+              <ProfileMenu
+                currentProfile={this.currentProfile}
+                profiles={this.profiles}
+              />
+              <div class="spacer"></div>
+              <div class="counter">
+                <strong>{this.mods.length}</strong> Mods /{" "}
+                <strong>{this.mods.filter((m) => m.enabled).length} </strong>
+                Active
+              </div>
+            </Toolbar>
             <frameset rows="*,15%" style="size: *;">
               <ModList
                 mods={this.mods}

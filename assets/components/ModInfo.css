@@ -25,6 +25,10 @@
         text-align: right;
     }
 
+    .md {
+        behavior: markdown;
+    }
+
     .long {
         flow: vertical;
         border-spacing: 4dip;

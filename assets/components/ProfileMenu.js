@@ -1,3 +1,6 @@
+import { Plus } from "../icons/Plus";
+import { Trash } from "../icons/Trash";
+
 export class ProfileMenu extends Element {
   this(props) {
     this.props = props;
@@ -12,6 +15,12 @@ export class ProfileMenu extends Element {
             <option key={profile}>{profile}</option>
           ))}
         </select>
+        <button .icon title="Delete Profile">
+          <Trash />
+        </button>
+        <button .icon title="New Profile">
+          <Plus />
+        </button>
       </div>
     );
   }

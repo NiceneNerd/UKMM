@@ -5,7 +5,7 @@ html, body {
 }
 
 splitter {
-    border: 2dip solid color(button-pressed-back);
+    border: 0.5dip solid color(button-pressed-back);
 }
 
 frameset[rows] > splitter {
@@ -16,6 +16,42 @@ frameset[rows] > splitter {
 frameset[cols] > splitter {
     width: 0;
     height: 100%;
+}
+
+.spacer {
+  width: *;
+}
+
+.counter {
+  background-color: color(button-pressed-back);
+  padding: 4dip 8dip;
+  border-radius: 6dip;
+}
+
+popup[role="tooltip"] {
+  background-color: color(panel-back);
+  color: color(panel-text);
+  border-radius: 8dip;
+  border: 1dip solid color(button-pressed-back);
+  padding: 4dip 8dip;
+}
+
+button.icon {
+    font-rendering-mode: sub-pixel;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-sizing: border-box;
+    font-size: 16dip;
+    max-height: 24dip;
+    padding: 0 2dip !important;
+}
+
+button.icon:hover {
+    background-color: color(button-back) !important;
+}
+
+button.icon:active {
+    background-color: color(button-pressed-back) !important;
 }
 
 /*
@@ -718,4 +754,25 @@ slider {
 progress {
   display: inline-block;
   style-set: std-progress;
+}
+
+/* -----
+SVG Icons - svgicons.sparkk.fr
+----- */
+
+.svg-icon {
+  width: 1em;
+  height: 1em;
+  background-color: transparent;
+}
+
+.svg-icon path,
+.svg-icon polygon,
+.svg-icon rect {
+  fill: color(text);
+}
+
+.svg-icon circle {
+  stroke: color(text);
+  stroke-width: 1;
 }

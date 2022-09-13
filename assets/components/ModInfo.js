@@ -16,20 +16,21 @@ export class ModInfo extends Element {
         <Row key="Category" val={mod.category} />
         <Row key="Author" val={mod.author} />
         {mod.url ? <Row key="Webpage" val={mod.url} /> : []}
-        <Long key="Description" val={mod.description} />
+        <Long key="Description" markdown={true} val={mod.description} />
         {mod.option_groups?.length > 0 ? (
           <Long
             key="Options"
             val={
               <div class="hbox">
-                {mod.option_groups.flatMap(group =>
-                  group.options.map(opt => (
+                {mod.option_groups.flatMap((group) =>
+                  group.options.map((opt) => (
                     <div
                       class={
                         "pill " +
                         (!this.props.mod.enabled_options.includes(opt.name) &&
                           "disabled")
-                      }>
+                      }
+                    >
                       {opt.name}
                     </div>
                   ))
@@ -54,9 +55,9 @@ const Row = ({ key, val }) => (
   </div>
 );
 
-const Long = ({ key, val }) => (
+const Long = ({ key, val, markdown }) => (
   <div class="long">
     <div class="label">{key}</div>
-    <div class="data">{val}</div>
+    <div class={"data " + (markdown && "md")}>{val}</div>
   </div>
 );

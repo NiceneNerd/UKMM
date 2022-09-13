@@ -1,9 +1,7 @@
 @set ProfileMenu {
     :root {
         border-spacing: 8dip;
-        font-size: smaller;
         flow: horizontal;
-        padding: 4dip 8dip;
     }
 
     select {

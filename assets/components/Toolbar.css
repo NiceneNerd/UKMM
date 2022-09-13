@@ -1,0 +1,10 @@
+@set Toolbar {
+    :root {
+        flow: horizontal;
+        font-size: smaller;
+        border-spacing: 4dip;
+        padding: 4dip 8dip;
+    }
+
+    
+}

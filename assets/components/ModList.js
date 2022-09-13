@@ -4,7 +4,9 @@ export class ModList extends Element {
     this.selectedIndicies = [];
     this.handleRowClick = this.handleRowClick.bind(this);
     this.handleDragStart = this.handleDragStart.bind(this);
-    this.updateColumns = this.updateColumns.bind(this);
+    this.handleSort = this.handleSort.bind(this);
+    this.modGetter = this.modGetter.bind(this);
+    this.sort = ["priority", false];
     this.isDragging = false;
     this.draggingRow = false;
     this.shadowList = [];
@@ -16,28 +18,11 @@ export class ModList extends Element {
 
   this(props) {
     this.props = props;
-    this.filtered = props.mods.map(mod => mod.hash);
+    this.filtered = [...props.mods];
   }
 
   componentDidMount() {
     this.table = document.querySelector("#ModList");
-    this.updateColumns();
-  }
-
-  updateColumns() {
-    if (!this.table) {
-      this.table = document.querySelector("#ModList");
-    }
-    this.columns = {};
-    for (const [i, col] of this.table.querySelectorAll("th").entries()) {
-      this.columns[i] = { header: col, size: false };
-    }
-  }
-
-  componentDidUpdate() {
-    if (!this.columns) {
-      this.updateColumns();
-    }
   }
 
   handleDragStart(evt, index) {
@@ -82,7 +67,6 @@ export class ModList extends Element {
       document.attributes["dnd"] = undefined;
 
       if (r && lasttarget) {
-        // const parent = lasttarget.parentNode;
         const parent = lasttarget.closest("tr");
         if (parent) {
           const newIdx = parent.attributes["index"] || 0;
@@ -125,8 +109,38 @@ export class ModList extends Element {
     }
   }
 
-  handleSort(key) {
-    throw "todo";
+  modGetter(field) {
+    switch(field) {
+      case "enabled":
+        return mod => mod.enabled;
+      case "priority":
+        return mod => this.props.mods.indexOf(mod);
+      default:
+        return mod => mod.meta[field];
+    }
+  }
+
+  handleSort(e) {
+    const field = e.target.attributes["field"];
+    let sort = this.sort;
+    if (sort[0] == field) {
+      sort[1] = !sort[1];
+    } else {
+      sort[0] = field;
+    }
+    const get = this.modGetter(field);
+    let filtered = this.filtered.slice();
+    filtered.sort((a, b) => {
+      let [valA, valB] = [get(a), get(b)];
+      if (valA > valB) {
+        return sort[1] ? -1 : 1;
+      } else if (valA < valB) {
+        return sort[1] ? 1 : -1;
+      } else {
+        return 0;
+      }
+    });
+    this.componentUpdate({ filtered, sort });
   }
 
   render() {
@@ -135,28 +149,26 @@ export class ModList extends Element {
         <table #ModList >
           <thead>
             <tr>
-              <th class="checkbox">
+              <th class="checkbox" field="enabled" onClick={this.handleSort}>
                 {" "}
               </th>
-              <th>{/* <th class="ellipsis"> */}
+              <th field="name" onClick={this.handleSort}>
                 Mod Name
               </th>
-              <th>
+              <th field="category" onClick={this.handleSort}>
                 Category
               </th>
-              <th class="numeric">
+              <th class="numeric" field="version" onClick={this.handleSort}>
                 Version
               </th>
-              <th class="numeric">
+              <th class="numeric" field="priority" onClick={this.handleSort}>
                 Priority
               </th>
             </tr>
           </thead>
           <tbody>
-            {this.filtered.map(hash => {
-              let [mod, i] = this.props.mods
-                .map((m, i) => [m, i])
-                .find(([m, i]) => m.hash == hash);
+            {this.filtered.map(mod => {
+              let i = this.props.mods.indexOf(mod);
               return (
                 <tr
                   index={i}
