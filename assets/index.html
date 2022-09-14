@@ -1,12 +1,15 @@
 <html window-resizeable theme="dark">
-<head>
+  <head>
     <title>U-King Mod Manager</title>
     <link rel="stylesheet" href="App.css" />
     <script type="module">
-        import { App } from "App.js";
-        document.body.patch(<App />);
+      import Modal from "components/Modal.js";
+      import { App } from "App.js";
+      Window.this.question = (kids) => {
+        Window.this.modal(<question>{kids}</question>)
+      };
+      document.body.patch(<App />);
     </script>
-</head>
-<body>
-</body>
+  </head>
+  <body></body>
 </html>

@@ -15,7 +15,7 @@ export class ProfileMenu extends Element {
             <option key={profile}>{profile}</option>
           ))}
         </select>
-        <button .icon title="Delete Profile">
+        <button .icon title="Delete Profile" onClick={() => Window.this.question(<p>Do you want to delete this?</p>)}>
           <Trash />
         </button>
         <button .icon title="New Profile">

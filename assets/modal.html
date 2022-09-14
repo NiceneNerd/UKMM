@@ -1,0 +1,12 @@
+<html window-resizeable theme="dark">
+  <head>
+    <link rel="stylesheet" href="styles/windows-flat.css" />
+    <script type="module">
+        const params = Window.this.parameters;
+        document.getRootNode().setAttribute("theme", params.theme);
+        document.body.patch(params.content);
+      </script>
+  </head>
+  <body>
+  </body>
+</html>
