@@ -33,6 +33,7 @@ popup[role="tooltip"] {
   color: color(panel-text);
   border-radius: 8dip;
   border: 1dip solid color(button-pressed-back);
+  box-shadow: 0 2dip 16dip rgba(0, 0, 0, 0.25);
   padding: 4dip 8dip;
 }
 
