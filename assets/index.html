@@ -6,7 +6,7 @@
       import Modal from "components/Modal.js";
       import { App } from "App.js";
       Window.this.question = (kids) => {
-        return Window.this.modal(<question><Modal>{kids}</Modal></question>);
+        return Window.this.modal(<question caption="Confirm"><Modal>{kids}</Modal></question>);
       };
       document.body.patch(<App />);
     </script>
