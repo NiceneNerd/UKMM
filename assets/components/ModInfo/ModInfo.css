@@ -5,11 +5,12 @@
         size: *;
         padding: 16dip;
         overflow-y: hidden;
+        min-width: min-content;
     }
 
     .row {
         flow: horizontal;
-        margin: 4dip 0;
+        margin: 8dip 0;
     }
 
     .label {
@@ -32,7 +33,7 @@
     .long {
         flow: vertical;
         border-spacing: 4dip;
-        margin: 4dip 0;
+        margin: 8dip 0;
     }
 
     .pill {

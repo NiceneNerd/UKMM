@@ -1,10 +1,10 @@
-import { ModList } from "./components/ModList";
-import { Log } from "./components/Log";
-import { MenuBar } from "./components/MenuBar";
-import { Tabs, Tab } from "./components/Tabs";
-import { ProfileMenu } from "./components/ProfileMenu";
-import { ModInfo } from "./components/ModInfo";
-import { Toolbar } from "./components/Toolbar";
+import { ModList } from "./components/ModList/ModList";
+import { Log } from "./components/Log/Log";
+import { MenuBar } from "./components/MenuBar/MenuBar";
+import { Tabs, Tab } from "./components/Tabs/Tabs";
+import { ProfileMenu } from "./components/ProfileMenu/ProfileMenu";
+import { ModInfo } from "./components/ModInfo/ModInfo";
+import { Toolbar } from "./components/Toolbar/Toolbar";
 
 export class App extends Element {
   constructor(props) {
@@ -90,11 +90,11 @@ export class App extends Element {
           </div>
           <splitter />
           <Tabs>
-            <Tab label="Install">
-              <p>todo</p>
-            </Tab>
             <Tab label="Mod Info">
               <ModInfo mod={this.mods[this.currentMod]} />
+            </Tab>
+            <Tab label="Install">
+              <folder filter="*.zip;*.7z" />
             </Tab>
           </Tabs>
         </frameset>

@@ -1,6 +1,6 @@
-import { Plus } from "../icons/Plus";
-import { Trash } from "../icons/Trash";
-import { Overflow } from "../icons/Overflow";
+import { Plus } from "../../icons/Plus";
+import { Trash } from "../../icons/Trash";
+import { Overflow } from "../../icons/Overflow";
 
 export class ProfileMenu extends Element {
   this(props) {

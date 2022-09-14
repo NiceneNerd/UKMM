@@ -1,0 +1,92 @@
+@set folder-view
+{
+  :root {
+    prototype: FolderView url(FolderView.js);
+    display:block;
+    size:*;
+    flow:vertical; 
+    background: color(panel-back);
+    border: 0;
+  }  
+
+  select.path {
+    display:block;
+    max-width: 100%;
+    flow:horizontal;
+    overflow-x:auto;
+    height:1.6em;
+    border:none;
+    background:none;
+  }
+
+  select.path > option {
+    height:1.6em;
+    line-height:height(100%);
+    max-width:max-content;
+    padding:0;
+  }
+
+  select:not(:focus) > option {background:transparent;}
+
+  select.path > option:nth-child(1n+2)::after {
+    content:"/";
+  }
+
+  select.path > option.up {
+    width:24dip; 
+    height:1.6em;
+    max-width:24dip; 
+    min-width:24dip; 
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    background-image: url(path: M52,83.999V21.655l21.172,21.172c1.562,1.562,4.094,1.562,5.656,0c1.562-1.562,1.562-4.095,0-5.657l-28-28
+      c-1.562-1.562-4.095-1.562-5.656,0l-28,28C16.391,37.951,16,38.974,16,39.999c0,1.023,0.391,2.047,1.172,2.828
+      c1.562,1.562,4.095,1.562,5.656,0L44,21.655v62.344c0,2.209,1.791,4,4,4S52,86.208,52,83.999z);
+    background-size: 0.7em; 
+    fill: color(button-text);
+    stroke:none;
+  }
+
+  select.content {
+    display:block;
+    size:*;
+    flow:vertical-wrap;
+    overflow-x:scroll-indicator;
+    overflow-y:none;
+    border-spacing:3dip 1dip;
+    border:none;
+    background: color(back);
+    border-top: 1dip solid color(widget-border);
+  }  
+
+  select.content > option 
+  {
+    foreground-repeat: no-repeat;
+    foreground-position: 2dip 50%;
+    padding-left: 24dip;
+    padding-right: 4dip;
+    width:max-content;
+    max-width:100%;
+    overflow-x:hidden;
+    text-overflow:ellipsis;
+    flow:text;
+  }
+
+  select.content > option.file { behavior:shell-icon; /*shows real icons*/ } 
+
+  select.content > option.folder { 
+    foreground-image:url(path:M18.208,2.958H8.875V1.792c0-0.644-0.522-1.167-1.167-1.167H1.875c-0.644,0-1.167,0.522-1.167,1.167v16.333
+    c0,0.645,0.522,1.166,1.167,1.166h16.333c0.645,0,1.167-0.521,1.167-1.166v-14C19.375,3.48,18.853,2.958,18.208,2.958z
+     M18.208,17.542c0,0.322-0.261,0.583-0.583,0.583H2.458c-0.323,0-0.583-0.261-0.583-0.583V6.458h16.333V17.542z M17.625,5.292
+    H1.875V2.375c0-0.323,0.261-0.583,0.583-0.583h4.667c0.323,0,0.583,0.261,0.583,0.583v1.75h9.917c0.322,0,0.583,0.261,0.583,0.583
+    C18.208,5.031,17.947,5.292,17.625,5.292z); 
+    stroke: color(panel-text);
+    stroke-width:1dip;
+    foreground-size:16dip; 
+  } 
+}
+
+/* this allows it to be used in HTML as <folder /> */
+folder {
+  style-set: folder-view;
+}

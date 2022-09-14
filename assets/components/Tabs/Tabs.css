@@ -3,7 +3,6 @@
     background-color: color(panel-back);
     flow: vertical;
     padding: 2dip;
-    min-width: min-content;
     size: *;
   }
 
