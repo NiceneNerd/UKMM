@@ -20,10 +20,6 @@
     background-color: color(back);
   }
 
-  tbody {
-    //background-color: color(panel-back);
-  }
-
   th {
     text-align: center;
     border: 1dip dashed transparent;
