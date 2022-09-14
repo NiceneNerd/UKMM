@@ -7,5 +7,6 @@
     select {
         padding: 2dip;
         font-size: 9pt;
+        width: *;
     }
 }
