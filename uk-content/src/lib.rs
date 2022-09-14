@@ -1,4 +1,4 @@
-#![feature(type_alias_impl_trait, drain_filter, arbitrary_self_types)]
+#![feature(type_alias_impl_trait, drain_filter, arbitrary_self_types, let_chains)]
 #![allow(clippy::derive_partial_eq_without_eq)]
 use smartstring::alias::String;
 use std::path::Path;

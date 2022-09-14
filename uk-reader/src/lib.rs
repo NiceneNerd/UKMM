@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 // mod nsp;
 mod unpacked;
 mod zarchive;

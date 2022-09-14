@@ -1,4 +1,4 @@
-#![feature(seek_stream_len)]
+#![feature(seek_stream_len, let_chains)]
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;

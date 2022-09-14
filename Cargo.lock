@@ -1551,9 +1551,9 @@ dependencies = [
 
 [[package]]
 name = "roead"
-version = "0.16.1"
+version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "735f4a316094f966ac6e840d724239958a7499e8ebc2c17019e717d2ce41fcbb"
+checksum = "ec9f079c3b6b2045fdf71a1bdc4139d87e767d74cd935574ed23ac418a1de4be"
 dependencies = [
  "almost",
  "binrw",

@@ -15,7 +15,7 @@ minicbor-ser = "0.1.3"
 parking_lot = "0.12.1"
 path-slash = "0.2.0"
 rayon = "1.5.3"
-roead = { version = "0.16.1", features = ["with-serde"] }
+roead = { version = "0.16.2", features = ["with-serde"] }
 rstb = "0.3.2"
 sanitise-file-name = "1.0.0"
 serde = { version = "1.0.137", features = ["derive"] }
