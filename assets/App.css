@@ -29,6 +29,8 @@ frameset[cols] > splitter {
   background-color: color(button-pressed-back);
   padding: 4dip 8dip;
   border-radius: 6dip;
+  min-width: min-content;
+  white-space: nowrap;
 }
 
 popup[role="tooltip"] {

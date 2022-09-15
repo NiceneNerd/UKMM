@@ -1,0 +1,18 @@
+@set DirtyBar {
+    :root {
+        flow: horizontal;
+        border-spacing: 8dip;
+        background-color: #4CAF50; /* mat-green500 */
+        padding: 4dip 16dip;
+        max-height: calc(11pt + 8dip);
+    }
+
+    :root * {
+        vertical-align: middle;
+    }
+
+    .label {
+        width: *;
+        font-weight: bold;
+    }
+}

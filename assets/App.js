@@ -6,25 +6,27 @@ import { ProfileMenu } from "./components/ProfileMenu/ProfileMenu";
 import { ModInfo } from "./components/ModInfo/ModInfo";
 import { Toolbar } from "./components/Toolbar/Toolbar";
 import { FolderView } from "./components/FolderView/FolderView";
+import { DirtyBar } from "./components/DirtyBar/DirtyBar";
 
 export class App extends Element {
+  dirty = false;
+  mods = [];
+  currentMod = 0;
+  profiles = [];
+  currentProfile = "Default";
+  log = [];
+
   constructor(props) {
     super(props);
     this.props = props;
     this.api = Window.this.xcall("GetApi");
     Window.this.api = this.api;
-    this.mods = [];
-    this.currentMod = 0;
-    this.profiles = [];
-    this.currentProfile = "Default";
     this.handleToggle = this.handleToggle.bind(this);
     this.handleReorder = this.handleReorder.bind(this);
     this.handleLog = this.handleLog.bind(this);
     Window.this.log = this.handleLog;
     this.handleSelect = this.handleSelect.bind(this);
     this.handleOpen = this.handleOpen.bind(this);
-    this.dirty = false;
-    this.log = [];
   }
 
   componentDidMount() {
@@ -48,7 +50,7 @@ export class App extends Element {
       newIdx == 0
         ? [...modsToMove, ...this.mods]
         : [...this.mods.slice(0, newIdx), ...modsToMove, ...this.mods.slice(newIdx)];
-    this.componentUpdate({ mods });
+    this.componentUpdate({ mods, dirty: true });
   }
 
   handleSelect(index) {
@@ -90,6 +92,7 @@ export class App extends Element {
                 onReorder={this.handleReorder}
                 onSelect={this.handleSelect}
               />
+              {this.dirty ? <DirtyBar onApply={() => console.log("Hey")} /> : []}
               <splitter />
               <Log logs={this.log} />
             </frameset>

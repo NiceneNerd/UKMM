@@ -11,6 +11,7 @@
     .row {
         flow: horizontal;
         margin: 8dip 0;
+        border-spacing: 8dip;
     }
 
     .label {
