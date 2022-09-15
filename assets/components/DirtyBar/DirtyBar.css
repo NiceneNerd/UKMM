@@ -1,10 +1,10 @@
 @set DirtyBar {
     :root {
         flow: horizontal;
-        border-spacing: 8dip;
+        border-spacing: 2dip;
         background-color: #4CAF50; /* mat-green500 */
         padding: 4dip 16dip;
-        max-height: calc(11pt + 8dip);
+        max-height: min-content; /* calc(11pt + 8dip); */
     }
 
     :root * {

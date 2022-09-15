@@ -58,6 +58,11 @@ button.icon svg {
     size: 16dip 16dip;
 }
 
+button.icon.danger svg {
+  box-sizing: border-box;
+  fill: #f44336;
+}
+
 button:disabled.icon svg {
   fill: color(disabled-text);
 }

@@ -6,6 +6,7 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use std::{
     hash::{Hash, Hasher},
     io::{BufReader, Read},
@@ -15,6 +16,7 @@ use std::{
 };
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
 
+#[serde_as]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Mod {
     pub meta: Meta,
@@ -22,6 +24,7 @@ pub struct Mod {
     pub enabled_options: Vec<ModOption>,
     pub enabled: bool,
     pub path: PathBuf,
+    #[serde_as(as = "DisplayFromStr")]
     pub(crate) hash: usize,
 }
 
@@ -136,7 +139,7 @@ impl Manager {
     pub fn init_from(mod_dir: &Path, settings: &Arc<RwLock<Settings>>) -> Result<Self> {
         log::info!("Initializing mod manager");
         if !mod_dir.exists() {
-            fs::create_dir_all(&mod_dir)?;
+            fs::create_dir_all(mod_dir)?;
             log::info!("Created mod directory at {}", mod_dir.display());
             let self_ = Self {
                 dir: mod_dir.to_path_buf(),

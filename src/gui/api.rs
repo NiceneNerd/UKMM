@@ -1,7 +1,8 @@
-use std::ops::Deref;
-
-use crate::core::Manager;
+use crate::{core::Manager, mods::Mod};
+use anyhow::Result;
 use sciter::Value;
+use std::ops::Deref;
+use uk_mod::Manifest;
 
 impl Manager {
     pub fn api(&self) -> Value {
@@ -57,6 +58,11 @@ impl Manager {
         let settings =
             |_args: &[Value]| -> Value { sciter_serde::to_value(self.settings().deref()).unwrap() };
 
+        let apply = |args: &[Value]| -> Value {
+            let mods: Vec<Mod> = serde_json::from_str(&args[0].as_string().unwrap()).unwrap();
+            self.apply_changes(mods).into()
+        };
+
         let check_hash = |args: &[Value]| {
             println!("{}", args[0].to_float().unwrap());
         };
@@ -68,6 +74,16 @@ impl Manager {
         api.set_item("current_profile", current_profile);
         api.set_item("check_hash", check_hash);
         api.set_item("settings", settings);
+        api.set_item("apply", apply);
         api
+    }
+
+    fn apply_changes(&self, changed_mods: Vec<Mod>) -> Result<()> {
+        let manager = self.mod_manager();
+        let mods = manager.all_mods().collect::<Vec<_>>();
+        let mut manifest = Manifest::default();
+        let mut match_index = 0;
+        todo!("Diff mod list");
+        Ok(())
     }
 }

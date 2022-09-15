@@ -27,6 +27,7 @@ export class App extends Element {
     Window.this.log = this.handleLog;
     this.handleSelect = this.handleSelect.bind(this);
     this.handleOpen = this.handleOpen.bind(this);
+    this.handleApply = this.handleApply.bind(this);
   }
 
   componentDidMount() {
@@ -67,6 +68,15 @@ export class App extends Element {
     console.log(path);
   }
 
+  handleApply() {
+    try {
+      this.api.apply(JSON.stringify(this.mods));
+    } catch (error) {
+      console.log(error);
+      Window.this.modal(<error caption="Error">{error}</error>);
+    }
+  }
+
   render() {
     return (
       <div style="flow: vertical; size: *;">
@@ -92,7 +102,7 @@ export class App extends Element {
                 onReorder={this.handleReorder}
                 onSelect={this.handleSelect}
               />
-              {this.dirty ? <DirtyBar onApply={() => console.log("Hey")} /> : []}
+              {this.dirty ? <DirtyBar onApply={this.handleApply} /> : []}
               <splitter />
               <Log logs={this.log} />
             </frameset>
