@@ -1,8 +1,7 @@
-use sciter::{dispatch_script_call, types::HWINDOW, Element, Value, Window, HELEMENT};
-use std::str::FromStr;
+mod api;
+use crate::mods::LookupMod;
+use sciter::{dispatch_script_call, Element, Value, HELEMENT};
 use std::sync::Arc;
-
-use crate::mods::{LookupMod, Mod};
 
 impl crate::mods::Mod {
     pub fn to_value(&self) -> Value {
@@ -27,64 +26,9 @@ struct EventHandler {
 
 impl EventHandler {
     #[allow(non_snake_case)]
+    #[inline(always)]
     fn GetApi(&mut self) -> Value {
-        let mods = |_args: &[Value]| -> Value {
-            let mods = self
-                .core
-                .mod_manager()
-                .all_mods()
-                .map(|m| m.to_value())
-                .collect();
-            log::debug!("{:?}", &mods);
-            mods
-        };
-
-        let profiles = |_args: &[Value]| -> Value {
-            self.core
-                .settings()
-                .profiles()
-                .map(|p| Value::from(p.as_str()))
-                .collect()
-        };
-
-        let current_profile = |_args: &[Value]| -> Value {
-            self.core
-                .settings()
-                .platform_config()
-                .map(|config| Value::from(config.profile.as_str()))
-                .unwrap_or_else(|| Value::from("Default"))
-        };
-
-        let preview = |args: &[Value]| -> Value {
-            let mod_manager = self.core.mod_manager();
-            let hash = args[0].as_string().unwrap().parse::<usize>().unwrap();
-            let mod_ = mod_manager.get_mod(hash).unwrap();
-            if let Ok(Some(data)) = mod_.preview() {
-                match &data[..4] {
-                    [0xff, 0xd8, 0xff, 0xe0] => {
-                        Value::from(format!("data:image/jpeg;base64,{}", base64::encode(&data)))
-                    }
-                    [0x89, 0x50, 0x4e, 0x47] => {
-                        Value::from(format!("data:image/png;base64,{}", base64::encode(&data)))
-                    }
-                    _ => Value::null(),
-                }
-            } else {
-                Value::null()
-            }
-        };
-
-        let check_hash = |args: &[Value]| {
-            println!("{}", args[0].to_float().unwrap());
-        };
-
-        let mut api = Value::new();
-        api.set_item("mods", mods);
-        api.set_item("profiles", profiles);
-        api.set_item("preview", preview);
-        api.set_item("current_profile", current_profile);
-        api.set_item("check_hash", check_hash);
-        api
+        self.core.api()
     }
 }
 

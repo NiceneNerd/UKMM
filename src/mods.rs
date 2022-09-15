@@ -181,16 +181,16 @@ impl Manager {
         Self::init_from(&settings.read().mods_dir(), settings)
     }
 
-    /// Iterate all enabled mods in load order.
-    pub fn mods(&self) -> ModIterator<'_> {
+    /// Iterate all mods, including disabled, in load order.
+    pub fn all_mods(&self) -> ModIterator<'_> {
         ModIterator {
             index: 0,
             manager: self,
         }
     }
 
-    /// Iterate all mods, including disabled, in load order.
-    pub fn all_mods(&self) -> impl Iterator<Item = MappedRwLockReadGuard<'_, Mod>> {
+    /// Iterate all enabled mods in load order.
+    pub fn mods(&self) -> impl Iterator<Item = MappedRwLockReadGuard<'_, Mod>> {
         ModIterator {
             index: 0,
             manager: self,
