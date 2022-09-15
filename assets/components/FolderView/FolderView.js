@@ -7,6 +7,14 @@ import { Open } from "../../icons/Open";
 const EXTENSIONS = ["zip", "7z"];
 const SEP = env.OS.includes("Windows") ? "\\" : "/";
 
+const isRoot = (path) => {
+  if (env.OS.includes("Windows")) {
+    return this.folder.split(SEP).length == 1;
+  } else {
+    return path == "/";
+  }
+};
+
 export class FolderView extends Element {
   folder = "";
   children = [];
@@ -32,8 +40,8 @@ export class FolderView extends Element {
   }
 
   goUp() {
+    if (isRoot(this.folder)) return;
     let parts = this.folder.split(SEP);
-    if (parts.length == 1) return;
     parts.pop();
     this.componentUpdate({
       history: [...this.history, this.folder],
@@ -65,7 +73,7 @@ export class FolderView extends Element {
 
   loadFolder() {
     const items = sys.fs
-      .$readdir(this.folder)
+      .$readdir(this.folder || "/")
       .filter(
         (item) =>
           !item.name.startsWith(".") &&
@@ -76,7 +84,7 @@ export class FolderView extends Element {
         if (a.type != b.type) {
           return b.type - a.type;
         } else {
-          return a.name > b.name;
+          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
         }
       });
     this.componentUpdate({
@@ -153,7 +161,7 @@ export class FolderView extends Element {
           <button class="icon" title="Open…" onClick={this.handleOpen}>
             <Open />
           </button>
-          <input type="text" class="path" value={this.folder} />
+          <input type="text" class="path" value={this.folder || "/"} />
         </nav>
         <select type="list" class="content" system={this.system}>
           {this.children.map((child) => (
