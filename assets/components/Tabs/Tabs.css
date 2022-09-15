@@ -3,7 +3,7 @@
     background-color: color(panel-back);
     flow: vertical;
     padding: 2dip;
-    size: *;
+    height: *;
   }
 
   .strip {

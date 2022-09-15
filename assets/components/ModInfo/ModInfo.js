@@ -1,16 +1,20 @@
 export class ModInfo extends Element {
-  image = null;
+  images = {};
 
   this(props) {
+    if (props.mod && !(props.mod.hash in this.images)) {
+      this.images[props.mod.hash] = Window.this.api.preview(props.mod.hash);
+    }
     this.props = props;
-    this.image = Window.this.api.preview(this.props.mod.hash);
   }
 
   render() {
-    const mod = this.props.mod?.meta;
-    return mod ? (
+    if (!this.props.mod) return <div></div>;
+    const mod = this.props.mod.meta;
+    console.log("Hey");
+    const rend = (
       <div styleset={__DIR__ + "ModInfo.css#ModInfo"}>
-        {this.image ? <img class="preview" src={this.image} /> : []}
+        {this.images[mod.hash] ? <img class="preview" src={this.images[mod.hash]} /> : []}
         <Row key="Name" val={mod.name} />
         <Row key="Version" val={mod.version.toPrecision(1)} />
         <Row key="Category" val={mod.category} />
@@ -42,9 +46,9 @@ export class ModInfo extends Element {
           []
         )}
       </div>
-    ) : (
-      []
     );
+    console.log("Rendering: ", rend);
+    return rend;
   }
 }
 

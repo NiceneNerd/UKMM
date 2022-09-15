@@ -5,6 +5,7 @@ import { Tabs, Tab } from "./components/Tabs/Tabs";
 import { ProfileMenu } from "./components/ProfileMenu/ProfileMenu";
 import { ModInfo } from "./components/ModInfo/ModInfo";
 import { Toolbar } from "./components/Toolbar/Toolbar";
+import { FolderView } from "./components/FolderView/FolderView";
 
 export class App extends Element {
   constructor(props) {
@@ -94,7 +95,7 @@ export class App extends Element {
               <ModInfo mod={this.mods[this.currentMod]} />
             </Tab>
             <Tab label="Install">
-              <folder filter="*.zip;*.7z" />
+              <FolderView />
             </Tab>
           </Tabs>
         </frameset>
