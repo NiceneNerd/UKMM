@@ -7,10 +7,10 @@ html:theme(dark) {
     var(panel-text): #eee;
     var(back): #202020;
     var(text): #fff;
-    var(border): #aaa;
+    var(border): #666;
     var(button-back): #555;
     var(button-pressed-back): #444;
-    var(hover-border): #eee;
+    var(hover-border): #aaa;
     var(disabled-text): #888;
     var(disabled-back): #444;
     var(hover-option-cover): rgba(255, 255, 255, 0.1);

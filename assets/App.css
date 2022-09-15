@@ -50,6 +50,16 @@ button.icon {
     padding: 0 2dip !important;
 }
 
+button.icon svg {
+    background-color: transparent !important;
+    fill: color(text);
+    size: 16dip 16dip;
+}
+
+button:disabled.icon svg {
+  fill: color(disabled-text);
+}
+
 button.icon:hover {
     background-color: color(button-back) !important;
 }

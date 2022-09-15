@@ -20,8 +20,9 @@ export class App extends Element {
     this.handleToggle = this.handleToggle.bind(this);
     this.handleReorder = this.handleReorder.bind(this);
     this.handleLog = this.handleLog.bind(this);
-    this.handleSelect = this.handleSelect.bind(this);
     Window.this.log = this.handleLog;
+    this.handleSelect = this.handleSelect.bind(this);
+    this.handleOpen = this.handleOpen.bind(this);
     this.dirty = false;
     this.log = [];
   }
@@ -60,6 +61,10 @@ export class App extends Element {
     this.componentUpdate({ log });
   }
 
+  handleOpen(path) {
+    console.log(path);
+  }
+
   render() {
     return (
       <div style="flow: vertical; size: *;">
@@ -95,7 +100,7 @@ export class App extends Element {
               <ModInfo mod={this.mods[this.currentMod]} />
             </Tab>
             <Tab label="Install">
-              <FolderView />
+              <FolderView onSelect={this.handleOpen} />
             </Tab>
           </Tabs>
         </frameset>

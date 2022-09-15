@@ -8,9 +8,9 @@
   html {
     font-size: 11pt;
   
-    var(border-width): 0.14em;
-    var(border-double-width): 0.28em;
-    var(border-radius): 0dip;
+    var(border-width): 1dip;
+    var(border-double-width): 2dip;
+    var(border-radius): 2dip;
     var(icon-size): window-icon-size;
   
     background: color(panel-back);
@@ -310,7 +310,8 @@
   @mixin STD-BOX-NORMAL {
     color: color(text);
     background: color(back);
-    border: 0.14em solid color(border);
+    border: length(border-width) solid color(border);
+    border-radius: length(border-radius);
     text-selection: color(text) transparent;
     padding: 0.2em 0.4em;
     vertical-align: middle;

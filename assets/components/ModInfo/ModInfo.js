@@ -11,10 +11,13 @@ export class ModInfo extends Element {
   render() {
     if (!this.props.mod) return <div></div>;
     const mod = this.props.mod.meta;
-    console.log("Hey");
-    const rend = (
+    return (
       <div styleset={__DIR__ + "ModInfo.css#ModInfo"}>
-        {this.images[mod.hash] ? <img class="preview" src={this.images[mod.hash]} /> : []}
+        {this.images[mod.hash] ? (
+          <img class="preview" src={this.images[mod.hash]} />
+        ) : (
+          []
+        )}
         <Row key="Name" val={mod.name} />
         <Row key="Version" val={mod.version.toPrecision(1)} />
         <Row key="Category" val={mod.category} />
@@ -47,8 +50,6 @@ export class ModInfo extends Element {
         )}
       </div>
     );
-    console.log("Rendering: ", rend);
-    return rend;
   }
 }
 
