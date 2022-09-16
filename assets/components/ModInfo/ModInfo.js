@@ -3,7 +3,7 @@ export class ModInfo extends Element {
 
   this(props) {
     if (props.mod && !(props.mod.hash in this.images)) {
-      this.images[props.mod.hash] = Window.this.api.preview(props.mod.hash);
+      this.images[props.mod.hash] = Window.this.api("preview", props.mod.hash);
     }
     this.props = props;
   }

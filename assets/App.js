@@ -7,6 +7,7 @@ import { ModInfo } from "./components/ModInfo/ModInfo";
 import { Toolbar } from "./components/Toolbar/Toolbar";
 import { FolderView } from "./components/FolderView/FolderView";
 import { DirtyBar } from "./components/DirtyBar/DirtyBar";
+import Modal from "./components/Modal";
 
 export class App extends Element {
   dirty = false;
@@ -19,7 +20,7 @@ export class App extends Element {
   constructor(props) {
     super(props);
     this.props = props;
-    this.api = Window.this.xcall("GetApi");
+    this.api = this.api.bind(this);
     Window.this.api = this.api;
     this.handleToggle = this.handleToggle.bind(this);
     this.handleReorder = this.handleReorder.bind(this);
@@ -30,28 +31,42 @@ export class App extends Element {
     this.handleApply = this.handleApply.bind(this);
   }
 
+  api(task, ...args) {
+    return Window.this.xcall(task, ...args);
+  }
+
   componentDidMount() {
-    const mods = this.api.mods();
-    const profiles = this.api.profiles();
-    const currentProfile = this.api.current_profile();
+    const mods = this.api("mods");
+    const profiles = this.api("profiles");
+    const currentProfile = this.api("currentProfile");
     this.componentUpdate({ mods, profiles, currentProfile });
   }
 
-  async doTask(task, args) {
+  async doTask(task, ...args) {
+    let modal = new Window({
+      type: Window.DIALOG_WINDOW,
+      parent: Window.this,
+      url: __DIR__ + "progress.html",
+      parameters: {
+        theme: document.getRootNode().getAttribute("theme"),
+      },
+    });
     try {
-      win.modal(
-        <info caption="Working">
-          <progress />
-        </info>
-      );
-      await (() => {
+      const res = await (() => {
         return new Promise((resolve) => {
-          task(...args, resolve);
+          this.api(task, ...args, resolve);
         });
       })();
+      modal.close();
+      if (res.error) throw res;
     } catch (error) {
+      modal.close();
       console.log(error);
-      Window.this.modal(<error caption="Error">{error}</error>);
+      Window.this.modal(
+        <error resizable={true} caption="Error">
+          <Modal>{error.error}</Modal>
+        </error>
+      );
     }
   }
 
@@ -86,8 +101,9 @@ export class App extends Element {
     console.log(path);
   }
 
-  handleApply() {
-    this.api.apply(JSON.stringify(this.mods));
+  async handleApply() {
+    await this.doTask("apply", JSON.stringify(this.mods));
+    this.componentUpdate({ mods: this.api("mods"), dirty: false });
   }
 
   render() {

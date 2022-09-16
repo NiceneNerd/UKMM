@@ -22,6 +22,8 @@ pub enum Commands {
 #[derive(Debug, Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Cli {
+    #[clap(long)]
+    pub debug: bool,
     #[clap(subcommand)]
     pub command: Option<Commands>,
     /// Automatically deploy after running command (redunant with `deploy` command)

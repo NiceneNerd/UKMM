@@ -316,6 +316,10 @@ impl Manager {
         Ok(manifest)
     }
 
+    pub fn set_order(&self, order: Vec<usize>) {
+        *self.load_order.write() = order;
+    }
+
     pub fn get_mod(&self, hash: usize) -> Option<MappedRwLockReadGuard<'_, Mod>> {
         if !self.mods.read().contains_key(&hash) {
             None

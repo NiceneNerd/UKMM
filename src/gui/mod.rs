@@ -20,21 +20,18 @@ impl crate::mods::Mod {
 }
 
 struct EventHandler {
-    core: crate::core::Manager,
+    core: Arc<crate::core::Manager>,
     root: Option<Arc<Element>>,
-}
-
-impl EventHandler {
-    #[allow(non_snake_case)]
-    #[inline(always)]
-    fn GetApi(&mut self) -> Value {
-        self.core.api()
-    }
 }
 
 impl sciter::EventHandler for EventHandler {
     dispatch_script_call! {
-        fn GetApi();
+        fn mods();
+        fn profiles();
+        fn currentProfile();
+        fn settings();
+        fn preview(String);
+        fn apply(String, Value);
     }
 
     fn document_complete(&mut self, root: HELEMENT, _target: HELEMENT) {
@@ -70,7 +67,7 @@ pub fn main() {
     log::debug!("Logger initialized");
     let mut frame = sciter::Window::new();
     frame.event_handler(EventHandler {
-        core: crate::core::Manager::init().unwrap(),
+        core: Arc::new(crate::core::Manager::init().unwrap()),
         root: None,
     });
     if cfg!(debug_assertions) {

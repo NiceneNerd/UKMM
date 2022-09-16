@@ -1,87 +1,104 @@
+use super::EventHandler;
 use crate::{core::Manager, mods::Mod};
 use anyhow::Result;
 use rustc_hash::FxHashMap;
-use sciter::Value;
-use std::ops::Deref;
+use sciter::{make_args, Value};
+use std::{ops::Deref, sync::Arc};
 use uk_mod::Manifest;
 
-impl Manager {
-    pub fn api(&self) -> Value {
-        let mods = |_args: &[Value]| -> Value {
-            let mods = self
-                .mod_manager()
-                .all_mods()
-                .map(|m| m.to_value())
-                .collect();
-            log::debug!("Mods: {:?}", &mods);
-            mods
-        };
-
-        let profiles = |_args: &[Value]| -> Value {
-            let profiles = self
-                .settings()
-                .profiles()
-                .map(|p| Value::from(p.as_str()))
-                .collect();
-            log::debug!("Profiles: {:?}", &profiles);
-            profiles
-        };
-
-        let current_profile = |_args: &[Value]| -> Value {
-            self.settings()
-                .platform_config()
-                .map(|config| Value::from(config.profile.as_str()))
-                .unwrap_or_else(|| Value::from("Default"))
-        };
-
-        let preview = |args: &[Value]| -> Value {
-            let mod_manager = self.mod_manager();
-            let hash = args[0].as_string().unwrap().parse::<usize>().unwrap();
-            let mod_ = mod_manager.get_mod(hash).unwrap();
-            if let Ok(Some(data)) = mod_.preview() {
-                match &data[..4] {
-                    [0xff, 0xd8, 0xff, 0xe0] => {
-                        Value::from(format!("data:image/jpeg;base64,{}", base64::encode(&data)))
-                    }
-                    [0x89, 0x50, 0x4e, 0x47] => {
-                        Value::from(format!("data:image/png;base64,{}", base64::encode(&data)))
-                    }
-                    _ => {
-                        log::debug!("Unsupported preview image, ignoring");
-                        Value::null()
-                    }
+macro_rules! res {
+    ($action:expr, $callback:expr) => {
+        std::thread::spawn(move || {
+            let _res = match $action {
+                Ok(_res) => _res.into(),
+                Err(_e) => {
+                    let mut _err = Value::error(&format!("{:?}", &_e));
+                    _err.set_item("error", Value::from(&format!("{:?}", &_e)));
+                    _err.set_item(
+                        "backtrace",
+                        Value::from(
+                            _e.chain()
+                                .map(|e| e.to_string())
+                                .collect::<Vec<String>>()
+                                .join("\n"),
+                        ),
+                    );
+                    _err
                 }
-            } else {
-                Value::null()
-            }
-        };
+            };
+            $callback.call(None, &make_args!(_res), None).unwrap();
+        });
+    };
+}
 
-        let settings =
-            |_args: &[Value]| -> Value { sciter_serde::to_value(self.settings().deref()).unwrap() };
-
-        let apply = |args: &[Value]| -> Value {
-            let mods: Vec<Mod> = serde_json::from_str(&args[0].as_string().unwrap()).unwrap();
-            self.apply_changes(mods).into()
-        };
-
-        let check_hash = |args: &[Value]| {
-            println!("{}", args[0].to_float().unwrap());
-        };
-
-        let mut api = Value::new();
-        api.set_item("mods", mods);
-        api.set_item("profiles", profiles);
-        api.set_item("preview", preview);
-        api.set_item("current_profile", current_profile);
-        api.set_item("check_hash", check_hash);
-        api.set_item("settings", settings);
-        api.set_item("apply", apply);
-        api
+#[allow(non_snake_case)]
+impl EventHandler {
+    pub fn mods(&self) -> Value {
+        let mods = self
+            .core
+            .mod_manager()
+            .all_mods()
+            .map(|m| m.to_value())
+            .collect();
+        log::debug!("Mods: {:?}", &mods);
+        mods
     }
 
-    fn apply_changes(&self, changed_mods: Vec<Mod>) -> Result<()> {
-        let manager = self.mod_manager();
+    pub fn profiles(&self) -> Value {
+        let profiles = self
+            .core
+            .settings()
+            .profiles()
+            .map(|p| Value::from(p.as_str()))
+            .collect();
+        log::debug!("Profiles: {:?}", &profiles);
+        profiles
+    }
+
+    pub fn currentProfile(&self) -> Value {
+        self.core
+            .settings()
+            .platform_config()
+            .map(|config| Value::from(config.profile.as_str()))
+            .unwrap_or_else(|| Value::from("Default"))
+    }
+
+    pub fn preview(&self, hash: String) -> Value {
+        let mod_manager = self.core.mod_manager();
+        let hash = hash.parse::<usize>().unwrap();
+        let mod_ = mod_manager.get_mod(hash).unwrap();
+        if let Ok(Some(data)) = mod_.preview() {
+            match &data[..4] {
+                [0xff, 0xd8, 0xff, 0xe0] => {
+                    Value::from(format!("data:image/jpeg;base64,{}", base64::encode(&data)))
+                }
+                [0x89, 0x50, 0x4e, 0x47] => {
+                    Value::from(format!("data:image/png;base64,{}", base64::encode(&data)))
+                }
+                _ => {
+                    log::debug!("Unsupported preview image, ignoring");
+                    Value::null()
+                }
+            }
+        } else {
+            Value::null()
+        }
+    }
+
+    pub fn settings(&self) -> Value {
+        sciter_serde::to_value(self.core.settings().deref()).unwrap()
+    }
+
+    pub fn apply(&self, mods: String, callback: Value) {
+        let mods: Vec<Mod> = serde_json::from_str(&mods).unwrap();
+        let core = self.core.clone();
+        res!(Self::apply_changes(core, mods), callback);
+    }
+
+    fn apply_changes(core: Arc<Manager>, changed_mods: Vec<Mod>) -> Result<()> {
+        let manager = core.mod_manager();
         let mods = manager.all_mods().map(|m| m.clone()).collect::<Vec<_>>();
+        let order = changed_mods.iter().map(|m| m.hash).collect();
         let mut manifest = Manifest::default();
         let mut modified = FxHashMap::default();
         for (i, mod_) in changed_mods.into_iter().enumerate() {
@@ -102,8 +119,9 @@ impl Manager {
                 manifest.extend(&mod_.manifest);
             }
         }
+        manager.set_order(order);
         manager.save()?;
-        self.deploy_manager().apply(Some(manifest))?;
+        core.deploy_manager().apply(Some(manifest))?;
         Ok(())
     }
 }
