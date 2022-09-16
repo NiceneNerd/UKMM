@@ -118,7 +118,8 @@ impl Runner {
                 if let Some(path) = self.check_mod(path)? {
                     let mods = self.core.mod_manager();
                     let mod_ = mods.add(&path)?;
-                    mods.enable(mod_)?;
+                    mods.set_enabled(mod_, true)?;
+                    mods.save()?;
                     println!("Applying mod to load order...");
                     let deployer = self.core.deploy_manager();
                     deployer.apply(Some(mod_.manifest.clone()))?;
@@ -149,6 +150,7 @@ impl Runner {
                         .with_context(|| format!("Mod {} does not exist", id))?;
                     println!("Removing mod {}...", &mod_.meta.name);
                     mod_manager.del(mod_)?;
+                    mod_manager.save()?;
                     manifests.extend(&mod_.manifest);
                 }
                 println!("Applying changes to merge...");

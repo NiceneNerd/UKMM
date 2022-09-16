@@ -37,6 +37,24 @@ export class App extends Element {
     this.componentUpdate({ mods, profiles, currentProfile });
   }
 
+  async doTask(task, args) {
+    try {
+      win.modal(
+        <info caption="Working">
+          <progress />
+        </info>
+      );
+      await (() => {
+        return new Promise((resolve) => {
+          task(...args, resolve);
+        });
+      })();
+    } catch (error) {
+      console.log(error);
+      Window.this.modal(<error caption="Error">{error}</error>);
+    }
+  }
+
   handleToggle(mod) {
     mod.enabled = !mod.enabled;
     this.componentUpdate({ mods: this.mods.slice(), dirty: true });
@@ -69,12 +87,7 @@ export class App extends Element {
   }
 
   handleApply() {
-    try {
-      this.api.apply(JSON.stringify(this.mods));
-    } catch (error) {
-      console.log(error);
-      Window.this.modal(<error caption="Error">{error}</error>);
-    }
+    this.api.apply(JSON.stringify(this.mods));
   }
 
   render() {

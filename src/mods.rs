@@ -80,6 +80,14 @@ impl Mod {
         }
         Ok(None)
     }
+
+    pub fn manifest_with_options(&self, options: impl AsRef<[ModOption]>) -> Result<Manifest> {
+        ModReader::open(&self.path, options.as_ref()).map(|r| r.manifest)
+    }
+
+    pub fn state_eq(&self, other: &Self) -> bool {
+        self.enabled == other.enabled && self.enabled_options == other.enabled_options
+    }
 }
 
 pub trait LookupMod {
@@ -249,7 +257,6 @@ impl Manager {
         // Convince the compiler that this does not leave us with an outstanding mutable reference
         let mod_: &Mod =
             unsafe { &*(self.mods.write().entry(mod_.hash).or_insert(mod_) as *const _) };
-        self.save()?;
         log::info!("Added mod {}", mod_.meta.name);
         log::debug!("{:?}", mod_);
         Ok(mod_)
@@ -266,7 +273,6 @@ impl Manager {
                 fs::remove_file(&mod_.path)?;
             }
             self.load_order.try_write().unwrap().retain(|m| m != &hash);
-            self.save()?;
             log::info!("Deleted mod {}", mod_.meta.name);
             Ok(manifest)
         } else {
@@ -275,33 +281,38 @@ impl Manager {
         }
     }
 
-    pub fn disable(&self, mod_: impl LookupMod) -> Result<Manifest> {
+    pub fn set_enabled(&self, mod_: impl LookupMod, enabled: bool) -> Result<Manifest> {
         let hash = mod_.as_hash_id();
         let manifest;
         if let Some(mod_) = self.mods.write().get_mut(&hash) {
-            mod_.enabled = false;
+            mod_.enabled = enabled;
             manifest = mod_.manifest.clone();
-            log::info!("Disabled mod {}", mod_.meta.name);
+            log::info!(
+                "{} mod {}",
+                if enabled { "Enabled" } else { "Disabled" },
+                mod_.meta.name
+            );
         } else {
             log::warn!("Mod with ID {} does not exist, doing nothing", hash);
             return Ok(Default::default());
         }
-        self.save()?;
         Ok(manifest)
     }
 
-    pub fn enable(&self, mod_: impl LookupMod) -> Result<Manifest> {
+    pub fn set_enabled_options(
+        &self,
+        mod_: impl LookupMod,
+        options: Vec<ModOption>,
+    ) -> Result<Manifest> {
         let hash = mod_.as_hash_id();
         let manifest;
         if let Some(mod_) = self.mods.write().get_mut(&hash) {
-            mod_.enabled = true;
-            manifest = mod_.manifest.clone();
-            log::info!("Enabled mod {}", mod_.meta.name);
+            manifest = mod_.manifest_with_options(&options)?;
+            mod_.enabled_options = options;
         } else {
             log::warn!("Mod with ID {} does not exist, doing nothing", hash);
             return Ok(Default::default());
         }
-        self.save()?;
         Ok(manifest)
     }
 

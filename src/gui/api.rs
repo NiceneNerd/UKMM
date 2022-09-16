@@ -1,5 +1,6 @@
 use crate::{core::Manager, mods::Mod};
 use anyhow::Result;
+use rustc_hash::FxHashMap;
 use sciter::Value;
 use std::ops::Deref;
 use uk_mod::Manifest;
@@ -80,10 +81,29 @@ impl Manager {
 
     fn apply_changes(&self, changed_mods: Vec<Mod>) -> Result<()> {
         let manager = self.mod_manager();
-        let mods = manager.all_mods().collect::<Vec<_>>();
+        let mods = manager.all_mods().map(|m| m.clone()).collect::<Vec<_>>();
         let mut manifest = Manifest::default();
-        let mut match_index = 0;
-        todo!("Diff mod list");
+        let mut modified = FxHashMap::default();
+        for (i, mod_) in changed_mods.into_iter().enumerate() {
+            if modified.contains_key(&mod_.hash) {
+                modified.remove(&mod_.hash);
+                continue;
+            }
+            let original = &mods[i - modified.len()];
+            if &mod_ != original || !mod_.state_eq(original) {
+                modified.insert(mod_.hash, mod_.clone());
+                if mod_.enabled_options != original.enabled_options {
+                    manifest.extend(&manager.set_enabled_options(mod_.hash, mod_.enabled_options)?);
+                    continue;
+                }
+                if mod_.enabled != original.enabled {
+                    manager.set_enabled(mod_.hash, mod_.enabled)?;
+                }
+                manifest.extend(&mod_.manifest);
+            }
+        }
+        manager.save()?;
+        self.deploy_manager().apply(Some(manifest))?;
         Ok(())
     }
 }
