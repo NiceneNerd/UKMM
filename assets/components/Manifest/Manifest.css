@@ -1,0 +1,9 @@
+@set Tree {
+    :root {
+        display: block;
+        background-color: transparent;
+        border: 0;
+        size: *;
+        overflow-y: auto;
+    }
+}

@@ -4,7 +4,7 @@
         border-spacing: 4dip;
         size: *;
         padding: 16dip;
-        overflow-y: hidden;
+        overflow-y: auto;
         min-width: min-content;
     }
 
@@ -35,6 +35,10 @@
         flow: vertical;
         border-spacing: 4dip;
         margin: 8dip 0;
+    }
+
+    .long.manifest, .manifest .data {
+        height: *;
     }
 
     .pill {

@@ -29,6 +29,7 @@ export class App extends Element {
     this.handleSelect = this.handleSelect.bind(this);
     this.handleOpen = this.handleOpen.bind(this);
     this.handleApply = this.handleApply.bind(this);
+    this.handleCancel = this.handleCancel.bind(this);
   }
 
   api(task, ...args) {
@@ -47,6 +48,7 @@ export class App extends Element {
       type: Window.DIALOG_WINDOW,
       parent: Window.this,
       url: __DIR__ + "progress.html",
+      alignment: 5,
       parameters: {
         theme: document.getRootNode().getAttribute("theme"),
       },
@@ -58,7 +60,7 @@ export class App extends Element {
         });
       })();
       modal.close();
-      if (res.error) throw res;
+      if (res?.error) throw res;
     } catch (error) {
       modal.close();
       console.log(error);
@@ -106,6 +108,10 @@ export class App extends Element {
     this.componentUpdate({ mods: this.api("mods"), dirty: false });
   }
 
+  handleCancel() {
+    this.componentUpdate({ mods: this.api("mods"), dirty: false });
+  }
+
   render() {
     return (
       <div style="flow: vertical; size: *;">
@@ -125,13 +131,15 @@ export class App extends Element {
               </div>
             </Toolbar>
             <frameset rows="*,15%" style="size: *;">
-              <ModList
-                mods={this.mods}
-                onToggle={this.handleToggle}
-                onReorder={this.handleReorder}
-                onSelect={this.handleSelect}
-              />
-              {this.dirty ? <DirtyBar onApply={this.handleApply} /> : []}
+              <div class="flow: vertical; size: *;">
+                <ModList
+                  mods={this.mods}
+                  onToggle={this.handleToggle}
+                  onReorder={this.handleReorder}
+                  onSelect={this.handleSelect}
+                />
+                {this.dirty ? <DirtyBar onApply={this.handleApply} onCancel={this.handleCancel} /> : []}
+              </div>
               <splitter />
               <Log logs={this.log} />
             </frameset>

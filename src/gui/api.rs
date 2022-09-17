@@ -12,17 +12,12 @@ macro_rules! res {
             let _res = match $action {
                 Ok(_res) => _res.into(),
                 Err(_e) => {
+                    log::error!("{:?}", &_e);
+                    let _trace = _e.backtrace().to_string();
+                    log::error!("{:?}", &_trace);
                     let mut _err = Value::error(&format!("{:?}", &_e));
                     _err.set_item("error", Value::from(&format!("{:?}", &_e)));
-                    _err.set_item(
-                        "backtrace",
-                        Value::from(
-                            _e.chain()
-                                .map(|e| e.to_string())
-                                .collect::<Vec<String>>()
-                                .join("\n"),
-                        ),
-                    );
+                    _err.set_item("source", Value::from(_trace));
                     _err
                 }
             };

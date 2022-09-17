@@ -1,3 +1,5 @@
+import { Manifest } from "../Manifest/Manifest";
+
 export class ModInfo extends Element {
   images = {};
 
@@ -48,6 +50,7 @@ export class ModInfo extends Element {
         ) : (
           []
         )}
+        <Long key="Manifest" className="manifest" val={<Manifest manifest={this.props.mod.manifest} />} />
       </div>
     );
   }
@@ -60,8 +63,8 @@ const Row = ({ key, val }) => (
   </div>
 );
 
-const Long = ({ key, val, markdown }) => (
-  <div class="long">
+const Long = ({ key, val, markdown, className }) => (
+  <div class={"long " + (className ? className : "")}>
     <div class="label">{key}</div>
     <div class={"data " + (markdown && "md")}>{val}</div>
   </div>
