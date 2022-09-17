@@ -1,5 +1,4 @@
 const TreeView = ({ path }) => {
-    console.log(path);
     return path.children.length == 0 ? (
         <option>{path.name}</option>
     ) : (

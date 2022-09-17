@@ -25,17 +25,25 @@ export class Tabs extends Element {
         <div class="strip">
           {this.kids.map((kid, i) => {
             return (
-              <div class={this.buttonClass(i)} onClick={() => this.handleTabClick(i)}>
+              <div
+                class={this.buttonClass(i)}
+                onClick={() => this.handleTabClick(i)}>
                 {kid[1]["label"]}
               </div>
             );
           })}
           <div style="width: *;"> </div>
         </div>
-        {this.kids[this.activeIndex]}
+        {this.kids.map((kid, i) =>
+          i == this.activeIndex
+            ? JSX(kid[0], { ...kid[1], active: true }, kid[2])
+            : kid
+        )}
       </div>
     );
   }
 }
 
-export const Tab = (props, kids) => <div class="tab">{kids}</div>;
+export const Tab = ({ active }, kids) => (
+  <div class={"tab " + (active ? "active" : "")}>{kids}</div>
+);
