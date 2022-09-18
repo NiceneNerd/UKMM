@@ -31,15 +31,14 @@ export class ModInfo extends Element {
             key="Options"
             val={
               <div class="hbox">
-                {mod.option_groups.flatMap((group) =>
-                  group.options.map((opt) => (
+                {mod.option_groups.flatMap(group =>
+                  group.options.map(opt => (
                     <div
                       class={
                         "pill " +
                         (!this.props.mod.enabled_options.includes(opt.name) &&
                           "disabled")
-                      }
-                    >
+                      }>
                       {opt.name}
                     </div>
                   ))
@@ -50,7 +49,11 @@ export class ModInfo extends Element {
         ) : (
           []
         )}
-        <Long key="Manifest" className="manifest" val={<Manifest manifest={this.props.mod.manifest} />} />
+        <Long
+          key="Manifest"
+          className="manifest"
+          val={<Manifest manifest={this.props.mod.manifest} />}
+        />
       </div>
     );
   }

@@ -3,7 +3,7 @@ use crate::{core::Manager, mods::Mod};
 use anyhow::Result;
 use rustc_hash::FxHashMap;
 use sciter::{make_args, Value};
-use std::{ops::Deref, sync::Arc};
+use std::{ops::Deref, panic::UnwindSafe, sync::Arc};
 use uk_mod::Manifest;
 
 macro_rules! res {
@@ -28,6 +28,40 @@ macro_rules! res {
 
 #[allow(non_snake_case)]
 impl EventHandler {
+    pub fn res<T>(
+        &self,
+        task: impl Send + Sync + FnOnce() -> anyhow::Result<T> + UnwindSafe + 'static,
+        callback: Value,
+    ) where
+        T: Into<Value>,
+    {
+        std::thread::spawn(move || {
+            let res = match std::panic::catch_unwind(task) {
+                Ok(Ok(res)) => res.into(),
+                e => {
+                    let err: anyhow::Error = match e {
+                        Ok(Err(e)) => e.into(),
+                        Err(e) => anyhow::Error::msg(
+                            e.downcast_ref::<String>()
+                                .cloned()
+                                .or_else(|| e.downcast_ref::<&'static str>().map(|s| s.to_string()))
+                                .unwrap(),
+                        ),
+                        _ => unreachable!(),
+                    };
+                    log::error!("{:?}", &err);
+                    let trace = err.backtrace().to_string();
+                    log::error!("{:?}", &trace);
+                    let mut err = Value::error(&format!("{:?}", &err));
+                    err.set_item("error", Value::from(&format!("{:?}", &err)));
+                    err.set_item("source", Value::from(trace));
+                    err
+                }
+            };
+            callback.call(None, &make_args!(res), None).unwrap();
+        });
+    }
+
     pub fn mods(&self) -> Value {
         let mods = self
             .core
@@ -87,7 +121,7 @@ impl EventHandler {
     pub fn apply(&self, mods: String, callback: Value) {
         let mods: Vec<Mod> = serde_json::from_str(&mods).unwrap();
         let core = self.core.clone();
-        res!(Self::apply_changes(core, mods), callback);
+        self.res(move || Self::apply_changes(core, mods), callback);
     }
 
     fn apply_changes(core: Arc<Manager>, changed_mods: Vec<Mod>) -> Result<()> {

@@ -11,6 +11,8 @@ pub struct Manager {
     settings: Arc<RwLock<Settings>>,
 }
 
+impl std::panic::RefUnwindSafe for Manager {}
+
 impl Manager {
     pub fn init() -> Result<Self> {
         let settings = Settings::load();

@@ -1,0 +1,25 @@
+@set Busy {
+    :root {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 999;
+        flow: vertical;
+        border-spacing: 16dip; 
+        background-color: rgba(0, 0, 0, .4);
+    }
+
+    :root > * {
+        margin: 0 auto !important;
+    }
+
+    p {
+        text-align: center;
+    }
+
+    progress {
+        width: 50vw !important;
+    }
+}

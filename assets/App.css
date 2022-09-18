@@ -25,6 +25,10 @@ frameset[cols] > splitter {
   width: *;
 }
 
+.vspacer {
+  height: *;
+}
+
 .counter {
   background-color: color(button-pressed-back);
   padding: 4dip 8dip;
