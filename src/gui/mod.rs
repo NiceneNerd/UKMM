@@ -3,19 +3,25 @@ use crate::mods::LookupMod;
 use sciter::{dispatch_script_call, Element, Value, HELEMENT};
 use std::sync::Arc;
 
-impl crate::mods::Mod {
-    pub fn to_value(&self) -> Value {
-        let mut val = Value::new();
-        val.set_item("meta", sciter_serde::to_value(&self.meta).unwrap());
-        val.set_item("manifest", sciter_serde::to_value(&self.manifest).unwrap());
+impl From<&crate::mods::Mod> for Value {
+    fn from(mod_: &crate::mods::Mod) -> Self {
+        let mut val = Self::new();
+        val.set_item("meta", sciter_serde::to_value(&mod_.meta).unwrap());
+        val.set_item("manifest", sciter_serde::to_value(&mod_.manifest).unwrap());
         val.set_item(
             "enabled_options",
-            sciter_serde::to_value(&self.enabled_options).unwrap(),
+            sciter_serde::to_value(&mod_.enabled_options).unwrap(),
         );
-        val.set_item("enabled", Value::from(self.enabled));
-        val.set_item("path", Value::from(self.path.to_str().unwrap()));
-        val.set_item("hash", Value::from(self.as_hash_id().to_string()));
+        val.set_item("enabled", Value::from(mod_.enabled));
+        val.set_item("path", Value::from(mod_.path.to_str().unwrap()));
+        val.set_item("hash", Value::from(mod_.as_hash_id().to_string()));
         val
+    }
+}
+
+impl From<crate::mods::Mod> for Value {
+    fn from(mod_: crate::mods::Mod) -> Self {
+        (&mod_).into()
     }
 }
 
@@ -32,6 +38,7 @@ impl sciter::EventHandler for EventHandler {
         fn settings();
         fn preview(String);
         fn apply(String, Value);
+        fn parse_mod(String, Value);
     }
 
     fn document_complete(&mut self, root: HELEMENT, _target: HELEMENT) {

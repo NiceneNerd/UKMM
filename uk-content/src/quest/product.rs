@@ -121,6 +121,6 @@ mod tests {
     fn identify() {
         let path =
             std::path::Path::new("content/Pack/TitleBG.pack//Quest/QuestProduct.sbquestpack");
-        assert!(super::QuestProduct::path_matches(&path));
+        assert!(super::QuestProduct::path_matches(path));
     }
 }

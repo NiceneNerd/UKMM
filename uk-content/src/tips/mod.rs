@@ -114,6 +114,6 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new("content/Pack/Bootup.pack//Tips/TipsWorld.sbyml");
-        assert!(super::Tips::path_matches(&path));
+        assert!(super::Tips::path_matches(path));
     }
 }

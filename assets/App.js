@@ -9,6 +9,7 @@ import { FolderView } from "./components/FolderView/FolderView";
 import { DirtyBar } from "./components/DirtyBar/DirtyBar";
 import Modal from "./components/Modal";
 import { Busy } from "./components/Busy/Busy";
+import { Error } from "./components/Error/Error";
 
 export class App extends Element {
   dirty = false;
@@ -36,6 +37,15 @@ export class App extends Element {
     return Window.this.xcall(task, ...args);
   };
 
+  showError(error) {
+    console.log("Error: ", error);
+    Window.this.modal(
+      <error resizable={true} caption="Error">
+        <Error error={error} />
+      </error>
+    );
+  }
+
   loadMods = () => {
     const mods = this.api("mods");
     const files = mods.reduce((files, mod) => {
@@ -60,23 +70,13 @@ export class App extends Element {
 
   doTask = async (task, ...args) => {
     this.componentUpdate({ busy: true });
-    try {
-      const res = await (() => {
-        return new Promise(resolve => {
-          this.api(task, ...args, resolve);
-        });
-      })();
-      if (res?.error) throw res;
-      this.componentUpdate({ busy: false });
-    } catch (error) {
-      console.log("Error: ", error);
-      this.componentUpdate({ busy: false });
-      Window.this.modal(
-        <error resizable={true} caption="Error">
-          <Modal>{error.error || error}</Modal>
-        </error>
-      );
-    }
+    const res = await (() => {
+      return new Promise(resolve => {
+        this.api(task, ...args, resolve);
+      });
+    })();
+    this.componentUpdate({ busy: false });
+    if (res?.msg || res?.trace) throw res;
   };
 
   handleToggle = mod => {
@@ -92,7 +92,11 @@ export class App extends Element {
     const mods =
       newIdx == 0
         ? [...modsToMove, ...this.mods]
-        : [...this.mods.slice(0, newIdx), ...modsToMove, ...this.mods.slice(newIdx)];
+        : [
+            ...this.mods.slice(0, newIdx),
+            ...modsToMove,
+            ...this.mods.slice(newIdx)
+          ];
     this.componentUpdate({ mods, dirty: true });
   };
 
@@ -109,14 +113,26 @@ export class App extends Element {
     }
   };
 
-  handleOpen = path => {
-    console.log(path);
+  handleOpen = async path => {
+    try {
+      const res = await this.doTask("parse_mod", path);
+      console.log(res);
+    } catch (error) {
+      if (error.msg && error.msg == "Mod missing meta file") {
+        // try converting
+      } else {
+        this.showError(error);
+      }
+    }
   };
 
-  handleApply = () => {
-    this.doTask("apply", JSON.stringify(this.mods)).then(() => {
+  handleApply = async () => {
+    try {
+      this.doTask("apply", JSON.stringify(this.mods));
       this.componentUpdate({ mods: this.api("mods"), dirty: false });
-    });
+    } catch (error) {
+      this.showError(error);
+    }
   };
 
   handleCancel = () => {
@@ -128,7 +144,9 @@ export class App extends Element {
       <div style="flow: vertical; size: *;">
         {this.busy ? (
           <Busy
-            text={this.log ? this.log[this.log.length - 1].args : "Getting started"}
+            text={
+              this.log ? this.log[this.log.length - 1].args : "Getting started"
+            }
           />
         ) : (
           []
@@ -157,7 +175,10 @@ export class App extends Element {
                   onSelect={this.handleSelect}
                 />
                 {this.dirty ? (
-                  <DirtyBar onApply={this.handleApply} onCancel={this.handleCancel} />
+                  <DirtyBar
+                    onApply={this.handleApply}
+                    onCancel={this.handleCancel}
+                  />
                 ) : (
                   []
                 )}

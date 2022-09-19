@@ -238,9 +238,9 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new("content/Map/MainField/F-3/F-3_Dynamic.smubin");
-        assert!(super::MapUnit::path_matches(&path));
+        assert!(super::MapUnit::path_matches(path));
         let path2 =
             std::path::Path::new("aoc/0010/Map/CDungeon/Dungeon044/Dungeon044_Static.mubin");
-        assert!(super::MapUnit::path_matches(&path2));
+        assert!(super::MapUnit::path_matches(path2));
     }
 }

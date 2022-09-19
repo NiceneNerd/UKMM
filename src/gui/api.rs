@@ -2,8 +2,8 @@ use super::EventHandler;
 use crate::mods::Mod;
 use rustc_hash::FxHashMap;
 use sciter::{make_args, Value};
-use std::{ops::Deref, panic::UnwindSafe};
-use uk_mod::Manifest;
+use std::{ops::Deref, panic::UnwindSafe, path::PathBuf};
+use uk_mod::{unpack::ModReader, Manifest};
 
 #[allow(non_snake_case)]
 impl EventHandler {
@@ -29,9 +29,10 @@ impl EventHandler {
                         _ => unreachable!(),
                     };
                     log::error!("{:?}", &err);
-                    let mut err = Value::error(&format!("{:?}", &err));
-                    err.set_item("error", Value::from(&format!("{:?}", &err)));
-                    err
+                    let mut res = Value::error(&err.to_string());
+                    res.set_item("msg", Value::from(err.to_string()));
+                    res.set_item("backtrace", Value::from(format!("{:?}", err)));
+                    res
                 }
             };
             callback.call(None, &make_args!(res), None).unwrap();
@@ -43,7 +44,7 @@ impl EventHandler {
             .core
             .mod_manager()
             .all_mods()
-            .map(|m| m.to_value())
+            .map(|m| <&Mod as Into<Value>>::into(&m))
             .collect();
         log::debug!("Mods: {:?}", &mods);
         mods
@@ -88,6 +89,17 @@ impl EventHandler {
         } else {
             Value::null()
         }
+    }
+
+    pub fn parse_mod(&self, path: String, callback: Value) {
+        let path: PathBuf = path.into();
+        self.res(
+            move || {
+                log::info!("Opening mod at {}", path.display());
+                ModReader::open(&path, vec![]).map(Mod::from_reader)
+            },
+            callback,
+        );
     }
 
     pub fn settings(&self) -> Value {

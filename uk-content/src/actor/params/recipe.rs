@@ -246,7 +246,7 @@ mod tests {
         let recipe = super::Recipe::try_from(&pio).unwrap();
         let mut info = roead::byml::Hash::default();
         recipe.update_info(&mut info).unwrap();
-        let table = recipe.0.get(&"Normal0".into()).unwrap();
+        let table = recipe.0.get(String64::from("Normal0")).unwrap();
         assert_eq!(
             info["normal0StuffNum"].as_i32().unwrap(),
             table.len() as i32

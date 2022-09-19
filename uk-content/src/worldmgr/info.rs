@@ -88,6 +88,6 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new("content/WorldMgr/normal.bwinfo");
-        assert!(super::WorldInfo::path_matches(&path));
+        assert!(super::WorldInfo::path_matches(path));
     }
 }

@@ -23,7 +23,6 @@
         handleToggle = (e, group, option) => {
           let enabledOptions = this.enabledOptions;
           if (e.target.checked) {
-            console.log(e, group.type, option);
             if (group.type == "Multiple") {
               enabledOptions[group.name].push(option);
             } else {

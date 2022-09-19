@@ -360,6 +360,8 @@ pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
             let tmpdir = tempfile::tempdir()?.into_path();
             sevenz_rust::decompress_file(path, &tmpdir).context("Failed to extract 7Z file")?;
             find_rules(&tmpdir).context("Could not find rules.txt in extracted")?
+        } else if path.file_name().context("No file name")?.to_str() == Some("rules.txt") {
+            path.parent().unwrap().to_owned()
         } else {
             log::error!("{} is not a supported mod archive", path.display());
             anyhow::bail!("{} files are not supported", ext)
