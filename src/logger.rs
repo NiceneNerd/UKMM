@@ -1,4 +1,3 @@
-use chrono::NaiveDateTime;
 use log::{LevelFilter, Record};
 use once_cell::sync::{Lazy, OnceCell};
 use parking_lot::Mutex;

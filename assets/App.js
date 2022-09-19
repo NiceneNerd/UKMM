@@ -105,19 +105,28 @@ export class App extends Element {
   };
 
   handleLog = record => {
-    console.log("Heyo");
     let log = this.log;
     log.push(record);
     this.componentUpdate({ log });
+    if (this.busy) {
+      document.body.patch(Window.this.app);
+    }
   };
 
-  handleOpen(path) {
+  handleOpen = path => {
     console.log(path);
-  }
+    new Window({
+      url: __DIR__ + "options.html",
+      parameters: {
+        options: this.mods[this.currentMod].meta.option_groups
+      }
+    });
+  };
 
-  handleApply = async () => {
-    await this.doTask("apply", JSON.stringify(this.mods));
-    this.componentUpdate({ mods: this.api("mods"), dirty: false });
+  handleApply = () => {
+    this.doTask("apply", JSON.stringify(this.mods)).then(() => {
+      this.componentUpdate({ mods: this.api("mods"), dirty: false });
+    });
   };
 
   handleCancel = () => {
@@ -127,7 +136,15 @@ export class App extends Element {
   render() {
     return (
       <div style="flow: vertical; size: *;">
-        {this.busy ? <Busy /> : []}
+        {this.busy ? (
+          <Busy
+            text={
+              this.log ? this.log[this.log.length - 1].args : "Getting started"
+            }
+          />
+        ) : (
+          []
+        )}
         <MenuBar />
         <frameset cols="*,36%" style="size: *;">
           <div style="size: *;">

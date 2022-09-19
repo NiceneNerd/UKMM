@@ -7,7 +7,10 @@ export const DirtyBar = ({ onApply, onCancel }) => (
     <button class="icon" title="Apply Pending Changes" onClick={onApply}>
       <Apply />
     </button>
-    <button class="icon danger" title="Cancel Pending Changes" onClick={onCancel}>
+    <button
+      class="icon danger"
+      title="Cancel Pending Changes"
+      onClick={onCancel}>
       <Cancel />
     </button>
   </div>

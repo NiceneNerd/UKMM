@@ -1,11 +1,10 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use fs_err as fs;
 use std::{
     io::{stdin, stdout, Write},
     path::{Path, PathBuf},
 };
-use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest};
+use uk_mod::{unpack::ModReader, Manifest};
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {

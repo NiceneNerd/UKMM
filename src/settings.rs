@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use fs_err as fs;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;

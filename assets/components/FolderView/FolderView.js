@@ -7,7 +7,7 @@ import { Open } from "../../icons/Open";
 const EXTENSIONS = ["zip", "7z"];
 const SEP = env.OS.includes("Windows") ? "\\" : "/";
 
-const isRoot = (path) => {
+const isRoot = path => {
   if (env.OS.includes("Windows")) {
     return this.folder.split(SEP).length == 1;
   } else {
@@ -45,7 +45,7 @@ export class FolderView extends Element {
     parts.pop();
     this.componentUpdate({
       history: [...this.history, this.folder],
-      folder: parts.join(SEP),
+      folder: parts.join(SEP)
     });
     this.loadFolder();
   }
@@ -64,7 +64,7 @@ export class FolderView extends Element {
       filter:
         "Graphic Pack or RomFS (*.zip, *.7z, rules.txt)|*.zip;*.7z;rules.txt|All Files (*.*)|*.*",
       caption: "Select Mod",
-      path: this.folder,
+      path: this.folder
     });
     if (file) {
       this.props.onSelect(file.replace("file:///", ""));
@@ -75,10 +75,12 @@ export class FolderView extends Element {
     const items = sys.fs
       .$readdir(this.folder || "/")
       .filter(
-        (item) =>
+        item =>
           !item.name.startsWith(".") &&
           (item.type == 2 ||
-            EXTENSIONS.includes(item.name.split(".").slice(-1)[0].toLowerCase()))
+            EXTENSIONS.includes(
+              item.name.split(".").slice(-1)[0].toLowerCase()
+            ))
       )
       .sort((a, b) => {
         if (a.type != b.type) {
@@ -88,18 +90,18 @@ export class FolderView extends Element {
         }
       });
     this.componentUpdate({
-      children: items.map((item) => ({
+      children: items.map(item => ({
         type: item.type == 1 ? "file" : "folder",
         path: this.folder + SEP + item.name,
-        name: item.name,
-      })),
+        name: item.name
+      }))
     });
   }
 
   ["on dblclick at option.folder"](e, opt) {
     this.componentUpdate({
       history: [...this.history, this.folder],
-      folder: opt.value,
+      folder: opt.value
     });
     this.loadFolder();
   }
@@ -115,7 +117,7 @@ export class FolderView extends Element {
         sys.fs.$stat(value);
         this.componentUpdate({
           history: [...this.history, this.folder],
-          folder: value,
+          folder: value
         });
         this.loadFolder();
       } catch (error) {
@@ -126,11 +128,11 @@ export class FolderView extends Element {
 
   ["on keyup at .content"](e, content) {
     if (e.code == "Enter") {
-      const selected = this.children.find((item) => item.path == e.target.value);
+      const selected = this.children.find(item => item.path == e.target.value);
       if (selected.type == "folder") {
         this.componentUpdate({
           history: [...this.history, this.folder],
-          folder: selected.path,
+          folder: selected.path
         });
         this.loadFolder();
       } else {
@@ -151,8 +153,7 @@ export class FolderView extends Element {
             class="icon"
             title="Back"
             disabled={this.history.length == 0}
-            onClick={this.goBack}
-          >
+            onClick={this.goBack}>
             <Back />
           </button>
           <button class="icon" title="Up" onClick={this.goUp}>
@@ -164,13 +165,12 @@ export class FolderView extends Element {
           <input type="text" class="path" value={this.folder || "/"} />
         </nav>
         <select type="list" class="content" system={this.system}>
-          {this.children.map((child) => (
+          {this.children.map(child => (
             <option
               class={child.type}
               key={child.path}
               value={child.path}
-              title={child.path}
-            >
+              title={child.path}>
               {child.name}
             </option>
           ))}

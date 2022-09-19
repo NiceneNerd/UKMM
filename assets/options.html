@@ -1,0 +1,28 @@
+<html window-resizeable theme="dark">
+  <head>
+    <title>U-King Mod Manager</title>
+    <link rel="stylesheet" href="styles/windows-flat.css" />
+    <script type="module">
+      class Options extends Element {
+        this() {
+            this.options = Window.this.parameters.options;
+            console.log(this.options);
+        }
+
+        render() {
+            return <div class="hbox">{this.options.map(group => (
+                <div>
+                    <h3>{group.name}</h3>
+                    <p>{group.description}</p>
+                    {group.options.map(option => (
+                        <p>{option.name}</p>
+                    ))}
+                </div>
+            ))}</div>;
+        }
+      }
+      document.body.patch(<Options />);
+    </script>
+  </head>
+  <body></body>
+</html>

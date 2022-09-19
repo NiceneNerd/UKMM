@@ -1,30 +1,9 @@
 use super::EventHandler;
-use crate::{core::Manager, mods::Mod};
-use anyhow::Result;
+use crate::mods::Mod;
 use rustc_hash::FxHashMap;
 use sciter::{make_args, Value};
-use std::{ops::Deref, panic::UnwindSafe, sync::Arc};
+use std::{ops::Deref, panic::UnwindSafe};
 use uk_mod::Manifest;
-
-macro_rules! res {
-    ($action:expr, $callback:expr) => {
-        std::thread::spawn(move || {
-            let _res = match $action {
-                Ok(_res) => _res.into(),
-                Err(_e) => {
-                    log::error!("{:?}", &_e);
-                    let _trace = _e.backtrace().to_string();
-                    log::error!("{:?}", &_trace);
-                    let mut _err = Value::error(&format!("{:?}", &_e));
-                    _err.set_item("error", Value::from(&format!("{:?}", &_e)));
-                    _err.set_item("source", Value::from(_trace));
-                    _err
-                }
-            };
-            $callback.call(None, &make_args!(_res), None).unwrap();
-        });
-    };
-}
 
 #[allow(non_snake_case)]
 impl EventHandler {
@@ -40,7 +19,7 @@ impl EventHandler {
                 Ok(Ok(res)) => res.into(),
                 e => {
                     let err: anyhow::Error = match e {
-                        Ok(Err(e)) => e.into(),
+                        Ok(Err(e)) => e,
                         Err(e) => anyhow::Error::msg(
                             e.downcast_ref::<String>()
                                 .cloned()
@@ -50,11 +29,8 @@ impl EventHandler {
                         _ => unreachable!(),
                     };
                     log::error!("{:?}", &err);
-                    let trace = err.backtrace().to_string();
-                    log::error!("{:?}", &trace);
                     let mut err = Value::error(&format!("{:?}", &err));
                     err.set_item("error", Value::from(&format!("{:?}", &err)));
-                    err.set_item("source", Value::from(trace));
                     err
                 }
             };
@@ -119,38 +95,47 @@ impl EventHandler {
     }
 
     pub fn apply(&self, mods: String, callback: Value) {
-        let mods: Vec<Mod> = serde_json::from_str(&mods).unwrap();
+        let changed_mods: Vec<Mod> = serde_json::from_str(&mods).unwrap();
         let core = self.core.clone();
-        self.res(move || Self::apply_changes(core, mods), callback);
-    }
-
-    fn apply_changes(core: Arc<Manager>, changed_mods: Vec<Mod>) -> Result<()> {
-        let manager = core.mod_manager();
-        let mods = manager.all_mods().map(|m| m.clone()).collect::<Vec<_>>();
-        let order = changed_mods.iter().map(|m| m.hash).collect();
-        let mut manifest = Manifest::default();
-        let mut modified = FxHashMap::default();
-        for (i, mod_) in changed_mods.into_iter().enumerate() {
-            if modified.contains_key(&mod_.hash) {
-                modified.remove(&mod_.hash);
-                continue;
-            }
-            let original = &mods[i - modified.len()];
-            if &mod_ != original || !mod_.state_eq(original) {
-                modified.insert(mod_.hash, mod_.clone());
-                if mod_.enabled_options != original.enabled_options {
-                    manifest.extend(&manager.set_enabled_options(mod_.hash, mod_.enabled_options)?);
-                    continue;
+        self.res(
+            move || {
+                log::info!("Parsing changes to mod configuration");
+                let manager = core.mod_manager();
+                let mods = manager.all_mods().map(|m| m.clone()).collect::<Vec<_>>();
+                let order = changed_mods.iter().map(|m| m.hash).collect::<Vec<_>>();
+                let mut manifest = Manifest::default();
+                let mut modified = FxHashMap::default();
+                for (i, mod_) in changed_mods.into_iter().enumerate() {
+                    if modified.contains_key(&mod_.hash) {
+                        modified.remove(&mod_.hash);
+                        continue;
+                    }
+                    let original = &mods[i - modified.len()];
+                    if &mod_ != original || !mod_.state_eq(original) {
+                        log::debug!("The state of {} has been modified", original.meta.name);
+                        modified.insert(mod_.hash, mod_.clone());
+                        if mod_.enabled_options != original.enabled_options {
+                            manifest.extend(
+                                &manager.set_enabled_options(mod_.hash, mod_.enabled_options)?,
+                            );
+                            continue;
+                        }
+                        if mod_.enabled != original.enabled {
+                            manager.set_enabled(mod_.hash, mod_.enabled)?;
+                        }
+                        manifest.extend(&mod_.manifest);
+                    }
                 }
-                if mod_.enabled != original.enabled {
-                    manager.set_enabled(mod_.hash, mod_.enabled)?;
+                if order.iter().ne(mods.iter().map(|m| &m.hash)) {
+                    log::info!("Updating load order");
+                    manager.set_order(order);
                 }
-                manifest.extend(&mod_.manifest);
-            }
-        }
-        manager.set_order(order);
-        manager.save()?;
-        core.deploy_manager().apply(Some(manifest))?;
-        Ok(())
+                manager.save()?;
+                core.deploy_manager().apply(Some(manifest))?;
+                log::info!("Completed applying changes");
+                Ok(())
+            },
+            callback,
+        );
     }
 }

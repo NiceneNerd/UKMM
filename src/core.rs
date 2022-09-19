@@ -1,8 +1,7 @@
 use crate::{deploy, mods, settings::Settings};
 use anyhow::{Context, Result};
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::{path::Path, sync::Arc};
-use uk_mod::ModOption;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Manager {
