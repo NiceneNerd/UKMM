@@ -92,11 +92,7 @@ export class App extends Element {
     const mods =
       newIdx == 0
         ? [...modsToMove, ...this.mods]
-        : [
-            ...this.mods.slice(0, newIdx),
-            ...modsToMove,
-            ...this.mods.slice(newIdx)
-          ];
+        : [...this.mods.slice(0, newIdx), ...modsToMove, ...this.mods.slice(newIdx)];
     this.componentUpdate({ mods, dirty: true });
   };
 
@@ -115,12 +111,6 @@ export class App extends Element {
 
   handleOpen = path => {
     console.log(path);
-    new Window({
-      url: __DIR__ + "options.html",
-      parameters: {
-        options: this.mods[this.currentMod].meta.option_groups
-      }
-    });
   };
 
   handleApply = () => {
@@ -138,9 +128,7 @@ export class App extends Element {
       <div style="flow: vertical; size: *;">
         {this.busy ? (
           <Busy
-            text={
-              this.log ? this.log[this.log.length - 1].args : "Getting started"
-            }
+            text={this.log ? this.log[this.log.length - 1].args : "Getting started"}
           />
         ) : (
           []
@@ -169,10 +157,7 @@ export class App extends Element {
                   onSelect={this.handleSelect}
                 />
                 {this.dirty ? (
-                  <DirtyBar
-                    onApply={this.handleApply}
-                    onCancel={this.handleCancel}
-                  />
+                  <DirtyBar onApply={this.handleApply} onCancel={this.handleCancel} />
                 ) : (
                   []
                 )}

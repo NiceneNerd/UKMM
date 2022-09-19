@@ -1,0 +1,31 @@
+@set Options {
+    :root {
+        padding: 0 16dip 16dip;
+        flow: vertical;
+        size: *;
+    }
+
+
+    main {
+        flow: horizontal-wrap;
+        border-spacing: 16dip;
+    }
+
+    .opt-group {
+        border: 1dip solid color(border);
+        border-radius: 8dip;
+        padding: 0 16dip 16dip;
+        width: max-content;
+    }
+
+    .opt-group button {
+        display: block;
+    }
+
+    footer {
+        flow: horizontal;
+        horizontal-align: right;
+        border-spacing: 8dip;
+        margin-top: 16dip;
+    }
+}

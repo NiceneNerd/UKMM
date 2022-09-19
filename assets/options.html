@@ -1,24 +1,82 @@
 <html window-resizeable theme="dark">
   <head>
     <title>U-King Mod Manager</title>
-    <link rel="stylesheet" href="styles/windows-flat.css" />
+    <link rel="stylesheet" href="App.css" />
     <script type="module">
       class Options extends Element {
         this() {
-            this.options = Window.this.parameters.options;
-            console.log(this.options);
+          this.mod = Window.this.parameters.mod;
+          this.enabledOptions = this.mod.enabled_options.length
+            ? this.mod.enabled_options
+            : this.mod.meta.option_groups.reduce((enabled, group) => {
+                enabled[group.name] = group.options.filter(opt => {
+                  if (group.type == "Multiple") {
+                    return group.defaults.includes(opt.path);
+                  } else {
+                    return group.default == opt.path;
+                  }
+                });
+                return enabled;
+              }, {});
         }
 
+        handleToggle = (e, group, option) => {
+          let enabledOptions = this.enabledOptions;
+          if (e.target.checked) {
+            console.log(e, group.type, option);
+            if (group.type == "Multiple") {
+              enabledOptions[group.name].push(option);
+            } else {
+              enabledOptions[group.name] = [option];
+            }
+          } else {
+            if (group.type == "Multiple") {
+              enabledOptions[group.name] = enabledOptions[group.name].filter(
+                opt => opt != option
+              );
+            }
+          }
+          this.componentUpdate({ enabledOptions });
+        };
+
         render() {
-            return <div class="hbox">{this.options.map(group => (
-                <div>
-                    <h3>{group.name}</h3>
+          return (
+            <div styleset={__DIR__ + "styles/options.css#Options"}>
+              <header>
+                <p>Select options for {this.mod.meta.name}:</p>
+              </header>
+              <main>
+                {this.mod.meta.option_groups.map(group => (
+                  <div class="opt-group" key={group.name}>
+                    <h4>{group.name}</h4>
                     <p>{group.description}</p>
                     {group.options.map(option => (
-                        <p>{option.name}</p>
+                      <button
+                        key={option.path}
+                        type={group.type == "Multiple" ? "checkbox" : "radio"}
+                        checked={this.enabledOptions[group.name].includes(option)}
+                        name={group.type == "Multiple" ? option.name : group.name}
+                        onChange={e => this.handleToggle(e, group, option)}
+                      >
+                        {option.name}
+                      </button>
                     ))}
-                </div>
-            ))}</div>;
+                  </div>
+                ))}
+              </main>
+              <div class="vspacer"></div>
+              <footer>
+                <button onClick={() => Window.this.close(null)}>Cancel</button>
+                <button
+                  onClick={() =>
+                    Window.this.close(Object.values(this.enabledOptions).flat())
+                  }
+                >
+                  OK
+                </button>
+              </footer>
+            </div>
+          );
         }
       }
       document.body.patch(<Options />);
