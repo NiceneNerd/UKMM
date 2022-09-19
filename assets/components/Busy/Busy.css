@@ -1,11 +1,10 @@
 @set Busy {
     :root {
-        position: absolute;
+        position: fixed;
         size: *;
-        z-index: 999;
         flow: vertical;
         border-spacing: 16dip; 
-        background-color: rgba(0, 0, 0, .4);
+        background-color: rgba(0, 0, 0, 0.4);
     }
 
     :root > * {

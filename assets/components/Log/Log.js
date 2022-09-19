@@ -36,7 +36,7 @@ export class Log extends Element {
         return (
             <div #Log styleset={__DIR__ + "Log.css#Log"} selectable>
                 {this.props.logs.map(entry => (
-                    <div selectable key={entry.msg}>
+                    <div key={entry.msg}>
                         [<span class="time">{entry.timestamp}</span>{" "}
                         <span class="level" style={`color: ${this.levelColor(entry.level)}`}>{entry.level}</span>]{" "}
                         <span class="msg">{entry.args}</span>

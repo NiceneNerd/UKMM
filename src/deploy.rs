@@ -250,6 +250,7 @@ impl Manager {
             }
         }
         log::info!("Updated RSTB");
+        fs::create_dir_all(table_path.parent().unwrap())?;
         fs::write(table_path, compress(table.to_binary(platform.into())))
             .context("Failed to write merged RSTB")?;
         self.pending_files

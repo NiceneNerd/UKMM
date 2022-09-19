@@ -33,18 +33,34 @@ export class App extends Element {
     this.loadMods();
   };
 
+  forceUpdate = () => {
+    document.body.patch(Window.this.app);
+  };
+
   api = (task, ...args) => {
     return Window.this.xcall(task, ...args);
   };
 
-  showError(error) {
+  doTask = async (task, ...args) => {
+    this.componentUpdate({ busy: true });
+    const res = await (() => {
+      return new Promise((resolve, reject) => {
+        this.api(task, ...args, resolve);
+      });
+    })();
+    this.componentUpdate({ busy: false });
+    if (res?.msg || res?.backtrace) throw res;
+    else return res;
+  };
+
+  showError = error => {
     console.log("Error: ", error);
-    Window.this.modal(
+    return Window.this.modal(
       <error resizable={true} caption="Error">
         <Error error={error} />
       </error>
     );
-  }
+  };
 
   loadMods = () => {
     const mods = this.api("mods");
@@ -63,20 +79,8 @@ export class App extends Element {
       }
       return files;
     }, {});
-    console.log(files);
     Window.this.files = files;
     this.componentUpdate({ mods });
-  };
-
-  doTask = async (task, ...args) => {
-    this.componentUpdate({ busy: true });
-    const res = await (() => {
-      return new Promise(resolve => {
-        this.api(task, ...args, resolve);
-      });
-    })();
-    this.componentUpdate({ busy: false });
-    if (res?.msg || res?.trace) throw res;
   };
 
   handleToggle = mod => {
@@ -92,11 +96,7 @@ export class App extends Element {
     const mods =
       newIdx == 0
         ? [...modsToMove, ...this.mods]
-        : [
-            ...this.mods.slice(0, newIdx),
-            ...modsToMove,
-            ...this.mods.slice(newIdx)
-          ];
+        : [...this.mods.slice(0, newIdx), ...modsToMove, ...this.mods.slice(newIdx)];
     this.componentUpdate({ mods, dirty: true });
   };
 
@@ -109,26 +109,51 @@ export class App extends Element {
     log.push(record);
     this.componentUpdate({ log });
     if (this.busy) {
-      document.body.patch(Window.this.app);
+      this.forceUpdate();
     }
   };
 
   handleOpen = async path => {
+    let mod;
     try {
-      const res = await this.doTask("parse_mod", path);
-      console.log(res);
+      mod = await this.doTask("parseMod", path);
     } catch (error) {
       if (error.msg && error.msg == "Mod missing meta file") {
-        // try converting
+        try {
+          mod = await this.doTask("convertMod", path);
+        } catch (error) {
+          this.showError(error);
+          return;
+        }
       } else {
         this.showError(error);
+        return;
       }
     }
+    console.log(mod);
+    let options = [];
+    if (mod.meta.option_groups.length) {
+      options = Window.this.modal({
+        url: __DIR__ + "options.html",
+        parameters: { mod },
+      });
+      if (!options) return;
+    }
+    try {
+      mod = await this.doTask("addMod", mod.path);
+    } catch (error) {
+      this.showError(error);
+      return;
+    }
+    mod.enabled_options = options;
+    let mods = this.mods;
+    mods.push(mod);
+    this.componentUpdate({ mods, dirty: true });
   };
 
   handleApply = async () => {
     try {
-      this.doTask("apply", JSON.stringify(this.mods));
+      await this.doTask("apply", JSON.stringify(this.mods));
       this.componentUpdate({ mods: this.api("mods"), dirty: false });
     } catch (error) {
       this.showError(error);
@@ -141,62 +166,59 @@ export class App extends Element {
 
   render() {
     return (
-      <div style="flow: vertical; size: *;">
+      <div style="size: *;">
         {this.busy ? (
           <Busy
-            text={
-              this.log ? this.log[this.log.length - 1].args : "Getting started"
-            }
+            text={this.log ? this.log[this.log.length - 1].args : "Getting started"}
           />
         ) : (
           []
         )}
-        <MenuBar />
-        <frameset cols="*,36%" style="size: *;">
-          <div style="size: *;">
-            <Toolbar>
-              <ProfileMenu
-                currentProfile={this.currentProfile}
-                profiles={this.profiles}
-              />
-              <div class="spacer"></div>
-              <div class="counter">
-                <strong>{this.mods.length}</strong> Mods /{" "}
-                <strong>{this.mods.filter(m => m.enabled).length} </strong>
-                Active
-              </div>
-            </Toolbar>
-            <frameset rows="*,15%" style="size: *;">
-              <div class="flow: vertical; size: *;">
-                <ModList
-                  mods={this.mods}
-                  onToggle={this.handleToggle}
-                  onReorder={this.handleReorder}
-                  onSelect={this.handleSelect}
+        <div style="flow: vertical; size: *;">
+          <MenuBar />
+          <frameset cols="*,36%" style="size: *;">
+            <div style="size: *;">
+              <Toolbar>
+                <ProfileMenu
+                  currentProfile={this.currentProfile}
+                  profiles={this.profiles}
                 />
-                {this.dirty ? (
-                  <DirtyBar
-                    onApply={this.handleApply}
-                    onCancel={this.handleCancel}
+                <div class="spacer"></div>
+                <div class="counter">
+                  <strong>{this.mods.length}</strong> Mods /{" "}
+                  <strong>{this.mods.filter(m => m.enabled).length} </strong>
+                  Active
+                </div>
+              </Toolbar>
+              <frameset rows="*,15%" style="size: *;">
+                <div class="flow: vertical; size: *;">
+                  <ModList
+                    mods={this.mods}
+                    onToggle={this.handleToggle}
+                    onReorder={this.handleReorder}
+                    onSelect={this.handleSelect}
                   />
-                ) : (
-                  []
-                )}
-              </div>
-              <splitter />
-              <Log logs={this.log} />
-            </frameset>
-          </div>
-          <splitter />
-          <Tabs>
-            <Tab label="Mod Info">
-              <ModInfo mod={this.mods[this.currentMod]} />
-            </Tab>
-            <Tab label="Install">
-              <FolderView onSelect={this.handleOpen} />
-            </Tab>
-          </Tabs>
-        </frameset>
+                  {this.dirty ? (
+                    <DirtyBar onApply={this.handleApply} onCancel={this.handleCancel} />
+                  ) : (
+                    []
+                  )}
+                </div>
+                <splitter />
+                <Log logs={this.log} />
+              </frameset>
+            </div>
+            <splitter />
+            <Tabs>
+              <Tab label="Mod Info">
+                <ModInfo mod={this.mods[this.currentMod]} />
+              </Tab>
+              <Tab label="Install">
+                <FolderView onSelect={this.handleOpen} />
+              </Tab>
+            </Tabs>
+          </frameset>
+        </div>
       </div>
     );
   }

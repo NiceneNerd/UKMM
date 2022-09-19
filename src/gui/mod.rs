@@ -38,7 +38,9 @@ impl sciter::EventHandler for EventHandler {
         fn settings();
         fn preview(String);
         fn apply(String, Value);
-        fn parse_mod(String, Value);
+        fn parseMod(String, Value);
+        fn convertMod(String, Value);
+        fn addMod(String, Value);
     }
 
     fn document_complete(&mut self, root: HELEMENT, _target: HELEMENT) {

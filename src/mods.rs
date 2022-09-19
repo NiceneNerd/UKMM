@@ -354,12 +354,12 @@ pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
                 .context("Failed to open ZIP")?
                 .extract(&tmpdir)
                 .context("Failed to extract ZIP")?;
-            find_rules(&tmpdir).context("Could not find rules.txt in extracted")?
+            find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
         } else if ext == "7Z" {
             log::info!("Extracting 7Z file...");
             let tmpdir = tempfile::tempdir()?.into_path();
             sevenz_rust::decompress_file(path, &tmpdir).context("Failed to extract 7Z file")?;
-            find_rules(&tmpdir).context("Could not find rules.txt in extracted")?
+            find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
         } else if path.file_name().context("No file name")?.to_str() == Some("rules.txt") {
             path.parent().unwrap().to_owned()
         } else {

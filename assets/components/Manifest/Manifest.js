@@ -1,9 +1,10 @@
 const TreeView = ({ path: node }) => {
   return node.children.length == 0 ? (
     <option
-      title={`Mods using this file:${Window.this.files[node.path].map(
+      title={`Mods using this file:${Window.this.files[node.path]?.map(
         m => " " + m.meta.name
-      )}`}>
+      )}`}
+    >
       {node.name}
     </option>
   ) : (

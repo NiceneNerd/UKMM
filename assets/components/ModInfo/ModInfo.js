@@ -8,6 +8,7 @@ export class ModInfo extends Element {
       this.images[props.mod.hash] = Window.this.api("preview", props.mod.hash);
     }
     this.props = props;
+    console.log(props.mod?.enabled_options);
   }
 
   render() {
@@ -36,9 +37,13 @@ export class ModInfo extends Element {
                     <div
                       class={
                         "pill " +
-                        (!this.props.mod.enabled_options.includes(opt.name) &&
-                          "disabled")
-                      }>
+                        (this.props.mod.enabled_options
+                          .map(opt => opt.path)
+                          .includes(opt.path)
+                          ? ""
+                          : "disabled")
+                      }
+                    >
                       {opt.name}
                     </div>
                   ))

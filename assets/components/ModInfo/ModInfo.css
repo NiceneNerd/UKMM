@@ -43,7 +43,7 @@
 
     .pill {
         font-size: smaller;
-        background-color: color(panel-popup-back);
+        background-color: color(border);
         border-radius: 16dip;
         color: color(text);
         margin: 4dip;

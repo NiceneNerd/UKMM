@@ -1,5 +1,6 @@
 use super::EventHandler;
 use crate::mods::Mod;
+use anyhow::Context;
 use rustc_hash::FxHashMap;
 use sciter::{make_args, Value};
 use std::{ops::Deref, panic::UnwindSafe, path::PathBuf};
@@ -37,6 +38,10 @@ impl EventHandler {
             };
             callback.call(None, &make_args!(res), None).unwrap();
         });
+    }
+
+    pub fn settings(&self) -> Value {
+        sciter_serde::to_value(self.core.settings().deref()).unwrap()
     }
 
     pub fn mods(&self) -> Value {
@@ -91,19 +96,39 @@ impl EventHandler {
         }
     }
 
-    pub fn parse_mod(&self, path: String, callback: Value) {
-        let path: PathBuf = path.into();
+    pub fn parseMod(&self, path: String, callback: Value) {
         self.res(
             move || {
-                log::info!("Opening mod at {}", path.display());
+                log::info!("Opening mod at {}", &path);
                 ModReader::open(&path, vec![]).map(Mod::from_reader)
             },
             callback,
         );
     }
 
-    pub fn settings(&self) -> Value {
-        sciter_serde::to_value(self.core.settings().deref()).unwrap()
+    pub fn convertMod(&self, path: String, callback: Value) {
+        self.res(
+            move || {
+                crate::mods::convert_gfx(path.as_ref())
+                    .context("Failed to convert to UKMM mod. Is it a supported format?")
+                    .map(|path| ModReader::open(&path, vec![]).map(Mod::from_reader))
+            },
+            callback,
+        )
+    }
+
+    pub fn addMod(&self, path: String, callback: Value) {
+        let core = self.core.clone();
+        self.res(
+            move || {
+                let manager = core.mod_manager();
+                log::info!("Adding mod to current profile");
+                manager
+                    .add(path.as_ref())
+                    .and_then(|mod_| manager.save().map(|_| mod_.clone()))
+            },
+            callback,
+        );
     }
 
     pub fn apply(&self, mods: String, callback: Value) {
