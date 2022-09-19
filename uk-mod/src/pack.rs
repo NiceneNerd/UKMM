@@ -172,7 +172,7 @@ impl ModPacker {
                     .to_slash_lossy()
                     .into();
                 // We know this is sound because we got `path` by iterating the contents of `root`.
-                let canon = canonicalize(unsafe { &path.strip_prefix(root).unwrap_unchecked() });
+                let canon = canonicalize(unsafe { path.strip_prefix(root).unwrap_unchecked() });
                 let file_data = fs::read(&path)?;
                 let file_data = decompress_if(&file_data);
 
@@ -258,14 +258,14 @@ impl ModPacker {
             let name = file
                 .name()
                 .with_context(|| jstr!("File in SARC missing name"))?;
-            let canon = canonicalize(&name);
+            let canon = canonicalize(name);
             let file_data = decompress_if(file.data);
 
             if !self.hash_table.is_modified(&canon, &*file_data) && !is_new_sarc {
                 continue;
             }
 
-            let resource = ResourceData::from_binary(&name, &*file_data)
+            let resource = ResourceData::from_binary(name, &*file_data)
                 .with_context(|| jstr!("Failed to parse resource {&canon}"))?;
             self.process_resource(name.into(), canon.clone(), resource, is_new_sarc)?;
             if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {

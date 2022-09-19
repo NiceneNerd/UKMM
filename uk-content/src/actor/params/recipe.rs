@@ -127,7 +127,7 @@ impl Mergeable for Recipe {
 
 impl InfoSource for Recipe {
     fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
-        if let Some(table) = self.0.get(&"Normal0".into()) {
+        if let Some(table) = self.0.get(String64::from("Normal0")) {
             info.insert("normal0StuffNum".into(), Byml::I32(table.len() as i32));
             for (i, (name, num)) in table.iter().enumerate() {
                 info.insert(

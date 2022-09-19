@@ -356,9 +356,9 @@ impl ModUnpacker {
 /// Extract a zipped mod, decompressing the binary files, but otherwise
 /// leaving the format intact.
 pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow::Result<()> {
-    let mut zip = ZipArchive::new(BufReader::new(fs::File::open(&mod_path)?))
+    let mut zip = ZipArchive::new(BufReader::new(fs::File::open(mod_path)?))
         .context("Failed to open mod ZIP")?;
-    zip.extract(&out_path)?;
+    zip.extract(out_path)?;
     WalkDir::new(out_path).into_iter().filter_map(std::result::Result::ok).filter(|f| {
         f.file_type.is_file() && {
             let file_name = f.file_name().to_str().unwrap();
