@@ -61,7 +61,22 @@ impl Mergeable for Element {
             children: other.children.as_ref().map(|other_children| {
                 self.children
                     .as_ref()
-                    .map(|self_children| util::simple_index_diff(self_children, other_children))
+                    .map(|self_children| {
+                        other_children
+                            .iter()
+                            .filter_map(|(k, other_v)| {
+                                if let Some(self_v) = self_children.get(k) {
+                                    if self_v != other_v {
+                                        Some((*k, self_v.diff(other_v)))
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    Some((*k, other_v.clone()))
+                                }
+                            })
+                            .collect()
+                    })
                     .unwrap_or_else(|| other_children.clone())
             }),
             extend: other.extend.as_ref().map(|other_extend| {
@@ -79,7 +94,18 @@ impl Mergeable for Element {
             children: diff.children.as_ref().map(|diff_children| {
                 self.children
                     .as_ref()
-                    .map(|self_children| util::simple_index_merge(self_children, diff_children))
+                    .map(|self_children| {
+                        self_children
+                            .iter()
+                            .map(|(i, self_v)| {
+                                if let Some(other_v) = diff_children.get(i) {
+                                    (*i, self_v.merge(other_v))
+                                } else {
+                                    (*i, self_v.clone())
+                                }
+                            })
+                            .collect()
+                    })
                     .unwrap_or_else(|| diff_children.clone())
             }),
             extend: diff.extend.as_ref().map(|diff_extend| {
