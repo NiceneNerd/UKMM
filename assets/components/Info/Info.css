@@ -1,0 +1,63 @@
+@set Info {
+    :root {
+        flow: vertical;
+        border-spacing: 4dip;
+        size: *;
+        padding: 16dip;
+        overflow-y: auto;
+        min-width: min-content;
+    }
+
+    .row {
+        flow: horizontal;
+        margin: 8dip 0;
+        border-spacing: 8dip;
+    }
+
+    .label {
+        font-weight: bold;
+    }
+    
+    .row .label {
+        width: 1*;
+    }
+
+    .row .data {
+        width: 3*;
+        text-align: right;
+    }
+
+    .md {
+        behavior: markdown;
+    }
+
+    .long {
+        flow: vertical;
+        border-spacing: 4dip;
+        margin: 8dip 0;
+    }
+
+    .long.manifest, .manifest .data {
+        height: *;
+    }
+
+    .pill {
+        font-size: smaller;
+        background-color: color(border);
+        border-radius: 16dip;
+        color: color(text);
+        margin: 4dip;
+        padding: 6dip 12dip;
+        white-space: nowrap;
+    }
+
+    .pill.disabled {
+        background-color: color(disabled-back);
+        color: color(disabled-text);
+    }
+
+    img.preview {
+        width: *;
+        margin-bottom: 16dip;
+    }
+}

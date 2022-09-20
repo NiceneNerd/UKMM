@@ -16,6 +16,14 @@
         vertical-align: middle;
     }
 
+    main {
+        padding: 8dip 0;
+    }
+
+    table, table * {
+        size: *;
+    }
+
     footer {
         flow: horizontal;
         horizontal-align: right;

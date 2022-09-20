@@ -1,3 +1,4 @@
+import { Info, Row, Long } from "../Info/Info";
 import { Manifest } from "../Manifest/Manifest";
 
 export class ModInfo extends Element {
@@ -8,14 +9,13 @@ export class ModInfo extends Element {
       this.images[props.mod.hash] = Window.this.api("preview", props.mod.hash);
     }
     this.props = props;
-    console.log(props.mod?.enabled_options);
   }
 
   render() {
     if (!this.props.mod) return <div></div>;
     const mod = this.props.mod.meta;
     return (
-      <div styleset={__DIR__ + "ModInfo.css#ModInfo"}>
+      <Info>
         {this.images[mod.hash] ? (
           <img class="preview" src={this.images[mod.hash]} />
         ) : (
@@ -59,21 +59,7 @@ export class ModInfo extends Element {
           className="manifest"
           val={<Manifest manifest={this.props.mod.manifest} />}
         />
-      </div>
+      </Info>
     );
   }
 }
-
-const Row = ({ key, val }) => (
-  <div class="row">
-    <div class="label">{key}</div>
-    <div class="data">{val}</div>
-  </div>
-);
-
-const Long = ({ key, val, markdown, className }) => (
-  <div class={"long " + (className ? className : "")}>
-    <div class="label">{key}</div>
-    <div class={"data " + (markdown && "md")}>{val}</div>
-  </div>
-);

@@ -1,6 +1,7 @@
 @set Log {
   :root {
     background-color: morph(color(back), darken: 10%);
+    border: 0;
     font-family: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono",
       "Fira Code", "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro",
       "Droid Sans Mono", "Courier New", monospace;
@@ -23,12 +24,15 @@
   .level.WARN {
     color: gold;
   }
+
   .level.INFO {
     color: forestgreen;
   }
+
   .level.DEBUG {
     color: royalblue;
   }
+
   .level.ERROR {
     color: red;
   }

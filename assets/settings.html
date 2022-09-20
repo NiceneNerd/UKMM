@@ -4,6 +4,7 @@
     <link rel="stylesheet" href="App.css" />
     <script type="module">
       import { Tabs, Tab } from "./components/Tabs/Tabs";
+      import { Info, Row, Long } from "./components/Info/Info";
       class Settings extends Element {
         this() {
           this.settings = Window.this.parameters.settings;
@@ -34,13 +35,46 @@
               <main>
                 <Tabs>
                   <Tab label="General">
-                    <p>Settings will go here.</p>
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td>
+                            Storage Directory
+                            <br />
+                            <small>
+                              UKMM will store mods, profiles, and similar data here.
+                            </small>
+                          </td>
+                          <td>
+                            <input type="text" value={this.settings.storage_dir} />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>Unpack Mods</td>
+                          <td>
+                            <input type="checkbox" value={this.settings.unpack_mods} />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </Tab>
                   <Tab label="Wii U Config"></Tab>
                   <Tab label="Switch Config"></Tab>
-                  <Tab label="Interface"></Tab>
+                  <Tab label="Interface">
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td>Dark Theme</td>
+                          <td>
+                            <input type="checkbox" checked={this.settings.ui.dark} />
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </Tab>
                 </Tabs>
               </main>
+              <div class="vspacer"></div>
               <footer>
                 <button>Close</button>
                 <button>OK</button>

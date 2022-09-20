@@ -21,13 +21,11 @@ export class Tabs extends Element {
 
   render() {
     return (
-      <div styleset={__DIR__ + "Tabs.css#Tabs"}>
+      <div class="tabs" styleset={__DIR__ + "Tabs.css#Tabs"}>
         <div class="strip">
           {this.kids.map((kid, i) => {
             return (
-              <div
-                class={this.buttonClass(i)}
-                onClick={() => this.handleTabClick(i)}>
+              <div class={this.buttonClass(i)} onClick={() => this.handleTabClick(i)}>
                 {kid[1]["label"]}
               </div>
             );
@@ -35,9 +33,7 @@ export class Tabs extends Element {
           <div style="width: *;"> </div>
         </div>
         {this.kids.map((kid, i) =>
-          i == this.activeIndex
-            ? JSX(kid[0], { ...kid[1], active: true }, kid[2])
-            : kid
+          i == this.activeIndex ? JSX(kid[0], { ...kid[1], active: true }, kid[2]) : kid
         )}
       </div>
     );

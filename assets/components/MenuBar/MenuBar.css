@@ -26,7 +26,7 @@
 
   :root > li:current /* current menu item in menu bar */ {
     background-color: color(highlight-hover);
-    color: highlighttext;
+    color: color(accent-text);
   }
 
   button[type="menu"] {
@@ -117,7 +117,7 @@
   menu li:hover:owns-popup,
   menu li:current {
     background-color: color(highlight-hover);
-    color: highlighttext;
+    color: color(accent-text);
   }
 
   /* menu separator */

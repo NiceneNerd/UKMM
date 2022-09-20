@@ -15,7 +15,7 @@ export class MenuBar extends Element {
     }
 
     render() {
-        return <ul styleset={__DIR__ + "MenuBar.css#menu-bar"}>
+        return <ul #MenuBar styleset={__DIR__ + "MenuBar.css#menu-bar"}>
             <li>File
                 <menu>
                   <li.command name="new-file" accesskey="^N">New file <span class="accesskey">Ctrl+N</span></li>
