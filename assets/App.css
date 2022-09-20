@@ -80,6 +80,10 @@ button.icon:active {
     background-color: color(button-pressed-back) !important;
 }
 
+input|file {
+    prototype: FileInput url(./components/File/File.js);
+}
+
 /* -----
 SVG Icons - svgicons.sparkk.fr
 ----- */

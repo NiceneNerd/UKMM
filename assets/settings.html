@@ -5,6 +5,8 @@
     <script type="module">
       import { Tabs, Tab } from "./components/Tabs/Tabs";
       import { Info, Row, Long } from "./components/Info/Info";
+      import { Spoiler } from "./components/Spoiler/Spoiler";
+
       class Settings extends Element {
         this() {
           this.settings = Window.this.parameters.settings;
@@ -38,15 +40,13 @@
                     <table>
                       <tbody>
                         <tr>
-                          <td>
-                            Storage Directory
-                            <br />
-                            <small>
+                          <td style="min-height: max-content">
+                            <Spoiler label="Storage Directory">
                               UKMM will store mods, profiles, and similar data here.
-                            </small>
+                            </Spoiler>
                           </td>
                           <td>
-                            <input type="text" value={this.settings.storage_dir} />
+                            <input type="file" value={this.settings.storage_dir} />
                           </td>
                         </tr>
                         <tr>
