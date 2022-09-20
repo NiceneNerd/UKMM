@@ -6,7 +6,7 @@
       "Droid Sans Mono", "Courier New", monospace;
     font-size: 12dip;
     padding: 4dip;
-    behavior: virtual-list;
+    /* behavior: virtual-list; */
     overflow: scroll;
     overflow-x: scroll;
     white-space: nowrap;
@@ -17,10 +17,27 @@
   }
 
   .level {
-    color: blue;
+    color: color(panel-text);
+  }
+
+  .level.WARN {
+    color: gold;
+  }
+  .level.INFO {
+    color: forestgreen;
+  }
+  .level.DEBUG {
+    color: royalblue;
+  }
+  .level.ERROR {
+    color: red;
   }
 
   .msg {
     color: color(text);
+  }
+
+  text {
+    white-space: nowrap;
   }
 }
