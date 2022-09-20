@@ -1,12 +1,16 @@
-<html window-resizeable theme="dark">
+<html window-resizeable window-icon="icons/ukmm.png" theme="dark">
   <head>
     <title>U-King Mod Manager</title>
     <link rel="stylesheet" href="App.css" />
     <script type="module">
       import Modal from "components/Modal.js";
       import { App } from "App.js";
-      Window.this.question = (kids) => {
-        return Window.this.modal(<question caption="Confirm"><Modal>{kids}</Modal></question>);
+      Window.this.question = kids => {
+        return Window.this.modal(
+          <question caption="Confirm">
+            <Modal>{kids}</Modal>
+          </question>
+        );
       };
       Window.this.app = <App />;
       document.body.patch(Window.this.app);

@@ -1,4 +1,4 @@
-<html window-resizeable theme="dark">
+<html window-icon="icons/ukmm.png" window-resizeable theme="dark">
   <head>
     <title>Settings</title>
     <link rel="stylesheet" href="App.css" />
@@ -18,31 +18,33 @@
                   type="radio"
                   name="current_mode"
                   value="WiiU"
-                  checked={this.settings.current_mode == "WiiU"}>
+                  checked={this.settings.current_mode == "WiiU"}
+                >
                   Wii U
                 </button>
                 <button
                   type="radio"
                   name="current_mode"
                   value="Switch"
-                  checked={this.settings.current_mode == "Switch"}>
+                  checked={this.settings.current_mode == "Switch"}
+                >
                   Switch
                 </button>
               </div>
               <main>
                 <Tabs>
-                    <Tab label="General">
-                        <p>Settings will go here.</p>
-                    </Tab>
-                    <Tab label="Wii U Config"></Tab>
-                    <Tab label="Switch Config"></Tab>
-                    <Tab label="Interface"></Tab>
+                  <Tab label="General">
+                    <p>Settings will go here.</p>
+                  </Tab>
+                  <Tab label="Wii U Config"></Tab>
+                  <Tab label="Switch Config"></Tab>
+                  <Tab label="Interface"></Tab>
                 </Tabs>
               </main>
               <footer>
-                  <button>Close</button>
-                  <button>OK</button>
-                </footer>
+                <button>Close</button>
+                <button>OK</button>
+              </footer>
             </div>
           );
         }
