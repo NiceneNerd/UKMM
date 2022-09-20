@@ -1,0 +1,25 @@
+@set Settings {
+    :root {
+        padding: 16dip;
+        flow: vertical;
+        size: *;
+    }
+
+    .mode-box {
+        horizontal-align: right;
+        flow: horizontal;
+        border-spacing: 1em;
+    }
+
+    .mode-box label {
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    footer {
+        flow: horizontal;
+        horizontal-align: right;
+        border-spacing: 8dip;
+        margin-top: 16dip;
+    }
+}

@@ -96,7 +96,11 @@ export class App extends Element {
     const mods =
       newIdx == 0
         ? [...modsToMove, ...this.mods]
-        : [...this.mods.slice(0, newIdx), ...modsToMove, ...this.mods.slice(newIdx)];
+        : [
+            ...this.mods.slice(0, newIdx),
+            ...modsToMove,
+            ...this.mods.slice(newIdx)
+          ];
     this.componentUpdate({ mods, dirty: true });
   };
 
@@ -118,7 +122,11 @@ export class App extends Element {
     try {
       mod = await this.doTask("parseMod", path);
     } catch (error) {
-      if (error.msg && error.msg == "Mod missing meta file") {
+      if (
+        error.msg &&
+        (error.msg == "Mod missing meta file" ||
+          error.msg.includes("invalid Zip"))
+      ) {
         try {
           mod = await this.doTask("convertMod", path);
         } catch (error) {
@@ -135,7 +143,7 @@ export class App extends Element {
     if (mod.meta.option_groups.length) {
       options = Window.this.modal({
         url: __DIR__ + "options.html",
-        parameters: { mod },
+        parameters: { mod }
       });
       if (!options) return;
     }
@@ -169,7 +177,9 @@ export class App extends Element {
       <div style="size: *;">
         {this.busy ? (
           <Busy
-            text={this.log ? this.log[this.log.length - 1].args : "Getting started"}
+            text={
+              this.log ? this.log[this.log.length - 1].args : "Getting started"
+            }
           />
         ) : (
           []
@@ -199,7 +209,10 @@ export class App extends Element {
                     onSelect={this.handleSelect}
                   />
                   {this.dirty ? (
-                    <DirtyBar onApply={this.handleApply} onCancel={this.handleCancel} />
+                    <DirtyBar
+                      onApply={this.handleApply}
+                      onCancel={this.handleCancel}
+                    />
                   ) : (
                     []
                   )}

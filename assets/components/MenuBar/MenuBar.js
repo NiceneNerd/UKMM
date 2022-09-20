@@ -5,6 +5,15 @@ export class MenuBar extends Element {
         this.app = props.app;
     }
 
+    ["on click at (edit-settings)"](e) {
+        Window.this.modal({
+            url: __DIR__ + "../../settings.html",
+            parameters: {
+                settings: Window.this.api("settings")
+            }
+        });
+    }
+
     render() {
         return <ul styleset={__DIR__ + "MenuBar.css#menu-bar"}>
             <li>File
@@ -20,6 +29,7 @@ export class MenuBar extends Element {
                   <li.command name="edit-copy">Copy</li>
                   <li.command name="edit-paste">Cut</li>
                   <li.command name="edit-paste">Paste</li>
+                  <li.command name="edit-settings">Settings</li>
                 </menu>
             </li>
         </ul>;
