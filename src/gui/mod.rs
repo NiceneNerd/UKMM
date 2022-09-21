@@ -36,11 +36,15 @@ impl App {
     }
 
     fn file_menu(ui: &mut Ui) {
-        ui.button("Open mod…");
+        if ui.button("Open mod…").clicked() {
+            todo!("Open mod");
+        }
     }
 
     fn edit_menu(ui: &mut Ui) {
-        ui.button("Settings");
+        if ui.button("Settings").clicked() {
+            todo!("Settings");
+        }
     }
 }
 
@@ -66,17 +70,36 @@ impl eframe::App for App {
         });
         egui::SidePanel::right("right_panel")
             .resizable(true)
+            .min_width(0.)
             .show(ctx, |ui| {
-                match self.tab {
-                    Tabs::Info => {
-                        if let Some(mod_) = self.selected.first() {
-                            info::mod_info(mod_, ui);
-                        } else {
-                            ui.label("No mod selected");
+                egui::ScrollArea::vertical()
+                    .id_source("right_panel_scroll")
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            if ui
+                                .selectable_label(matches!(self.tab, Tabs::Info), "Mod Info")
+                                .clicked()
+                            {
+                                self.tab = Tabs::Info;
+                            }
+                            if ui
+                                .selectable_label(matches!(self.tab, Tabs::Install), "Install")
+                                .clicked()
+                            {
+                                self.tab = Tabs::Install;
+                            }
+                        });
+                        match self.tab {
+                            Tabs::Info => {
+                                if let Some(mod_) = self.selected.first() {
+                                    info::render_mod_info(mod_, ui);
+                                } else {
+                                    ui.label("No mod selected");
+                                }
+                            }
+                            Tabs::Install => {}
                         }
-                    }
-                    Tabs::Install => {}
-                }
+                    });
                 ui.allocate_space(ui.available_size());
             });
     }
