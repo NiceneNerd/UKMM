@@ -1,6 +1,6 @@
 use log::{LevelFilter, Record};
 use once_cell::sync::{Lazy, OnceCell};
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use serde::Serialize;
 use std::{ops::Deref, sync::Arc};
 
@@ -39,22 +39,19 @@ pub struct Logger {
     inner: env_logger::Logger,
     debug: bool,
     queue: Mutex<Vec<Entry>>,
-    root: OnceCell<Arc<sciter::Element>>,
+    root: OnceCell<Arc<RwLock<Vec<Entry>>>>,
 }
 
 impl Logger {
-    pub fn set_root(&self, root: Arc<sciter::Element>) {
+    pub fn set_root(&self, root: Arc<RwLock<Vec<Entry>>>) {
         self.root.set(root).unwrap_or(());
     }
 
     pub fn flush_queue(&self) {
         if let Some(root) = self.root.get() {
+            let mut root = root.write();
             for entry in self.queue.lock().drain(..) {
-                root.call_function(
-                    "Window.this.log",
-                    &[sciter_serde::to_value(&entry).unwrap()],
-                )
-                .unwrap_or_default();
+                root.push(entry);
             }
         }
     }
@@ -69,12 +66,9 @@ impl log::Log for Logger {
         let entry: Entry = record.into();
         if record.target().contains("ukmm") && (self.debug || record.level() < LevelFilter::Debug) {
             if let Some(root) = self.root.get() {
+                let mut root = root.write();
                 self.flush_queue();
-                root.call_function(
-                    "Window.this.log",
-                    &[sciter_serde::to_value(&entry).unwrap()],
-                )
-                .unwrap_or_default();
+                root.push(entry);
             } else {
                 self.queue.lock().push(entry);
             }

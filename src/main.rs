@@ -1,3 +1,4 @@
+#![feature(const_result_drop)]
 mod cli;
 mod core;
 mod deploy;
