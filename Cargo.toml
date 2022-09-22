@@ -10,9 +10,9 @@ chrono = "0.4.22"
 clap = { version = "3.2.17", features = ["derive"] }
 dircpy = "0.3.12"
 dirs2 = "3.0.1"
-eframe = "0.19.0"
-egui = { version = "0.19.0", features = ["color-hex"] }
-egui_extras = "0.19.0"
+eframe = { path = "../egui/crates/eframe"} #eframe = "0.19.0"
+egui = { path = "../egui/crates/egui", features = ["color-hex"] } #egui = { version = "0.19.0", features = ["color-hex"] }
+egui_extras = { path = "../egui/crates/egui_extras"} #egui_extras = "0.19.0"
 env_logger = "0.9.0"
 flume = "0.10.14"
 fs-err = "2.8.1"

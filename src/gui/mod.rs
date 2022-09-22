@@ -1,4 +1,5 @@
 mod info;
+mod mods;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod};
 use eframe::NativeOptions;
@@ -19,6 +20,7 @@ fn common_frame() -> Frame {
     Frame {
         stroke: Stroke::new(0.1, Color32::DARK_GRAY),
         inner_margin: Margin::same(4.),
+        fill: visuals::panel(),
         ..Default::default()
     }
 }
@@ -37,6 +39,8 @@ struct App {
     channel: (Sender<Message>, Receiver<Message>),
     mods: Vec<Mod>,
     selected: Vec<Mod>,
+    drag_index: Option<usize>,
+    hover_index: Option<usize>,
     tab: Tabs,
     logs: VecDeque<Entry>,
 }
@@ -53,6 +57,8 @@ impl App {
         Self {
             channel: (send, recv),
             selected: mods.first().cloned().into_iter().collect(),
+            drag_index: None,
+            hover_index: None,
             mods,
             core,
             logs: VecDeque::new(),
@@ -153,113 +159,62 @@ impl App {
                     });
             });
     }
-
-    fn render_modlist(&mut self, ui: &mut Ui) {
-        println!("{}", ui.available_width());
-        let size = ui.available_size();
-        ui.set_max_size(size);
-        Grid::new("mod_list").striped(true).show(ui, |ui| {
-            self.mods.iter_mut().enumerate().for_each(|(i, mod_)| {
-                ui.checkbox(&mut mod_.enabled, "");
-                ui.label(mod_.meta.name.as_str());
-                ui.allocate_space(ui.available_size());
-                ui.label(mod_.meta.category.as_str());
-                ui.label(&mod_.meta.version.to_string());
-                ui.label(&i.to_string());
-                ui.end_row();
-            });
-        });
-        ui.set_min_size(size);
-        // TableBuilder::new(ui)
-        //     .resizable(true)
-        //     .striped(true)
-        //     // .column(Size::exact(16.))
-        //     .columns(Size::remainder(), 5)
-        //     // .column(Size::exact(16.))
-        //     // .column(Size::exact(16.))
-        //     .clip(true)
-        //     .header(text_height, |mut header| {
-        //         header.col(|ui| {
-        //             ui.add_space(16.);
-        //         });
-        //         header.col(|ui| {
-        //             ui.label("Mod Name");
-        //         });
-        //         header.col(|ui| {
-        //             ui.label("Category");
-        //         });
-        //         header.col(|ui| {
-        //             ui.label("Version");
-        //         });
-        //         header.col(|ui| {
-        //             ui.label("Priority");
-        //         });
-        //     })
-        //     .body(|mut body| {
-        //         body.rows(text_height, self.mods.len(), |index, mut row| {
-        //             let mod_ = unsafe { self.mods.get_unchecked_mut(index) };
-        //             row.col(|ui| {
-        //                 ui.checkbox(&mut mod_.enabled, "");
-        //             });
-        //             row.col(|ui| {
-        //                 ui.label(mod_.meta.name.as_str());
-        //             });
-        //             row.col(|ui| {
-        //                 ui.label(mod_.meta.category.as_str());
-        //             });
-        //             row.col(|ui| {
-        //                 ui.label(&mod_.meta.version.to_string());
-        //             });
-        //             row.col(|ui| {
-        //                 ui.label(&index.to_string());
-        //             });
-        //         });
-        //     });
-    }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         self.handle_update();
         self.render_menu(ctx);
-        egui::CentralPanel::default().show(ctx, |ui| {
-            self.render_modlist(ui);
-            egui::SidePanel::right("right_panel")
-                .resizable(true)
-                .min_width(0.)
-                .frame(common_frame())
-                .show(ctx, |ui| {
-                    egui::ScrollArea::vertical()
-                        .id_source("right_panel_scroll")
-                        .show(ui, |ui| {
-                            ui.horizontal(|ui| {
-                                if ui
-                                    .selectable_label(matches!(self.tab, Tabs::Info), "Mod Info")
-                                    .clicked()
-                                {
-                                    self.tab = Tabs::Info;
-                                }
-                                if ui
-                                    .selectable_label(matches!(self.tab, Tabs::Install), "Install")
-                                    .clicked()
-                                {
-                                    self.tab = Tabs::Install;
-                                }
-                            });
-                            match self.tab {
-                                Tabs::Info => {
-                                    if let Some(mod_) = self.selected.first() {
-                                        info::render_mod_info(mod_, ui);
-                                    } else {
-                                        ui.label("No mod selected");
-                                    }
-                                }
-                                Tabs::Install => {}
+        let mut max_width = 0.;
+        egui::SidePanel::right("right_panel")
+            .resizable(true)
+            .max_width(ctx.used_size().x / 3.)
+            .min_width(0.)
+            .frame(common_frame())
+            .show(ctx, |ui| {
+                max_width = ui.available_width();
+                egui::ScrollArea::vertical()
+                    .id_source("right_panel_scroll")
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            if ui
+                                .selectable_label(matches!(self.tab, Tabs::Info), "Mod Info")
+                                .clicked()
+                            {
+                                self.tab = Tabs::Info;
+                            }
+                            if ui
+                                .selectable_label(matches!(self.tab, Tabs::Install), "Install")
+                                .clicked()
+                            {
+                                self.tab = Tabs::Install;
                             }
                         });
-                    ui.allocate_space(ui.available_size());
+                        match self.tab {
+                            Tabs::Info => {
+                                if let Some(mod_) = self.selected.first() {
+                                    info::render_mod_info(mod_, ui);
+                                } else {
+                                    ui.label("No mod selected");
+                                }
+                            }
+                            Tabs::Install => {}
+                        }
+                    });
+                ui.allocate_space(ui.available_size());
+                max_width -= ui.min_rect().width();
+            });
+        egui::CentralPanel::default()
+            .frame(Frame {
+                fill: visuals::dark_panel(),
+                inner_margin: Margin::symmetric(4., 8.),
+                ..Default::default()
+            })
+            .show(ctx, |ui| {
+                egui::ScrollArea::both().show(ui, |ui| {
+                    self.render_modlist(ui);
                 });
-        });
+            });
         self.render_log(ctx);
     }
 }

@@ -1,4 +1,4 @@
-#![feature(const_result_drop)]
+#![feature(const_result_drop, let_chains)]
 mod cli;
 mod core;
 mod deploy;

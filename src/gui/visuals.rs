@@ -34,6 +34,16 @@ const fn lighten(color: Color32, percentage: usize) -> Color32 {
     )
 }
 
+#[inline(always)]
+pub fn panel() -> Color32 {
+    default().widgets.noninteractive.bg_fill
+}
+
+#[inline(always)]
+pub fn dark_panel() -> Color32 {
+    darken(panel(), 25)
+}
+
 pub fn default() -> Visuals {
     Visuals {
         widgets: Widgets {
