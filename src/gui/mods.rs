@@ -9,11 +9,14 @@ impl App {
         let text_height = ui.text_style_height(&TextStyle::Body) + 4.;
         TableBuilder::new(ui)
             .cell_layout(Layout::left_to_right(Align::Center))
+            .cell_sense(Sense::click_and_drag())
             .striped(true)
-            .clip(true)
             .column(Size::exact(16.))
             .column(Size::remainder())
-            .column(Size::remainder())
+            .column(Size::Absolute {
+                initial: 80.,
+                range: (16., 240.),
+            })
             .column(Size::exact(48.))
             .column(Size::exact(48.))
             .header(text_height, |mut header| {
@@ -39,16 +42,15 @@ impl App {
                     let up = self.render_mod_row(index, row);
                     drag_up = drag_up.or(up);
                 });
-                if self.drag_index.is_some() && self.drag_index == drag_up {
-                    if let Some(start_index) = self.drag_index.take()
-                        && let Some(dest_index) = self.hover_index.take()
-                    {
-                        if start_index != dest_index {
-                            self.mods.retain(|m| !self.selected.contains(m));
-                            for (i, selected_mod) in self.selected.iter().enumerate() {
-                                self.mods.insert(dest_index + i, selected_mod.clone());
-                            }
-                        }
+                if self.drag_index.is_some()
+                    && self.drag_index == drag_up
+                    && let Some(start_index) = self.drag_index.take()
+                    && let Some(dest_index) = self.hover_index.take()
+                    && start_index != dest_index
+                {
+                    self.mods.retain(|m| !self.selected.contains(m));
+                    for (i, selected_mod) in self.selected.iter().enumerate() {
+                        self.mods.insert(dest_index + i, selected_mod.clone());
                     }
                 }
             });
@@ -63,42 +65,56 @@ impl App {
         let mut drag_ended = false;
         let mut ctrl = false;
         let mut hover = false;
-        if selected {
-            row.set_selected(true);
+
+        fn process_col_res(
+            res: Response,
+            clicked: &mut bool,
+            hover: &mut bool,
+            drag_started: &mut bool,
+            drag_ended: &mut bool,
+        ) {
+            *clicked = *clicked || res.clicked();
+            *hover = *hover || res.hovered();
+            *drag_started = *drag_started || res.drag_started();
+            *drag_ended = *drag_ended || res.drag_released();
         }
-        row.col(|ui| {
-            ui.checkbox(&mut mod_.enabled, "");
-            ctrl = ui.input().modifiers.ctrl;
-        });
-        row.col(|ui| {
-            let res = Self::render_mod_cell(&mod_.meta.name, selected, ui);
-            clicked = clicked || res.clicked();
-            hover = hover || res.hovered();
-            drag_started = drag_started || res.drag_started();
-            drag_ended = drag_ended || res.drag_released();
-        });
-        row.col(|ui| {
-            let res = Self::render_mod_cell(&mod_.meta.category, selected, ui);
-            clicked = clicked || res.clicked();
-            hover = hover || res.hovered();
-            drag_started = drag_started || res.drag_started();
-            drag_ended = drag_ended || res.drag_released();
-        });
-        row.col(|ui| {
-            let res = Self::render_mod_cell(mod_.meta.version.to_string(), selected, ui);
-            clicked = clicked || res.clicked();
-            hover = hover || res.hovered();
-            drag_started = drag_started || res.drag_started();
-            drag_ended = drag_ended || res.drag_released();
-        });
-        row.col(|ui| {
-            let res = Self::render_mod_cell(index.to_string(), selected, ui);
-            hover = hover || res.hovered();
-            clicked = clicked || res.clicked();
-            drag_started = drag_started || res.drag_started();
-            drag_ended = drag_ended || res.drag_released();
-        });
-        if clicked {
+
+        if selected {
+            row = row.selected(true);
+        }
+        process_col_res(
+            row.col(|ui| {
+                ui.checkbox(&mut mod_.enabled, "");
+                ctrl = ui.input().modifiers.ctrl;
+            }),
+            &mut clicked,
+            &mut hover,
+            &mut drag_started,
+            &mut drag_ended,
+        );
+        for label in [
+            mod_.meta.name.as_str(),
+            mod_.meta.category.as_str(),
+            mod_.meta.version.to_string().as_str(),
+            index.to_string().as_str(),
+        ] {
+            process_col_res(
+                row.col(|ui| {
+                    process_col_res(
+                        Self::render_mod_cell(label, selected, ui),
+                        &mut clicked,
+                        &mut hover,
+                        &mut drag_started,
+                        &mut drag_ended,
+                    );
+                }),
+                &mut clicked,
+                &mut hover,
+                &mut drag_started,
+                &mut drag_ended,
+            );
+        }
+        let mut process_click = || {
             if selected && ctrl {
                 self.selected.retain(|m| m != mod_);
             } else if selected && self.selected.len() > 1 {
@@ -109,8 +125,16 @@ impl App {
                 }
                 self.selected.push(mod_.clone());
             }
+        };
+        if clicked {
+            if self.drag_index != Some(index) {
+                process_click();
+            }
         } else if drag_started {
             self.drag_index = Some(index);
+            if !selected {
+                process_click();
+            }
         } else if hover {
             self.hover_index = Some(index);
         } else {

@@ -2,7 +2,11 @@ mod info;
 mod mods;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod};
-use eframe::NativeOptions;
+use eframe::{
+    egui::{FontData, FontDefinitions},
+    epaint::FontFamily,
+    NativeOptions,
+};
 use egui::{
     self,
     style::{Margin, Widgets},
@@ -47,7 +51,24 @@ struct App {
 
 impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
-        // cc.egui_ctx.set_visuals(visuals::default());
+        let mut fonts = FontDefinitions::default();
+        fonts.font_data.insert(
+            "Rodin".to_owned(),
+            FontData::from_static(include_bytes!("../../assets/rodin.otf")),
+        );
+        fonts.font_data.insert(
+            "RodinBold".to_owned(),
+            FontData::from_static(include_bytes!("../../assets/rodin-bold.otf")),
+        );
+        fonts
+            .families
+            .insert(FontFamily::Proportional, vec!["Rodin".to_owned()]);
+        fonts.families.insert(
+            FontFamily::Name("Bold".into()),
+            vec!["RodinBold".to_owned()],
+        );
+        cc.egui_ctx.set_fonts(fonts);
+        cc.egui_ctx.set_pixels_per_point(1.);
         let core = Arc::new(Manager::init().unwrap());
         let mods: Vec<_> = core.mod_manager().all_mods().map(|m| m.clone()).collect();
         let (send, recv) = flume::unbounded();
@@ -206,7 +227,7 @@ impl eframe::App for App {
             });
         egui::CentralPanel::default()
             .frame(Frame {
-                fill: visuals::dark_panel(),
+                // fill: visuals::dark_panel(),
                 inner_margin: Margin::symmetric(4., 8.),
                 ..Default::default()
             })
