@@ -9,6 +9,10 @@ pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
     ui.vertical(|ui| {
         ui.spacing_mut().item_spacing.y = 8.;
         ui.add_space(8.);
+        if let Some(preview) = mod_.preview() {
+            preview.show_max_size(ui, ui.available_size());
+            ui.add_space(8.);
+        }
         let ver = mod_.meta.version.to_string();
         [
             ("Name", mod_.meta.name.as_str()),
@@ -121,22 +125,30 @@ fn render_dir(dir: &PathNode, ui: &mut Ui) {
 }
 
 pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
-    let mut content_root = dir("Base Files");
-    manifest.content_files.iter().for_each(|file| {
-        build_tree(
-            &mut content_root,
-            &file.split('/').map(|s| s.to_owned()).collect(),
-            0,
-        );
+    ui.scope(|ui| {
+        ui.style_mut().override_text_style = Some(egui::TextStyle::Body);
+        ui.spacing_mut().item_spacing.y = 4.;
+        if !manifest.content_files.is_empty() {
+            let mut content_root = dir("Base Files");
+            manifest.content_files.iter().for_each(|file| {
+                build_tree(
+                    &mut content_root,
+                    &file.split('/').map(|s| s.to_owned()).collect(),
+                    0,
+                );
+            });
+            render_dir(&content_root, ui);
+        }
+        if !manifest.aoc_files.is_empty() {
+            let mut aoc_root = dir("DLC Files");
+            manifest.aoc_files.iter().for_each(|file| {
+                build_tree(
+                    &mut aoc_root,
+                    &file.split('/').map(|s| s.to_owned()).collect(),
+                    0,
+                );
+            });
+            render_dir(&aoc_root, ui);
+        }
     });
-    render_dir(&content_root, ui);
-    let mut aoc_root = dir("DLC Files");
-    manifest.aoc_files.iter().for_each(|file| {
-        build_tree(
-            &mut aoc_root,
-            &file.split('/').map(|s| s.to_owned()).collect(),
-            0,
-        );
-    });
-    render_dir(&aoc_root, ui);
 }

@@ -57,8 +57,26 @@ impl App {
                     }
                 }
             });
+        if ui.memory().focus().is_none() {
+            if ui.input().key_pressed(Key::ArrowDown)
+                && let Some((last_index, _)) = self.mods.iter().enumerate().filter(|(_, m)| self.selected.contains(m)).last()
+            {
+                if !ui.input().modifiers.shift {
+                    self.selected.clear();
+                } 
+                self.selected.push(self.mods[std::cmp::min(last_index + 1, self.mods.len())].clone()); 
+                
+            } else if ui.input().key_pressed(Key::ArrowUp)
+                && let Some((first_index, _)) = self.mods.iter().enumerate().find(|(_, m)| self.selected.contains(m))
+            {
+                if !ui.input().modifiers.shift {
+                    self.selected.clear();
+                } 
+                self.selected.push(self.mods[std::cmp::max(first_index - 1, 0)].clone());
+                
+            }
+        } 
         self.render_drag_state(text_height, ui);
-        // ui.set_max_width(ui.available_width());
     }
 
     fn render_drag_state(&mut self, text_height: f32, ui: &mut Ui) {

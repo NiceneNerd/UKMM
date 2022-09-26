@@ -12,10 +12,11 @@ dircpy = "0.3.12"
 dirs2 = "3.0.1"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
 egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", features = ["color-hex"] }
-egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras" }
+egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image"] }
 env_logger = "0.9.0"
 flume = "0.10.14"
 fs-err = "2.8.1"
+image = { version = "0.24.4", features = ["jpeg", "png"] }
 jwalk = "0.6.0"
 join_str = "0.1.0"
 log = "0.4.17"

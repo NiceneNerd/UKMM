@@ -3,8 +3,10 @@ use crate::{
     util::{self, HashMap},
 };
 use anyhow::{Context, Result};
+use egui_extras::RetainedImage;
 use fs_err as fs;
-use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
+use once_cell::sync::{Lazy, OnceCell};
+use parking_lot::{lock_api::RwLockWriteGuard, MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use std::{
@@ -66,19 +68,40 @@ impl Mod {
         }
     }
 
-    pub fn preview(&self) -> Result<Option<Vec<u8>>> {
-        let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&self.path)?))?;
-        if let Ok(mut file) = zip.by_name("thumb.jpg") {
-            let mut vec = vec![0; file.size() as usize];
-            file.read_exact(&mut vec)?;
-            return Ok(Some(vec));
+    pub fn preview(&self) -> Option<Arc<RetainedImage>> {
+        fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
+            let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
+            if let Ok(mut file) = zip.by_name("thumb.jpg") {
+                let mut vec = vec![0; file.size() as usize];
+                file.read_exact(&mut vec)?;
+                return Ok(Some(Arc::new(
+                    RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
+                        .map_err(|e| anyhow::anyhow!("{}", e))?,
+                )));
+            }
+            if let Ok(mut file) = zip.by_name("thumb.png") {
+                let mut vec = vec![0; file.size() as usize];
+                file.read_exact(&mut vec)?;
+                return Ok(Some(Arc::new(
+                    RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
+                        .map_err(|e| anyhow::anyhow!("{}", e))?,
+                )));
+            }
+            Ok(None)
         }
-        if let Ok(mut file) = zip.by_name("thumb.png") {
-            let mut vec = vec![0; file.size() as usize];
-            file.read_exact(&mut vec)?;
-            return Ok(Some(vec));
-        }
-        Ok(None)
+        static PREVIEW: Lazy<RwLock<HashMap<usize, Option<Arc<RetainedImage>>>>> =
+            Lazy::new(|| RwLock::new(HashMap::default()));
+        let mut preview = PREVIEW.write();
+        preview
+            .entry(self.hash)
+            .or_insert_with(|| match load_preview(self) {
+                Ok(pre) => pre,
+                Err(e) => {
+                    log::error!("Error loading mod preview: {}", e);
+                    None
+                }
+            })
+            .clone()
     }
 
     pub fn manifest_with_options(&self, options: impl AsRef<[ModOption]>) -> Result<Manifest> {

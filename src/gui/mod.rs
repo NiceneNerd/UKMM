@@ -232,9 +232,11 @@ impl eframe::App for App {
                 ..Default::default()
             })
             .show(ctx, |ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
-                    self.render_modlist(ui);
-                });
+                egui::ScrollArea::both()
+                    .id_source("mod_list")
+                    .show(ui, |ui| {
+                        self.render_modlist(ui);
+                    });
             });
         self.render_log(ctx);
     }
