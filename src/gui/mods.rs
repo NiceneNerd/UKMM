@@ -1,6 +1,6 @@
 use crate::mods::Mod;
 
-use super::{visuals, App};
+use super::{visuals, App, Message};
 use egui::{
     Align, Checkbox, CursorIcon, Id, Key, Label, LayerId, Layout, Response, Sense, TextStyle, Ui,
     Vec2,
@@ -40,43 +40,41 @@ impl App {
                 });
             })
             .body(|body| {
-                let mut drag_up = None;
                 body.rows(text_height, self.mods.len(), |index, row| {
-                    let up = self.render_mod_row(index, row);
-                    drag_up = drag_up.or(up);
+                    self.render_mod_row(index, row);
                 });
-                if self.drag_index.is_some()
-                    && self.drag_index == drag_up
-                    && let Some(start_index) = self.drag_index.take()
-                    && let Some(dest_index) = self.hover_index.take()
-                    && start_index != dest_index
-                {
-                    self.mods.retain(|m| !self.selected.contains(m));
-                    for (i, selected_mod) in self.selected.iter().enumerate() {
-                        self.mods.insert(dest_index + i, selected_mod.clone());
-                    }
-                }
             });
         if ui.memory().focus().is_none() {
             if ui.input().key_pressed(Key::ArrowDown)
                 && let Some((last_index, _)) = self.mods.iter().enumerate().filter(|(_, m)| self.selected.contains(m)).last()
             {
                 if !ui.input().modifiers.shift {
-                    self.selected.clear();
-                } 
-                self.selected.push(self.mods[std::cmp::min(last_index + 1, self.mods.len())].clone()); 
-                
+                    self.do_update(Message::SelectOnly(last_index + 1));
+                } else {
+                    self.do_update(Message::SelectAlso(last_index + 1));
+                }
             } else if ui.input().key_pressed(Key::ArrowUp)
                 && let Some((first_index, _)) = self.mods.iter().enumerate().find(|(_, m)| self.selected.contains(m))
             {
                 if !ui.input().modifiers.shift {
-                    self.selected.clear();
-                } 
-                self.selected.push(self.mods[std::cmp::max(first_index - 1, 0)].clone());
-                
+                    self.do_update(Message::SelectOnly(first_index - 1));
+                } else {
+                    self.do_update(Message::SelectAlso(first_index - 1));
+                }
             }
         } 
         self.render_drag_state(text_height, ui);
+        if ui.input().pointer.any_released() {
+            if let Some(start_index) = self.drag_index
+                && let Some(dest_index) = self.hover_index
+                && start_index != dest_index
+            {
+                self.do_update(Message::MoveSelected(dest_index))
+            } else {
+                self.do_update(Message::ClearDrag);
+            }
+            ui.output().cursor_icon = CursorIcon::Default;
+        }
     }
 
     fn render_drag_state(&mut self, text_height: f32, ui: &mut Ui) {
@@ -117,18 +115,14 @@ impl App {
                 ui.ctx().translate_layer(layer_id, Vec2::new(0.0, delta));
                 
             }
-        } else if ui.input().pointer.any_released() {
-            self.drag_index = None;
-            ui.output().cursor_icon = CursorIcon::Default;
         }
     }
 
-    fn render_mod_row(&mut self, index: usize, mut row: TableRow) -> Option<usize> {
+    fn render_mod_row(&mut self, index: usize, mut row: TableRow) {
         let mod_ = unsafe { self.mods.get_unchecked_mut(index) };
         let selected = self.selected.contains(mod_);
         let mut clicked = false;
         let mut drag_started = false;
-        let mut drag_ended = false;
         let mut ctrl = false;
         let mut hover = false;
 
@@ -136,7 +130,6 @@ impl App {
             clicked = clicked || res.clicked();
             hover = hover || res.hovered();
             drag_started = drag_started || res.drag_started();
-            drag_ended = drag_ended || res.drag_released();
         };
 
         if selected {
@@ -156,32 +149,20 @@ impl App {
                 ui.label(label);
             }));
         }
-        let mut process_click = || {
-            if selected && ctrl {
-                self.selected.retain(|m| m != mod_);
-            } else if selected && self.selected.len() > 1 {
-                self.selected.retain(|m| m == mod_);
-            } else {
-                if !ctrl {
-                    self.selected.clear();
-                }
-                self.selected.push(mod_.clone());
-            }
-        };
         if clicked {
-            if self.drag_index != Some(index) {
-                process_click();
+            if selected && ctrl {
+                self.do_update(Message::Deselect(index));
+            } else if ctrl {
+                self.do_update(Message::SelectAlso(index));
+            } else {
+                self.do_update(Message::SelectOnly(index));
             }
         } else if drag_started {
-            self.drag_index = Some(index);
-            if !selected {
-                process_click();
+            if !ctrl {
+                self.do_update(Message::StartDrag(index));
             }
-        } else if hover {
+        } else if self.drag_index != Some(index) && hover {
             self.hover_index = Some(index);
-        } else {
-            return drag_ended.then_some(index);
         }
-        None
     }
 }

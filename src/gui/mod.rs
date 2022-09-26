@@ -1,5 +1,6 @@
 mod info;
 mod mods;
+mod picker;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod};
 use eframe::{
@@ -17,7 +18,9 @@ use egui::{
 use egui_extras::{Size, TableBuilder};
 use flume::{Receiver, Sender};
 use join_str::jstr;
-use std::{collections::VecDeque, sync::Arc};
+use std::{collections::VecDeque, path::PathBuf, sync::Arc};
+
+use self::picker::FilePickerState;
 
 // #[inline(always)]
 // fn common_frame() -> Frame {
@@ -31,6 +34,17 @@ use std::{collections::VecDeque, sync::Arc};
 
 pub enum Message {
     Log(Entry),
+    SelectOnly(usize),
+    SelectAlso(usize),
+    Deselect(usize),
+    ClearSelect,
+    StartDrag(usize),
+    ClearDrag,
+    SetDragDest(usize),
+    MoveSelected(usize),
+    FilePickerUp,
+    FilePickerBack,
+    FilePickerSet(PathBuf),
 }
 
 enum Tabs {
@@ -45,6 +59,7 @@ struct App {
     selected: Vec<Mod>,
     drag_index: Option<usize>,
     hover_index: Option<usize>,
+    picker_state: FilePickerState,
     tab: Tabs,
     logs: VecDeque<Entry>,
 }
@@ -62,7 +77,9 @@ impl App {
         );
         fonts
             .families
-            .insert(FontFamily::Proportional, vec!["Rodin".to_owned()]);
+            .get_mut(&FontFamily::Proportional)
+            .unwrap()
+            .insert(0, "Rodin".to_owned());
         fonts.families.insert(
             FontFamily::Name("Bold".into()),
             vec!["RodinBold".to_owned()],
@@ -80,6 +97,7 @@ impl App {
             selected: mods.first().cloned().into_iter().collect(),
             drag_index: None,
             hover_index: None,
+            picker_state: Default::default(),
             mods,
             core,
             logs: VecDeque::new(),
@@ -87,23 +105,99 @@ impl App {
         }
     }
 
-    fn handle_update(&mut self) {
+    fn do_update(&self, message: Message) {
+        self.channel.0.send(message).unwrap();
+    }
+
+    fn handle_update(&mut self, ctx: &eframe::egui::Context) {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
                 Message::Log(entry) => self.logs.push_back(entry),
+                Message::SelectOnly(i) => {
+                    let index = i.clamp(0, self.mods.len() - 1);
+                    let mod_ = &self.mods[index];
+                    if self.selected.contains(mod_) {
+                        self.selected.retain(|m| m == mod_);
+                    } else {
+                        self.selected.clear();
+                        self.selected.push(self.mods[index].clone());
+                    }
+                    self.drag_index = None;
+                }
+                Message::SelectAlso(i) => {
+                    let index = i.clamp(0, self.mods.len() - 1);
+                    let mod_ = &self.mods[index];
+                    if !self.selected.contains(mod_) {
+                        self.selected.push(mod_.clone());
+                    }
+                    self.drag_index = None;
+                }
+                Message::Deselect(i) => {
+                    let index = i.clamp(0, self.mods.len() - 1);
+                    let mod_ = &self.mods[index];
+                    self.selected.retain(|m| m != mod_);
+                    self.drag_index = None;
+                }
+                Message::ClearSelect => {
+                    self.selected.clear();
+                    self.drag_index = None;
+                }
+                Message::StartDrag(i) => {
+                    if ctx.input().pointer.any_released() {
+                        self.drag_index = None;
+                    }
+                    self.drag_index = Some(i);
+                    let mod_ = &self.mods[i];
+                    if !self.selected.contains(mod_) {
+                        if !ctx.input().modifiers.ctrl {
+                            self.selected.clear();
+                        }
+                        self.selected.push(mod_.clone());
+                    }
+                }
+                Message::ClearDrag => {
+                    self.drag_index = None;
+                }
+                Message::SetDragDest(i) => self.hover_index = Some(i),
+                Message::MoveSelected(dest_index) => {
+                    if self.selected.len() == self.mods.len() {
+                        return;
+                    }
+                    self.mods.retain(|m| !self.selected.contains(m));
+                    for (i, selected_mod) in self.selected.iter().enumerate() {
+                        self.mods.insert(dest_index + i, selected_mod.clone());
+                    }
+                    self.hover_index = None;
+                    self.drag_index = None;
+                }
+                Message::FilePickerUp => {
+                    if let Some(parent) = self.picker_state.path().parent() {
+                        self.picker_state.history.push(self.picker_state.path());
+                        self.picker_state.path = parent.display().to_string();
+                    }
+                }
+                Message::FilePickerBack => {
+                    if let Some(prev) = self.picker_state.history.pop() {
+                        self.picker_state.path = prev.display().to_string();
+                    }
+                }
+                Message::FilePickerSet(path) => {
+                    self.picker_state
+                        .history
+                        .push(self.picker_state.path.as_str().into());
+                    self.picker_state.path = path.display().to_string();
+                }
             }
         }
     }
 
     fn render_menu(&self, ctx: &egui::Context) {
-        egui::TopBottomPanel::top("menu_bar")
-            // .frame(common_frame())
-            .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.menu_button("File", Self::file_menu);
-                    ui.menu_button("Edit", Self::edit_menu);
-                });
+        egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.menu_button("File", Self::file_menu);
+                ui.menu_button("Edit", Self::edit_menu);
             });
+        });
     }
 
     fn file_menu(ui: &mut Ui) {
@@ -120,12 +214,12 @@ impl App {
 
     fn render_log(&self, ctx: &egui::Context) {
         egui::TopBottomPanel::bottom("log")
-            .frame(Frame {
-                fill: Color32::BLACK,
-                inner_margin: Margin::same(6.),
-                stroke: Stroke::new(0.1, Color32::DARK_GRAY),
-                ..Default::default()
-            })
+            // .frame(Frame {
+            //     fill: Color32::BLACK,
+            //     inner_margin: Margin::same(6.),
+            //     stroke: Stroke::new(0.1, Color32::DARK_GRAY),
+            //     ..Default::default()
+            // })
             .resizable(true)
             .show(ctx, |ui| {
                 egui::ScrollArea::both()
@@ -184,7 +278,7 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
-        self.handle_update();
+        self.handle_update(ctx);
         self.render_menu(ctx);
         let mut max_width = 0.;
         egui::SidePanel::right("right_panel")
@@ -219,7 +313,9 @@ impl eframe::App for App {
                                     ui.label("No mod selected");
                                 }
                             }
-                            Tabs::Install => {}
+                            Tabs::Install => {
+                                self.render_file_picker(ui);
+                            }
                         }
                     });
                 ui.allocate_space(ui.available_size());
