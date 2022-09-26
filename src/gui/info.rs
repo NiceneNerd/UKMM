@@ -2,11 +2,13 @@ use std::path::PathBuf;
 
 use crate::mods::Mod;
 use eframe::epaint::text::TextWrapping;
-use egui::{text::LayoutJob, Align, Label, Layout, RichText, Sense, TextFormat, Ui};
+use egui::{text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui};
 use uk_mod::Manifest;
 
 pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
     ui.vertical(|ui| {
+        ui.spacing_mut().item_spacing.y = 8.;
+        ui.add_space(8.);
         let ver = mod_.meta.version.to_string();
         [
             ("Name", mod_.meta.name.as_str()),
@@ -15,18 +17,21 @@ pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
             ("Author", mod_.meta.author.as_str()),
         ]
         .into_iter()
+        .filter(|(_, v)| !v.is_empty())
         .for_each(|(label, value)| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new(label));
+                ui.label(RichText::new(label).family(egui::FontFamily::Name("Bold".into())));
                 ui.add_space(8.);
                 ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                     ui.add(Label::new(value).wrap(true));
                 })
             });
         });
-        ui.label("Description");
+        ui.label(RichText::new("Description").family(egui::FontFamily::Name("Bold".into())));
+        ui.add_space(4.);
         ui.add(Label::new(mod_.meta.description.as_str()).wrap(true));
-        ui.label("Manifest");
+        ui.add_space(4.);
+        ui.label(RichText::new("Manifest").family(egui::FontFamily::Name("Bold".into())));
         render_manifest(&mod_.manifest, ui);
     });
 }

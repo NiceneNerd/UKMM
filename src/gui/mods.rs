@@ -1,16 +1,19 @@
 use crate::mods::Mod;
 
 use super::{visuals, App};
-use egui::{Align, Key, Label, Layout, Response, Sense, TextStyle, Ui};
+use egui::{
+    Align, Checkbox, CursorIcon, Id, Key, Label, LayerId, Layout, Response, Sense, TextStyle, Ui,
+    Vec2,
+};
 use egui_extras::{Size, TableBuilder, TableRow};
 
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {
         let text_height = ui.text_style_height(&TextStyle::Body) + 4.;
         TableBuilder::new(ui)
-            .cell_layout(Layout::left_to_right(Align::Center))
             .cell_sense(Sense::click_and_drag())
             .striped(true)
+            .cell_layout(Layout::left_to_right(Align::Center))
             .column(Size::exact(16.))
             .column(Size::remainder())
             .column(Size::Absolute {
@@ -54,7 +57,52 @@ impl App {
                     }
                 }
             });
-        ui.set_max_width(ui.available_width());
+        self.render_drag_state(text_height, ui);
+        // ui.set_max_width(ui.available_width());
+    }
+
+    fn render_drag_state(&mut self, text_height: f32, ui: &mut Ui) {
+        let being_dragged = ui.memory().is_anything_being_dragged();
+        if being_dragged && let Some(drag_index) = self.drag_index {
+            ui.output().cursor_icon = CursorIcon::Grabbing;
+            let layer_id = LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
+            let res = ui.with_layer_id(layer_id, |ui| {
+                TableBuilder::new(ui).column(Size::exact(16.))
+                .column(Size::remainder())
+                .column(Size::Absolute {
+                    initial: 80.,
+                    range: (16., 240.),
+                })
+                .column(Size::exact(48.))
+                .column(Size::exact(48.)).body(|body| {
+                    body.rows(text_height, self.selected.len(), |index, mut row| {
+                        let mod_ = unsafe { self.selected.get_unchecked(index) };
+                        let mut enabled = mod_.enabled;
+                        row.col(|ui| {
+                            ui.checkbox(&mut enabled, "");
+                        });
+                        for label in [
+                            mod_.meta.name.as_str(),
+                            mod_.meta.category.as_str(),
+                            mod_.meta.version.to_string().as_str(),
+                            self.mods.iter().position(|m| m == mod_).unwrap().to_string().as_str(),
+                        ] {
+                            row.col(|ui| {
+                                ui.label(label);
+                            });
+                        };
+                    });
+                });
+            }).response;
+            if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
+                let delta = pointer_pos.y - res.rect.center().y;
+                ui.ctx().translate_layer(layer_id, Vec2::new(0.0, delta));
+                
+            }
+        } else if ui.input().pointer.any_released() {
+            self.drag_index = None;
+            ui.output().cursor_icon = CursorIcon::Default;
+        }
     }
 
     fn render_mod_row(&mut self, index: usize, mut row: TableRow) -> Option<usize> {
@@ -66,53 +114,29 @@ impl App {
         let mut ctrl = false;
         let mut hover = false;
 
-        fn process_col_res(
-            res: Response,
-            clicked: &mut bool,
-            hover: &mut bool,
-            drag_started: &mut bool,
-            drag_ended: &mut bool,
-        ) {
-            *clicked = *clicked || res.clicked();
-            *hover = *hover || res.hovered();
-            *drag_started = *drag_started || res.drag_started();
-            *drag_ended = *drag_ended || res.drag_released();
-        }
+        let mut process_col_res = |res: Response| {
+            clicked = clicked || res.clicked();
+            hover = hover || res.hovered();
+            drag_started = drag_started || res.drag_started();
+            drag_ended = drag_ended || res.drag_released();
+        };
 
         if selected {
             row = row.selected(true);
         }
-        process_col_res(
-            row.col(|ui| {
-                ui.checkbox(&mut mod_.enabled, "");
-                ctrl = ui.input().modifiers.ctrl;
-            }),
-            &mut clicked,
-            &mut hover,
-            &mut drag_started,
-            &mut drag_ended,
-        );
+        process_col_res(row.col(|ui| {
+            ui.checkbox(&mut mod_.enabled, "");
+            ctrl = ui.input().modifiers.ctrl;
+        }));
         for label in [
             mod_.meta.name.as_str(),
             mod_.meta.category.as_str(),
             mod_.meta.version.to_string().as_str(),
             index.to_string().as_str(),
         ] {
-            process_col_res(
-                row.col(|ui| {
-                    process_col_res(
-                        Self::render_mod_cell(label, selected, ui),
-                        &mut clicked,
-                        &mut hover,
-                        &mut drag_started,
-                        &mut drag_ended,
-                    );
-                }),
-                &mut clicked,
-                &mut hover,
-                &mut drag_started,
-                &mut drag_ended,
-            );
+            process_col_res(row.col(|ui| {
+                ui.label(label);
+            }));
         }
         let mut process_click = || {
             if selected && ctrl {
@@ -141,18 +165,5 @@ impl App {
             return drag_ended.then_some(index);
         }
         None
-    }
-
-    fn render_mod_cell(label: impl AsRef<str>, selected: bool, ui: &mut Ui) -> Response {
-        if selected {
-            ui.style_mut().visuals.override_text_color =
-                Some(ui.style().visuals.selection.stroke.color);
-        }
-        let label = if label.as_ref().is_empty() {
-            "   "
-        } else {
-            label.as_ref()
-        };
-        ui.add(Label::new(label).sense(Sense::click_and_drag()).wrap(false))
     }
 }

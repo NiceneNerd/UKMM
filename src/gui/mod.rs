@@ -19,15 +19,15 @@ use flume::{Receiver, Sender};
 use join_str::jstr;
 use std::{collections::VecDeque, sync::Arc};
 
-#[inline(always)]
-fn common_frame() -> Frame {
-    Frame {
-        stroke: Stroke::new(0.1, Color32::DARK_GRAY),
-        inner_margin: Margin::same(4.),
-        fill: visuals::panel(),
-        ..Default::default()
-    }
-}
+// #[inline(always)]
+// fn common_frame() -> Frame {
+//     Frame {
+//         stroke: Stroke::new(0.1, Color32::DARK_GRAY),
+//         inner_margin: Margin::same(4.),
+//         fill: visuals::panel(),
+//         ..Default::default()
+//     }
+// }
 
 pub enum Message {
     Log(Entry),
@@ -97,7 +97,7 @@ impl App {
 
     fn render_menu(&self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("menu_bar")
-            .frame(common_frame())
+            // .frame(common_frame())
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.menu_button("File", Self::file_menu);
@@ -191,7 +191,7 @@ impl eframe::App for App {
             .resizable(true)
             .max_width(ctx.used_size().x / 3.)
             .min_width(0.)
-            .frame(common_frame())
+            // .frame(common_frame())
             .show(ctx, |ui| {
                 max_width = ui.available_width();
                 egui::ScrollArea::vertical()
