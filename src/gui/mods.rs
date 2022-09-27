@@ -92,7 +92,7 @@ impl App {
                 .column(Size::exact(48.))
                 .column(Size::exact(48.)).body(|body| {
                     body.rows(text_height, self.selected.len(), |index, mut row| {
-                        let mod_ = unsafe { self.selected.get_unchecked(index) };
+                        let mod_ = &self.selected[index];
                         let mut enabled = mod_.enabled;
                         row.col(|ui| {
                             ui.checkbox(&mut enabled, "");
@@ -119,12 +119,13 @@ impl App {
     }
 
     fn render_mod_row(&mut self, index: usize, mut row: TableRow) {
-        let mod_ = unsafe { self.mods.get_unchecked_mut(index) };
+        let mod_ = unsafe { self.mods.get_mut(index).unwrap_unchecked() };
         let selected = self.selected.contains(mod_);
         let mut clicked = false;
         let mut drag_started = false;
         let mut ctrl = false;
         let mut hover = false;
+        let memory;
 
         let mut process_col_res = |res: Response| {
             clicked = clicked || res.clicked();
@@ -138,6 +139,7 @@ impl App {
         process_col_res(row.col(|ui| {
             ui.checkbox(&mut mod_.enabled, "");
             ctrl = ui.input().modifiers.ctrl;
+            memory = ui.ctx().memory();
         }));
         for label in [
             mod_.meta.name.as_str(),
@@ -150,6 +152,7 @@ impl App {
             }));
         }
         if clicked {
+            memory.request_focus(Id::new("mod_list"));
             if selected && ctrl {
                 self.do_update(Message::Deselect(index));
             } else if ctrl {

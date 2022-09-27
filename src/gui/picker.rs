@@ -1,7 +1,7 @@
 use super::{App, Message};
-use egui::{Button, Id, Key, RichText, SelectableLabel, TextStyle, Ui, WidgetText};
+use egui::{Button, Id, Key, Ui};
 use fs_err as fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Clone)]
 pub struct FilePickerState {
@@ -20,6 +20,14 @@ impl Default for FilePickerState {
             history: vec![],
             selected: None,
         }
+    }
+}
+
+impl FilePickerState {
+    pub fn set_path(&mut self, path: impl Into<PathBuf>) {
+        let path = path.into();
+        self.path_input = path.display().to_string();
+        self.path = path;
     }
 }
 
@@ -60,12 +68,15 @@ impl App {
                     self.do_update(Message::FilePickerSet(None));
                 }
             });
-            ui.vertical(|ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
+            egui::ScrollArea::both()
+                .id_source("file_picker")
+                .show(ui, |ui| {
+                    ui.add_space(8.);
+                    ui.style_mut().spacing.item_spacing.y = 4.;
                     if let Ok(dir_entries) = fs::read_dir(&self.picker_state.path)
                         .map(|entries| entries.filter_map(std::result::Result::ok))
                     {
-                        dir_entries
+                        let mut entries = dir_entries
                             .filter_map(|e| {
                                 let path = e.path();
                                 let ext = path
@@ -77,30 +88,57 @@ impl App {
                                     && !e.file_name().to_str().unwrap_or("").starts_with('.'))
                                 .then_some(path)
                             })
-                            .for_each(|path| {
-                                let mut name = path
-                                    .file_name()
+                            .collect::<Vec<_>>();
+                        entries.sort_by(|a, b| {
+                            if a.is_file() != b.is_file() {
+                                b.is_dir().cmp(&a.is_dir())
+                            } else {
+                                a.file_name()
                                     .and_then(|n| n.to_str())
-                                    .unwrap_or_default()
-                                    .to_owned();
-                                if ui
-                                    .selectable_value(
-                                        &mut self.picker_state.selected,
-                                        Some(path.clone()),
-                                        name,
+                                    .unwrap_or("")
+                                    .to_lowercase()
+                                    .cmp(
+                                        &b.file_name()
+                                            .and_then(|n| n.to_str())
+                                            .unwrap_or("")
+                                            .to_lowercase(),
                                     )
-                                    .double_clicked()
-                                {
-                                    if path.is_dir() {
-                                        self.do_update(Message::FilePickerSet(Some(path)));
-                                    } else {
-                                        todo!()
-                                    }
-                                }
-                            });
+                            }
+                        });
+                        entries.into_iter().for_each(|path| {
+                            self.render_picker_dir_entry(path, ui);
+                        });
                     }
+                    ui.allocate_space(ui.available_size());
                 });
-            });
         });
+    }
+
+    fn render_picker_dir_entry(&mut self, path: PathBuf, ui: &mut Ui) {
+        let name = if path.is_dir() {
+            "🗀 ".to_owned()
+        } else {
+            "🗄 ".to_owned()
+        } + path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default();
+        let res = ui.add(Button::new(name).wrap(false).fill(
+            if self.picker_state.selected.as_ref() == Some(&path) {
+                ui.style().visuals.selection.bg_fill
+            } else {
+                ui.style().visuals.noninteractive().bg_fill
+            },
+        ));
+        if res.double_clicked() {
+            if path.is_dir() {
+                self.do_update(Message::FilePickerSet(Some(path)));
+            } else {
+                todo!()
+            }
+        } else if res.clicked() {
+            ui.ctx().memory().request_focus(Id::new("file_picker"));
+            self.picker_state.selected = Some(path);
+        }
     }
 }

@@ -9,14 +9,11 @@ use eframe::{
     NativeOptions,
 };
 use egui::{
-    self,
-    style::{Margin, Widgets},
-    text::LayoutJob,
-    Color32, FontId, Frame, Grid, Label, Layout, RichText, Sense, Stroke, TextBuffer, TextEdit,
-    TextFormat, TextStyle, Ui, Visuals, WidgetText,
+    self, style::Margin, text::LayoutJob, Color32, ComboBox, FontId, Frame, Label, Sense,
+    TextFormat, Ui,
 };
-use egui_extras::{Size, TableBuilder};
 use flume::{Receiver, Sender};
+use im::Vector;
 use join_str::jstr;
 use std::{collections::VecDeque, path::PathBuf, sync::Arc};
 
@@ -45,6 +42,7 @@ pub enum Message {
     FilePickerUp,
     FilePickerBack,
     FilePickerSet(Option<PathBuf>),
+    ChangeProfile(String),
 }
 
 enum Tabs {
@@ -52,11 +50,13 @@ enum Tabs {
     Install,
 }
 
+enum FocusedPane {}
+
 struct App {
     core: Arc<Manager>,
     channel: (Sender<Message>, Receiver<Message>),
-    mods: Vec<Mod>,
-    selected: Vec<Mod>,
+    mods: Vector<Mod>,
+    selected: Vector<Mod>,
     drag_index: Option<usize>,
     hover_index: Option<usize>,
     picker_state: FilePickerState,
@@ -87,14 +87,14 @@ impl App {
         cc.egui_ctx.set_fonts(fonts);
         cc.egui_ctx.set_pixels_per_point(1.);
         let core = Arc::new(Manager::init().unwrap());
-        let mods: Vec<_> = core.mod_manager().all_mods().map(|m| m.clone()).collect();
+        let mods: Vector<_> = core.mod_manager().all_mods().map(|m| m.clone()).collect();
         let (send, recv) = flume::unbounded();
         crate::logger::LOGGER.set_sender(send.clone());
         crate::logger::LOGGER.flush_queue();
         log::info!("Logger initialized");
         Self {
             channel: (send, recv),
-            selected: mods.first().cloned().into_iter().collect(),
+            selected: mods.front().cloned().into_iter().collect(),
             drag_index: None,
             hover_index: None,
             picker_state: Default::default(),
@@ -112,7 +112,10 @@ impl App {
     fn handle_update(&mut self, ctx: &eframe::egui::Context) {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
-                Message::Log(entry) => self.logs.push_back(entry),
+                Message::Log(entry) => {
+                    self.logs.push_back(entry);
+                    ctx.request_repaint();
+                }
                 Message::SelectOnly(i) => {
                     let index = i.clamp(0, self.mods.len() - 1);
                     let mod_ = &self.mods[index];
@@ -120,7 +123,7 @@ impl App {
                         self.selected.retain(|m| m == mod_);
                     } else {
                         self.selected.clear();
-                        self.selected.push(self.mods[index].clone());
+                        self.selected.push_back(self.mods[index].clone());
                     }
                     self.drag_index = None;
                 }
@@ -128,7 +131,7 @@ impl App {
                     let index = i.clamp(0, self.mods.len() - 1);
                     let mod_ = &self.mods[index];
                     if !self.selected.contains(mod_) {
-                        self.selected.push(mod_.clone());
+                        self.selected.push_back(mod_.clone());
                     }
                     self.drag_index = None;
                 }
@@ -152,7 +155,7 @@ impl App {
                         if !ctx.input().modifiers.ctrl {
                             self.selected.clear();
                         }
-                        self.selected.push(mod_.clone());
+                        self.selected.push_back(mod_.clone());
                     }
                 }
                 Message::ClearDrag => {
@@ -171,18 +174,18 @@ impl App {
                     self.drag_index = None;
                 }
                 Message::FilePickerUp => {
-                    if let Some(parent) = self.picker_state.path.parent() {
+                    let has_parent = self.picker_state.path.parent().is_some();
+                    if has_parent {
                         self.picker_state
                             .history
                             .push(self.picker_state.path.clone());
-                        self.picker_state.path_input = parent.display().to_string();
-                        self.picker_state.path = parent.to_path_buf();
+                        self.picker_state
+                            .set_path(self.picker_state.path.parent().unwrap().to_path_buf());
                     }
                 }
                 Message::FilePickerBack => {
                     if let Some(prev) = self.picker_state.history.pop() {
-                        self.picker_state.path_input = prev.display().to_string();
-                        self.picker_state.path = prev;
+                        self.picker_state.set_path(prev);
                     }
                 }
                 Message::FilePickerSet(path) => {
@@ -193,8 +196,10 @@ impl App {
                         Some(path) => path,
                         None => self.picker_state.path_input.as_str().into(),
                     };
-                    self.picker_state.path_input = path.display().to_string();
-                    self.picker_state.path = path;
+                    self.picker_state.set_path(path);
+                }
+                Message::ChangeProfile(profile) => {
+                    todo!("Change profile");
                 }
             }
         }
@@ -221,14 +226,41 @@ impl App {
         }
     }
 
+    fn render_profile_menu(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            let current_profile = self
+                .core
+                .settings()
+                .platform_config()
+                .map(|c| c.profile.to_string())
+                .unwrap_or_else(|| "Default".to_owned());
+            ComboBox::from_id_source("profiles")
+                .selected_text(&current_profile)
+                .show_ui(ui, |ui| {
+                    self.core.settings().profiles().for_each(|profile| {
+                        if ui
+                            .selectable_label(profile.as_str() == current_profile, profile.as_str())
+                            .clicked()
+                        {
+                            self.do_update(Message::ChangeProfile(profile.into()));
+                        }
+                    });
+                })
+                .response
+                .on_hover_text("Select Mod Profile");
+            ui.button("🗑").on_hover_text("Delete Profile");
+            ui.button("✚").on_hover_text("New Profile");
+            ui.button("☰").on_hover_text("Manage Profiles…");
+            ui.label(format!(
+                "{} Mods / {} Active",
+                self.mods.len(),
+                self.mods.iter().filter(|m| m.enabled).count()
+            ));
+        });
+    }
+
     fn render_log(&self, ctx: &egui::Context) {
         egui::TopBottomPanel::bottom("log")
-            // .frame(Frame {
-            //     fill: Color32::BLACK,
-            //     inner_margin: Margin::same(6.),
-            //     stroke: Stroke::new(0.1, Color32::DARK_GRAY),
-            //     ..Default::default()
-            // })
             .resizable(true)
             .show(ctx, |ui| {
                 egui::ScrollArea::both()
@@ -294,7 +326,6 @@ impl eframe::App for App {
             .resizable(true)
             .max_width(ctx.used_size().x / 3.)
             .min_width(0.)
-            // .frame(common_frame())
             .show(ctx, |ui| {
                 max_width = ui.available_width();
                 egui::ScrollArea::vertical()
@@ -316,10 +347,12 @@ impl eframe::App for App {
                         });
                         match self.tab {
                             Tabs::Info => {
-                                if let Some(mod_) = self.selected.first() {
+                                if let Some(mod_) = self.selected.front() {
                                     info::render_mod_info(mod_, ui);
                                 } else {
-                                    ui.label("No mod selected");
+                                    ui.centered_and_justified(|ui| {
+                                        ui.label("No mod selected");
+                                    });
                                 }
                             }
                             Tabs::Install => {
@@ -330,19 +363,14 @@ impl eframe::App for App {
                 ui.allocate_space(ui.available_size());
                 max_width -= ui.min_rect().width();
             });
-        egui::CentralPanel::default()
-            .frame(Frame {
-                // fill: visuals::dark_panel(),
-                inner_margin: Margin::symmetric(4., 8.),
-                ..Default::default()
-            })
-            .show(ctx, |ui| {
-                egui::ScrollArea::both()
-                    .id_source("mod_list")
-                    .show(ui, |ui| {
-                        self.render_modlist(ui);
-                    });
-            });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            self.render_profile_menu(ui);
+            egui::ScrollArea::both()
+                .id_source("mod_list")
+                .show(ui, |ui| {
+                    self.render_modlist(ui);
+                });
+        });
         self.render_log(ctx);
     }
 }
