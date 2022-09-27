@@ -44,7 +44,7 @@ pub enum Message {
     MoveSelected(usize),
     FilePickerUp,
     FilePickerBack,
-    FilePickerSet(PathBuf),
+    FilePickerSet(Option<PathBuf>),
 }
 
 enum Tabs {
@@ -171,21 +171,30 @@ impl App {
                     self.drag_index = None;
                 }
                 Message::FilePickerUp => {
-                    if let Some(parent) = self.picker_state.path().parent() {
-                        self.picker_state.history.push(self.picker_state.path());
-                        self.picker_state.path = parent.display().to_string();
+                    if let Some(parent) = self.picker_state.path.parent() {
+                        self.picker_state
+                            .history
+                            .push(self.picker_state.path.clone());
+                        self.picker_state.path_input = parent.display().to_string();
+                        self.picker_state.path = parent.to_path_buf();
                     }
                 }
                 Message::FilePickerBack => {
                     if let Some(prev) = self.picker_state.history.pop() {
-                        self.picker_state.path = prev.display().to_string();
+                        self.picker_state.path_input = prev.display().to_string();
+                        self.picker_state.path = prev;
                     }
                 }
                 Message::FilePickerSet(path) => {
                     self.picker_state
                         .history
-                        .push(self.picker_state.path.as_str().into());
-                    self.picker_state.path = path.display().to_string();
+                        .push(self.picker_state.path.clone());
+                    let path = match path {
+                        Some(path) => path,
+                        None => self.picker_state.path_input.as_str().into(),
+                    };
+                    self.picker_state.path_input = path.display().to_string();
+                    self.picker_state.path = path;
                 }
             }
         }
