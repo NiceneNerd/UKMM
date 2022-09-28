@@ -3,19 +3,22 @@ mod mods;
 mod picker;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod};
+use anyhow::Result;
 use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::FontFamily,
     NativeOptions,
 };
 use egui::{
-    self, style::Margin, text::LayoutJob, Color32, ComboBox, FontId, Frame, Label, Sense,
-    TextFormat, Ui,
+    self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
+    Label, Layout, RichText, Sense, TextFormat, Ui, Vec2,
 };
 use flume::{Receiver, Sender};
+use font_loader::system_fonts::FontPropertyBuilder;
 use im::Vector;
 use join_str::jstr;
-use std::{collections::VecDeque, path::PathBuf, sync::Arc};
+use std::{collections::VecDeque, path::PathBuf, sync::Arc, thread};
+use uk_mod::unpack::ModReader;
 
 use self::picker::FilePickerState;
 
@@ -29,8 +32,57 @@ use self::picker::FilePickerState;
 //     }
 // }
 
+fn load_fonts(context: &egui::Context) {
+    let mut fonts = FontDefinitions::default();
+    let font_to_try = if cfg!(windows) {
+        "Segoe UI".to_owned()
+    } else {
+        std::process::Command::new("gsettings")
+            .args(["get", "org.gnome.desktop.interface", "font-name"])
+            .output()
+            .and_then(|o| {
+                String::from_utf8(o.stdout)
+                    .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Bah"))
+            })
+            .unwrap_or_else(|_| "Ubuntu".to_owned())
+    };
+    if let Some(system_font) =
+        font_loader::system_fonts::get(&FontPropertyBuilder::new().family(&font_to_try).build())
+    {
+        fonts
+            .font_data
+            .insert("System".to_owned(), FontData::from_owned(system_font.0));
+    }
+    if let Some(system_font) = font_loader::system_fonts::get(
+        &FontPropertyBuilder::new()
+            .family(&font_to_try)
+            .bold()
+            .build(),
+    )
+    .or_else(|| {
+        let property = FontPropertyBuilder::new()
+            .family(&(font_to_try + " Bold"))
+            .build();
+        font_loader::system_fonts::get(&property)
+    }) {
+        fonts
+            .font_data
+            .insert("Bold".to_owned(), FontData::from_owned(system_font.0));
+    }
+    fonts
+        .families
+        .get_mut(&FontFamily::Proportional)
+        .unwrap()
+        .insert(0, "System".to_owned());
+    fonts
+        .families
+        .insert(FontFamily::Name("Bold".into()), vec!["Bold".to_owned()]);
+    context.set_fonts(fonts);
+}
+
 pub enum Message {
     Log(Entry),
+    CloseError,
     SelectOnly(usize),
     SelectAlso(usize),
     Deselect(usize),
@@ -43,6 +95,9 @@ pub enum Message {
     FilePickerBack,
     FilePickerSet(Option<PathBuf>),
     ChangeProfile(String),
+    SetFocus(FocusedPane),
+    OpenMod(PathBuf),
+    HandleMod(Result<Mod>),
 }
 
 enum Tabs {
@@ -50,7 +105,12 @@ enum Tabs {
     Install,
 }
 
-enum FocusedPane {}
+#[derive(Debug, PartialEq, Eq)]
+pub enum FocusedPane {
+    ModList,
+    FilePicker,
+    None,
+}
 
 struct App {
     core: Arc<Manager>,
@@ -61,30 +121,14 @@ struct App {
     hover_index: Option<usize>,
     picker_state: FilePickerState,
     tab: Tabs,
+    focused: FocusedPane,
     logs: VecDeque<Entry>,
+    error: Option<anyhow::Error>,
 }
 
 impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
-        let mut fonts = FontDefinitions::default();
-        fonts.font_data.insert(
-            "Rodin".to_owned(),
-            FontData::from_static(include_bytes!("../../assets/rodin.otf")),
-        );
-        fonts.font_data.insert(
-            "RodinBold".to_owned(),
-            FontData::from_static(include_bytes!("../../assets/rodin-bold.otf")),
-        );
-        fonts
-            .families
-            .get_mut(&FontFamily::Proportional)
-            .unwrap()
-            .insert(0, "Rodin".to_owned());
-        fonts.families.insert(
-            FontFamily::Name("Bold".into()),
-            vec!["RodinBold".to_owned()],
-        );
-        cc.egui_ctx.set_fonts(fonts);
+        load_fonts(&cc.egui_ctx);
         cc.egui_ctx.set_pixels_per_point(1.);
         let core = Arc::new(Manager::init().unwrap());
         let mods: Vector<_> = core.mod_manager().all_mods().map(|m| m.clone()).collect();
@@ -102,11 +146,20 @@ impl App {
             core,
             logs: VecDeque::new(),
             tab: Tabs::Info,
+            focused: FocusedPane::None,
+            error: None,
         }
     }
 
     fn do_update(&self, message: Message) {
         self.channel.0.send(message).unwrap();
+    }
+
+    fn show_error(&mut self, ctx: &egui::Context, error: impl Into<anyhow::Error>) {
+        let error = error.into();
+        log::error!("{}", error.to_string());
+        self.error = Some(error);
+        ctx.request_repaint();
     }
 
     fn handle_update(&mut self, ctx: &eframe::egui::Context) {
@@ -116,6 +169,7 @@ impl App {
                     self.logs.push_back(entry);
                     ctx.request_repaint();
                 }
+                Message::CloseError => self.error = None,
                 Message::SelectOnly(i) => {
                     let index = i.clamp(0, self.mods.len() - 1);
                     let mod_ = &self.mods[index];
@@ -201,6 +255,28 @@ impl App {
                 Message::ChangeProfile(profile) => {
                     todo!("Change profile");
                 }
+                Message::SetFocus(pane) => {
+                    self.focused = pane;
+                }
+                Message::OpenMod(path) => {
+                    let sender = self.channel.0.clone();
+                    thread::spawn(move || {
+                        log::info!("Opening mod at {}", path.display());
+                        sender.send(Message::HandleMod(
+                            ModReader::open(&path, vec![]).map(Mod::from_reader),
+                        ))
+                    });
+                }
+                Message::HandleMod(result) => {
+                    match result {
+                        Ok(mod_) => {
+                            dbg!(mod_);
+                        }
+                        Err(e) => {
+                            self.show_error(ctx, e);
+                        }
+                    };
+                }
             }
         }
     }
@@ -212,6 +288,55 @@ impl App {
                 ui.menu_button("Edit", Self::edit_menu);
             });
         });
+    }
+
+    fn render_error(&mut self, ctx: &egui::Context) {
+        if let Some(err) = self.error.as_ref() {
+            egui::Window::new("Error")
+                .collapsible(false)
+                .anchor(Align2::CENTER_CENTER, Vec2::default())
+                .auto_sized()
+                .frame(Frame::window(&ctx.style()).inner_margin(Margin {
+                    top: 0.,
+                    left: 8.,
+                    right: 8.,
+                    bottom: 8.,
+                }))
+                .show(ctx, |ui| {
+                    ui.add_space(8.);
+                    ui.label(err.to_string());
+                    ui.add_space(8.);
+                    egui::CollapsingHeader::new("Details").show(ui, |ui| {
+                        err.chain().for_each(|e| {
+                            ui.label(RichText::new(e.to_string()).code());
+                        });
+                    });
+                    ui.add_space(8.);
+                    let width = ui.min_size().x;
+                    ui.horizontal(|ui| {
+                        ui.allocate_ui_with_layout(
+                            Vec2::new(width, ui.min_size().y),
+                            Layout::right_to_left(Align::Center),
+                            |ui| {
+                                if ui.button("OK").clicked() {
+                                    self.do_update(Message::CloseError);
+                                }
+                                if ui.button("Copy").clicked() {
+                                    ui.output().copied_text = err
+                                        .chain()
+                                        .map(|e| e.to_string())
+                                        .collect::<Vec<_>>()
+                                        .join("\n");
+                                    egui::popup::show_tooltip(ctx, Id::new("copied"), |ui| {
+                                        ui.label("Copied")
+                                    });
+                                }
+                                ui.shrink_width_to_current();
+                            },
+                        );
+                    });
+                });
+        }
     }
 
     fn file_menu(ui: &mut Ui) {
@@ -321,6 +446,7 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         self.handle_update(ctx);
         self.render_menu(ctx);
+        self.render_error(ctx);
         let mut max_width = 0.;
         egui::SidePanel::right("right_panel")
             .resizable(true)

@@ -1,6 +1,6 @@
 use crate::mods::Mod;
 
-use super::{visuals, App, Message};
+use super::{visuals, App, Message, FocusedPane};
 use egui::{
     Align, Checkbox, CursorIcon, Id, Key, Label, LayerId, Layout, Response, Sense, TextStyle, Ui,
     Vec2,
@@ -44,7 +44,7 @@ impl App {
                     self.render_mod_row(index, row);
                 });
             });
-        if ui.memory().focus().is_none() {
+        if ui.memory().focus().is_none() && self.focused == FocusedPane::ModList {
             if ui.input().key_pressed(Key::ArrowDown)
                 && let Some((last_index, _)) = self.mods.iter().enumerate().filter(|(_, m)| self.selected.contains(m)).last()
             {
@@ -56,10 +56,11 @@ impl App {
             } else if ui.input().key_pressed(Key::ArrowUp)
                 && let Some((first_index, _)) = self.mods.iter().enumerate().find(|(_, m)| self.selected.contains(m))
             {
+                let index = first_index.max(1);
                 if !ui.input().modifiers.shift {
-                    self.do_update(Message::SelectOnly(first_index - 1));
+                    self.do_update(Message::SelectOnly(index - 1));
                 } else {
-                    self.do_update(Message::SelectAlso(first_index - 1));
+                    self.do_update(Message::SelectAlso(index - 1));
                 }
             }
         } 
@@ -125,7 +126,6 @@ impl App {
         let mut drag_started = false;
         let mut ctrl = false;
         let mut hover = false;
-        let memory;
 
         let mut process_col_res = |res: Response| {
             clicked = clicked || res.clicked();
@@ -139,7 +139,6 @@ impl App {
         process_col_res(row.col(|ui| {
             ui.checkbox(&mut mod_.enabled, "");
             ctrl = ui.input().modifiers.ctrl;
-            memory = ui.ctx().memory();
         }));
         for label in [
             mod_.meta.name.as_str(),
@@ -152,7 +151,7 @@ impl App {
             }));
         }
         if clicked {
-            memory.request_focus(Id::new("mod_list"));
+            self.do_update(Message::SetFocus(FocusedPane::ModList));
             if selected && ctrl {
                 self.do_update(Message::Deselect(index));
             } else if ctrl {

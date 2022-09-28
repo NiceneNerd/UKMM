@@ -1,7 +1,7 @@
-use super::{App, Message};
+use super::{App, FocusedPane, Message};
 use egui::{Button, Id, Key, Ui};
 use fs_err as fs;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 #[derive(Clone)]
 pub struct FilePickerState {
@@ -105,6 +105,18 @@ impl App {
                                     )
                             }
                         });
+                        if self.focused == FocusedPane::FilePicker {
+                            if ui.input().key_pressed(Key::ArrowDown)
+                                && let Some(pos) = entries.iter().position(|p| self.picker_state.selected.as_ref() == Some(p))
+                            {
+                                self.picker_state.selected = Some(entries[(pos + 1).min(entries.len() - 1)].to_path_buf());
+                            } else if ui.input().key_pressed(Key::ArrowUp)
+                                && let Some(pos) = entries.iter().position(|p| self.picker_state.selected.as_ref() == Some(p))
+                            {
+                                let index = pos.max(1);
+                                self.picker_state.selected = Some(entries[index - 1].to_path_buf());
+                            }
+                        } 
                         entries.into_iter().for_each(|path| {
                             self.render_picker_dir_entry(path, ui);
                         });
@@ -123,21 +135,23 @@ impl App {
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or_default();
+        let selected = self.picker_state.selected.as_ref() == Some(&path);
         let res = ui.add(Button::new(name).wrap(false).fill(
-            if self.picker_state.selected.as_ref() == Some(&path) {
+            if selected {
                 ui.style().visuals.selection.bg_fill
             } else {
                 ui.style().visuals.noninteractive().bg_fill
             },
         ));
-        if res.double_clicked() {
+        if res.double_clicked() || (ui.input().key_pressed(Key::Enter) && selected) {
+            self.do_update(Message::SetFocus(FocusedPane::FilePicker));
             if path.is_dir() {
                 self.do_update(Message::FilePickerSet(Some(path)));
             } else {
-                todo!()
+                self.do_update(Message::OpenMod(path));
             }
         } else if res.clicked() {
-            ui.ctx().memory().request_focus(Id::new("file_picker"));
+            self.do_update(Message::SetFocus(FocusedPane::FilePicker));
             self.picker_state.selected = Some(path);
         }
     }
