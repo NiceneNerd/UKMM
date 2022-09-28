@@ -1,9 +1,10 @@
 mod info;
 mod mods;
 mod picker;
+mod tasks;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::FontFamily,
@@ -89,7 +90,6 @@ pub enum Message {
     ClearSelect,
     StartDrag(usize),
     ClearDrag,
-    SetDragDest(usize),
     MoveSelected(usize),
     FilePickerUp,
     FilePickerBack,
@@ -97,7 +97,8 @@ pub enum Message {
     ChangeProfile(String),
     SetFocus(FocusedPane),
     OpenMod(PathBuf),
-    HandleMod(Result<Mod>),
+    HandleMod(Mod),
+    Error(anyhow::Error),
 }
 
 enum Tabs {
@@ -124,6 +125,7 @@ struct App {
     focused: FocusedPane,
     logs: VecDeque<Entry>,
     error: Option<anyhow::Error>,
+    busy: bool,
 }
 
 impl App {
@@ -148,18 +150,35 @@ impl App {
             tab: Tabs::Info,
             focused: FocusedPane::None,
             error: None,
+            busy: false,
         }
+    }
+
+    #[inline(always)]
+    fn modal_open(&self) -> bool {
+        self.error.is_some() || self.busy
     }
 
     fn do_update(&self, message: Message) {
         self.channel.0.send(message).unwrap();
     }
 
-    fn show_error(&mut self, ctx: &egui::Context, error: impl Into<anyhow::Error>) {
-        let error = error.into();
-        log::error!("{}", error.to_string());
-        self.error = Some(error);
-        ctx.request_repaint();
+    fn do_task(
+        &mut self,
+        task: impl 'static + Send + Sync + FnOnce(Arc<Manager>) -> Result<Message>,
+    ) {
+        let sender = self.channel.0.clone();
+        let core = self.core.clone();
+        let task = Box::new(task);
+        self.busy = true;
+        thread::spawn(move || {
+            sender
+                .send(match task(core) {
+                    Ok(msg) => msg,
+                    Err(e) => Message::Error(e),
+                })
+                .unwrap();
+        });
     }
 
     fn handle_update(&mut self, ctx: &eframe::egui::Context) {
@@ -215,7 +234,6 @@ impl App {
                 Message::ClearDrag => {
                     self.drag_index = None;
                 }
-                Message::SetDragDest(i) => self.hover_index = Some(i),
                 Message::MoveSelected(dest_index) => {
                     if self.selected.len() == self.mods.len() {
                         return;
@@ -259,23 +277,16 @@ impl App {
                     self.focused = pane;
                 }
                 Message::OpenMod(path) => {
-                    let sender = self.channel.0.clone();
-                    thread::spawn(move || {
-                        log::info!("Opening mod at {}", path.display());
-                        sender.send(Message::HandleMod(
-                            ModReader::open(&path, vec![]).map(Mod::from_reader),
-                        ))
-                    });
+                    self.do_task(move |_| tasks::open_mod(&path));
                 }
-                Message::HandleMod(result) => {
-                    match result {
-                        Ok(mod_) => {
-                            dbg!(mod_);
-                        }
-                        Err(e) => {
-                            self.show_error(ctx, e);
-                        }
-                    };
+                Message::HandleMod(mod_) => {
+                    self.busy = false;
+                    dbg!(mod_);
+                }
+                Message::Error(error) => {
+                    log::error!("{:?}", &error);
+                    self.error = Some(error);
+                    ctx.request_repaint();
                 }
             }
         }
@@ -283,6 +294,7 @@ impl App {
 
     fn render_menu(&self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+            ui.set_enabled(!self.modal_open());
             ui.horizontal(|ui| {
                 ui.menu_button("File", Self::file_menu);
                 ui.menu_button("Edit", Self::edit_menu);
@@ -339,6 +351,26 @@ impl App {
         }
     }
 
+    fn render_busy(&self, ctx: &egui::Context) {
+        if self.busy {
+            egui::Window::new("Working")
+                .fixed_size(ctx.available_rect().size())
+                .anchor(Align2::CENTER_CENTER, Vec2::default())
+                .collapsible(false)
+                .show(ctx, |ui| {
+                    ui.vertical(|ui| {
+                        ui.label("Processing…");
+                        ui.label(
+                            self.logs
+                                .back()
+                                .map(|l| l.args.as_str())
+                                .unwrap_or_default(),
+                        );
+                    });
+                });
+        }
+    }
+
     fn file_menu(ui: &mut Ui) {
         if ui.button("Open mod…").clicked() {
             // todo!("Open mod");
@@ -388,6 +420,7 @@ impl App {
         egui::TopBottomPanel::bottom("log")
             .resizable(true)
             .show(ctx, |ui| {
+                ui.set_enabled(!self.modal_open());
                 egui::ScrollArea::both()
                     .auto_shrink([false, false])
                     .stick_to_bottom(true)
@@ -445,15 +478,15 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         self.handle_update(ctx);
-        self.render_menu(ctx);
         self.render_error(ctx);
-        let mut max_width = 0.;
+        self.render_busy(ctx);
+        self.render_menu(ctx);
         egui::SidePanel::right("right_panel")
             .resizable(true)
             .max_width(ctx.used_size().x / 3.)
             .min_width(0.)
             .show(ctx, |ui| {
-                max_width = ui.available_width();
+                ui.set_enabled(!self.modal_open());
                 egui::ScrollArea::vertical()
                     .id_source("right_panel_scroll")
                     .show(ui, |ui| {
@@ -487,9 +520,9 @@ impl eframe::App for App {
                         }
                     });
                 ui.allocate_space(ui.available_size());
-                max_width -= ui.min_rect().width();
             });
         egui::CentralPanel::default().show(ctx, |ui| {
+            ui.set_enabled(!self.modal_open());
             self.render_profile_menu(ui);
             egui::ScrollArea::both()
                 .id_source("mod_list")

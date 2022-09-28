@@ -12,7 +12,7 @@ use serde::Serialize;
 use smartstring::alias::String;
 use std::{
     collections::BTreeSet,
-    io::{BufReader, Read, Write},
+    io::{BufReader, Read, Write, Seek},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -153,8 +153,7 @@ impl ModReader {
         })
     }
 
-    fn open_zipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
-        let mut zip = ZipArchive::new(BufReader::new(fs::File::open(&path)?))?;
+    pub fn from_archive(path: PathBuf, mut zip: ZipArchive<BufReader<fs::File>>, options: Vec<ModOption>) -> Result<Self> {
         let mut buffer = vec![0; 524288]; // 512kb
         let mut read;
         let mut size;
@@ -201,6 +200,11 @@ impl ModReader {
             manifest,
             zip: Some(Arc::new(Mutex::new(zip))),
         })
+    }
+
+    fn open_zipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
+        let zip = ZipArchive::new(BufReader::new(fs::File::open(&path)?))?;
+        Self::from_archive(path, zip, options)
     }
 
     pub fn manifest(&self) -> &Manifest {
