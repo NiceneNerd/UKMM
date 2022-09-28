@@ -1,60 +1,116 @@
 use crate::mods::Mod;
 
-use super::{visuals, App, Message, FocusedPane};
+use super::{visuals, App, FocusedPane, Message, Sort};
+use eframe::epaint::text::TextWrapping;
 use egui::{
-    Align, Checkbox, CursorIcon, Id, Key, Label, LayerId, Layout, Response, Sense, TextStyle, Ui,
-    Vec2,
+    text::LayoutJob, Align, Button, Checkbox, Color32, CursorIcon, Id, Key, Label, LayerId, Layout,
+    Response, Sense, TextStyle, Ui, Vec2,
 };
 use egui_extras::{Size, TableBuilder, TableRow};
 
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {
         let text_height = ui.text_style_height(&TextStyle::Body) + 4.;
+        let icon_width = ui.spacing().icon_width + ui.spacing().button_padding.x;
         TableBuilder::new(ui)
             .cell_sense(Sense::click_and_drag())
             .striped(true)
             .cell_layout(Layout::left_to_right(Align::Center))
-            .column(Size::exact(16.))
+            .column(Size::exact(icon_width))
             .column(Size::remainder())
             .column(Size::Absolute {
-                initial: 80.,
+                initial: 100.,
                 range: (16., 240.),
             })
-            .column(Size::exact(48.))
-            .column(Size::exact(48.))
+            .column(Size::exact(72.))
+            .column(Size::exact(72.))
             .header(text_height, |mut header| {
                 header.col(|ui| {
-                    ui.add_space(16.);
+                    let is_current = self.sort.0 == Sort::Enabled;
+                    let label = if is_current {
+                        if self.sort.1 {
+                            "⏷"
+                        } else {
+                            "⏶"
+                        }
+                    } else {
+                        "  "
+                    };
+                    if ui
+                        .add(Button::new(label).small().fill(Color32::TRANSPARENT))
+                        .clicked()
+                    {
+                        self.do_update(Message::ChangeSort(
+                            Sort::Enabled,
+                            if is_current {
+                                !self.sort.1
+                            } else {
+                                self.sort.1
+                            },
+                        ));
+                    }
                 });
-                header.col(|ui| {
-                    ui.label("Mod Name");
-                });
-                header.col(|ui| {
-                    ui.label("Category");
-                });
-                header.col(|ui| {
-                    ui.label("Version");
-                });
-                header.col(|ui| {
-                    ui.label("Priority");
+                [
+                    ("Mod Name", Sort::Name),
+                    ("Category", Sort::Category),
+                    ("Version", Sort::Version),
+                    ("Priority", Sort::Priority),
+                ]
+                .into_iter()
+                .for_each(|(label, sort)| {
+                    header.col(|ui| {
+                        let is_current = self.sort.0 == sort;
+                        let mut label = label.to_owned();
+                        if is_current {
+                            if self.sort.1 {
+                                label += " ⏷";
+                            } else {
+                                label += " ⏶";
+                            }
+                        } else {
+                            label += "  ";
+                        }
+                        ui.centered_and_justified(|ui| {
+                            if ui
+                                .add(Button::new(label).small().fill(Color32::TRANSPARENT))
+                                .clicked()
+                            {
+                                self.do_update(Message::ChangeSort(
+                                    sort,
+                                    if is_current {
+                                        !self.sort.1
+                                    } else {
+                                        self.sort.1
+                                    },
+                                ));
+                            }
+                        });
+                    });
                 });
             })
             .body(|body| {
-                body.rows(text_height, self.mods.len(), |index, row| {
+                body.rows(text_height, self.displayed_mods.len(), |index, row| {
                     self.render_mod_row(index, row);
                 });
             });
         if ui.memory().focus().is_none() && self.focused == FocusedPane::ModList {
-            if ui.input().key_pressed(Key::ArrowDown)
-                && let Some((last_index, _)) = self.mods.iter().enumerate().filter(|(_, m)| self.selected.contains(m)).last()
+            if ui.input().key_pressed(Key::ArrowDown) && let Some((last_index, _)) = self
+                .mods
+                .iter()
+                .enumerate()
+                .filter(|(_, m)| self.selected.contains(m))
+                .last()
             {
                 if !ui.input().modifiers.shift {
                     self.do_update(Message::SelectOnly(last_index + 1));
                 } else {
                     self.do_update(Message::SelectAlso(last_index + 1));
                 }
-            } else if ui.input().key_pressed(Key::ArrowUp)
-                && let Some((first_index, _)) = self.mods.iter().enumerate().find(|(_, m)| self.selected.contains(m))
+            } else if ui.input().key_pressed(Key::ArrowUp) && let Some((first_index, _)) = self
+                .mods
+                .iter()
+                .enumerate()
+                .find(|(_, m)| self.selected.contains(m))
             {
                 let index = first_index.max(1);
                 if !ui.input().modifiers.shift {
@@ -63,7 +119,7 @@ impl App {
                     self.do_update(Message::SelectAlso(index - 1));
                 }
             }
-        } 
+        }
         self.render_drag_state(text_height, ui);
         if ui.input().pointer.any_released() {
             if let Some(start_index) = self.drag_index
@@ -80,47 +136,57 @@ impl App {
 
     fn render_drag_state(&mut self, text_height: f32, ui: &mut Ui) {
         let being_dragged = ui.memory().is_anything_being_dragged();
+        let icon_width = ui.spacing().icon_width + ui.spacing().button_padding.x;
         if being_dragged && let Some(drag_index) = self.drag_index {
             ui.output().cursor_icon = CursorIcon::Grabbing;
             let layer_id = LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
-            let res = ui.with_layer_id(layer_id, |ui| {
-                TableBuilder::new(ui).column(Size::exact(16.))
-                .column(Size::remainder())
-                .column(Size::Absolute {
-                    initial: 80.,
-                    range: (16., 240.),
-                })
-                .column(Size::exact(48.))
-                .column(Size::exact(48.)).body(|body| {
-                    body.rows(text_height, self.selected.len(), |index, mut row| {
-                        let mod_ = &self.selected[index];
-                        let mut enabled = mod_.enabled;
-                        row.col(|ui| {
-                            ui.checkbox(&mut enabled, "");
-                        });
-                        for label in [
-                            mod_.meta.name.as_str(),
-                            mod_.meta.category.as_str(),
-                            mod_.meta.version.to_string().as_str(),
-                            self.mods.iter().position(|m| m == mod_).unwrap().to_string().as_str(),
-                        ] {
-                            row.col(|ui| {
-                                ui.label(label);
+            let res = ui
+                .with_layer_id(layer_id, |ui| {
+                    TableBuilder::new(ui)
+                        .column(Size::exact(icon_width))
+                        .column(Size::remainder())
+                        .column(Size::Absolute {
+                            initial: 80.,
+                            range: (16., 240.),
+                        })
+                        .column(Size::exact(64.))
+                        .column(Size::exact(64.))
+                        .body(|body| {
+                            body.rows(text_height, self.selected.len(), |index, mut row| {
+                                let mod_ = &self.selected[index];
+                                let mut enabled = mod_.enabled;
+                                row.col(|ui| {
+                                    ui.checkbox(&mut enabled, "");
+                                });
+                                for label in [
+                                    mod_.meta.name.as_str(),
+                                    mod_.meta.category.as_str(),
+                                    mod_.meta.version.to_string().as_str(),
+                                    self.mods
+                                        .iter()
+                                        .position(|m| m == mod_)
+                                        .unwrap()
+                                        .to_string()
+                                        .as_str(),
+                                ] {
+                                    row.col(|ui| {
+                                        ui.label(label);
+                                    });
+                                }
                             });
-                        };
-                    });
-                });
-            }).response;
+                        });
+                })
+                .response;
             if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
                 let delta = pointer_pos.y - res.rect.center().y;
                 ui.ctx().translate_layer(layer_id, Vec2::new(0.0, delta));
-                
             }
         }
     }
 
     fn render_mod_row(&mut self, index: usize, mut row: TableRow) {
-        let mod_ = unsafe { self.mods.get_mut(index).unwrap_unchecked() };
+        let mod_ = unsafe { self.displayed_mods.get_mut(index).unwrap_unchecked() };
+        let index = unsafe { self.mods.index_of(mod_).unwrap_unchecked() };
         let selected = self.selected.contains(mod_);
         let mut clicked = false;
         let mut drag_started = false;
@@ -140,14 +206,31 @@ impl App {
             ui.checkbox(&mut mod_.enabled, "");
             ctrl = ui.input().modifiers.ctrl;
         }));
+        process_col_res(row.col(|ui| {
+            let mut job = LayoutJob {
+                text: mod_.meta.name.to_string(),
+                first_row_min_height: ui.text_style_height(&TextStyle::Body),
+                halign: Align::LEFT,
+                wrap: TextWrapping {
+                    max_width: ui.available_width(),
+                    max_rows: 1,
+                    break_anywhere: true,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            dbg!(&job);
+            ui.add(Label::new(job).wrap(false));
+        }));
         for label in [
-            mod_.meta.name.as_str(),
             mod_.meta.category.as_str(),
             mod_.meta.version.to_string().as_str(),
             index.to_string().as_str(),
         ] {
             process_col_res(row.col(|ui| {
-                ui.label(label);
+                ui.centered_and_justified(|ui| {
+                    ui.label(label);
+                });
             }));
         }
         if clicked {

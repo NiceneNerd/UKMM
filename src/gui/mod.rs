@@ -7,12 +7,12 @@ use crate::{core::Manager, logger::Entry, mods::Mod};
 use anyhow::{Context, Result};
 use eframe::{
     egui::{FontData, FontDefinitions},
-    epaint::FontFamily,
+    epaint::{text::TextWrapping, FontFamily},
     NativeOptions,
 };
 use egui::{
     self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
-    Label, Layout, RichText, Sense, TextFormat, Ui, Vec2,
+    Label, Layout, RichText, Sense, Spinner, TextFormat, TextStyle, Ui, Vec2,
 };
 use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
@@ -102,6 +102,7 @@ pub enum Message {
     InstallMod(Mod),
     AddMod(Mod),
     Error(anyhow::Error),
+    ChangeSort(Sort, bool),
 }
 
 enum Tabs {
@@ -116,10 +117,43 @@ pub enum FocusedPane {
     None,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Sort {
+    Enabled,
+    Name,
+    Category,
+    Version,
+    Priority,
+}
+
+impl Sort {
+    pub fn orderer(&self) -> Box<dyn Fn(&(usize, Mod), &(usize, Mod)) -> std::cmp::Ordering> {
+        match self {
+            Sort::Enabled => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| a.enabled.cmp(&b.enabled))
+            }
+            Sort::Name => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| a.meta.name.cmp(&b.meta.name))
+            }
+            Sort::Category => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                a.meta.category.cmp(&b.meta.category)
+            }),
+            Sort::Version => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                a.meta
+                    .version
+                    .partial_cmp(&b.meta.version)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            }),
+            Sort::Priority => Box::new(|&(a, _), &(b, _)| a.cmp(&b)),
+        }
+    }
+}
+
 struct App {
     core: Arc<Manager>,
     channel: (Sender<Message>, Receiver<Message>),
     mods: Vector<Mod>,
+    displayed_mods: Vector<Mod>,
     selected: Vector<Mod>,
     drag_index: Option<usize>,
     hover_index: Option<usize>,
@@ -130,6 +164,7 @@ struct App {
     error: Option<anyhow::Error>,
     busy: bool,
     dirty: bool,
+    sort: (Sort, bool),
 }
 
 impl App {
@@ -140,7 +175,6 @@ impl App {
         let mods: Vector<_> = core.mod_manager().all_mods().map(|m| m.clone()).collect();
         let (send, recv) = flume::unbounded();
         crate::logger::LOGGER.set_sender(send.clone());
-        crate::logger::LOGGER.flush_queue();
         log::info!("Logger initialized");
         Self {
             channel: (send, recv),
@@ -148,6 +182,7 @@ impl App {
             drag_index: None,
             hover_index: None,
             picker_state: Default::default(),
+            displayed_mods: mods.clone(),
             mods,
             core,
             logs: VecDeque::new(),
@@ -156,6 +191,7 @@ impl App {
             error: None,
             busy: false,
             dirty: false,
+            sort: (Sort::Priority, false),
         }
     }
 
@@ -191,6 +227,17 @@ impl App {
             match msg {
                 Message::Log(entry) => {
                     self.logs.push_back(entry);
+                }
+                Message::ChangeSort(sort, rev) => {
+                    let orderer = sort.orderer();
+                    let mut temp = self.mods.iter().cloned().enumerate().collect::<Vector<_>>();
+                    temp.sort_by(orderer);
+                    self.displayed_mods = if rev {
+                        temp.into_iter().rev().map(|(_, m)| m).collect()
+                    } else {
+                        temp.into_iter().map(|(_, m)| m).collect()
+                    };
+                    self.sort = (sort, rev);
                 }
                 Message::CloseError => self.error = None,
                 Message::SelectOnly(i) => {
@@ -248,6 +295,7 @@ impl App {
                     }
                     self.hover_index = None;
                     self.drag_index = None;
+                    self.do_update(Message::ChangeSort(self.sort.0, self.sort.1));
                 }
                 Message::FilePickerUp => {
                     let has_parent = self.picker_state.path.parent().is_some();
@@ -289,7 +337,7 @@ impl App {
                 Message::HandleMod(mod_) => {
                     self.busy = false;
                     log::debug!("{:?}", &mod_);
-                    if mod_.meta.options.len() > 0 {
+                    if !mod_.meta.options.is_empty() {
                         self.do_update(Message::RequestOptions(mod_));
                     } else {
                         self.do_update(Message::InstallMod(mod_));
@@ -384,19 +432,43 @@ impl App {
     fn render_busy(&self, ctx: &egui::Context) {
         if self.busy {
             egui::Window::new("Working")
-                .fixed_size(ctx.used_size() / 2.)
+                .default_size([240., 80.])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .collapsible(false)
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
-                    ui.vertical(|ui| {
-                        ui.label("Processing…");
-                        ui.label(
-                            self.logs
-                                .back()
-                                .map(|l| l.args.as_str())
-                                .unwrap_or_default(),
-                        );
+                    let max_width = ui.available_width() / 2.;
+                    ui.vertical_centered(|ui| {
+                        let text_height = ui.text_style_height(&TextStyle::Body) * 2.;
+                        let padding = ui.available_size().y - text_height - 8.;
+                        ui.allocate_space([max_width, padding / 2.].into());
+                        ui.horizontal(|ui| {
+                            ui.add_space(8.);
+                            ui.add(Spinner::new().size(text_height));
+                            ui.add_space(8.);
+                            ui.vertical(|ui| {
+                                ui.label("Processing…");
+                                let mut job = LayoutJob::single_section(
+                                    self.logs
+                                        .iter()
+                                        .rev()
+                                        .find(|l| l.level == "INFO")
+                                        .map(|l| l.args.as_str())
+                                        .unwrap_or_default()
+                                        .to_owned(),
+                                    TextFormat::default(),
+                                );
+                                job.wrap = TextWrapping {
+                                    max_width,
+                                    max_rows: 1,
+                                    break_anywhere: true,
+                                    ..Default::default()
+                                };
+                                ui.add(Label::new(job).wrap(false));
+                            });
+                            ui.shrink_width_to_current();
+                        });
+                        ui.add_space(padding / 2.);
                     });
                 });
         }
@@ -554,14 +626,15 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.set_enabled(!self.modal_open());
             self.render_profile_menu(ui);
+            ui.add_space(4.);
             egui::ScrollArea::both()
                 .id_source("mod_list")
                 .show(ui, |ui| {
                     self.render_modlist(ui);
                 });
         });
-        self.render_busy(ctx);
         self.render_log(ctx);
+        self.render_busy(ctx);
     }
 }
 

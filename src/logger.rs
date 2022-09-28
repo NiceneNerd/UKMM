@@ -46,6 +46,7 @@ pub struct Logger {
 impl Logger {
     pub fn set_sender(&self, sender: flume::Sender<Message>) {
         self.sender.set(sender).unwrap_or(());
+        self.flush_queue();
     }
 
     pub fn flush_queue(&self) {
