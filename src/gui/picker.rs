@@ -1,7 +1,7 @@
 use super::{App, FocusedPane, Message};
-use egui::{Button, Id, Key, Ui};
+use egui::{Button, Id, Key, Modifiers, TextEdit, Ui};
 use fs_err as fs;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 #[derive(Clone)]
 pub struct FilePickerState {
@@ -60,11 +60,8 @@ impl App {
                         cb();
                     }
                 }
-                if ui
-                    .text_edit_singleline(&mut self.picker_state.path_input)
-                    .has_focus()
-                    && ui.input().key_pressed(Key::Enter)
-                {
+                let res = ui.text_edit_singleline(&mut self.picker_state.path_input);
+                if res.changed() {
                     self.do_update(Message::FilePickerSet(None));
                 }
             });
@@ -106,17 +103,26 @@ impl App {
                             }
                         });
                         if self.focused == FocusedPane::FilePicker {
-                            if ui.input().key_pressed(Key::ArrowDown)
-                                && let Some(pos) = entries.iter().position(|p| self.picker_state.selected.as_ref() == Some(p))
-                            {
-                                self.picker_state.selected = Some(entries[(pos + 1).min(entries.len() - 1)].to_path_buf());
-                            } else if ui.input().key_pressed(Key::ArrowUp)
-                                && let Some(pos) = entries.iter().position(|p| self.picker_state.selected.as_ref() == Some(p))
-                            {
-                                let index = pos.max(1);
-                                self.picker_state.selected = Some(entries[index - 1].to_path_buf());
+                            if ui.input().key_pressed(Key::ArrowDown) {
+                                let pos = match entries
+                                    .iter()
+                                    .position(|p| self.picker_state.selected.as_ref() == Some(p))
+                                {
+                                    Some(p) => (p + 1).min(entries.len() - 1),
+                                    None => 0,
+                                };
+                                self.picker_state.selected = Some(entries[pos].to_path_buf());
+                            } else if ui.input().key_pressed(Key::ArrowUp) {
+                                let pos = match entries
+                                    .iter()
+                                    .position(|p| self.picker_state.selected.as_ref() == Some(p))
+                                {
+                                    Some(p) => p.max(1) - 1,
+                                    None => 0,
+                                };
+                                self.picker_state.selected = Some(entries[pos].to_path_buf());
                             }
-                        } 
+                        }
                         entries.into_iter().for_each(|path| {
                             self.render_picker_dir_entry(path, ui);
                         });
@@ -136,13 +142,11 @@ impl App {
             .and_then(|n| n.to_str())
             .unwrap_or_default();
         let selected = self.picker_state.selected.as_ref() == Some(&path);
-        let res = ui.add(Button::new(name).wrap(false).fill(
-            if selected {
-                ui.style().visuals.selection.bg_fill
-            } else {
-                ui.style().visuals.noninteractive().bg_fill
-            },
-        ));
+        let res = ui.add(Button::new(name).wrap(false).fill(if selected {
+            ui.style().visuals.selection.bg_fill
+        } else {
+            ui.style().visuals.noninteractive().bg_fill
+        }));
         if res.double_clicked() || (ui.input().key_pressed(Key::Enter) && selected) {
             self.do_update(Message::SetFocus(FocusedPane::FilePicker));
             if path.is_dir() {

@@ -44,11 +44,11 @@ pub fn open_mod(path: &Path) -> Result<Message> {
     let mod_ = match ModReader::open(path, vec![]) {
         Ok(reader) => Mod::from_reader(reader),
         Err(err) => {
-            log::warn!(
-                "Could not open mod at {}, let's find out why",
-                path.display()
-            );
-            if err.to_string().contains("meta file") && is_probably_a_mod(path) {
+            log::warn!("Could not open mod, let's find out why");
+            let err_msg = err.to_string();
+            if (err_msg.contains("meta file") || err_msg.contains("invalid Zip"))
+                && is_probably_a_mod(path)
+            {
                 log::info!("Maybe it's not a UKMM mod, let's to convert it");
                 let converted_path = crate::mods::convert_gfx(path)?;
                 Mod::from_reader(

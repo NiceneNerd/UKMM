@@ -98,6 +98,9 @@ pub enum Message {
     SetFocus(FocusedPane),
     OpenMod(PathBuf),
     HandleMod(Mod),
+    RequestOptions(Mod),
+    InstallMod(Mod),
+    AddMod(Mod),
     Error(anyhow::Error),
 }
 
@@ -126,6 +129,7 @@ struct App {
     logs: VecDeque<Entry>,
     error: Option<anyhow::Error>,
     busy: bool,
+    dirty: bool,
 }
 
 impl App {
@@ -151,6 +155,7 @@ impl App {
             focused: FocusedPane::None,
             error: None,
             busy: false,
+            dirty: false,
         }
     }
 
@@ -186,7 +191,6 @@ impl App {
             match msg {
                 Message::Log(entry) => {
                     self.logs.push_back(entry);
-                    ctx.request_repaint();
                 }
                 Message::CloseError => self.error = None,
                 Message::SelectOnly(i) => {
@@ -261,14 +265,17 @@ impl App {
                     }
                 }
                 Message::FilePickerSet(path) => {
-                    self.picker_state
-                        .history
-                        .push(self.picker_state.path.clone());
                     let path = match path {
                         Some(path) => path,
                         None => self.picker_state.path_input.as_str().into(),
                     };
-                    self.picker_state.set_path(path);
+                    if path.is_dir() {
+                        self.picker_state.selected = None;
+                        self.picker_state
+                            .history
+                            .push(self.picker_state.path.clone());
+                        self.picker_state.set_path(path);
+                    }
                 }
                 Message::ChangeProfile(profile) => {
                     todo!("Change profile");
@@ -281,14 +288,37 @@ impl App {
                 }
                 Message::HandleMod(mod_) => {
                     self.busy = false;
-                    dbg!(mod_);
+                    log::debug!("{:?}", &mod_);
+                    if mod_.meta.options.len() > 0 {
+                        self.do_update(Message::RequestOptions(mod_));
+                    } else {
+                        self.do_update(Message::InstallMod(mod_));
+                    }
+                }
+                Message::InstallMod(mod_) => {
+                    self.do_task(move |core| {
+                        let mods = core.mod_manager();
+                        let mod_ = mods.add(&mod_.path)?.clone();
+                        mods.save()?;
+                        log::info!("Added mod {} to current profile", mod_.meta.name.as_str());
+                        Ok(Message::AddMod(mod_))
+                    });
+                }
+                Message::AddMod(mod_) => {
+                    self.busy = false;
+                    self.mods.push_back(mod_);
+                }
+                Message::RequestOptions(mod_) => {
+                    todo!("Request options");
                 }
                 Message::Error(error) => {
                     log::error!("{:?}", &error);
+                    self.busy = false;
                     self.error = Some(error);
                     ctx.request_repaint();
                 }
             }
+            ctx.request_repaint();
         }
     }
 
@@ -354,9 +384,10 @@ impl App {
     fn render_busy(&self, ctx: &egui::Context) {
         if self.busy {
             egui::Window::new("Working")
-                .fixed_size(ctx.available_rect().size())
+                .fixed_size(ctx.used_size() / 2.)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .collapsible(false)
+                .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     ui.vertical(|ui| {
                         ui.label("Processing…");
@@ -479,7 +510,6 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         self.handle_update(ctx);
         self.render_error(ctx);
-        self.render_busy(ctx);
         self.render_menu(ctx);
         egui::SidePanel::right("right_panel")
             .resizable(true)
@@ -530,6 +560,7 @@ impl eframe::App for App {
                     self.render_modlist(ui);
                 });
         });
+        self.render_busy(ctx);
         self.render_log(ctx);
     }
 }
