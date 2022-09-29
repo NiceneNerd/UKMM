@@ -386,12 +386,7 @@ impl App {
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .auto_sized()
-                .frame(Frame::window(&ctx.style()).inner_margin(Margin {
-                    top: 0.,
-                    left: 8.,
-                    right: 8.,
-                    bottom: 8.,
-                }))
+                .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     ui.add_space(8.);
                     ui.label(err.to_string());
@@ -412,11 +407,7 @@ impl App {
                                     self.do_update(Message::CloseError);
                                 }
                                 if ui.button("Copy").clicked() {
-                                    ui.output().copied_text = err
-                                        .chain()
-                                        .map(|e| e.to_string())
-                                        .collect::<Vec<_>>()
-                                        .join("\n");
+                                    ui.output().copied_text = format!("{:?}", &err);
                                     egui::popup::show_tooltip(ctx, Id::new("copied"), |ui| {
                                         ui.label("Copied")
                                     });

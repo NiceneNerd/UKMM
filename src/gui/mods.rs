@@ -1,7 +1,7 @@
 use crate::mods::Mod;
 
 use super::{visuals, App, FocusedPane, Message, Sort};
-use eframe::epaint::text::TextWrapping;
+use eframe::epaint::{text::TextWrapping, Galley};
 use egui::{
     text::LayoutJob, Align, Button, Checkbox, Color32, CursorIcon, Id, Key, Label, LayerId, Layout,
     Response, Sense, TextStyle, Ui, Vec2,
@@ -207,20 +207,26 @@ impl App {
             ctrl = ui.input().modifiers.ctrl;
         }));
         process_col_res(row.col(|ui| {
-            let mut job = LayoutJob {
-                text: mod_.meta.name.to_string(),
-                first_row_min_height: ui.text_style_height(&TextStyle::Body),
-                halign: Align::LEFT,
-                wrap: TextWrapping {
-                    max_width: ui.available_width(),
-                    max_rows: 1,
-                    break_anywhere: true,
-                    ..Default::default()
-                },
+            let mut job = LayoutJob::simple_singleline(
+                mod_.meta.name.to_string(),
+                ui.style()
+                    .text_styles
+                    .get(&TextStyle::Body)
+                    .unwrap()
+                    .clone(),
+                ui.style().visuals.text_color(),
+            );
+            let max_width = ui.available_width();
+            job.wrap = TextWrapping {
+                max_rows: 1,
+                max_width,
                 ..Default::default()
             };
-            dbg!(&job);
-            ui.add(Label::new(job).wrap(false));
+            let gallery = ui.fonts().layout_job(job);
+            let res = ui.add(Label::new(gallery));
+            if (mod_.meta.name.len() * 10) as f32 > max_width {
+                res.on_hover_text(mod_.meta.name.as_str());
+            }
         }));
         for label in [
             mod_.meta.category.as_str(),
