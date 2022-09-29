@@ -8,7 +8,7 @@ use fs_err as fs;
 use once_cell::sync::{Lazy, OnceCell};
 use parking_lot::{lock_api::RwLockWriteGuard, MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{core::any, serde_as, DisplayFromStr};
 use std::{
     hash::{Hash, Hasher},
     io::{BufReader, Read},
@@ -17,6 +17,8 @@ use std::{
     sync::{Arc, Weak},
 };
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
+
+type ManifestCache = Lazy<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Arc<Manifest>>>>>;
 
 #[serde_as]
 #[derive(Clone, Serialize, Deserialize)]
@@ -102,24 +104,24 @@ impl Mod {
             .clone()
     }
 
-    pub fn manifest(&self) -> Result<&'static Manifest> {
+    pub fn manifest(&self) -> Result<Arc<Manifest>> {
         self.manifest_with_options(&self.enabled_options)
     }
 
-    pub fn manifest_with_options(
-        &self,
-        options: impl AsRef<[ModOption]>,
-    ) -> Result<&'static Manifest> {
-        static MANIFEST_CACHE: Lazy<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Manifest>>>> =
-            Lazy::new(|| RwLock::new(HashMap::default()));
-        MANIFEST_CACHE
+    pub fn manifest_with_options(&self, options: impl AsRef<[ModOption]>) -> Result<Arc<Manifest>> {
+        static MANIFEST_CACHE: ManifestCache = Lazy::new(|| RwLock::new(HashMap::default()));
+        match MANIFEST_CACHE
             .write()
-            .entry((self.hash, options.as_ref().iter().map(|o| o.path).collect()))
-            .or_insert_with(|| ModReader::open(&self.path, options.as_ref()).map(|r| r.manifest))
-            .as_ref()
-            .with_context(|| {
-                join_str::jstr!("Failed to get manifest for {self.meta.name.as_str()}")
-            })
+            .entry((
+                self.hash,
+                options.as_ref().iter().map(|o| o.path.clone()).collect(),
+            ))
+            .or_insert_with(|| {
+                ModReader::open(&self.path, options.as_ref()).map(|r| Arc::new(r.manifest))
+            }) {
+            Ok(manifest) => Ok(manifest.clone()),
+            Err(e) => Err(anyhow::format_err!("{:?}", e)),
+        }
     }
 
     pub fn state_eq(&self, other: &Self) -> bool {
@@ -299,7 +301,7 @@ impl Manager {
         Ok(mod_)
     }
 
-    pub fn del(&self, mod_: impl LookupMod) -> Result<Manifest> {
+    pub fn del(&self, mod_: impl LookupMod) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
         let mod_ = self.mods.write().remove(&hash);
         if let Some(mod_) = mod_ {
@@ -318,7 +320,7 @@ impl Manager {
         }
     }
 
-    pub fn set_enabled(&self, mod_: impl LookupMod, enabled: bool) -> Result<Manifest> {
+    pub fn set_enabled(&self, mod_: impl LookupMod, enabled: bool) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
         let manifest;
         if let Some(mod_) = self.mods.write().get_mut(&hash) {
@@ -340,7 +342,7 @@ impl Manager {
         &self,
         mod_: impl LookupMod,
         options: Vec<ModOption>,
-    ) -> Result<Manifest> {
+    ) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
         let manifest;
         if let Some(mod_) = self.mods.write().get_mut(&hash) {
