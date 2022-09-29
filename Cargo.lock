@@ -33,6 +33,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "getrandom",
  "once_cell",
+ "serde",
  "version_check",
 ]
 
@@ -1022,6 +1023,8 @@ dependencies = [
  "ahash",
  "epaint",
  "nohash-hasher",
+ "ron",
+ "serde",
  "tracing",
 ]
 
@@ -1074,6 +1077,7 @@ version = "0.19.0"
 source = "git+https://github.com/NiceneNerd/egui#69e31a7d35dc1972bdbd1bf9a27c34f2a997e959"
 dependencies = [
  "bytemuck",
+ "serde",
 ]
 
 [[package]]
@@ -1134,6 +1138,7 @@ dependencies = [
  "emath",
  "nohash-hasher",
  "parking_lot",
+ "serde",
 ]
 
 [[package]]

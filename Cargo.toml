@@ -11,7 +11,7 @@ clap = { version = "3.2.17", features = ["derive"] }
 dircpy = "0.3.12"
 dirs2 = "3.0.1"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
-egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", features = ["color-hex"] }
+egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", features = ["color-hex", "persistence"] }
 egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image"] }
 env_logger = "0.9.0"
 flume = "0.10.14"

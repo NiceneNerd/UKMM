@@ -1,5 +1,6 @@
 mod info;
 mod mods;
+mod options;
 mod picker;
 mod tasks;
 mod visuals;
@@ -126,8 +127,10 @@ pub enum Sort {
     Priority,
 }
 
+type Orderer = dyn Fn(&(usize, Mod), &(usize, Mod)) -> std::cmp::Ordering;
+
 impl Sort {
-    pub fn orderer(&self) -> Box<dyn Fn(&(usize, Mod), &(usize, Mod)) -> std::cmp::Ordering> {
+    pub fn orderer(&self) -> Box<Orderer> {
         match self {
             Sort::Enabled => {
                 Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| a.enabled.cmp(&b.enabled))
@@ -165,6 +168,7 @@ struct App {
     busy: bool,
     dirty: bool,
     sort: (Sort, bool),
+    options_mod: Option<Mod>,
 }
 
 impl App {
@@ -192,6 +196,7 @@ impl App {
             busy: false,
             dirty: false,
             sort: (Sort::Priority, false),
+            options_mod: None,
         }
     }
 
@@ -357,13 +362,12 @@ impl App {
                     self.mods.push_back(mod_);
                 }
                 Message::RequestOptions(mod_) => {
-                    todo!("Request options");
+                    self.options_mod = Some(mod_);
                 }
                 Message::Error(error) => {
                     log::error!("{:?}", &error);
                     self.busy = false;
                     self.error = Some(error);
-                    ctx.request_repaint();
                 }
             }
             ctx.request_repaint();
@@ -574,6 +578,7 @@ impl eframe::App for App {
         self.handle_update(ctx);
         self.render_error(ctx);
         self.render_menu(ctx);
+        self.render_option_picker(ctx);
         egui::SidePanel::right("right_panel")
             .resizable(true)
             .max_width(ctx.used_size().x / 3.)
