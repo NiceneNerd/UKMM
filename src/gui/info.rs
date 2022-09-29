@@ -1,8 +1,14 @@
-use std::path::PathBuf;
-
 use crate::mods::Mod;
 use eframe::epaint::text::TextWrapping;
 use egui::{text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui};
+use once_cell::sync::{Lazy, OnceCell};
+use parking_lot::RwLock;
+use rustc_hash::{FxHashMap, FxHasher};
+use std::{
+    collections::BTreeSet,
+    hash::{Hash, Hasher},
+    path::PathBuf,
+};
 use uk_mod::Manifest;
 
 pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
@@ -131,29 +137,43 @@ fn render_dir(dir: &PathNode, ui: &mut Ui) {
 
 pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
     ui.scope(|ui| {
+        static ROOTS: Lazy<RwLock<FxHashMap<u64, PathNode>>> =
+            Lazy::new(|| RwLock::new(FxHashMap::default()));
         ui.style_mut().override_text_style = Some(egui::TextStyle::Body);
         ui.spacing_mut().item_spacing.y = 4.;
         if !manifest.content_files.is_empty() {
-            let mut content_root = dir("Base Files");
-            manifest.content_files.iter().for_each(|file| {
-                build_tree(
-                    &mut content_root,
-                    &file.split('/').map(|s| s.to_owned()).collect(),
-                    0,
-                );
+            let mut hasher = FxHasher::default();
+            manifest.content_files.hash(&mut hasher);
+            let mut roots = ROOTS.write();
+            let content_root = roots.entry(hasher.finish()).or_insert_with(|| {
+                let mut root = dir("Base Files");
+                manifest.content_files.iter().for_each(|file| {
+                    build_tree(
+                        &mut root,
+                        &file.split('/').map(|s| s.to_owned()).collect(),
+                        0,
+                    );
+                });
+                root
             });
-            render_dir(&content_root, ui);
+            render_dir(content_root, ui);
         }
         if !manifest.aoc_files.is_empty() {
-            let mut aoc_root = dir("DLC Files");
-            manifest.aoc_files.iter().for_each(|file| {
-                build_tree(
-                    &mut aoc_root,
-                    &file.split('/').map(|s| s.to_owned()).collect(),
-                    0,
-                );
+            let mut hasher = FxHasher::default();
+            manifest.aoc_files.hash(&mut hasher);
+            let mut roots = ROOTS.write();
+            let aoc_root = roots.entry(hasher.finish()).or_insert_with(|| {
+                let mut root = dir("DLC Files");
+                manifest.aoc_files.iter().for_each(|file| {
+                    build_tree(
+                        &mut root,
+                        &file.split('/').map(|s| s.to_owned()).collect(),
+                        0,
+                    );
+                });
+                root
             });
-            render_dir(&aoc_root, ui);
+            render_dir(aoc_root, ui);
         }
     });
 }

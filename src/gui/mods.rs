@@ -7,6 +7,7 @@ use egui::{
     Sense, TextStyle, Ui, Vec2,
 };
 use egui_extras::{Size, TableBuilder, TableRow};
+use join_str::jstr;
 use once_cell::sync::OnceCell;
 
 impl App {
@@ -231,84 +232,94 @@ impl App {
 
     fn render_mod_row(&mut self, index: usize, mut row: TableRow) {
         let mod_ = unsafe { self.displayed_mods.get_mut(index).unwrap_unchecked() };
-        let index = unsafe { self.mods.index_of(mod_).unwrap_unchecked() };
-        let selected = self.selected.contains(mod_);
-        let mut clicked = false;
-        let mut drag_started = false;
-        let mut ctrl = false;
-        let mut hover = false;
-        let menu_mod = mod_.clone();
+        if let Some(index) = self.mods.index_of(mod_) {
+            let selected = self.selected.contains(mod_);
+            let mut clicked = false;
+            let mut drag_started = false;
+            let mut ctrl = false;
+            let mut hover = false;
+            let menu_mod = mod_.clone();
 
-        let mut process_col_res = |res: Response| {
-            clicked = clicked || res.clicked();
-            hover = hover || res.hovered();
-            drag_started = drag_started || res.drag_started();
-            res.context_menu(|ui| {
-                Self::render_mod_context_menu(self.channel.0.clone(), menu_mod.clone(), ui);
-            });
-        };
-
-        if selected {
-            row = row.selected(true);
-        }
-        process_col_res(row.col(|ui| {
-            ui.checkbox(&mut mod_.enabled, "");
-            ctrl = ui.input().modifiers.ctrl;
-        }));
-        process_col_res(row.col(|ui| {
-            let mut job = LayoutJob::simple_singleline(
-                mod_.meta.name.to_string(),
-                ui.style()
-                    .text_styles
-                    .get(&TextStyle::Body)
-                    .unwrap()
-                    .clone(),
-                ui.style().visuals.text_color(),
-            );
-            let unclipped = ui.fonts().layout_job(job.clone());
-            let max_width = ui.available_width();
-            job.wrap = TextWrapping {
-                max_rows: 1,
-                max_width,
-                ..Default::default()
-            };
-            let clipped = ui.fonts().layout_job(job);
-            let res = ui.add(Label::new(clipped));
-            if unclipped.size().x > max_width {
-                res.on_hover_text(mod_.meta.name.as_str());
-            }
-        }));
-        for label in [
-            mod_.meta.category.as_str(),
-            mod_.meta.version.to_string().as_str(),
-            index.to_string().as_str(),
-        ] {
-            process_col_res(row.col(|ui| {
-                ui.centered_and_justified(|ui| {
-                    ui.label(label);
+            let mut process_col_res = |res: Response| {
+                clicked = clicked || res.clicked();
+                hover = hover || res.hovered();
+                drag_started = drag_started || res.drag_started();
+                res.context_menu(|ui| {
+                    Self::render_mod_context_menu(self.channel.0.clone(), menu_mod.clone(), ui);
                 });
+            };
+
+            if selected {
+                row = row.selected(true);
+            }
+            process_col_res(row.col(|ui| {
+                ui.checkbox(&mut mod_.enabled, "");
+                ctrl = ui.input().modifiers.ctrl;
             }));
-        }
-        if clicked {
-            self.do_update(Message::SetFocus(FocusedPane::ModList));
-            if selected && ctrl {
-                self.do_update(Message::Deselect(index));
-            } else if ctrl {
-                self.do_update(Message::SelectAlso(index));
-            } else {
-                self.do_update(Message::SelectOnly(index));
+            process_col_res(row.col(|ui| {
+                let mut job = LayoutJob::simple_singleline(
+                    mod_.meta.name.to_string(),
+                    ui.style()
+                        .text_styles
+                        .get(&TextStyle::Body)
+                        .unwrap()
+                        .clone(),
+                    ui.style().visuals.text_color(),
+                );
+                let unclipped = ui.fonts().layout_job(job.clone());
+                let max_width = ui.available_width();
+                job.wrap = TextWrapping {
+                    max_rows: 1,
+                    max_width,
+                    ..Default::default()
+                };
+                let clipped = ui.fonts().layout_job(job);
+                let res = ui.add(Label::new(clipped));
+                if unclipped.size().x > max_width {
+                    res.on_hover_text(mod_.meta.name.as_str());
+                }
+            }));
+            for label in [
+                mod_.meta.category.as_str(),
+                mod_.meta.version.to_string().as_str(),
+                index.to_string().as_str(),
+            ] {
+                process_col_res(row.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.label(label);
+                    });
+                }));
             }
-        } else if drag_started {
-            if !ctrl {
-                self.do_update(Message::StartDrag(index));
+            if clicked {
+                self.do_update(Message::SetFocus(FocusedPane::ModList));
+                if selected && ctrl {
+                    self.do_update(Message::Deselect(index));
+                } else if ctrl {
+                    self.do_update(Message::SelectAlso(index));
+                } else {
+                    self.do_update(Message::SelectOnly(index));
+                }
+            } else if drag_started {
+                if !ctrl {
+                    self.do_update(Message::StartDrag(index));
+                }
+            } else if self.drag_index != Some(index) && hover {
+                self.hover_index = Some(index);
             }
-        } else if self.drag_index != Some(index) && hover {
-            self.hover_index = Some(index);
         }
     }
 
     fn render_mod_context_menu(sender: flume::Sender<Message>, mod_: Mod, ui: &mut Ui) {
-        ui.button("Uninstall");
+        if ui.button("Uninstall").clicked() {
+            let prompt = jstr!("Are you sure you want to uninstall the selected mod(s)?");
+            ui.close_menu();
+            sender
+                .send(Message::Confirm(
+                    Message::UninstallMods(None).into(),
+                    prompt,
+                ))
+                .unwrap();
+        }
         ui.button("Disable");
         ui.button("View folder");
         ui.button("Move to top");

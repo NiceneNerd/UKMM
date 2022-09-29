@@ -122,6 +122,8 @@ impl Entry {
 
 pub enum Message {
     Log(Entry),
+    Confirm(Box<Message>, String),
+    CloseConfirm,
     CloseError,
     SelectOnly(usize),
     SelectAlso(usize),
@@ -139,9 +141,12 @@ pub enum Message {
     HandleMod(Mod),
     RequestOptions(Mod),
     InstallMod(Mod),
+    UninstallMods(Option<Vector<Mod>>),
     AddMod(Mod),
+    RemoveMods(Vector<Mod>),
     Error(anyhow::Error),
     ChangeSort(Sort, bool),
+    RefreshModsDisplay,
 }
 
 enum Tabs {
@@ -204,6 +209,7 @@ struct App {
     logs: Vector<Entry>,
     log: LayoutJob,
     error: Option<anyhow::Error>,
+    confirm: Option<(Message, String)>,
     busy: bool,
     dirty: Manifest,
     sort: (Sort, bool),
@@ -233,6 +239,7 @@ impl App {
             tab: Tabs::Info,
             focused: FocusedPane::None,
             error: None,
+            confirm: None,
             busy: false,
             dirty: Manifest::default(),
             sort: (Sort::Priority, false),
@@ -242,7 +249,7 @@ impl App {
 
     #[inline(always)]
     fn modal_open(&self) -> bool {
-        self.error.is_some() || self.busy || self.options_mod.is_some()
+        self.error.is_some() || self.busy || self.options_mod.is_some() || self.confirm.is_some()
     }
 
     fn do_update(&self, message: Message) {
@@ -280,6 +287,9 @@ impl App {
                         }
                     }
                 }
+                Message::RefreshModsDisplay => {
+                    self.do_update(Message::ChangeSort(self.sort.0, self.sort.1))
+                }
                 Message::ChangeSort(sort, rev) => {
                     let orderer = sort.orderer();
                     let mut temp = self.mods.iter().cloned().enumerate().collect::<Vector<_>>();
@@ -292,6 +302,10 @@ impl App {
                     self.sort = (sort, rev);
                 }
                 Message::CloseError => self.error = None,
+                Message::CloseConfirm => self.confirm = None,
+                Message::Confirm(msg, prompt) => {
+                    self.confirm = Some((*msg, prompt));
+                }
                 Message::SelectOnly(i) => {
                     let index = i.clamp(0, self.mods.len() - 1);
                     let mod_ = &self.mods[index];
@@ -416,9 +430,29 @@ impl App {
                         Ok(Message::AddMod(mod_))
                     });
                 }
+                Message::UninstallMods(mods) => {
+                    let mods = mods.unwrap_or_else(|| self.selected.clone());
+                    self.do_task(move |core| {
+                        let manager = core.mod_manager();
+                        mods.iter().try_for_each(|m| -> Result<()> {
+                            manager.del(m.hash)?;
+                            log::info!("Removed mod {} from current profile", m.meta.name.as_str());
+                            Ok(())
+                        })?;
+                        manager.save()?;
+                        Ok(Message::RemoveMods(mods))
+                    });
+                }
                 Message::AddMod(mod_) => {
                     self.busy = false;
                     self.mods.push_back(mod_);
+                    self.do_update(Message::RefreshModsDisplay);
+                }
+                Message::RemoveMods(mods) => {
+                    self.mods.retain(|m| !mods.contains(m));
+                    self.selected.retain(|m| !mods.contains(m));
+                    self.do_update(Message::RefreshModsDisplay);
+                    self.busy = false;
                 }
                 Message::RequestOptions(mod_) => {
                     self.options_mod = Some(mod_);
@@ -474,6 +508,40 @@ impl App {
                                     egui::popup::show_tooltip(ctx, Id::new("copied"), |ui| {
                                         ui.label("Copied")
                                     });
+                                }
+                                ui.shrink_width_to_current();
+                            },
+                        );
+                    });
+                });
+        }
+    }
+
+    fn render_confirm(&mut self, ctx: &egui::Context) {
+        let is_confirm = self.confirm.is_some();
+        if is_confirm {
+            egui::Window::new("Confirm")
+                .collapsible(false)
+                .anchor(Align2::CENTER_CENTER, Vec2::default())
+                .auto_sized()
+                .frame(Frame::window(&ctx.style()).inner_margin(8.))
+                .show(ctx, |ui| {
+                    ui.add_space(8.);
+                    ui.label(&self.confirm.as_ref().unwrap().1);
+                    ui.add_space(8.);
+                    let width = ui.min_size().x;
+                    ui.horizontal(|ui| {
+                        ui.allocate_ui_with_layout(
+                            Vec2::new(width, ui.min_size().y),
+                            Layout::right_to_left(Align::Center),
+                            |ui| {
+                                if ui.button("OK").clicked() {
+                                    let msg = self.confirm.take().unwrap().0;
+                                    self.do_update(msg);
+                                    self.do_update(Message::CloseConfirm);
+                                }
+                                if ui.button("Close").clicked() {
+                                    self.do_update(Message::CloseConfirm);
                                 }
                                 ui.shrink_width_to_current();
                             },
@@ -598,6 +666,7 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         self.handle_update(ctx);
         self.render_error(ctx);
+        self.render_confirm(ctx);
         self.render_menu(ctx);
         self.render_option_picker(ctx);
         egui::SidePanel::right("right_panel")
