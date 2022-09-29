@@ -1,6 +1,7 @@
 use super::{App, FocusedPane, Message};
 use egui::{Button, Id, Key, Modifiers, TextEdit, Ui};
 use fs_err as fs;
+use im::Vector;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone)]
@@ -9,6 +10,7 @@ pub struct FilePickerState {
     pub history: Vec<PathBuf>,
     pub path_input: String,
     pub selected: Option<PathBuf>,
+    pub entries: Vector<PathBuf>,
 }
 
 impl Default for FilePickerState {
@@ -16,6 +18,7 @@ impl Default for FilePickerState {
         let path = dirs2::download_dir().unwrap();
         Self {
             path_input: path.display().to_string(),
+            entries: Self::load_entries(&path),
             path,
             history: vec![],
             selected: None,
@@ -27,7 +30,47 @@ impl FilePickerState {
     pub fn set_path(&mut self, path: impl Into<PathBuf>) {
         let path = path.into();
         self.path_input = path.display().to_string();
+        self.entries = Self::load_entries(&path);
         self.path = path;
+    }
+
+    fn load_entries(path: &Path) -> Vector<PathBuf> {
+        if let Ok(dir_entries) =
+            fs::read_dir(path).map(|entries| entries.filter_map(std::result::Result::ok))
+        {
+            let mut entries = dir_entries
+                .filter_map(|e| {
+                    let path = e.path();
+                    let ext = path
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .unwrap_or("")
+                        .to_lowercase();
+                    ((ext == "zip" || ext == "7z" || path.is_dir())
+                        && !e.file_name().to_str().unwrap_or("").starts_with('.'))
+                    .then_some(path)
+                })
+                .collect::<Vector<_>>();
+            entries.sort_by(|a, b| {
+                if a.is_file() != b.is_file() {
+                    b.is_dir().cmp(&a.is_dir())
+                } else {
+                    a.file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("")
+                        .to_lowercase()
+                        .cmp(
+                            &b.file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("")
+                                .to_lowercase(),
+                        )
+                }
+            });
+            entries
+        } else {
+            Default::default()
+        }
     }
 }
 
@@ -70,69 +113,37 @@ impl App {
                 .show(ui, |ui| {
                     ui.add_space(8.);
                     ui.style_mut().spacing.item_spacing.y = 4.;
-                    if let Ok(dir_entries) = fs::read_dir(&self.picker_state.path)
-                        .map(|entries| entries.filter_map(std::result::Result::ok))
-                    {
-                        let mut entries = dir_entries
-                            .filter_map(|e| {
-                                let path = e.path();
-                                let ext = path
-                                    .extension()
-                                    .and_then(|e| e.to_str())
-                                    .unwrap_or("")
-                                    .to_lowercase();
-                                ((ext == "zip" || ext == "7z" || path.is_dir())
-                                    && !e.file_name().to_str().unwrap_or("").starts_with('.'))
-                                .then_some(path)
-                            })
-                            .collect::<Vec<_>>();
-                        entries.sort_by(|a, b| {
-                            if a.is_file() != b.is_file() {
-                                b.is_dir().cmp(&a.is_dir())
-                            } else {
-                                a.file_name()
-                                    .and_then(|n| n.to_str())
-                                    .unwrap_or("")
-                                    .to_lowercase()
-                                    .cmp(
-                                        &b.file_name()
-                                            .and_then(|n| n.to_str())
-                                            .unwrap_or("")
-                                            .to_lowercase(),
-                                    )
-                            }
-                        });
-                        if self.focused == FocusedPane::FilePicker {
-                            if ui.input().key_pressed(Key::ArrowDown) {
-                                let pos = match entries
-                                    .iter()
-                                    .position(|p| self.picker_state.selected.as_ref() == Some(p))
-                                {
-                                    Some(p) => (p + 1).min(entries.len() - 1),
-                                    None => 0,
-                                };
-                                self.picker_state.selected = Some(entries[pos].to_path_buf());
-                            } else if ui.input().key_pressed(Key::ArrowUp) {
-                                let pos = match entries
-                                    .iter()
-                                    .position(|p| self.picker_state.selected.as_ref() == Some(p))
-                                {
-                                    Some(p) => p.max(1) - 1,
-                                    None => 0,
-                                };
-                                self.picker_state.selected = Some(entries[pos].to_path_buf());
-                            }
+                    let entries = &self.picker_state.entries;
+                    if self.focused == FocusedPane::FilePicker {
+                        if ui.input().key_pressed(Key::ArrowDown) {
+                            let pos = match entries
+                                .iter()
+                                .position(|p| self.picker_state.selected.as_ref() == Some(p))
+                            {
+                                Some(p) => (p + 1).min(entries.len() - 1),
+                                None => 0,
+                            };
+                            self.picker_state.selected = Some(entries[pos].to_path_buf());
+                        } else if ui.input().key_pressed(Key::ArrowUp) {
+                            let pos = match entries
+                                .iter()
+                                .position(|p| self.picker_state.selected.as_ref() == Some(p))
+                            {
+                                Some(p) => p.max(1) - 1,
+                                None => 0,
+                            };
+                            self.picker_state.selected = Some(entries[pos].to_path_buf());
                         }
-                        entries.into_iter().for_each(|path| {
-                            self.render_picker_dir_entry(path, ui);
-                        });
                     }
+                    entries.clone().iter().for_each(|path| {
+                        self.render_picker_dir_entry(path, ui);
+                    });
                     ui.allocate_space(ui.available_size());
                 });
         });
     }
 
-    fn render_picker_dir_entry(&mut self, path: PathBuf, ui: &mut Ui) {
+    fn render_picker_dir_entry(&mut self, path: &Path, ui: &mut Ui) {
         let name = if path.is_dir() {
             "🗀 ".to_owned()
         } else {
@@ -141,7 +152,7 @@ impl App {
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or_default();
-        let selected = self.picker_state.selected.as_ref() == Some(&path);
+        let selected = self.picker_state.selected.as_ref().map(|p| p.as_ref()) == Some(path);
         let res = ui.add(Button::new(name).wrap(false).fill(if selected {
             ui.style().visuals.selection.bg_fill
         } else {
@@ -150,13 +161,13 @@ impl App {
         if res.double_clicked() || (ui.input().key_pressed(Key::Enter) && selected) {
             self.do_update(Message::SetFocus(FocusedPane::FilePicker));
             if path.is_dir() {
-                self.do_update(Message::FilePickerSet(Some(path)));
+                self.do_update(Message::FilePickerSet(Some(path.to_path_buf())));
             } else {
-                self.do_update(Message::OpenMod(path));
+                self.do_update(Message::OpenMod(path.to_path_buf()));
             }
         } else if res.clicked() {
             self.do_update(Message::SetFocus(FocusedPane::FilePicker));
-            self.picker_state.selected = Some(path);
+            self.picker_state.selected = Some(path.to_path_buf());
         }
     }
 }
