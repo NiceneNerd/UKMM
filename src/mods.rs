@@ -22,7 +22,6 @@ use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Mod {
     pub meta: Meta,
-    pub manifest: Manifest,
     pub enabled_options: Vec<ModOption>,
     pub enabled: bool,
     pub path: PathBuf,
@@ -61,7 +60,6 @@ impl Mod {
         Self {
             hash: hasher.finish() as usize,
             meta: reader.meta,
-            manifest: reader.manifest,
             enabled_options: vec![],
             path: reader.path,
             enabled: false,
@@ -104,8 +102,24 @@ impl Mod {
             .clone()
     }
 
-    pub fn manifest_with_options(&self, options: impl AsRef<[ModOption]>) -> Result<Manifest> {
-        ModReader::open(&self.path, options.as_ref()).map(|r| r.manifest)
+    pub fn manifest(&self) -> Result<&'static Manifest> {
+        self.manifest_with_options(&self.enabled_options)
+    }
+
+    pub fn manifest_with_options(
+        &self,
+        options: impl AsRef<[ModOption]>,
+    ) -> Result<&'static Manifest> {
+        static MANIFEST_CACHE: Lazy<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Manifest>>>> =
+            Lazy::new(|| RwLock::new(HashMap::default()));
+        MANIFEST_CACHE
+            .write()
+            .entry((self.hash, options.as_ref().iter().map(|o| o.path).collect()))
+            .or_insert_with(|| ModReader::open(&self.path, options.as_ref()).map(|r| r.manifest))
+            .as_ref()
+            .with_context(|| {
+                join_str::jstr!("Failed to get manifest for {self.meta.name.as_str()}")
+            })
     }
 
     pub fn state_eq(&self, other: &Self) -> bool {
@@ -237,12 +251,12 @@ impl Manager {
         &'a self,
         manifest: &'m Manifest,
     ) -> impl Iterator<Item = MappedRwLockReadGuard<'_, Mod>> + 'm {
-        self.mods().filter(|mod_| {
-            !mod_
-                .manifest
-                .content_files
-                .is_disjoint(&manifest.content_files)
-                || !mod_.manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+        self.mods().filter(|mod_| match mod_.manifest() {
+            Ok(manifest) => {
+                !manifest.content_files.is_disjoint(&manifest.content_files)
+                    || !manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+            }
+            Err(_) => false,
         })
     }
 
@@ -289,7 +303,7 @@ impl Manager {
         let hash = mod_.as_hash_id();
         let mod_ = self.mods.write().remove(&hash);
         if let Some(mod_) = mod_ {
-            let manifest = mod_.manifest;
+            let manifest = mod_.manifest()?;
             if mod_.path.is_dir() {
                 util::remove_dir_all(&mod_.path)?;
             } else {
@@ -309,7 +323,7 @@ impl Manager {
         let manifest;
         if let Some(mod_) = self.mods.write().get_mut(&hash) {
             mod_.enabled = enabled;
-            manifest = mod_.manifest.clone();
+            manifest = mod_.manifest()?;
             log::info!(
                 "{} mod {}",
                 if enabled { "Enabled" } else { "Disabled" },

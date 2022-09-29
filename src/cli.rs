@@ -123,7 +123,7 @@ impl Runner {
                     mods.save()?;
                     println!("Applying mod to load order...");
                     let deployer = self.core.deploy_manager();
-                    deployer.apply(Some(mod_.manifest.clone()))?;
+                    deployer.apply(Some(mod_.manifest()?.clone()))?;
                     if self.cli.deploy {
                         self.deploy()?;
                     }
@@ -152,7 +152,7 @@ impl Runner {
                     println!("Removing mod {}...", &mod_.meta.name);
                     mod_manager.del(mod_)?;
                     mod_manager.save()?;
-                    manifests.extend(&mod_.manifest);
+                    manifests.extend(mod_.manifest()?);
                 }
                 println!("Applying changes to merge...");
                 self.core.deploy_manager().apply(Some(manifests))?;

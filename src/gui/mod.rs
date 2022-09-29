@@ -349,7 +349,7 @@ impl App {
                     self.drag_index = None;
                     match self.selected.iter().try_for_each(|m| {
                         self.dirty
-                            .extend(&m.manifest_with_options(&m.enabled_options)?);
+                            .extend(m.manifest_with_options(&m.enabled_options)?);
                         Ok(())
                     }) {
                         Ok(()) => self.do_update(Message::ChangeSort(self.sort.0, self.sort.1)),

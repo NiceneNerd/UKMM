@@ -36,7 +36,12 @@ pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
         ui.add(Label::new(mod_.meta.description.as_str()).wrap(true));
         ui.add_space(4.);
         ui.label(RichText::new("Manifest").family(egui::FontFamily::Name("Bold".into())));
-        render_manifest(&mod_.manifest, ui);
+        match mod_.manifest() {
+            Ok(manifest) => render_manifest(&manifest, ui),
+            Err(e) => {
+                ui.label(RichText::new("FAILED TO LOAD MANIFEST").strong());
+            }
+        }
     });
 }
 
