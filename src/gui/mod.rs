@@ -4,6 +4,7 @@ mod options;
 mod picker;
 mod tasks;
 mod visuals;
+use self::picker::FilePickerState;
 use crate::{core::Manager, logger::Entry, mods::Mod};
 use anyhow::{Context, Result};
 use eframe::{
@@ -20,9 +21,7 @@ use font_loader::system_fonts::FontPropertyBuilder;
 use im::Vector;
 use join_str::jstr;
 use std::{collections::VecDeque, path::PathBuf, sync::Arc, thread};
-use uk_mod::unpack::ModReader;
-
-use self::picker::FilePickerState;
+use uk_mod::{unpack::ModReader, Manifest};
 
 // #[inline(always)]
 // fn common_frame() -> Frame {
@@ -80,6 +79,45 @@ fn load_fonts(context: &egui::Context) {
         .families
         .insert(FontFamily::Name("Bold".into()), vec!["Bold".to_owned()]);
     context.set_fonts(fonts);
+}
+
+impl Entry {
+    pub fn format(&self, job: &mut LayoutJob) {
+        job.append(
+            &jstr!("[{&self.timestamp}] "),
+            0.,
+            TextFormat {
+                color: Color32::GRAY,
+                font_id: FontId::monospace(10.),
+                ..Default::default()
+            },
+        );
+        job.append(
+            &jstr!("{&self.level} "),
+            0.,
+            TextFormat {
+                color: match self.level.as_str() {
+                    "INFO" => visuals::GREEN,
+                    "WARN" => visuals::ORGANGE,
+                    "ERROR" => visuals::RED,
+                    "DEBUG" => visuals::BLUE,
+                    _ => visuals::YELLOW,
+                },
+                font_id: FontId::monospace(10.),
+                ..Default::default()
+            },
+        );
+        job.append(
+            &self.args,
+            1.,
+            TextFormat {
+                color: Color32::WHITE,
+                font_id: FontId::monospace(10.),
+                ..Default::default()
+            },
+        );
+        job.append("\n", 0.0, Default::default());
+    }
 }
 
 pub enum Message {
@@ -163,10 +201,11 @@ struct App {
     picker_state: FilePickerState,
     tab: Tabs,
     focused: FocusedPane,
-    logs: VecDeque<Entry>,
+    logs: Vector<Entry>,
+    log: LayoutJob,
     error: Option<anyhow::Error>,
     busy: bool,
-    dirty: bool,
+    dirty: Manifest,
     sort: (Sort, bool),
     options_mod: Option<Mod>,
 }
@@ -189,12 +228,13 @@ impl App {
             displayed_mods: mods.clone(),
             mods,
             core,
-            logs: VecDeque::new(),
+            logs: Vector::new(),
+            log: LayoutJob::default(),
             tab: Tabs::Info,
             focused: FocusedPane::None,
             error: None,
             busy: false,
-            dirty: false,
+            dirty: Manifest::default(),
             sort: (Sort::Priority, false),
             options_mod: None,
         }
@@ -202,7 +242,7 @@ impl App {
 
     #[inline(always)]
     fn modal_open(&self) -> bool {
-        self.error.is_some() || self.busy
+        self.error.is_some() || self.busy || self.options_mod.is_some()
     }
 
     fn do_update(&self, message: Message) {
@@ -231,7 +271,14 @@ impl App {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
                 Message::Log(entry) => {
+                    entry.format(&mut self.log);
                     self.logs.push_back(entry);
+                    if self.logs.len() > 100 {
+                        self.logs.pop_front();
+                        for _ in 0..4 {
+                            self.log.sections.remove(0);
+                        }
+                    }
                 }
                 Message::ChangeSort(sort, rev) => {
                     let orderer = sort.orderer();
@@ -300,7 +347,14 @@ impl App {
                     }
                     self.hover_index = None;
                     self.drag_index = None;
-                    self.do_update(Message::ChangeSort(self.sort.0, self.sort.1));
+                    match self.selected.iter().try_for_each(|m| {
+                        self.dirty
+                            .extend(&m.manifest_with_options(&m.enabled_options)?);
+                        Ok(())
+                    }) {
+                        Ok(()) => self.do_update(Message::ChangeSort(self.sort.0, self.sort.1)),
+                        Err(e) => self.do_update(Message::Error(e)),
+                    };
                 }
                 Message::FilePickerUp => {
                     let has_parent = self.picker_state.path.parent().is_some();
@@ -352,8 +406,13 @@ impl App {
                     self.do_task(move |core| {
                         let mods = core.mod_manager();
                         let mod_ = mods.add(&mod_.path)?.clone();
+                        let hash = mod_.hash;
+                        if !mod_.enabled_options.is_empty() {
+                            mods.set_enabled_options(hash, mod_.enabled_options)?;
+                        }
                         mods.save()?;
                         log::info!("Added mod {} to current profile", mod_.meta.name.as_str());
+                        let mod_ = unsafe { mods.get_mod(hash).unwrap_unchecked() }.clone();
                         Ok(Message::AddMod(mod_))
                     });
                 }
@@ -523,50 +582,12 @@ impl App {
                     .auto_shrink([false, false])
                     .stick_to_bottom(true)
                     .show(ui, |ui| {
-                        let mut job = LayoutJob::default();
-                        self.logs.iter().for_each(|entry| {
-                            job.append(
-                                &jstr!("[{&entry.timestamp}] "),
-                                0.,
-                                TextFormat {
-                                    color: Color32::GRAY,
-                                    font_id: FontId::monospace(10.),
-                                    ..Default::default()
-                                },
-                            );
-                            job.append(
-                                &jstr!("{&entry.level} "),
-                                0.,
-                                TextFormat {
-                                    color: match entry.level.as_str() {
-                                        "INFO" => visuals::GREEN,
-                                        "WARN" => visuals::ORGANGE,
-                                        "ERROR" => visuals::RED,
-                                        "DEBUG" => visuals::BLUE,
-                                        _ => visuals::YELLOW,
-                                    },
-                                    font_id: FontId::monospace(10.),
-                                    ..Default::default()
-                                },
-                            );
-                            job.append(
-                                &entry.args,
-                                1.,
-                                TextFormat {
-                                    color: Color32::WHITE,
-                                    font_id: FontId::monospace(10.),
-                                    ..Default::default()
-                                },
-                            );
-                            job.append("\n", 0.0, Default::default());
-                        });
-                        let text = job.text.clone();
                         if ui
-                            .add(Label::new(job).sense(Sense::click()))
+                            .add(Label::new(self.log.clone()).sense(Sense::click()))
                             .on_hover_text("Click to copy")
                             .clicked()
                         {
-                            ui.output().copied_text = text;
+                            ui.output().copied_text = self.log.text.clone();
                         }
                     });
             });

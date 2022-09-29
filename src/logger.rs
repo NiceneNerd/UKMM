@@ -17,7 +17,7 @@ pub fn init() {
     log::set_max_level(log::LevelFilter::Debug);
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Entry {
     pub timestamp: String,
     pub level: String,
