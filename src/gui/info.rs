@@ -1,11 +1,10 @@
 use crate::mods::Mod;
 use eframe::epaint::text::TextWrapping;
 use egui::{text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui};
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rustc_hash::{FxHashMap, FxHasher};
 use std::{
-    collections::BTreeSet,
     hash::{Hash, Hasher},
     path::PathBuf,
 };
@@ -124,11 +123,19 @@ fn render_dir(dir: &PathNode, ui: &mut Ui) {
                 })
             });
     } else {
-        let mut job = LayoutJob::single_section(dir.name.clone(), {
-            let mut fmt = TextFormat::default();
-            fmt.font_id.size = 10.;
-            fmt
-        });
+        let mut job = LayoutJob::single_section(
+            dir.name.clone(),
+            TextFormat {
+                font_id: FontId::proportional(
+                    ui.style()
+                        .text_styles
+                        .get(&egui::TextStyle::Body)
+                        .unwrap()
+                        .size,
+                ),
+                ..Default::default()
+            },
+        );
         job.wrap = TextWrapping {
             max_width: ui.available_width(),
             max_rows: 1,

@@ -1081,6 +1081,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum-iterator"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2953d1df47ac0eb70086ccabf0275aa8da8591a28bd358ee2b52bd9f9e3ff9e9"
+dependencies = [
+ "enum-iterator-derive",
+]
+
+[[package]]
+name = "enum-iterator-derive"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8958699f9359f0b04e691a13850d48b7de329138023876d07cbd024c2c820598"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "enum_dispatch"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1952,6 +1972,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "material-icons"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3c66ba5859c80e2e0a86e95d8d62cb85df0bdef18b2c1e91d1f31eb0490a4b3"
+dependencies = [
+ "enum-iterator",
 ]
 
 [[package]]
@@ -3379,6 +3408,7 @@ dependencies = [
  "join_str",
  "jwalk",
  "log",
+ "material-icons",
  "once_cell",
  "parking_lot",
  "rayon",

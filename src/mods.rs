@@ -5,10 +5,10 @@ use crate::{
 use anyhow::{Context, Result};
 use egui_extras::RetainedImage;
 use fs_err as fs;
-use once_cell::sync::{Lazy, OnceCell};
-use parking_lot::{lock_api::RwLockWriteGuard, MappedRwLockReadGuard, RwLock, RwLockReadGuard};
+use once_cell::sync::Lazy;
+use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use serde::{Deserialize, Serialize};
-use serde_with::{core::any, serde_as, DisplayFromStr};
+use serde_with::{serde_as, DisplayFromStr};
 use std::{
     hash::{Hash, Hasher},
     io::{BufReader, Read},
@@ -251,12 +251,14 @@ impl Manager {
     /// Iterate all mods which modify any files in the given manifest.
     pub fn mods_by_manifest<'a: 'm, 'm>(
         &'a self,
-        manifest: &'m Manifest,
+        ref_manifest: &'m Manifest,
     ) -> impl Iterator<Item = MappedRwLockReadGuard<'_, Mod>> + 'm {
         self.mods().filter(|mod_| match mod_.manifest() {
             Ok(manifest) => {
-                !manifest.content_files.is_disjoint(&manifest.content_files)
-                    || !manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+                !ref_manifest
+                    .content_files
+                    .is_disjoint(&manifest.content_files)
+                    || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
             }
             Err(_) => false,
         })

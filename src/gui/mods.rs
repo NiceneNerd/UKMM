@@ -10,7 +10,7 @@ use egui::{
 };
 use egui_extras::{Size, TableBuilder, TableRow};
 use join_str::jstr;
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::OnceCell;
 
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {

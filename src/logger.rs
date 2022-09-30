@@ -1,9 +1,9 @@
 use crate::gui::Message;
 use log::{LevelFilter, Record};
 use once_cell::sync::{Lazy, OnceCell};
-use parking_lot::{Mutex, RwLock};
+use parking_lot::Mutex;
 use serde::Serialize;
-use std::{ops::Deref, sync::Arc};
+use std::ops::Deref;
 
 pub static LOGGER: Lazy<Logger> = Lazy::new(|| Logger {
     inner: env_logger::builder().build(),

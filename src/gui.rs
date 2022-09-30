@@ -3,10 +3,10 @@ mod mods;
 mod options;
 mod picker;
 mod tasks;
+mod util;
 mod visuals;
-use self::picker::FilePickerState;
 use crate::{core::Manager, logger::Entry, mods::Mod};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::{text::TextWrapping, FontFamily},
@@ -20,8 +20,11 @@ use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
 use im::Vector;
 use join_str::jstr;
-use std::{collections::VecDeque, path::PathBuf, sync::Arc, thread};
-use uk_mod::{unpack::ModReader, Manifest};
+use material_icons::Icon;
+use picker::FilePickerState;
+use std::{path::PathBuf, sync::Arc, thread};
+use uk_mod::Manifest;
+use util::IconButtonExt;
 
 // #[inline(always)]
 // fn common_frame() -> Frame {
@@ -70,6 +73,10 @@ fn load_fonts(context: &egui::Context) {
             .font_data
             .insert("Bold".to_owned(), FontData::from_owned(system_font.0));
     }
+    fonts.font_data.insert(
+        "Icon".to_owned(),
+        FontData::from_static(material_icons::FONT),
+    );
     fonts
         .families
         .get_mut(&FontFamily::Proportional)
@@ -78,6 +85,11 @@ fn load_fonts(context: &egui::Context) {
     fonts
         .families
         .insert(FontFamily::Name("Bold".into()), vec!["Bold".to_owned()]);
+    fonts
+        .families
+        .get_mut(&FontFamily::Proportional)
+        .unwrap()
+        .push("Icon".to_owned());
     context.set_fonts(fonts);
 }
 
@@ -655,9 +667,9 @@ impl App {
                 })
                 .response
                 .on_hover_text("Select Mod Profile");
-            ui.button("🗑").on_hover_text("Delete Profile");
-            ui.button("✚").on_hover_text("New Profile");
-            ui.button("☰").on_hover_text("Manage Profiles…");
+            ui.icon_button(Icon::Delete).on_hover_text("Delete Profile");
+            ui.icon_button(Icon::Add).on_hover_text("New Profile");
+            ui.icon_button(Icon::Menu).on_hover_text("Manage Profiles…");
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 ui.add_space(20.);
                 ui.label(format!(
@@ -694,7 +706,7 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         self.handle_update(ctx);
         self.render_error(ctx);
         self.render_confirm(ctx);

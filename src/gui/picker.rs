@@ -1,7 +1,8 @@
-use super::{App, FocusedPane, Message};
-use egui::{Button, Id, Key, Modifiers, TextEdit, Ui};
+use super::{util::IconButtonExt, App, FocusedPane, Message};
+use egui::{text::LayoutJob, Align, Button, Key, TextFormat, Ui};
 use fs_err as fs;
 use im::Vector;
+use material_icons::Icon;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone)]
@@ -80,26 +81,22 @@ impl App {
             ui.horizontal(|ui| {
                 for (icon, tooltip, cb) in [
                     (
-                        "🗁",
+                        Icon::FolderOpen,
                         "Open Mod…",
                         Box::new(|| self.do_update(Message::ClearSelect)) as Box<dyn FnOnce()>,
                     ),
                     (
-                        "⏶",
+                        Icon::ArrowUpward,
                         "Up One Level",
                         Box::new(|| self.do_update(Message::FilePickerUp)) as Box<dyn FnOnce()>,
                     ),
                     (
-                        "⮪",
+                        Icon::ArrowBack,
                         "Back",
                         Box::new(|| self.do_update(Message::FilePickerBack)) as Box<dyn FnOnce()>,
                     ),
                 ] {
-                    if ui
-                        .add(Button::new(icon).small())
-                        .on_hover_text(tooltip)
-                        .clicked()
-                    {
+                    if ui.icon_button(icon).on_hover_text(tooltip).clicked() {
                         cb();
                     }
                 }
@@ -144,15 +141,31 @@ impl App {
     }
 
     fn render_picker_dir_entry(&mut self, path: &Path, ui: &mut Ui) {
-        let name = if path.is_dir() {
-            "🗀 ".to_owned()
-        } else {
-            "🗄 ".to_owned()
-        } + path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or_default();
+        let mut name = LayoutJob::default();
+        name.append(
+            &if path.is_dir() {
+                Icon::Folder.to_string()
+            } else {
+                Icon::Archive.to_string()
+            },
+            0.,
+            TextFormat {
+                valign: Align::BOTTOM,
+                ..Default::default()
+            },
+        );
+        name.append(
+            path.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or_default(),
+            4.,
+            TextFormat {
+                valign: Align::TOP,
+                ..Default::default()
+            },
+        );
         let selected = self.picker_state.selected.as_ref().map(|p| p.as_ref()) == Some(path);
+        let name = ui.fonts().layout_job(name);
         let res = ui.add(Button::new(name).wrap(false).fill(if selected {
             ui.style().visuals.selection.bg_fill
         } else {

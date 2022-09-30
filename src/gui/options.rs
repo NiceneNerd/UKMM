@@ -1,6 +1,4 @@
 use super::{App, Message};
-use crate::mods::Mod;
-use anyhow::Result;
 use egui::{Align, Checkbox, Context, Layout, Vec2};
 use uk_mod::ModOptionGroup;
 

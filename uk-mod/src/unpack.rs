@@ -12,7 +12,7 @@ use serde::Serialize;
 use smartstring::alias::String;
 use std::{
     collections::BTreeSet,
-    io::{BufReader, Read, Write, Seek},
+    io::{BufReader, Read, Write},
     path::{Path, PathBuf},
     sync::Arc,
 };
