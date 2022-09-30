@@ -1,9 +1,9 @@
+mod icons;
 mod info;
 mod mods;
 mod options;
 mod picker;
 mod tasks;
-mod util;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod};
 use anyhow::Result;
@@ -13,28 +13,17 @@ use eframe::{
     NativeOptions,
 };
 use egui::{
-    self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
-    Label, Layout, RichText, Sense, Spinner, TextFormat, TextStyle, Ui, Vec2,
+    self, style::Margin, text::LayoutJob, Align, Align2, Button, Color32, ComboBox, FontId, Frame,
+    Id, Label, Layout, RichText, Sense, Spinner, TextFormat, TextStyle, Ui, Vec2,
 };
 use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
+use icons::IconButtonExt;
 use im::Vector;
 use join_str::jstr;
-use material_icons::Icon;
 use picker::FilePickerState;
 use std::{path::PathBuf, sync::Arc, thread};
 use uk_mod::Manifest;
-use util::IconButtonExt;
-
-// #[inline(always)]
-// fn common_frame() -> Frame {
-//     Frame {
-//         stroke: Stroke::new(0.1, Color32::DARK_GRAY),
-//         inner_margin: Margin::same(4.),
-//         fill: visuals::panel(),
-//         ..Default::default()
-//     }
-// }
 
 fn load_fonts(context: &egui::Context) {
     let mut fonts = FontDefinitions::default();
@@ -73,10 +62,6 @@ fn load_fonts(context: &egui::Context) {
             .font_data
             .insert("Bold".to_owned(), FontData::from_owned(system_font.0));
     }
-    fonts.font_data.insert(
-        "Icon".to_owned(),
-        FontData::from_static(material_icons::FONT),
-    );
     fonts
         .families
         .get_mut(&FontFamily::Proportional)
@@ -85,11 +70,6 @@ fn load_fonts(context: &egui::Context) {
     fonts
         .families
         .insert(FontFamily::Name("Bold".into()), vec!["Bold".to_owned()]);
-    fonts
-        .families
-        .get_mut(&FontFamily::Proportional)
-        .unwrap()
-        .push("Icon".to_owned());
     context.set_fonts(fonts);
 }
 
@@ -157,6 +137,7 @@ pub enum Message {
     AddMod(Mod),
     RemoveMods(Vector<Mod>),
     ToggleMods(Option<Vector<Mod>>, bool),
+    Apply,
     // UpdateMods(Vector<Mod>),
     Error(anyhow::Error),
     ChangeSort(Sort, bool),
@@ -491,6 +472,18 @@ impl App {
                     self.do_update(Message::RefreshModsDisplay);
                     self.busy = false;
                 }
+                Message::Apply => {
+                    let order = self.mods.iter().map(|m| m.hash).collect::<Vec<_>>();
+                    let dirty = self.dirty.clone();
+                    self.do_task(move |core| {
+                        let mods = core.mod_manager();
+                        mods.set_order(order);
+                        mods.save()?;
+                        let deploy = core.deploy_manager();
+                        deploy.apply(Some(dirty))?;
+                        Ok(Message::RefreshModsDisplay)
+                    });
+                }
                 Message::RequestOptions(mod_) => {
                     self.options_mod = Some(mod_);
                 }
@@ -667,9 +660,9 @@ impl App {
                 })
                 .response
                 .on_hover_text("Select Mod Profile");
-            ui.icon_button(Icon::Delete).on_hover_text("Delete Profile");
-            ui.icon_button(Icon::Add).on_hover_text("New Profile");
-            ui.icon_button(Icon::Menu).on_hover_text("Manage Profiles…");
+            ui.icon_button("delete").on_hover_text("Delete Profile");
+            ui.icon_button("add").on_hover_text("New Profile");
+            ui.icon_button("menu").on_hover_text("Manage Profiles…");
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 ui.add_space(20.);
                 ui.label(format!(
@@ -678,7 +671,13 @@ impl App {
                     self.mods.iter().filter(|m| m.enabled).count()
                 ));
                 if !self.dirty.is_empty() {
-                    ui.button("✓ Apply Pending Changes");
+                    ui.spacing_mut().icon_spacing = 4.;
+                    if ui
+                        .icon_text_button("Apply Pending Changes", "check")
+                        .clicked()
+                    {
+                        self.do_update(Message::Apply);
+                    }
                 }
             });
         });
@@ -687,6 +686,7 @@ impl App {
     fn render_log(&self, ctx: &egui::Context) {
         egui::TopBottomPanel::bottom("log")
             .resizable(true)
+            .min_height(0.)
             .show(ctx, |ui| {
                 ui.set_enabled(!self.modal_open());
                 egui::ScrollArea::both()
@@ -779,6 +779,7 @@ impl eframe::App for App {
 }
 
 pub fn main() {
+    icons::load_icons();
     crate::logger::init();
     log::debug!("Logger initialized");
     log::info!("Started ukmm");

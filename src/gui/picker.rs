@@ -1,8 +1,10 @@
-use super::{util::IconButtonExt, App, FocusedPane, Message};
-use egui::{text::LayoutJob, Align, Button, Key, TextFormat, Ui};
+use super::{
+    icons::{get_icon, IconButtonExt},
+    visuals, App, FocusedPane, Message,
+};
+use egui::{text::LayoutJob, Align, Button, Key, TextFormat, Ui, Vec2};
 use fs_err as fs;
 use im::Vector;
-use material_icons::Icon;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone)]
@@ -81,17 +83,17 @@ impl App {
             ui.horizontal(|ui| {
                 for (icon, tooltip, cb) in [
                     (
-                        Icon::FolderOpen,
+                        "folder-open",
                         "Open Mod…",
                         Box::new(|| self.do_update(Message::ClearSelect)) as Box<dyn FnOnce()>,
                     ),
                     (
-                        Icon::ArrowUpward,
+                        "up",
                         "Up One Level",
                         Box::new(|| self.do_update(Message::FilePickerUp)) as Box<dyn FnOnce()>,
                     ),
                     (
-                        Icon::ArrowBack,
+                        "back",
                         "Back",
                         Box::new(|| self.do_update(Message::FilePickerBack)) as Box<dyn FnOnce()>,
                     ),
@@ -141,36 +143,31 @@ impl App {
     }
 
     fn render_picker_dir_entry(&mut self, path: &Path, ui: &mut Ui) {
-        let mut name = LayoutJob::default();
-        name.append(
-            &if path.is_dir() {
-                Icon::Folder.to_string()
-            } else {
-                Icon::Archive.to_string()
-            },
-            0.,
-            TextFormat {
-                valign: Align::BOTTOM,
-                ..Default::default()
-            },
-        );
-        name.append(
-            path.file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or_default(),
-            4.,
-            TextFormat {
-                valign: Align::TOP,
-                ..Default::default()
-            },
-        );
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default();
+        let is_dir = path.is_dir();
         let selected = self.picker_state.selected.as_ref().map(|p| p.as_ref()) == Some(path);
-        let name = ui.fonts().layout_job(name);
-        let res = ui.add(Button::new(name).wrap(false).fill(if selected {
-            ui.style().visuals.selection.bg_fill
-        } else {
-            ui.style().visuals.noninteractive().bg_fill
-        }));
+        let icon_size: Vec2 = [ui.spacing().icon_width, ui.spacing().icon_width].into();
+        let res = ui.add(
+            Button::image_and_text(
+                get_icon(ui.ctx(), if is_dir { "folder" } else { "archive" }),
+                icon_size,
+                name,
+            )
+            .wrap(false)
+            .tint(if is_dir {
+                visuals::YELLOW
+            } else {
+                visuals::GREEN
+            })
+            .fill(if selected {
+                ui.style().visuals.selection.bg_fill
+            } else {
+                ui.style().visuals.noninteractive().bg_fill
+            }),
+        );
         if res.double_clicked() || (ui.input().key_pressed(Key::Enter) && selected) {
             self.do_update(Message::SetFocus(FocusedPane::FilePicker));
             if path.is_dir() {
