@@ -54,7 +54,7 @@ pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
 // A recursive type to represent a directory tree.
 // Simplification: If it has children, it is considered
 // a directory, else considered a file.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash)]
 struct PathNode {
     name: String,
     path: Option<PathBuf>,
@@ -115,13 +115,20 @@ fn build_tree(node: &mut PathNode, parts: &Vec<String>, depth: usize) {
 
 fn render_dir(dir: &PathNode, ui: &mut Ui) {
     if !dir.children.is_empty() {
-        egui::CollapsingHeader::new(dir.name.as_str()).show(ui, |ui| {
-            dir.children.iter().for_each(|subdir| {
-                render_dir(subdir, ui);
-            })
-        });
+        ui.spacing_mut().icon_width_inner = 4.;
+        egui::CollapsingHeader::new(dir.name.as_str())
+            .id_source(dir)
+            .show(ui, |ui| {
+                dir.children.iter().for_each(|subdir| {
+                    render_dir(subdir, ui);
+                })
+            });
     } else {
-        let mut job = LayoutJob::single_section(dir.name.clone(), TextFormat::default());
+        let mut job = LayoutJob::single_section(dir.name.clone(), {
+            let mut fmt = TextFormat::default();
+            fmt.font_id.size = 10.;
+            fmt
+        });
         job.wrap = TextWrapping {
             max_width: ui.available_width(),
             max_rows: 1,

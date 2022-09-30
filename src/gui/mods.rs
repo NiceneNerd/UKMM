@@ -1,3 +1,5 @@
+use std::process::Command;
+
 use crate::mods::Mod;
 
 use super::{App, FocusedPane, Message, Sort};
@@ -8,7 +10,7 @@ use egui::{
 };
 use egui_extras::{Size, TableBuilder, TableRow};
 use join_str::jstr;
-use once_cell::sync::OnceCell;
+use once_cell::sync::{Lazy, OnceCell};
 
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {
@@ -320,9 +322,36 @@ impl App {
                 ))
                 .unwrap();
         }
-        ui.button("Disable");
-        ui.button("View folder");
-        ui.button("Move to top");
-        ui.button("Move to bottom");
+        if ui
+            .button(if mod_.enabled { "Disable" } else { "Enable" })
+            .clicked()
+        {
+            ui.close_menu();
+            sender
+                .send(Message::ToggleMods(None, !mod_.enabled))
+                .unwrap();
+        }
+        if ui.button("View folder").clicked() {
+            ui.close_menu();
+            let _ = Command::new(if cfg!(windows) {
+                "explorer"
+            } else {
+                "xdg-open"
+            })
+            .arg(if mod_.path.is_dir() {
+                &mod_.path
+            } else {
+                mod_.path.parent().unwrap()
+            })
+            .output();
+        }
+        if ui.button("Move to start").clicked() {
+            ui.close_menu();
+            sender.send(Message::MoveSelected(0)).unwrap();
+        }
+        if ui.button("Move to end").clicked() {
+            ui.close_menu();
+            sender.send(Message::MoveSelected(9999)).unwrap();
+        }
     }
 }
