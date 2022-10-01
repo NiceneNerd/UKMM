@@ -59,13 +59,17 @@ pub trait IconButtonExt {
 
 impl IconButtonExt for Ui {
     fn icon_button(&mut self, icon_name: &str) -> Response {
-        self.add(
+        let button_padding = self.spacing().button_padding;
+        self.spacing_mut().button_padding = button_padding / 2.;
+        let res = self.add(
             ImageButton::new(
                 get_icon(self.ctx(), icon_name),
                 [self.spacing().icon_width, self.spacing().icon_width],
             )
             .tint(self.style().visuals.widgets.inactive.fg_stroke.color),
-        )
+        );
+        self.spacing_mut().button_padding = button_padding;
+        res
     }
 
     fn icon_text_button(&mut self, text: impl Into<WidgetText>, icon_name: &str) -> Response {

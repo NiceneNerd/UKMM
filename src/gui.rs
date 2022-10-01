@@ -6,7 +6,7 @@ mod picker;
 mod tasks;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::{text::TextWrapping, FontFamily},
@@ -22,7 +22,7 @@ use icons::IconButtonExt;
 use im::Vector;
 use join_str::jstr;
 use picker::FilePickerState;
-use std::{path::PathBuf, sync::Arc, thread};
+use std::{ops::Deref, path::PathBuf, sync::Arc, thread};
 use uk_mod::Manifest;
 
 fn load_fonts(context: &egui::Context) {
@@ -112,38 +112,6 @@ impl Entry {
     }
 }
 
-pub enum Message {
-    Log(Entry),
-    Confirm(Box<Message>, String),
-    CloseConfirm,
-    CloseError,
-    SelectOnly(usize),
-    SelectAlso(usize),
-    Deselect(usize),
-    ClearSelect,
-    StartDrag(usize),
-    ClearDrag,
-    MoveSelected(usize),
-    FilePickerUp,
-    FilePickerBack,
-    FilePickerSet(Option<PathBuf>),
-    ChangeProfile(String),
-    SetFocus(FocusedPane),
-    OpenMod(PathBuf),
-    HandleMod(Mod),
-    RequestOptions(Mod),
-    InstallMod(Mod),
-    UninstallMods(Option<Vector<Mod>>),
-    AddMod(Mod),
-    RemoveMods(Vector<Mod>),
-    ToggleMods(Option<Vector<Mod>>, bool),
-    Apply,
-    // UpdateMods(Vector<Mod>),
-    Error(anyhow::Error),
-    ChangeSort(Sort, bool),
-    RefreshModsDisplay,
-}
-
 enum Tabs {
     Info,
     Install,
@@ -188,6 +156,39 @@ impl Sort {
             Sort::Priority => Box::new(|&(a, _), &(b, _)| a.cmp(&b)),
         }
     }
+}
+
+pub enum Message {
+    Log(Entry),
+    Confirm(Box<Message>, String),
+    CloseConfirm,
+    CloseError,
+    SelectOnly(usize),
+    SelectAlso(usize),
+    Deselect(usize),
+    ClearSelect,
+    StartDrag(usize),
+    ClearDrag,
+    MoveSelected(usize),
+    FilePickerUp,
+    FilePickerBack,
+    FilePickerSet(Option<PathBuf>),
+    ChangeProfile(String),
+    SetFocus(FocusedPane),
+    OpenMod(PathBuf),
+    HandleMod(Mod),
+    RequestOptions(Mod),
+    InstallMod(Mod),
+    UninstallMods(Option<Vector<Mod>>),
+    AddMod(Mod),
+    RemoveMods(Vector<Mod>),
+    ToggleMods(Option<Vector<Mod>>, bool),
+    Apply,
+    // UpdateMods(Vector<Mod>),
+    Error(anyhow::Error),
+    ChangeSort(Sort, bool),
+    RefreshModsDisplay,
+    ClearChanges,
 }
 
 struct App {
@@ -282,8 +283,13 @@ impl App {
                         }
                     }
                 }
+                Message::ClearChanges => {
+                    self.busy = false;
+                    self.dirty.clear();
+                    self.do_update(Message::RefreshModsDisplay);
+                }
                 Message::RefreshModsDisplay => {
-                    self.do_update(Message::ChangeSort(self.sort.0, self.sort.1))
+                    self.do_update(Message::ChangeSort(self.sort.0, self.sort.1));
                 }
                 Message::ChangeSort(sort, rev) => {
                     let orderer = sort.orderer();
@@ -473,15 +479,31 @@ impl App {
                     self.busy = false;
                 }
                 Message::Apply => {
-                    let order = self.mods.iter().map(|m| m.hash).collect::<Vec<_>>();
+                    let mods = self.mods.clone();
                     let dirty = self.dirty.clone();
                     self.do_task(move |core| {
-                        let mods = core.mod_manager();
-                        mods.set_order(order);
-                        mods.save()?;
-                        let deploy = core.deploy_manager();
-                        deploy.apply(Some(dirty))?;
-                        Ok(Message::RefreshModsDisplay)
+                        let mod_manager = core.mod_manager();
+                        mods.iter()
+                            .try_for_each(|m| -> Result<()> {
+                                let mod_ = mod_manager
+                                    .all_mods()
+                                    .find(|m2| m2.hash == m.hash)
+                                    .unwrap()
+                                    .clone();
+                                if !mod_.state_eq(m) {
+                                    mod_manager.set_enabled(m.hash, m.enabled)?;
+                                    mod_manager
+                                        .set_enabled_options(m.hash, m.enabled_options.clone())?;
+                                }
+                                Ok(())
+                            })
+                            .context("Failed to update mod state")?;
+                        let order = mods.iter().map(|m| m.hash).collect();
+                        mod_manager.set_order(order);
+                        mod_manager.save()?;
+                        let deploy_manager = core.deploy_manager();
+                        deploy_manager.apply(Some(dirty))?;
+                        Ok(Message::ClearChanges)
                     });
                 }
                 Message::RequestOptions(mod_) => {
@@ -592,7 +614,7 @@ impl App {
                     let max_width = ui.available_width() / 2.;
                     ui.vertical_centered(|ui| {
                         let text_height = ui.text_style_height(&TextStyle::Body) * 2.;
-                        let padding = ui.available_size().y - text_height - 8.;
+                        let padding = 80. - text_height - 8.;
                         ui.allocate_space([max_width, padding / 2.].into());
                         ui.horizontal(|ui| {
                             ui.add_space(8.);
@@ -620,7 +642,7 @@ impl App {
                             });
                             ui.shrink_width_to_current();
                         });
-                        ui.add_space(padding / 2.);
+                        ui.allocate_space([0., padding / 2.].into());
                     });
                 });
         }

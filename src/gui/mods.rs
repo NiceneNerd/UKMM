@@ -1,16 +1,15 @@
-use std::process::Command;
-
-use crate::mods::Mod;
-
 use super::{App, FocusedPane, Message, Sort};
+use crate::mods::Mod;
 use eframe::epaint::text::TextWrapping;
 use egui::{
     text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, Label, LayerId, Layout, Response,
     Sense, TextStyle, Ui, Vec2,
 };
 use egui_extras::{Size, TableBuilder, TableRow};
+use im::vector;
 use join_str::jstr;
 use once_cell::sync::OnceCell;
+use std::process::Command;
 
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {
@@ -240,6 +239,7 @@ impl App {
             let mut drag_started = false;
             let mut ctrl = false;
             let mut hover = false;
+            let mut toggled = false;
             let menu_mod = mod_.clone();
 
             let mut process_col_res = |res: Response| {
@@ -254,8 +254,9 @@ impl App {
             if selected {
                 row = row.selected(true);
             }
+            let mut enabled = mod_.enabled;
             process_col_res(row.col(|ui| {
-                ui.checkbox(&mut mod_.enabled, "");
+                toggled = ui.checkbox(&mut enabled, "").clicked();
                 ctrl = ui.input().modifiers.ctrl;
             }));
             process_col_res(row.col(|ui| {
@@ -292,7 +293,12 @@ impl App {
                     });
                 }));
             }
-            if clicked {
+            if toggled {
+                self.do_update(Message::ToggleMods(
+                    Some(vector![menu_mod.clone()]),
+                    enabled,
+                ));
+            } else if clicked {
                 self.do_update(Message::SetFocus(FocusedPane::ModList));
                 if selected && ctrl {
                     self.do_update(Message::Deselect(index));
