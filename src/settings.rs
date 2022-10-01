@@ -114,6 +114,17 @@ pub enum DeployMethod {
     Symlink,
 }
 
+impl DeployMethod {
+    #[inline(always)]
+    pub fn name(&self) -> &str {
+        match self {
+            DeployMethod::Copy => "Copy",
+            DeployMethod::HardLink => "Hard Links",
+            DeployMethod::Symlink => "Symlink",
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlatformSettings {
     pub language: Language,

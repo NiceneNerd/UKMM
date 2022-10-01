@@ -15,7 +15,8 @@ use eframe::{
 };
 use egui::{
     self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Button, Color32, ComboBox,
-    FontId, Frame, Id, Label, Layout, RichText, Sense, Spinner, TextFormat, TextStyle, Ui, Vec2,
+    FontId, Frame, Id, Label, LayerId, Layout, RichText, Sense, Spinner, TextFormat, TextStyle, Ui,
+    Vec2,
 };
 use egui_dock::{NodeIndex, Style, Tree};
 use flume::{Receiver, Sender};
@@ -27,7 +28,7 @@ use picker::FilePickerState;
 use std::{
     ops::{Deref, DerefMut},
     path::PathBuf,
-    sync::Arc,
+    sync::{Arc, Once},
     thread,
 };
 use uk_mod::Manifest;
@@ -120,10 +121,13 @@ impl Entry {
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-enum Tabs {
+pub enum Tabs {
     Info,
     Install,
     Deploy,
+    Mods,
+    Log,
+    Settings,
 }
 
 impl std::fmt::Display for Tabs {
@@ -216,7 +220,7 @@ struct App {
     drag_index: Option<usize>,
     hover_index: Option<usize>,
     picker_state: FilePickerState,
-    closed_tabs: im::HashSet<Tabs>,
+    closed_tabs: im::HashMap<Tabs, NodeIndex>,
     tree: Arc<RwLock<Tree<Tabs>>>,
     focused: FocusedPane,
     logs: Vector<Entry>,
@@ -249,7 +253,7 @@ impl App {
             core,
             logs: Vector::new(),
             log: LayoutJob::default(),
-            closed_tabs: im::HashSet::new(),
+            closed_tabs: im::HashMap::new(),
             focused: FocusedPane::None,
             error: None,
             confirm: None,
@@ -257,11 +261,7 @@ impl App {
             dirty: Manifest::default(),
             sort: (Sort::Priority, false),
             options_mod: None,
-            tree: Arc::new(RwLock::new({
-                let mut tree = Tree::new(vec![Tabs::Info, Tabs::Install]);
-                tree.split_below(NodeIndex(0), 0.5, vec![Tabs::Deploy]);
-                tree
-            })),
+            tree: Arc::new(RwLock::new(tabs::default_ui())),
         }
     }
 
@@ -698,12 +698,30 @@ impl App {
     }
 
     fn window_menu(&mut self, ui: &mut Ui) {
-        for tab in [Tabs::Info, Tabs::Install, Tabs::Deploy] {
-            let disabled = self.closed_tabs.contains(&tab);
-            let mut label = tab.to_string();
-            if ui.add_enabled(disabled, Button::new(label)).clicked() {
-                if let Some(tab) = self.closed_tabs.remove(&tab) {
-                    self.tree.write().push_to_first_leaf(tab);
+        if ui.button("Reset").clicked() {
+            ui.close_menu();
+            *self.tree.write() = tabs::default_ui();
+        }
+        ui.separator();
+        for tab in [
+            Tabs::Info,
+            Tabs::Install,
+            Tabs::Deploy,
+            Tabs::Mods,
+            Tabs::Settings,
+            Tabs::Log,
+        ] {
+            let disabled = self.closed_tabs.contains_key(&tab);
+            let label = if disabled { "" } else { "✓ " }.to_owned() + tab.to_string().as_str();
+            if ui.button(label).clicked() {
+                ui.close_menu();
+                let mut tree = self.tree.write();
+                if let Some((tab, parent)) = self.closed_tabs.remove_with_key(&tab) {
+                    tree.iter_mut().nth(parent.0).unwrap().append_tab(tab);
+                } else if let Some((parent_index, node_index)) = tree.find_tab(&tab) {
+                    let parent = tree.iter_mut().nth(parent_index.0).unwrap();
+                    parent.remove_tab(node_index);
+                    self.closed_tabs.insert(tab, parent_index);
                 }
             }
         }
@@ -760,21 +778,11 @@ impl App {
             .min_height(0.)
             .show(ctx, |ui| {
                 ui.set_enabled(!self.modal_open());
-                egui::ScrollArea::both()
-                    .auto_shrink([false, false])
-                    .stick_to_bottom(true)
-                    .show(ui, |ui| {
-                        if ui
-                            .add(Label::new(self.log.clone()).sense(Sense::click()))
-                            .on_hover_text("Click to copy")
-                            .clicked()
-                        {
-                            ui.output().copied_text = self.log.text.clone();
-                        }
-                    });
             });
     }
 }
+
+static LAYOUT_FIX: Once = Once::new();
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
@@ -783,40 +791,18 @@ impl eframe::App for App {
         self.render_confirm(ctx);
         self.render_menu(ctx);
         self.render_option_picker(ctx);
-        egui::SidePanel::right("right_panel")
-            .resizable(true)
-            .max_width(ctx.used_size().x * 0.4)
-            .min_width(0.)
-            .show(ctx, |ui| {
-                ui.set_enabled(!self.modal_open());
-                egui_dock::DockArea::new(self.tree.clone().write().deref_mut())
-                    .style(Style::from_egui(ui.ctx().style().deref()))
-                    .show_inside(ui, self);
-                ui.allocate_space(ui.available_size());
-            });
-        egui::CentralPanel::default()
-            .frame(
-                Frame::none()
-                    .fill(ctx.style().visuals.window_fill())
-                    .inner_margin(Margin {
-                        right: -12.,
-                        bottom: 8.,
-                        top: 8.,
-                        left: 8.,
-                    }),
-            )
-            .show(ctx, |ui| {
-                ui.set_enabled(!self.modal_open());
-                self.render_profile_menu(ui);
-                ui.add_space(4.);
-                egui::ScrollArea::both()
-                    .id_source("mod_list")
-                    .show(ui, |ui| {
-                        self.render_modlist(ui);
-                    });
-            });
-        self.render_log(ctx);
+        let layer_id = LayerId::background();
+        let max_rect = ctx.available_rect();
+        let clip_rect = ctx.available_rect();
+        let id = Id::new("egui_dock::DockArea");
+        let mut ui = Ui::new(ctx.clone(), layer_id, id, max_rect, clip_rect);
+        egui_dock::DockArea::new(self.tree.clone().write().deref_mut())
+            .style(Style::from_egui(ui.ctx().style().deref()))
+            .show_inside(&mut ui, self);
         self.render_busy(ctx);
+        LAYOUT_FIX.call_once(|| {
+            *self.tree.write() = tabs::default_ui();
+        });
     }
 }
 

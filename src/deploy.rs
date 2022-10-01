@@ -87,6 +87,16 @@ impl Manager {
         !(self.pending_delete.read().is_empty() && self.pending_files.read().is_empty())
     }
 
+    #[inline]
+    pub fn pending_len(&self) -> usize {
+        let dels = self.pending_delete.read();
+        let files = self.pending_files.read();
+        dels.content_files.len()
+            + dels.aoc_files.len()
+            + files.content_files.len()
+            + files.aoc_files.len()
+    }
+
     fn save(&self) -> Result<()> {
         fs::write(
             Self::log_path(&self.settings.upgrade().unwrap().read()),
