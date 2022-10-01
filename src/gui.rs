@@ -3,6 +3,7 @@ mod info;
 mod mods;
 mod options;
 mod picker;
+mod tabs;
 mod tasks;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod};
@@ -13,16 +14,22 @@ use eframe::{
     NativeOptions,
 };
 use egui::{
-    self, style::Margin, text::LayoutJob, Align, Align2, Button, Color32, ComboBox, FontId, Frame,
-    Id, Label, Layout, RichText, Sense, Spinner, TextFormat, TextStyle, Ui, Vec2,
+    self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Button, Color32, ComboBox,
+    FontId, Frame, Id, Label, Layout, RichText, Sense, Spinner, TextFormat, TextStyle, Ui, Vec2,
 };
+use egui_dock::{NodeIndex, Style, Tree};
 use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
 use icons::IconButtonExt;
 use im::Vector;
 use join_str::jstr;
 use picker::FilePickerState;
-use std::{ops::Deref, path::PathBuf, sync::Arc, thread};
+use std::{
+    ops::{Deref, DerefMut},
+    path::PathBuf,
+    sync::Arc,
+    thread,
+};
 use uk_mod::Manifest;
 
 fn load_fonts(context: &egui::Context) {
@@ -112,9 +119,17 @@ impl Entry {
     }
 }
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 enum Tabs {
     Info,
     Install,
+    Deploy,
+}
+
+impl std::fmt::Display for Tabs {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -184,6 +199,7 @@ pub enum Message {
     RemoveMods(Vector<Mod>),
     ToggleMods(Option<Vector<Mod>>, bool),
     Apply,
+    Remerge,
     // UpdateMods(Vector<Mod>),
     Error(anyhow::Error),
     ChangeSort(Sort, bool),
@@ -200,7 +216,8 @@ struct App {
     drag_index: Option<usize>,
     hover_index: Option<usize>,
     picker_state: FilePickerState,
-    tab: Tabs,
+    closed_tabs: im::HashSet<Tabs>,
+    tree: Arc<RwLock<Tree<Tabs>>>,
     focused: FocusedPane,
     logs: Vector<Entry>,
     log: LayoutJob,
@@ -232,7 +249,7 @@ impl App {
             core,
             logs: Vector::new(),
             log: LayoutJob::default(),
-            tab: Tabs::Info,
+            closed_tabs: im::HashSet::new(),
             focused: FocusedPane::None,
             error: None,
             confirm: None,
@@ -240,6 +257,11 @@ impl App {
             dirty: Manifest::default(),
             sort: (Sort::Priority, false),
             options_mod: None,
+            tree: Arc::new(RwLock::new({
+                let mut tree = Tree::new(vec![Tabs::Info, Tabs::Install]);
+                tree.split_below(NodeIndex(0), 0.5, vec![Tabs::Deploy]);
+                tree
+            })),
         }
     }
 
@@ -506,6 +528,13 @@ impl App {
                         Ok(Message::ClearChanges)
                     });
                 }
+                Message::Remerge => {
+                    self.do_task(|core| {
+                        let deploy_manager = core.deploy_manager();
+                        deploy_manager.apply(None)?;
+                        Ok(Message::ClearChanges)
+                    });
+                }
                 Message::RequestOptions(mod_) => {
                     self.options_mod = Some(mod_);
                 }
@@ -517,16 +546,6 @@ impl App {
             }
             ctx.request_repaint();
         }
-    }
-
-    fn render_menu(&self, ctx: &egui::Context) {
-        egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
-            ui.set_enabled(!self.modal_open());
-            ui.horizontal(|ui| {
-                ui.menu_button("File", Self::file_menu);
-                ui.menu_button("Edit", Self::edit_menu);
-            });
-        });
     }
 
     fn render_error(&mut self, ctx: &egui::Context) {
@@ -648,15 +667,45 @@ impl App {
         }
     }
 
+    fn render_menu(&mut self, ctx: &egui::Context) {
+        egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+            ui.set_enabled(!self.modal_open());
+            ui.horizontal(|ui| {
+                ui.menu_button("File", Self::file_menu);
+                ui.menu_button("Edit", Self::edit_menu);
+                ui.menu_button("Tools", |ui| self.tool_menu(ui));
+                ui.menu_button("Window", |ui| self.window_menu(ui));
+            });
+        });
+    }
+
     fn file_menu(ui: &mut Ui) {
         if ui.button("Open mod…").clicked() {
-            // todo!("Open mod");
+            todo!("Open mod");
         }
     }
 
     fn edit_menu(ui: &mut Ui) {
         if ui.button("Settings").clicked() {
             todo!("Settings");
+        }
+    }
+
+    fn tool_menu(&mut self, ui: &mut Ui) {
+        if ui.button("Refresh Merge").clicked() {
+            self.do_update(Message::Remerge);
+        }
+    }
+
+    fn window_menu(&mut self, ui: &mut Ui) {
+        for tab in [Tabs::Info, Tabs::Install, Tabs::Deploy] {
+            let disabled = self.closed_tabs.contains(&tab);
+            let mut label = tab.to_string();
+            if ui.add_enabled(disabled, Button::new(label)).clicked() {
+                if let Some(tab) = self.closed_tabs.remove(&tab) {
+                    self.tree.write().push_to_first_leaf(tab);
+                }
+            }
         }
     }
 
@@ -736,42 +785,13 @@ impl eframe::App for App {
         self.render_option_picker(ctx);
         egui::SidePanel::right("right_panel")
             .resizable(true)
-            .max_width(ctx.used_size().x / 3.)
+            .max_width(ctx.used_size().x * 0.4)
             .min_width(0.)
             .show(ctx, |ui| {
                 ui.set_enabled(!self.modal_open());
-                egui::ScrollArea::vertical()
-                    .id_source("right_panel_scroll")
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            if ui
-                                .selectable_label(matches!(self.tab, Tabs::Info), "Mod Info")
-                                .clicked()
-                            {
-                                self.tab = Tabs::Info;
-                            }
-                            if ui
-                                .selectable_label(matches!(self.tab, Tabs::Install), "Install")
-                                .clicked()
-                            {
-                                self.tab = Tabs::Install;
-                            }
-                        });
-                        match self.tab {
-                            Tabs::Info => {
-                                if let Some(mod_) = self.selected.front() {
-                                    info::render_mod_info(mod_, ui);
-                                } else {
-                                    ui.centered_and_justified(|ui| {
-                                        ui.label("No mod selected");
-                                    });
-                                }
-                            }
-                            Tabs::Install => {
-                                self.render_file_picker(ui);
-                            }
-                        }
-                    });
+                egui_dock::DockArea::new(self.tree.clone().write().deref_mut())
+                    .style(Style::from_egui(ui.ctx().style().deref()))
+                    .show_inside(ui, self);
                 ui.allocate_space(ui.available_size());
             });
         egui::CentralPanel::default()

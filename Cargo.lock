@@ -1015,6 +1015,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui_dock"
+version = "0.2.1"
+source = "git+https://github.com/NiceneNerd/egui_dock#0dffb443c6dcc19bc5713b5f8ad2d4b4abd44c9c"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "egui_extras"
 version = "0.19.0"
 source = "git+https://github.com/NiceneNerd/egui#ff92ab09c665b51ab9f80dd0d76f55376e659433"
@@ -3475,6 +3483,7 @@ dependencies = [
  "dirs2",
  "eframe",
  "egui",
+ "egui_dock",
  "egui_extras",
  "env_logger",
  "flume",
