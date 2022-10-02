@@ -1,5 +1,5 @@
 use super::{
-    icons::{get_icon, IconButtonExt},
+    icons::{get_icon, Icon, IconButtonExt},
     visuals, App, FocusedPane, Message,
 };
 use egui::{text::LayoutJob, Align, Button, Key, TextFormat, Ui, Vec2};
@@ -83,17 +83,17 @@ impl App {
             ui.horizontal(|ui| {
                 for (icon, tooltip, cb) in [
                     (
-                        "folder-open",
+                        Icon::FolderOpen,
                         "Open Mod…",
                         Box::new(|| self.do_update(Message::ClearSelect)) as Box<dyn FnOnce()>,
                     ),
                     (
-                        "up",
+                        Icon::ArrowUp,
                         "Up One Level",
                         Box::new(|| self.do_update(Message::FilePickerUp)) as Box<dyn FnOnce()>,
                     ),
                     (
-                        "back",
+                        Icon::ArrowBack,
                         "Back",
                         Box::new(|| self.do_update(Message::FilePickerBack)) as Box<dyn FnOnce()>,
                     ),
@@ -152,7 +152,14 @@ impl App {
         let icon_size: Vec2 = [ui.spacing().icon_width, ui.spacing().icon_width].into();
         let res = ui.add(
             Button::image_and_text(
-                get_icon(ui.ctx(), if is_dir { "folder" } else { "archive" }),
+                get_icon(
+                    ui.ctx(),
+                    if is_dir {
+                        Icon::Folder
+                    } else {
+                        Icon::FolderZip
+                    },
+                ),
                 icon_size,
                 name,
             )

@@ -15,8 +15,8 @@ use eframe::{
 };
 use egui::{
     self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Button, Color32, ComboBox,
-    FontId, Frame, Id, Label, LayerId, Layout, RichText, Sense, Spinner, TextFormat, TextStyle, Ui,
-    Vec2,
+    FontId, Frame, Id, Label, LayerId, Layout, RichText, Rounding, Sense, Spinner, TextFormat,
+    TextStyle, Ui, Vec2,
 };
 use egui_dock::{NodeIndex, Style, Tree};
 use flume::{Receiver, Sender};
@@ -24,6 +24,7 @@ use font_loader::system_fonts::FontPropertyBuilder;
 use icons::IconButtonExt;
 use im::Vector;
 use join_str::jstr;
+use once_cell::sync::OnceCell;
 use picker::FilePickerState;
 use std::{
     ops::{Deref, DerefMut},
@@ -32,6 +33,8 @@ use std::{
     thread,
 };
 use uk_mod::Manifest;
+
+use self::icons::Icon;
 
 fn load_fonts(context: &egui::Context) {
     let mut fonts = FontDefinitions::default();
@@ -712,16 +715,27 @@ impl App {
             Tabs::Log,
         ] {
             let disabled = self.closed_tabs.contains_key(&tab);
-            let label = if disabled { "" } else { "✓ " }.to_owned() + tab.to_string().as_str();
-            if ui.button(label).clicked() {
+            let icon_width = ui.spacing().icon_width;
+            if ui
+                .icon_text_button(
+                    format!(" {tab}"),
+                    if disabled { Icon::Blank } else { Icon::Check },
+                )
+                .clicked()
+            {
                 ui.close_menu();
                 let mut tree = self.tree.write();
                 if let Some((tab, parent)) = self.closed_tabs.remove_with_key(&tab) {
-                    tree.iter_mut().nth(parent.0).unwrap().append_tab(tab);
+                    if let Some(parent) = tree.iter_mut().nth(parent.0) && parent.tabs_count() > 0 {
+                        parent.append_tab(tab);
+                    } else {
+                        tree.push_to_focused_leaf(tab);
+                    }
                 } else if let Some((parent_index, node_index)) = tree.find_tab(&tab) {
                     let parent = tree.iter_mut().nth(parent_index.0).unwrap();
                     parent.remove_tab(node_index);
                     self.closed_tabs.insert(tab, parent_index);
+                    tree.remove_empty_leaf();
                 }
             }
         }
@@ -749,9 +763,9 @@ impl App {
                 })
                 .response
                 .on_hover_text("Select Mod Profile");
-            ui.icon_button("delete").on_hover_text("Delete Profile");
-            ui.icon_button("add").on_hover_text("New Profile");
-            ui.icon_button("menu").on_hover_text("Manage Profiles…");
+            ui.icon_button(Icon::Delete).on_hover_text("Delete Profile");
+            ui.icon_button(Icon::Add).on_hover_text("New Profile");
+            ui.icon_button(Icon::Menu).on_hover_text("Manage Profiles…");
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 ui.add_space(20.);
                 ui.label(format!(
@@ -759,17 +773,23 @@ impl App {
                     self.mods.len(),
                     self.mods.iter().filter(|m| m.enabled).count()
                 ));
-                if !self.dirty.is_empty() {
-                    ui.spacing_mut().icon_spacing = 4.;
-                    if ui
-                        .icon_text_button("Apply Pending Changes", "check")
-                        .clicked()
-                    {
-                        self.do_update(Message::Apply);
-                    }
-                }
             });
         });
+    }
+
+    fn render_pending(&self, ctx: &egui::Context) {
+        if !self.dirty.is_empty() {
+            egui::Window::new("Pending Changes")
+                .anchor(Align2::RIGHT_BOTTOM, [4.0, 4.0])
+                .collapsible(true)
+                .auto_sized()
+                .show(ctx, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.icon_text_button("Apply", Icon::Check);
+                        ui.icon_text_button("Cancel", Icon::Cancel);
+                    });
+                });
+        }
     }
 
     fn render_log(&self, ctx: &egui::Context) {
@@ -796,8 +816,20 @@ impl eframe::App for App {
         let clip_rect = ctx.available_rect();
         let id = Id::new("egui_dock::DockArea");
         let mut ui = Ui::new(ctx.clone(), layer_id, id, max_rect, clip_rect);
+        static DOCK_STYLE: OnceCell<egui_dock::Style> = OnceCell::new();
         egui_dock::DockArea::new(self.tree.clone().write().deref_mut())
-            .style(Style::from_egui(ui.ctx().style().deref()))
+            .style(
+                DOCK_STYLE
+                    .get_or_init(|| {
+                        egui_dock::StyleBuilder::from_egui(&ui.ctx().style())
+                            .show_close_buttons(false)
+                            .with_border_width(0.0)
+                            .with_padding(Margin::symmetric(4.0, 2.0))
+                            .with_tab_rounding(Rounding::same(2.0))
+                            .build()
+                    })
+                    .clone(),
+            )
             .show_inside(&mut ui, self);
         self.render_busy(ctx);
         LAYOUT_FIX.call_once(|| {
