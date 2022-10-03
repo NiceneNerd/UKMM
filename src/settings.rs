@@ -10,10 +10,20 @@ use std::{
 };
 use uk_reader::ResourceReader;
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Platform {
     WiiU,
     Switch,
+}
+
+impl std::fmt::Display for Platform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::WiiU => "Wii U",
+            Self::Switch => "Switch",
+        }
+        .fmt(f)
+    }
 }
 
 impl std::str::FromStr for Platform {
@@ -82,7 +92,7 @@ impl From<Platform> for rstb::Endian {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Language {
     USen,
     EUen,
@@ -100,7 +110,13 @@ pub enum Language {
     TWzh,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl std::fmt::Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeployConfig {
     pub output: PathBuf,
     pub method: DeployMethod,
@@ -125,7 +141,7 @@ impl DeployMethod {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlatformSettings {
     pub language: Language,
     pub profile: String,
@@ -133,7 +149,7 @@ pub struct PlatformSettings {
     pub deploy_config: Option<DeployConfig>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UiSettings {
     pub dark: bool,
 }
@@ -144,7 +160,7 @@ impl Default for UiSettings {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Settings {
     pub current_mode: Platform,
     pub storage_dir: PathBuf,

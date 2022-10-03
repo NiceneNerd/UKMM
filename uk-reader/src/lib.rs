@@ -71,6 +71,12 @@ pub struct ResourceReader {
     cache: ResourceCache,
 }
 
+impl PartialEq for ResourceReader {
+    fn eq(&self, other: &Self) -> bool {
+        self.bin_type == other.bin_type && self.source.host_path() == other.source.host_path()
+    }
+}
+
 impl std::fmt::Debug for ResourceReader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ResourceReader")

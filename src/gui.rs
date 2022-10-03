@@ -3,10 +3,12 @@ mod info;
 mod mods;
 mod options;
 mod picker;
+mod settings;
 mod tabs;
 mod tasks;
+mod util;
 mod visuals;
-use crate::{core::Manager, logger::Entry, mods::Mod};
+use crate::{core::Manager, logger::Entry, mods::Mod, settings::Settings};
 use anyhow::{Context, Result};
 use eframe::{
     egui::{FontData, FontDefinitions},
@@ -19,6 +21,7 @@ use egui::{
     TextFormat, TextStyle, Ui, Vec2,
 };
 use egui_dock::{NodeIndex, Style, Tree};
+use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
 use icons::IconButtonExt;
@@ -31,6 +34,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, Once},
     thread,
+    time::Duration,
 };
 use uk_mod::Manifest;
 
@@ -213,6 +217,8 @@ pub enum Message {
     RefreshModsDisplay,
     ClearChanges,
     Deploy,
+    ResetSettings,
+    SaveSettings,
 }
 
 struct App {
@@ -235,6 +241,8 @@ struct App {
     dirty: Manifest,
     sort: (Sort, bool),
     options_mod: Option<Mod>,
+    temp_settings: Settings,
+    toasts: egui_notify::Toasts,
 }
 
 impl App {
@@ -246,6 +254,7 @@ impl App {
         let (send, recv) = flume::unbounded();
         crate::logger::LOGGER.set_sender(send.clone());
         log::info!("Logger initialized");
+        let temp_settings = core.settings().clone();
         Self {
             channel: (send, recv),
             selected: mods.front().cloned().into_iter().collect(),
@@ -254,6 +263,7 @@ impl App {
             picker_state: Default::default(),
             displayed_mods: mods.clone(),
             mods,
+            temp_settings,
             core,
             logs: Vector::new(),
             log: LayoutJob::default(),
@@ -266,6 +276,7 @@ impl App {
             sort: (Sort::Priority, false),
             options_mod: None,
             tree: Arc::new(RwLock::new(tabs::default_ui())),
+            toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
         }
     }
 
@@ -526,6 +537,26 @@ impl App {
                         deploy_manager.apply(None)?;
                         Ok(Message::ClearChanges)
                     });
+                }
+                Message::ResetSettings => {
+                    self.temp_settings = self.core.settings().clone();
+                }
+                Message::SaveSettings => {
+                    match self.temp_settings.save().and_then(|_| {
+                        Arc::make_mut(&mut self.core).reload()?;
+                        Ok(())
+                    }) {
+                        Ok(()) => {
+                            self.toasts.add({
+                                let mut toast = Toast::success("Settings saved");
+                                toast.set_duration(Some(Duration::new(2, 0)));
+                                toast
+                            });
+                            self.do_update(Message::ClearSelect);
+                            self.do_update(Message::ClearChanges);
+                        }
+                        Err(e) => self.do_update(Message::Error(e)),
+                    };
                 }
                 Message::RequestOptions(mod_) => {
                     self.options_mod = Some(mod_);
@@ -848,6 +879,7 @@ impl eframe::App for App {
             )
             .show_inside(&mut ui, self);
         self.render_busy(ctx);
+        self.toasts.show(ctx);
         LAYOUT_FIX.call_once(|| {
             *self.tree.write() = tabs::default_ui();
         });

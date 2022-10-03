@@ -135,7 +135,7 @@ impl TabViewer for super::App {
                 ui.shrink_height_to_current();
             }
             Tabs::Settings => {
-                ui.label("Settings stuff");
+                self.render_settings(ui);
             }
         }
     }

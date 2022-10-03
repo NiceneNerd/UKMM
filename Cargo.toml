@@ -14,6 +14,7 @@ eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
 egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", features = ["color-hex", "persistence"] }
 egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
 egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
+egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
 env_logger = "0.9.0"
 flume = "0.10.14"
 font-loader = "0.11.0"
@@ -26,6 +27,7 @@ log = "0.4.17"
 once_cell = "1.13.1"
 parking_lot = "0.12.1"
 rayon = "1.5.3"
+rfd = "0.10.0"
 roead = "0.16.2"
 ron = "0.8.0"
 rustc-hash = "1.1.0"

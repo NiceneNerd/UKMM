@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::sync::Arc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Manager {
     mod_manager: Arc<mods::Manager>,
     deploy_manager: Arc<deploy::Manager>,
