@@ -2,7 +2,7 @@ use super::{
     icons::{get_icon, Icon, IconButtonExt},
     visuals, App, FocusedPane, Message,
 };
-use egui::{text::LayoutJob, Align, Button, Key, TextFormat, Ui, Vec2};
+use egui::{style::Margin, text::LayoutJob, Align, Button, Key, TextFormat, Ui, Vec2};
 use fs_err as fs;
 use im::Vector;
 use std::path::{Path, PathBuf};
@@ -79,7 +79,7 @@ impl FilePickerState {
 
 impl App {
     pub fn render_file_picker(&mut self, ui: &mut Ui) {
-        ui.vertical(|ui| {
+        egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
             ui.horizontal(|ui| {
                 for (icon, tooltip, cb) in [
                     (

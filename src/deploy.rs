@@ -134,7 +134,10 @@ impl Manager {
                 let dest = config.output.join(dir);
                 let source = settings.merged_dir().join(dir);
                 dels.par_iter().try_for_each(|f| -> Result<()> {
-                    fs::remove_file(dest.join(f.as_str()))?;
+                    let file = dest.join(f.as_str());
+                    if file.exists() {
+                        fs::remove_file(dest.join(f.as_str()))?;
+                    }
                     Ok(())
                 })?;
                 match config.method {

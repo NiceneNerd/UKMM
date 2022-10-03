@@ -1,12 +1,13 @@
-use super::Tabs;
-use egui::{Label, Sense, Ui, WidgetText};
+use super::{visuals, Tabs};
+use eframe::epaint::text::TextWrapping;
+use egui::{text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText};
 use egui_dock::{NodeIndex, TabViewer, Tree};
 use join_str::jstr;
 
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Settings]);
     let [main, side] = tree.split_right(0.into(), 0.9, vec![Tabs::Info, Tabs::Install]);
-    let [side_top, side_bottom] = tree.split_below(side, 0.5, vec![Tabs::Deploy]);
+    let [side_top, side_bottom] = tree.split_below(side, 0.6, vec![Tabs::Deploy]);
     let [main, log] = tree.split_below(main, 0.99, vec![Tabs::Log]);
     tree
 }
@@ -39,17 +40,75 @@ impl TabViewer for super::App {
                 self.render_file_picker(ui);
             }
             Tabs::Deploy => {
-                if let Some(config) = self
+                match self
                     .core
                     .settings()
                     .platform_config()
                     .and_then(|c| c.deploy_config.as_ref())
                 {
-                    ui.label(jstr!("Deployment method: {config.method.name()}"));
-                    ui.label(config.output.display().to_string());
-                    ui.label(jstr!(
-                        "Deployment pending: {&self.core.deploy_manager().pending().to_string()}"
-                    ));
+                    Some(config) => {
+                        egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
+                            ui.with_layout(Layout::top_down(Align::Center), |ui| {
+                                let pending = self.core.deploy_manager().pending();
+                                ui.horizontal(|ui| {
+                                    ui.label(
+                                        RichText::new("Method")
+                                            .family(egui::FontFamily::Name("Bold".into())),
+                                    );
+                                    ui.add_space(8.);
+                                    ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
+                                        ui.label(config.method.name());
+                                    })
+                                });
+                                ui.horizontal(|ui| {
+                                    ui.label(
+                                        RichText::new("Auto Deploy")
+                                            .family(egui::FontFamily::Name("Bold".into())),
+                                    );
+                                    ui.add_space(8.);
+                                    ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
+                                        ui.label(if config.auto {
+                                            RichText::new("Yes").color(visuals::GREEN)
+                                        } else {
+                                            RichText::new("No").color(visuals::RED)
+                                        });
+                                    })
+                                });
+                                ui.vertical(|ui| {
+                                    ui.label(
+                                        RichText::new("Target Folder")
+                                            .family(egui::FontFamily::Name("Bold".into())),
+                                    );
+                                    let mut job = LayoutJob::simple_singleline(
+                                        config.output.to_string_lossy().into(),
+                                        ui.style()
+                                            .text_styles
+                                            .get(&egui::TextStyle::Body)
+                                            .unwrap()
+                                            .clone(),
+                                        ui.visuals().text_color(),
+                                    );
+                                    job.wrap = TextWrapping {
+                                        max_rows: 1,
+                                        max_width: ui.available_size_before_wrap().x,
+                                        ..Default::default()
+                                    };
+                                    ui.label(job).on_hover_text(config.output.to_string_lossy())
+                                });
+                                if !config.auto {
+                                    ui.add_space(4.);
+                                    if ui.add_enabled(pending, Button::new("Deploy")).clicked() {
+                                        self.do_update(super::Message::Deploy);
+                                    }
+                                }
+                            });
+                        });
+                    }
+                    None => {
+                        ui.centered_and_justified(|ui| {
+                            ui.label("No deployment config for current platform");
+                        });
+                    }
                 }
             }
             Tabs::Mods => {
@@ -57,6 +116,7 @@ impl TabViewer for super::App {
                 ui.add_space(4.);
                 self.render_modlist(ui);
                 ui.allocate_space(ui.available_size());
+                self.render_pending(ui);
             }
             Tabs::Log => {
                 egui::ScrollArea::new([true, true])

@@ -2,8 +2,8 @@ use super::{App, FocusedPane, Message, Sort};
 use crate::mods::Mod;
 use eframe::epaint::text::TextWrapping;
 use egui::{
-    text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, Label, LayerId, Layout, Response,
-    Sense, TextStyle, Ui, Vec2,
+    style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, Label, LayerId,
+    Layout, Response, Sense, TextStyle, Ui, Vec2,
 };
 use egui_extras::{Size, TableBuilder, TableRow};
 use im::vector;
@@ -33,71 +33,44 @@ impl App {
                 .size()
                 .x
         });
-        TableBuilder::new(ui)
-            .cell_sense(Sense::click_and_drag())
-            .striped(true)
-            .cell_layout(Layout::left_to_right(Align::Center))
-            .column(Size::exact(*icon_width))
-            .column(Size::remainder())
-            .column(Size::Absolute {
-                initial: 100.,
-                range: (16., 240.),
+        egui::Frame::none()
+            .inner_margin(Margin {
+                bottom: 4.0,
+                top: 4.0,
+                left: 4.0,
+                right: -16.0,
             })
-            .column(Size::exact(*numeric_col_width))
-            .column(Size::exact(*numeric_col_width))
-            .header(*text_height, |mut header| {
-                header.col(|ui| {
-                    let is_current = self.sort.0 == Sort::Enabled;
-                    let label = if is_current {
-                        if self.sort.1 {
-                            "⏷"
-                        } else {
-                            "⏶"
-                        }
-                    } else {
-                        "  "
-                    };
-                    if ui
-                        .add(Button::new(label).small().fill(Color32::TRANSPARENT))
-                        .clicked()
-                    {
-                        self.do_update(Message::ChangeSort(
-                            Sort::Enabled,
-                            if is_current {
-                                !self.sort.1
+            .show(ui, |ui| {
+                TableBuilder::new(ui)
+                    .cell_sense(Sense::click_and_drag())
+                    .striped(true)
+                    .cell_layout(Layout::left_to_right(Align::Center))
+                    .column(Size::exact(*icon_width))
+                    .column(Size::remainder())
+                    .column(Size::Absolute {
+                        initial: 100.,
+                        range: (16., 240.),
+                    })
+                    .column(Size::exact(*numeric_col_width))
+                    .column(Size::exact(*numeric_col_width))
+                    .header(*text_height, |mut header| {
+                        header.col(|ui| {
+                            let is_current = self.sort.0 == Sort::Enabled;
+                            let label = if is_current {
+                                if self.sort.1 {
+                                    "⏷"
+                                } else {
+                                    "⏶"
+                                }
                             } else {
-                                self.sort.1
-                            },
-                        ));
-                    }
-                });
-                [
-                    ("Mod Name", Sort::Name),
-                    ("Category", Sort::Category),
-                    ("Version", Sort::Version),
-                    ("Priority", Sort::Priority),
-                ]
-                .into_iter()
-                .for_each(|(label, sort)| {
-                    header.col(|ui| {
-                        let is_current = self.sort.0 == sort;
-                        let mut label = label.to_owned();
-                        if is_current {
-                            if self.sort.1 {
-                                label += " ⏷";
-                            } else {
-                                label += " ⏶";
-                            }
-                        } else {
-                            label += "  ";
-                        }
-                        ui.centered_and_justified(|ui| {
+                                "  "
+                            };
                             if ui
                                 .add(Button::new(label).small().fill(Color32::TRANSPARENT))
                                 .clicked()
                             {
                                 self.do_update(Message::ChangeSort(
-                                    sort,
+                                    Sort::Enabled,
                                     if is_current {
                                         !self.sort.1
                                     } else {
@@ -106,13 +79,49 @@ impl App {
                                 ));
                             }
                         });
+                        [
+                            ("Mod Name", Sort::Name),
+                            ("Category", Sort::Category),
+                            ("Version", Sort::Version),
+                            ("Priority", Sort::Priority),
+                        ]
+                        .into_iter()
+                        .for_each(|(label, sort)| {
+                            header.col(|ui| {
+                                let is_current = self.sort.0 == sort;
+                                let mut label = label.to_owned();
+                                if is_current {
+                                    if self.sort.1 {
+                                        label += " ⏷";
+                                    } else {
+                                        label += " ⏶";
+                                    }
+                                } else {
+                                    label += "  ";
+                                }
+                                ui.centered_and_justified(|ui| {
+                                    if ui
+                                        .add(Button::new(label).small().fill(Color32::TRANSPARENT))
+                                        .clicked()
+                                    {
+                                        self.do_update(Message::ChangeSort(
+                                            sort,
+                                            if is_current {
+                                                !self.sort.1
+                                            } else {
+                                                self.sort.1
+                                            },
+                                        ));
+                                    }
+                                });
+                            });
+                        });
+                    })
+                    .body(|body| {
+                        body.rows(*text_height, self.displayed_mods.len(), |index, row| {
+                            self.render_mod_row(index, row);
+                        });
                     });
-                });
-            })
-            .body(|body| {
-                body.rows(*text_height, self.displayed_mods.len(), |index, row| {
-                    self.render_mod_row(index, row);
-                });
             });
         if ui.memory().focus().is_none() && self.focused == FocusedPane::ModList {
             if ui.input().key_pressed(Key::ArrowDown) && let Some((last_index, _)) = self

@@ -1,9 +1,10 @@
 use super::Message;
-use crate::mods::Mod;
+use crate::{core::Manager, mods::Mod};
 use anyhow::{Context, Result};
 use fs_err as fs;
+use im::Vector;
 use std::{io::BufReader, path::Path};
-use uk_mod::unpack::ModReader;
+use uk_mod::{unpack::ModReader, Manifest};
 
 fn is_probably_a_mod(path: &Path) -> bool {
     let ext = path
@@ -61,4 +62,48 @@ pub fn open_mod(path: &Path) -> Result<Message> {
         }
     };
     Ok(Message::HandleMod(mod_))
+}
+
+pub fn apply_changes(core: &Manager, mods: Vector<Mod>, dirty: Manifest) -> Result<Message> {
+    let mod_manager = core.mod_manager();
+    log::info!("Applying pending changes to mod configuration");
+    log::info!("Updating mod states");
+    mods.iter()
+        .try_for_each(|m| -> Result<()> {
+            let mod_ = mod_manager
+                .all_mods()
+                .find(|m2| m2.hash == m.hash)
+                .unwrap()
+                .clone();
+            if !mod_.state_eq(m) {
+                mod_manager
+                    .set_enabled(m.hash, m.enabled)
+                    .with_context(|| {
+                        format!(
+                            "Failed to {} {}",
+                            if m.enabled { "enable" } else { "disable" },
+                            m.meta.name.as_str()
+                        )
+                    })?;
+                mod_manager
+                    .set_enabled_options(m.hash, m.enabled_options.clone())
+                    .with_context(|| {
+                        format!("Failed to update options on {}", m.meta.name.as_str())
+                    })?;
+            }
+            Ok(())
+        })
+        .context("Failed to update mod state")?;
+    log::info!("Updating load order");
+    let order = mods.iter().map(|m| m.hash).collect();
+    mod_manager.set_order(order);
+    mod_manager
+        .save()
+        .context("Failed to save mod configuration for current profile")?;
+    log::info!("Applying changes");
+    let deploy_manager = core.deploy_manager();
+    deploy_manager
+        .apply(Some(dirty))
+        .context("Failed to apply pending mod changes")?;
+    Ok(Message::ClearChanges)
 }

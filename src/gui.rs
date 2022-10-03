@@ -15,8 +15,8 @@ use eframe::{
 };
 use egui::{
     self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Button, Color32, ComboBox,
-    FontId, Frame, Id, Label, LayerId, Layout, RichText, Rounding, Sense, Spinner, TextFormat,
-    TextStyle, Ui, Vec2,
+    FontId, Frame, Id, Label, LayerId, Layout, Rect, RichText, Rounding, Sense, Spinner,
+    TextFormat, TextStyle, Ui, Vec2,
 };
 use egui_dock::{NodeIndex, Style, Tree};
 use flume::{Receiver, Sender};
@@ -212,6 +212,7 @@ pub enum Message {
     ChangeSort(Sort, bool),
     RefreshModsDisplay,
     ClearChanges,
+    Deploy,
 }
 
 struct App {
@@ -311,6 +312,12 @@ impl App {
                 Message::ClearChanges => {
                     self.busy = false;
                     self.dirty.clear();
+                    self.mods = self
+                        .core
+                        .mod_manager()
+                        .all_mods()
+                        .map(|m| m.clone())
+                        .collect();
                     self.do_update(Message::RefreshModsDisplay);
                 }
                 Message::RefreshModsDisplay => {
@@ -506,31 +513,13 @@ impl App {
                 Message::Apply => {
                     let mods = self.mods.clone();
                     let dirty = self.dirty.clone();
-                    self.do_task(move |core| {
-                        let mod_manager = core.mod_manager();
-                        mods.iter()
-                            .try_for_each(|m| -> Result<()> {
-                                let mod_ = mod_manager
-                                    .all_mods()
-                                    .find(|m2| m2.hash == m.hash)
-                                    .unwrap()
-                                    .clone();
-                                if !mod_.state_eq(m) {
-                                    mod_manager.set_enabled(m.hash, m.enabled)?;
-                                    mod_manager
-                                        .set_enabled_options(m.hash, m.enabled_options.clone())?;
-                                }
-                                Ok(())
-                            })
-                            .context("Failed to update mod state")?;
-                        let order = mods.iter().map(|m| m.hash).collect();
-                        mod_manager.set_order(order);
-                        mod_manager.save()?;
-                        let deploy_manager = core.deploy_manager();
-                        deploy_manager.apply(Some(dirty))?;
-                        Ok(Message::ClearChanges)
-                    });
+                    self.do_task(move |core| tasks::apply_changes(&core, mods, dirty));
                 }
+                Message::Deploy => self.do_task(move |core| {
+                    log::info!("Deploying current mod configuration");
+                    core.deploy_manager().deploy()?;
+                    Ok(Message::ClearChanges)
+                }),
                 Message::Remerge => {
                     self.do_task(|core| {
                         let deploy_manager = core.deploy_manager();
@@ -715,7 +704,6 @@ impl App {
             Tabs::Log,
         ] {
             let disabled = self.closed_tabs.contains_key(&tab);
-            let icon_width = ui.spacing().icon_width;
             if ui
                 .icon_text_button(
                     format!(" {tab}"),
@@ -742,51 +730,79 @@ impl App {
     }
 
     fn render_profile_menu(&mut self, ui: &mut Ui) {
-        ui.horizontal(|ui| {
-            let current_profile = self
-                .core
-                .settings()
-                .platform_config()
-                .map(|c| c.profile.to_string())
-                .unwrap_or_else(|| "Default".to_owned());
-            ComboBox::from_id_source("profiles")
-                .selected_text(&current_profile)
-                .show_ui(ui, |ui| {
-                    self.core.settings().profiles().for_each(|profile| {
-                        if ui
-                            .selectable_label(profile.as_str() == current_profile, profile.as_str())
-                            .clicked()
-                        {
-                            self.do_update(Message::ChangeProfile(profile.into()));
-                        }
+        egui::Frame::none()
+            .inner_margin(Margin {
+                left: 2.0,
+                ..Default::default()
+            })
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    let current_profile = self
+                        .core
+                        .settings()
+                        .platform_config()
+                        .map(|c| c.profile.to_string())
+                        .unwrap_or_else(|| "Default".to_owned());
+                    ComboBox::from_id_source("profiles")
+                        .selected_text(&current_profile)
+                        .show_ui(ui, |ui| {
+                            self.core.settings().profiles().for_each(|profile| {
+                                if ui
+                                    .selectable_label(
+                                        profile.as_str() == current_profile,
+                                        profile.as_str(),
+                                    )
+                                    .clicked()
+                                {
+                                    self.do_update(Message::ChangeProfile(profile.into()));
+                                }
+                            });
+                        })
+                        .response
+                        .on_hover_text("Select Mod Profile");
+                    ui.icon_button(Icon::Delete).on_hover_text("Delete Profile");
+                    ui.icon_button(Icon::Add).on_hover_text("New Profile");
+                    ui.icon_button(Icon::Menu).on_hover_text("Manage Profiles…");
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        ui.add_space(20.);
+                        ui.label(format!(
+                            "{} Mods / {} Active",
+                            self.mods.len(),
+                            self.mods.iter().filter(|m| m.enabled).count()
+                        ));
                     });
-                })
-                .response
-                .on_hover_text("Select Mod Profile");
-            ui.icon_button(Icon::Delete).on_hover_text("Delete Profile");
-            ui.icon_button(Icon::Add).on_hover_text("New Profile");
-            ui.icon_button(Icon::Menu).on_hover_text("Manage Profiles…");
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.add_space(20.);
-                ui.label(format!(
-                    "{} Mods / {} Active",
-                    self.mods.len(),
-                    self.mods.iter().filter(|m| m.enabled).count()
-                ));
+                });
             });
-        });
     }
 
-    fn render_pending(&self, ctx: &egui::Context) {
+    fn render_pending(&self, ui: &mut Ui) {
         if !self.dirty.is_empty() {
             egui::Window::new("Pending Changes")
-                .anchor(Align2::RIGHT_BOTTOM, [4.0, 4.0])
+                .anchor(Align2::RIGHT_BOTTOM, [-32.0, -32.0])
                 .collapsible(true)
-                .auto_sized()
-                .show(ctx, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.icon_text_button("Apply", Icon::Check);
-                        ui.icon_text_button("Cancel", Icon::Cancel);
+                .show(ui.ctx(), |ui| {
+                    ui.with_layout(Layout::top_down(Align::Center), |ui| {
+                        egui::ScrollArea::new([false, true])
+                            .id_source("pending_files")
+                            .auto_shrink([true, true])
+                            .max_height(200.)
+                            .show(ui, |ui| {
+                                egui::CollapsingHeader::new("Files Pending Update").show(
+                                    ui,
+                                    |ui| {
+                                        info::render_manifest(&self.dirty, ui);
+                                    },
+                                );
+                            });
+                        ui.add_space(4.0);
+                        ui.horizontal(|ui| {
+                            if ui.icon_text_button("Apply", Icon::Check).clicked() {
+                                self.do_update(Message::Apply);
+                            }
+                            if ui.icon_text_button("Cancel", Icon::Cancel).clicked() {
+                                self.do_update(Message::ClearChanges);
+                            }
+                        });
                     });
                 });
         }

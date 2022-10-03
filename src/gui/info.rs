@@ -11,7 +11,7 @@ use std::{
 use uk_mod::Manifest;
 
 pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
-    ui.vertical(|ui| {
+    egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
         ui.spacing_mut().item_spacing.y = 8.;
         ui.add_space(8.);
         if let Some(preview) = mod_.preview() {
