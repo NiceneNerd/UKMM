@@ -1,18 +1,23 @@
 use super::{
     icons::{self, IconButtonExt},
-    util::FolderPickerExt,
+    util::PickerExt,
     App, Message,
 };
-use crate::settings::{Language, Platform, PlatformSettings, Settings};
+use crate::settings::{DeployConfig, Language, Platform, PlatformSettings, Settings};
 use egui::{
     Align, Button, Checkbox, Id, ImageButton, InnerResponse, Layout, Memory, Response, RichText,
     TextStyle, Ui,
 };
-use parking_lot::{MappedRwLockWriteGuard, RwLockReadGuard, RwLockWriteGuard};
+use once_cell::sync::Lazy;
+use parking_lot::{MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use rustc_hash::FxHashMap;
+use serde::Deserialize;
 use std::{
     borrow::Cow,
     ops::{Deref, DerefMut},
+    path::{Path, PathBuf},
 };
+use uk_reader::ResourceReader;
 
 fn render_setting<R>(
     name: &str,
@@ -38,39 +43,181 @@ fn render_setting<R>(
     res
 }
 
-fn render_platform_config(config: &mut Option<PlatformSettings>, platform: Platform, ui: &mut Ui) {
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(tag = "type")]
+enum DumpType {
+    Unpacked {
+        host_path: PathBuf,
+        content_dir: Option<PathBuf>,
+        update_dir: Option<PathBuf>,
+        aoc_dir: Option<PathBuf>,
+    },
+    ZArchive {
+        content_dir: PathBuf,
+        update_dir: PathBuf,
+        aoc_dir: Option<PathBuf>,
+        host_path: PathBuf,
+    },
+}
+
+impl DumpType {
+    pub fn host_path(&self) -> &Path {
+        match self {
+            DumpType::Unpacked { host_path, .. } => host_path.as_path(),
+            DumpType::ZArchive { host_path, .. } => host_path.as_path(),
+        }
+    }
+}
+
+impl From<&ResourceReader> for DumpType {
+    fn from(reader: &ResourceReader) -> Self {
+        serde_json::from_str(&reader.source_ser()).unwrap()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct PlatformSettingsUI {
+    pub language: Language,
+    pub dump: DumpType,
+    pub deploy_config: DeployConfig,
+}
+
+impl Default for PlatformSettingsUI {
+    fn default() -> Self {
+        PlatformSettingsUI {
+            language: Language::USen,
+            dump: DumpType::Unpacked {
+                host_path: Default::default(),
+                content_dir: Default::default(),
+                update_dir: Default::default(),
+                aoc_dir: Default::default(),
+            },
+            deploy_config: Default::default(),
+        }
+    }
+}
+
+impl From<&PlatformSettings> for PlatformSettingsUI {
+    fn from(settings: &PlatformSettings) -> Self {
+        Self {
+            language: settings.language,
+            dump: settings.dump.as_ref().into(),
+            deploy_config: settings.deploy_config.as_ref().cloned().unwrap_or_default(),
+        }
+    }
+}
+
+impl PartialEq<PlatformSettings> for PlatformSettingsUI {
+    fn eq(&self, other: &PlatformSettings) -> bool {
+        self.language == other.language
+            && other.deploy_config.contains(&self.deploy_config)
+            && self.dump.host_path() == other.dump.source().host_path()
+    }
+}
+
+static CONFIG: Lazy<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
+    Lazy::new(|| RwLock::new(Default::default()));
+
+fn render_platform_config(
+    config: &mut Option<PlatformSettings>,
+    platform: Platform,
+    ui: &mut Ui,
+) -> bool {
+    let mut changed = false;
+    let mut conf_lock = CONFIG.write();
+    let config = conf_lock
+        .entry(platform)
+        .or_insert_with(|| config.as_ref().map(|c| c.into()).unwrap_or_default());
     render_setting(
         "Language",
         "Select the language and region corresponding to your game version and settings.",
         ui,
         |ui| {
-            let lang_id = Id::new("language").with(platform);
-            let mut language = *ui.memory().data.get_temp_mut_or_insert_with(lang_id, || {
-                config
-                    .as_ref()
-                    .map(|c| c.language)
-                    .unwrap_or(Language::USen)
-            });
             egui::ComboBox::new(format!("lang-{platform}"), "")
-                .selected_text(language.to_string())
+                .selected_text(config.language.to_str())
                 .show_ui(ui, |ui| {
                     enum_iterator::all::<Language>().for_each(|lang| {
-                        if ui
-                            .selectable_value(&mut language, lang, lang.to_string())
-                            .changed()
-                        {
-                            ui.memory().data.insert_temp(lang_id, language);
-                        }
+                        changed = changed
+                            || ui
+                                .selectable_value(&mut config.language, lang, lang.to_str())
+                                .changed();
                     });
                 });
         },
     );
+    if platform == Platform::WiiU {
+        render_setting("Dump Type", "Blah blah", ui, |ui| {
+            if ui
+                .radio(matches!(config.dump, DumpType::Unpacked { .. }), "Unpacked")
+                .clicked()
+            {
+                config.dump = DumpType::Unpacked {
+                    host_path: Default::default(),
+                    content_dir: Default::default(),
+                    update_dir: Default::default(),
+                    aoc_dir: Default::default(),
+                };
+                changed = true;
+            }
+            if ui
+                .radio(matches!(config.dump, DumpType::ZArchive { .. }), "WUA")
+                .clicked()
+            {
+                config.dump = DumpType::ZArchive {
+                    content_dir: Default::default(),
+                    update_dir: Default::default(),
+                    aoc_dir: Default::default(),
+                    host_path: Default::default(),
+                };
+                changed = true;
+            }
+        });
+    }
+    match &mut config.dump {
+        DumpType::Unpacked {
+            host_path: _,
+            content_dir,
+            update_dir,
+            aoc_dir,
+        } => {
+            render_setting("Base Folder", "Blah blah", ui, |ui| {
+                changed = changed
+                    || ui
+                        .folder_picker(content_dir.get_or_insert_default())
+                        .changed();
+            });
+            if platform == Platform::WiiU {
+                render_setting("Update Folder", "Blah blah", ui, |ui| {
+                    changed = changed
+                        || ui
+                            .folder_picker(update_dir.get_or_insert_default())
+                            .changed();
+                });
+            }
+            render_setting("DLC Folder", "Blah blah", ui, |ui| {
+                changed = changed || ui.folder_picker(aoc_dir.get_or_insert_default()).changed();
+            });
+        }
+        DumpType::ZArchive {
+            content_dir: _,
+            update_dir: _,
+            aoc_dir: _,
+            host_path,
+        } => {
+            render_setting("WUA Path", "Blah blah", ui, |ui| {
+                changed = changed || ui.file_picker(host_path).changed();
+            });
+        }
+    }
+    changed
 }
 
 impl App {
     pub fn render_settings(&mut self, ui: &mut Ui) {
         egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
             let settings = &mut self.temp_settings;
+            let mut wiiu_changed = false;
+            let mut switch_changed = false;
             ui.vertical(|ui| {
                 egui::CollapsingHeader::new("General")
                     .default_open(true)
@@ -110,14 +257,24 @@ impl App {
                 egui::CollapsingHeader::new("Wii U Config")
                     .show(ui, |ui| {
                         egui::Grid::new("wiiu_config").num_columns(2).spacing([8.0, 8.0]).show(ui, |ui| {
-                            render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
+                            wiiu_changed = render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
                         });
                     });
+                egui::CollapsingHeader::new("Switch Config")
+                .show(ui, |ui| {
+                    egui::Grid::new("switch_config").num_columns(2).spacing([8.0, 8.0]).show(ui, |ui| {
+                        switch_changed = render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
+                    });
+                });
             });
+            switch_changed = switch_changed || settings.switch_config.as_ref().and_then(|c| CONFIG.read().get(&Platform::Switch).map(|cc| cc.eq(c))).unwrap_or(false);
+            wiiu_changed = wiiu_changed || settings.wiiu_config.as_ref().and_then(|c| CONFIG.read().get(&Platform::WiiU).map(|cc| cc.eq(c))).unwrap_or(false);
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    ui.add_enabled_ui(self.temp_settings.ne(self.core.settings().deref()), |ui| {
+                    ui.add_enabled_ui({
+                        self.temp_settings.ne(self.core.settings().deref() )|| wiiu_changed || switch_changed
+                    }, |ui| {
                         if ui.button("Save").clicked() {
                             self.do_update(Message::SaveSettings);
                         }

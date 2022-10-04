@@ -80,6 +80,7 @@ impl PartialEq for ResourceReader {
 impl std::fmt::Debug for ResourceReader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ResourceReader")
+            .field("bin_type", &self.bin_type)
             .field("source", &self.source)
             .field("cache_len", &self.cache.entry_count())
             .finish()
@@ -87,6 +88,14 @@ impl std::fmt::Debug for ResourceReader {
 }
 
 impl ResourceReader {
+    pub fn source(&self) -> &dyn ResourceLoader {
+        self.source.as_ref()
+    }
+
+    pub fn source_ser(&self) -> std::string::String {
+        serde_json::to_string(&self.source).unwrap()
+    }
+
     pub fn from_zarchive(archive_path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
             source: Box::new(ZArchive::new(archive_path)?),

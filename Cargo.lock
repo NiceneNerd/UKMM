@@ -3653,6 +3653,7 @@ dependencies = [
  "once_cell",
  "roead",
  "serde",
+ "serde_json",
  "smartstring",
  "thiserror",
  "typetag",

@@ -111,9 +111,30 @@ pub enum Language {
     TWzh,
 }
 
-impl std::fmt::Display for Language {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+impl Language {
+    pub fn to_str(self) -> &'static str {
+        self.into()
+    }
+}
+
+impl From<Language> for &str {
+    fn from(lang: Language) -> Self {
+        match lang {
+            Language::USen => "USen",
+            Language::EUen => "EUen",
+            Language::USfr => "USfr",
+            Language::USes => "USes",
+            Language::EUde => "EUde",
+            Language::EUes => "EUes",
+            Language::EUfr => "EUfr",
+            Language::EUit => "EUit",
+            Language::EUnl => "EUnl",
+            Language::EUru => "EUru",
+            Language::CNzh => "CNzh",
+            Language::JPja => "JPja",
+            Language::KRko => "KRko",
+            Language::TWzh => "TWzh",
+        }
     }
 }
 
@@ -122,6 +143,16 @@ pub struct DeployConfig {
     pub output: PathBuf,
     pub method: DeployMethod,
     pub auto: bool,
+}
+
+impl Default for DeployConfig {
+    fn default() -> Self {
+        DeployConfig {
+            output: "".into(),
+            method: DeployMethod::Copy,
+            auto: false,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
