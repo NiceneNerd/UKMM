@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use enum_iterator::Sequence;
 use fs_err as fs;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
@@ -10,7 +11,7 @@ use std::{
 };
 use uk_reader::ResourceReader;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Platform {
     WiiU,
     Switch,
@@ -92,7 +93,7 @@ impl From<Platform> for rstb::Endian {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sequence, Serialize, Deserialize)]
 pub enum Language {
     USen,
     EUen,

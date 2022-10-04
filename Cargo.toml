@@ -15,6 +15,7 @@ egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", features 
 egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
 egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
 egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
+enum-iterator = "1.2.0"
 env_logger = "0.9.0"
 flume = "0.10.14"
 font-loader = "0.11.0"

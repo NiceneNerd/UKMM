@@ -5,10 +5,14 @@ use super::{
 };
 use crate::settings::{Language, Platform, PlatformSettings, Settings};
 use egui::{
-    Align, Button, Checkbox, Id, ImageButton, InnerResponse, Layout, Response, RichText, TextStyle,
-    Ui,
+    Align, Button, Checkbox, Id, ImageButton, InnerResponse, Layout, Memory, Response, RichText,
+    TextStyle, Ui,
 };
-use std::{borrow::Cow, ops::Deref};
+use parking_lot::{MappedRwLockWriteGuard, RwLockReadGuard, RwLockWriteGuard};
+use std::{
+    borrow::Cow,
+    ops::{Deref, DerefMut},
+};
 
 fn render_setting<R>(
     name: &str,
@@ -35,19 +39,29 @@ fn render_setting<R>(
 }
 
 fn render_platform_config(config: &mut Option<PlatformSettings>, platform: Platform, ui: &mut Ui) {
-    let mut language = config
-        .as_ref()
-        .map(|c| c.language)
-        .unwrap_or(Language::USen);
     render_setting(
         "Language",
         "Select the language and region corresponding to your game version and settings.",
         ui,
         |ui| {
-            egui::ComboBox::new(format!("lang-{platform}"), language.to_string())
+            let lang_id = Id::new("language").with(platform);
+            let mut language = *ui.memory().data.get_temp_mut_or_insert_with(lang_id, || {
+                config
+                    .as_ref()
+                    .map(|c| c.language)
+                    .unwrap_or(Language::USen)
+            });
+            egui::ComboBox::new(format!("lang-{platform}"), "")
                 .selected_text(language.to_string())
                 .show_ui(ui, |ui| {
-                    ui.selectable_label(false, "USen");
+                    enum_iterator::all::<Language>().for_each(|lang| {
+                        if ui
+                            .selectable_value(&mut language, lang, lang.to_string())
+                            .changed()
+                        {
+                            ui.memory().data.insert_temp(lang_id, language);
+                        }
+                    });
                 });
         },
     );
@@ -95,7 +109,9 @@ impl App {
                     });
                 egui::CollapsingHeader::new("Wii U Config")
                     .show(ui, |ui| {
-                        render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
+                        egui::Grid::new("wiiu_config").num_columns(2).spacing([8.0, 8.0]).show(ui, |ui| {
+                            render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
+                        });
                     });
             });
             ui.add_space(8.0);
