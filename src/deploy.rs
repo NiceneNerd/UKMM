@@ -157,10 +157,12 @@ impl Manager {
                         syncs.par_iter().try_for_each(|f: &String| -> Result<()> {
                             let out = dest.join(f.as_str());
                             fs::create_dir_all(out.parent().unwrap())?;
-                            fs::hard_link(source.join(f.as_str()), dest.join(f.as_str()))
-                                .with_context(|| {
-                                    format!("Failed to deploy {} to {}", f, out.display())
-                                })?;
+                            if out.exists() {
+                                fs::remove_file(&out)?;
+                            }
+                            fs::hard_link(source.join(f.as_str()), &out).with_context(|| {
+                                format!("Failed to deploy {} to {}", f, out.display())
+                            })?;
                             Ok(())
                         })?;
                     }
@@ -295,11 +297,8 @@ impl Manager {
                 .mods_by_manifest(&manifest)
                 .map(|m| {
                     ModReader::open(&m.path, m.enabled_options.clone())
+                        .inspect(|m| total_manifest.extend(&m.manifest))
                         .with_context(|| jstr!("Failed to open mod: {&m.meta.name}"))
-                        .map(|m| {
-                            total_manifest.extend(&m.manifest);
-                            m
-                        })
                 })
                 .collect::<Result<Vec<_>>>()?;
             self.handle_orphans(
@@ -313,14 +312,17 @@ impl Manager {
             ModUnpacker::new(dump, endian, mods, out_dir.clone()).with_manifest(manifest)
         } else {
             log::info!("Manifest not provided, remerging all mods");
+            let mut total_manifest = Manifest::default();
             let mods = mod_manager
                 .mods()
                 .map(|m| {
                     ModReader::open(&m.path, m.enabled_options.clone())
+                        .inspect(|m| total_manifest.extend(&m.manifest))
                         .with_context(|| jstr!("Failed to open mod: {&m.meta.name}"))
                 })
                 .collect::<Result<Vec<_>>>()?;
             util::remove_dir_all(&out_dir).context("Failed to clear merged folder")?;
+            self.pending_files.write().extend(&total_manifest);
             ModUnpacker::new(dump, endian, mods, out_dir.clone())
         };
         log::info!("Applying changes");

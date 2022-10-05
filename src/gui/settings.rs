@@ -179,6 +179,30 @@ impl PartialEq<PlatformSettings> for PlatformSettingsUI {
 static CONFIG: Lazy<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
     Lazy::new(|| RwLock::new(Default::default()));
 
+fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
+    ui.label("Deployment");
+    ui.separator();
+    ui.end_row();
+    let mut changed = false;
+    render_setting("Deploy Method", "There are three methods of deployment: copying, hard linking, and symlinking. Generally copying is slow and should be avoided if possible. For more on this, consult the docs.", ui, |ui| {
+        changed = changed || ui.radio_value(&mut config.method, crate::settings::DeployMethod::Copy, "Copy").changed();
+        changed = changed || ui.radio_value(&mut config.method, crate::settings::DeployMethod::HardLink, "Hard Links").changed();
+        changed = changed || ui.radio_value(&mut config.method, crate::settings::DeployMethod::Symlink, "Symlink").changed();
+    });
+    render_setting("Auto Deploy", "Whether to automatically deploy changes to the mod configuration every time they are applied.", ui, |ui| {
+        changed = changed || ui.checkbox(&mut config.auto, "").changed();
+    });
+    render_setting(
+        "Output Folder",
+        "Where to deploy the final merged mod pack.",
+        ui,
+        |ui| {
+            changed = changed || ui.folder_picker(&mut config.output).changed();
+        },
+    );
+    changed
+}
+
 fn render_platform_config(
     config: &mut Option<PlatformSettings>,
     platform: Platform,
@@ -206,6 +230,9 @@ fn render_platform_config(
                 });
         },
     );
+    ui.label("Game Dump");
+    ui.separator();
+    ui.end_row();
     if platform == Platform::WiiU {
         render_setting("Dump Type", "Blah blah", ui, |ui| {
             if ui
@@ -279,6 +306,7 @@ fn render_platform_config(
             });
         }
     }
+    changed = changed || render_deploy_config(&mut config.deploy_config, ui);
     changed
 }
 
