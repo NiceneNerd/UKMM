@@ -23,7 +23,7 @@ jobs:
     - name: Build
       run: cargo +nightly build --verbose --release
     - name: Run `uk-content` tests
-      run: cargo +nightly test --release --package uk-content
+      run: cargo +nightly test --package uk-content
   
   build_windows:
 
@@ -38,4 +38,4 @@ jobs:
     - name: Build
       run: cargo +nightly build --verbose --release
     - name: Run `uk-content` tests
-      run: cargo +nightly test --release --package uk-content
+      run: cargo +nightly test --package uk-content
