@@ -9,18 +9,18 @@ mod tasks;
 mod util;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod, settings::Settings};
-use anyhow::{Context, Result};
+use anyhow::{Result};
 use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::{text::TextWrapping, FontFamily},
     NativeOptions,
 };
 use egui::{
-    self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Button, Color32, ComboBox,
-    FontId, Frame, Id, Label, LayerId, Layout, Rect, RichText, Rounding, Sense, Spinner,
+    self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox,
+    FontId, Frame, Id, Label, LayerId, Layout, RichText, Rounding, Spinner,
     TextFormat, TextStyle, Ui, Vec2,
 };
-use egui_dock::{NodeIndex, Style, Tree};
+use egui_dock::{NodeIndex, Tree};
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
@@ -30,7 +30,7 @@ use join_str::jstr;
 use once_cell::sync::OnceCell;
 use picker::FilePickerState;
 use std::{
-    ops::{Deref, DerefMut},
+    ops::{DerefMut},
     path::PathBuf,
     sync::{Arc, Once},
     thread,
@@ -448,7 +448,7 @@ impl App {
                         self.picker_state.set_path(path);
                     }
                 }
-                Message::ChangeProfile(profile) => {
+                Message::ChangeProfile(_profile) => {
                     todo!("Change profile");
                 }
                 Message::SetFocus(pane) => {

@@ -1,4 +1,4 @@
-use egui::{Align, Direction, Layout, Response, Ui};
+use egui::{Direction, Response, Ui};
 use std::path::PathBuf;
 
 pub trait PickerExt {

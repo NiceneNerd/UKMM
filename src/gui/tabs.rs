@@ -5,13 +5,13 @@ use egui::{
     Stroke, Ui, WidgetText,
 };
 use egui_dock::{NodeIndex, TabViewer, Tree};
-use join_str::jstr;
+
 
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Settings]);
     let [main, side] = tree.split_right(0.into(), 0.9, vec![Tabs::Info, Tabs::Install]);
-    let [side_top, side_bottom] = tree.split_below(side, 0.6, vec![Tabs::Deploy]);
-    let [main, log] = tree.split_below(main, 0.99, vec![Tabs::Log]);
+    let [_side_top, _side_bottom] = tree.split_below(side, 0.6, vec![Tabs::Deploy]);
+    let [_main, _log] = tree.split_below(main, 0.99, vec![Tabs::Log]);
     tree
 }
 

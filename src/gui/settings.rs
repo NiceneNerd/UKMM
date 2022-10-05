@@ -1,21 +1,20 @@
 use super::{
-    icons::{self, IconButtonExt},
+    icons::{self},
     util::PickerExt,
     App, Message,
 };
-use crate::settings::{DeployConfig, Language, Platform, PlatformSettings, Settings};
+use crate::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use anyhow::Result;
 use egui::{
-    Align, Button, Checkbox, Id, ImageButton, InnerResponse, Layout, Memory, Response, RichText,
+    Align, Checkbox, ImageButton, InnerResponse, Layout, RichText,
     TextStyle, Ui,
 };
 use once_cell::sync::Lazy;
-use parking_lot::{MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{RwLock};
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
 use std::{
-    borrow::Cow,
-    ops::{Deref, DerefMut},
+    ops::{Deref},
     path::{Path, PathBuf},
     sync::Arc,
 };

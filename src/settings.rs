@@ -138,7 +138,7 @@ impl From<Language> for &str {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeployConfig {
     pub output: PathBuf,
     pub method: DeployMethod,
@@ -181,7 +181,7 @@ pub struct PlatformSettings {
     pub deploy_config: Option<DeployConfig>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UiSettings {
     pub dark: bool,
 }

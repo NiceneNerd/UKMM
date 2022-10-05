@@ -43,7 +43,7 @@ pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
         ui.label(RichText::new("Manifest").family(egui::FontFamily::Name("Bold".into())));
         match mod_.manifest() {
             Ok(manifest) => render_manifest(&manifest, ui),
-            Err(e) => {
+            Err(_e) => {
                 ui.label(RichText::new("FAILED TO LOAD MANIFEST").strong());
             }
         }

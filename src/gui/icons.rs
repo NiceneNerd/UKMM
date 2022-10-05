@@ -1,4 +1,4 @@
-use egui::{Button, Color32, ImageButton, Response, TextureHandle, TextureId, Ui, WidgetText};
+use egui::{Button, ImageButton, Response, TextureId, Ui, WidgetText};
 use egui_extras::RetainedImage;
 use once_cell::sync::OnceCell;
 use rustc_hash::FxHashMap;

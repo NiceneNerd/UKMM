@@ -1,6 +1,5 @@
 use eframe::epaint::{color_hex::color_from_hex, Shadow};
 use egui::{
-    hex_color,
     style::{Selection, WidgetVisuals, Widgets},
     Color32, Rounding, Stroke, Visuals,
 };
@@ -17,22 +16,6 @@ pub const BLUE: Color32 = from_hex!("#38b6f1");
 pub const RED: Color32 = from_hex!("#F52331");
 pub const YELLOW: Color32 = from_hex!("#ffbc28");
 pub const ORGANGE: Color32 = from_hex!("#ff953f");
-
-const fn darken(color: Color32, percentage: usize) -> Color32 {
-    Color32::from_rgb(
-        (((color.r() as usize * 100) - (percentage * 100)) / 100) as u8,
-        (((color.g() as usize * 100) - (percentage * 100)) / 100) as u8,
-        (((color.b() as usize * 100) - (percentage * 100)) / 100) as u8,
-    )
-}
-
-const fn lighten(color: Color32, percentage: usize) -> Color32 {
-    Color32::from_rgb(
-        (((color.r() as usize * 100) + (percentage * 100)) / 100) as u8,
-        (((color.g() as usize * 100) + (percentage * 100)) / 100) as u8,
-        (((color.b() as usize * 100) + (percentage * 100)) / 100) as u8,
-    )
-}
 
 pub fn default_dark() -> Visuals {
     Visuals {
