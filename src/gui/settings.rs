@@ -4,6 +4,7 @@ use super::{
     App, Message,
 };
 use crate::settings::{DeployConfig, Language, Platform, PlatformSettings, Settings};
+use anyhow::Result;
 use egui::{
     Align, Button, Checkbox, Id, ImageButton, InnerResponse, Layout, Memory, Response, RichText,
     TextStyle, Ui,
@@ -16,6 +17,7 @@ use std::{
     borrow::Cow,
     ops::{Deref, DerefMut},
     path::{Path, PathBuf},
+    sync::Arc,
 };
 use uk_reader::ResourceReader;
 
@@ -67,6 +69,31 @@ impl DumpType {
             DumpType::ZArchive { host_path, .. } => host_path.as_path(),
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            DumpType::Unpacked {
+                content_dir,
+                update_dir,
+                aoc_dir,
+                ..
+            } => {
+                content_dir
+                    .as_ref()
+                    .map(|d| d.as_os_str().is_empty())
+                    .unwrap_or(true)
+                    && update_dir
+                        .as_ref()
+                        .map(|d| d.as_os_str().is_empty())
+                        .unwrap_or(true)
+                    && aoc_dir
+                        .as_ref()
+                        .map(|d| d.as_os_str().is_empty())
+                        .unwrap_or(true)
+            }
+            DumpType::ZArchive { host_path, .. } => host_path.as_os_str().is_empty(),
+        }
+    }
 }
 
 impl From<&ResourceReader> for DumpType {
@@ -78,6 +105,7 @@ impl From<&ResourceReader> for DumpType {
 #[derive(Debug, Clone, PartialEq)]
 struct PlatformSettingsUI {
     pub language: Language,
+    pub profile: String,
     pub dump: DumpType,
     pub deploy_config: DeployConfig,
 }
@@ -86,6 +114,7 @@ impl Default for PlatformSettingsUI {
     fn default() -> Self {
         PlatformSettingsUI {
             language: Language::USen,
+            profile: "Default".into(),
             dump: DumpType::Unpacked {
                 host_path: Default::default(),
                 content_dir: Default::default(),
@@ -97,10 +126,42 @@ impl Default for PlatformSettingsUI {
     }
 }
 
+impl TryFrom<PlatformSettingsUI> for PlatformSettings {
+    type Error = anyhow::Error;
+    fn try_from(settings: PlatformSettingsUI) -> Result<Self> {
+        let dump = match settings.dump {
+            DumpType::Unpacked {
+                content_dir,
+                update_dir,
+                aoc_dir,
+                ..
+            } => Arc::new(ResourceReader::from_unpacked_dirs(
+                content_dir,
+                update_dir,
+                aoc_dir,
+            )?),
+            DumpType::ZArchive { host_path, .. } => {
+                Arc::new(ResourceReader::from_zarchive(host_path)?)
+            }
+        };
+        Ok(Self {
+            language: settings.language,
+            profile: settings.profile.into(),
+            dump,
+            deploy_config: if settings.deploy_config.output.as_os_str().is_empty() {
+                None
+            } else {
+                Some(settings.deploy_config)
+            },
+        })
+    }
+}
+
 impl From<&PlatformSettings> for PlatformSettingsUI {
     fn from(settings: &PlatformSettings) -> Self {
         Self {
             language: settings.language,
+            profile: settings.profile.to_string(),
             dump: settings.dump.as_ref().into(),
             deploy_config: settings.deploy_config.as_ref().cloned().unwrap_or_default(),
         }
@@ -175,27 +236,36 @@ fn render_platform_config(
     }
     match &mut config.dump {
         DumpType::Unpacked {
-            host_path: _,
+            host_path,
             content_dir,
             update_dir,
             aoc_dir,
         } => {
             render_setting("Base Folder", "Blah blah", ui, |ui| {
-                changed = changed
-                    || ui
-                        .folder_picker(content_dir.get_or_insert_default())
-                        .changed();
+                if ui
+                    .folder_picker(content_dir.get_or_insert_default())
+                    .changed()
+                {
+                    changed = true;
+                    *host_path = "/".into();
+                }
             });
             if platform == Platform::WiiU {
                 render_setting("Update Folder", "Blah blah", ui, |ui| {
-                    changed = changed
-                        || ui
-                            .folder_picker(update_dir.get_or_insert_default())
-                            .changed();
+                    if ui
+                        .folder_picker(update_dir.get_or_insert_default())
+                        .changed()
+                    {
+                        changed = true;
+                        *host_path = "/".into();
+                    }
                 });
             }
             render_setting("DLC Folder", "Blah blah", ui, |ui| {
-                changed = changed || ui.folder_picker(aoc_dir.get_or_insert_default()).changed();
+                if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
+                    changed = true;
+                    *host_path = "/".into();
+                }
             });
         }
         DumpType::ZArchive {
@@ -215,10 +285,10 @@ fn render_platform_config(
 impl App {
     pub fn render_settings(&mut self, ui: &mut Ui) {
         egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
-            let settings = &mut self.temp_settings;
             let mut wiiu_changed = false;
             let mut switch_changed = false;
             ui.vertical(|ui| {
+                let settings = &mut self.temp_settings;
                 egui::CollapsingHeader::new("General")
                     .default_open(true)
                     .show(ui, |ui| {
@@ -267,18 +337,50 @@ impl App {
                     });
                 });
             });
-            switch_changed = switch_changed || settings.switch_config.as_ref().and_then(|c| CONFIG.read().get(&Platform::Switch).map(|cc| cc.eq(c))).unwrap_or(false);
-            wiiu_changed = wiiu_changed || settings.wiiu_config.as_ref().and_then(|c| CONFIG.read().get(&Platform::WiiU).map(|cc| cc.eq(c))).unwrap_or(false);
+            switch_changed = switch_changed || {
+                match (CONFIG.read().get(&Platform::Switch), self.temp_settings.switch_config.as_ref()) {
+                    (None, None) | (None, Some(_)) => false,
+                    (Some(config), None) => !config.dump.is_empty() || !config.deploy_config.output.as_os_str().is_empty(),
+                    (Some(tmp_config), Some(config)) => tmp_config.ne(config),
+                }
+            };
+            wiiu_changed = wiiu_changed || {
+                match (CONFIG.read().get(&Platform::WiiU), self.temp_settings.wiiu_config.as_ref()) {
+                    (None, None) | (None, Some(_)) => false,
+                    (Some(config), None) => !config.dump.is_empty() || !config.deploy_config.output.as_os_str().is_empty(),
+                    (Some(tmp_config), Some(config)) => tmp_config.ne(config),
+                }
+            };
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    ui.add_enabled_ui({
-                        self.temp_settings.ne(self.core.settings().deref() )|| wiiu_changed || switch_changed
-                    }, |ui| {
+                    let platform_config_changed = self.temp_settings.ne(self.core.settings().deref() )|| wiiu_changed || switch_changed;
+                    ui.add_enabled_ui(platform_config_changed, |ui| {
                         if ui.button("Save").clicked() {
+                            if wiiu_changed {
+                                let wiiu_config = CONFIG.write().remove(&Platform::WiiU).unwrap().try_into();
+                                match wiiu_config {
+                                    Ok(conf) => self.temp_settings.wiiu_config = Some(conf),
+                                    Err(e) => {
+                                        self.do_update(Message::Error(e));
+                                        return;
+                                    },
+                                }
+                            }
+                            if switch_changed {
+                                let switch_config = CONFIG.write().remove(&Platform::Switch).unwrap().try_into();
+                                match switch_config {
+                                    Ok(conf) => self.temp_settings.switch_config = Some(conf),
+                                    Err(e) => {
+                                        self.do_update(Message::Error(e));
+                                        return;
+                                    },
+                                }
+                            }
                             self.do_update(Message::SaveSettings);
                         }
                         if ui.button("Reset").clicked() {
+                            CONFIG.write().clear();
                             self.do_update(Message::ResetSettings);
                         }
                     })
