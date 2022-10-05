@@ -22,8 +22,8 @@ jobs:
         toolchain: nightly
     - name: Build
       run: cargo +nightly build --verbose --release
-    - name: Run tests
-      run: cargo +nightly test --all --release --verbose
+    - name: Run `uk-content` tests
+      run: cargo +nightly test --release --package uk-content
   
   build_windows:
 
@@ -37,5 +37,5 @@ jobs:
         toolchain: nightly
     - name: Build
       run: cargo +nightly build --verbose --release
-    - name: Run tests
-      run: cargo +nightly test --all --release --verbose
+    - name: Run `uk-content` tests
+      run: cargo +nightly test --release --package uk-content
