@@ -2,7 +2,7 @@ use super::{
     icons::{get_icon, Icon, IconButtonExt},
     visuals, App, FocusedPane, Message,
 };
-use egui::{style::Margin, text::LayoutJob, Align, Button, Key, TextFormat, Ui, Vec2};
+use egui::{Button, Key, Ui, Vec2};
 use fs_err as fs;
 use im::Vector;
 use std::path::{Path, PathBuf};
@@ -85,7 +85,7 @@ impl App {
                     (
                         Icon::FolderOpen,
                         "Open Mod…",
-                        Box::new(|| self.do_update(Message::ClearSelect)) as Box<dyn FnOnce()>,
+                        Box::new(|| self.do_update(Message::SelectFile)) as Box<dyn FnOnce()>,
                     ),
                     (
                         Icon::ArrowUp,
@@ -112,6 +112,7 @@ impl App {
                 .show(ui, |ui| {
                     ui.add_space(8.);
                     ui.style_mut().spacing.item_spacing.y = 4.;
+                    ui.style_mut().visuals.widgets.inactive.bg_stroke.width = 0.0;
                     let entries = &self.picker_state.entries;
                     if self.focused == FocusedPane::FilePicker {
                         if ui.input().key_pressed(Key::ArrowDown) {

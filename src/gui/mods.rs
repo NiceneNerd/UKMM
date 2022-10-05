@@ -38,12 +38,12 @@ impl App {
                 bottom: 4.0,
                 top: 4.0,
                 left: 4.0,
-                right: -16.0,
+                right: -12.0,
             })
             .show(ui, |ui| {
                 TableBuilder::new(ui)
                     .cell_sense(Sense::click_and_drag())
-                    .striped(true)
+                    // .striped(true)
                     .cell_layout(Layout::left_to_right(Align::Center))
                     .column(Size::exact(*icon_width))
                     .column(Size::remainder())
@@ -65,6 +65,7 @@ impl App {
                             } else {
                                 "  "
                             };
+                            ui.style_mut().visuals.widgets.inactive.bg_stroke.width = 0.0;
                             if ui
                                 .add(Button::new(label).small().fill(Color32::TRANSPARENT))
                                 .clicked()
@@ -100,6 +101,7 @@ impl App {
                                     label += "  ";
                                 }
                                 ui.centered_and_justified(|ui| {
+                                    ui.style_mut().visuals.widgets.inactive.bg_stroke.width = 0.0;
                                     if ui
                                         .add(Button::new(label).small().fill(Color32::TRANSPARENT))
                                         .clicked()

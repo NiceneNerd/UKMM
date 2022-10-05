@@ -1,6 +1,9 @@
 use super::{visuals, Tabs};
 use eframe::epaint::text::TextWrapping;
-use egui::{text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText};
+use egui::{
+    text::LayoutJob, Align, Button, Color32, Label, Layout, Rect, RichText, Rounding, Sense,
+    Stroke, Ui, WidgetText,
+};
 use egui_dock::{NodeIndex, TabViewer, Tree};
 use join_str::jstr;
 
@@ -114,23 +117,40 @@ impl TabViewer for super::App {
             Tabs::Mods => {
                 self.render_profile_menu(ui);
                 ui.add_space(4.);
-                self.render_modlist(ui);
-                ui.allocate_space(ui.available_size());
-                self.render_pending(ui);
+                egui::Frame::none()
+                    .fill(ui.style().visuals.extreme_bg_color)
+                    .inner_margin(0.0)
+                    .outer_margin(0.0)
+                    .show(ui, |ui| {
+                        self.render_modlist(ui);
+                        ui.allocate_space(ui.available_size());
+                        self.render_pending(ui);
+                        ui.painter().rect_stroke(
+                            Rect::from_center_size(ui.cursor().center(), [10.0, 10.0].into()),
+                            Rounding::none(),
+                            Stroke::new(1.0, Color32::LIGHT_BLUE),
+                        );
+                    });
             }
             Tabs::Log => {
-                egui::ScrollArea::new([true, true])
-                    .auto_shrink([false, true])
-                    .stick_to_bottom(true)
+                egui::Frame::none()
+                    .fill(ui.style().visuals.extreme_bg_color)
+                    .inner_margin(-2.0)
+                    .outer_margin(0.0)
                     .show(ui, |ui| {
-                        if ui
-                            .add(Label::new(self.log.clone()).sense(Sense::click()))
-                            .on_hover_text("Click to copy")
-                            .clicked()
-                        {
-                            ui.output().copied_text = self.log.text.clone();
-                        }
-                        ui.shrink_height_to_current();
+                        egui::ScrollArea::new([true, true])
+                            .auto_shrink([false, true])
+                            .stick_to_bottom(true)
+                            .show(ui, |ui| {
+                                if ui
+                                    .add(Label::new(self.log.clone()).sense(Sense::click()))
+                                    .on_hover_text("Click to copy")
+                                    .clicked()
+                                {
+                                    ui.output().copied_text = self.log.text.clone();
+                                }
+                                ui.allocate_space(ui.available_size());
+                            });
                     });
                 ui.shrink_height_to_current();
             }

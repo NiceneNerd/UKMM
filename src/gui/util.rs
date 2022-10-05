@@ -9,7 +9,7 @@ pub trait PickerExt {
 fn render_picker(folder: bool, ui: &mut Ui, value: &mut PathBuf) -> Response {
     let mut path = value.display().to_string();
     ui.scope(|ui| {
-        ui.spacing_mut().item_spacing.x = 2.0;
+        ui.spacing_mut().item_spacing.x = 4.0;
         if ui.layout().main_dir() == Direction::LeftToRight {
             let res = ui.text_edit_singleline(&mut path);
             if res.changed() {
@@ -18,7 +18,7 @@ fn render_picker(folder: bool, ui: &mut Ui, value: &mut PathBuf) -> Response {
             res
         } else {
             let mut changed = false;
-            if ui.small_button("Browse…").clicked()
+            if ui.button("Browse…").clicked()
                 && let Some(folder) = {
                     if folder {
                         rfd::FileDialog::new().pick_folder()

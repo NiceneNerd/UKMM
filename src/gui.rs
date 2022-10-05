@@ -185,6 +185,7 @@ impl Sort {
 }
 
 pub enum Message {
+    Noop,
     Log(Entry),
     Confirm(Box<Message>, String),
     CloseConfirm,
@@ -201,6 +202,7 @@ pub enum Message {
     FilePickerSet(Option<PathBuf>),
     ChangeProfile(String),
     SetFocus(FocusedPane),
+    SelectFile,
     OpenMod(PathBuf),
     HandleMod(Mod),
     RequestOptions(Mod),
@@ -249,6 +251,7 @@ impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
         load_fonts(&cc.egui_ctx);
         cc.egui_ctx.set_pixels_per_point(1.);
+        cc.egui_ctx.set_visuals(visuals::default_dark());
         let core = Arc::new(Manager::init().unwrap());
         let mods: Vector<_> = core.mod_manager().all_mods().map(|m| m.clone()).collect();
         let (send, recv) = flume::unbounded();
@@ -310,6 +313,7 @@ impl App {
     fn handle_update(&mut self, ctx: &eframe::egui::Context) {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
+                Message::Noop => self.busy = false,
                 Message::Log(entry) => {
                     entry.format(&mut self.log);
                     self.logs.push_back(entry);
@@ -449,6 +453,18 @@ impl App {
                 }
                 Message::SetFocus(pane) => {
                     self.focused = pane;
+                }
+                Message::SelectFile => {
+                    self.do_task(move |_| {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("UKMM Mod (*.zip)", &["*.zip"])
+                            .pick_file()
+                        {
+                            tasks::open_mod(&path)
+                        } else {
+                            Ok(Message::Noop)
+                        }
+                    });
                 }
                 Message::OpenMod(path) => {
                     self.do_task(move |_| tasks::open_mod(&path));
@@ -692,9 +708,10 @@ impl App {
 
     fn render_menu(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+            ui.style_mut().visuals.button_frame = false;
             ui.set_enabled(!self.modal_open());
             ui.horizontal(|ui| {
-                ui.menu_button("File", Self::file_menu);
+                ui.menu_button("File", |ui| self.file_menu(ui));
                 ui.menu_button("Edit", Self::edit_menu);
                 ui.menu_button("Tools", |ui| self.tool_menu(ui));
                 ui.menu_button("Window", |ui| self.window_menu(ui));
@@ -702,9 +719,9 @@ impl App {
         });
     }
 
-    fn file_menu(ui: &mut Ui) {
+    fn file_menu(&self, ui: &mut Ui) {
         if ui.button("Open mod…").clicked() {
-            todo!("Open mod");
+            self.do_update(Message::SelectFile);
         }
     }
 
@@ -825,14 +842,16 @@ impl App {
                                     },
                                 );
                             });
-                        ui.add_space(4.0);
+                        ui.add_space(8.0);
                         ui.horizontal(|ui| {
-                            if ui.icon_text_button("Apply", Icon::Check).clicked() {
-                                self.do_update(Message::Apply);
-                            }
-                            if ui.icon_text_button("Cancel", Icon::Cancel).clicked() {
-                                self.do_update(Message::ClearChanges);
-                            }
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                if ui.icon_text_button("Apply", Icon::Check).clicked() {
+                                    self.do_update(Message::Apply);
+                                }
+                                if ui.icon_text_button("Cancel", Icon::Cancel).clicked() {
+                                    self.do_update(Message::ClearChanges);
+                                }
+                            });
                         });
                     });
                 });
@@ -871,8 +890,17 @@ impl eframe::App for App {
                         egui_dock::StyleBuilder::from_egui(&ui.ctx().style())
                             .show_close_buttons(false)
                             .with_border_width(0.0)
-                            .with_padding(Margin::symmetric(4.0, 2.0))
-                            .with_tab_rounding(Rounding::same(2.0))
+                            .with_tab_rounding(Rounding {
+                                ne: 2.0,
+                                nw: 2.0,
+                                ..Default::default()
+                            })
+                            .with_tab_outline_color(
+                                ui.style().visuals.widgets.noninteractive.bg_stroke.color,
+                            )
+                            .with_border_width(0.5)
+                            .with_separator_width(0.5)
+                            .with_padding(Margin::default())
                             .build()
                     })
                     .clone(),
