@@ -6,6 +6,7 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use std::{
+    ffi::OsStr,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -283,7 +284,9 @@ impl Settings {
                     .filter_map(|entry| {
                         entry
                             .path()
-                            .is_dir()
+                            .extension()
+                            .map(|e| e == OsStr::new("yml"))
+                            .unwrap_or(false)
                             .then(|| entry.file_name().to_string_lossy().into())
                     })
             })
@@ -291,9 +294,7 @@ impl Settings {
 
     #[inline]
     pub fn mods_dir(&self) -> PathBuf {
-        self.platform_config()
-            .map(|config| self.profiles_dir().join(config.profile.as_str()))
-            .unwrap_or_else(|| self.profiles_dir().join("Default"))
+        self.platform_dir().join("mods")
     }
 
     #[inline]

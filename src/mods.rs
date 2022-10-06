@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use egui_extras::RetainedImage;
 use fs_err as fs;
 use once_cell::sync::Lazy;
-use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
+use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use std::{
@@ -159,71 +159,64 @@ pub struct ModIterator<'a> {
     index: usize,
 }
 
-impl<'a> Iterator for ModIterator<'a> {
-    type Item = MappedRwLockReadGuard<'a, Mod>;
-    fn next(&mut self) -> Option<Self::Item> {
-        let mods = self.manager.mods.read();
-        let loads = self.manager.load_order.read();
-        if self.index < loads.len() {
-            let hash = loads[self.index];
-            self.index += 1;
-            Some(RwLockReadGuard::map(mods, |m| &m[&hash]))
-        } else {
-            None
-        }
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct Profile {
+    mods: RwLock<HashMap<usize, Mod>>,
+    load_order: RwLock<Vec<usize>>,
+}
+
+impl Profile {
+    pub fn mods(&self) -> RwLockReadGuard<HashMap<usize, Mod>> {
+        self.mods.read()
+    }
+
+    pub fn mods_mut(&self) -> RwLockWriteGuard<HashMap<usize, Mod>> {
+        self.mods.write()
+    }
+
+    pub fn load_order(&self) -> RwLockReadGuard<Vec<usize>> {
+        self.load_order.read()
+    }
+
+    pub fn load_order_mut(&self) -> RwLockWriteGuard<Vec<usize>> {
+        self.load_order.write()
     }
 }
 
 #[derive(Debug)]
 pub struct Manager {
-    dir: PathBuf,
-    mods: RwLock<HashMap<usize, Mod>>,
-    load_order: RwLock<Vec<usize>>,
+    path: PathBuf,
+    profile: Profile,
     settings: Weak<RwLock<Settings>>,
 }
 
 impl Manager {
-    pub fn init_from(mod_dir: &Path, settings: &Arc<RwLock<Settings>>) -> Result<Self> {
+    pub fn init_from(path: &Path, settings: &Arc<RwLock<Settings>>) -> Result<Self> {
         log::info!("Initializing mod manager");
-        if !mod_dir.exists() {
-            fs::create_dir_all(mod_dir)?;
-            log::info!("Created mod directory at {}", mod_dir.display());
+        if !path.exists() {
+            log::info!("Creating profile at {}", path.display());
             let self_ = Self {
-                dir: mod_dir.to_path_buf(),
-                mods: Default::default(),
-                load_order: Default::default(),
+                path: path.to_path_buf(),
+                profile: Default::default(),
                 settings: Arc::downgrade(settings),
             };
             self_.save()?;
             return Ok(self_);
         }
-        let mods = serde_yaml::from_str(&fs::read_to_string(mod_dir.join("mods.yml"))?)
+        let profile = serde_yaml::from_str(&fs::read_to_string(path)?)
             .context("Failed to parse mod database")?;
-        log::debug!("Mods:\n{:?}", &mods);
-        let load_order = serde_yaml::from_str(&fs::read_to_string(mod_dir.join("load.yml"))?)
-            .context("Failed to parse load order table")?;
-        log::debug!("Load order:\n{:?}", &load_order);
+        log::debug!("Profile data:\n{:?}", &profile);
         Ok(Self {
-            dir: mod_dir.to_path_buf(),
-            mods: RwLock::new(mods),
-            load_order: RwLock::new(load_order),
+            path: path.to_path_buf(),
+            profile,
             settings: Arc::downgrade(settings),
         })
     }
 
     pub fn save(&self) -> Result<()> {
-        fs::write(
-            self.dir.join("mods.yml"),
-            serde_yaml::to_string(self.mods.read().deref())?,
-        )?;
-        log::info!("Saved mod list");
-        log::debug!("{:?}", &self.mods);
-        fs::write(
-            self.dir.join("load.yml"),
-            serde_yaml::to_string(self.load_order.read().deref())?,
-        )?;
-        log::info!("Saved load order");
-        log::debug!("{:?}", &self.load_order);
+        fs::write(self.path, serde_yaml::to_string(&self.profile)?)?;
+        log::info!("Saved profile data");
+        log::debug!("{:?}", &self.profile);
         Ok(())
     }
 
@@ -232,27 +225,20 @@ impl Manager {
     }
 
     /// Iterate all mods, including disabled, in load order.
-    pub fn all_mods(&self) -> ModIterator<'_> {
-        ModIterator {
-            index: 0,
-            manager: self,
-        }
+    pub fn all_mods(&self) -> impl Iterator<Item = Mod> + '_ {
+        self.profile.mods().values().cloned()
     }
 
     /// Iterate all enabled mods in load order.
-    pub fn mods(&self) -> impl Iterator<Item = MappedRwLockReadGuard<'_, Mod>> {
-        ModIterator {
-            index: 0,
-            manager: self,
-        }
-        .filter(|m| m.enabled)
+    pub fn mods(&self) -> impl Iterator<Item = Mod> + '_ {
+        self.profile.mods().values().cloned().filter(|m| m.enabled)
     }
 
     /// Iterate all mods which modify any files in the given manifest.
     pub fn mods_by_manifest<'a: 'm, 'm>(
         &'a self,
         ref_manifest: &'m Manifest,
-    ) -> impl Iterator<Item = MappedRwLockReadGuard<'_, Mod>> + 'm {
+    ) -> impl Iterator<Item = Mod> + 'm {
         self.mods().filter(|mod_| match mod_.manifest() {
             Ok(manifest) => {
                 !ref_manifest
@@ -266,7 +252,7 @@ impl Manager {
 
     /// Add a mod to the list of installed mods. This function assumes that the
     /// mod at the provided path has already been validated.
-    pub fn add<'a, 'b>(&'a self, mod_path: &'b Path) -> Result<&'a Mod> {
+    pub fn add(&self, mod_path: &Path) -> Result<Mod> {
         let mut san_opts = sanitise_file_name::Options::DEFAULT;
         san_opts.url_safe = true;
         let sanitized = sanitise_file_name::sanitise_with_options(
@@ -278,7 +264,7 @@ impl Manager {
                 .trim_start_matches('.'),
             &san_opts,
         );
-        let stored_path = self.dir.join(sanitized);
+        let stored_path = self.path.join(sanitized);
         if mod_path.is_file() {
             if self.settings.upgrade().unwrap().read().unpack_mods {
                 uk_mod::unpack::unzip_mod(mod_path, &stored_path)
@@ -292,12 +278,8 @@ impl Manager {
         }
         let reader = ModReader::open(&stored_path, vec![])?;
         let mod_ = Mod::from_reader(reader);
-        {
-            self.load_order.write().push(mod_.hash);
-        }
-        // Convince the compiler that this does not leave us with an outstanding mutable reference
-        let mod_: &Mod =
-            unsafe { &*(self.mods.write().entry(mod_.hash).or_insert(mod_) as *const _) };
+        self.profile.load_order_mut().push(mod_.hash);
+        self.profile.mods_mut().insert(mod_.hash, mod_.clone());
         log::info!("Added mod {}", mod_.meta.name);
         log::debug!("{:?}", mod_);
         Ok(mod_)
@@ -305,7 +287,7 @@ impl Manager {
 
     pub fn del(&self, mod_: impl LookupMod) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
-        let mod_ = self.mods.write().remove(&hash);
+        let mod_ = self.profile.mods_mut().remove(&hash);
         if let Some(mod_) = mod_ {
             let manifest = mod_.manifest()?;
             if mod_.path.is_dir() {
@@ -313,7 +295,7 @@ impl Manager {
             } else {
                 fs::remove_file(&mod_.path)?;
             }
-            self.load_order.try_write().unwrap().retain(|m| m != &hash);
+            self.profile.load_order_mut().retain(|m| m != &hash);
             log::info!("Deleted mod {}", mod_.meta.name);
             Ok(manifest)
         } else {
@@ -325,7 +307,7 @@ impl Manager {
     pub fn set_enabled(&self, mod_: impl LookupMod, enabled: bool) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
         let manifest;
-        if let Some(mod_) = self.mods.write().get_mut(&hash) {
+        if let Some(mod_) = self.profile.mods_mut().get_mut(&hash) {
             mod_.enabled = enabled;
             manifest = mod_.manifest()?;
             log::info!(
@@ -347,7 +329,7 @@ impl Manager {
     ) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
         let manifest;
-        if let Some(mod_) = self.mods.write().get_mut(&hash) {
+        if let Some(mod_) = self.profile.mods_mut().get_mut(&hash) {
             manifest = mod_.manifest_with_options(&options)?;
             mod_.enabled_options = options;
         } else {
@@ -358,15 +340,11 @@ impl Manager {
     }
 
     pub fn set_order(&self, order: Vec<usize>) {
-        *self.load_order.write() = order;
+        *self.profile.load_order_mut() = order;
     }
 
-    pub fn get_mod(&self, hash: usize) -> Option<MappedRwLockReadGuard<'_, Mod>> {
-        if !self.mods.read().contains_key(&hash) {
-            None
-        } else {
-            Some(RwLockReadGuard::map(self.mods.read(), |mods| &mods[&hash]))
-        }
+    pub fn get_mod(&self, hash: usize) -> Option<&Mod> {
+        self.profile.mods().get(&hash)
     }
 }
 

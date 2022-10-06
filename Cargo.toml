@@ -29,7 +29,7 @@ join_str = "0.1.0"
 log = "0.4.17"
 once_cell = "1.13.1"
 open = "3.0.3"
-parking_lot = "0.12.1"
+parking_lot = { version = "0.12.1", features = ["serde"] }
 rayon = "1.5.3"
 rfd = "0.10.0"
 roead = "0.16.2"
