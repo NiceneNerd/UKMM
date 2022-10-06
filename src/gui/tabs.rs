@@ -6,7 +6,6 @@ use egui::{
 };
 use egui_dock::{NodeIndex, TabViewer, Tree};
 
-
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Settings]);
     let [main, side] = tree.split_right(0.into(), 0.9, vec![Tabs::Info, Tabs::Install]);
@@ -156,6 +155,9 @@ impl TabViewer for super::App {
             }
             Tabs::Settings => {
                 self.render_settings(ui);
+            }
+            Tabs::Theme => {
+                self.style.ui(ui);
             }
         }
     }

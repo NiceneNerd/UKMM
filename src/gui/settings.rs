@@ -5,16 +5,13 @@ use super::{
 };
 use crate::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use anyhow::Result;
-use egui::{
-    Align, Checkbox, ImageButton, InnerResponse, Layout, RichText,
-    TextStyle, Ui,
-};
+use egui::{Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui};
 use once_cell::sync::Lazy;
-use parking_lot::{RwLock};
+use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
 use std::{
-    ops::{Deref},
+    ops::Deref,
     path::{Path, PathBuf},
     sync::Arc,
 };
