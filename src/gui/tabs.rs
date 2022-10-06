@@ -1,11 +1,10 @@
 use super::{visuals, Tabs};
 use eframe::epaint::text::TextWrapping;
 use egui::{
-    text::LayoutJob, Align, Button, Color32, Label, Layout, Rect, RichText, Rounding, Sense, Shape,
-    Stroke, Ui, WidgetText,
+    text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText,
 };
 use egui_dock::{NodeIndex, TabViewer, Tree};
-use once_cell::sync::Lazy;
+
 
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Settings]);
