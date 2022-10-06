@@ -9,16 +9,16 @@ mod tasks;
 mod util;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod, settings::Settings};
-use anyhow::{Result};
+use anyhow::Result;
 use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::{text::TextWrapping, FontFamily},
     NativeOptions,
 };
 use egui::{
-    self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox,
-    FontId, Frame, Id, Label, LayerId, Layout, RichText, Rounding, Spinner,
-    TextFormat, TextStyle, Ui, Vec2,
+    self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId,
+    Frame, Id, Label, LayerId, Layout, RichText, Rounding, Spinner, TextFormat, TextStyle, Ui,
+    Vec2,
 };
 use egui_dock::{NodeIndex, Tree};
 use egui_notify::Toast;
@@ -30,7 +30,7 @@ use join_str::jstr;
 use once_cell::sync::OnceCell;
 use picker::FilePickerState;
 use std::{
-    ops::{DerefMut},
+    ops::DerefMut,
     path::PathBuf,
     sync::{Arc, Once},
     thread,
@@ -190,6 +190,8 @@ pub enum Message {
     Confirm(Box<Message>, String),
     CloseConfirm,
     CloseError,
+    ShowAbout,
+    CloseAbout,
     SelectOnly(usize),
     SelectAlso(usize),
     Deselect(usize),
@@ -240,6 +242,7 @@ struct App {
     error: Option<anyhow::Error>,
     confirm: Option<(Message, String)>,
     busy: bool,
+    about: bool,
     dirty: Manifest,
     sort: (Sort, bool),
     options_mod: Option<Mod>,
@@ -250,8 +253,8 @@ struct App {
 impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
         load_fonts(&cc.egui_ctx);
-        cc.egui_ctx.set_pixels_per_point(1.);
-        cc.egui_ctx.set_visuals(visuals::default_dark());
+        // cc.egui_ctx.set_pixels_per_point(1.);
+        visuals::default_dark(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
         let mods: Vector<_> = core.mod_manager().all_mods().map(|m| m.clone()).collect();
         let (send, recv) = flume::unbounded();
@@ -274,6 +277,7 @@ impl App {
             focused: FocusedPane::None,
             error: None,
             confirm: None,
+            about: false,
             busy: false,
             dirty: Manifest::default(),
             sort: (Sort::Priority, false),
@@ -351,6 +355,8 @@ impl App {
                 }
                 Message::CloseError => self.error = None,
                 Message::CloseConfirm => self.confirm = None,
+                Message::ShowAbout => self.about = true,
+                Message::CloseAbout => self.about = false,
                 Message::Confirm(msg, prompt) => {
                     self.confirm = Some((*msg, prompt));
                 }
@@ -706,33 +712,72 @@ impl App {
         }
     }
 
+    fn render_about(&self, ctx: &egui::Context) {
+        if self.about {
+            egui::Window::new("About")
+                .collapsible(false)
+                .anchor(Align2::CENTER_CENTER, Vec2::default())
+                .fixed_size([360.0, 240.0])
+                .frame(Frame::window(&ctx.style()).inner_margin(8.))
+                .show(ctx, |ui| {
+                    ui.spacing_mut().item_spacing.y = 8.0;
+                    ui.vertical_centered(|ui| {
+                        ui.heading("U-King Mod Manager");
+                        ui.label("© 2022 Caleb Smith - GPLv3");
+                        ui.label(concat!("Version ", env!("CARGO_PKG_VERSION")));
+                    });
+                    egui::Grid::new("about_box").num_columns(2).show(ui, |ui| {
+                        ui.label("GitHub:");
+                        if ui.link("https://github.com/NiceneNerd/ukmm").clicked() {
+                            open::that("https://github.com/NiceneNerd/ukmm").unwrap_or(());
+                        }
+                        ui.end_row();
+                        ui.label("GUI library:");
+                        if ui.link("egui (forked)").clicked() {
+                            open::that("https://github.com/NiceneNerd/egui").unwrap_or(());
+                        }
+                        ui.end_row();
+                    });
+                    let width = ui.min_size().x;
+                    ui.horizontal(|ui| {
+                        ui.allocate_ui_with_layout(
+                            Vec2::new(width, ui.min_size().y),
+                            Layout::right_to_left(Align::Center),
+                            |ui| {
+                                if ui.button("OK").clicked() {
+                                    self.do_update(Message::CloseAbout);
+                                }
+                                ui.shrink_width_to_current();
+                            },
+                        );
+                    });
+                });
+        }
+    }
+
     fn render_menu(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             ui.style_mut().visuals.button_frame = false;
             ui.set_enabled(!self.modal_open());
             ui.horizontal(|ui| {
                 ui.menu_button("File", |ui| self.file_menu(ui));
-                ui.menu_button("Edit", Self::edit_menu);
                 ui.menu_button("Tools", |ui| self.tool_menu(ui));
                 ui.menu_button("Window", |ui| self.window_menu(ui));
+                ui.menu_button("Help", |ui| self.help_menu(ui))
             });
         });
     }
 
     fn file_menu(&self, ui: &mut Ui) {
         if ui.button("Open mod…").clicked() {
+            ui.close_menu();
             self.do_update(Message::SelectFile);
-        }
-    }
-
-    fn edit_menu(ui: &mut Ui) {
-        if ui.button("Settings").clicked() {
-            todo!("Settings");
         }
     }
 
     fn tool_menu(&mut self, ui: &mut Ui) {
         if ui.button("Refresh Merge").clicked() {
+            ui.close_menu();
             self.do_update(Message::Remerge);
         }
     }
@@ -774,6 +819,17 @@ impl App {
                     tree.remove_empty_leaf();
                 }
             }
+        }
+    }
+
+    fn help_menu(&self, ui: &mut Ui) {
+        if ui.button("Help").clicked() {
+            ui.close_menu();
+            todo!("You need help");
+        }
+        if ui.button("About").clicked() {
+            ui.close_menu();
+            self.do_update(Message::ShowAbout);
         }
     }
 
@@ -857,15 +913,6 @@ impl App {
                 });
         }
     }
-
-    fn render_log(&self, ctx: &egui::Context) {
-        egui::TopBottomPanel::bottom("log")
-            .resizable(true)
-            .min_height(0.)
-            .show(ctx, |ui| {
-                ui.set_enabled(!self.modal_open());
-            });
-    }
 }
 
 static LAYOUT_FIX: Once = Once::new();
@@ -875,6 +922,7 @@ impl eframe::App for App {
         self.handle_update(ctx);
         self.render_error(ctx);
         self.render_confirm(ctx);
+        self.render_about(ctx);
         self.render_menu(ctx);
         self.render_option_picker(ctx);
         let layer_id = LayerId::background();
@@ -889,7 +937,6 @@ impl eframe::App for App {
                     .get_or_init(|| {
                         egui_dock::StyleBuilder::from_egui(&ui.ctx().style())
                             .show_close_buttons(false)
-                            .with_border_width(0.0)
                             .with_tab_rounding(Rounding {
                                 ne: 2.0,
                                 nw: 2.0,
@@ -898,8 +945,14 @@ impl eframe::App for App {
                             .with_tab_outline_color(
                                 ui.style().visuals.widgets.noninteractive.bg_stroke.color,
                             )
-                            .with_border_width(0.5)
-                            .with_separator_width(0.5)
+                            .with_border_width(1.0)
+                            .with_border_color(
+                                ui.style().visuals.widgets.noninteractive.bg_stroke.color,
+                            )
+                            .with_separator_width(1.0)
+                            .with_separator_color(
+                                ui.style().visuals.widgets.noninteractive.bg_stroke.color,
+                            )
                             .with_padding(Margin::default())
                             .build()
                     })
