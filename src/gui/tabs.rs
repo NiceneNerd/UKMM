@@ -1,10 +1,11 @@
 use super::{visuals, Tabs};
 use eframe::epaint::text::TextWrapping;
 use egui::{
-    text::LayoutJob, Align, Button, Color32, Label, Layout, Rect, RichText, Rounding, Sense,
+    text::LayoutJob, Align, Button, Color32, Label, Layout, Rect, RichText, Rounding, Sense, Shape,
     Stroke, Ui, WidgetText,
 };
 use egui_dock::{NodeIndex, TabViewer, Tree};
+use once_cell::sync::Lazy;
 
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Settings]);
@@ -117,18 +118,13 @@ impl TabViewer for super::App {
                 self.render_profile_menu(ui);
                 ui.add_space(4.);
                 egui::Frame::none()
-                    .fill(ui.style().visuals.extreme_bg_color)
                     .inner_margin(0.0)
                     .outer_margin(0.0)
                     .show(ui, |ui| {
+                        visuals::slate_grid(ui);
                         self.render_modlist(ui);
                         ui.allocate_space(ui.available_size());
                         self.render_pending(ui);
-                        ui.painter().rect_stroke(
-                            Rect::from_center_size(ui.cursor().center(), [10.0, 10.0].into()),
-                            Rounding::none(),
-                            Stroke::new(1.0, Color32::LIGHT_BLUE),
-                        );
                     });
             }
             Tabs::Log => {

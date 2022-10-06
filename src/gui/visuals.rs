@@ -1,8 +1,9 @@
 use eframe::epaint::{color_hex::color_from_hex, Shadow};
 use egui::{
     style::{Margin, Selection, Spacing, WidgetVisuals, Widgets},
-    Color32, Rounding, Stroke, Style, Visuals,
+    Color32, Rounding, Stroke, Style, Ui, Visuals,
 };
+use once_cell::sync::Lazy;
 
 macro_rules! from_hex {
     ($hex:expr) => {{
@@ -16,6 +17,33 @@ pub const BLUE: Color32 = from_hex!("#38b6f1");
 pub const RED: Color32 = from_hex!("#F52331");
 pub const YELLOW: Color32 = from_hex!("#ffbc28");
 pub const ORGANGE: Color32 = from_hex!("#ff953f");
+
+pub fn slate_grid(ui: &mut Ui) {
+    let cursor = ui.cursor();
+    let width = ui.available_width() - cursor.min.x;
+    let height = ui.available_height() * 1.5;
+    static GRID_COLOR: Lazy<Color32> = Lazy::new(|| BLUE.linear_multiply(0.0333));
+    const GRID_OFFSET: f32 = 16.0;
+    ui.painter().rect_filled(
+        cursor,
+        Rounding::none(),
+        ui.style().visuals.extreme_bg_color,
+    );
+    for i in 0..(height as usize / 48 + 1) {
+        ui.painter().hline(
+            cursor.min.x..=width,
+            (i as f32 * 48.0) + cursor.min.y + GRID_OFFSET,
+            Stroke::new(1.0, *GRID_COLOR),
+        );
+    }
+    for i in 0..(width as usize / 48 + 1) {
+        ui.painter().vline(
+            (i as f32 * 48.0) + cursor.min.x + GRID_OFFSET,
+            cursor.min.y..=height,
+            Stroke::new(1.0, *GRID_COLOR),
+        );
+    }
+}
 
 pub fn default_dark(ctx: &egui::Context) {
     ctx.set_style(Style {
