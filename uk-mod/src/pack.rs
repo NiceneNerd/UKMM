@@ -181,9 +181,9 @@ impl ModPacker {
                 }
 
                 let resource = ResourceData::from_binary(name.as_str(), &*file_data)
-                    .with_context(|| jstr!("Failed to parse resouece {&name}"))?;
+                    .with_context(|| jstr!("Failed to parse resource {&name}"))?;
                 self.process_resource(name, canon.clone(), resource, false)
-                    .with_context(|| jstr!("Failed to process resouece {&canon}"))?;
+                    .with_context(|| jstr!("Failed to process resource {&canon}"))?;
                 if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                     self.process_sarc(
                         Sarc::new(file_data.as_ref())?,
