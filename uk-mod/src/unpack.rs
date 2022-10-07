@@ -29,10 +29,43 @@ use zip::ZipArchive;
 
 type ZipReader = Arc<Mutex<ZipArchive<BufReader<fs::File>>>>;
 
+pub enum ZipData {
+    Owned(Vec<u8>),
+    Memory(Mmap),
+}
+
+impl std::ops::Deref for ZipData {
+    type Target = [u8];
+    fn deref(&self) -> &Self::Target {
+        match self {
+            ZipData::Owned(d) => d.as_slice(),
+            ZipData::Memory(d) => d.as_slice(),
+        }
+    }
+}
+
+impl std::fmt::Debug for ZipData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let ptr = match self {
+            ZipData::Owned(v) => v.as_ptr() as usize,
+            ZipData::Memory(m) => m.as_ptr() as usize,
+        };
+        f.debug_struct("ZipData")
+            .field(
+                match self {
+                    ZipData::Owned(_) => "Owned",
+                    ZipData::Memory(_) => "Memory",
+                },
+                &format!("0x{:x}", ptr),
+            )
+            .finish()
+    }
+}
+
 #[self_referencing]
 pub struct ParallelZipReader {
-    map: Mmap,
-    #[borrows(map)]
+    data: ZipData,
+    #[borrows(data)]
     #[covariant]
     zip: piz::ZipArchive<'this>,
     #[borrows(zip)]
@@ -51,14 +84,17 @@ impl std::fmt::Debug for ParallelZipReader {
 
 impl ParallelZipReader {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let file = std::fs::File::open(path)?;
+        let mut file = std::fs::File::open(path)?;
+        let len = file.metadata()?.len() as usize;
         let self_ = ParallelZipReaderTryBuilder {
-            map: unsafe {
-                MmapOptions::new(file.metadata()?.len() as usize)
-                    .with_file(file, 0)
-                    .map()?
+            data: if len > (1024 * 1024 * 512) {
+                unsafe { ZipData::Memory(MmapOptions::new(len).with_file(file, 0).map()?) }
+            } else {
+                let mut buffer = vec![0u8; len];
+                file.read_exact(&mut buffer)?;
+                ZipData::Owned(buffer)
             },
-            zip_builder: |map: &Mmap| -> Result<piz::ZipArchive<'_>> {
+            zip_builder: |map: &ZipData| -> Result<piz::ZipArchive<'_>> {
                 Ok(piz::ZipArchive::new(map)?)
             },
             files_builder:
