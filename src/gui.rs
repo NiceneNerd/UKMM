@@ -302,7 +302,11 @@ impl App {
 
     fn do_task(
         &mut self,
-        task: impl 'static + Send + Sync + FnOnce(Arc<Manager>) -> Result<Message>,
+        task: impl 'static
+            + Send
+            + Sync
+            + FnOnce(Arc<Manager>) -> Result<Message>
+            + std::panic::UnwindSafe,
     ) {
         let sender = self.channel.0.clone();
         let core = self.core.clone();
@@ -310,9 +314,17 @@ impl App {
         self.busy = true;
         thread::spawn(move || {
             sender
-                .send(match task(core) {
-                    Ok(msg) => msg,
-                    Err(e) => Message::Error(e),
+                .send(match std::panic::catch_unwind(|| task(core)) {
+                    Ok(Ok(msg)) => msg,
+                    Ok(Err(e)) => Message::Error(e),
+                    Err(e) => Message::Error(anyhow::format_err!(
+                        "{}",
+                        e.downcast::<String>().unwrap_or_else(|_| {
+                            Box::new(
+                                "An unknown error occured, check the log for details.".to_string(),
+                            )
+                        })
+                    )),
                 })
                 .unwrap();
         });
@@ -604,8 +616,8 @@ impl App {
                     ui.label(err.to_string());
                     ui.add_space(8.);
                     egui::CollapsingHeader::new("Details").show(ui, |ui| {
-                        err.chain().for_each(|e| {
-                            ui.label(RichText::new(e.to_string()).code());
+                        err.chain().enumerate().for_each(|(i, e)| {
+                            ui.label(RichText::new(format!("{i}. {e}")).code());
                         });
                     });
                     ui.add_space(8.);

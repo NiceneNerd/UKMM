@@ -51,9 +51,9 @@ impl ResourceLoader for ModReader {
             if let Ok(mut file) = zip.lock().by_name(&canon) {
                 let size = file.size() as usize;
                 let mut buffer = vec![0; size];
-                let read = file.read(buffer.as_mut_slice())?;
+                let read = file.read(buffer.as_mut_slice()).with_context(|| jstr!("Failed to read file {&canon} from mod"))?;
                 if read == size {
-                    return Ok(zstd::decode_all(buffer.as_slice())?);
+                    return Ok(zstd::decode_all(buffer.as_slice()).with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
                 }
             }
         } else if let path = self.path.join(canon.as_str()) && path.exists() {
@@ -309,7 +309,7 @@ impl ModUnpacker {
         }
         let base_version = versions
             .pop_front()
-            .expect(&jstr!("No base version for file {&file}"));
+            .with_context(|| format!("No base version for file {}", &file))?;
         let data = match base_version.as_ref() {
             ResourceData::Binary(_) => {
                 let res = versions.pop_back().unwrap_or(base_version);
@@ -338,7 +338,7 @@ impl ModUnpacker {
                         }
                         res
                     });
-                self.build_sarc(merged)?
+                self.build_sarc(merged).with_context(|| jstr!("Failed to build SARC file {&file}"))?
             }
         };
         Ok(data)
@@ -347,7 +347,7 @@ impl ModUnpacker {
     fn build_sarc(&self, sarc: SarcMap) -> Result<Vec<u8>> {
         let mut writer = SarcWriter::new(self.endian.into());
         for file in sarc.0.into_iter() {
-            let data = self.build_file(&file)?;
+            let data = self.build_file(&file).with_context(|| jstr!("Failed to build file {&file} for SARC"))?;
             writer.add_file(
                 file.as_str(),
                 compress_if(data.as_ref(), file.as_str()).as_ref(),
