@@ -226,7 +226,7 @@ impl ModPacker {
                     .ok()
             })
             .last();
-        if let Some(ref_res_data) = reference
+        if let Some(ref_res_data) = reference.as_ref()
             && let Some(ref_res) = ref_res_data.as_mergeable()
             && let ResourceData::Mergeable(res) = &resource
         {
@@ -234,6 +234,14 @@ impl ModPacker {
                 return Ok(());
             }
             resource = ResourceData::Mergeable(ref_res.diff(res));
+        } else if let Some(ref_res_data) = reference.as_ref()
+            && let Some(ref_sarc) = ref_res_data.as_sarc()
+            && let ResourceData::Sarc(sarc) = &resource
+        {
+            if ref_sarc == sarc && !in_new_sarc {
+                return Ok(());
+            }
+            resource = ResourceData::Sarc(ref_sarc.diff(sarc));
         }
 
         let data = minicbor_ser::to_vec(&resource)
