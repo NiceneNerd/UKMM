@@ -101,5 +101,5 @@ pub fn apply_changes(core: &Manager, mods: Vector<Mod>, dirty: Manifest) -> Resu
     deploy_manager
         .apply(Some(dirty))
         .context("Failed to apply pending mod changes")?;
-    Ok(Message::ClearChanges)
+    Ok(Message::ResetMods)
 }

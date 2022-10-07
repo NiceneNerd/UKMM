@@ -320,6 +320,14 @@ impl Settings {
         }
     }
 
+    #[inline(always)]
+    pub fn platform_config_mut(&mut self) -> Option<&mut PlatformSettings> {
+        match self.current_mode {
+            Platform::Switch => self.switch_config.as_mut(),
+            Platform::WiiU => self.wiiu_config.as_mut(),
+        }
+    }
+
     #[inline]
     pub fn merged_dir(&self) -> PathBuf {
         self.profile_dir().join("merged")

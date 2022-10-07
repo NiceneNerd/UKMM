@@ -25,21 +25,20 @@ use egui_notify::Toast;
 use egui_stylist::StylistState;
 use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
-use icons::IconButtonExt;
+use fs_err as fs;
+use icons::{Icon, IconButtonExt};
 use im::Vector;
 use join_str::jstr;
 use once_cell::sync::OnceCell;
 use picker::FilePickerState;
 use std::{
-    ops::DerefMut,
+    ops::{Deref, DerefMut},
     path::PathBuf,
     sync::{Arc, Once},
     thread,
     time::Duration,
 };
 use uk_mod::Manifest;
-
-use self::icons::Icon;
 
 fn load_fonts(context: &egui::Context) {
     let mut fonts = FontDefinitions::default();
@@ -215,13 +214,16 @@ pub enum Message {
     AddMod(Mod),
     RemoveMods(Vector<Mod>),
     ToggleMods(Option<Vector<Mod>>, bool),
+    DeleteProfile(String),
+    NewProfile,
+    AddProfile,
     Apply,
     Remerge,
     // UpdateMods(Vector<Mod>),
     Error(anyhow::Error),
     ChangeSort(Sort, bool),
     RefreshModsDisplay,
-    ClearChanges,
+    ResetMods,
     Deploy,
     ResetSettings,
     SaveSettings,
@@ -242,6 +244,7 @@ struct App {
     logs: Vector<Entry>,
     log: LayoutJob,
     error: Option<anyhow::Error>,
+    new_profile: Option<String>,
     confirm: Option<(Message, String)>,
     busy: bool,
     about: bool,
@@ -279,6 +282,7 @@ impl App {
             closed_tabs: im::HashMap::new(),
             focused: FocusedPane::None,
             error: None,
+            new_profile: None,
             confirm: None,
             about: false,
             busy: false,
@@ -293,7 +297,12 @@ impl App {
 
     #[inline(always)]
     fn modal_open(&self) -> bool {
-        self.error.is_some() || self.busy || self.options_mod.is_some() || self.confirm.is_some()
+        self.error.is_some()
+            || self.busy
+            || self.options_mod.is_some()
+            || self.confirm.is_some()
+            || self.about
+            || self.new_profile.is_some()
     }
 
     fn do_update(&self, message: Message) {
@@ -344,7 +353,7 @@ impl App {
                         }
                     }
                 }
-                Message::ClearChanges => {
+                Message::ResetMods => {
                     self.busy = false;
                     self.dirty.clear();
                     self.mods = self.core.mod_manager().all_mods().collect();
@@ -465,9 +474,28 @@ impl App {
                         self.picker_state.set_path(path);
                     }
                 }
-                Message::ChangeProfile(_profile) => {
-                    todo!("Change profile");
+                Message::ChangeProfile(profile) => {
+                    self.do_task(move |mut core| {
+                        let core = Arc::make_mut(&mut core);
+                        core.change_profile(profile)?;
+                        Ok(Message::ResetMods)
+                    });
                 }
+                Message::NewProfile => self.new_profile = Some("".into()),
+                Message::AddProfile => {
+                    if let Some(profile) = self.new_profile.take() {
+                        self.do_task(move |mut core| {
+                            let core = Arc::make_mut(&mut core);
+                            core.change_profile(profile)?;
+                            Ok(Message::ResetMods)
+                        });
+                    }
+                }
+                Message::DeleteProfile(profile) => self.do_task(move |core| {
+                    let path = core.settings().profile_dir().join(profile);
+                    fs::remove_dir_all(path)?;
+                    Ok(Message::Noop)
+                }),
                 Message::SetFocus(pane) => {
                     self.focused = pane;
                 }
@@ -556,19 +584,19 @@ impl App {
                 }
                 Message::Apply => {
                     let mods = self.mods.clone();
-                    let dirty = self.dirty.clone();
+                    let dirty = std::mem::take(&mut self.dirty);
                     self.do_task(move |core| tasks::apply_changes(&core, mods, dirty));
                 }
                 Message::Deploy => self.do_task(move |core| {
                     log::info!("Deploying current mod configuration");
                     core.deploy_manager().deploy()?;
-                    Ok(Message::ClearChanges)
+                    Ok(Message::ResetMods)
                 }),
                 Message::Remerge => {
                     self.do_task(|core| {
                         let deploy_manager = core.deploy_manager();
                         deploy_manager.apply(None)?;
-                        Ok(Message::ClearChanges)
+                        Ok(Message::ResetMods)
                     });
                 }
                 Message::ResetSettings => {
@@ -586,7 +614,7 @@ impl App {
                                 toast
                             });
                             self.do_update(Message::ClearSelect);
-                            self.do_update(Message::ClearChanges);
+                            self.do_update(Message::ResetMods);
                         }
                         Err(e) => self.do_update(Message::Error(e)),
                     };
@@ -669,6 +697,39 @@ impl App {
                                 }
                                 if ui.button("Close").clicked() {
                                     self.do_update(Message::CloseConfirm);
+                                }
+                                ui.shrink_width_to_current();
+                            },
+                        );
+                    });
+                });
+        }
+    }
+
+    fn render_new_profile(&mut self, ctx: &egui::Context) {
+        let is_open = self.new_profile.is_some();
+        if is_open {
+            egui::Window::new("New Profile")
+                .collapsible(false)
+                .anchor(Align2::CENTER_CENTER, Vec2::default())
+                .auto_sized()
+                .frame(Frame::window(&ctx.style()).inner_margin(8.))
+                .show(ctx, |ui| {
+                    ui.add_space(8.);
+                    ui.label("Enter name for new profile");
+                    ui.add_space(8.);
+                    ui.text_edit_singleline(self.new_profile.as_mut().unwrap());
+                    let width = ui.min_size().x;
+                    ui.horizontal(|ui| {
+                        ui.allocate_ui_with_layout(
+                            Vec2::new(width, ui.min_size().y),
+                            Layout::right_to_left(Align::Center),
+                            |ui| {
+                                if ui.button("OK").clicked() {
+                                    self.do_update(Message::AddProfile);
+                                }
+                                if ui.button("Close").clicked() {
+                                    self.new_profile = None;
                                 }
                                 ui.shrink_width_to_current();
                             },
@@ -868,6 +929,7 @@ impl App {
                                         profile.as_str(),
                                     )
                                     .clicked()
+                                    && current_profile != profile
                                 {
                                     self.do_update(Message::ChangeProfile(profile.into()));
                                 }
@@ -876,7 +938,13 @@ impl App {
                         .response
                         .on_hover_text("Select Mod Profile");
                     ui.icon_button(Icon::Delete).on_hover_text("Delete Profile");
-                    ui.icon_button(Icon::Add).on_hover_text("New Profile");
+                    if ui
+                        .icon_button(Icon::Add)
+                        .on_hover_text("New Profile")
+                        .clicked()
+                    {
+                        self.do_update(Message::NewProfile);
+                    };
                     ui.icon_button(Icon::Menu).on_hover_text("Manage Profiles…");
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         ui.add_space(20.);
@@ -916,7 +984,7 @@ impl App {
                                     self.do_update(Message::Apply);
                                 }
                                 if ui.icon_text_button("Cancel", Icon::Cancel).clicked() {
-                                    self.do_update(Message::ClearChanges);
+                                    self.do_update(Message::ResetMods);
                                 }
                             });
                         });
@@ -933,6 +1001,7 @@ impl eframe::App for App {
         self.handle_update(ctx);
         self.render_error(ctx);
         self.render_confirm(ctx);
+        self.render_new_profile(ctx);
         self.render_about(ctx);
         self.render_menu(ctx);
         self.render_option_picker(ctx);

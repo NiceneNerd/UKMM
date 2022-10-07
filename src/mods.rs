@@ -206,7 +206,7 @@ pub struct Manager {
 }
 
 impl Manager {
-    pub fn init_from(path: &Path, settings: &Arc<RwLock<Settings>>) -> Result<Self> {
+    pub fn open_profile(path: &Path, settings: &Arc<RwLock<Settings>>) -> Result<Self> {
         log::info!("Initializing mod manager");
         if !path.exists() {
             log::info!("Creating profile at {}", path.display());
@@ -239,8 +239,8 @@ impl Manager {
         Ok(())
     }
 
-    pub fn init(settings: &Arc<RwLock<Settings>>) -> Result<Self> {
-        Self::init_from(&settings.read().profile_dir(), settings)
+    pub fn open_current_profile(settings: &Arc<RwLock<Settings>>) -> Result<Self> {
+        Self::open_profile(&settings.read().profile_dir(), settings)
     }
 
     /// Iterate all mods, including disabled, in load order.
