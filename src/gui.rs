@@ -259,7 +259,7 @@ impl App {
         // cc.egui_ctx.set_pixels_per_point(1.);
         visuals::default_dark(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
-        let mods: Vector<_> = core.mod_manager().all_mods().map(|m| m.clone()).collect();
+        let mods: Vector<_> = core.mod_manager().all_mods().collect();
         let (send, recv) = flume::unbounded();
         crate::logger::LOGGER.set_sender(send.clone());
         log::info!("Logger initialized");
@@ -335,12 +335,7 @@ impl App {
                 Message::ClearChanges => {
                     self.busy = false;
                     self.dirty.clear();
-                    self.mods = self
-                        .core
-                        .mod_manager()
-                        .all_mods()
-                        .map(|m| m.clone())
-                        .collect();
+                    self.mods = self.core.mod_manager().all_mods().collect();
                     self.do_update(Message::RefreshModsDisplay);
                 }
                 Message::RefreshModsDisplay => {
@@ -491,14 +486,14 @@ impl App {
                 Message::InstallMod(mod_) => {
                     self.do_task(move |core| {
                         let mods = core.mod_manager();
-                        let mod_ = mods.add(&mod_.path)?.clone();
+                        let mod_ = mods.add(&mod_.path)?;
                         let hash = mod_.hash;
                         if !mod_.enabled_options.is_empty() {
                             mods.set_enabled_options(hash, mod_.enabled_options)?;
                         }
                         mods.save()?;
                         log::info!("Added mod {} to current profile", mod_.meta.name.as_str());
-                        let mod_ = unsafe { mods.get_mod(hash).unwrap_unchecked() }.clone();
+                        let mod_ = unsafe { mods.get_mod(hash).unwrap_unchecked() };
                         Ok(Message::AddMod(mod_))
                     });
                 }

@@ -6,13 +6,12 @@ use anyhow::{Context, Result};
 use egui_extras::RetainedImage;
 use fs_err as fs;
 use once_cell::sync::Lazy;
-use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use std::{
     hash::{Hash, Hasher},
     io::{BufReader, Read},
-    ops::Deref,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
 };
@@ -154,11 +153,6 @@ impl LookupMod for usize {
     }
 }
 
-pub struct ModIterator<'a> {
-    manager: &'a Manager,
-    index: usize,
-}
-
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Profile {
     mods: RwLock<HashMap<usize, Mod>>,
@@ -174,12 +168,33 @@ impl Profile {
         self.mods.write()
     }
 
+    #[allow(unused)]
     pub fn load_order(&self) -> RwLockReadGuard<Vec<usize>> {
         self.load_order.read()
     }
 
     pub fn load_order_mut(&self) -> RwLockWriteGuard<Vec<usize>> {
         self.load_order.write()
+    }
+}
+
+pub struct ModIterator<'a> {
+    profile: &'a Profile,
+    index: usize,
+}
+
+impl<'a> Iterator for ModIterator<'a> {
+    type Item = Mod;
+    fn next(&mut self) -> Option<Self::Item> {
+        let mods = self.profile.mods.read();
+        let loads = self.profile.load_order.read();
+        if self.index < loads.len() {
+            let hash = loads[self.index];
+            self.index += 1;
+            Some(mods[&hash].clone())
+        } else {
+            None
+        }
     }
 }
 
@@ -195,6 +210,7 @@ impl Manager {
         log::info!("Initializing mod manager");
         if !path.exists() {
             log::info!("Creating profile at {}", path.display());
+            fs::create_dir_all(path)?;
             let self_ = Self {
                 path: path.to_path_buf(),
                 profile: Default::default(),
@@ -203,7 +219,7 @@ impl Manager {
             self_.save()?;
             return Ok(self_);
         }
-        let profile = serde_yaml::from_str(&fs::read_to_string(path)?)
+        let profile = serde_yaml::from_str(&fs::read_to_string(path.join("profile.yml"))?)
             .context("Failed to parse mod database")?;
         log::debug!("Profile data:\n{:?}", &profile);
         Ok(Self {
@@ -214,24 +230,34 @@ impl Manager {
     }
 
     pub fn save(&self) -> Result<()> {
-        fs::write(self.path, serde_yaml::to_string(&self.profile)?)?;
+        fs::write(
+            self.path.join("profile.yml"),
+            serde_yaml::to_string(&self.profile)?,
+        )?;
         log::info!("Saved profile data");
         log::debug!("{:?}", &self.profile);
         Ok(())
     }
 
     pub fn init(settings: &Arc<RwLock<Settings>>) -> Result<Self> {
-        Self::init_from(&settings.read().mods_dir(), settings)
+        Self::init_from(&settings.read().profile_dir(), settings)
     }
 
     /// Iterate all mods, including disabled, in load order.
-    pub fn all_mods(&self) -> impl Iterator<Item = Mod> + '_ {
-        self.profile.mods().values().cloned()
+    pub fn all_mods(&self) -> ModIterator<'_> {
+        ModIterator {
+            index: 0,
+            profile: &self.profile,
+        }
     }
 
     /// Iterate all enabled mods in load order.
     pub fn mods(&self) -> impl Iterator<Item = Mod> + '_ {
-        self.profile.mods().values().cloned().filter(|m| m.enabled)
+        ModIterator {
+            index: 0,
+            profile: &self.profile,
+        }
+        .filter(|m| m.enabled)
     }
 
     /// Iterate all mods which modify any files in the given manifest.
@@ -264,7 +290,13 @@ impl Manager {
                 .trim_start_matches('.'),
             &san_opts,
         );
-        let stored_path = self.path.join(sanitized);
+        let stored_path = self
+            .settings
+            .upgrade()
+            .unwrap()
+            .read()
+            .mods_dir()
+            .join(sanitized);
         if mod_path.is_file() {
             if self.settings.upgrade().unwrap().read().unpack_mods {
                 uk_mod::unpack::unzip_mod(mod_path, &stored_path)
@@ -343,8 +375,8 @@ impl Manager {
         *self.profile.load_order_mut() = order;
     }
 
-    pub fn get_mod(&self, hash: usize) -> Option<&Mod> {
-        self.profile.mods().get(&hash)
+    pub fn get_mod(&self, hash: usize) -> Option<Mod> {
+        self.profile.mods().get(&hash).cloned()
     }
 }
 

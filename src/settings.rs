@@ -275,6 +275,15 @@ impl Settings {
     }
 
     #[inline]
+    pub fn profile_dir(&self) -> PathBuf {
+        self.platform_dir().join("profiles").join(
+            self.platform_config()
+                .map(|c| c.profile.as_str())
+                .unwrap_or("Default"),
+        )
+    }
+
+    #[inline]
     pub fn profiles(&self) -> impl Iterator<Item = String> {
         fs::read_dir(self.profiles_dir())
             .into_iter()
@@ -284,9 +293,7 @@ impl Settings {
                     .filter_map(|entry| {
                         entry
                             .path()
-                            .extension()
-                            .map(|e| e == OsStr::new("yml"))
-                            .unwrap_or(false)
+                            .is_dir()
                             .then(|| entry.file_name().to_string_lossy().into())
                     })
             })
@@ -315,7 +322,7 @@ impl Settings {
 
     #[inline]
     pub fn merged_dir(&self) -> PathBuf {
-        self.mods_dir().join("merged")
+        self.profile_dir().join("merged")
     }
 
     #[inline]

@@ -133,7 +133,7 @@ impl Runner {
             Commands::Uninstall => {
                 println!("Installed mods:");
                 let mod_manager = self.core.mod_manager();
-                let mods = mod_manager.mods().map(|m| m.clone()).collect::<Vec<_>>();
+                let mods = mod_manager.mods().collect::<Vec<_>>();
                 for (i, mod_) in mods.iter().enumerate() {
                     println!(
                         "{}. {} (v{}) by {}",

@@ -70,11 +70,7 @@ pub fn apply_changes(core: &Manager, mods: Vector<Mod>, dirty: Manifest) -> Resu
     log::info!("Updating mod states");
     mods.iter()
         .try_for_each(|m| -> Result<()> {
-            let mod_ = mod_manager
-                .all_mods()
-                .find(|m2| m2.hash == m.hash)
-                .unwrap()
-                .clone();
+            let mod_ = mod_manager.all_mods().find(|m2| m2.hash == m.hash).unwrap();
             if !mod_.state_eq(m) {
                 mod_manager
                     .set_enabled(m.hash, m.enabled)
