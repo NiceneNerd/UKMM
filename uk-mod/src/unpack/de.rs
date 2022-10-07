@@ -91,7 +91,8 @@ impl<'de> Deserialize<'de> for ModReader {
                     manifest,
                     options,
                     zip: Some(
-                        super::ParallelZipReader::open(&path).map_err(serde::de::Error::custom)?,
+                        super::ParallelZipReader::open(&path, false)
+                            .map_err(serde::de::Error::custom)?,
                     ),
                     path,
                 })

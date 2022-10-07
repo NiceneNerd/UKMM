@@ -6,7 +6,6 @@ use join_str::jstr;
 use jwalk::WalkDir;
 use mmap_rs::{Mmap, MmapOptions};
 use ouroboros::self_referencing;
-use parking_lot::Mutex;
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{sarc::SarcWriter, yaz0::compress_if};
@@ -25,9 +24,6 @@ use uk_content::{
     util::HashMap,
 };
 use uk_reader::{ResourceLoader, ResourceReader};
-use zip::ZipArchive;
-
-type ZipReader = Arc<Mutex<ZipArchive<BufReader<fs::File>>>>;
 
 pub enum ZipData {
     Owned(Vec<u8>),
@@ -83,11 +79,11 @@ impl std::fmt::Debug for ParallelZipReader {
 }
 
 impl ParallelZipReader {
-    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+    pub fn open(path: impl AsRef<Path>, peek: bool) -> Result<Self> {
         let mut file = std::fs::File::open(path)?;
         let len = file.metadata()?.len() as usize;
         let self_ = ParallelZipReaderTryBuilder {
-            data: if len > (1024 * 1024 * 512) {
+            data: if len > (1024 * 1024 * 256) || peek {
                 unsafe { ZipData::Memory(MmapOptions::new(len).with_file(file, 0).map()?) }
             } else {
                 let mut buffer = vec![0u8; len];
@@ -218,6 +214,16 @@ impl ModReader {
         }
     }
 
+    pub fn open_peek(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
+        let path = path.as_ref().to_path_buf();
+        let options = options.into();
+        if path.is_file() {
+            Self::open_zipped_peek(path, options)
+        } else {
+            Self::open_unzipped(path, options)
+        }
+    }
+
     fn open_unzipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
         let meta: Meta = toml::from_str(&fs::read_to_string(path.join("meta.toml"))?)?;
         let mut manifest: Manifest =
@@ -246,7 +252,7 @@ impl ModReader {
         let mut read;
         let mut size;
         let meta: Meta = {
-            let mut meta = zip
+            let meta = zip
                 .borrow_files()
                 .get(Path::new("meta.toml"))
                 .context("Mod missing meta file")?;
@@ -259,7 +265,7 @@ impl ModReader {
             toml::from_slice(&buffer[..read]).context("Failed to parse meta file from mod")?
         };
         let mut manifest = {
-            let mut manifest = zip
+            let manifest = zip
                 .borrow_files()
                 .get(Path::new("manifest.yml"))
                 .context("Mod missing manifest file")?;
@@ -273,7 +279,7 @@ impl ModReader {
                 .context("Failed to parse manifest file")?
         };
         for opt in &options {
-            let mut opt_manifest = zip
+            let opt_manifest = zip
                 .borrow_files()
                 .get(opt.manifest_path().as_path())
                 .context("Mod missing option manifest file")?;
@@ -299,7 +305,12 @@ impl ModReader {
     }
 
     fn open_zipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
-        let zip = ParallelZipReader::open(&path)?;
+        let zip = ParallelZipReader::open(&path, false)?;
+        Self::from_archive(path, zip, options)
+    }
+
+    fn open_zipped_peek(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
+        let zip = ParallelZipReader::open(&path, true)?;
         Self::from_archive(path, zip, options)
     }
 
@@ -470,7 +481,7 @@ impl ModUnpacker {
 /// Extract a zipped mod, decompressing the binary files, but otherwise
 /// leaving the format intact.
 pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow::Result<()> {
-    let mut zip = ZipArchive::new(BufReader::new(fs::File::open(mod_path)?))
+    let mut zip = zip::ZipArchive::new(BufReader::new(fs::File::open(mod_path)?))
         .context("Failed to open mod ZIP")?;
     zip.extract(out_path)?;
     WalkDir::new(out_path)

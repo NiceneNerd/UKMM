@@ -42,7 +42,7 @@ fn is_probably_a_mod(path: &Path) -> bool {
 
 pub fn open_mod(path: &Path) -> Result<Message> {
     log::info!("Opening mod at {}", path.display());
-    let mod_ = match ModReader::open(path, vec![]) {
+    let mod_ = match ModReader::open_peek(path, vec![]) {
         Ok(reader) => Mod::from_reader(reader),
         Err(err) => {
             log::warn!("Could not open mod, let's find out why");
@@ -53,7 +53,7 @@ pub fn open_mod(path: &Path) -> Result<Message> {
                 log::info!("Maybe it's not a UKMM mod, let's to convert it");
                 let converted_path = crate::mods::convert_gfx(path)?;
                 Mod::from_reader(
-                    ModReader::open(&converted_path, vec![])
+                    ModReader::open_peek(&converted_path, vec![])
                         .context("Failed to open converted mod")?,
                 )
             } else {

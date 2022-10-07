@@ -308,7 +308,7 @@ impl Manager {
             dircpy::copy_dir(mod_path, &stored_path)
                 .context("Failed to copy mod to storage folder")?;
         }
-        let reader = ModReader::open(&stored_path, vec![])?;
+        let reader = ModReader::open_peek(&stored_path, vec![])?;
         let mod_ = Mod::from_reader(reader);
         self.profile.load_order_mut().push(mod_.hash);
         self.profile.mods_mut().insert(mod_.hash, mod_.clone());
