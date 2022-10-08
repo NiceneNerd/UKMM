@@ -41,6 +41,12 @@ impl App {
                 right: -12.0,
             })
             .show(ui, |ui| {
+                ui.style_mut()
+                    .visuals
+                    .widgets
+                    .noninteractive
+                    .fg_stroke
+                    .color = ui.style().visuals.strong_text_color();
                 TableBuilder::new(ui)
                     .cell_sense(Sense::click_and_drag())
                     // .striped(true)

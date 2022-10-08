@@ -1,6 +1,6 @@
 use super::{
     icons::{self},
-    util::PickerExt,
+    util::UkWidgetExt,
     App, Message,
 };
 use crate::settings::{DeployConfig, Language, Platform, PlatformSettings};

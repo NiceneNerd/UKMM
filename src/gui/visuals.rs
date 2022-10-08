@@ -1,7 +1,7 @@
 use eframe::epaint::{color_hex::color_from_hex, Shadow};
 use egui::{
     style::{Margin, Selection, Spacing, WidgetVisuals, Widgets},
-    Color32, Rounding, Stroke, Style, Ui, Visuals,
+    Color32, FontFamily, Rounding, Stroke, Style, Ui, Visuals,
 };
 use once_cell::sync::Lazy;
 
@@ -55,7 +55,7 @@ pub fn default_dark(ctx: &egui::Context) {
                 noninteractive: WidgetVisuals {
                     bg_fill: from_hex!("#1C1E1F"),
                     bg_stroke: Stroke::new(1.0, from_hex!("#2F2E2A")),
-                    fg_stroke: Stroke::new(1.0, from_hex!("#D9EEFF")),
+                    fg_stroke: Stroke::new(1.0, from_hex!("#BCCAD1")),
                     rounding: Rounding::same(0.0),
                     expansion: 0.0,
                 },
@@ -76,7 +76,7 @@ pub fn default_dark(ctx: &egui::Context) {
                 active: WidgetVisuals {
                     bg_fill: from_hex!("#12384f"),
                     bg_stroke: Stroke::new(1.0, from_hex!("#237ba3")),
-                    fg_stroke: Stroke::new(1.5, from_hex!("#1d4e77")),
+                    fg_stroke: Stroke::new(1.5, from_hex!("#D9EEFF")),
                     rounding: Rounding::same(2.0),
                     expansion: 1.0,
                 },
@@ -115,6 +115,12 @@ pub fn default_dark(ctx: &egui::Context) {
             scroll_bar_width: 2.0,
             indent_ends_with_horizontal_line: false,
             ..Default::default()
+        },
+        text_styles: {
+            let mut styles = egui::style::default_text_styles();
+            styles.get_mut(&egui::TextStyle::Heading).unwrap().family =
+                FontFamily::Name("Bold".into());
+            styles
         },
         ..Default::default()
     })

@@ -32,13 +32,14 @@ use join_str::jstr;
 use once_cell::sync::OnceCell;
 use picker::FilePickerState;
 use std::{
-    ops::{Deref, DerefMut},
+    ops::DerefMut,
     path::PathBuf,
     sync::{Arc, Once},
     thread,
     time::Duration,
 };
 use uk_mod::Manifest;
+use util::UkWidgetExt;
 
 fn load_fonts(context: &egui::Context) {
     let mut fonts = FontDefinitions::default();
@@ -330,7 +331,8 @@ impl App {
                         "{}",
                         e.downcast::<String>().unwrap_or_else(|_| {
                             Box::new(
-                                "An unknown error occured, check the log for details.".to_string(),
+                                "An unknown error occured, check the log for possible details."
+                                    .to_string(),
                             )
                         })
                     )),
@@ -475,11 +477,10 @@ impl App {
                     }
                 }
                 Message::ChangeProfile(profile) => {
-                    self.do_task(move |mut core| {
-                        let core = Arc::make_mut(&mut core);
-                        core.change_profile(profile)?;
-                        Ok(Message::ResetMods)
-                    });
+                    match Arc::make_mut(&mut self.core).change_profile(profile) {
+                        Ok(()) => self.do_update(Message::ResetMods),
+                        Err(e) => self.do_update(Message::Error(e)),
+                    };
                 }
                 Message::NewProfile => self.new_profile = Some("".into()),
                 Message::AddProfile => {
@@ -794,7 +795,7 @@ impl App {
                 .show(ctx, |ui| {
                     ui.spacing_mut().item_spacing.y = 8.0;
                     ui.vertical_centered(|ui| {
-                        ui.heading("U-King Mod Manager");
+                        ui.strong_heading("U-King Mod Manager");
                         ui.label("© 2022 Caleb Smith - GPLv3");
                         ui.label(concat!("Version ", env!("CARGO_PKG_VERSION")));
                     });
@@ -1022,6 +1023,8 @@ impl eframe::App for App {
                                 nw: 2.0,
                                 ..Default::default()
                             })
+                            .with_tab_text_color_focused(ui.style().visuals.strong_text_color())
+                            .with_tab_text_color_unfocused(ui.style().visuals.weak_text_color())
                             .with_tab_outline_color(
                                 ui.style().visuals.widgets.noninteractive.bg_stroke.color,
                             )

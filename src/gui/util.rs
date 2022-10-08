@@ -1,9 +1,10 @@
-use egui::{Direction, Response, Ui};
+use egui::{Direction, Response, RichText, Ui};
 use std::path::PathBuf;
 
-pub trait PickerExt {
+pub trait UkWidgetExt {
     fn folder_picker(&mut self, value: &mut PathBuf) -> Response;
     fn file_picker(&mut self, value: &mut PathBuf) -> Response;
+    fn strong_heading(&mut self, text: impl Into<String>) -> Response;
 }
 
 fn render_picker(folder: bool, ui: &mut Ui, value: &mut PathBuf) -> Response {
@@ -43,11 +44,19 @@ fn render_picker(folder: bool, ui: &mut Ui, value: &mut PathBuf) -> Response {
     .inner
 }
 
-impl PickerExt for Ui {
+impl UkWidgetExt for Ui {
     fn folder_picker(&mut self, value: &mut PathBuf) -> Response {
         render_picker(true, self, value)
     }
     fn file_picker(&mut self, value: &mut PathBuf) -> Response {
         render_picker(false, self, value)
+    }
+
+    fn strong_heading(&mut self, text: impl Into<String>) -> Response {
+        self.label(
+            RichText::new(text)
+                .color(self.style().visuals.widgets.inactive.bg_fill)
+                .heading(),
+        )
     }
 }

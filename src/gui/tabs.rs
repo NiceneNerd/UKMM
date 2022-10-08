@@ -7,7 +7,8 @@ pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Settings]);
     let [main, side] = tree.split_right(0.into(), 0.9, vec![Tabs::Info, Tabs::Install]);
     let [_side_top, _side_bottom] = tree.split_below(side, 0.6, vec![Tabs::Deploy]);
-    let [_main, _log] = tree.split_below(main, 0.99, vec![Tabs::Log]);
+    let [main, _log] = tree.split_below(main, 0.99, vec![Tabs::Log]);
+    tree.set_focused_node(main);
     tree
 }
 
