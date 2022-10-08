@@ -76,7 +76,7 @@ pub fn default_dark(ctx: &egui::Context) {
                 active: WidgetVisuals {
                     bg_fill: from_hex!("#12384f"),
                     bg_stroke: Stroke::new(1.0, from_hex!("#237ba3")),
-                    fg_stroke: Stroke::new(1.5, from_hex!("#7297b2")),
+                    fg_stroke: Stroke::new(1.5, from_hex!("#1d4e77")),
                     rounding: Rounding::same(2.0),
                     expansion: 1.0,
                 },

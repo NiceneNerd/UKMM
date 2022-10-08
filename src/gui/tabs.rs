@@ -1,10 +1,7 @@
 use super::{visuals, Tabs};
 use eframe::epaint::text::TextWrapping;
-use egui::{
-    text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText,
-};
+use egui::{text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText};
 use egui_dock::{NodeIndex, TabViewer, Tree};
-
 
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Settings]);
@@ -99,9 +96,17 @@ impl TabViewer for super::App {
                                 });
                                 if !config.auto {
                                     ui.add_space(4.);
-                                    if ui.add_enabled(pending, Button::new("Deploy")).clicked() {
-                                        self.do_update(super::Message::Deploy);
-                                    }
+                                    ui.with_layout(Layout::top_down(Align::Center), |ui| {
+                                        let padding = (ui.available_height()
+                                            - ui.text_style_height(&egui::TextStyle::Button)
+                                            - (ui.spacing().button_padding.y * 2.0))
+                                            / 2.0;
+                                        ui.add_space(padding);
+                                        if ui.add_enabled(pending, Button::new("Deploy")).clicked()
+                                        {
+                                            self.do_update(super::Message::Deploy);
+                                        }
+                                    });
                                 }
                             });
                         });
