@@ -340,6 +340,11 @@ impl Settings {
             .and_then(|c| c.deploy_config.as_ref())
             .map(|c| c.output.as_ref())
     }
+
+    #[inline]
+    pub fn state_file(&self) -> PathBuf {
+        self.storage_dir.join("ui.json")
+    }
 }
 
 static SETTINGS_PATH: Lazy<PathBuf> = Lazy::new(|| {

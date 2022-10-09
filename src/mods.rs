@@ -394,7 +394,8 @@ pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
                 .into_iter()
                 .filter_map(std::result::Result::ok)
                 .find_map(|f| {
-                    (f.file_name().to_str() == Some("rules.txt")).then(|| f.parent_path().into())
+                    ([Some("rules.txt"), Some("info.json")].contains(&f.file_name().to_str()))
+                        .then(|| f.parent_path().into())
                 })
         };
 

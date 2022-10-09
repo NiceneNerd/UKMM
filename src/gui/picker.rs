@@ -5,9 +5,10 @@ use super::{
 use egui::{Button, Key, Ui, Vec2};
 use fs_err as fs;
 use im::Vector;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct FilePickerState {
     pub path: PathBuf,
     pub history: Vec<PathBuf>,

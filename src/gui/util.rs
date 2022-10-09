@@ -1,4 +1,5 @@
-use egui::{Direction, Response, RichText, Ui};
+use eframe::epaint::{RectShape, Shadow, Tessellator, TextShape};
+use egui::{Direction, FontId, Mesh, Rect, Response, RichText, Stroke, TextStyle, Ui};
 use std::path::PathBuf;
 
 pub trait UkWidgetExt {
@@ -53,6 +54,46 @@ impl UkWidgetExt for Ui {
     }
 
     fn strong_heading(&mut self, text: impl Into<String>) -> Response {
+        let text = text.into();
+        // TODO: Figure out shadow
+        // let heading_style = self.style().text_styles.get(&TextStyle::Heading).unwrap();
+        // let gallery = self.fonts().layout_no_wrap(
+        //     text.clone(),
+        //     heading_style.clone(),
+        //     self.style()
+        //         .visuals
+        //         .strong_text_color()
+        //         .linear_multiply(0.5),
+        // );
+        // let mut mesh = Mesh::default();
+        // let mut tessellator = Tessellator::new(
+        //     self.fonts().pixels_per_point(),
+        //     eframe::epaint::TessellationOptions {
+        //         feathering: true,
+        //         feathering_size_in_pixels: 16.0,
+        //         ..Default::default()
+        //     },
+        //     self.fonts().font_image_size(),
+        //     vec![],
+        // );
+        // let center_x =
+        //     (self.cursor().min.x + self.available_width()) / 2.0 + (self.cursor().min.x / 2.0);
+        // let x = center_x - gallery.size().x / 2.0;
+        // let y = self.cursor().min.y + (self.text_style_height(&TextStyle::Heading) / 2.0);
+        // tessellator.tessellate_line(
+        //     [[x, y].into(), [x + gallery.size().x, y].into()],
+        //     Stroke::new(
+        //         1.0,
+        //         self.style()
+        //             .visuals
+        //             .widgets
+        //             .hovered
+        //             .bg_fill
+        //             .linear_multiply(0.5),
+        //     ),
+        //     &mut mesh,
+        // );
+        // self.painter().add(mesh);
         self.label(
             RichText::new(text)
                 .color(self.style().visuals.widgets.inactive.bg_fill)

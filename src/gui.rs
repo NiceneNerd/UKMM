@@ -9,7 +9,7 @@ mod tasks;
 mod util;
 mod visuals;
 use crate::{core::Manager, logger::Entry, mods::Mod, settings::Settings};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::{text::TextWrapping, FontFamily},
@@ -268,12 +268,16 @@ impl App {
         crate::logger::LOGGER.set_sender(send.clone());
         log::info!("Logger initialized");
         let temp_settings = core.settings().clone();
+        let picker_state = fs::read_to_string(core.settings().state_file())
+            .context("")
+            .and_then(|s| serde_json::from_str(&s).context(""))
+            .unwrap_or_default();
         Self {
             channel: (send, recv),
             selected: mods.front().cloned().into_iter().collect(),
             drag_index: None,
             hover_index: None,
-            picker_state: Default::default(),
+            picker_state,
             displayed_mods: mods.clone(),
             mods,
             temp_settings,
@@ -1047,6 +1051,14 @@ impl eframe::App for App {
         LAYOUT_FIX.call_once(|| {
             *self.tree.write() = tabs::default_ui();
         });
+    }
+
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        fs::write(
+            self.core.settings().state_file(),
+            &serde_json::to_string_pretty(&self.picker_state).unwrap(),
+        )
+        .unwrap();
     }
 }
 
