@@ -507,7 +507,7 @@ impl App {
                 Message::SelectFile => {
                     self.do_task(move |_| {
                         if let Some(path) = rfd::FileDialog::new()
-                            .add_filter("UKMM Mod (*.zip)", &["*.zip"])
+                            .add_filter("UKMM Mod (*.zip)", &["zip"])
                             .pick_file()
                         {
                             tasks::open_mod(&path)
@@ -953,11 +953,14 @@ impl App {
                     ui.icon_button(Icon::Menu).on_hover_text("Manage Profiles…");
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         ui.add_space(20.);
-                        ui.label(format!(
-                            "{} Mods / {} Active",
-                            self.mods.len(),
-                            self.mods.iter().filter(|m| m.enabled).count()
-                        ));
+                        ui.label(
+                            RichText::new(format!(
+                                "{} Mods / {} Active",
+                                self.mods.len(),
+                                self.mods.iter().filter(|m| m.enabled).count()
+                            ))
+                            .strong(),
+                        );
                     });
                 });
             });

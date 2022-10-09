@@ -1,9 +1,9 @@
 use super::{App, FocusedPane, Message, Sort};
 use crate::mods::Mod;
-use eframe::epaint::text::TextWrapping;
+use eframe::epaint::{text::TextWrapping, Shadow};
 use egui::{
     style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, Label, LayerId,
-    Layout, Response, Sense, TextStyle, Ui, Vec2,
+    Layout, Rect, Response, Sense, TextStyle, Ui, Vec2,
 };
 use egui_extras::{Size, TableBuilder, TableRow};
 use im::vector;

@@ -13,6 +13,7 @@ pub struct FilePickerState {
     pub path: PathBuf,
     pub history: Vec<PathBuf>,
     pub path_input: String,
+    #[serde(skip)]
     pub selected: Option<PathBuf>,
     pub entries: Vector<PathBuf>,
 }

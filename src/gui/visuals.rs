@@ -1,7 +1,7 @@
-use eframe::epaint::{color_hex::color_from_hex, Shadow};
+use eframe::epaint::{color_hex::color_from_hex, RectShape, Shadow, Tessellator};
 use egui::{
     style::{Margin, Selection, Spacing, WidgetVisuals, Widgets},
-    Color32, FontFamily, Rounding, Stroke, Style, Ui, Visuals,
+    Color32, FontFamily, LayerId, Mesh, Pos2, Rect, Rounding, Stroke, Style, Ui, Vec2, Visuals,
 };
 use once_cell::sync::Lazy;
 
@@ -19,30 +19,54 @@ pub const YELLOW: Color32 = from_hex!("#ffbc28");
 pub const ORGANGE: Color32 = from_hex!("#ff953f");
 
 pub fn slate_grid(ui: &mut Ui) {
-    let cursor = ui.cursor();
-    let width = ui.available_width() - cursor.min.x;
-    let height = ui.available_height() * 1.5;
-    static GRID_COLOR: Lazy<Color32> = Lazy::new(|| BLUE.linear_multiply(0.0333));
-    const GRID_OFFSET: f32 = 16.0;
-    ui.painter().rect_filled(
-        cursor,
-        Rounding::none(),
-        ui.style().visuals.extreme_bg_color,
-    );
-    for i in 0..(height as usize / 48 + 1) {
-        ui.painter().hline(
-            cursor.min.x..=width,
-            (i as f32 * 48.0) + cursor.min.y + GRID_OFFSET,
-            Stroke::new(1.0, *GRID_COLOR),
+    ui.with_layer_id(LayerId::background(), |ui| {
+        let cursor = ui.cursor();
+        let width = ui.available_width() - cursor.min.x;
+        let height = ui.available_height() * 1.5;
+        static GRID_COLOR: Lazy<Color32> = Lazy::new(|| BLUE.linear_multiply(0.0333));
+        const GRID_OFFSET: f32 = 16.0;
+        ui.painter().rect_filled(
+            cursor,
+            Rounding::none(),
+            ui.style().visuals.extreme_bg_color,
         );
-    }
-    for i in 0..(width as usize / 48 + 1) {
-        ui.painter().vline(
-            (i as f32 * 48.0) + cursor.min.x + GRID_OFFSET,
-            cursor.min.y..=height,
-            Stroke::new(1.0, *GRID_COLOR),
-        );
-    }
+        ui.painter().add({
+            let mut mesh = Mesh::default();
+            let mut tesselator = Tessellator::new(
+                ui.fonts().pixels_per_point(),
+                eframe::epaint::TessellationOptions {
+                    feathering: true,
+                    feathering_size_in_pixels: 32.0,
+                    ..Default::default()
+                },
+                [0, 0],
+                vec![],
+            );
+            tesselator.tessellate_rect(
+                &RectShape::stroke(
+                    Rect::from_min_size(ui.cursor().min, ui.available_size()).shrink(4.0),
+                    0.0,
+                    Stroke::new(1.0, ui.style().visuals.widgets.inactive.bg_fill),
+                ),
+                &mut mesh,
+            );
+            mesh
+        });
+        for i in 0..(height as usize / 48 + 1) {
+            ui.painter().hline(
+                cursor.min.x..=width,
+                (i as f32 * 48.0) + cursor.min.y + GRID_OFFSET,
+                Stroke::new(1.0, *GRID_COLOR),
+            );
+        }
+        for i in 0..(width as usize / 48 + 1) {
+            ui.painter().vline(
+                (i as f32 * 48.0) + cursor.min.x + GRID_OFFSET,
+                cursor.min.y..=height,
+                Stroke::new(1.0, *GRID_COLOR),
+            );
+        }
+    });
 }
 
 pub fn default_dark(ctx: &egui::Context) {
