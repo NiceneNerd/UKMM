@@ -127,6 +127,14 @@ impl Manager {
             log::debug!("Deployed files to delete:\n{:?}", &deletes);
             let syncs = self.pending_files.read();
             log::debug!("Files to deploy\n{:?}", &syncs);
+            log::info!(
+                "Deploying by {}",
+                match config.method {
+                    DeployMethod::Copy => "copy",
+                    DeployMethod::HardLink => "hard links",
+                    DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
+                }
+            );
             for (dir, dels, syncs) in [
                 (content, &deletes.content_files, &syncs.content_files),
                 (aoc, &deletes.aoc_files, &syncs.aoc_files),
@@ -142,7 +150,6 @@ impl Manager {
                 })?;
                 match config.method {
                     DeployMethod::Copy => {
-                        log::info!("Deploying by copy");
                         syncs.par_iter().try_for_each(|f: &String| -> Result<()> {
                             let out = dest.join(f.as_str());
                             fs::create_dir_all(out.parent().unwrap())?;
@@ -153,7 +160,6 @@ impl Manager {
                         })?;
                     }
                     DeployMethod::HardLink => {
-                        log::info!("Deploying by hard links");
                         syncs.par_iter().try_for_each(|f: &String| -> Result<()> {
                             let out = dest.join(f.as_str());
                             fs::create_dir_all(out.parent().unwrap())?;
@@ -243,7 +249,7 @@ impl Manager {
         platform: Platform,
         updates: HashMap<String, Option<u32>>,
     ) -> Result<()> {
-        const RSTB_PATH: &str = "System/Resource/ResourceSizeTable.product.srsizetable";
+        static RSTB_PATH: &str = "System/Resource/ResourceSizeTable.product.srsizetable";
         log::debug!("RSTB updates:\n{:?}", &updates);
         let content = uk_content::platform_content(platform.into());
         let table_path = merged.join(content).join(RSTB_PATH);
@@ -329,6 +335,7 @@ impl Manager {
         let rstb_updates = unpacker.unpack()?;
         self.apply_rstb(&out_dir, settings.current_mode, rstb_updates)?;
         self.save()?;
+        log::info!("All changed applied successfully");
         Ok(())
     }
 }

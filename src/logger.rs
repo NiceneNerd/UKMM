@@ -3,11 +3,11 @@ use log::{LevelFilter, Record};
 use once_cell::sync::{Lazy, OnceCell};
 use parking_lot::Mutex;
 use serde::Serialize;
-use std::ops::Deref;
+use std::{ops::Deref, sync::atomic::AtomicBool};
 
 pub static LOGGER: Lazy<Logger> = Lazy::new(|| Logger {
     inner: env_logger::builder().build(),
-    debug: std::env::args().any(|arg| &arg == "--debug"),
+    debug: std::env::args().any(|arg| &arg == "--debug").into(),
     queue: Mutex::new(vec![]),
     sender: OnceCell::new(),
 });
@@ -38,12 +38,21 @@ impl From<&Record<'_>> for Entry {
 
 pub struct Logger {
     inner: env_logger::Logger,
-    debug: bool,
+    debug: AtomicBool,
     queue: Mutex<Vec<Entry>>,
     sender: OnceCell<flume::Sender<Message>>,
 }
 
 impl Logger {
+    pub fn debug(&self) -> bool {
+        self.debug.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    pub fn set_debug(&self, debug: bool) {
+        self.debug
+            .store(debug, std::sync::atomic::Ordering::Relaxed);
+    }
+
     pub fn set_sender(&self, sender: flume::Sender<Message>) {
         self.sender.set(sender).unwrap_or(());
         self.flush_queue();
@@ -65,7 +74,8 @@ impl log::Log for Logger {
 
     fn log(&self, record: &Record) {
         let entry: Entry = record.into();
-        if record.target().contains("ukmm") && (self.debug || record.level() < LevelFilter::Debug) {
+        if record.target().contains("ukmm") && (self.debug() || record.level() < LevelFilter::Debug)
+        {
             if let Some(sender) = self.sender.get() {
                 sender.send(Message::Log(entry)).unwrap();
             } else {

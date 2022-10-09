@@ -27,7 +27,7 @@ use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
 use fs_err as fs;
 use icons::{Icon, IconButtonExt};
-use im::Vector;
+use im::{vector, Vector};
 use join_str::jstr;
 use once_cell::sync::OnceCell;
 use picker::FilePickerState;
@@ -590,7 +590,7 @@ impl App {
                 Message::Apply => {
                     let mods = self.mods.clone();
                     let dirty = std::mem::take(&mut self.dirty);
-                    self.do_task(move |core| tasks::apply_changes(&core, mods, dirty));
+                    self.do_task(move |core| tasks::apply_changes(&core, mods, Some(dirty)));
                 }
                 Message::Deploy => self.do_task(move |core| {
                     log::info!("Deploying current mod configuration");
@@ -598,11 +598,7 @@ impl App {
                     Ok(Message::ResetMods)
                 }),
                 Message::Remerge => {
-                    self.do_task(|core| {
-                        let deploy_manager = core.deploy_manager();
-                        deploy_manager.apply(None)?;
-                        Ok(Message::ResetMods)
-                    });
+                    self.do_task(|core| tasks::apply_changes(&core, vector![], None));
                 }
                 Message::ResetSettings => {
                     self.temp_settings = self.core.settings().clone();
@@ -900,6 +896,17 @@ impl App {
     }
 
     fn help_menu(&self, ui: &mut Ui) {
+        let verbose = crate::logger::LOGGER.debug();
+        if ui
+            .icon_text_button(
+                " Verbose Logging",
+                if !verbose { Icon::Blank } else { Icon::Check },
+            )
+            .clicked()
+        {
+            ui.close_menu();
+            crate::logger::LOGGER.set_debug(!verbose);
+        }
         if ui.button("Help").clicked() {
             ui.close_menu();
             todo!("You need help");
