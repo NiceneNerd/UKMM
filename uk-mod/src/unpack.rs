@@ -399,7 +399,8 @@ impl ModUnpacker {
                 let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
                 writer.write_all(&compress_if(data.as_ref(), &out_file))?;
                 let canon = canonicalize(out_file.strip_prefix(&self.out_dir).unwrap());
-                let size = rstb::calc::calc_from_slice_and_name(&data, &canon, self.endian.into());
+                let size =
+                    rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
                 Ok((canon, size))
             })
             .collect()
