@@ -13,7 +13,7 @@ use anyhow::{Context, Result};
 use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::{text::TextWrapping, FontFamily},
-    NativeOptions,
+    IconData, NativeOptions,
 };
 use egui::{
     self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId,
@@ -1079,7 +1079,17 @@ pub fn main() {
     log::info!("Started ukmm");
     eframe::run_native(
         "U-King Mod Manager",
-        NativeOptions::default(),
+        NativeOptions {
+            icon_data: Some(IconData {
+                height: 256,
+                width: 256,
+                rgba: image::load_from_memory(include_bytes!("../assets/ukmm.png"))
+                    .unwrap()
+                    .to_rgba8()
+                    .into_vec(),
+            }),
+            ..Default::default()
+        },
         Box::new(|cc| Box::new(App::new(cc))),
     );
 }
