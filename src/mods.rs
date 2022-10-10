@@ -278,6 +278,7 @@ impl Manager {
 
     /// Add a mod to the list of installed mods. This function assumes that the
     /// mod at the provided path has already been validated.
+    #[allow(irrefutable_let_patterns)]
     pub fn add(&self, mod_path: &Path) -> Result<Mod> {
         let mut san_opts = sanitise_file_name::Options::DEFAULT;
         san_opts.url_safe = true;
@@ -297,6 +298,9 @@ impl Manager {
             .read()
             .mods_dir()
             .join(sanitized);
+        if let parent = stored_path.parent().unwrap() && !parent.exists() {
+            fs::create_dir_all(parent)?;
+        }
         if mod_path.is_file() {
             if self.settings.upgrade().unwrap().read().unpack_mods {
                 uk_mod::unpack::unzip_mod(mod_path, &stored_path)
