@@ -6,6 +6,7 @@ use join_str::jstr;
 use jwalk::WalkDir;
 use mmap_rs::{Mmap, MmapOptions};
 use ouroboros::self_referencing;
+use parking_lot::RwLock;
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{sarc::SarcWriter, yaz0::compress_if};
@@ -325,6 +326,7 @@ pub struct ModUnpacker {
     manifest: Option<Manifest>,
     mods: Vec<ModReader>,
     endian: Endian,
+    rstb: RwLock<HashMap<String, Option<u32>>>,
     out_dir: PathBuf,
 }
 
@@ -340,6 +342,7 @@ impl ModUnpacker {
             manifest: None,
             mods,
             endian,
+            rstb: RwLock::new(HashMap::default()),
             out_dir,
         }
     }
@@ -371,39 +374,26 @@ impl ModUnpacker {
                 .collect();
         }
         let (content, aoc) = platform_prefixes(self.endian);
-        let rstb_vals = self
-            .unpack_files(content_files, self.out_dir.join(content))?
-            .into_iter()
-            .chain(
-                self.unpack_files(aoc_files, self.out_dir.join(aoc))?
-                    .into_iter(),
-            )
-            .collect();
-        Ok(rstb_vals)
+        self.unpack_files(content_files, self.out_dir.join(content))?;
+        self.unpack_files(aoc_files, self.out_dir.join(aoc))?;
+        Ok(self.rstb.into_inner())
     }
 
     #[allow(irrefutable_let_patterns)]
-    fn unpack_files(
-        &self,
-        files: BTreeSet<&String>,
-        dir: PathBuf,
-    ) -> Result<HashMap<String, Option<u32>>> {
-        files
-            .into_par_iter()
-            .map(|file| -> Result<(String, Option<u32>)> {
-                let data = self.build_file(file.as_str())?;
-                let out_file = dir.join(file.as_str());
-                if let parent = out_file.parent().unwrap() && !parent.exists() {
-                fs::create_dir_all(parent)?;
-            }
-                let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
-                writer.write_all(&compress_if(data.as_ref(), &out_file))?;
-                let canon = canonicalize(out_file.strip_prefix(&self.out_dir).unwrap());
-                let size =
-                    rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
-                Ok((canon, size))
-            })
-            .collect()
+    fn unpack_files(&self, files: BTreeSet<&String>, dir: PathBuf) -> Result<()> {
+        files.into_par_iter().try_for_each(|file| -> Result<()> {
+            let data = self.build_file(file.as_str())?;
+            let out_file = dir.join(file.as_str());
+            if let parent = out_file.parent().unwrap() && !parent.exists() {
+                    fs::create_dir_all(parent)?;
+                }
+            let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
+            writer.write_all(&compress_if(data.as_ref(), &out_file))?;
+            let canon = canonicalize(out_file.strip_prefix(&self.out_dir).unwrap());
+            let size = rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
+            self.rstb.write().insert(canon, size);
+            Ok(())
+        })
     }
 
     fn build_file(&self, file: &str) -> Result<Vec<u8>> {
@@ -474,6 +464,9 @@ impl ModUnpacker {
                 file.as_str(),
                 compress_if(data.as_ref(), file.as_str()).as_ref(),
             );
+            let canon = canonicalize(file.as_str());
+            let size = rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
+            self.rstb.write().insert(canon, size);
         }
         Ok(writer.to_binary())
     }
