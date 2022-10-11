@@ -225,7 +225,7 @@ impl Settings {
     pub fn load() -> Arc<RwLock<Settings>> {
         Arc::new(RwLock::new(match Settings::read(&SETTINGS_PATH) {
             Ok(settings) => {
-                log::debug!("{:?}", settings);
+                log::debug!("{:#?}", settings);
                 settings
             }
             Err(e) => {
@@ -250,7 +250,7 @@ impl Settings {
         if !SETTINGS_PATH.parent().unwrap().exists() {
             fs::create_dir_all(SETTINGS_PATH.parent().unwrap())?;
         }
-        log::debug!("Saving settings:\n{:?}", self);
+        log::debug!("Saving settings:\n{:#?}", self);
         fs::write(SETTINGS_PATH.as_path(), toml::to_string_pretty(self)?)?;
         log::info!("Settings saved");
         Ok(())

@@ -521,7 +521,7 @@ impl App {
                 }
                 Message::HandleMod(mod_) => {
                     self.busy = false;
-                    log::debug!("{:?}", &mod_);
+                    log::debug!("{:#?}", &mod_);
                     if !mod_.meta.options.is_empty() {
                         self.do_update(Message::RequestOptions(mod_));
                     } else {
@@ -906,6 +906,7 @@ impl App {
         {
             ui.close_menu();
             crate::logger::LOGGER.set_debug(!verbose);
+            log::debug!("Verbose logging enabled"); // Think about it for a second
         }
         if ui.button("Help").clicked() {
             ui.close_menu();
@@ -1068,7 +1069,8 @@ impl eframe::App for App {
             self.core.settings().state_file(),
             &serde_json::to_string_pretty(&self.picker_state).unwrap(),
         )
-        .unwrap();
+        .unwrap_or(());
+        crate::util::clear_temp();
     }
 }
 

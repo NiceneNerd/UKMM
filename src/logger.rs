@@ -31,7 +31,7 @@ impl From<&Record<'_>> for Entry {
             timestamp: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
             level: record.level().to_string(),
             target: record.target().to_string(),
-            args: record.args().to_string(),
+            args: format!("{:#?}", record.args()),
         }
     }
 }

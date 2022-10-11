@@ -188,7 +188,8 @@ impl ModPacker {
                     self.process_sarc(
                         Sarc::new(file_data.as_ref())?,
                         !self.hash_table.contains(&canon),
-                    )?;
+                    )
+                    .with_context(|| jstr!("Failed to process SARC file {&canon}"))?;
                 }
 
                 Ok(Some(
@@ -277,7 +278,8 @@ impl ModPacker {
                 .with_context(|| jstr!("Failed to parse resource {&canon}"))?;
             self.process_resource(name.into(), canon.clone(), resource, is_new_sarc)?;
             if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
-                self.process_sarc(Sarc::new(file_data.as_ref())?, is_new_sarc)?;
+                self.process_sarc(Sarc::new(file_data.as_ref())?, is_new_sarc)
+                    .with_context(|| jstr!("Failed to process SARC file {&canon}"))?;
             }
         }
         Ok(())

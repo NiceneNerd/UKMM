@@ -221,7 +221,7 @@ impl Manager {
         }
         let profile = serde_yaml::from_str(&fs::read_to_string(path.join("profile.yml"))?)
             .context("Failed to parse mod database")?;
-        log::debug!("Profile data:\n{:?}", &profile);
+        log::debug!("Profile data:\n{:#?}", &profile);
         Ok(Self {
             path: path.to_path_buf(),
             profile,
@@ -235,7 +235,7 @@ impl Manager {
             serde_yaml::to_string(&self.profile)?,
         )?;
         log::info!("Saved profile data");
-        log::debug!("{:?}", &self.profile);
+        log::debug!("{:#?}", &self.profile);
         Ok(())
     }
 
@@ -317,7 +317,7 @@ impl Manager {
         self.profile.load_order_mut().push(mod_.hash);
         self.profile.mods_mut().insert(mod_.hash, mod_.clone());
         log::info!("Added mod {}", mod_.meta.name);
-        log::debug!("{:?}", mod_);
+        log::debug!("{:#?}", mod_);
         Ok(mod_)
     }
 
@@ -405,16 +405,16 @@ pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
 
         if ext == "ZIP" {
             log::info!("Extracting ZIP file...");
-            let tmpdir = tempfile::tempdir()?.into_path();
+            let tmpdir = util::get_temp_folder();
             zip::ZipArchive::new(BufReader::new(fs::File::open(path)?))
                 .context("Failed to open ZIP")?
-                .extract(&tmpdir)
+                .extract(&*tmpdir)
                 .context("Failed to extract ZIP")?;
             find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
         } else if ext == "7Z" {
             log::info!("Extracting 7Z file...");
-            let tmpdir = tempfile::tempdir()?.into_path();
-            sevenz_rust::decompress_file(path, &tmpdir).context("Failed to extract 7Z file")?;
+            let tmpdir = util::get_temp_folder();
+            sevenz_rust::decompress_file(path, &*tmpdir).context("Failed to extract 7Z file")?;
             find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
         } else if path.file_name().context("No file name")?.to_str() == Some("rules.txt") {
             path.parent().unwrap().to_owned()
@@ -426,10 +426,10 @@ pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
         log::info!("Unpacked mod, that's easy");
         path.to_path_buf()
     };
-    let temp = tempfile::tempdir()?.into_path();
+    let temp = util::get_temp_folder();
     log::debug!("Temp folder: {}", temp.display());
     log::info!("Attempting to convert mod...");
-    let packer = ModPacker::new(&path, &temp, None, vec![])?;
+    let packer = ModPacker::new(&path, &*temp, None, vec![])?;
     let result_path = packer.pack()?;
     log::info!("Conversion complete");
     Ok(result_path)

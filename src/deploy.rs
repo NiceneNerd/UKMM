@@ -62,7 +62,7 @@ impl Manager {
             Ok(log) => {
                 if !log.files.is_empty() || !log.delete.is_empty() {
                     log::info!("Pending deployment data found");
-                    log::debug!("{:?}", &log);
+                    log::debug!("{:#?}", &log);
                 } else {
                     log::info!("No files pending deployment");
                 }
@@ -118,15 +118,15 @@ impl Manager {
             .platform_config()
             .and_then(|c| c.deploy_config.as_ref())
             .context("No deployment config for current platform")?;
-        log::debug!("Deployment config:\n{:?}", &config);
+        log::debug!("Deployment config:\n{:#?}", &config);
         if config.method == DeployMethod::Symlink {
             log::info!("Depoyment method is symlink, no action needed");
         } else {
             let (content, aoc) = uk_content::platform_prefixes(settings.current_mode.into());
             let deletes = self.pending_delete.read();
-            log::debug!("Deployed files to delete:\n{:?}", &deletes);
+            log::debug!("Deployed files to delete:\n{:#?}", &deletes);
             let syncs = self.pending_files.read();
-            log::debug!("Files to deploy\n{:?}", &syncs);
+            log::debug!("Files to deploy\n{:#?}", &syncs);
             log::info!(
                 "Deploying by {}",
                 match config.method {
@@ -207,7 +207,7 @@ impl Manager {
             return Ok(());
         }
         log::debug!(
-            "Orphans to delete:\n{:?}\n{:?}",
+            "Orphans to delete:\n{:#?}\n{:#?}",
             &orphans_content,
             &orphans_aoc
         );
@@ -250,21 +250,27 @@ impl Manager {
         updates: HashMap<String, Option<u32>>,
     ) -> Result<()> {
         static RSTB_PATH: &str = "System/Resource/ResourceSizeTable.product.srsizetable";
-        log::debug!("RSTB updates:\n{:?}", &updates);
+        log::debug!("RSTB updates:\n{:#?}", &updates);
         let content = uk_content::platform_content(platform.into());
         let table_path = merged.join(content).join(RSTB_PATH);
         let mut table = if table_path.exists() {
+            log::debug!("Updating existing merged RSTB");
             ResourceSizeTable::from_binary(
                 decompress(fs::read(&table_path).context("Failed to open merged RSTB")?)
                     .context("Failed to decompress merged RSTB")?,
             )
             .context("Failed to parse merged RSTB")?
         } else {
+            log::debug!("Creating new RSTB");
             ResourceSizeTable::new_from_stock(platform.into())
         };
         for (canon, size) in updates {
             match size {
-                Some(size) => table.set(canon.as_str(), size),
+                Some(size) => {
+                    if table.get(canon.as_str()).map(|s| s < size).unwrap_or(true) {
+                        table.set(canon.as_str(), size);
+                    }
+                }
                 None => {
                     table.remove(canon.as_str());
                 }
@@ -313,7 +319,7 @@ impl Manager {
                 &out_dir,
                 settings.current_mode,
             )?;
-            log::debug!("Change manifest: {:?}", &manifest);
+            log::debug!("Change manifest: {:#?}", &manifest);
             self.pending_files.write().extend(&manifest);
             ModUnpacker::new(dump, endian, mods, out_dir.clone()).with_manifest(manifest)
         } else {
