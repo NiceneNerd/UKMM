@@ -53,6 +53,9 @@ zip = { version = "0.6.2", default-features = false, features = ["deflate"]}
 [target.'cfg(windows)'.dependencies]
 remove_dir_all = "0.7.0"
 
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1.12"
+
 [workspace]
 members = [
     "uk-content",
