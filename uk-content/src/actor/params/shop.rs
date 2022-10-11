@@ -111,7 +111,7 @@ impl TryFrom<&ParameterIO> for ShopData {
                                         ))?
                                         .as_bool()?,
                                     amount: table_obj
-                                        .get(&format!("ItemAdjustPrice{:03}", i))
+                                        .get(&format!("ItemAmount{:03}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Shop table missing item amount",
                                         ))?
