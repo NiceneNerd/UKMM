@@ -1,9 +1,9 @@
 use super::Message;
-use crate::{core::Manager, mods::Mod};
 use anyhow::{Context, Result};
 use fs_err as fs;
 use im::Vector;
 use std::{io::BufReader, path::Path};
+use uk_manager::{core::Manager, mods::Mod};
 use uk_mod::{unpack::ModReader, Manifest};
 
 fn is_probably_a_mod(path: &Path) -> bool {
@@ -51,7 +51,7 @@ pub fn open_mod(path: &Path) -> Result<Message> {
                 && is_probably_a_mod(path)
             {
                 log::info!("Maybe it's not a UKMM mod, let's to convert it");
-                let converted_path = crate::mods::convert_gfx(path)?;
+                let converted_path = uk_manager::mods::convert_gfx(path)?;
                 Mod::from_reader(
                     ModReader::open_peek(&converted_path, vec![])
                         .context("Failed to open converted mod")?,
@@ -75,10 +75,13 @@ pub fn apply_changes(
         log::info!("Updating mod states");
         mods.iter()
             .try_for_each(|m| -> Result<()> {
-                let mod_ = mod_manager.all_mods().find(|m2| m2.hash == m.hash).unwrap();
+                let mod_ = mod_manager
+                    .all_mods()
+                    .find(|m2| m2.hash() == m.hash())
+                    .unwrap();
                 if !mod_.state_eq(m) {
                     mod_manager
-                        .set_enabled(m.hash, m.enabled)
+                        .set_enabled(m.hash(), m.enabled)
                         .with_context(|| {
                             format!(
                                 "Failed to {} {}",
@@ -87,7 +90,7 @@ pub fn apply_changes(
                             )
                         })?;
                     mod_manager
-                        .set_enabled_options(m.hash, m.enabled_options.clone())
+                        .set_enabled_options(m.hash(), m.enabled_options.clone())
                         .with_context(|| {
                             format!("Failed to update options on {}", m.meta.name.as_str())
                         })?;
@@ -96,7 +99,7 @@ pub fn apply_changes(
             })
             .context("Failed to update mod state")?;
         log::info!("Updating load order");
-        let order = mods.iter().map(|m| m.hash).collect();
+        let order = mods.iter().map(|m| m.hash()).collect();
         mod_manager.set_order(order);
         mod_manager
             .save()

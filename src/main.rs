@@ -10,13 +10,8 @@
     result_option_inspect
 )]
 mod cli;
-mod core;
-mod deploy;
 mod gui;
 mod logger;
-mod mods;
-mod settings;
-mod util;
 
 use anyhow::Result;
 use clap::Parser;

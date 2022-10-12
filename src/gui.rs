@@ -8,7 +8,7 @@ mod tabs;
 mod tasks;
 mod util;
 mod visuals;
-use crate::{core::Manager, logger::Entry, mods::Mod, settings::Settings};
+use crate::logger::Entry;
 use anyhow::{Context, Result};
 use eframe::{
     egui::{FontData, FontDefinitions},
@@ -37,6 +37,11 @@ use std::{
     sync::{Arc, Once},
     thread,
     time::Duration,
+};
+use uk_manager::{
+    core::Manager,
+    mods::{LookupMod, Mod},
+    settings::Settings,
 };
 use uk_mod::Manifest;
 use util::UkWidgetExt;
@@ -532,7 +537,7 @@ impl App {
                     self.do_task(move |core| {
                         let mods = core.mod_manager();
                         let mod_ = mods.add(&mod_.path)?;
-                        let hash = mod_.hash;
+                        let hash = mod_.as_hash_id();
                         if !mod_.enabled_options.is_empty() {
                             mods.set_enabled_options(hash, mod_.enabled_options)?;
                         }
@@ -547,7 +552,7 @@ impl App {
                     self.do_task(move |core| {
                         let manager = core.mod_manager();
                         mods.iter().try_for_each(|m| -> Result<()> {
-                            manager.del(m.hash)?;
+                            manager.del(m.as_hash_id())?;
                             log::info!("Removed mod {} from current profile", m.meta.name.as_str());
                             Ok(())
                         })?;
@@ -1070,7 +1075,7 @@ impl eframe::App for App {
             &serde_json::to_string_pretty(&self.picker_state).unwrap(),
         )
         .unwrap_or(());
-        crate::util::clear_temp();
+        uk_manager::util::clear_temp();
     }
 }
 

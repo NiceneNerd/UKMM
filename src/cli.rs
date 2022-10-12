@@ -4,6 +4,7 @@ use std::{
     io::{stdin, stdout, Write},
     path::{Path, PathBuf},
 };
+use uk_manager::{core, mods::LookupMod, settings};
 use uk_mod::{unpack::ModReader, Manifest};
 
 #[derive(Debug, Subcommand)]
@@ -15,7 +16,7 @@ pub enum Commands {
     /// Deploy mods
     Deploy,
     /// Change current mode (Switch or Wii U)
-    Mode { platform: crate::settings::Platform },
+    Mode { platform: settings::Platform },
 }
 
 #[derive(Debug, Parser)]
@@ -41,14 +42,14 @@ macro_rules! input {
 
 #[derive(Debug)]
 pub struct Runner {
-    core: crate::core::Manager,
+    core: core::Manager,
     cli: Cli,
 }
 
 impl Runner {
     pub fn new(cli: Cli) -> Self {
         Self {
-            core: crate::core::Manager::init().unwrap(),
+            core: core::Manager::init().unwrap(),
             cli,
         }
     }
@@ -58,7 +59,7 @@ impl Runner {
         let (mod_, path) = match ModReader::open(path, vec![]) {
             Ok(mod_) => (mod_, path.to_path_buf()),
             Err(e) => {
-                match crate::mods::convert_gfx(path) {
+                match uk_manager::mods::convert_gfx(path) {
                     Ok(path) => {
                         log::info!("Opening mod at {}", path.display());
                         (ModReader::open(&path, vec![]).context("Failed to open converted mod")?, path)
@@ -119,7 +120,7 @@ impl Runner {
                 if let Some(path) = self.check_mod(path)? {
                     let mods = self.core.mod_manager();
                     let mod_ = mods.add(&path)?;
-                    mods.set_enabled(mod_.hash, true)?;
+                    mods.set_enabled(mod_.as_hash_id(), true)?;
                     mods.save()?;
                     println!("Applying mod to load order...");
                     let deployer = self.core.deploy_manager();
@@ -170,17 +171,15 @@ impl Runner {
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
-
+    use uk_manager::settings::{self, DeployConfig, Platform};
     use uk_reader::ResourceReader;
-
-    use crate::settings::{DeployConfig, Platform};
 
     #[test]
     fn settings() {
-        let mut settings = crate::settings::Settings::default();
+        let mut settings = settings::Settings::default();
         settings.current_mode = Platform::WiiU;
-        settings.wiiu_config = Some(crate::settings::PlatformSettings {
-            language: crate::settings::Language::USen,
+        settings.wiiu_config = Some(settings::PlatformSettings {
+            language: settings::Language::USen,
             dump: Arc::new(
                 ResourceReader::from_unpacked_dirs(
                     Some("/games/Cemu/mlc01/usr/title/00050000/101C9400/content"),
@@ -191,7 +190,7 @@ mod tests {
             ),
             deploy_config: Some(DeployConfig {
                 auto: false,
-                method: crate::settings::DeployMethod::HardLink,
+                method: settings::DeployMethod::HardLink,
                 output: "/tmp/BreathOfTheWild_UKMM".into(),
             }),
             profile: "Default".into(),

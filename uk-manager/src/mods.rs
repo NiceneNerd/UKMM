@@ -3,7 +3,6 @@ use crate::{
     util::{self, HashMap},
 };
 use anyhow::{Context, Result};
-use egui_extras::RetainedImage;
 use fs_err as fs;
 use once_cell::sync::Lazy;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -67,42 +66,6 @@ impl Mod {
         }
     }
 
-    pub fn preview(&self) -> Option<Arc<RetainedImage>> {
-        fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
-            let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
-            if let Ok(mut file) = zip.by_name("thumb.jpg") {
-                let mut vec = vec![0; file.size() as usize];
-                file.read_exact(&mut vec)?;
-                return Ok(Some(Arc::new(
-                    RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
-                        .map_err(|e| anyhow::anyhow!("{}", e))?,
-                )));
-            }
-            if let Ok(mut file) = zip.by_name("thumb.png") {
-                let mut vec = vec![0; file.size() as usize];
-                file.read_exact(&mut vec)?;
-                return Ok(Some(Arc::new(
-                    RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
-                        .map_err(|e| anyhow::anyhow!("{}", e))?,
-                )));
-            }
-            Ok(None)
-        }
-        static PREVIEW: Lazy<RwLock<HashMap<usize, Option<Arc<RetainedImage>>>>> =
-            Lazy::new(|| RwLock::new(HashMap::default()));
-        let mut preview = PREVIEW.write();
-        preview
-            .entry(self.hash)
-            .or_insert_with(|| match load_preview(self) {
-                Ok(pre) => pre,
-                Err(e) => {
-                    log::error!("Error loading mod preview: {}", e);
-                    None
-                }
-            })
-            .clone()
-    }
-
     pub fn manifest(&self) -> Result<Arc<Manifest>> {
         self.manifest_with_options(&self.enabled_options)
     }
@@ -125,6 +88,11 @@ impl Mod {
 
     pub fn state_eq(&self, other: &Self) -> bool {
         self.enabled == other.enabled && self.enabled_options == other.enabled_options
+    }
+
+    #[inline(always)]
+    pub fn hash(&self) -> usize {
+        self.hash
     }
 }
 

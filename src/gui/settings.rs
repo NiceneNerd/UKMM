@@ -3,7 +3,6 @@ use super::{
     util::UkWidgetExt,
     App, Message,
 };
-use crate::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use anyhow::Result;
 use egui::{Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui};
 use once_cell::sync::Lazy;
@@ -15,6 +14,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
+use uk_manager::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
 
 fn render_setting<R>(
@@ -181,9 +181,9 @@ fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
     ui.end_row();
     let mut changed = false;
     render_setting("Deploy Method", "There are three methods of deployment: copying, hard linking, and symlinking. Generally copying is slow and should be avoided if possible. For more on this, consult the docs.", ui, |ui| {
-        changed = changed || ui.radio_value(&mut config.method, crate::settings::DeployMethod::Copy, "Copy").changed();
-        changed = changed || ui.radio_value(&mut config.method, crate::settings::DeployMethod::HardLink, "Hard Links").changed();
-        changed = changed || ui.radio_value(&mut config.method, crate::settings::DeployMethod::Symlink, "Symlink").changed();
+        changed = changed || ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Copy, "Copy").changed();
+        changed = changed || ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::HardLink, "Hard Links").changed();
+        changed = changed || ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Symlink, "Symlink").changed();
     });
     render_setting("Auto Deploy", "Whether to automatically deploy changes to the mod configuration every time they are applied.", ui, |ui| {
         changed = changed || ui.checkbox(&mut config.auto, "").changed();

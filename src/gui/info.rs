@@ -1,20 +1,60 @@
-use crate::mods::Mod;
+use anyhow::Result;
 use eframe::epaint::text::TextWrapping;
 use egui::{text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui};
+use egui_extras::RetainedImage;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rustc_hash::{FxHashMap, FxHasher};
 use std::{
     hash::{Hash, Hasher},
+    io::{BufReader, Read},
     path::PathBuf,
+    sync::Arc,
 };
+use uk_manager::mods::Mod;
 use uk_mod::Manifest;
+
+pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
+    fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
+        let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
+        if let Ok(mut file) = zip.by_name("thumb.jpg") {
+            let mut vec = vec![0; file.size() as usize];
+            file.read_exact(&mut vec)?;
+            return Ok(Some(Arc::new(
+                RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
+                    .map_err(|e| anyhow::anyhow!("{}", e))?,
+            )));
+        }
+        if let Ok(mut file) = zip.by_name("thumb.png") {
+            let mut vec = vec![0; file.size() as usize];
+            file.read_exact(&mut vec)?;
+            return Ok(Some(Arc::new(
+                RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
+                    .map_err(|e| anyhow::anyhow!("{}", e))?,
+            )));
+        }
+        Ok(None)
+    }
+    static PREVIEW: Lazy<RwLock<FxHashMap<usize, Option<Arc<RetainedImage>>>>> =
+        Lazy::new(|| RwLock::new(FxHashMap::default()));
+    let mut preview = PREVIEW.write();
+    preview
+        .entry(mod_.hash())
+        .or_insert_with(|| match load_preview(mod_) {
+            Ok(pre) => pre,
+            Err(e) => {
+                log::error!("Error loading mod preview: {}", e);
+                None
+            }
+        })
+        .clone()
+}
 
 pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
     egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
         ui.spacing_mut().item_spacing.y = 8.;
         ui.add_space(8.);
-        if let Some(preview) = mod_.preview() {
+        if let Some(preview) = preview(mod_) {
             preview.show_max_size(ui, ui.available_size());
             ui.add_space(8.);
         }

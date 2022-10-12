@@ -9,7 +9,6 @@ anyhow = "1.0.62"
 base64 = "0.13.0"
 chrono = "0.4.22"
 clap = { version = "3.2.17", features = ["derive"] }
-dircpy = "0.3.12"
 dirs2 = "3.0.1"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
 egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-features = false, features = ["color-hex", "persistence"] }
@@ -32,20 +31,13 @@ open = "3.0.3"
 parking_lot = { version = "0.12.1", features = ["serde"] }
 rayon = "1.5.3"
 rfd = "0.10.0"
-roead = "0.16.2"
-ron = "0.8.0"
 rustc-hash = "1.1.0"
-rstb = { version= "0.3.2", features = ["botw-data"] }
-sanitise-file-name = "1.0.0"
 serde = { version = "1.0.144", features = ["derive", "rc"] }
 serde_json = "1.0.85"
-serde_with = "2.0.1"
-serde_yaml = "0.9.10"
-sevenz-rust = "0.1.1"
 smartstring = { version = "1.0.1", features = ["serde"] }
-tempfile = "3.3.0"
 toml = "0.5.9"
 uk-content = { path = "./uk-content" }
+uk-manager = { path = "./uk-manager" }
 uk-mod = { path = "./uk-mod" }
 uk-reader = { path = "./uk-reader" }
 zip = { version = "0.6.2", default-features = false, features = ["deflate"]}

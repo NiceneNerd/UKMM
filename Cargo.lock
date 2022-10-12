@@ -3797,6 +3797,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "uk-manager"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.13.0",
+ "dircpy",
+ "dirs2",
+ "enum-iterator",
+ "fs-err",
+ "join_str",
+ "jwalk",
+ "log",
+ "once_cell",
+ "parking_lot",
+ "rayon",
+ "remove_dir_all 0.7.0",
+ "roead",
+ "rstb",
+ "rustc-hash",
+ "sanitise-file-name",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "serde_yaml 0.9.13",
+ "sevenz-rust",
+ "smartstring",
+ "tempfile",
+ "toml",
+ "uk-content",
+ "uk-mod",
+ "uk-reader",
+ "zip",
+]
+
+[[package]]
 name = "uk-mod"
 version = "0.1.0"
 dependencies = [
@@ -3861,7 +3896,6 @@ dependencies = [
  "base64 0.13.0",
  "chrono",
  "clap 3.2.22",
- "dircpy",
  "dirs2",
  "eframe",
  "egui",
@@ -3885,20 +3919,13 @@ dependencies = [
  "rayon",
  "remove_dir_all 0.7.0",
  "rfd",
- "roead",
- "ron",
- "rstb",
  "rustc-hash",
- "sanitise-file-name",
  "serde",
  "serde_json",
- "serde_with",
- "serde_yaml 0.9.13",
- "sevenz-rust",
  "smartstring",
- "tempfile",
  "toml",
  "uk-content",
+ "uk-manager",
  "uk-mod",
  "uk-reader",
  "winres",
