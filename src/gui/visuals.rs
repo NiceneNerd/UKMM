@@ -1,7 +1,7 @@
 use eframe::epaint::{color_hex::color_from_hex, RectShape, Shadow, Tessellator};
 use egui::{
     style::{Margin, Selection, Spacing, WidgetVisuals, Widgets},
-    Color32, FontFamily, LayerId, Mesh, Pos2, Rect, Rounding, Stroke, Style, Ui, Vec2, Visuals,
+    Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
 };
 use once_cell::sync::Lazy;
 

@@ -74,7 +74,8 @@ impl log::Log for Logger {
 
     fn log(&self, record: &Record) {
         let entry: Entry = record.into();
-        if record.target().contains("ukmm") && (self.debug() || record.level() < LevelFilter::Debug)
+        if record.target().starts_with("uk")
+            && (self.debug() || record.level() < LevelFilter::Debug)
         {
             if let Some(sender) = self.sender.get() {
                 sender.send(Message::Log(entry)).unwrap();

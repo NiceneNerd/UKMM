@@ -1,5 +1,5 @@
-use eframe::epaint::{RectShape, Shadow, Tessellator, TextShape};
-use egui::{Direction, FontId, Mesh, Rect, Response, RichText, Stroke, TextStyle, Ui};
+
+use egui::{Direction, Response, RichText, Ui};
 use std::path::PathBuf;
 
 pub trait UkWidgetExt {
