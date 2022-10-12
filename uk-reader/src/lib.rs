@@ -60,6 +60,10 @@ pub trait ResourceLoader: std::fmt::Debug + Send + Sync {
 }
 
 fn construct_cache() -> ResourceCache {
+    log::debug!(
+        "Initializing resource cache (up to {} resources)",
+        CACHE_SIZE
+    );
     ResourceCache::new(CACHE_SIZE)
 }
 
@@ -163,9 +167,11 @@ impl ResourceReader {
         path: impl AsRef<Path>,
         canon: String,
     ) -> uk_content::Result<Arc<ResourceData>> {
+        log::trace!("Loading resource {}", &canon);
         let resource =
             self.cache
                 .try_get_with(canon.clone(), || -> uk_content::Result<_> {
+                    log::trace!("Resource {} not in cache, pulling", &canon);
                     let data = self.source.get_data(path.as_ref())?;
                     let resource = match self.bin_type {
                         BinType::Nintendo => {
@@ -191,6 +197,7 @@ impl ResourceReader {
     }
 
     fn process_sarc(&self, sarc: roead::sarc::Sarc) -> uk_content::Result<()> {
+        log::trace!("Resource is SARC, add contents to cache");
         for file in sarc.files() {
             let name = file.name().context("SARC file missing name")?.to_string();
             let canon = canonicalize(&name);

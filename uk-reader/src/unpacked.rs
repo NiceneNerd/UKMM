@@ -18,31 +18,42 @@ impl Unpacked {
         aoc_dir: Option<impl AsRef<Path>>,
         test_valid: bool,
     ) -> Result<Self> {
+        log::info!("Loading unpacked game files");
         let content_dir = content_dir.as_ref().map(|c| c.as_ref());
         let update_dir = update_dir.as_ref().map(|d| d.as_ref());
         let aoc_dir = aoc_dir.as_ref().map(|a| a.as_ref());
+        log::debug!(
+            "Folders:\n{:?}\n{:?}\n{:?}",
+            content_dir.map(|p| p.display()),
+            update_dir.map(|p| p.display()),
+            aoc_dir.map(|p| p.display())
+        );
         if test_valid {
+            static CONTENT_TEST: &str = "Map/MainField/A-1/A-1.00_Clustering.sblwp";
+            static UPDATE_TEST: &str = "Actor/Pack/Enemy_Lynel_Dark.sbactorpack";
+            static AOC_TEST: &str = "Pack/AocMainField.pack";
             if let Some(content_dir) = content_dir.as_ref()
                 && !content_dir
-                    .join("Map/MainField/A-1/A-1.00_Clustering.sblwp")
+                    .join(CONTENT_TEST)
                     .exists()
             {
+                log::error!("Test file {} not found in content folder", CONTENT_TEST);
                 return Err(ROMError::MissingDumpDir(
                     "base game",
                     content_dir.to_path_buf(),
                 ));
             } else if let Some(update_dir) = update_dir.as_ref()
                 && !update_dir
-                    .join("Actor/Pack/Enemy_Lynel_Dark.sbactorpack")
+                    .join(UPDATE_TEST)
                     .exists()
             {
+                log::error!("Test file {} not found in update folder", UPDATE_TEST);
                 return Err(ROMError::MissingDumpDir(
                     "update",
                     update_dir.to_path_buf(),
                 ));
-            } else if let Some(aoc_dir) =
-                aoc_dir.as_ref() && !aoc_dir.join("Pack/AocMainField.pack").exists()
-            {
+            } else if let Some(aoc_dir) = aoc_dir.as_ref() && !aoc_dir.join(AOC_TEST).exists() {
+                log::error!("Test file {} not found in DLC folder", UPDATE_TEST);
                 return Err(ROMError::MissingDumpDir(
                     "DLC",
                     aoc_dir.to_path_buf(),

@@ -14,6 +14,7 @@ pub(crate) struct ZArchive {
 
 impl ZArchive {
     pub(crate) fn new(path: impl AsRef<Path>) -> Result<Self> {
+        log::info!("Opening ZArchive at {}", path.as_ref().display());
         let archive = zarchive::reader::ZArchiveReader::open(path.as_ref())?;
         let mut content_dir: Option<PathBuf> = None;
         let mut update_dir: Option<PathBuf> = None;
@@ -21,10 +22,13 @@ impl ZArchive {
         for dir in archive.iter()? {
             if dir.name().starts_with("0005000") && dir.name().ends_with("v0") {
                 content_dir = Some(Path::new(dir.name()).join("content"));
+                log::debug!("Found content folder in ZArchive at {:?}", &content_dir);
             } else if dir.name().starts_with("0005000") && dir.name().ends_with("v208") {
                 update_dir = Some(Path::new(dir.name()).join("content"));
+                log::debug!("Found update folder in ZArchive at {:?}", &update_dir);
             } else if dir.name().starts_with("0005000") && dir.name().ends_with("v80") {
                 aoc_dir = Some(Path::new(dir.name()).join("content/0010"));
+                log::debug!("Found DLC folder in ZArchive at {:?}", &aoc_dir);
             }
         }
         Ok(Self {

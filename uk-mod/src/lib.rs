@@ -161,21 +161,8 @@ impl Meta {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn save_dump() {
-        let reader = uk_reader::ResourceReader::from_unpacked_dirs(
-            Some("/games/Cemu/mlc01/usr/title/00050000/101C9400/content"),
-            Some("/games/Cemu/mlc01/usr/title/0005000E/101C9400/content"),
-            Some("/games/Cemu/mlc01/usr/title/0005000C/101C9400/content/0010"),
-        )
-        .unwrap();
-        std::fs::write(
-            "../.vscode/dump.yml",
-            serde_yaml::to_string(&reader).unwrap(),
-        )
-        .unwrap();
-    }
 
+    #[test]
     #[test]
     fn read_meta() {
         dbg!(Meta::read("test/wiiu.zip").unwrap());

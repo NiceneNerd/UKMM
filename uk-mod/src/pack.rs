@@ -116,15 +116,20 @@ impl ModPacker {
         meta: Option<Meta>,
         masters: Vec<Arc<uk_reader::ResourceReader>>,
     ) -> Result<Self> {
+        log::info!("Attempting to package mod at {}", source.as_ref().display());
         let source_dir = source.as_ref().to_path_buf();
         if !(source_dir.exists() && source_dir.is_dir()) {
             anyhow::bail!("Source directory does not exist: {}", source_dir.display());
         }
         let meta = if let Some(meta) = meta {
+            log::debug!("Using providing meta info:\n{:#?}", &meta);
             meta
         } else if let rules = source.as_ref().join("rules.txt") && rules.exists() {
+            log::debug!("Attempting to parse existing rules.txt");
             Self::parse_rules(rules)?
         } else if let info = source.as_ref().join("info.json") && info.exists() {
+            log::debug!("Attempting to parse existing info.json");
+            log::warn!("`info.json` found. If this is a BNP, conversion will not work properly!");
             Self::parse_info(info)?
         } else {
             anyhow::bail!("No meta info provided or meta file available");
@@ -134,11 +139,13 @@ impl ModPacker {
             dest.to_path_buf()
         } else {
             dest.join(sanitise_file_name::sanitise(&meta.name))
-                .with_extension(".zip")
+                .with_extension("zip")
         };
+        log::debug!("Using temp file at {}", dest_file.display());
         if dest_file.exists() {
             fs::remove_file(&dest_file)?;
         }
+        log::debug!("Creating ZIP file");
         let zip = Arc::new(Mutex::new(ZipW::new(fs::File::create(&dest_file)?)));
         Ok(Self {
             current_root: source_dir.clone(),
@@ -163,9 +170,11 @@ impl ModPacker {
                     .and_then(|f| f.file_type().is_file().then(|| f.path()))
             })
             .collect::<Vec<PathBuf>>();
+        log::debug!("Resources found in root {}:\n{:#?}", root.display(), &files);
         Ok(files
             .into_par_iter()
             .map(|path| -> Result<Option<String>> {
+                log::trace!("Processing resource at {}", path.display());
                 let name: String = path
                     .strip_prefix(&self.current_root)
                     .unwrap()
@@ -177,6 +186,7 @@ impl ModPacker {
                 let file_data = decompress_if(&file_data);
 
                 if !self.hash_table.is_modified(&canon, &*file_data) {
+                    log::trace!("Resource {} not modded, ignoring", &canon);
                     return Ok(None);
                 }
 
@@ -185,6 +195,10 @@ impl ModPacker {
                 self.process_resource(name, canon.clone(), resource, false)
                     .with_context(|| jstr!("Failed to process resource {&canon}"))?;
                 if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
+                    log::trace!(
+                        "Resource {} is a mergeable SARC, processing contents",
+                        &canon
+                    );
                     self.process_sarc(
                         Sarc::new(file_data.as_ref())?,
                         !self.hash_table.contains(&canon),
@@ -210,6 +224,7 @@ impl ModPacker {
         in_new_sarc: bool,
     ) -> Result<()> {
         if self.built_resources.read().contains(&canon) {
+            log::trace!("Already processed {}, skipping", &canon);
             return Ok(());
         }
         let prefixes = platform_prefixes(self.endian);
@@ -227,21 +242,26 @@ impl ModPacker {
                     .ok()
             })
             .last();
+        log::trace!("Resource {} has a master: {}", &canon, reference.is_some());
         if let Some(ref_res_data) = reference.as_ref()
             && let Some(ref_res) = ref_res_data.as_mergeable()
             && let ResourceData::Mergeable(res) = &resource
         {
             if ref_res == res && !in_new_sarc {
+                log::trace!("{} not modded, skipping", &canon);
                 return Ok(());
             }
+            log::trace!("Diffing {}", &canon);
             resource = ResourceData::Mergeable(ref_res.diff(res));
         } else if let Some(ref_res_data) = reference.as_ref()
             && let Some(ref_sarc) = ref_res_data.as_sarc()
             && let ResourceData::Sarc(sarc) = &resource
         {
             if ref_sarc == sarc && !in_new_sarc {
+                log::trace!("{} not modded, skipping", &canon);
                 return Ok(());
             }
+            log::trace!("Diffing {}", &canon);
             resource = ResourceData::Sarc(ref_sarc.diff(sarc));
         }
 
@@ -253,6 +273,7 @@ impl ModPacker {
             .unwrap()
             .join(canon.as_str());
         {
+            log::trace!("Writing {} to ZIP", &canon);
             let mut zip = self.zip.lock();
             zip.start_file(zip_path.to_slash_lossy(), self._zip_opts)?;
             zip.write_all(&zstd::encode_all(&*data, 3)?)?;
@@ -271,6 +292,7 @@ impl ModPacker {
             let file_data = decompress_if(file.data);
 
             if !self.hash_table.is_modified(&canon, &*file_data) && !is_new_sarc {
+                log::trace!("{} not modded, skipping", &canon);
                 continue;
             }
 
@@ -278,6 +300,10 @@ impl ModPacker {
                 .with_context(|| jstr!("Failed to parse resource {&canon}"))?;
             self.process_resource(name.into(), canon.clone(), resource, is_new_sarc)?;
             if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
+                log::trace!(
+                    "Resource {} is a mergeable SARC, processing contents",
+                    &canon
+                );
                 self.process_sarc(Sarc::new(file_data.as_ref())?, is_new_sarc)
                     .with_context(|| jstr!("Failed to process SARC file {&canon}"))?;
             }
@@ -287,25 +313,34 @@ impl ModPacker {
 
     #[allow(irrefutable_let_patterns)]
     fn pack_root(&self, root: impl AsRef<Path>) -> Result<()> {
+        log::debug!("Packing from root of {}", root.as_ref().display());
         self.built_resources.write().clear();
         let (content, aoc) = platform_prefixes(self.endian);
         let content_dir = if let content_dir = root.as_ref().join(content) && content_dir.exists() {
+            log::debug!("Found content folder at {}", content_dir.display());
             Some(content_dir)
         } else {
             None
         };
         let aoc_dir = if let aoc_dir = root.as_ref().join(aoc) && aoc_dir.exists() {
+            log::debug!("Found DLC folder at {}", aoc_dir.display());
             Some(aoc_dir)
         } else {
             None
         };
         let manifest = serde_yaml::to_string(&Manifest {
-            aoc_files: aoc_dir
-                .map(|aoc| self.collect_resources(&aoc))
+            content_files: content_dir
+                .map(|content| {
+                    log::info!("Collecting resources");
+                    self.collect_resources(&content)
+                })
                 .transpose()?
                 .unwrap_or_default(),
-            content_files: content_dir
-                .map(|content| self.collect_resources(&content))
+            aoc_files: aoc_dir
+                .map(|aoc| {
+                    log::info!("Collecting DLC resources");
+                    self.collect_resources(&aoc)
+                })
                 .transpose()?
                 .unwrap_or_default(),
         })?;
@@ -328,16 +363,19 @@ impl ModPacker {
         for group in &self.meta.options {
             roots.extend(group.options().iter().map(|opt| opt_root.join(&opt.path)))
         }
+        log::debug!("Detected options:\n{:#?}", &roots);
         roots
     }
 
     pub fn pack(mut self) -> Result<PathBuf> {
         self.pack_root(&self.source_dir)?;
         if self.source_dir.join("options").exists() {
+            log::debug!("Mod contains options");
             self.masters
                 .push(Arc::new(uk_reader::ResourceReader::from_unpacked_mod(
                     &self.source_dir,
                 )?));
+            log::info!("Collecting resources for options");
             for root in self.collect_roots() {
                 self.current_root = root.clone();
                 self.pack_root(root)?;
