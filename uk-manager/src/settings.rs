@@ -209,7 +209,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             current_mode: Platform::WiiU,
-            storage_dir: dirs2::config_dir().unwrap().join("ukmm"),
+            storage_dir: dirs2::data_local_dir().unwrap().join("ukmm"),
             unpack_mods: false,
             wiiu_config: None,
             switch_config: None,
