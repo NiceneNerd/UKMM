@@ -6,7 +6,6 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use std::{
-    ffi::OsStr,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -237,7 +236,7 @@ impl Settings {
     }
 
     pub fn read(path: &Path) -> Result<Self> {
-        Ok(toml::from_str(&fs::read_to_string(path)?)?)
+        Ok(serde_yaml::from_str(&fs::read_to_string(path)?)?)
     }
 
     pub fn apply(&mut self, apply_fn: impl Fn(&mut Self)) -> Result<()> {
@@ -251,7 +250,7 @@ impl Settings {
             fs::create_dir_all(SETTINGS_PATH.parent().unwrap())?;
         }
         log::debug!("Saving settings:\n{:#?}", self);
-        fs::write(SETTINGS_PATH.as_path(), toml::to_string_pretty(self)?)?;
+        fs::write(SETTINGS_PATH.as_path(), serde_yaml::to_string(self)?)?;
         log::info!("Settings saved");
         Ok(())
     }
@@ -349,9 +348,9 @@ impl Settings {
 
 static SETTINGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
     if std::env::args().any(|a| a == "--portable") {
-        std::env::current_dir().unwrap().join("settings.toml")
+        std::env::current_dir().unwrap().join("settings.yml")
     } else {
-        dirs2::config_dir().unwrap().join("ukmm/settings.toml")
+        dirs2::config_dir().unwrap().join("ukmm/settings.yml")
     }
 });
 

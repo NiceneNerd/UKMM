@@ -3824,7 +3824,6 @@ dependencies = [
  "sevenz-rust",
  "smartstring",
  "tempfile",
- "toml",
  "uk-content",
  "uk-mod",
  "uk-reader",
