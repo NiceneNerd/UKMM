@@ -40,6 +40,7 @@ uk-content = { path = "./uk-content" }
 uk-manager = { path = "./uk-manager" }
 uk-mod = { path = "./uk-mod" }
 uk-reader = { path = "./uk-reader" }
+uk-ui = { path = "./uk-ui" }
 zip = { version = "0.6.2", default-features = false, features = ["deflate"]}
 
 [target.'cfg(windows)'.dependencies]
@@ -51,6 +52,8 @@ winres = "0.1.12"
 [workspace]
 members = [
     "uk-content",
+    "uk-manager",
     "uk-mod",
     "uk-reader",
+    "uk-ui"
 ]

@@ -1,6 +1,5 @@
 use super::{
     icons::{self},
-    util::UkWidgetExt,
     App, Message,
 };
 use anyhow::Result;
@@ -16,6 +15,7 @@ use std::{
 };
 use uk_manager::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
+use uk_ui::ext::UiExt;
 
 fn render_setting<R>(
     name: &str,

@@ -1,0 +1,11 @@
+[package]
+name = "uk-ui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-features = false, features = ["color-hex", "persistence"] }
+hex = "0.4.3"
+rfd = "0.10.0"
+roead = { version = "0.16.2", features = ["with-serde"] }
+smartstring = "1.0.1"

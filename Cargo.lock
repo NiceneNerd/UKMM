@@ -3891,6 +3891,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "uk-ui"
+version = "0.1.0"
+dependencies = [
+ "egui",
+ "hex",
+ "rfd",
+ "roead",
+ "smartstring",
+]
+
+[[package]]
 name = "ukmm"
 version = "0.1.0"
 dependencies = [
@@ -3930,6 +3941,7 @@ dependencies = [
  "uk-manager",
  "uk-mod",
  "uk-reader",
+ "uk-ui",
  "winres",
  "zip",
 ]

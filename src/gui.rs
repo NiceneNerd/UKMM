@@ -44,7 +44,7 @@ use uk_manager::{
     settings::Settings,
 };
 use uk_mod::Manifest;
-use util::UkWidgetExt;
+use uk_ui::ext::UiExt;
 
 fn load_fonts(context: &egui::Context) {
     let mut fonts = FontDefinitions::default();
