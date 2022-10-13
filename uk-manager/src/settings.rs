@@ -221,8 +221,28 @@ impl Default for Settings {
 }
 
 impl Settings {
+    pub fn path() -> &'static Path {
+        static PATH: Lazy<PathBuf> = Lazy::new(|| Settings::config_dir().join("settings.yml"));
+        PATH.as_path()
+    }
+
+    pub fn config_dir() -> &'static Path {
+        static PATH: Lazy<PathBuf> = Lazy::new(|| {
+            if std::env::args().any(|a| a == "--portable") {
+                std::env::current_exe()
+                    .expect("No current executable???")
+                    .parent()
+                    .expect("Executable has no parent???")
+                    .to_path_buf()
+            } else {
+                dirs2::config_dir().unwrap().join("ukmm")
+            }
+        });
+        PATH.as_path()
+    }
+
     pub fn load() -> Arc<RwLock<Settings>> {
-        Arc::new(RwLock::new(match Settings::read(&SETTINGS_PATH) {
+        Arc::new(RwLock::new(match Settings::read(&Self::path()) {
             Ok(settings) => {
                 log::debug!("{:#?}", settings);
                 settings
@@ -246,11 +266,11 @@ impl Settings {
     }
 
     pub fn save(&self) -> Result<()> {
-        if !SETTINGS_PATH.parent().unwrap().exists() {
-            fs::create_dir_all(SETTINGS_PATH.parent().unwrap())?;
+        if !Self::path().parent().unwrap().exists() {
+            fs::create_dir_all(Self::path().parent().unwrap())?;
         }
         log::debug!("Saving settings:\n{:#?}", self);
-        fs::write(SETTINGS_PATH.as_path(), serde_yaml::to_string(self)?)?;
+        fs::write(Self::path(), serde_yaml::to_string(self)?)?;
         log::info!("Settings saved");
         Ok(())
     }
@@ -342,42 +362,6 @@ impl Settings {
 
     #[inline]
     pub fn state_file(&self) -> PathBuf {
-        self.storage_dir.join("ui.json")
+        Self::config_dir().join("ui.json")
     }
 }
-
-static SETTINGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    if std::env::args().any(|a| a == "--portable") {
-        std::env::current_dir().unwrap().join("settings.yml")
-    } else {
-        dirs2::config_dir().unwrap().join("ukmm/settings.yml")
-    }
-});
-
-/*
-SAMPLE SETTINGS
-
-current_mode = "WiiU"
-storage_dir = "/home/nn/.config/ukmm"
-unpack_mods = false
-check_updates = true
-show_changelog = true
-
-[wiiu_config]
-language = "USen"
-
-[wiiu_config.dump]
-bin_type = "Nintendo"
-
-[wiiu_config.dump.source]
-type = "Unpacked"
-host_path = "/games/Cemu/mlc01/usr/title"
-content_dir = "/games/Cemu/mlc01/usr/title/00050000/101C9400/content"
-update_dir = "/games/Cemu/mlc01/usr/title/0005000E/101C9400/content"
-aoc_dir = "/games/Cemu/mlc01/usr/title/0005000C/101C9400/content/0010"
-
-[wiiu_config.deploy_config]
-output = "/tmp/BreathOfTheWild_UKMM"
-method = "Copy"
-auto = false
-*/
