@@ -513,8 +513,21 @@ impl App {
                     fs::remove_dir_all(path)?;
                     Ok(Message::Noop)
                 }),
-                Message::DuplicateProfile(profile) => todo!(),
-                Message::RenameProfile(profile, rename) => todo!(),
+                Message::DuplicateProfile(profile) => {
+                    self.do_task(move |core| {
+                        let profiles_dir = core.settings().profiles_dir();
+                        dircpy::copy_dir(
+                            profiles_dir.join(&profile),
+                            profiles_dir.join(profile + "_copy"),
+                        )?;
+                        Ok(Message::Noop)
+                    });
+                }
+                Message::RenameProfile(profile, rename) => self.do_task(move |core| {
+                    let profiles_dir = core.settings().profiles_dir();
+                    fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
+                    Ok(Message::Noop)
+                }),
                 Message::SelectProfileManage(name) => {
                     self.profiles_state.selected = Some(profiles::SelectedProfile::load(
                         &self.core.settings().profiles_dir(),

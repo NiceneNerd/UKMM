@@ -3908,6 +3908,7 @@ dependencies = [
  "base64 0.13.0",
  "chrono",
  "clap 3.2.22",
+ "dircpy",
  "dirs2",
  "eframe",
  "egui",
