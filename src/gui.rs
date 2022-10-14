@@ -3,6 +3,7 @@ mod info;
 mod mods;
 mod options;
 mod picker;
+mod profiles;
 mod settings;
 mod tabs;
 mod tasks;
@@ -199,6 +200,7 @@ pub enum Message {
     CloseError,
     ShowAbout,
     CloseAbout,
+    CloseProfiles,
     SelectOnly(usize),
     SelectAlso(usize),
     Deselect(usize),
@@ -221,8 +223,11 @@ pub enum Message {
     RemoveMods(Vector<Mod>),
     ToggleMods(Option<Vector<Mod>>, bool),
     DeleteProfile(String),
+    RenameProfile(String, String),
+    DuplicateProfile(String),
     NewProfile,
     AddProfile,
+    SelectProfileManage(smartstring::alias::String),
     Apply,
     Remerge,
     // UpdateMods(Vector<Mod>),
@@ -244,6 +249,7 @@ struct App {
     drag_index: Option<usize>,
     hover_index: Option<usize>,
     picker_state: FilePickerState,
+    profiles_state: profiles::ProfileManagerState,
     closed_tabs: im::HashMap<Tabs, NodeIndex>,
     tree: Arc<RwLock<Tree<Tabs>>>,
     focused: FocusedPane,
@@ -253,7 +259,7 @@ struct App {
     new_profile: Option<String>,
     confirm: Option<(Message, String)>,
     busy: bool,
-    about: bool,
+    show_about: bool,
     dirty: Manifest,
     sort: (Sort, bool),
     options_mod: Option<Mod>,
@@ -283,6 +289,7 @@ impl App {
             drag_index: None,
             hover_index: None,
             picker_state,
+            profiles_state: Default::default(),
             displayed_mods: mods.clone(),
             mods,
             temp_settings,
@@ -294,7 +301,7 @@ impl App {
             error: None,
             new_profile: None,
             confirm: None,
-            about: false,
+            show_about: false,
             busy: false,
             dirty: Manifest::default(),
             sort: (Sort::Priority, false),
@@ -311,7 +318,7 @@ impl App {
             || self.busy
             || self.options_mod.is_some()
             || self.confirm.is_some()
-            || self.about
+            || self.show_about
             || self.new_profile.is_some()
     }
 
@@ -386,8 +393,9 @@ impl App {
                 }
                 Message::CloseError => self.error = None,
                 Message::CloseConfirm => self.confirm = None,
-                Message::ShowAbout => self.about = true,
-                Message::CloseAbout => self.about = false,
+                Message::ShowAbout => self.show_about = true,
+                Message::CloseAbout => self.show_about = false,
+                Message::CloseProfiles => self.profiles_state.show = false,
                 Message::Confirm(msg, prompt) => {
                     self.confirm = Some((*msg, prompt));
                 }
@@ -494,18 +502,25 @@ impl App {
                 Message::NewProfile => self.new_profile = Some("".into()),
                 Message::AddProfile => {
                     if let Some(profile) = self.new_profile.take() {
-                        self.do_task(move |mut core| {
-                            let core = Arc::make_mut(&mut core);
-                            core.change_profile(profile)?;
-                            Ok(Message::ResetMods)
-                        });
+                        match Arc::make_mut(&mut self.core).change_profile(profile) {
+                            Ok(()) => self.do_update(Message::ResetMods),
+                            Err(e) => self.do_update(Message::Error(e)),
+                        };
                     }
                 }
                 Message::DeleteProfile(profile) => self.do_task(move |core| {
-                    let path = core.settings().profile_dir().join(profile);
+                    let path = core.settings().profiles_dir().join(profile);
                     fs::remove_dir_all(path)?;
                     Ok(Message::Noop)
                 }),
+                Message::DuplicateProfile(profile) => todo!(),
+                Message::RenameProfile(profile, rename) => todo!(),
+                Message::SelectProfileManage(name) => {
+                    self.profiles_state.selected = Some(profiles::SelectedProfile::load(
+                        &self.core.settings().profiles_dir(),
+                        name.as_str(),
+                    ));
+                }
                 Message::SetFocus(pane) => {
                     self.focused = pane;
                 }
@@ -791,7 +806,7 @@ impl App {
     }
 
     fn render_about(&self, ctx: &egui::Context) {
-        if self.about {
+        if self.show_about {
             egui::Window::new("About")
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
@@ -955,7 +970,6 @@ impl App {
                         })
                         .response
                         .on_hover_text("Select Mod Profile");
-                    ui.icon_button(Icon::Delete).on_hover_text("Delete Profile");
                     if ui
                         .icon_button(Icon::Add)
                         .on_hover_text("New Profile")
@@ -963,7 +977,13 @@ impl App {
                     {
                         self.do_update(Message::NewProfile);
                     };
-                    ui.icon_button(Icon::Menu).on_hover_text("Manage Profiles…");
+                    if ui
+                        .icon_button(Icon::Menu)
+                        .on_hover_text("Manage Profiles…")
+                        .clicked()
+                    {
+                        self.profiles_state.show = true;
+                    }
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         ui.add_space(20.);
                         ui.label(
@@ -1026,6 +1046,7 @@ impl eframe::App for App {
         self.render_about(ctx);
         self.render_menu(ctx);
         self.render_option_picker(ctx);
+        self.render_profiles_modal(ctx);
         let layer_id = LayerId::background();
         let max_rect = ctx.available_rect();
         let clip_rect = ctx.available_rect();

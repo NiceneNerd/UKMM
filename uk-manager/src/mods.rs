@@ -127,6 +127,15 @@ pub struct Profile {
     load_order: RwLock<Vec<usize>>,
 }
 
+impl Clone for Profile {
+    fn clone(&self) -> Self {
+        Self {
+            mods: RwLock::new(self.mods.read().clone()),
+            load_order: RwLock::new(self.load_order.read().clone()),
+        }
+    }
+}
+
 impl Profile {
     pub fn mods(&self) -> RwLockReadGuard<HashMap<usize, Mod>> {
         self.mods.read()
@@ -175,7 +184,13 @@ pub struct Manager {
 
 impl Manager {
     pub fn open_profile(path: &Path, settings: &Arc<RwLock<Settings>>) -> Result<Self> {
-        log::info!("Initializing mod manager");
+        log::info!(
+            "Initializing mod manager for profile {}",
+            path.file_name()
+                .unwrap_or_default()
+                .to_str()
+                .unwrap_or_default()
+        );
         if !path.exists() {
             log::info!("Creating profile at {}", path.display());
             fs::create_dir_all(path)?;
