@@ -1,0 +1,39 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - book/**
+      - .github/workflows/site.yml
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+      - name: Get mdBook
+        run: cargo install mdbook
+
+      - name: Build
+        working-directory: book
+        run: mdbook build
+
+      - name: Push to gh-pages
+        working-directory: book/book
+        run: |
+          REV=$(git rev-parse --short HEAD)
+          git init
+          git remote add upstream https://x-access-token:${{secrets.GITHUB_TOKEN}}@github.com/NiceneNerd/ukmm
+          git config user.name "Nicene Nerd"
+          git config user.email "c.smith@tuta.io"
+          git add -A .
+          git commit -qm "Website @ ${{github.repository}}@${REV}"
+          git push -q upstream HEAD:refs/heads/gh-pages --force
