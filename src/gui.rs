@@ -541,6 +541,7 @@ impl App {
                     self.do_task(move |_| {
                         if let Some(path) = rfd::FileDialog::new()
                             .add_filter("UKMM Mod (*.zip)", &["zip"])
+                            .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
                             .pick_file()
                         {
                             tasks::open_mod(&path)
@@ -930,20 +931,20 @@ impl App {
 
     fn help_menu(&self, ui: &mut Ui) {
         let verbose = crate::logger::LOGGER.debug();
-        if ui
-            .icon_text_button(
-                " Verbose Logging",
-                if !verbose { Icon::Blank } else { Icon::Check },
-            )
-            .clicked()
-        {
+        let verbose_button = if verbose {
+            ui.icon_text_button(" Verbose Logging", Icon::Check)
+        } else {
+            ui.button("Verbose Logging")
+        };
+        ui.separator();
+        if verbose_button.clicked() {
             ui.close_menu();
             crate::logger::LOGGER.set_debug(!verbose);
             log::debug!("Verbose logging enabled"); // Think about it for a second
         }
         if ui.button("Help").clicked() {
             ui.close_menu();
-            todo!("You need help");
+            open::that("https://nicenenerd.github.io/ukmm").unwrap_or(());
         }
         if ui.button("About").clicked() {
             ui.close_menu();
