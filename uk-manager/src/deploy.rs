@@ -22,9 +22,21 @@ use uk_mod::{
 };
 
 #[inline(always)]
+fn is_symlink(link: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        junction::exists(link).unwrap_or(false) || link.is_symlink()
+    }
+    #[cfg(unix)]
+    {
+        link.is_symlink()
+    }
+}
+
+#[inline(always)]
 fn create_symlink(link: &Path, target: &Path) -> Result<()> {
     #[cfg(windows)]
-    std::os::windows::fs::symlink_dir(target, link)?;
+    junction::create(target, link).or_else(|_| std::os::windows::fs::symlink_dir(target, link))?;
     #[cfg(unix)]
     std::os::unix::fs::symlink(target, link)?;
     Ok(())
@@ -120,8 +132,23 @@ impl Manager {
             .context("No deployment config for current platform")?;
         log::debug!("Deployment config:\n{:#?}", &config);
         if config.method == DeployMethod::Symlink {
-            log::info!("Depoyment method is symlink, no action needed");
+            log::info!("Deploy method is symlink, checking for symlink");
+            if !is_symlink(&config.output) {
+                if config.output.exists() {
+                    log::warn!("Removing old stuff from deploy folder");
+                    util::remove_dir_all(&config.output)
+                        .context("Failed to remove old deployment folder")?;
+                }
+                log::info!("Creating new symlink");
+                create_symlink(&config.output, &settings.merged_dir())
+                    .context("Failed to symlink deployment folder")?;
+            } else {
+                log::info!("Symlink exists, no deployment needed")
+            }
         } else {
+            if is_symlink(&config.output) {
+                anyhow::bail!("Deployment folder is currently a symlink or junction, but the current deployment method is not symlinking. Please manually remove the existing link at {} to prevent unexpected results.", config.output.display());
+            }
             let (content, aoc) = uk_content::platform_prefixes(settings.current_mode.into());
             let deletes = self.pending_delete.read();
             log::debug!("Deployed files to delete:\n{:#?}", &deletes);
@@ -166,9 +193,18 @@ impl Manager {
                             if out.exists() {
                                 fs::remove_file(&out)?;
                             }
-                            fs::hard_link(source.join(f.as_str()), &out).with_context(|| {
+                            match fs::hard_link(source.join(f.as_str()), &out).with_context(|| {
                                 format!("Failed to deploy {} to {}", f, out.display())
-                            })?;
+                            }) {
+                                Err(e) => {
+                                    return Err(if e.root_cause().to_string().contains("os error 17") {
+                                        e.context("Hard linking failed because the output folder is on a different disk or partition than the storage folder.")
+                                    } else {
+                                        e
+                                    });
+                                }
+                                _ => (),
+                            }
                             Ok(())
                         })?;
                     }

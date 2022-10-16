@@ -48,6 +48,7 @@ impl TabViewer for super::App {
                 {
                     Some(config) => {
                         egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
+                            ui.spacing_mut().item_spacing.y = 8.0;
                             ui.with_layout(Layout::top_down(Align::Center), |ui| {
                                 let pending = self.core.deploy_manager().pending();
                                 ui.horizontal(|ui| {
@@ -55,7 +56,7 @@ impl TabViewer for super::App {
                                         RichText::new("Method")
                                             .family(egui::FontFamily::Name("Bold".into())),
                                     );
-                                    ui.add_space(8.);
+                                    // ui.add_space(8.);
                                     ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                                         ui.label(config.method.name());
                                     })
@@ -65,7 +66,7 @@ impl TabViewer for super::App {
                                         RichText::new("Auto Deploy")
                                             .family(egui::FontFamily::Name("Bold".into())),
                                     );
-                                    ui.add_space(8.);
+                                    // ui.add_space(8.);
                                     ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                                         ui.label(if config.auto {
                                             RichText::new("Yes").color(visuals::GREEN)
@@ -95,18 +96,18 @@ impl TabViewer for super::App {
                                     };
                                     ui.label(job).on_hover_text(config.output.to_string_lossy())
                                 });
-                                if !config.auto {
+                                if !config.auto || self.core.deploy_manager().pending() {
                                     ui.add_space(4.);
-                                    ui.with_layout(Layout::top_down(Align::Center), |ui| {
-                                        let padding = (ui.available_height()
-                                            - ui.text_style_height(&egui::TextStyle::Button)
-                                            - (ui.spacing().button_padding.y * 2.0))
-                                            / 2.0;
-                                        ui.add_space(padding);
-                                        if ui.add_enabled(pending, Button::new("Deploy")).clicked()
-                                        {
-                                            self.do_update(super::Message::Deploy);
-                                        }
+                                    ui.with_layout(Layout::from_main_dir_and_cross_align(egui::Direction::BottomUp, Align::Center), |ui| {
+                                        egui::Frame::none().show(ui, |ui| {
+                                            if ui.add_enabled(pending, Button::new("Deploy")).clicked()
+                                            {
+                                                self.do_update(super::Message::Deploy);
+                                            }
+                                            if config.auto {
+                                                ui.label(RichText::new("Auto deploy incomplete, please deploy manually").color(visuals::RED));
+                                            }
+                                        });
                                     });
                                 }
                             });

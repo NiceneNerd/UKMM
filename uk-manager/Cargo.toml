@@ -34,4 +34,5 @@ uk-reader = { path = "../uk-reader" }
 zip = { version = "0.6.2", default-features = false, features = ["deflate"]}
 
 [target.'cfg(windows)'.dependencies]
+junction = { git = "https://github.com/NiceneNerd/junction" }
 remove_dir_all = "0.7.0"
