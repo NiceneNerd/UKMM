@@ -2042,6 +2042,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "junction"
+version = "0.2.0"
+source = "git+https://github.com/NiceneNerd/junction#84e0dbd793645acf2702de283f78e8f6e0043ea5"
+dependencies = [
+ "scopeguard",
+ "winapi",
+]
+
+[[package]]
 name = "jwalk"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3807,6 +3816,7 @@ dependencies = [
  "enum-iterator",
  "fs-err",
  "join_str",
+ "junction",
  "jwalk",
  "log",
  "once_cell",

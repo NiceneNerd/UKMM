@@ -1,7 +1,7 @@
 # Introduction
 
 Once upon a time, there was a program called BCML, that is, Breath of the Wild
-Cross-platform Mod Manager. It existed because Breath of the Wild is very rather
+Cross-Platform Mod Loader. It existed because Breath of the Wild is very rather
 structurally hard to mod. The resource packing system, the resource size table,
 and similar features of the game make mods very collision-prone. Crashes, bugs,
 and other similar maladies appear frequently when multiple mods are naively
@@ -22,4 +22,4 @@ everything that made people (sometimes justifiably) rage and screech about
 BCML.[^1]
 
 [^1]: Except, of course, the requirement to have a complete game dump. There
-will never be a way around that, guys.]
+will never be a way around that, guys.

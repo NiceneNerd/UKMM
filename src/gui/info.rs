@@ -14,6 +14,8 @@ use std::{
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
 
+use super::icons::IconButtonExt;
+
 pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
     fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
         let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
@@ -80,10 +82,33 @@ pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
         ui.add_space(4.);
         ui.add(Label::new(mod_.meta.description.as_str()).wrap(true));
         ui.add_space(4.);
+        if !mod_.meta.options.is_empty() {
+            ui.horizontal(|ui| {
+                ui.label(
+                    RichText::new("Enabled Options").family(egui::FontFamily::Name("Bold".into())),
+                );
+                ui.add_space(8.);
+                ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
+                    ui.icon_button(super::icons::Icon::Settings);
+                })
+            });
+            ui.add_space(4.0);
+            if !mod_.enabled_options.is_empty() {
+                ui.add_enabled_ui(false, |ui| {
+                    mod_.enabled_options.iter().for_each(|opt| {
+                        ui.checkbox(&mut true, opt.name.as_str());
+                    });
+                });
+            } else {
+                ui.label("No options enabled");
+            }
+            ui.add_space(4.0);
+        }
         ui.label(RichText::new("Manifest").family(egui::FontFamily::Name("Bold".into())));
         match mod_.manifest() {
             Ok(manifest) => render_manifest(&manifest, ui),
-            Err(_e) => {
+            Err(e) => {
+                log::error!("{:#?}", e);
                 ui.label(RichText::new("FAILED TO LOAD MANIFEST").strong());
             }
         }

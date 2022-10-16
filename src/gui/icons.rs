@@ -18,6 +18,7 @@ static FOLDER_OPEN: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24"
 static FOLDER_ZIP: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path stroke="white" fill="white" d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-2 6h-2v2h2v2h-2v2h-2v-2h2v-2h-2v-2h2v-2h-2V8h2v2h2v2z"/></svg>"#;
 static FOLDER: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path stroke="white" fill="white" d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>"#;
 static MENU: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path stroke="white" fill="white" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>"#;
+static SETTINGS: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 0 48 48"><path stroke="white" fill="white" d="M11.1 37.3 4 30.2l2.1-2.1 5 4.95 8.95-8.95 2.1 2.15Zm0-16L4 14.2l2.1-2.1 5 4.95 8.95-8.95 2.1 2.15ZM26 33.5v-3h18v3Zm0-16v-3h18v3Z"/></svg>"#;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Icon {
@@ -33,6 +34,7 @@ pub enum Icon {
     FolderZip,
     Folder,
     Menu,
+    Settings,
 }
 
 pub fn load_icons() {
@@ -81,6 +83,10 @@ pub fn load_icons() {
     map.insert(
         Icon::ArrowBack,
         RetainedImage::from_svg_str("back", ARROW_BACK).unwrap(),
+    );
+    map.insert(
+        Icon::Settings,
+        RetainedImage::from_svg_str("settings", SETTINGS).unwrap(),
     );
     unsafe { ICONS.set(map).unwrap_unchecked() }
 }
