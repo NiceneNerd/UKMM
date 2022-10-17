@@ -21,15 +21,17 @@ pub const ORGANGE: Color32 = from_hex!("#ff953f");
 pub fn slate_grid(ui: &mut Ui) {
     ui.with_layer_id(LayerId::background(), |ui| {
         let cursor = ui.cursor();
-        let width = ui.available_width() - cursor.min.x;
+        let width = ui.available_width();
         let height = ui.available_height() * 1.5;
         static GRID_COLOR: Lazy<Color32> = Lazy::new(|| BLUE.linear_multiply(0.0333));
         const GRID_OFFSET: f32 = 16.0;
+        let bg_rect = Rect::from_min_size(ui.cursor().min, ui.available_size()); //.shrink(4.0);
         ui.painter().rect_filled(
-            cursor,
+            bg_rect,
             Rounding::none(),
             ui.style().visuals.extreme_bg_color,
         );
+        ui.set_clip_rect(bg_rect);
         ui.painter().add({
             let mut mesh = Mesh::default();
             let mut tesselator = Tessellator::new(
@@ -44,9 +46,9 @@ pub fn slate_grid(ui: &mut Ui) {
             );
             tesselator.tessellate_rect(
                 &RectShape::stroke(
-                    Rect::from_min_size(ui.cursor().min, ui.available_size()).shrink(4.0),
+                    bg_rect.expand2([64.0, 0.0].into()),
                     0.0,
-                    Stroke::new(1.0, ui.style().visuals.widgets.inactive.bg_fill),
+                    Stroke::new(2.0, ui.style().visuals.widgets.inactive.bg_fill),
                 ),
                 &mut mesh,
             );
@@ -54,7 +56,7 @@ pub fn slate_grid(ui: &mut Ui) {
         });
         for i in 0..(height as usize / 48 + 1) {
             ui.painter().hline(
-                cursor.min.x..=width,
+                cursor.min.x..=width + 4.0,
                 (i as f32 * 48.0) + cursor.min.y + GRID_OFFSET,
                 Stroke::new(1.0, *GRID_COLOR),
             );
