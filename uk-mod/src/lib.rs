@@ -163,7 +163,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[test]
     fn read_meta() {
         dbg!(Meta::read("test/wiiu.zip").unwrap());
     }

@@ -1,6 +1,8 @@
-use std::hash::Hash;
-
-use egui::{DragValue, Response, Ui};
+use egui::{Align, DragValue, Layout, Response, Ui};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
 pub trait EditableValue {
     fn edit_ui(&mut self, ui: &mut Ui) -> Response;
@@ -124,46 +126,26 @@ impl EditableValue for roead::byml::Byml {
     }
 }
 
-pub fn editable_map_fixed_keys<'a>(
-    iter: impl Iterator<Item = (impl AsRef<str> + 'a, &'a mut (impl EditableValue + 'a))>,
-    id_source: impl Hash,
-    ui: &mut Ui,
-) -> Response {
-    let mut changed = false;
-    let mut res = egui::Grid::new(id_source)
-        .num_columns(2)
-        .striped(true)
-        .show(ui, |ui| {
-            iter.for_each(|(k, v)| {
-                ui.label(k.as_ref());
-                changed = changed || v.edit_ui(ui).changed();
-                ui.end_row();
-            });
+impl EditableValue for roead::byml::Hash {
+    fn edit_ui(&mut self, ui: &mut Ui) -> Response {
+        let mut hasher = DefaultHasher::new();
+        self.iter().for_each(|(k, v)| {
+            k.hash(&mut hasher);
+            v.hash(&mut hasher);
         });
-    if changed {
-        res.response.mark_changed();
+        let id = ui.make_persistent_id(hasher.finish());
+        egui::Grid::new(id)
+            .num_columns(2)
+            .show(ui, |ui| {
+                self.iter_mut().for_each(|(k, v)| {
+                    ui.label(k.as_str());
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        ui.small_button("Del");
+                        v.edit_ui(ui);
+                        ui.end_row();
+                    });
+                });
+            })
+            .response
     }
-    res.response
-}
-
-pub fn editable_map<'a>(
-    iter: impl Iterator<Item = &'a mut (impl EditableValue + 'a, impl EditableValue + 'a)>,
-    id_source: impl Hash,
-    ui: &mut Ui,
-) -> Response {
-    let mut changed = false;
-    let mut res = egui::Grid::new(id_source)
-        .num_columns(2)
-        .striped(true)
-        .show(ui, |ui| {
-            iter.for_each(|(k, v)| {
-                changed = changed || k.edit_ui(ui).changed();
-                changed = changed || v.edit_ui(ui).changed();
-                ui.end_row();
-            });
-        });
-    if changed {
-        res.response.mark_changed();
-    }
-    res.response
 }

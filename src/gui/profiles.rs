@@ -1,9 +1,7 @@
 use super::{icons::IconButtonExt, visuals, App, Message};
 use anyhow::Result;
 use egui::{text::LayoutJob, Layout, RichText, TextStyle, Ui};
-
 use fs_err as fs;
-
 use std::path::Path;
 
 #[derive(Debug, Default)]
