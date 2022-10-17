@@ -1,12 +1,10 @@
 use super::{icons::IconButtonExt, visuals, App, Message};
 use anyhow::Result;
-use egui::{text::LayoutJob, Id, Layout, RichText, TextStyle, Ui};
-use egui_extras::TableBuilder;
-use fs_err as fs;
-use once_cell::sync::Lazy;
-use std::{path::Path, sync::Arc};
+use egui::{text::LayoutJob, Layout, RichText, TextStyle, Ui};
 
-const SELECTED_PROF_ID: Lazy<Id> = Lazy::new(|| Id::new("selected_profile")); // CRC for "selected_profile"
+use fs_err as fs;
+
+use std::path::Path;
 
 #[derive(Debug, Default)]
 pub struct ProfileManagerState {
@@ -159,9 +157,7 @@ impl App {
                                                     .clicked()
                                                 {
                                                     sender
-                                                        .send(Message::SelectProfileManage(
-                                                            p.clone(),
-                                                        ))
+                                                        .send(Message::SelectProfileManage(p))
                                                         .unwrap();
                                                 }
                                             });

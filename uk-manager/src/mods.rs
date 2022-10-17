@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use std::{
     hash::{Hash, Hasher},
-    io::{BufReader, Read},
+    io::BufReader,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
 };

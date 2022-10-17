@@ -193,17 +193,14 @@ impl Manager {
                             if out.exists() {
                                 fs::remove_file(&out)?;
                             }
-                            match fs::hard_link(source.join(f.as_str()), &out).with_context(|| {
+                            if let Err(e) = fs::hard_link(source.join(f.as_str()), &out).with_context(|| {
                                 format!("Failed to deploy {} to {}", f, out.display())
                             }) {
-                                Err(e) => {
-                                    return Err(if e.root_cause().to_string().contains("os error 17") {
-                                        e.context("Hard linking failed because the output folder is on a different disk or partition than the storage folder.")
-                                    } else {
-                                        e
-                                    });
-                                }
-                                _ => (),
+                                return Err(if e.root_cause().to_string().contains("os error 17") {
+                                    e.context("Hard linking failed because the output folder is on a different disk or partition than the storage folder.")
+                                } else {
+                                    e
+                                });
                             }
                             Ok(())
                         })?;

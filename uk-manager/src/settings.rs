@@ -242,7 +242,7 @@ impl Settings {
     }
 
     pub fn load() -> Arc<RwLock<Settings>> {
-        Arc::new(RwLock::new(match Settings::read(&Self::path()) {
+        Arc::new(RwLock::new(match Settings::read(Self::path()) {
             Ok(settings) => {
                 log::debug!("{:#?}", settings);
                 settings

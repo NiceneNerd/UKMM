@@ -1,6 +1,6 @@
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
-use egui::{DragValue, InnerResponse, Response, Ui, WidgetText};
+use egui::{DragValue, Response, Ui};
 
 pub trait EditableValue {
     fn edit_ui(&mut self, ui: &mut Ui) -> Response;
@@ -111,7 +111,7 @@ impl EditableValue for roead::byml::Byml {
             roead::byml::Byml::String(v) => v.edit_ui(ui),
             roead::byml::Byml::BinaryData(v) => v.edit_ui(ui),
             roead::byml::Byml::Array(v) => v.edit_ui(ui),
-            roead::byml::Byml::Hash(v) => todo!(),
+            roead::byml::Byml::Hash(_v) => todo!(),
             roead::byml::Byml::Bool(v) => v.edit_ui(ui),
             roead::byml::Byml::I32(v) => v.edit_ui(ui),
             roead::byml::Byml::Float(v) => v.edit_ui(ui),
