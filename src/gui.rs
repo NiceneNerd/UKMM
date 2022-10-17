@@ -216,7 +216,8 @@ pub enum Message {
     SelectFile,
     OpenMod(PathBuf),
     HandleMod(Mod),
-    RequestOptions(Mod),
+    RequestOptions(Mod, bool),
+    UpdateOptions(Mod),
     InstallMod(Mod),
     UninstallMods(Option<Vector<Mod>>),
     AddMod(Mod),
@@ -262,7 +263,7 @@ struct App {
     show_about: bool,
     dirty: Manifest,
     sort: (Sort, bool),
-    options_mod: Option<Mod>,
+    options_mod: Option<(Mod, bool)>,
     temp_settings: Settings,
     toasts: egui_notify::Toasts,
     style: StylistState,
@@ -557,18 +558,18 @@ impl App {
                     self.busy = false;
                     log::debug!("{:#?}", &mod_);
                     if !mod_.meta.options.is_empty() {
-                        self.do_update(Message::RequestOptions(mod_));
+                        self.do_update(Message::RequestOptions(mod_, false));
                     } else {
                         self.do_update(Message::InstallMod(mod_));
                     }
                 }
-                Message::InstallMod(mod_) => {
+                Message::InstallMod(tmp_mod_) => {
                     self.do_task(move |core| {
                         let mods = core.mod_manager();
-                        let mod_ = mods.add(&mod_.path)?;
+                        let mod_ = mods.add(&tmp_mod_.path)?;
                         let hash = mod_.as_hash_id();
-                        if !mod_.enabled_options.is_empty() {
-                            mods.set_enabled_options(hash, mod_.enabled_options)?;
+                        if !tmp_mod_.enabled_options.is_empty() {
+                            mods.set_enabled_options(hash, tmp_mod_.enabled_options)?;
                         }
                         mods.save()?;
                         log::info!("Added mod {} to current profile", mod_.meta.name.as_str());
@@ -654,8 +655,32 @@ impl App {
                         Err(e) => self.do_update(Message::Error(e)),
                     };
                 }
-                Message::RequestOptions(mod_) => {
-                    self.options_mod = Some(mod_);
+                Message::RequestOptions(mod_, update) => {
+                    self.options_mod = Some((mod_, update));
+                }
+                Message::UpdateOptions(mod_) => {
+                    let opts = mod_.enabled_options.clone();
+                    match self
+                        .core
+                        .mod_manager()
+                        .set_enabled_options(mod_.hash(), opts)
+                    {
+                        Ok(manifest) => {
+                            self.dirty.extend(&manifest);
+                            if let Some(old_mod) =
+                                self.mods.iter_mut().find(|m| m.hash() == mod_.hash())
+                            {
+                                *old_mod = mod_.clone();
+                            }
+                            if let Some(old_mod) =
+                                self.selected.iter_mut().find(|m| m.hash() == mod_.hash())
+                            {
+                                *old_mod = mod_;
+                            }
+                            self.do_update(Message::RefreshModsDisplay);
+                        }
+                        Err(e) => self.do_update(Message::Error(e)),
+                    }
                 }
                 Message::Error(error) => {
                     log::error!("{:?}", &error);

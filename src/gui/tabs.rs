@@ -29,7 +29,7 @@ impl TabViewer for super::App {
         match tab {
             Tabs::Info => {
                 if let Some(mod_) = self.selected.front() {
-                    super::info::render_mod_info(mod_, ui);
+                    self.render_mod_info(mod_, ui);
                 } else {
                     ui.centered_and_justified(|ui| {
                         ui.label("No mod selected");

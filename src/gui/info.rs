@@ -14,7 +14,7 @@ use std::{
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
 
-use super::icons::IconButtonExt;
+use super::{icons::IconButtonExt, Message};
 
 pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
     fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
@@ -52,67 +52,72 @@ pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
         .clone()
 }
 
-pub fn render_mod_info(mod_: &Mod, ui: &mut Ui) {
-    egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
-        ui.spacing_mut().item_spacing.y = 8.;
-        ui.add_space(8.);
-        if let Some(preview) = preview(mod_) {
-            preview.show_max_size(ui, ui.available_size());
+impl super::App {
+    pub fn render_mod_info(&self, mod_: &Mod, ui: &mut Ui) {
+        egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
+            ui.spacing_mut().item_spacing.y = 8.;
             ui.add_space(8.);
-        }
-        let ver = mod_.meta.version.to_string();
-        [
-            ("Name", mod_.meta.name.as_str()),
-            ("Version", ver.as_str()),
-            ("Category", mod_.meta.category.as_str()),
-            ("Author", mod_.meta.author.as_str()),
-        ]
-        .into_iter()
-        .filter(|(_, v)| !v.is_empty())
-        .for_each(|(label, value)| {
-            ui.horizontal(|ui| {
-                ui.label(RichText::new(label).family(egui::FontFamily::Name("Bold".into())));
+            if let Some(preview) = preview(mod_) {
+                preview.show_max_size(ui, ui.available_size());
                 ui.add_space(8.);
-                ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                    ui.add(Label::new(value).wrap(true));
-                })
-            });
-        });
-        ui.label(RichText::new("Description").family(egui::FontFamily::Name("Bold".into())));
-        ui.add_space(4.);
-        ui.add(Label::new(mod_.meta.description.as_str()).wrap(true));
-        ui.add_space(4.);
-        if !mod_.meta.options.is_empty() {
-            ui.horizontal(|ui| {
-                ui.label(
-                    RichText::new("Enabled Options").family(egui::FontFamily::Name("Bold".into())),
-                );
-                ui.add_space(8.);
-                ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                    ui.icon_button(super::icons::Icon::Settings);
-                })
-            });
-            ui.add_space(4.0);
-            if !mod_.enabled_options.is_empty() {
-                ui.add_enabled_ui(false, |ui| {
-                    mod_.enabled_options.iter().for_each(|opt| {
-                        ui.checkbox(&mut true, opt.name.as_str());
-                    });
+            }
+            let ver = mod_.meta.version.to_string();
+            [
+                ("Name", mod_.meta.name.as_str()),
+                ("Version", ver.as_str()),
+                ("Category", mod_.meta.category.as_str()),
+                ("Author", mod_.meta.author.as_str()),
+            ]
+            .into_iter()
+            .filter(|(_, v)| !v.is_empty())
+            .for_each(|(label, value)| {
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new(label).family(egui::FontFamily::Name("Bold".into())));
+                    ui.add_space(8.);
+                    ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
+                        ui.add(Label::new(value).wrap(true));
+                    })
                 });
-            } else {
-                ui.label("No options enabled");
+            });
+            ui.label(RichText::new("Description").family(egui::FontFamily::Name("Bold".into())));
+            ui.add_space(4.);
+            ui.add(Label::new(mod_.meta.description.as_str()).wrap(true));
+            ui.add_space(4.);
+            if !mod_.meta.options.is_empty() {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new("Enabled Options")
+                            .family(egui::FontFamily::Name("Bold".into())),
+                    );
+                    ui.add_space(8.);
+                    ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
+                        if ui.icon_button(super::icons::Icon::Settings).clicked() {
+                            self.do_update(Message::RequestOptions(mod_.clone(), true));
+                        }
+                    })
+                });
+                ui.add_space(4.0);
+                if !mod_.enabled_options.is_empty() {
+                    ui.add_enabled_ui(false, |ui| {
+                        mod_.enabled_options.iter().for_each(|opt| {
+                            ui.checkbox(&mut true, opt.name.as_str());
+                        });
+                    });
+                } else {
+                    ui.label("No options enabled");
+                }
+                ui.add_space(4.0);
             }
-            ui.add_space(4.0);
-        }
-        ui.label(RichText::new("Manifest").family(egui::FontFamily::Name("Bold".into())));
-        match mod_.manifest() {
-            Ok(manifest) => render_manifest(&manifest, ui),
-            Err(e) => {
-                log::error!("{:#?}", e);
-                ui.label(RichText::new("FAILED TO LOAD MANIFEST").strong());
+            ui.label(RichText::new("Manifest").family(egui::FontFamily::Name("Bold".into())));
+            match mod_.manifest() {
+                Ok(manifest) => render_manifest(&manifest, ui),
+                Err(e) => {
+                    log::error!("{:#?}", e);
+                    ui.label(RichText::new("FAILED TO LOAD MANIFEST").strong());
+                }
             }
-        }
-    });
+        });
+    }
 }
 
 // A recursive type to represent a directory tree.

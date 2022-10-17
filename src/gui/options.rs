@@ -12,12 +12,13 @@ impl App {
             .collapsible(false)
             .anchor(egui::Align2::CENTER_CENTER, Vec2::default())
             .show(ctx, |ui| {
-                let mod_ = unsafe { self.options_mod.as_mut().unwrap_unchecked() };
+                let mod_ = unsafe { &mut self.options_mod.as_mut().unwrap_unchecked().0 };
                 mod_.meta.options.iter().for_each(|group| {
                     egui::CollapsingHeader::new(group.name())
                         .default_open(true)
                         .show(ui, |ui| {
                             ui.vertical(|ui| {
+                                ui.spacing_mut().item_spacing.y = 8.0;
                                 ui.label(group.description());
                                 match group {
                                     uk_mod::OptionGroup::Exclusive(group) => {
@@ -54,15 +55,20 @@ impl App {
                             });
                         });
                 });
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ui.button("OK").clicked() {
-                        let mod_ = self.options_mod.as_ref().unwrap().clone();
-                        self.do_update(Message::InstallMod(mod_));
-                    }
-                    if ui.button("Cancel").clicked() {
-                        self.options_mod = None;
-                    }
-                    ui.shrink_width_to_current();
+                ui.horizontal(|ui| {
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if ui.button("OK").clicked() {
+                            let (mod_, update) = self.options_mod.take().unwrap();
+                            if update {
+                                self.do_update(Message::UpdateOptions(mod_));
+                            } else {
+                                self.do_update(Message::InstallMod(mod_));
+                            }
+                        }
+                        if ui.button("Cancel").clicked() {
+                            self.options_mod = None;
+                        }
+                    });
                 });
             });
     }
