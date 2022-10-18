@@ -23,6 +23,6 @@ fn main() {
     eframe::run_native(
         "U-King Mod Editor",
         eframe::NativeOptions::default(),
-        Box::new(|cc| Box::new(EditorTest { value: byml })),
+        Box::new(|_cc| Box::new(EditorTest { value: byml })),
     )
 }
