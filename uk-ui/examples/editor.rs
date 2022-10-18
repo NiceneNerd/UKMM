@@ -5,10 +5,10 @@ struct EditorTest<T> {
 }
 
 impl<T: EditableValue> eframe::App for EditorTest<T> {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::new([false, true]).show(ui, |ui| {
-                self.value.edit_ui(ui);
+                self.value.edit_ui_with_id(ui, "byml-test");
             });
         });
     }

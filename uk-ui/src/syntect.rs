@@ -144,7 +144,7 @@ impl CodeTheme {
     pub const fn dark() -> Self {
         Self {
             dark_mode: true,
-            syntect_theme: SyntectTheme::Base16MochaDark,
+            syntect_theme: SyntectTheme::Base16OceanDark,
         }
     }
 
