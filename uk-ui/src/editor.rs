@@ -1,4 +1,4 @@
-use crate::icons::IconButtonExt;
+use crate::{icons::IconButtonExt, syntect::CodeTheme};
 use egui::{mutex::RwLock, Align, DragValue, Id, Layout, Response, Ui};
 use egui_extras::Size;
 use rustc_hash::FxHashSet;
@@ -124,91 +124,34 @@ impl EditableValue for Vec<u8> {
 
 impl EditableValue for roead::byml::Byml {
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
-        match self {
-            roead::byml::Byml::String(v) => v.edit_ui(ui),
-            roead::byml::Byml::BinaryData(v) => v.edit_ui(ui),
-            roead::byml::Byml::Array(v) => v.edit_ui(ui),
-            roead::byml::Byml::Hash(v) => v.edit_ui(ui),
-            roead::byml::Byml::Bool(v) => v.edit_ui(ui),
-            roead::byml::Byml::I32(v) => v.edit_ui(ui),
-            roead::byml::Byml::Float(v) => v.edit_ui(ui),
-            roead::byml::Byml::U32(v) => v.edit_ui(ui),
-            roead::byml::Byml::I64(v) => v.edit_ui(ui),
-            roead::byml::Byml::U64(v) => v.edit_ui(ui),
-            roead::byml::Byml::Double(v) => v.edit_ui(ui),
-            roead::byml::Byml::Null => ui.label("NULL"),
-        }
-    }
-}
-
-impl EditableValue for roead::byml::Hash {
-    fn edit_ui(&mut self, ui: &mut Ui) -> Response {
-        let mut hasher = DefaultHasher::new();
-        self.iter().for_each(|(k, v)| {
-            k.hash(&mut hasher);
-            v.hash(&mut hasher);
-        });
-        let hash = hasher.finish();
-        let id = ui.make_persistent_id(hash);
-        // egui::Grid::new(id)
-        // .num_columns(2)
-        // .striped(true)
-        egui::Frame::none()
-            .show(ui, |ui| {
-                let mut dels: FxHashSet<smartstring::alias::String> = FxHashSet::default();
-                ui.vertical(|ui| {
-                    self.iter_mut().for_each(|(k, v)| {
-                        egui_extras::StripBuilder::new(ui)
-                            .size(Size::Absolute {
-                                initial: 100.0,
-                                range: (30.0, 300.0),
-                            })
-                            .size(Size::remainder())
-                            .horizontal(|mut strip| {
-                                strip.cell(|ui| {});
-                                strip.cell(|ui| {});
-                            });
-                    });
-                });
-                dels.into_iter().for_each(|d| {
-                    self.remove(&d);
-                });
-                ui.horizontal(|ui| {
-                    let add_id = Id::new(hash + 1);
-                    if ui.icon_button(crate::icons::Icon::Add).clicked() {
-                        ui.memory()
-                            .data
-                            .insert_temp(add_id, Arc::new(RwLock::new(String::new())));
-                    }
-                    let mut added = false;
-                    let new_key = ui
-                        .ctx()
-                        .memory()
-                        .data
-                        .get_temp::<Arc<RwLock<String>>>(add_id);
-                    if let Some(key) = new_key {
-                        let res = ui.text_edit_singleline(key.write().deref_mut());
-                        if (res.has_focus() && ui.input().key_pressed(egui::Key::Enter))
-                            || res.lost_focus()
-                        {
-                            added = true;
-                        }
-                    }
-                    if added {
-                        self.insert(
-                            ui.memory()
-                                .data
-                                .get_temp::<Arc<RwLock<String>>>(add_id)
-                                .expect("Missing new key name")
-                                .read()
-                                .as_str()
-                                .into(),
-                            roead::byml::Byml::String("".into()),
-                        );
-                        ui.memory().data.remove::<Arc<RwLock<String>>>(add_id);
-                    }
-                });
-            })
-            .response
+        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+            let id = Id::new(&self);
+            let yaml = ui
+                .memory()
+                .data
+                .get_temp_mut_or_insert_with(id, || Arc::new(RwLock::new(self.to_text().unwrap())))
+                .clone();
+            let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
+                let mut layout_job = crate::syntect::highlight(
+                    ui.ctx(),
+                    &crate::syntect::CodeTheme::dark(),
+                    string,
+                    "yaml",
+                );
+                layout_job.wrap.max_width = wrap_width;
+                ui.fonts().layout_job(layout_job)
+            };
+            if ui.icon_button(super::icons::Icon::Check).clicked() {
+                if let Ok(val) = roead::byml::Byml::from_text(yaml.read().as_str()) {
+                    *self = val;
+                }
+            }
+            egui::TextEdit::multiline(yaml.write().deref_mut())
+                .layouter(&mut layouter)
+                .code_editor()
+                .desired_width(ui.available_width())
+                .show(ui);
+        })
+        .response
     }
 }
