@@ -3903,10 +3903,14 @@ dependencies = [
 name = "uk-ui"
 version = "0.1.0"
 dependencies = [
+ "eframe",
  "egui",
+ "egui_extras",
  "hex",
+ "once_cell",
  "rfd",
  "roead",
+ "rustc-hash",
  "smartstring",
 ]
 

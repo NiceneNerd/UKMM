@@ -1,4 +1,3 @@
-mod icons;
 mod info;
 mod mods;
 mod options;
@@ -27,7 +26,6 @@ use egui_stylist::StylistState;
 use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
 use fs_err as fs;
-use icons::{Icon, IconButtonExt};
 use im::{vector, Vector};
 use join_str::jstr;
 use once_cell::sync::OnceCell;
@@ -46,6 +44,7 @@ use uk_manager::{
 };
 use uk_mod::Manifest;
 use uk_ui::ext::UiExt;
+use uk_ui::icons::{Icon, IconButtonExt};
 
 fn load_fonts(context: &egui::Context) {
     let mut fonts = FontDefinitions::default();
@@ -1140,7 +1139,7 @@ impl eframe::App for App {
 }
 
 pub fn main() {
-    icons::load_icons();
+    uk_ui::icons::load_icons();
     crate::logger::init();
     log::debug!("Logger initialized");
     log::info!("Started ukmm");

@@ -1,7 +1,4 @@
-use super::{
-    icons::{self},
-    App, Message,
-};
+use super::{App, Message};
 use anyhow::Result;
 use egui::{Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui};
 use once_cell::sync::Lazy;
@@ -15,7 +12,7 @@ use std::{
 };
 use uk_manager::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
-use uk_ui::ext::UiExt;
+use uk_ui::{ext::UiExt, icons};
 
 fn render_setting<R>(
     name: &str,

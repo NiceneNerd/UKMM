@@ -1,8 +1,9 @@
-use super::{icons::IconButtonExt, visuals, App, Message};
+use super::{visuals, App, Message};
 use anyhow::Result;
 use egui::{text::LayoutJob, Layout, RichText, TextStyle, Ui};
 use fs_err as fs;
 use std::path::Path;
+use uk_ui::icons::IconButtonExt;
 
 #[derive(Debug, Default)]
 pub struct ProfileManagerState {
@@ -75,7 +76,7 @@ impl App {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(name);
                         if ui
-                            .icon_button(super::icons::Icon::Check)
+                            .icon_button(uk_ui::icons::Icon::Check)
                             .on_hover_text("Save")
                             .clicked()
                         {

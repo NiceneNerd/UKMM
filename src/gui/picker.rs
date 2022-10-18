@@ -1,12 +1,10 @@
-use super::{
-    icons::{get_icon, Icon, IconButtonExt},
-    visuals, App, FocusedPane, Message,
-};
+use super::{visuals, App, FocusedPane, Message};
 use egui::{Button, Key, Ui, Vec2};
 use fs_err as fs;
 use im::Vector;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use uk_ui::icons::{get_icon, Icon, IconButtonExt};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FilePickerState {

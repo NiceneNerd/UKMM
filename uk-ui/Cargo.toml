@@ -5,7 +5,13 @@ edition = "2021"
 
 [dependencies]
 egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-features = false, features = ["color-hex", "persistence"] }
+egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
 hex = "0.4.3"
+once_cell = "1.13.1"
 rfd = "0.10.0"
 roead = { version = "0.16.2", features = ["with-serde"] }
+rustc-hash = "1.1.0"
 smartstring = "1.0.1"
+
+[dev-dependencies]
+eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }

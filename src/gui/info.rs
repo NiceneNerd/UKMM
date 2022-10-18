@@ -1,3 +1,4 @@
+use super::Message;
 use anyhow::Result;
 use eframe::epaint::text::TextWrapping;
 use egui::{text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui};
@@ -13,8 +14,7 @@ use std::{
 };
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
-
-use super::{icons::IconButtonExt, Message};
+use uk_ui::icons::IconButtonExt;
 
 pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
     fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
@@ -91,7 +91,7 @@ impl super::App {
                     );
                     ui.add_space(8.);
                     ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                        if ui.icon_button(super::icons::Icon::Settings).clicked() {
+                        if ui.icon_button(uk_ui::icons::Icon::Settings).clicked() {
                             self.do_update(Message::RequestOptions(mod_.clone(), true));
                         }
                     })
