@@ -233,8 +233,7 @@ impl EditableValue for ParameterList {
 fn edit_pio_code(pio: &mut ParameterIO, ui: &mut egui::Ui, id: Id) -> egui::Response {
     ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
         let yaml = ui
-            .memory()
-            .data
+            .data()
             .get_temp_mut_or_insert_with(id, || Arc::new(RwLock::new(pio.to_text())))
             .clone();
         ui.allocate_ui_with_layout(
@@ -312,45 +311,59 @@ impl EditableValue for ParameterIO {
             .with(self.version)
             .with("code");
         let mut code_editor = *ui.data().get_temp_mut_or_default::<bool>(code_flag_id);
-        let mut res = egui::Frame::none()
-            .show(ui, |ui| {
-                ui.horizontal_top(|ui| {
-                    ui.vertical(|ui| {
-                        if code_editor {
-                            edit_pio_code(self, ui, Id::new("pio-code"));
-                        } else {
-                            egui::Grid::new("pio_meta")
-                                .num_columns(2)
-                                .min_col_width(30.0)
-                                .striped(true)
-                                .show(ui, |ui| {
-                                    ui.label("version");
-                                    changed = changed || self.version.edit_ui(ui).changed();
-                                    ui.end_row();
-                                    ui.label("type");
-                                    changed = changed || self.data_type.edit_ui(ui).changed();
-                                    ui.end_row()
-                                });
-                            egui::CollapsingHeader::new("param_root").show(ui, |ui| {
-                                changed = changed
-                                    || edit_ui_plist(
-                                        &mut self.param_root,
-                                        ui,
-                                        Some(PARAM_ROOT_HASH),
-                                    )
-                                    .changed();
+        let mut res = ui
+            .vertical_centered_justified(|ui| {
+                egui::Grid::new("pio_meta")
+                    .min_col_width(30.0)
+                    .num_columns(2)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        ui.label("");
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if ui.toggle_value(&mut code_editor, "Code").changed() {
+                                ui.data().insert_temp(code_flag_id, code_editor);
+                                if !code_editor {
+                                    let text = ui
+                                        .data()
+                                        .get_temp::<Arc<RwLock<String>>>(Id::new("pio-code"))
+                                        .expect("YAML text should exist");
+                                    let text = text.read();
+                                    if let Ok(pio) = ParameterIO::from_text(text.as_str()) {
+                                        *self = pio
+                                    }
+                                }
+                            }
+                            ui.allocate_space([ui.available_width(), 0.0].into());
+                        });
+                        ui.end_row();
+                        if !code_editor {
+                            ui.label("version");
+                            ui.horizontal(|ui| {
+                                changed = changed || self.version.edit_ui(ui).changed();
                             });
+                            ui.end_row();
+                            ui.label("type");
+                            ui.horizontal(|ui| {
+                                changed = changed || self.data_type.edit_ui(ui).changed();
+                            });
+                            ui.end_row()
                         }
                     });
-                    if ui.toggle_value(&mut code_editor, "Code").changed() {
-                        ui.data().insert_temp(code_flag_id, code_editor);
-                    }
-                });
+                if code_editor {
+                    edit_pio_code(self, ui, Id::new("pio-code"));
+                } else {
+                    egui::CollapsingHeader::new("param_root").show(ui, |ui| {
+                        changed = changed
+                            || edit_ui_plist(&mut self.param_root, ui, Some(PARAM_ROOT_HASH))
+                                .changed();
+                    });
+                }
             })
             .response;
         if changed {
             res.mark_changed();
         }
+        ui.allocate_space(ui.available_size());
         res
     }
 }
