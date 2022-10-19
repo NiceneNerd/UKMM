@@ -3837,6 +3837,7 @@ dependencies = [
  "rfd",
  "roead",
  "rustc-hash",
+ "serde_yaml 0.9.13",
  "smartstring",
  "syntect",
 ]
