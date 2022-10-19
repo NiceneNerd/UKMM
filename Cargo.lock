@@ -2955,9 +2955,9 @@ dependencies = [
 
 [[package]]
 name = "roead"
-version = "0.16.3"
+version = "0.16.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a601790feec2b315a3d3e7fb4a28786bb7f43365a623456049ba5e766b6305f"
+checksum = "b689a23cce0310203207edf6538c15a97f9ede69324e0c86bb56f783a4a14698"
 dependencies = [
  "almost",
  "base64 0.13.0",
@@ -3840,6 +3840,17 @@ dependencies = [
  "serde_yaml 0.9.13",
  "smartstring",
  "syntect",
+]
+
+[[package]]
+name = "uk-ui-derive"
+version = "0.1.0"
+dependencies = [
+ "egui",
+ "proc-macro2 1.0.46",
+ "quote 1.0.21",
+ "syn 1.0.102",
+ "uk-ui",
 ]
 
 [[package]]

@@ -58,5 +58,6 @@ members = [
     "uk-manager",
     "uk-mod",
     "uk-reader",
-    "uk-ui"
+    "uk-ui",
+    "uk-ui-derive"
 ]

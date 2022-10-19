@@ -14,7 +14,7 @@ msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284
 once_cell = "1.13.0"
 thiserror = "1.0.30"
 rstb = "0.3.2"
-roead = { version = "0.16.3", features = ["with-serde", "smartstring"] }
+roead = { version = "0.16.4", features = ["with-serde", "smartstring"] }
 rustc-hash = "1.1.0"
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.82"
