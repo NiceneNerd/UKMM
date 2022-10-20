@@ -1,0 +1,13 @@
+[package]
+name = "uk-editor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
+egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
+roead = { version = "0.16.4", features = ["with-serde", "yaml"] }
+uk-content = { path = "../uk-content" }
+uk-mod = { path = "../uk-mod" }
+uk-ui = { path = "../uk-ui" }
+uk-ui-derive = { path = "../uk-ui-derive" }

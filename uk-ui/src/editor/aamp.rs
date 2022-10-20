@@ -1,17 +1,16 @@
-use std::{ops::DerefMut, sync::Arc};
-
+use super::{EditableDisplay, EditableValue};
 use crate::icons::IconButtonExt;
-
-use super::EditableValue;
 use egui::{mutex::RwLock, Align, Color32, Id, Layout};
 use roead::{
     aamp::{Parameter, ParameterIO, ParameterList, ParameterObject},
     types::{Color, Quat, Vector2f, Vector3f, Vector4f},
 };
+use std::{ops::DerefMut, sync::Arc};
 
 macro_rules! impl_edit_veclike {
     ($type:tt, $($field:ident),+) => {
         impl EditableValue for $type {
+            const DISPLAY: EditableDisplay = EditableDisplay::Inline;
             fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
                 ui.horizontal_wrapped(|ui| {
                     $(
@@ -30,6 +29,7 @@ impl_edit_veclike!(Vector4f, x, y, z, t);
 impl_edit_veclike!(Quat, a, b, c, d);
 
 impl EditableValue for Color {
+    const DISPLAY: EditableDisplay = EditableDisplay::Inline;
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         let mut color = [self.r, self.g, self.b, self.a];
         let res = ui.color_edit_button_rgba_premultiplied(&mut color);
@@ -76,12 +76,14 @@ impl<const N: usize> egui::TextBuffer for FixedSafeStringWrapper<'_, N> {
 }
 
 impl<const N: usize> EditableValue for roead::types::FixedSafeString<N> {
+    const DISPLAY: EditableDisplay = EditableDisplay::Inline;
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         ui.text_edit_singleline(&mut FixedSafeStringWrapper(self))
     }
 }
 
 impl EditableValue for Parameter {
+    const DISPLAY: EditableDisplay = EditableDisplay::Inline;
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         match self {
             Parameter::Bool(v) => v.edit_ui(ui),
@@ -147,6 +149,7 @@ fn edit_ui_pobj(
 }
 
 impl EditableValue for ParameterObject {
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
     #[inline]
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         edit_ui_pobj(self, ui, None)
@@ -221,6 +224,7 @@ fn edit_ui_plist(
 }
 
 impl EditableValue for ParameterList {
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         edit_ui_plist(self, ui, None)
     }
@@ -304,6 +308,7 @@ fn edit_pio_code(pio: &mut ParameterIO, ui: &mut egui::Ui, id: Id) -> egui::Resp
 }
 
 impl EditableValue for ParameterIO {
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         let mut changed = false;
         let code_flag_id = Id::new("pio")

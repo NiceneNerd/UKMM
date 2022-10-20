@@ -3,7 +3,14 @@ use std::hash::Hash;
 pub mod aamp;
 pub mod byml;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum EditableDisplay {
+    Block,
+    Inline,
+}
+
 pub trait EditableValue {
+    const DISPLAY: EditableDisplay;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response;
     fn edit_ui_with_id(&mut self, ui: &mut Ui, _id: impl Hash) -> Response {
         self.edit_ui(ui)
@@ -11,14 +18,16 @@ pub trait EditableValue {
 }
 
 impl EditableValue for bool {
+    const DISPLAY: EditableDisplay = EditableDisplay::Inline;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
-        ui.checkbox(self, "")
+        ui.checkbox(self, if *self { "Enabled" } else { "Disabled " })
     }
 }
 
 macro_rules! impl_num {
     ($num:tt) => {
         impl EditableValue for $num {
+            const DISPLAY: EditableDisplay = EditableDisplay::Inline;
             fn edit_ui(&mut self, ui: &mut Ui) -> Response {
                 ui.add(DragValue::new(self))
             }
@@ -40,6 +49,7 @@ impl_num!(f32);
 impl_num!(f64);
 
 impl EditableValue for String {
+    const DISPLAY: EditableDisplay = EditableDisplay::Inline;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         ui.text_edit_singleline(self)
     }
@@ -74,6 +84,7 @@ impl egui::TextBuffer for SmartStringWrapper<'_> {
 }
 
 impl EditableValue for smartstring::alias::String {
+    const DISPLAY: EditableDisplay = EditableDisplay::Inline;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         let mut text = SmartStringWrapper(self);
         ui.text_edit_singleline(&mut text)
@@ -84,6 +95,7 @@ impl<T> EditableValue for [T]
 where
     T: EditableValue,
 {
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         let mut changed = false;
         let mut res = if self.len() < 5 {
@@ -109,6 +121,7 @@ where
 }
 
 impl EditableValue for Vec<u8> {
+    const DISPLAY: EditableDisplay = EditableDisplay::Inline;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         let mut text = hex::encode(self.as_slice());
         let res = ui.text_edit_singleline(&mut text);
@@ -120,12 +133,13 @@ impl EditableValue for Vec<u8> {
 }
 
 impl<T: EditableValue + Default> EditableValue for Option<T> {
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         let mut is_some = self.is_some();
         let mut changed = false;
         let mut res = ui.scope(|ui| match self.as_mut() {
             Some(val) => {
-                if ui.checkbox(&mut is_some, "").changed() {
+                if ui.checkbox(&mut is_some, "Enabled").changed() {
                     *self = None;
                     changed = true;
                 } else {
@@ -133,8 +147,8 @@ impl<T: EditableValue + Default> EditableValue for Option<T> {
                 }
             }
             None => {
-                if ui.checkbox(&mut is_some, "").changed() {
-                    *self = Self::default();
+                if ui.checkbox(&mut is_some, "Disabled").changed() {
+                    *self = Some(T::default());
                     changed = true;
                 }
             }

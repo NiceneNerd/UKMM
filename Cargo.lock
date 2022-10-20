@@ -3734,6 +3734,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "uk-editor"
+version = "0.1.0"
+dependencies = [
+ "eframe",
+ "egui_dock",
+ "roead",
+ "uk-content",
+ "uk-mod",
+ "uk-ui",
+ "uk-ui-derive",
+]
+
+[[package]]
 name = "uk-manager"
 version = "0.1.0"
 dependencies = [
