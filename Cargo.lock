@@ -3727,6 +3727,8 @@ dependencies = [
  "serde_json",
  "smartstring",
  "thiserror",
+ "uk-ui",
+ "uk-ui-derive",
  "xxhash-rust",
  "zstd",
 ]

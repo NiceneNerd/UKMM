@@ -118,3 +118,30 @@ impl EditableValue for Vec<u8> {
         res
     }
 }
+
+impl<T: EditableValue + Default> EditableValue for Option<T> {
+    fn edit_ui(&mut self, ui: &mut Ui) -> Response {
+        let mut is_some = self.is_some();
+        let mut changed = false;
+        let mut res = ui.scope(|ui| match self.as_mut() {
+            Some(val) => {
+                if ui.checkbox(&mut is_some, "").changed() {
+                    *self = None;
+                    changed = true;
+                } else {
+                    changed = changed || val.edit_ui(ui).changed();
+                }
+            }
+            None => {
+                if ui.checkbox(&mut is_some, "").changed() {
+                    *self = Self::default();
+                    changed = true;
+                }
+            }
+        });
+        if changed {
+            res.response.mark_changed();
+        }
+        res.response
+    }
+}
