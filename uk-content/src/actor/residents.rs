@@ -9,7 +9,7 @@ pub struct ResidentActorData {
     pub scale: Option<Byml>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ResidentActors(pub DeleteMap<String, ResidentActorData>);
 
 impl TryFrom<&Byml> for ResidentActors {

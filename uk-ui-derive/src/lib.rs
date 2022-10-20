@@ -1,6 +1,9 @@
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{DataStruct, Expr, Fields, FieldsNamed, Ident, Type, VisPublic, Visibility};
+use quote::{__private::ext::RepToTokensExt, quote, ToTokens};
+use syn::{
+    token::Colon2, DataStruct, Expr, Fields, FieldsNamed, FieldsUnnamed, Ident, Path, Type,
+    VisPublic, Visibility,
+};
 use uk_ui::editor::EditableDisplay;
 
 #[proc_macro_derive(Editable)]
@@ -25,7 +28,7 @@ fn impl_struct_named_fields(
             let ty = &field.ty;
             let str_name = name.to_string();
             quote! {
-                let child_id = id.with(#str_name);
+            let child_id = id.with(#str_name);
                 match <#ty as ::uk_ui::editor::EditableValue>::DISPLAY {
                     ::uk_ui::editor::EditableDisplay::Block => {
                         ::uk_ui::egui::CollapsingHeader::new(#str_name).id_source(id.with(#str_name)).show(ui, |ui| {
@@ -53,6 +56,53 @@ fn impl_struct_named_fields(
         })
 }
 
+fn get_display_type(ty: &Type) -> Expr {
+    let mut ty = ty.clone();
+    if let Type::Path(ref mut path) = ty {
+        if let syn::PathArguments::AngleBracketed(ref mut args) =
+            path.path.segments.first_mut().unwrap().arguments
+        {
+            args.colon2_token = Some(Colon2::default());
+        }
+        return syn::parse_str(&format!("{}::DISPLAY", ty.into_token_stream())).unwrap();
+    }
+    todo!()
+}
+
+fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStream {
+    let field_count = fields.unnamed.len();
+    let str_name = name.to_string();
+    if field_count == 1 {
+        let field = fields
+            .unnamed
+            .next()
+            .and_then(|n| n.iter().next())
+            .expect("newtype struct should have one field");
+        let display = get_display_type(&field.ty);
+        quote! {
+            #[automatically_derived]
+            impl ::uk_ui::editor::EditableValue for #name {
+                const DISPLAY: ::uk_ui::editor::EditableDisplay = #display;
+                fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
+                    use ::uk_ui::egui;
+                    egui::CollapsingHeader::new(#str_name).show(ui, |ui| {
+                        self.0.edit_ui(ui)
+                    }).header_response
+                }
+                fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
+                    use ::uk_ui::egui;
+                    let id = egui::Id::new(id);
+                    egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
+                        self.0.edit_ui_with_id(ui, id.with("inner"))
+                    }).header_response
+                }
+            }
+        }.into()
+    } else {
+        todo!()
+    }
+}
+
 fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
     let str_name = name.to_string();
     let (field_impls, display) = match struc.fields {
@@ -61,8 +111,8 @@ fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
             syn::parse_str::<Expr>("::uk_ui::editor::EditableDisplay::Block")
                 .expect("display variant should parse"),
         ),
-        Fields::Unnamed(_) => todo!(),
-        Fields::Unit => todo!(),
+        Fields::Unnamed(ref fields) => return impl_struct_unnamed_fields(name, fields),
+        Fields::Unit => unimplemented!(),
     };
     quote! {
         #[automatically_derived]
@@ -77,6 +127,7 @@ fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
                 let id = egui::Id::new(id);
                 egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
                     #(#field_impls)*
+                    ui.shrink_height_to_current();
                 }).header_response
             }
         }

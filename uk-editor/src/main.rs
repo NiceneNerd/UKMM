@@ -1,4 +1,5 @@
-use uk_content::actor::residents::ResidentActorData;
+use roead::byml::Byml;
+use uk_content::actor::residents::ResidentActors;
 use uk_ui::editor::EditableValue;
 use uk_ui::egui;
 
@@ -18,17 +19,14 @@ impl<T: EditableValue> eframe::App for EditorTest<T> {
 
 fn main() {
     uk_ui::icons::load_icons();
-    let resident = ResidentActorData {
-        only_res: true,
-        scale: Some(
-            [("x", 0.0.into()), ("y", 0.0.into()), ("z", 0.0.into())]
-                .into_iter()
-                .collect(),
-        ),
-    };
+    let residents = ResidentActors::try_from(
+        &Byml::from_binary(&std::fs::read("uk-content/test/Actor/ResidentActors.byml").unwrap())
+            .unwrap(),
+    )
+    .unwrap();
     eframe::run_native(
         "U-King Mod Editor",
         eframe::NativeOptions::default(),
-        Box::new(move |_cc| Box::new(EditorTest { value: resident })),
+        Box::new(move |_cc| Box::new(EditorTest { value: residents })),
     )
 }

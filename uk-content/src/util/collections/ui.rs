@@ -5,6 +5,7 @@ use super::*;
 use uk_ui::editor::{EditableDisplay, EditableValue};
 use uk_ui::egui;
 use uk_ui::egui::mutex::RwLock;
+use uk_ui::egui_extras;
 use uk_ui::icons::IconButtonExt;
 
 impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec<T> {
@@ -144,7 +145,7 @@ where
 
 impl<T, U> EditableValue for DeleteMap<T, U>
 where
-    T: DeleteKey,
+    T: std::fmt::Debug + DeleteKey + for<'a> TryFrom<&'a str>,
     U: PartialEq + Clone + EditableValue,
 {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
@@ -155,6 +156,66 @@ where
 
     fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl Hash) -> egui::Response {
         let id = egui::Id::new(id);
-        todo!("edit ui for deletemap")
+        let mut changed = false;
+        let mut res = ui
+            .vertical(|ui| {
+                ui.allocate_space([ui.available_width(), 0.0].into());
+                for (key, (val, del)) in self.0.iter_mut() {
+                    let str_key = format!("{:#?}", &key).trim_matches('"').to_owned();
+                    match <U as EditableValue>::DISPLAY {
+                        EditableDisplay::Block => {
+                            egui::CollapsingHeader::new(if *del {
+                                egui::RichText::new(&str_key).color(uk_ui::visuals::RED)
+                            } else {
+                                egui::RichText::new(&str_key)
+                            })
+                            .id_source(id.with(key))
+                            .show(ui, |ui| {
+                                changed = changed
+                                    || ui
+                                        .checkbox(del, if *del { "Disabled" } else { "Enabled" })
+                                        .changed();
+                                changed = changed
+                                    || val
+                                        .edit_ui_with_id(ui, id.with(key).with("child-ui"))
+                                        .changed();
+                            });
+                        }
+                        EditableDisplay::Inline => {
+                            let label_width = ui.available_width() / 4.0;
+                            let chk_width = ui.spacing().interact_size.x;
+                            egui_extras::StripBuilder::new(ui)
+                                .size(egui_extras::Size::initial(30.0).at_most(label_width))
+                                .size(egui_extras::Size::remainder())
+                                .size(egui_extras::Size::exact(chk_width))
+                                .horizontal(|mut strip| {
+                                    strip.cell(|ui| {
+                                        ui.label(&str_key);
+                                    });
+                                    strip.cell(|ui| {
+                                        changed = changed
+                                            || val.edit_ui_with_id(ui, id.with(key)).changed();
+                                    });
+                                    strip.cell(|ui| {
+                                        changed = changed
+                                            || ui
+                                                .checkbox(del, "")
+                                                .on_hover_text(if *del {
+                                                    "Check to restore"
+                                                } else {
+                                                    "Uncheck to delete"
+                                                })
+                                                .changed();
+                                    });
+                                });
+                        }
+                    }
+                }
+            })
+            .response;
+        if changed {
+            res.mark_changed();
+        }
+        res
     }
 }
