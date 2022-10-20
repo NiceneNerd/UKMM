@@ -1,5 +1,5 @@
 use super::{EditableDisplay, EditableValue};
-use crate::icons::IconButtonExt;
+use crate::{icons::IconButtonExt, visuals};
 use egui::{mutex::RwLock, Align, Color32, Id, Layout};
 use roead::{
     aamp::{Parameter, ParameterIO, ParameterList, ParameterObject},
@@ -277,11 +277,7 @@ fn edit_pio_code(pio: &mut ParameterIO, ui: &mut egui::Ui, id: Id) -> egui::Resp
         );
         let has_err = ui.memory().data.get_temp(id.with("error")).unwrap_or(false);
         if has_err {
-            ui.visuals_mut().extreme_bg_color = if ui.visuals().dark_mode {
-                Color32::DARK_RED
-            } else {
-                Color32::LIGHT_RED
-            };
+            ui.visuals_mut().extreme_bg_color = visuals::error_bg(ui.visuals());
         }
         let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
             let mut layout_job = crate::syntect::highlight(

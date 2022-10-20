@@ -1,4 +1,4 @@
-use eframe::epaint::{color_hex::color_from_hex, RectShape, Shadow, Tessellator};
+use egui::epaint::{color_hex::color_from_hex, RectShape, Shadow, Tessellator};
 use egui::{
     style::{Margin, Selection, Spacing, WidgetVisuals, Widgets},
     Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
@@ -18,6 +18,13 @@ pub const RED: Color32 = from_hex!("#F52331");
 pub const YELLOW: Color32 = from_hex!("#ffbc28");
 pub const ORGANGE: Color32 = from_hex!("#ff953f");
 
+#[inline(always)]
+pub fn error_bg(visuals: &Visuals) -> Color32 {
+    let mut color = egui::color::Hsva::from(RED);
+    color.v = egui::color::Hsva::from(visuals.window_fill()).v;
+    color.into()
+}
+
 pub fn slate_grid(ui: &mut Ui) {
     ui.with_layer_id(LayerId::background(), |ui| {
         let cursor = ui.cursor();
@@ -36,7 +43,7 @@ pub fn slate_grid(ui: &mut Ui) {
             let mut mesh = Mesh::default();
             let mut tesselator = Tessellator::new(
                 ui.fonts().pixels_per_point(),
-                eframe::epaint::TessellationOptions {
+                egui::epaint::TessellationOptions {
                     feathering: true,
                     feathering_size_in_pixels: 32.0,
                     ..Default::default()

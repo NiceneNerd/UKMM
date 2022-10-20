@@ -1,6 +1,10 @@
+use std::ops::DerefMut;
+use std::sync::Arc;
+
 use super::*;
 use uk_ui::editor::{EditableDisplay, EditableValue};
 use uk_ui::egui;
+use uk_ui::egui::mutex::RwLock;
 use uk_ui::icons::IconButtonExt;
 
 impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec<T> {
@@ -17,9 +21,9 @@ impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec
                 for (i, (val, del)) in self.0.iter_mut().enumerate() {
                     egui::Frame::none()
                         .fill(if *del {
-                            egui::Color32::DARK_RED
+                            uk_ui::visuals::error_bg(ui.visuals())
                         } else {
-                            ui.style().noninteractive().bg_fill
+                            egui::Color32::TRANSPARENT
                         })
                         .show(ui, |ui| {
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
@@ -52,8 +56,9 @@ impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec
     }
 }
 
-impl<T: std::fmt::Debug + Into<String> + Default + Clone + PartialEq + Hash + Eq> EditableValue
-    for DeleteSet<T>
+impl<T> EditableValue for DeleteSet<T>
+where
+    T: std::fmt::Debug + for<'a> TryFrom<&'a str> + Default + DeleteKey,
 {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
@@ -64,15 +69,92 @@ impl<T: std::fmt::Debug + Into<String> + Default + Clone + PartialEq + Hash + Eq
         let mut changed = false;
         let mut res = ui
             .group(|ui| {
-                for (i, (val, del)) in self.0.iter_mut() {
+                for (val, del) in self.0.iter_mut() {
                     changed = changed || ui.checkbox(del, format!("{:#?}", val)).changed();
                 }
-                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {}
+                let new_value = ui
+                    .data()
+                    .get_temp::<Arc<RwLock<String>>>(id.with("new_val"));
+                if let Some(new_value) = new_value {
+                    ui.horizontal(|ui| {
+                        ui.text_edit_singleline(new_value.write().deref_mut());
+                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                            if let Ok(val) = T::try_from(new_value.read().as_str()) {
+                                self.0.insert(val, false);
+                                ui.data().remove::<Arc<RwLock<String>>>(id.with("new_val"))
+                            }
+                        }
+                    });
+                }
+                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                    ui.data()
+                        .insert_temp(id.with("new_val"), Arc::new(RwLock::new(String::new())));
+                }
             })
             .response;
         if changed {
             res.mark_changed();
         }
         res
+    }
+}
+
+impl<T> EditableValue for SortedDeleteSet<T>
+where
+    T: std::fmt::Debug + for<'a> TryFrom<&'a str> + Default + DeleteKey + Ord,
+{
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
+    fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
+        self.edit_ui_with_id(ui, "delete_set")
+    }
+    fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl Hash) -> egui::Response {
+        let id = egui::Id::new(id);
+        let mut changed = false;
+        let mut res = ui
+            .group(|ui| {
+                for (val, del) in self.0.iter_mut() {
+                    changed = changed || ui.checkbox(del, format!("{:#?}", val)).changed();
+                }
+                let new_value = ui
+                    .data()
+                    .get_temp::<Arc<RwLock<String>>>(id.with("new_val"));
+                if let Some(new_value) = new_value {
+                    ui.horizontal(|ui| {
+                        ui.text_edit_singleline(new_value.write().deref_mut());
+                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                            if let Ok(val) = T::try_from(new_value.read().as_str()) {
+                                self.0.insert(val, false);
+                                ui.data().remove::<Arc<RwLock<String>>>(id.with("new_val"))
+                            }
+                        }
+                    });
+                }
+                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                    ui.data()
+                        .insert_temp(id.with("new_val"), Arc::new(RwLock::new(String::new())));
+                }
+            })
+            .response;
+        if changed {
+            res.mark_changed();
+        }
+        res
+    }
+}
+
+impl<T, U> EditableValue for DeleteMap<T, U>
+where
+    T: DeleteKey,
+    U: PartialEq + Clone + EditableValue,
+{
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
+    fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
+        self.edit_ui_with_id(ui, "delete_map")
+    }
+
+    fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl Hash) -> egui::Response {
+        let id = egui::Id::new(id);
+        todo!("edit ui for deletemap")
     }
 }

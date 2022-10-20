@@ -7,7 +7,6 @@ mod settings;
 mod tabs;
 mod tasks;
 mod util;
-mod visuals;
 use crate::logger::Entry;
 use anyhow::{Context, Result};
 use eframe::{
@@ -45,6 +44,7 @@ use uk_manager::{
 use uk_mod::Manifest;
 use uk_ui::ext::UiExt;
 use uk_ui::icons::{Icon, IconButtonExt};
+pub use uk_ui::visuals;
 
 fn load_fonts(context: &egui::Context) {
     let mut fonts = FontDefinitions::default();
