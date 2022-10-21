@@ -23,6 +23,11 @@ impl<T: EditableValue> eframe::App for EditorTest<T> {
 
 fn main() {
     uk_ui::icons::load_icons();
+    // let data = ResidentActors::try_from(
+    //     &Byml::from_binary(&std::fs::read("uk-content/test/Actor/ResidentActors.byml").unwrap())
+    //         .unwrap(),
+    // )
+    // .unwrap();
     let actor = Sarc::new(
         yaz0::decompress(
             &std::fs::read("uk-content/test/Actor/Pack/Npc_TripMaster_00.sbactorpack").unwrap(),

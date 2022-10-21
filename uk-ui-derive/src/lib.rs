@@ -32,25 +32,15 @@ fn impl_struct_named_fields(
                 match <#ty as ::uk_ui::editor::EditableValue>::DISPLAY {
                     ::uk_ui::editor::EditableDisplay::Block => {
                         egui::CollapsingHeader::new(#str_name).id_source(id.with(#str_name)).show(ui, |ui| {
-                            max_rect.max.y += self.#name.edit_ui_with_id(ui, child_id).rect.height();
+                            changed = changed || self.#name.edit_ui_with_id(ui, child_id).changed();
                         });
                     }
                     ::uk_ui::editor::EditableDisplay::Inline => {
-                        let mut height = 0.0;
-                        ::uk_ui::egui_extras::StripBuilder::new(ui)
-                            .size(::uk_ui::egui_extras::Size::relative(0.2))
-                            .size(::uk_ui::egui_extras::Size::remainder())
-                            .horizontal(|mut strip| {
-                                strip.cell(|ui| {
-                                    ui.label(#str_name);
-                                });
-                                strip.cell(|ui| {
-                                    height = self.#name.edit_ui_with_id(ui, child_id).rect.height();
-                                });
-                            });
-                        ui.shrink_height_to_current();
-                        ui.allocate_space([0.0, height].into());
-                        max_rect.max.y += height;
+                        ui.columns(2, |uis| {
+                            uis[0].label(#str_name);
+                            let res = self.#name.edit_ui_with_id(&mut uis[1], child_id);
+                            changed = changed || res.changed();
+                        });
                     }
                 }
             }
@@ -85,27 +75,51 @@ fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStre
             impl ::uk_ui::editor::EditableValue for #name {
                 const DISPLAY: ::uk_ui::editor::EditableDisplay = #display;
                 fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
-                    use ::uk_ui::egui;
-                    egui::CollapsingHeader::new(#str_name).show(ui, |ui| {
-                        self.0.edit_ui(ui)
-                    }).header_response
+                    self.edit_ui_with_id(ui, #str_name)
                 }
                 fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
                     use ::uk_ui::egui;
-                    let id = egui::Id::new(id);
-                    let mut max_rect = egui::Rect { min: Default::default(), max: Default::default() };
-                    let res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
-                        let res = self.0.edit_ui_with_id(ui, id.with("inner"));
-                        max_rect = res.rect;
-                        ui.set_clip_rect(max_rect);
+                    let id = egui::Id::new(id).with(#str_name);
+                    let mut changed = false;
+                    let mut res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
+                        changed = changed || self.0.edit_ui_with_id(ui, id.with("inner")).changed();
                     }).header_response;
-                    ui.set_clip_rect(max_rect);
+                    if changed {
+                        res.mark_changed();
+                    }
                     res
                 }
             }
         }.into()
     } else {
-        todo!()
+        let field_impls = fields.unnamed.iter().enumerate().map(|(i, _)| {
+            quote! {
+                changed = changed || self.#i.edit_ui_with_id(id.with(#i)).changed();
+            }
+        });
+        quote! {
+            #[automatically_derived]
+            impl ::uk_ui::editor::EditableValue for #name {
+                const DISPLAY: ::uk_ui::editor::EditableDisplay = ::uk_ui::editor::EditableDisplay::Block;
+                fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
+                    self.edit_ui_with_id(ui, #str_name)
+                }
+                fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
+                    use ::uk_ui::egui;
+                    let id = egui::Id::new(id).with(#str_name);
+                    let mut changed = false;
+                    let res = ui.group(|ui| {
+                        ui.columns(#field_count, |uis| {
+                            #(#field_impls)*
+                        });
+                    }).response;
+                    if changed {
+                        res.mark_changed();
+                    }
+                    res
+                }
+            }
+        }.into()
     }
 }
 
@@ -131,11 +145,14 @@ fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
             fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
                 use ::uk_ui::egui;
                 let id = egui::Id::new(id);
-                let mut max_rect = egui::Rect::from_min_size(ui.cursor().min, [ui.available_width(), ui.spacing().interact_size.y].into());
-                let res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
+                let mut changed = false;
+                let mut res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
                     #(#field_impls)*
-                }).header_response;
-                ui.set_clip_rect(max_rect);
+                });
+                let mut res = res.body_response.unwrap_or(res.header_response);
+                if changed {
+                    res.mark_changed();
+                }
                 res
             }
         }

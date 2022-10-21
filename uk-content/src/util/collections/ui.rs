@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use super::*;
 use uk_ui::editor::{EditableDisplay, EditableValue};
-use uk_ui::egui;
 use uk_ui::egui::mutex::RwLock;
+use uk_ui::egui::{self, Layout};
 use uk_ui::egui_extras;
 use uk_ui::icons::IconButtonExt;
 
@@ -190,39 +190,47 @@ where
                             });
                         }
                         EditableDisplay::Inline => {
-                            let label_width = ui.available_width() / 4.0;
-                            let chk_width = ui.spacing().interact_size.x;
-                            egui_extras::StripBuilder::new(ui)
-                                .size(egui_extras::Size::initial(30.0).at_most(label_width))
-                                .size(egui_extras::Size::remainder())
-                                .size(egui_extras::Size::exact(chk_width))
-                                .horizontal(|mut strip| {
-                                    strip.cell(|ui| {
-                                        ui.label(&str_key);
-                                    });
-                                    strip.cell(|ui| {
-                                        let res = val.edit_ui_with_id(ui, id.with(key));
-                                        changed = changed || res.changed();
-                                        max_height = res.rect.height();
-                                    });
-                                    strip.cell(|ui| {
-                                        changed = changed
-                                            || ui
-                                                .checkbox(del, "")
-                                                .on_hover_text(if *del {
-                                                    "Check to restore"
-                                                } else {
-                                                    "Uncheck to delete"
-                                                })
-                                                .changed();
-                                    });
-                                });
+                            ui.allocate_ui_with_layout(
+                                [ui.available_width(), ui.spacing().interact_size.y].into(),
+                                Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    let gallery = ui.fonts().layout_no_wrap(
+                                        str_key,
+                                        ui.style()
+                                            .text_styles
+                                            .get(&egui::TextStyle::Body)
+                                            .unwrap()
+                                            .clone(),
+                                        ui.visuals().text_color(),
+                                    );
+                                    changed = changed
+                                        || ui
+                                            .checkbox(del, "")
+                                            .on_hover_text(if *del {
+                                                "Check to restore"
+                                            } else {
+                                                "Uncheck to delete"
+                                            })
+                                            .changed();
+                                    let res = val.edit_ui_with_id(ui, id.with(key));
+                                    changed = changed || res.changed();
+                                    ui.allocate_space(
+                                        [
+                                            ui.available_width()
+                                                - gallery.rect.width()
+                                                - ui.spacing().item_spacing.x,
+                                            0.0,
+                                        ]
+                                        .into(),
+                                    );
+                                    ui.label(gallery);
+                                },
+                            );
                         }
                     }
                 }
             })
             .response;
-        ui.set_max_height(10.0);
         if changed {
             res.mark_changed();
         }
