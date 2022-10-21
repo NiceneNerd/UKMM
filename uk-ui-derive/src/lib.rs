@@ -28,11 +28,11 @@ fn impl_struct_named_fields(
             let ty = &field.ty;
             let str_name = name.to_string();
             quote! {
-            let child_id = id.with(#str_name);
+                let child_id = id.with(#str_name);
                 match <#ty as ::uk_ui::editor::EditableValue>::DISPLAY {
                     ::uk_ui::editor::EditableDisplay::Block => {
-                        ::uk_ui::egui::CollapsingHeader::new(#str_name).id_source(id.with(#str_name)).show(ui, |ui| {
-                            self.#name.edit_ui_with_id(ui, child_id);
+                        egui::CollapsingHeader::new(#str_name).id_source(id.with(#str_name)).show(ui, |ui| {
+                            max_rect.max.y += self.#name.edit_ui_with_id(ui, child_id).rect.height();
                         });
                     }
                     ::uk_ui::editor::EditableDisplay::Inline => {
@@ -48,9 +48,10 @@ fn impl_struct_named_fields(
                                     height = self.#name.edit_ui_with_id(ui, child_id).rect.height();
                                 });
                             });
-                            ui.shrink_height_to_current();
-                            ui.allocate_space([0.0, height].into());
-                        }
+                        ui.shrink_height_to_current();
+                        ui.allocate_space([0.0, height].into());
+                        max_rect.max.y += height;
+                    }
                 }
             }
         })
@@ -92,9 +93,14 @@ fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStre
                 fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
                     use ::uk_ui::egui;
                     let id = egui::Id::new(id);
-                    egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
-                        self.0.edit_ui_with_id(ui, id.with("inner"))
-                    }).header_response
+                    let mut max_rect = egui::Rect { min: Default::default(), max: Default::default() };
+                    let res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
+                        let res = self.0.edit_ui_with_id(ui, id.with("inner"));
+                        max_rect = res.rect;
+                        ui.set_clip_rect(max_rect);
+                    }).header_response;
+                    ui.set_clip_rect(max_rect);
+                    res
                 }
             }
         }.into()
@@ -125,10 +131,12 @@ fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
             fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
                 use ::uk_ui::egui;
                 let id = egui::Id::new(id);
-                egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
+                let mut max_rect = egui::Rect::from_min_size(ui.cursor().min, [ui.available_width(), ui.spacing().interact_size.y].into());
+                let res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
                     #(#field_impls)*
-                    ui.shrink_height_to_current();
-                }).header_response
+                }).header_response;
+                ui.set_clip_rect(max_rect);
+                res
             }
         }
     }

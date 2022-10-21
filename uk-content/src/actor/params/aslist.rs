@@ -2,8 +2,9 @@ use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKErr
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct AddRes {
     pub anim: String64,
     pub retarget_model: Option<String64>,
@@ -51,7 +52,7 @@ impl From<AddRes> for ParameterObject {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ASList {
     pub common: Option<ParameterObject>,
     pub add_reses: DeleteMap<String, AddRes>,

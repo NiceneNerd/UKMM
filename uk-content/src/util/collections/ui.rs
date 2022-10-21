@@ -42,9 +42,9 @@ impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec
                                         changed || val.edit_ui_with_id(ui, id.with(i)).changed();
                                 });
                             });
-                            do_add = ui.icon_button(uk_ui::icons::Icon::Add).clicked();
                         });
                 }
+                do_add = ui.icon_button(uk_ui::icons::Icon::Add).clicked();
             })
             .response;
         if do_add {
@@ -157,8 +157,9 @@ where
     fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl Hash) -> egui::Response {
         let id = egui::Id::new(id);
         let mut changed = false;
+        let mut max_height = ui.spacing().interact_size.y;
         let mut res = ui
-            .vertical(|ui| {
+            .scope(|ui| {
                 ui.allocate_space([ui.available_width(), 0.0].into());
                 for (key, (val, del)) in self.0.iter_mut() {
                     let str_key = format!("{:#?}", &key).trim_matches('"').to_owned();
@@ -173,12 +174,19 @@ where
                             .show(ui, |ui| {
                                 changed = changed
                                     || ui
-                                        .checkbox(del, if *del { "Disabled" } else { "Enabled" })
+                                        .checkbox(
+                                            del,
+                                            if *del {
+                                                egui::RichText::new("Delete")
+                                                    .color(uk_ui::visuals::RED)
+                                            } else {
+                                                egui::RichText::new("Delete")
+                                            },
+                                        )
                                         .changed();
-                                changed = changed
-                                    || val
-                                        .edit_ui_with_id(ui, id.with(key).with("child-ui"))
-                                        .changed();
+                                let res = val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
+                                changed = changed || res.changed();
+                                max_height = res.rect.height();
                             });
                         }
                         EditableDisplay::Inline => {
@@ -193,8 +201,9 @@ where
                                         ui.label(&str_key);
                                     });
                                     strip.cell(|ui| {
-                                        changed = changed
-                                            || val.edit_ui_with_id(ui, id.with(key)).changed();
+                                        let res = val.edit_ui_with_id(ui, id.with(key));
+                                        changed = changed || res.changed();
+                                        max_height = res.rect.height();
                                     });
                                     strip.cell(|ui| {
                                         changed = changed
@@ -213,6 +222,7 @@ where
                 }
             })
             .response;
+        ui.set_max_height(10.0);
         if changed {
             res.mark_changed();
         }

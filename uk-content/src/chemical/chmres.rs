@@ -2,8 +2,9 @@ use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ChemicalRes {
     pub world: DeleteMap<String256, ParameterObject>,
     pub material: DeleteMap<String256, ParameterObject>,
