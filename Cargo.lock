@@ -2955,9 +2955,9 @@ dependencies = [
 
 [[package]]
 name = "roead"
-version = "0.16.4"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b689a23cce0310203207edf6538c15a97f9ede69324e0c86bb56f783a4a14698"
+checksum = "0670032ff14b3ec0b32c0855360e58229c4b6e698817580c6b3b555a55697df4"
 dependencies = [
  "almost",
  "base64 0.13.0",
@@ -3848,6 +3848,7 @@ dependencies = [
  "egui",
  "egui_extras",
  "hex",
+ "indexmap",
  "once_cell",
  "rfd",
  "roead",
