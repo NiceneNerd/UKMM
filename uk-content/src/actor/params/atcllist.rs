@@ -7,8 +7,9 @@ use crate::{
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct AttClientList {
     pub att_pos: ParameterObject,
     pub att_clients: DeleteMap<String64, String64>,

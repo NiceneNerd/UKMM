@@ -6,6 +6,7 @@ use uk_ui::editor::{EditableDisplay, EditableValue};
 use uk_ui::egui::mutex::RwLock;
 use uk_ui::egui::{self, Layout};
 use uk_ui::egui_extras;
+use uk_ui::ext::UiExt;
 use uk_ui::icons::IconButtonExt;
 
 impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec<T> {
@@ -146,7 +147,7 @@ where
 impl<T, U> EditableValue for DeleteMap<T, U>
 where
     T: std::fmt::Debug + DeleteKey + for<'a> TryFrom<&'a str>,
-    U: PartialEq + Clone + EditableValue,
+    U: PartialEq + Clone + EditableValue + Default,
 {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
 
@@ -237,6 +238,138 @@ where
                             );
                         }
                     }
+                }
+                if let Some(new_key) = ui.get_temp_string(id.with("new_key")) {
+                    ui.horizontal(|ui| {
+                        ui.text_edit_singleline(new_key.write().deref_mut());
+                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                            if let Ok(k) = <&str as TryInto<T>>::try_into(new_key.read().as_str()) {
+                                self.0.insert(k, (U::default(), false));
+                                ui.clear_temp_string(id.with("new_key"));
+                            }
+                        }
+                    });
+                }
+                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                    ui.create_temp_string(id.with("new_key"), None);
+                }
+            })
+            .response;
+        if changed {
+            res.mark_changed();
+        }
+        res
+    }
+}
+
+impl<T, U> EditableValue for SortedDeleteMap<T, U>
+where
+    T: std::fmt::Debug + DeleteKey + for<'a> TryFrom<&'a str> + Ord,
+    U: PartialEq + Clone + EditableValue + Default,
+{
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
+    fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
+        self.edit_ui_with_id(ui, "sorted_delete_map")
+    }
+
+    fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl Hash) -> egui::Response {
+        let id = egui::Id::new(id);
+        let mut changed = false;
+        let mut max_height = ui.spacing().interact_size.y;
+        let mut res = ui
+            .scope(|ui| {
+                ui.allocate_space([ui.available_width(), 0.0].into());
+                for (key, (val, del)) in self.0.iter_mut() {
+                    let str_key = format!("{:#?}", &key).trim_matches('"').to_owned();
+                    match <U as EditableValue>::DISPLAY {
+                        EditableDisplay::Block => {
+                            egui::CollapsingHeader::new(if *del {
+                                egui::RichText::new(&str_key).color(uk_ui::visuals::RED)
+                            } else {
+                                egui::RichText::new(&str_key)
+                            })
+                            .id_source(id.with(key))
+                            .show(ui, |ui| {
+                                changed = changed
+                                    || ui
+                                        .checkbox(
+                                            del,
+                                            if *del {
+                                                egui::RichText::new("Delete")
+                                                    .color(uk_ui::visuals::RED)
+                                            } else {
+                                                egui::RichText::new("Delete")
+                                            },
+                                        )
+                                        .changed();
+                                ui.add_enabled_ui(!*del, |ui| {
+                                    let res =
+                                        val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
+                                    changed = changed || res.changed();
+                                    max_height = res.rect.height();
+                                });
+                            });
+                        }
+                        EditableDisplay::Inline => {
+                            ui.allocate_ui_with_layout(
+                                [ui.available_width(), ui.spacing().interact_size.y].into(),
+                                Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    let gallery = ui.fonts().layout_no_wrap(
+                                        str_key,
+                                        ui.style()
+                                            .text_styles
+                                            .get(&egui::TextStyle::Body)
+                                            .unwrap()
+                                            .clone(),
+                                        if *del {
+                                            ui.visuals().error_fg_color
+                                        } else {
+                                            ui.visuals().text_color()
+                                        },
+                                    );
+                                    changed = changed
+                                        || ui
+                                            .checkbox(del, "")
+                                            .on_hover_text(if *del {
+                                                "Uncheck to restore"
+                                            } else {
+                                                "Mark for delete"
+                                            })
+                                            .changed();
+                                    ui.add_enabled_ui(!*del, |ui| {
+                                        let res = val.edit_ui_with_id(ui, id.with(key));
+                                        changed = changed || res.changed();
+                                    });
+                                    ui.allocate_space(
+                                        [
+                                            ui.available_width()
+                                                - gallery.rect.width()
+                                                - ui.spacing().item_spacing.x,
+                                            0.0,
+                                        ]
+                                        .into(),
+                                    );
+                                    ui.label(gallery);
+                                },
+                            );
+                        }
+                    }
+                }
+                if let Some(new_key) = ui.get_temp_string(id.with("new_key")) {
+                    ui.horizontal(|ui| {
+                        ui.text_edit_singleline(new_key.write().deref_mut());
+                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                            if let Ok(k) = <&str as TryInto<T>>::try_into(new_key.read().as_str()) {
+                                self.0.insert(k, (U::default(), false));
+                                ui.clear_temp_string(id.with("new_key"));
+                            }
+                        }
+                    });
+                }
+                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                    ui.create_temp_string(id.with("new_key"), None);
                 }
             })
             .response;

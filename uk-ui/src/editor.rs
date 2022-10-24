@@ -2,6 +2,7 @@ use egui::{DragValue, Id, Response, Ui};
 use std::hash::Hash;
 pub mod aamp;
 pub mod byml;
+pub mod maps;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum EditableDisplay {

@@ -8,8 +8,9 @@ use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ModelList {
     pub controller_info: ParameterObject,
     pub attention: ParameterObject,

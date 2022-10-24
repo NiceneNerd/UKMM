@@ -3,7 +3,7 @@ use roead::byml::Byml;
 use roead::sarc::Sarc;
 use roead::yaz0;
 use uk_content::actor::residents::ResidentActors;
-use uk_content::resource::{ASList, CookData};
+use uk_content::resource::{AIProgram, ASList, CookData};
 use uk_ui::editor::EditableValue;
 use uk_ui::egui;
 
@@ -35,10 +35,10 @@ fn main() {
         .unwrap(),
     )
     .unwrap();
-    let data = ASList::try_from(
+    let data = AIProgram::try_from(
         &ParameterIO::from_binary(
             actor
-                .get_file("Actor/ASList/Npc_TripMaster_00.baslist")
+                .get_file("Actor/AIProgram/NpcTripMaster.baiprog")
                 .unwrap()
                 .unwrap()
                 .data,

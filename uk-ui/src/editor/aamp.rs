@@ -2,7 +2,10 @@ use super::{EditableDisplay, EditableValue};
 use crate::{icons::IconButtonExt, visuals};
 use egui::{mutex::RwLock, Align, Color32, Id, Layout};
 use roead::{
-    aamp::{Parameter, ParameterIO, ParameterList, ParameterObject},
+    aamp::{
+        Parameter, ParameterIO, ParameterList, ParameterListMap, ParameterObject,
+        ParameterObjectMap,
+    },
     types::{Color, Quat, Vector2f, Vector3f, Vector4f},
 };
 use std::{ops::DerefMut, sync::Arc};
@@ -161,12 +164,98 @@ impl EditableValue for ParameterObject {
     }
 }
 
+fn edit_ui_pobj_map(
+    pobj_map: &mut ParameterObjectMap,
+    ui: &mut egui::Ui,
+    id: Id,
+    parent: Option<u32>,
+) -> bool {
+    let table = roead::aamp::get_default_name_table();
+    let mut changed = false;
+    pobj_map.iter_mut().enumerate().for_each(|(i, (key, val))| {
+        let header = table
+            .get_name(key.hash(), i, parent.unwrap_or(0))
+            .map(|k| k.to_string())
+            .unwrap_or_else(|| key.hash().to_string());
+        egui::CollapsingHeader::new(header)
+            .id_source(id.with(key))
+            .show(ui, |ui| {
+                changed = changed || edit_ui_pobj(val, ui, Some(key.hash())).changed();
+            });
+    });
+    changed
+}
+
+impl EditableValue for ParameterObjectMap {
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
+    fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
+        self.edit_ui_with_id(ui, "pobj_map")
+    }
+
+    fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl std::hash::Hash) -> egui::Response {
+        let mut changed = false;
+        let mut res = ui
+            .scope(|ui| {
+                changed = edit_ui_pobj_map(self, ui, Id::new(id), None);
+            })
+            .response;
+        if changed {
+            res.mark_changed();
+        }
+        res
+    }
+}
+
+fn edit_ui_plist_map(
+    plist_map: &mut ParameterListMap,
+    ui: &mut egui::Ui,
+    id: Id,
+    parent: Option<u32>,
+) -> bool {
+    let table = roead::aamp::get_default_name_table();
+    let mut changed = false;
+    plist_map
+        .iter_mut()
+        .enumerate()
+        .for_each(|(i, (key, val))| {
+            let header = table
+                .get_name(key.hash(), i, parent.unwrap_or(0))
+                .map(|k| k.to_string())
+                .unwrap_or_else(|| key.hash().to_string());
+            egui::CollapsingHeader::new(header)
+                .id_source(id.with(key))
+                .show(ui, |ui| {
+                    changed = changed || edit_ui_plist(val, ui, Some(key.hash())).changed();
+                });
+        });
+    changed
+}
+
+impl EditableValue for ParameterListMap {
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
+    fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
+        self.edit_ui_with_id(ui, "plist_map")
+    }
+
+    fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl std::hash::Hash) -> egui::Response {
+        let mut changed = false;
+        let mut res = ui
+            .scope(|ui| {
+                changed = edit_ui_plist_map(self, ui, Id::new(id), None);
+            })
+            .response;
+        if changed {
+            res.mark_changed();
+        }
+        res
+    }
+}
+
 fn edit_ui_plist(
     plist: &mut ParameterList,
     ui: &mut egui::Ui,
     parent: Option<u32>,
 ) -> egui::Response {
-    let table = roead::aamp::get_default_name_table();
     let id = Id::new(
         parent
             .or_else(|| plist.lists.0.keys().next().map(|k| k.hash()))
@@ -178,42 +267,12 @@ fn edit_ui_plist(
             egui::CollapsingHeader::new("objects")
                 .id_source(id.with("objects"))
                 .show(ui, |ui| {
-                    plist
-                        .objects
-                        .iter_mut()
-                        .enumerate()
-                        .for_each(|(i, (key, val))| {
-                            let header = table
-                                .get_name(key.hash(), i, parent.unwrap_or(0))
-                                .map(|k| k.to_string())
-                                .unwrap_or_else(|| key.hash().to_string());
-                            egui::CollapsingHeader::new(header)
-                                .id_source(id.with(key))
-                                .show(ui, |ui| {
-                                    changed = changed
-                                        || edit_ui_pobj(val, ui, Some(key.hash())).changed();
-                                });
-                        });
+                    changed = changed || edit_ui_pobj_map(&mut plist.objects, ui, id, parent);
                 });
             egui::CollapsingHeader::new("lists")
                 .id_source(id.with("lists"))
                 .show(ui, |ui| {
-                    plist
-                        .lists
-                        .iter_mut()
-                        .enumerate()
-                        .for_each(|(i, (key, val))| {
-                            let header = table
-                                .get_name(key.hash(), i, parent.unwrap_or(0))
-                                .map(|k| k.to_string())
-                                .unwrap_or_else(|| key.hash().to_string());
-                            egui::CollapsingHeader::new(header)
-                                .id_source(id.with(key))
-                                .show(ui, |ui| {
-                                    changed = changed
-                                        || edit_ui_plist(val, ui, Some(key.hash())).changed();
-                                });
-                        });
+                    changed = changed || edit_ui_plist_map(&mut plist.lists, ui, id, parent);
                 });
         })
         .response;

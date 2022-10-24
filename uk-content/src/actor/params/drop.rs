@@ -7,8 +7,9 @@ use crate::{
 use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct DropTable(pub IndexMap<String64, ParameterObject>);
 
 impl From<DropTable> for ParameterIO {

@@ -8,8 +8,9 @@ use crate::{
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct LifeCondition {
     pub invalid_weathers: Option<DeleteSet<Weather>>,
     pub invalid_times: Option<DeleteSet<Time>>,

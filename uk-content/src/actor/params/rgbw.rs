@@ -8,8 +8,11 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Serialize, Deserialize, Editable,
+)]
 pub struct Key {
     pub state_key: String32,
     pub system_key: String32,
@@ -47,7 +50,7 @@ impl From<Key> for ParameterObject {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct RagdollBlendWeight(IndexMap<Key, DeleteMap<String32, f32>>);
 
 impl TryFrom<&ParameterIO> for RagdollBlendWeight {

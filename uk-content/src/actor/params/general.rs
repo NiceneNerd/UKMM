@@ -7,8 +7,9 @@ use crate::{
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct GeneralParamList(pub ParameterIO);
 
 impl From<&ParameterIO> for GeneralParamList {

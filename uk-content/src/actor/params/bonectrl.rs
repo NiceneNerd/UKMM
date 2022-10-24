@@ -8,8 +8,9 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct BoneControl {
     pub objects: ParameterObjectMap,
     pub bone_groups: IndexMap<String64, DeleteSet<String64>>,

@@ -7,10 +7,11 @@ use crate::{
 use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
 type RecipeTable = DeleteMap<String64, u8>;
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct Recipe(pub DeleteMap<String64, RecipeTable>);
 
 impl TryFrom<&ParameterIO> for Recipe {

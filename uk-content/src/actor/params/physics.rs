@@ -7,8 +7,9 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ContactInfoItem {
     pub name: String32,
     pub info_type: String32,
@@ -48,7 +49,7 @@ impl From<ContactInfoItem> for ParameterObject {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ContactInfo {
     pub contact_point_info: Option<Vec<ContactInfoItem>>,
     pub collision_info: Option<Vec<ContactInfoItem>>,
@@ -194,7 +195,7 @@ impl Mergeable for ContactInfo {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct CharacterController {
     pub header: ParameterObject,
     pub forms: BTreeMap<usize, ParameterList>,
@@ -245,7 +246,7 @@ impl Mergeable for CharacterController {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct Cloth {
     pub setup_file_path: Option<String>,
     pub subwind: ParameterObject,
@@ -354,7 +355,7 @@ impl Mergeable for Cloth {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct Physics {
     pub ragdoll: Option<String>,
     pub support_bone: Option<String>,

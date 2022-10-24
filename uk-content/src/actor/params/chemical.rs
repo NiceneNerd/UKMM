@@ -10,14 +10,15 @@ use roead::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ChemicalBody {
     pub rigid_c: ParameterObject,
     pub shape: ParameterObject,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct Chemical {
     pub unknown: Option<usize>,
     pub body: BTreeMap<usize, ChemicalBody>,

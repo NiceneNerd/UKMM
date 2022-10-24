@@ -8,8 +8,9 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct AIEntry {
     pub def: ParameterObject,
     pub params: Option<ParameterObject>,
@@ -123,7 +124,7 @@ impl Mergeable for AIEntry {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ActionEntry {
     pub def: ParameterObject,
     pub params: Option<ParameterObject>,
@@ -215,10 +216,16 @@ impl Mergeable for ActionEntry {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub enum ChildEntry {
     AI(AIEntry),
     Action(ActionEntry),
+}
+
+impl Default for ChildEntry {
+    fn default() -> Self {
+        Self::AI(Default::default())
+    }
 }
 
 impl Mergeable for ChildEntry {
@@ -249,7 +256,7 @@ impl Mergeable for ChildEntry {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct AIProgram {
     pub demos: IndexMap<Name, ChildEntry>,
     pub tree: IndexMap<String, AIEntry>,

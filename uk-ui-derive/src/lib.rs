@@ -1,8 +1,8 @@
 use proc_macro::TokenStream;
 use quote::{__private::ext::RepToTokensExt, quote, ToTokens};
 use syn::{
-    token::Colon2, DataStruct, Expr, Fields, FieldsNamed, FieldsUnnamed, Ident, Path, Type,
-    VisPublic, Visibility,
+    token::Colon2, DataEnum, DataStruct, Expr, Fields, FieldsNamed, FieldsUnnamed, Ident, Path,
+    Type, VisPublic, Visibility,
 };
 use uk_ui::editor::EditableDisplay;
 
@@ -11,9 +11,22 @@ pub fn editable(input: TokenStream) -> TokenStream {
     let ast: syn::DeriveInput = syn::parse(input).unwrap();
     match ast.data {
         syn::Data::Struct(struc) => impl_editable_struct(&ast.ident, struc),
-        syn::Data::Enum(_) => todo!(),
+        syn::Data::Enum(enu) => impl_editable_enum(&ast.ident, enu),
         syn::Data::Union(_) => unimplemented!(),
     }
+}
+
+fn get_display_type(ty: &Type) -> Expr {
+    let mut ty = ty.clone();
+    if let Type::Path(ref mut path) = ty {
+        if let syn::PathArguments::AngleBracketed(ref mut args) =
+            path.path.segments.first_mut().unwrap().arguments
+        {
+            args.colon2_token = Some(Colon2::default());
+        }
+        return syn::parse_str(&format!("{}::DISPLAY", ty.into_token_stream())).unwrap();
+    }
+    todo!()
 }
 
 fn impl_struct_named_fields(
@@ -45,19 +58,6 @@ fn impl_struct_named_fields(
                 }
             }
         })
-}
-
-fn get_display_type(ty: &Type) -> Expr {
-    let mut ty = ty.clone();
-    if let Type::Path(ref mut path) = ty {
-        if let syn::PathArguments::AngleBracketed(ref mut args) =
-            path.path.segments.first_mut().unwrap().arguments
-        {
-            args.colon2_token = Some(Colon2::default());
-        }
-        return syn::parse_str(&format!("{}::DISPLAY", ty.into_token_stream())).unwrap();
-    }
-    todo!()
 }
 
 fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStream {
@@ -158,4 +158,102 @@ fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
         }
     }
     .into()
+}
+
+fn impl_editable_enum(name: &Ident, enu: DataEnum) -> TokenStream {
+    let str_name = name.to_string();
+    let inline = enu.variants.iter().all(|v| v.fields.is_empty());
+    let variants = enu.variants.iter().map(|var| {
+        let var_name = var.ident.to_string();
+        let path: Expr = if inline {
+            syn::parse_str(&format!("{}::{}", &str_name, var.ident)).unwrap()
+        } else {
+            syn::parse_str(&format!("{}::{}(_)", &str_name, var.ident)).unwrap()
+        };
+        let def_path: Expr = if inline {
+            path.clone()
+        } else {
+            syn::parse_str(&format!("{}::{}(Default::default())", &str_name, var.ident)).unwrap()
+        };
+        quote! {
+            let res = ui.add(egui::SelectableLabel::new(matches!(self, #path), #var_name));
+            changed = changed || res.changed();
+            if res.clicked() {
+                *self = #def_path;
+            }
+        }
+    });
+    let uis = enu.variants.iter().map(|var| {
+        let is_unit = var.fields.is_empty();
+        let path: Expr = if is_unit {
+            syn::parse_str(&format!("{}::{}", &str_name, var.ident)).unwrap()
+        } else {
+            syn::parse_str(&format!("{}::{}(v)", &str_name, var.ident)).unwrap()
+        };
+        if is_unit {
+            quote!(#path => (),)
+        } else {
+            let field_uis = var
+                .fields
+                .iter()
+                .enumerate()
+                .map(|(i, _)| quote!(v.edit_ui_with_id(ui, id.with(#i));));
+            quote! {
+                #path => {
+                    #(#field_uis)*
+                },
+            }
+        }
+    });
+    let var_names = enu.variants.iter().map(|var| {
+        let var_name = var.ident.to_string();
+        let path: Expr = if var.fields.is_empty() {
+            syn::parse_str(&format!("{}::{}", &str_name, var.ident)).unwrap()
+        } else {
+            syn::parse_str(&format!("{}::{}(_)", &str_name, var.ident)).unwrap()
+        };
+        quote!(#path => #var_name,)
+    });
+    let display = if inline {
+        syn::parse_str::<Expr>("::uk_ui::editor::EditableDisplay::Inline")
+            .expect("display variant should parse")
+    } else {
+        syn::parse_str::<Expr>("::uk_ui::editor::EditableDisplay::Block")
+            .expect("display variant should parse")
+    };
+    quote! {
+        impl #name {
+            pub fn variant_name(&self) -> &'static str {
+                match self {
+                    #(#var_names)*
+                }
+            }
+        }
+
+        #[automatically_derived]
+        impl ::uk_ui::editor::EditableValue for #name {
+            const DISPLAY: ::uk_ui::editor::EditableDisplay = #display;
+            fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
+                self.edit_ui_with_id(ui, #str_name)
+            }
+
+            fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
+                use ::uk_ui::egui;
+                let mut changed = false;
+                let id = egui::Id::new(id);
+                let mut res = egui::ComboBox::new(id, #str_name)
+                    .selected_text(self.variant_name())
+                    .show_ui(ui, |ui| {
+                        #(#variants)*
+                    }).response;
+                match self {
+                    #(#uis)*
+                };
+                if changed {
+                    res.mark_changed();
+                }
+                res
+            }
+        }
+    }.into()
 }

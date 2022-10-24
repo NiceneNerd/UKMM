@@ -2,8 +2,9 @@ use crate::{actor::ParameterResource, prelude::*, util::IndexMap, Result, UKErro
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ShopItem {
     pub sort: u8,
     pub num: u8,
@@ -32,7 +33,7 @@ fn merge_table(base: &ShopTable, diff: &ShopTable) -> ShopTable {
         .collect()
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ShopData(pub IndexMap<String64, Option<ShopTable>>);
 
 impl TryFrom<ParameterIO> for ShopData {

@@ -3,8 +3,9 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct RagdollConfig {
     pub attack_type_impulse_data: ParameterObject,
     pub impact_impulse_info: BTreeMap<usize, ParameterList>,

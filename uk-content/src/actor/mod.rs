@@ -16,7 +16,7 @@ pub use prelude::*;
 // pub trait TargetParams: Clone + Mergeable + ParameterResource {}
 // impl<T> TargetParams for T where T: Clone + Mergeable + ParameterResource {}
 
-// #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+// #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Editable)]
 // pub enum LinkTarget<T: TargetParams> {
 //     Dummy,
 //     External(String),
@@ -125,7 +125,7 @@ pub use prelude::*;
 //     }
 // }
 
-// #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+// #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 // pub struct Actor {
 //     pub name: String,
 //     pub link: params::link::ActorLink,

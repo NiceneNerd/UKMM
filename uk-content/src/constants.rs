@@ -1,8 +1,9 @@
 use crate::UKError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Editable)]
 pub enum Weather {
     Bluesky,
     Cloudy,
@@ -73,7 +74,7 @@ impl fmt::Display for Weather {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Editable)]
 pub enum Time {
     Morning_A,
     Morning_B,

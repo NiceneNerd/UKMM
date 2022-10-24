@@ -189,6 +189,17 @@ impl TryFrom<&Byml> for BymlHashValue {
     }
 }
 
+impl TryFrom<&str> for BymlHashValue {
+    type Error = crate::UKError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value
+            .parse::<u32>()
+            .map_err(|_| crate::UKError::Other("Invalid BYML key"))
+            .map(|h| h.into())
+    }
+}
+
 impl From<u32> for BymlHashValue {
     fn from(val: u32) -> Self {
         Self(val)
