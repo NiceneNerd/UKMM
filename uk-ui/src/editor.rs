@@ -20,7 +20,7 @@ pub trait EditableValue {
 impl EditableValue for bool {
     const DISPLAY: EditableDisplay = EditableDisplay::Inline;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
-        ui.checkbox(self, if *self { "Enabled" } else { "Disabled " })
+        ui.checkbox(self, if *self { "True" } else { "False" })
     }
 }
 
@@ -132,30 +132,25 @@ impl EditableValue for Vec<u8> {
     }
 }
 
-impl<T: EditableValue + Default> EditableValue for Option<T> {
+impl<T: EditableValue + Default + PartialEq> EditableValue for Option<T> {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         self.edit_ui_with_id(ui, "option")
     }
 
     fn edit_ui_with_id(&mut self, ui: &mut Ui, id: impl Hash) -> Response {
-        let mut is_some = self.is_some();
         let mut changed = false;
         let id = Id::new(id).with("value");
-        let mut res = ui.scope(|ui| match self.as_mut() {
-            Some(val) => {
-                if ui.checkbox(&mut is_some, "Enabled").changed() {
-                    *self = None;
-                    changed = true;
-                } else {
-                    changed = changed || val.edit_ui_with_id(ui, id).changed();
-                }
-            }
-            None => {
-                if ui.checkbox(&mut is_some, "Disabled").changed() {
+        let mut res = ui.vertical(|ui| {
+            ui.horizontal(|ui| {
+                changed = changed || ui.radio_value(self, None, "None").clicked();
+                if ui.radio(self.is_some(), "Set Value").clicked() {
                     *self = Some(T::default());
                     changed = true;
                 }
+            });
+            if let Some(ref mut value) = self {
+                changed = changed || value.edit_ui_with_id(ui, id).changed();
             }
         });
         if changed {

@@ -134,6 +134,23 @@ impl ModPacker {
         } else {
             anyhow::bail!("No meta info provided or meta file available");
         };
+        let ((content_u, dlc_u), (content_nx, dlc_nx)) = (
+            platform_prefixes(Endian::Big),
+            platform_prefixes(Endian::Little),
+        );
+        let endian = if source.as_ref().join(content_u).exists()
+            || source.as_ref().join(dlc_u).exists()
+        {
+            Endian::Big
+        } else if source.as_ref().join(content_nx).exists() || source.as_ref().join(dlc_nx).exists()
+        {
+            Endian::Little
+        } else {
+            anyhow::bail!(
+                "No content or DLC folder found in source at {}",
+                source.as_ref().display()
+            );
+        };
         let dest = dest.as_ref();
         let dest_file = if dest.is_file() {
             dest.to_path_buf()
@@ -150,7 +167,7 @@ impl ModPacker {
         Ok(Self {
             current_root: source_dir.clone(),
             source_dir,
-            endian: meta.platform,
+            endian,
             zip,
             masters,
             hash_table: get_hash_table(meta.platform),
@@ -316,13 +333,17 @@ impl ModPacker {
         log::debug!("Packing from root of {}", root.as_ref().display());
         self.built_resources.write().clear();
         let (content, aoc) = platform_prefixes(self.endian);
-        let content_dir = if let content_dir = root.as_ref().join(content) && content_dir.exists() {
+        let content_dir = root.as_ref().join(content);
+        log::debug!("Checking for content folder at {}", content_dir.display());
+        let content_dir = if content_dir.exists() {
             log::debug!("Found content folder at {}", content_dir.display());
             Some(content_dir)
         } else {
             None
         };
-        let aoc_dir = if let aoc_dir = root.as_ref().join(aoc) && aoc_dir.exists() {
+        let aoc_dir = root.as_ref().join(aoc);
+        log::debug!("Checking for DLC folder at {}", aoc_dir.display());
+        let aoc_dir = if aoc_dir.exists() {
             log::debug!("Found DLC folder at {}", aoc_dir.display());
             Some(aoc_dir)
         } else {

@@ -184,9 +184,12 @@ where
                                             },
                                         )
                                         .changed();
-                                let res = val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
-                                changed = changed || res.changed();
-                                max_height = res.rect.height();
+                                ui.add_enabled_ui(!*del, |ui| {
+                                    let res =
+                                        val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
+                                    changed = changed || res.changed();
+                                    max_height = res.rect.height();
+                                });
                             });
                         }
                         EditableDisplay::Inline => {
@@ -201,19 +204,25 @@ where
                                             .get(&egui::TextStyle::Body)
                                             .unwrap()
                                             .clone(),
-                                        ui.visuals().text_color(),
+                                        if *del {
+                                            ui.visuals().error_fg_color
+                                        } else {
+                                            ui.visuals().text_color()
+                                        },
                                     );
                                     changed = changed
                                         || ui
                                             .checkbox(del, "")
                                             .on_hover_text(if *del {
-                                                "Check to restore"
+                                                "Uncheck to restore"
                                             } else {
-                                                "Uncheck to delete"
+                                                "Mark for delete"
                                             })
                                             .changed();
-                                    let res = val.edit_ui_with_id(ui, id.with(key));
-                                    changed = changed || res.changed();
+                                    ui.add_enabled_ui(!*del, |ui| {
+                                        let res = val.edit_ui_with_id(ui, id.with(key));
+                                        changed = changed || res.changed();
+                                    });
                                     ui.allocate_space(
                                         [
                                             ui.available_width()

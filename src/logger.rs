@@ -14,7 +14,8 @@ pub static LOGGER: Lazy<Logger> = Lazy::new(|| Logger {
 
 pub fn init() {
     log::set_logger(LOGGER.deref()).unwrap();
-    log::set_max_level(log::LevelFilter::Debug);
+    let level = log::max_level();
+    log::set_max_level(level.max(log::LevelFilter::Debug));
 }
 
 #[derive(Debug, Clone, Serialize)]
