@@ -6,6 +6,10 @@
     negative_impls
 )]
 #![allow(clippy::derive_partial_eq_without_eq)]
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 use smartstring::alias::String;
 use std::path::Path;
 use thiserror::Error;
