@@ -73,6 +73,12 @@ impl fmt::Display for Weather {
     }
 }
 
+impl Default for Weather {
+    fn default() -> Self {
+        Weather::Bluesky
+    }
+}
+
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Editable)]
 pub enum Time {
@@ -91,6 +97,12 @@ pub enum Time {
 impl fmt::Display for Time {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(&self, f)
+    }
+}
+
+impl Default for Time {
+    fn default() -> Self {
+        Self::Morning_A
     }
 }
 

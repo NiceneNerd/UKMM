@@ -1,5 +1,4 @@
-#![feature(let_chains)]
-
+#![feature(let_chains, min_specialization)]
 pub mod editor;
 pub mod ext;
 pub mod icons;

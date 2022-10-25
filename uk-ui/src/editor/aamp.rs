@@ -108,7 +108,14 @@ impl EditableValue for Parameter {
             Parameter::String256(v) => v.edit_ui(ui),
             Parameter::Quat(v) => v.edit_ui(ui),
             Parameter::U32(v) => v.edit_ui(ui),
-            Parameter::BufferBinary(v) => v.edit_ui(ui),
+            Parameter::BufferBinary(v) => {
+                let mut text = hex::encode(v.as_slice());
+                let res = ui.text_edit_singleline(&mut text);
+                if res.changed() && let Ok(data) = hex::decode(text) {
+                    *v = data
+                }
+                res
+            }
             Parameter::StringRef(v) => v.edit_ui(ui),
         }
     }

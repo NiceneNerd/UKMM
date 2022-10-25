@@ -121,15 +121,29 @@ where
     }
 }
 
-impl EditableValue for Vec<u8> {
-    const DISPLAY: EditableDisplay = EditableDisplay::Inline;
+impl<T: EditableValue> EditableValue for Vec<T> {
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
-        let mut text = hex::encode(self.as_slice());
-        let res = ui.text_edit_singleline(&mut text);
-        if res.changed() && let Ok(data) = hex::decode(text) {
-            *self = data
+        let mut changed = false;
+        let mut res = if self.len() < 5 {
+            ui.horizontal(|ui| {
+                self.iter_mut().for_each(|v| {
+                    changed = changed || v.edit_ui(ui).changed();
+                    ui.separator();
+                });
+            })
+        } else {
+            ui.group(|ui| {
+                self.iter_mut().for_each(|v| {
+                    changed = changed || v.edit_ui(ui).changed();
+                    ui.separator();
+                });
+            })
+        };
+        if changed {
+            res.response.mark_changed();
         }
-        res
+        res.response
     }
 }
 
