@@ -131,10 +131,63 @@ impl TryFrom<&Byml> for LevelSensor {
                         let weapon = weapon.as_hash()?;
                         let series = weapon
                             .get("series")
-                            .ok_or("Level sensor weapons entry missing series name")?
+                            .ok_or(UKError::MissingBymlKey(
+                                "Level sensor weapons entry missing series name",
+                            ))?
                             .as_string()?
                             .clone();
-                        // let series_map = weapons.get_mut(&series)
+                        let series_map: &mut DeleteMap<String, WeaponSeries> =
+                            weapons.get_or_insert_default(series);
+                        let actor_type = weapon
+                            .get("actorType")
+                            .ok_or(UKError::MissingBymlKey(
+                                "Level sensor weapons entry missing actor type",
+                            ))?
+                            .as_string()?
+                            .clone();
+                            series_map.insert(
+                                actor_type,
+                                WeaponSeries {
+                                    actors: weapon
+                                        .get("actors")
+                                        .ok_or(UKError::MissingBymlKey(
+                                            "Level sensor weapon entry missing actor list",
+                                        ))?
+                                        .as_array()?
+                                        .iter()
+                                        .map(|actor| -> Result<(String, (i32, f32))> {
+                                            let actor = actor.as_hash()?;
+                                            Ok((
+                                                actor
+                                                    .get("name")
+                                                    .ok_or(UKError::MissingBymlKey(
+                                                        "Level sensor weapons actor entry missing name",
+                                                    ))?
+                                                    .as_string()?
+                                                    .clone(),
+                                                (
+                                                    actor
+                                                        .get("plus")
+                                                        .ok_or(UKError::MissingBymlKey(
+                                                            "Level sensor weapons actor entry missing plus value",
+                                                        ))?
+                                                        .as_i32()?,
+                                                    actor
+                                                        .get("value")
+                                                        .ok_or(UKError::MissingBymlKey(
+                                                            "Level sensor weapons actor entry missing value",
+                                                        ))?
+                                                        .as_float()?,
+                                                ),
+                                            ))
+                                        })
+                                        .collect::<Result<_>>()?,
+                                    not_rank_up: weapon
+                                        .get("not_rank_up")
+                                        .and_then(|v| v.as_bool().ok())
+                                        .unwrap_or_default(),
+                                },
+                            );
                         Ok(weapons)
                     },
                 )?,
@@ -194,30 +247,7 @@ impl From<LevelSensor> for Byml {
                 "weapon",
                 val.weapon
                     .into_iter()
-                    .map(|((actor_type, series), data)| -> Byml {
-                        [
-                            ("actorType", Byml::String(actor_type)),
-                            (
-                                "actors",
-                                data.actors
-                                    .into_iter()
-                                    .map(|(actor, (plus, value))| -> Byml {
-                                        [
-                                            ("name", Byml::String(actor)),
-                                            ("plus", Byml::I32(plus)),
-                                            ("value", Byml::Float(value)),
-                                        ]
-                                        .into_iter()
-                                        .collect()
-                                    })
-                                    .collect(),
-                            ),
-                            ("not_rank_up", Byml::Bool(data.not_rank_up)),
-                            ("series", Byml::String(series)),
-                        ]
-                        .into_iter()
-                        .collect()
-                    })
+                    .flat_map(|(series, type_map)| -> Vec<Byml> { todo!() })
                     .collect(),
             ),
         ]

@@ -404,6 +404,7 @@ macro_rules! impl_delete_map {
         }
 
         impl<T: $($key)*, U: PartialEq + Clone> $type<T, U> {
+            #[inline]
             pub fn new() -> Self {
                 Self(Default::default())
             }
@@ -424,6 +425,7 @@ macro_rules! impl_delete_map {
                 self
             }
 
+            #[inline]
             pub fn delete(&mut self) {
                 self.0.retain(|_, (_, del)| !*del);
             }
@@ -435,12 +437,14 @@ macro_rules! impl_delete_map {
             //         .collect()
             // }
 
+            #[inline]
             pub fn set_delete(&mut self, key: impl Borrow<T>) {
                 if let Some((_, del)) = self.0.get_mut(key.borrow()) {
                     *del = true;
                 }
             }
 
+            #[inline]
             pub fn is_delete(&self, key: impl Borrow<T>) -> Option<bool> {
                 self.0.get(key.borrow()).map(|(_, del)| del).copied()
             }
@@ -475,6 +479,16 @@ macro_rules! impl_delete_map {
             #[inline]
             pub fn get_mut(&mut self, key: impl Borrow<T>) -> Option<&mut U> {
                 self.0.get_mut(key.borrow()).and_then(|(v, del)| (!*del).then(|| v))
+            }
+
+            #[inline]
+            pub fn get_or_insert_default(&mut self, key: impl Into<T>) -> &mut U where U: Default {
+                &mut self.0.entry(key.into()).or_insert_with(|| (Default::default(), false)).0
+            }
+
+            #[inline]
+            pub fn get_or_insert_with(&mut self, key: impl Into<T>, with: impl Fn() -> U) -> &mut U {
+                &mut self.0.entry(key.into()).or_insert_with(|| (with(), false)).0
             }
 
             #[inline]
