@@ -1,8 +1,9 @@
 use crate::prelude::*;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct EventInfo(pub Byml);
 
 impl From<Byml> for EventInfo {

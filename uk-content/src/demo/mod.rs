@@ -1,8 +1,9 @@
 use crate::prelude::*;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct Demo(pub ParameterIO);
 
 impl From<&ParameterIO> for Demo {

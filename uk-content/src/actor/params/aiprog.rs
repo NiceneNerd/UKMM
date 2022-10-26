@@ -256,7 +256,7 @@ impl Mergeable for ChildEntry {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct AIProgram {
     pub demos: IndexMap<Name, ChildEntry>,
     pub tree: IndexMap<String, AIEntry>,

@@ -174,3 +174,36 @@ impl<T: EditableValue + Default + PartialEq> EditableValue for Option<T> {
         res.response
     }
 }
+
+impl<T: EditableValue> EditableValue for Box<T> {
+    const DISPLAY: EditableDisplay = T::DISPLAY;
+    fn edit_ui(&mut self, ui: &mut Ui) -> Response {
+        self.edit_ui_with_id(ui, "boxed")
+    }
+
+    fn edit_ui_with_id(&mut self, ui: &mut Ui, id: impl Hash) -> Response {
+        self.as_mut().edit_ui_with_id(ui, id)
+    }
+}
+
+impl<T: EditableValue, U: EditableValue> EditableValue for (T, U) {
+    const DISPLAY: EditableDisplay = T::DISPLAY;
+    fn edit_ui(&mut self, ui: &mut Ui) -> Response {
+        self.edit_ui_with_id(ui, "tuple")
+    }
+
+    fn edit_ui_with_id(&mut self, ui: &mut Ui, id: impl Hash) -> Response {
+        let id = Id::new(id);
+        let mut changed = false;
+        let mut res = ui
+            .group(|ui| {
+                changed = changed || self.0.edit_ui_with_id(ui, id.with("first")).changed();
+                changed = changed || self.1.edit_ui_with_id(ui, id.with("second")).changed();
+            })
+            .response;
+        if changed {
+            res.mark_changed();
+        }
+        res
+    }
+}

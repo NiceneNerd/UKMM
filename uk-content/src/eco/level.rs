@@ -1,10 +1,11 @@
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
 type Series = DeleteMap<String, f32>;
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct WeaponSeries {
     pub actors: DeleteMap<String, (i32, f32)>,
     pub not_rank_up: bool,

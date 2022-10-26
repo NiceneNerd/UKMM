@@ -1,4 +1,5 @@
 use std::ops::DerefMut;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use super::*;
@@ -264,7 +265,7 @@ where
 
 impl<T, U> EditableValue for SortedDeleteMap<T, U>
 where
-    T: std::fmt::Debug + DeleteKey + for<'a> TryFrom<&'a str> + Ord,
+    T: std::fmt::Debug + DeleteKey + FromStr + Ord,
     U: PartialEq + Clone + EditableValue + Default,
 {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
@@ -361,7 +362,7 @@ where
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_key.write().deref_mut());
                         if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
-                            if let Ok(k) = <&str as TryInto<T>>::try_into(new_key.read().as_str()) {
+                            if let Ok(k) = new_key.read().as_str().parse() {
                                 self.0.insert(k, (U::default(), false));
                                 ui.clear_temp_string(id.with("new_key"));
                             }

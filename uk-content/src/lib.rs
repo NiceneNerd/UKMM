@@ -3,7 +3,8 @@
     drain_filter,
     arbitrary_self_types,
     let_chains,
-    negative_impls
+    negative_impls,
+    min_specialization
 )]
 #![allow(clippy::derive_partial_eq_without_eq)]
 use mimalloc::MiMalloc;

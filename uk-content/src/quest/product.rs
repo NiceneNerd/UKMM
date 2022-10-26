@@ -1,8 +1,9 @@
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct QuestProduct(pub DeleteMap<String, Byml>);
 
 impl TryFrom<&Byml> for QuestProduct {

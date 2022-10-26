@@ -5,15 +5,16 @@ use crate::{
 };
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct LocationEntry {
     pub show_level: usize,
     pub translate: Byml,
     pub ltype: usize,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct Location(pub SortedDeleteMap<String, DeleteVec<LocationEntry>>);
 
 impl TryFrom<&Byml> for Location {

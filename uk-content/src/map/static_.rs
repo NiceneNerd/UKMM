@@ -6,8 +6,9 @@ use crate::{
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize, Editable)]
 pub struct EntryPos {
     pub rotate: roead::byml::Byml,
     pub translate: roead::byml::Byml,

@@ -5,8 +5,10 @@ use egui::Layout;
 use indexmap::map::IndexMap;
 use std::{
     collections::BTreeMap,
+    fmt::{Debug, Display},
     hash::{BuildHasher, Hash},
     ops::DerefMut,
+    str::FromStr,
 };
 
 impl<T, U, S> EditableValue for IndexMap<T, U, S>
@@ -95,8 +97,9 @@ where
     }
 }
 
-impl<U> EditableValue for BTreeMap<usize, U>
+impl<T, U> EditableValue for BTreeMap<T, U>
 where
+    T: FromStr + Display + Debug + Hash + Eq + Ord,
     U: PartialEq + Clone + EditableValue + Default,
 {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;

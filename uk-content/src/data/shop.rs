@@ -5,8 +5,9 @@ use crate::{
 };
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ShopGameDataInfo {
     pub area_info: SortedDeleteMap<BymlHashValue, Byml>,
     pub sold_out_info: SortedDeleteMap<BymlHashValue, Byml>,

@@ -4,6 +4,7 @@ pub use collections::*;
 use roead::aamp::*;
 use roead::byml::Byml;
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
 pub fn diff_plist<P: ParameterListing + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
@@ -189,12 +190,10 @@ impl TryFrom<&Byml> for BymlHashValue {
     }
 }
 
-impl TryFrom<&str> for BymlHashValue {
-    type Error = crate::UKError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        value
-            .parse::<u32>()
+impl FromStr for BymlHashValue {
+    type Err = crate::UKError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse::<u32>()
             .map_err(|_| crate::UKError::Other("Invalid BYML key"))
             .map(|h| h.into())
     }

@@ -102,9 +102,11 @@ fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStre
             impl ::uk_ui::editor::EditableValue for #name {
                 const DISPLAY: ::uk_ui::editor::EditableDisplay = ::uk_ui::editor::EditableDisplay::Block;
                 fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
+                    use ::uk_ui::editor::EditableValue;
                     self.edit_ui_with_id(ui, #str_name)
                 }
                 fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
+                    use ::uk_ui::editor::EditableValue;
                     use ::uk_ui::egui;
                     let id = egui::Id::new(id).with(#str_name);
                     let mut changed = false;
@@ -139,11 +141,13 @@ fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
         impl ::uk_ui::editor::EditableValue for #name {
             const DISPLAY: ::uk_ui::editor::EditableDisplay = #display;
             fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
+                use ::uk_ui::editor::EditableValue;
                 self.edit_ui_with_id(ui, #str_name)
             }
 
             fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
                 use ::uk_ui::egui;
+                use ::uk_ui::editor::EditableValue;
                 let id = egui::Id::new(id);
                 let mut changed = false;
                 let mut res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
@@ -165,12 +169,12 @@ fn impl_editable_enum(name: &Ident, enu: DataEnum) -> TokenStream {
     let inline = enu.variants.iter().all(|v| v.fields.is_empty());
     let variants = enu.variants.iter().map(|var| {
         let var_name = var.ident.to_string();
-        let path: Expr = if inline {
+        let path: Expr = if var.fields.is_empty() {
             syn::parse_str(&format!("{}::{}", &str_name, var.ident)).unwrap()
         } else {
             syn::parse_str(&format!("{}::{}(_)", &str_name, var.ident)).unwrap()
         };
-        let def_path: Expr = if inline {
+        let def_path: Expr = if var.fields.is_empty() {
             path.clone()
         } else {
             syn::parse_str(&format!("{}::{}(Default::default())", &str_name, var.ident)).unwrap()
@@ -234,11 +238,13 @@ fn impl_editable_enum(name: &Ident, enu: DataEnum) -> TokenStream {
         impl ::uk_ui::editor::EditableValue for #name {
             const DISPLAY: ::uk_ui::editor::EditableDisplay = #display;
             fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
+                use ::uk_ui::editor::EditableValue;
                 self.edit_ui_with_id(ui, #str_name)
             }
 
             fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
                 use ::uk_ui::egui;
+                use ::uk_ui::editor::EditableValue;
                 let mut changed = false;
                 let id = egui::Id::new(id);
                 let mut res = egui::ComboBox::new(id, #str_name)

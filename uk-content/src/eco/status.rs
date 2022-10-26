@@ -2,11 +2,18 @@ use crate::{prelude::*, util::DeleteVec, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub enum StatusEffectValues {
     Special,
     Normal(DeleteVec<f32>),
+}
+
+impl Default for StatusEffectValues {
+    fn default() -> Self {
+        Self::Normal(Default::default())
+    }
 }
 
 impl TryFrom<&Byml> for StatusEffectValues {
@@ -102,7 +109,7 @@ impl Mergeable for StatusEffectValues {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct StatusEffectList(pub BTreeMap<String, StatusEffectValues>);
 
 impl TryFrom<&Byml> for StatusEffectList {

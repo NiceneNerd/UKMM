@@ -374,8 +374,13 @@ impl ModUnpacker {
                 .collect();
         }
         let (content, aoc) = platform_prefixes(self.endian);
-        self.unpack_files(content_files, self.out_dir.join(content))?;
-        self.unpack_files(aoc_files, self.out_dir.join(aoc))?;
+        std::thread::scope(|s| -> Result<()> {
+            let s1 = s.spawn(|| self.unpack_files(content_files, self.out_dir.join(content)));
+            let s2 = s.spawn(|| self.unpack_files(aoc_files, self.out_dir.join(aoc)));
+            s1.join().expect("Failed to join thread")?;
+            s2.join().expect("Failed to join thread")?;
+            Ok(())
+        })?;
         Ok(self.rstb.into_inner())
     }
 

@@ -50,7 +50,7 @@ impl From<Key> for ParameterObject {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RagdollBlendWeight(IndexMap<Key, DeleteMap<String32, f32>>);
 
 impl TryFrom<&ParameterIO> for RagdollBlendWeight {

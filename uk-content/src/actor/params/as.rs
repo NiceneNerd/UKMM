@@ -3,8 +3,9 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct Element {
     pub params: ParameterObject,
     pub children: Option<BTreeMap<usize, Element>>,
@@ -118,7 +119,7 @@ impl Mergeable for Element {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct AS(pub Option<Element>);
 
 impl TryFrom<&ParameterIO> for AS {
