@@ -55,6 +55,7 @@ winres = "0.1.12"
 [workspace]
 members = [
     "uk-content",
+    "uk-content-derive",
     "uk-editor",
     "uk-manager",
     "uk-mod",

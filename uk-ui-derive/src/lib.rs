@@ -1,10 +1,9 @@
 use proc_macro::TokenStream;
 use quote::{__private::ext::RepToTokensExt, quote, ToTokens};
 use syn::{
-    token::Colon2, DataEnum, DataStruct, Expr, Fields, FieldsNamed, FieldsUnnamed, Ident, Path,
-    Type, VisPublic, Visibility,
+    token::Colon2, DataEnum, DataStruct, Expr, Fields, FieldsNamed, FieldsUnnamed, Ident, Type,
+    Visibility,
 };
-use uk_ui::editor::EditableDisplay;
 
 #[proc_macro_derive(Editable)]
 pub fn editable(input: TokenStream) -> TokenStream {
