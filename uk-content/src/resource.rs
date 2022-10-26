@@ -38,7 +38,7 @@ use std::{borrow::Cow, collections::BTreeMap};
 use uk_ui::editor::EditableValue;
 use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Editable)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MergeableResource {
     // Actor(Box<Actor>),
     ActorInfo(Box<ActorInfo>),
