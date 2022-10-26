@@ -27,7 +27,7 @@ impl Mergeable for WeaponSeries {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct LevelSensor {
     pub enemy: DeleteMap<String, Series>,
     pub flag: Series,
@@ -247,7 +247,36 @@ impl From<LevelSensor> for Byml {
                 "weapon",
                 val.weapon
                     .into_iter()
-                    .flat_map(|(series, type_map)| -> Vec<Byml> { todo!() })
+                    .flat_map(|(series, type_map)| -> Vec<Byml> {
+                        type_map
+                            .into_iter()
+                            .map(|(actor_type, weapons)| {
+                                [
+                                    ("actorType", actor_type.into()),
+                                    (
+                                        "actors",
+                                        weapons
+                                            .actors
+                                            .into_iter()
+                                            .map(|(name, (plus, value))| {
+                                                [
+                                                    ("name", name.into()),
+                                                    ("plus", plus.into()),
+                                                    ("value", value.into()),
+                                                ]
+                                                .into_iter()
+                                                .collect::<Byml>()
+                                            })
+                                            .collect::<Byml>(),
+                                    ),
+                                    ("not_rank_up", weapons.not_rank_up.into()),
+                                    ("series", series.clone().into()),
+                                ]
+                                .into_iter()
+                                .collect::<Byml>()
+                            })
+                            .collect::<Vec<Byml>>()
+                    })
                     .collect(),
             ),
         ]

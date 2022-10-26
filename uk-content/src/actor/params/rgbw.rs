@@ -248,8 +248,8 @@ impl EditableValue for RagdollBlendWeight {
     ) -> uk_ui::egui::Response {
         use uk_ui::egui;
         let mut changed = false;
-        let mut id = egui::Id::new(id);
-        let mut res = egui::CollapsingHeader::new("RagdollBlendWeight")
+        let id = egui::Id::new(id);
+        let res = egui::CollapsingHeader::new("RagdollBlendWeight")
             .id_source(id)
             .show(ui, |ui| {
                 for (k, v) in self.0.iter_mut() {
@@ -263,7 +263,8 @@ impl EditableValue for RagdollBlendWeight {
             });
         let tmp_id = id.with("new_key");
         let mut add_new = false;
-        if let Some(new_key) = ui.data().get_temp::<Arc<RwLock<Key>>>(tmp_id) {
+        let new_key = ui.data().get_temp::<Arc<RwLock<Key>>>(tmp_id);
+        if let Some(new_key) = new_key {
             ui.horizontal(|ui| {
                 new_key.write().edit_ui_with_id(ui, tmp_id.with("value"));
                 if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
@@ -276,10 +277,11 @@ impl EditableValue for RagdollBlendWeight {
         }
         if add_new {
             self.0.insert(
-                *ui.data()
+                ui.data()
                     .get_temp::<Arc<RwLock<Key>>>(tmp_id)
                     .expect("key should exist")
-                    .read(),
+                    .read()
+                    .clone(),
                 Default::default(),
             );
             ui.data().remove::<Arc<RwLock<Key>>>(tmp_id);
