@@ -32,7 +32,7 @@ pub struct LevelSensor {
     pub enemy: DeleteMap<String, Series>,
     pub flag: Series,
     pub setting: Series,
-    pub weapon: DeleteMap<(String, String), WeaponSeries>,
+    pub weapon: DeleteMap<String, DeleteMap<String, WeaponSeries>>,
 }
 
 impl TryFrom<&Byml> for LevelSensor {
@@ -56,7 +56,8 @@ impl TryFrom<&Byml> for LevelSensor {
                             .ok_or(UKError::MissingBymlKey(
                                 "Level sensor enemy entry missing species",
                             ))?
-                            .as_string()?.clone(),
+                            .as_string()?
+                            .clone(),
                         enemy
                             .get("actors")
                             .ok_or(UKError::MissingBymlKey(
@@ -115,80 +116,28 @@ impl TryFrom<&Byml> for LevelSensor {
                 ))?
                 .as_hash()?
                 .iter()
-                .map(|(k, v)| -> Result<(String, f32)> {
-                    Ok((k.clone(), v.as_float()?))
-                })
+                .map(|(k, v)| -> Result<(String, f32)> { Ok((k.clone(), v.as_float()?)) })
                 .collect::<Result<_>>()?,
-            weapon: hash.get("weapon")
+            weapon: hash
+                .get("weapon")
                 .ok_or(UKError::MissingBymlKey(
                     "Level sensor missing weapon section",
                 ))?
                 .as_array()?
                 .iter()
-                .map(|weapon| -> Result<((String, String), WeaponSeries)> {
-                    let weapon = weapon.as_hash()?;
-                    Ok((
-                        (
-                            weapon
-                                .get("actorType")
-                                .ok_or(UKError::MissingBymlKey(
-                                    "Level sensor weapon entry missing actor type",
-                                ))?
-                                .as_string()?
-                                .clone(),
-                            weapon
-                                .get("series")
-                                .ok_or(UKError::MissingBymlKey(
-                                    "Level sensor weapon entry missing series",
-                                ))?
-                                .as_string()?
-                                .clone(),
-                        ),
-                        WeaponSeries {
-                            not_rank_up: weapon
-                                .get("not_rank_up")
-                                .ok_or(UKError::MissingBymlKey(
-                                    "Level sensor weapon entry missing not_rank_up",
-                                ))?
-                                .as_bool()?,
-                            actors: weapon
-                                .get("actors")
-                                .ok_or(UKError::MissingBymlKey(
-                                    "Level sensor weapon entry missing actors list",
-                                ))?
-                                .as_array()?
-                                .iter()
-                                .map(|actor| -> Result<(String, (i32, f32))> {
-                                    let actor = actor.as_hash()?;
-                                    Ok((
-                                        actor
-                                            .get("name")
-                                            .ok_or(UKError::MissingBymlKey(
-                                                "Level sensor weapon actor entry missing name",
-                                            ))?
-                                            .as_string()?
-                                            .clone(),
-                                        (
-                                            actor
-                                                .get("plus")
-                                                .ok_or(UKError::MissingBymlKey(
-                                                    "Level sensor weapon actor entry missing plus value",
-                                                ))?
-                                                .as_i32()?,
-                                            actor
-                                                .get("value")
-                                                .ok_or(UKError::MissingBymlKey(
-                                                    "Level sensor weapon actor entry missing value",
-                                                ))?
-                                                .as_float()?,
-                                        ),
-                                    ))
-                                })
-                                .collect::<Result<_>>()?,
-                        },
-                    ))
-                })
-                .collect::<Result<_>>()?
+                .try_fold(
+                    DeleteMap::default(),
+                    |mut weapons, weapon| -> Result<DeleteMap<_, _>> {
+                        let weapon = weapon.as_hash()?;
+                        let series = weapon
+                            .get("series")
+                            .ok_or("Level sensor weapons entry missing series name")?
+                            .as_string()?
+                            .clone();
+                        // let series_map = weapons.get_mut(&series)
+                        Ok(weapons)
+                    },
+                )?,
         })
     }
 }

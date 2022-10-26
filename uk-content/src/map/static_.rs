@@ -15,7 +15,7 @@ pub struct EntryPos {
     pub player_state: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct Static {
     pub general: BTreeMap<String, DeleteVec<Byml>>,
     pub start_pos: DeleteMap<String, DeleteMap<String, EntryPos>>,

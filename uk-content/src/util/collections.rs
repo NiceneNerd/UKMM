@@ -477,14 +477,17 @@ macro_rules! impl_delete_map {
                 self.0.get_mut(key.borrow()).and_then(|(v, del)| (!*del).then(|| v))
             }
 
+            #[inline]
             pub fn insert(&mut self, key: impl Borrow<T>, value: U) {
                 self.0.insert(key.borrow().clone(), (value, false));
             }
 
+            #[inline]
             pub fn insert_del(&mut self, key: impl Borrow<T>, value: U) {
                 self.0.insert(key.borrow().clone(), (value, true));
             }
 
+            #[inline]
             pub fn extend(&mut self, other: impl IntoIterator<Item = (T, U)>) {
                 for (k, v) in other {
                     self.0.insert(k.clone(), (v, false));

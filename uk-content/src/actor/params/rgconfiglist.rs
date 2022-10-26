@@ -7,8 +7,9 @@ use crate::{
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Editable)]
 pub struct BodyParam {
     pub name: String64,
     pub friction_scale: f32,
@@ -52,7 +53,7 @@ impl From<BodyParam> for ParameterObject {
     }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Editable)]
 pub struct RagdollConfigList {
     pub common_data: ParameterObject,
     pub impulse_params: ParameterList,
