@@ -1,10 +1,27 @@
 use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+use uk_content_derive::BymlData;
 use uk_ui_derive::Editable;
 
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable, BymlData)]
+pub struct TipData {
+    #[name = "ConditionEntry"]
+    condition_entry: String,
+    #[name = "ConditionFile"]
+    condition_file: String,
+    #[name = "Interval"]
+    interval: String,
+    #[name = "IntervalOption"]
+    interval_option: i32,
+    #[name = "MessageId"]
+    message_id: String,
+    #[name = "Priority"]
+    priority: String,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
-pub struct Tips(pub SortedDeleteMap<String, Byml>);
+pub struct Tips(pub SortedDeleteMap<String, TipData>);
 
 impl TryFrom<&Byml> for Tips {
     type Error = UKError;
@@ -13,14 +30,14 @@ impl TryFrom<&Byml> for Tips {
         Ok(Self(
             byml.as_array()?
                 .iter()
-                .map(|entry| -> Result<(String, Byml)> {
+                .map(|entry| -> Result<(String, TipData)> {
                     let hash = entry.as_hash()?;
                     Ok((
                         hash.get("MessageId")
                             .ok_or(UKError::MissingBymlKey("Tips file entry missing MessageId"))?
                             .as_string()?
                             .clone(),
-                        entry.clone(),
+                        entry.try_into()?,
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -30,7 +47,10 @@ impl TryFrom<&Byml> for Tips {
 
 impl From<Tips> for Byml {
     fn from(val: Tips) -> Self {
-        val.0.into_iter().map(|(_, v)| v).collect()
+        val.0
+            .into_iter()
+            .map(|(_, v)| -> Byml { v.into() })
+            .collect()
     }
 }
 

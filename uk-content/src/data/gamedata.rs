@@ -80,7 +80,10 @@ impl From<GameData> for Byml {
     fn from(val: GameData) -> Self {
         [(
             val.data_type.to_string(),
-            val.flags.values().map(|f| -> Byml { f.into() }).collect(),
+            val.flags
+                .into_iter()
+                .map(|(_, f)| -> Byml { f.into() })
+                .collect(),
         )]
         .into_iter()
         .collect()

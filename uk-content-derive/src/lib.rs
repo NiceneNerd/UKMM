@@ -130,13 +130,13 @@ fn field_to_byml(
         .any(|s| s.ident.to_string().as_str() == "Option")
     {
         quote! {
-            if let Some(ref #field_var_name) = val.#field_var_name {
-                hash.insert(#field_src_name.into(), #field_var_name.clone().into());
+            if let Some(#field_var_name) = val.#field_var_name {
+                hash.insert(#field_src_name.into(), #field_var_name.into());
             }
         }
     } else {
         quote! {
-            hash.insert(#field_src_name.into(), val.#field_var_name.clone().into());
+            hash.insert(#field_src_name.into(), val.#field_var_name.into());
         }
     }
 }
@@ -149,8 +149,8 @@ fn impl_into_byml(name: &Ident, fields: &FieldsNamed) -> proc_macro2::TokenStrea
     });
     quote! {
         #[automatically_derived]
-        impl From<&#name> for ::roead::byml::Byml {
-            fn from(val: &#name) -> Self {
+        impl From<#name> for ::roead::byml::Byml {
+            fn from(val: #name) -> Self {
                 let mut hash = ::roead::byml::Hash::default();
                 #(#fields)*
                 Byml::Hash(hash)

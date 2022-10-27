@@ -10,82 +10,47 @@ use roead::{
     sarc::{Sarc, SarcWriter},
 };
 use serde::{Deserialize, Serialize};
+use uk_content_derive::BymlData;
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
 pub struct SaveDataHeader {
+    #[name = "IsCommon"]
     pub is_common: bool,
+    #[name = "IsCommonAtSameAccount"]
     pub is_common_at_same_account: bool,
+    #[name = "IsSaveSecureCode"]
     pub is_save_secure_code: bool,
     pub file_name: String,
 }
 
-impl TryFrom<&Byml> for SaveDataHeader {
-    type Error = UKError;
-
-    fn try_from(val: &Byml) -> Result<Self> {
-        let hash = val.as_hash()?;
-        Ok(Self {
-            is_common: hash
-                .get("IsCommon")
-                .ok_or(UKError::MissingBymlKey("bgsvdata header missing IsCommon"))?
-                .as_bool()?,
-            is_common_at_same_account: hash
-                .get("IsCommonAtSameAccount")
-                .ok_or(UKError::MissingBymlKey(
-                    "bgsvdata header missing IsCommonAtSameAccount",
-                ))?
-                .as_bool()?,
-            is_save_secure_code: hash
-                .get("IsSaveSecureCode")
-                .ok_or(UKError::MissingBymlKey(
-                    "bgsvdata header missing IsSaveSecureCode",
-                ))?
-                .as_bool()?,
-            file_name: hash
-                .get("file_name")
-                .ok_or(UKError::MissingBymlKey("bgsvdata header missing file_name"))?
-                .as_string()?
-                .clone(),
-        })
-    }
+#[derive(Debug, Clone, Default, Deserialize, Serialize, BymlData)]
+pub struct Flag {
+    #[name = "DataName"]
+    name: String,
+    #[name = "HashValue"]
+    hash: i32,
 }
-
-impl From<SaveDataHeader> for Byml {
-    fn from(val: SaveDataHeader) -> Self {
-        [
-            ("IsCommon", Byml::Bool(val.is_common)),
-            (
-                "IsCommonAtSameAccount",
-                Byml::Bool(val.is_common_at_same_account),
-            ),
-            ("IsSaveSecureCode", Byml::Bool(val.is_save_secure_code)),
-            ("file_name", Byml::String(val.file_name)),
-        ]
-        .into_iter()
-        .collect()
-    }
-}
-
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-pub struct Flag(String, i32);
 
 impl From<String> for Flag {
-    fn from(string: String) -> Self {
-        let hash = hash_name(&string) as i32;
-        Self(string, hash)
+    fn from(name: String) -> Self {
+        let hash = hash_name(&name) as i32;
+        Self { name, hash }
     }
 }
 
 impl From<&str> for Flag {
-    fn from(string: &str) -> Self {
-        let hash = hash_name(string) as i32;
-        Self(string.into(), hash)
+    fn from(name: &str) -> Self {
+        let hash = hash_name(name) as i32;
+        Self {
+            name: name.into(),
+            hash,
+        }
     }
 }
 
 impl PartialEq for Flag {
     fn eq(&self, other: &Self) -> bool {
-        self.1 == other.1
+        self.hash == other.hash
     }
 }
 
@@ -93,48 +58,19 @@ impl Eq for Flag {}
 
 impl std::hash::Hash for Flag {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write_i32(self.1)
+        state.write_i32(self.hash)
     }
 }
 
 impl PartialOrd for Flag {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.1.partial_cmp(&other.1)
+        self.hash.partial_cmp(&other.hash)
     }
 }
 
 impl Ord for Flag {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.1.cmp(&other.1)
-    }
-}
-
-impl TryFrom<&Byml> for Flag {
-    type Error = UKError;
-
-    fn try_from(byml: &Byml) -> Result<Self> {
-        Ok(Self(
-            byml.as_hash()?
-                .get("DataName")
-                .ok_or(UKError::MissingBymlKey("bgsvdata missing DataName"))?
-                .as_string()?
-                .clone(),
-            byml.as_hash()?
-                .get("HashValue")
-                .ok_or(UKError::MissingBymlKey("bgsvdata missing HashValue"))?
-                .as_i32()?,
-        ))
-    }
-}
-
-impl From<Flag> for Byml {
-    fn from(val: Flag) -> Self {
-        [
-            ("DataName", Byml::String(val.0)),
-            ("HashValue", Byml::I32(val.1)),
-        ]
-        .into_iter()
-        .collect()
+        self.hash.cmp(&other.hash)
     }
 }
 
