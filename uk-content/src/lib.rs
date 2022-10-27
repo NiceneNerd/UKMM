@@ -63,6 +63,8 @@ pub enum UKError {
     RoeadError(#[from] roead::Error),
     #[error(transparent)]
     Any(#[from] anyhow::Error),
+    #[error("Invalid BYML data for field {0}: {1:#?}")]
+    InvalidByml(String, roead::byml::Byml),
 }
 
 pub type Result<T> = std::result::Result<T, UKError>;

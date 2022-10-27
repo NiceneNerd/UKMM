@@ -5,11 +5,42 @@ use roead::{
 };
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
+use uk_content_derive::BymlData;
+
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
+pub struct FlagData {
+    #[name = "Category"]
+    category: Option<i32>,
+    #[name = "DataName"]
+    data_name: String,
+    #[name = "DeleteRev"]
+    delete_rev: i32,
+    #[name = "HashValue"]
+    hash_value: i32,
+    #[name = "InitValue"]
+    init_value: Byml,
+    #[name = "IsEventAssociated"]
+    is_event_associated: bool,
+    #[name = "IsOneTrigger"]
+    is_one_trigger: bool,
+    #[name = "IsProgramReadable"]
+    is_program_readable: bool,
+    #[name = "IsProgramWritable"]
+    is_program_writable: bool,
+    #[name = "IsSave"]
+    is_save: bool,
+    #[name = "MaxValue"]
+    max_value: Byml,
+    #[name = "MinValue"]
+    min_value: Byml,
+    #[name = "ResetType"]
+    reset_type: i32,
+}
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct GameData {
     pub data_type: String,
-    pub flags: DeleteMap<u32, Byml>,
+    pub flags: DeleteMap<u32, FlagData>,
 }
 
 impl TryFrom<&Byml> for GameData {
@@ -29,7 +60,7 @@ impl TryFrom<&Byml> for GameData {
                 .ok_or(UKError::MissingBymlKey("bgdata file missing data"))?
                 .as_array()?
                 .iter()
-                .map(|item| -> Result<(u32, Byml)> {
+                .map(|item| -> Result<(u32, FlagData)> {
                     Ok((
                         item.as_hash()?
                             .get("HashValue")
@@ -37,7 +68,7 @@ impl TryFrom<&Byml> for GameData {
                                 "bgdata file entry missing HashValue",
                             ))?
                             .as_i32()? as u32,
-                        item.clone(),
+                        item.try_into()?,
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -49,7 +80,7 @@ impl From<GameData> for Byml {
     fn from(val: GameData) -> Self {
         [(
             val.data_type.to_string(),
-            val.flags.values().cloned().collect(),
+            val.flags.values().map(|f| -> Byml { f.into() }).collect(),
         )]
         .into_iter()
         .collect()
@@ -188,7 +219,7 @@ fn extract_gamedata_by_type(sarc: &SarcSource, key: &str) -> Result<GameData> {
                                 "bgdata file entry missing HashValue",
                             ))?
                             .as_i32()? as u32,
-                        item,
+                        (&item).try_into()?,
                     );
                 }
             }
@@ -279,9 +310,9 @@ impl GameDataPack {
                             ))?
                             .as_i32()? as u32;
                         if Self::STAGES.contains(&parts[0]) && !name.contains("HiddenKorok") {
-                            revival_bool_data.insert(hash_value, item);
+                            revival_bool_data.insert(hash_value, (&item).try_into()?);
                         } else {
-                            bool_data.insert(hash_value, item);
+                            bool_data.insert(hash_value, (&item).try_into()?);
                         }
                     }
                 }
@@ -302,9 +333,9 @@ impl GameDataPack {
                             ))?
                             .as_i32()? as u32;
                         if Self::STAGES.contains(&parts[0]) {
-                            revival_s32_data.insert(hash_value, item);
+                            revival_s32_data.insert(hash_value, (&item).try_into()?);
                         } else {
-                            s32_data.insert(hash_value, item);
+                            s32_data.insert(hash_value, (&item).try_into()?);
                         }
                     }
                 }
@@ -318,7 +349,7 @@ impl GameDataPack {
                                 "bgdata file entry missing HashValue",
                             ))?
                             .as_i32()? as u32;
-                        string32_data.insert(hash_value, item);
+                        string32_data.insert(hash_value, (&item).try_into()?);
                     }
                 }
             }

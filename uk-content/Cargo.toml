@@ -20,6 +20,7 @@ rustc-hash = "1.1.0"
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.82"
 smartstring = { version = "1.0.1", features = ["serde"] }
+uk-content-derive = { path = "../uk-content-derive" }
 uk-ui = { path = "../uk-ui" }
 uk-ui-derive = { path = "../uk-ui-derive" }
 xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
