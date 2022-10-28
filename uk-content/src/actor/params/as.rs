@@ -3,11 +3,28 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable, ParamData)]
+pub struct ElementParams {
+    #[name = "TypeIndex"]
+    type_index: i32,
+    #[name = "NoSync"]
+    no_sync: Option<bool>,
+    #[name = "JudgeOnce"]
+    judge_once: Option<bool>,
+    #[name = "InputLimit"]
+    input_limit: Option<f32>,
+    #[name = "FileName"]
+    file_name: Option<String64>,
+    #[name = "Morph"]
+    morph: Option<i32>,
+}
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct Element {
-    pub params: ParameterObject,
+    pub params: ElementParams,
     pub children: Option<BTreeMap<usize, Element>>,
     pub extend: Option<ParameterList>,
 }
@@ -21,7 +38,7 @@ impl Element {
             params: list
                 .object("Parameters")
                 .ok_or(UKError::MissingAampKey("AS node missing parameters"))?
-                .clone(),
+                .try_into()?,
             children: list
                 .object("Children")
                 .map(|children| -> Result<BTreeMap<usize, Element>> {
@@ -58,7 +75,7 @@ impl Element {
 impl Mergeable for Element {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            params: util::diff_pobj(&self.params, &other.params),
+            params: other.params.clone(),
             children: other.children.as_ref().map(|other_children| {
                 self.children
                     .as_ref()
@@ -91,7 +108,7 @@ impl Mergeable for Element {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            params: util::merge_pobj(&self.params, &diff.params),
+            params: diff.params.clone(),
             children: diff.children.as_ref().map(|diff_children| {
                 self.children
                     .as_ref()
@@ -162,7 +179,7 @@ impl ParameterIOBuilder {
                 Vec::with_capacity(element.children.as_ref().map(|cl| cl.len()).unwrap_or(1));
             self.done.push(element.clone());
             let list = ParameterList {
-                objects: [("Parameters", element.params.clone())]
+                objects: [("Parameters", element.params.clone().into())]
                     .into_iter()
                     .chain(element.children.iter().map(|children| {
                         (

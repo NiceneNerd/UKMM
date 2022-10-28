@@ -7,46 +7,15 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable, ParamData)]
 pub struct ContactInfoItem {
     pub name: String32,
+    #[name = "type"]
     pub info_type: String32,
     pub num: Option<i32>,
-}
-
-impl TryFrom<&ParameterObject> for ContactInfoItem {
-    type Error = UKError;
-    fn try_from(obj: &ParameterObject) -> Result<Self> {
-        Ok(Self {
-            name: *obj
-                .get("name")
-                .ok_or(UKError::MissingAampKey("Contact info item missing name"))?
-                .as_string32()?,
-            info_type: *obj
-                .get("type")
-                .ok_or(UKError::MissingAampKey("Contact info item missing type"))?
-                .as_string32()?,
-            num: obj.get("num").map(|p| p.as_int()).transpose()?,
-        })
-    }
-}
-
-impl From<ContactInfoItem> for ParameterObject {
-    fn from(val: ContactInfoItem) -> Self {
-        [
-            ("name", Parameter::String32(val.name)),
-            ("type", Parameter::String32(val.info_type)),
-        ]
-        .into_iter()
-        .chain(
-            [val.num]
-                .into_iter()
-                .filter_map(|num| num.map(|v| ("num", Parameter::Int(v)))),
-        )
-        .collect()
-    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]

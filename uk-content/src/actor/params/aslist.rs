@@ -2,56 +2,17 @@ use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKErr
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable, ParamData)]
 pub struct AddRes {
+    #[name = "Anim"]
     pub anim: String64,
+    #[name = "RetargetModel"]
     pub retarget_model: Option<String64>,
+    #[name = "RetargetNoCorrect"]
     pub retarget_nocorrect: Option<bool>,
-}
-
-impl TryFrom<&ParameterObject> for AddRes {
-    type Error = UKError;
-
-    fn try_from(value: &ParameterObject) -> Result<Self> {
-        Ok(Self {
-            anim: *value
-                .get("Anim")
-                .ok_or(UKError::MissingAampKey("AS list add res missing anim"))?
-                .as_string64()?,
-            retarget_model: value
-                .get("RetargetModel")
-                .map(|v| v.as_string64())
-                .transpose()?
-                .copied(),
-            retarget_nocorrect: value
-                .get("RetargetNoCorrect")
-                .map(|v| v.as_bool())
-                .transpose()?,
-        })
-    }
-}
-
-impl From<AddRes> for ParameterObject {
-    fn from(value: AddRes) -> Self {
-        [
-            ("Anim", Some(Parameter::String64(Box::new(value.anim)))),
-            (
-                "RetargetModel",
-                value
-                    .retarget_model
-                    .map(|m| Parameter::String64(Box::new(m))),
-            ),
-            (
-                "RetargetNoCorrect",
-                value.retarget_nocorrect.map(Parameter::Bool),
-            ),
-        ]
-        .into_iter()
-        .filter_map(|(k, v)| v.map(|v| (k, v)))
-        .collect()
-    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]

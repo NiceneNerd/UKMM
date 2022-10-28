@@ -7,50 +7,17 @@ use crate::{
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Editable)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Editable, ParamData)]
 pub struct BodyParam {
+    #[name = "RigidName"]
     pub name: String64,
+    #[name = "FrictionScale"]
     pub friction_scale: f32,
+    #[name = "BuoyancyScale"]
     pub buoyancy_scale: f32,
-}
-
-impl BodyParam {
-    pub(crate) fn try_from(obj: &ParameterObject) -> Result<Self> {
-        Ok(Self {
-            name: *unsafe {
-                // This is sound because this function is never
-                // called until the name has already been checked.
-                obj.get("RigidName").unwrap_unchecked()
-            }
-            .as_string64()?,
-            friction_scale: obj
-                .get("FrictionScale")
-                .ok_or(UKError::MissingAampKey(
-                    "Ragdoll config list body param entry missing friction scale",
-                ))?
-                .as_f32()?,
-            buoyancy_scale: obj
-                .get("BuoyancyScale")
-                .ok_or(UKError::MissingAampKey(
-                    "Ragdoll config list body param entry missing buoyancy scale",
-                ))?
-                .as_f32()?,
-        })
-    }
-}
-
-impl From<BodyParam> for ParameterObject {
-    fn from(val: BodyParam) -> Self {
-        [
-            ("RigidName", Parameter::String64(Box::new(val.name))),
-            ("FrictionScale", Parameter::F32(val.friction_scale)),
-            ("BuoyancyScale", Parameter::F32(val.buoyancy_scale)),
-        ]
-        .into_iter()
-        .collect()
-    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Editable)]

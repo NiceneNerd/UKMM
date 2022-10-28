@@ -8,44 +8,17 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, sync::Arc};
+use uk_content_derive::ParamData;
 use uk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
 
-#[derive(Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Serialize, Deserialize, ParamData,
+)]
 pub struct Key {
+    #[name = "StateKey"]
     pub state_key: String32,
+    #[name = "SystemKey"]
     pub system_key: String32,
-}
-
-impl TryFrom<&ParameterObject> for Key {
-    type Error = UKError;
-
-    fn try_from(obj: &ParameterObject) -> Result<Self> {
-        Ok(Self {
-            state_key: *obj
-                .get("StateKey")
-                .ok_or(UKError::MissingAampKey(
-                    "Ragdoll blend weight state header missing state key",
-                ))?
-                .as_string32()?,
-            system_key: *obj
-                .get("SystemKey")
-                .ok_or(UKError::MissingAampKey(
-                    "Ragdoll blend weight state header missing system key",
-                ))?
-                .as_string32()?,
-        })
-    }
-}
-
-impl From<Key> for ParameterObject {
-    fn from(key: Key) -> Self {
-        [
-            ("StateKey", Parameter::String32(key.state_key)),
-            ("SystemKey", Parameter::String32(key.system_key)),
-        ]
-        .into_iter()
-        .collect()
-    }
 }
 
 impl ToString for Key {
