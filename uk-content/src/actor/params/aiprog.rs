@@ -8,11 +8,22 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable, ParamData)]
+pub struct AIDef {
+    #[name = "Name"]
+    pub name: String,
+    #[name = "ClassName"]
+    pub class_name: String32,
+    #[name = "GroupName"]
+    pub group_name: String,
+}
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct AIEntry {
-    pub def: ParameterObject,
+    pub def: AIDef,
     pub params: Option<ParameterObject>,
     pub children: IndexMap<Name, ChildEntry>,
     pub behaviors: Option<IndexMap<Name, ParameterList>>,
@@ -20,29 +31,16 @@ pub struct AIEntry {
 
 impl AIEntry {
     fn full_name(&self) -> String {
-        self.def
-            .0
-            .values()
-            .filter_map(|p| p.as_str().ok())
-            .collect()
+        self.def.name.clone() + self.def.class_name.as_str() + self.def.group_name.as_str()
     }
 }
 
 impl Mergeable for AIEntry {
     fn diff(&self, other: &Self) -> Self {
-        let mut diff = AIEntry::default();
-        if self.def != other.def {
-            diff.def = self.def.clone();
-            diff.def.0.extend(other.def.0.iter().filter_map(|(k, v)| {
-                if !self.def.0.contains_key(k) || self.def.0[k] != *v {
-                    Some((*k, v.clone()))
-                } else {
-                    None
-                }
-            }));
-        } else {
-            diff.def = self.def.clone();
-        }
+        let mut diff = AIEntry {
+            def: other.def.clone(),
+            ..Default::default()
+        };
         if self.params != other.params {
             if let Some(self_params) = &self.params {
                 diff.params = other
@@ -126,36 +124,23 @@ impl Mergeable for AIEntry {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ActionEntry {
-    pub def: ParameterObject,
+    pub def: AIDef,
     pub params: Option<ParameterObject>,
     pub behaviors: Option<IndexMap<Name, ParameterList>>,
 }
 
 impl ActionEntry {
     fn full_name(&self) -> String {
-        self.def
-            .0
-            .values()
-            .filter_map(|p| p.as_str().ok())
-            .collect()
+        self.def.name.clone() + self.def.class_name.as_str() + self.def.group_name.as_str()
     }
 }
 
 impl Mergeable for ActionEntry {
     fn diff(&self, other: &Self) -> Self {
-        let mut diff = ActionEntry::default();
-        if self.def != other.def {
-            diff.def = self.def.clone();
-            diff.def.0.extend(other.def.0.iter().filter_map(|(k, v)| {
-                if !self.def.0.contains_key(k) || self.def.0[k] != *v {
-                    Some((*k, v.clone()))
-                } else {
-                    None
-                }
-            }));
-        } else {
-            diff.def = self.def.clone();
-        }
+        let mut diff = ActionEntry {
+            def: other.def.clone(),
+            ..Default::default()
+        };
         if self.params != other.params {
             if let Some(self_params) = &self.params {
                 diff.params = other
@@ -367,7 +352,7 @@ mod parse {
             def: list
                 .object("Def")
                 .ok_or(UKError::MissingAampKey("AI entry missing Def object"))?
-                .clone(),
+                .try_into()?,
             params: list.object("SInst").cloned(),
             children: list
                 .object("ChildIdx")
@@ -441,7 +426,7 @@ mod parse {
             def: list
                 .object("Def")
                 .ok_or(UKError::MissingAampKey("Action entry missing Def object"))?
-                .clone(),
+                .try_into()?,
             params: list.object("SInst").cloned(),
             behaviors: list
                 .object("BehaviorIdx")
@@ -638,7 +623,7 @@ mod write {
             let mut list = ParameterList::new();
             let idx = self.ais.len();
             self.ais.insert(idx, ParameterList::new());
-            list.objects_mut().insert("Def", ai.def);
+            list.objects_mut().insert("Def", ai.def.into());
             if let Some(params) = ai.params {
                 list.objects_mut().insert("SInst", params);
             };
@@ -684,7 +669,7 @@ mod write {
                 return *idx;
             }
             let mut list = ParameterList::new();
-            list.objects_mut().insert("Def", action.def);
+            list.objects_mut().insert("Def", action.def.into());
             if let Some(params) = action.params {
                 list.objects_mut().insert("SInst", params);
             }
@@ -888,6 +873,7 @@ mod tests {
         .unwrap();
         let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
         let diff = aiprog.diff(&aiprog2);
+        dbg!(&diff);
         let merged = aiprog.merge(&diff);
         assert_eq!(aiprog2, merged);
     }
