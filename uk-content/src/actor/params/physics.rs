@@ -308,7 +308,9 @@ impl From<Cloth> for ParameterList {
                     [
                         (
                             "cloth_setup_file_path",
-                            Parameter::String256(val.setup_file_path.unwrap_or_default().into()),
+                            Parameter::String256(Box::new(
+                                val.setup_file_path.unwrap_or_default().into(),
+                            )),
                         ),
                         ("cloth_num", Parameter::Int(val.cloths.len() as i32)),
                     ]
@@ -554,7 +556,9 @@ impl From<Physics> for ParameterIO {
                             v.map(|s| {
                                 (
                                     k,
-                                    [(p, Parameter::String256(s.into()))].into_iter().collect(),
+                                    [(p, Parameter::String256(Box::new(s.into())))]
+                                        .into_iter()
+                                        .collect(),
                                 )
                             })
                         }),

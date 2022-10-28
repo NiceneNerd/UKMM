@@ -12,7 +12,7 @@ pub struct FlagData {
     #[name = "Category"]
     category: Option<i32>,
     #[name = "DataName"]
-    data_name: String,
+    data_name: Option<String>,
     #[name = "DeleteRev"]
     delete_rev: i32,
     #[name = "HashValue"]

@@ -6,7 +6,7 @@ use super::*;
 use uk_ui::editor::{EditableDisplay, EditableValue};
 use uk_ui::egui::mutex::RwLock;
 use uk_ui::egui::{self, Layout};
-use uk_ui::egui_extras;
+
 use uk_ui::ext::UiExt;
 use uk_ui::icons::IconButtonExt;
 

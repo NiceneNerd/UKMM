@@ -62,8 +62,8 @@ impl From<AttClientList> for ParameterIO {
                     (
                         jstr!("AttClient_{&lexical::to_string(i)}"),
                         ParameterObject::new()
-                            .with_parameter("Name", Parameter::String64(name))
-                            .with_parameter("FileName", Parameter::String64(filename)),
+                            .with_parameter("Name", Parameter::String64(Box::new(name)))
+                            .with_parameter("FileName", Parameter::String64(Box::new(filename))),
                     )
                 },
             )),

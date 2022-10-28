@@ -1,6 +1,6 @@
 use super::EditableDisplay;
 use crate::{icons::IconButtonExt, visuals};
-use egui::{mutex::RwLock, Align, Color32, Id, Layout, Response, Ui};
+use egui::{mutex::RwLock, Align, Id, Layout, Response, Ui};
 use std::{hash::Hash, ops::DerefMut, sync::Arc};
 
 impl super::EditableValue for roead::byml::Byml {

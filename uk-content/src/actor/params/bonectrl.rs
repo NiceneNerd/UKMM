@@ -80,9 +80,12 @@ impl From<BoneControl> for ParameterIO {
                                         objects: [
                                             (
                                                 "Param",
-                                                [("GroupName", Parameter::String64(group))]
-                                                    .into_iter()
-                                                    .collect(),
+                                                [(
+                                                    "GroupName",
+                                                    Parameter::String64(Box::new(group)),
+                                                )]
+                                                .into_iter()
+                                                .collect(),
                                             ),
                                             (
                                                 "Bones",
@@ -92,7 +95,7 @@ impl From<BoneControl> for ParameterIO {
                                                     .map(|(i, bone)| {
                                                         (
                                                             jstr!("Bone_{&lexical::to_string(i)}"),
-                                                            Parameter::String64(bone),
+                                                            Parameter::String64(Box::new(bone)),
                                                         )
                                                     })
                                                     .collect(),

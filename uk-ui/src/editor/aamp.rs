@@ -1,6 +1,6 @@
 use super::{EditableDisplay, EditableValue};
 use crate::{icons::IconButtonExt, visuals};
-use egui::{mutex::RwLock, Align, Color32, Id, Layout};
+use egui::{mutex::RwLock, Align, Id, Layout};
 use roead::{
     aamp::{
         Parameter, ParameterIO, ParameterList, ParameterListMap, ParameterObject,

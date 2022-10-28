@@ -137,11 +137,12 @@ impl From<ShopData> for ParameterIO {
             "Header",
             [("TableNum".into(), Parameter::Int(val.0.len() as i32))]
                 .into_iter()
-                .chain(
-                    val.0.keys().enumerate().map(|(i, name)| {
-                        (format!("Table{:02}", i + 1), Parameter::String64(*name))
-                    }),
-                )
+                .chain(val.0.keys().enumerate().map(|(i, name)| {
+                    (
+                        format!("Table{:02}", i + 1),
+                        Parameter::String64(Box::new(*name)),
+                    )
+                }))
                 .collect(),
         );
         val.0
@@ -164,7 +165,10 @@ impl From<ShopData> for ParameterIO {
                                             format!("ItemSort{:03}", i),
                                             Parameter::Int(data.sort as i32),
                                         ),
-                                        (format!("ItemName{:03}", i), Parameter::String64(name)),
+                                        (
+                                            format!("ItemName{:03}", i),
+                                            Parameter::String64(Box::new(name)),
+                                        ),
                                         (
                                             format!("ItemNum{:03}", i),
                                             Parameter::Int(data.num as i32),

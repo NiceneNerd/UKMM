@@ -44,7 +44,7 @@ impl BodyParam {
 impl From<BodyParam> for ParameterObject {
     fn from(val: BodyParam) -> Self {
         [
-            ("RigidName", Parameter::String64(val.name)),
+            ("RigidName", Parameter::String64(Box::new(val.name))),
             ("FrictionScale", Parameter::F32(val.friction_scale)),
             ("BuoyancyScale", Parameter::F32(val.buoyancy_scale)),
         ]

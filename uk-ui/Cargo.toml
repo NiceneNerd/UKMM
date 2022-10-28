@@ -10,7 +10,7 @@ hex = "0.4.3"
 indexmap = "1.9.1"
 once_cell = "1.13.1"
 rfd = "0.10.0"
-roead = { version = "0.16.5", features = ["with-serde", "yaml"] }
+roead = { version = "0.18.1", features = ["with-serde", "yaml"] }
 rustc-hash = "1.1.0"
 serde_yaml = "0.9.13"
 smartstring = "1.0.1"

@@ -79,12 +79,12 @@ impl From<Recipe> for ParameterIO {
                 "Header",
                 [("TableNum".into(), Parameter::Int(val.0.len() as i32))]
                     .into_iter()
-                    .chain(
-                        val.0
-                            .keys()
-                            .enumerate()
-                            .map(|(i, n)| (format!("Table{:02}", i + 1), Parameter::String64(*n))),
-                    )
+                    .chain(val.0.keys().enumerate().map(|(i, n)| {
+                        (
+                            format!("Table{:02}", i + 1),
+                            Parameter::String64(Box::new(*n)),
+                        )
+                    }))
                     .collect(),
             )
             .with_objects(val.0.into_iter().map(|(name, table)| {
@@ -101,7 +101,7 @@ impl From<Recipe> for ParameterIO {
                                     [
                                         (
                                             format!("ItemName{:02}", i + 1),
-                                            Parameter::String64(name),
+                                            Parameter::String64(Box::new(name)),
                                         ),
                                         (
                                             format!("ItemNum{:02}", i + 1),

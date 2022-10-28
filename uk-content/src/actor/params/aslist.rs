@@ -36,10 +36,12 @@ impl TryFrom<&ParameterObject> for AddRes {
 impl From<AddRes> for ParameterObject {
     fn from(value: AddRes) -> Self {
         [
-            ("Anim", Some(Parameter::String64(value.anim))),
+            ("Anim", Some(Parameter::String64(Box::new(value.anim)))),
             (
                 "RetargetModel",
-                value.retarget_model.map(Parameter::String64),
+                value
+                    .retarget_model
+                    .map(|m| Parameter::String64(Box::new(m))),
             ),
             (
                 "RetargetNoCorrect",
@@ -145,10 +147,13 @@ impl From<ASList> for ParameterIO {
                                         (
                                             jstr!("ASDefine_{&lexical::to_string(i)}"),
                                             ParameterObject::new()
-                                                .with_parameter("Name", Parameter::String64(name))
+                                                .with_parameter(
+                                                    "Name",
+                                                    Parameter::String64(Box::new(name)),
+                                                )
                                                 .with_parameter(
                                                     "Filename",
-                                                    Parameter::String64(filename),
+                                                    Parameter::String64(Box::new(filename)),
                                                 ),
                                         )
                                     },

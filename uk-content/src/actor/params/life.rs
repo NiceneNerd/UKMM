@@ -127,7 +127,10 @@ impl From<LifeCondition> for ParameterIO {
                     .into_iter()
                     .enumerate()
                     .map(|(i, weather)| {
-                        (format!("Item{:03}", i), Parameter::String64(weather.into()))
+                        (
+                            format!("Item{:03}", i),
+                            Parameter::String64(Box::new(weather.into())),
+                        )
                     })
                     .collect(),
             );
@@ -138,7 +141,12 @@ impl From<LifeCondition> for ParameterIO {
                 times
                     .into_iter()
                     .enumerate()
-                    .map(|(i, time)| (format!("Item{:03}", i), Parameter::String64(time.into())))
+                    .map(|(i, time)| {
+                        (
+                            format!("Item{:03}", i),
+                            Parameter::String64(Box::new(time.into())),
+                        )
+                    })
                     .collect(),
             );
         }
@@ -173,7 +181,10 @@ impl From<LifeCondition> for ParameterIO {
                     .into_iter()
                     .enumerate()
                     .map(|(i, weather)| {
-                        (format!("Item{:03}", i), Parameter::String64(weather.into()))
+                        (
+                            format!("Item{:03}", i),
+                            Parameter::String64(Box::new(weather.into())),
+                        )
                     })
                     .collect(),
             );
@@ -184,7 +195,12 @@ impl From<LifeCondition> for ParameterIO {
                 times
                     .into_iter()
                     .enumerate()
-                    .map(|(i, time)| (format!("Item{:03}", i), Parameter::String64(time.into())))
+                    .map(|(i, time)| {
+                        (
+                            format!("Item{:03}", i),
+                            Parameter::String64(Box::new(time.into())),
+                        )
+                    })
                     .collect(),
             );
         }

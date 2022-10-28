@@ -23,7 +23,10 @@ impl From<DropTable> for ParameterIO {
                         [("TableNum".into(), Parameter::Int(drop.0.len() as i32))]
                             .into_iter()
                             .chain(drop.0.keys().enumerate().map(|(i, name)| {
-                                (format!("Table{:02}", i + 1), Parameter::String64(*name))
+                                (
+                                    format!("Table{:02}", i + 1),
+                                    Parameter::String64(Box::new(*name)),
+                                )
                             }))
                             .collect(),
                     );
