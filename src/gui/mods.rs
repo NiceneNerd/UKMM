@@ -1,15 +1,15 @@
 use super::{App, FocusedPane, Message, Sort};
-use eframe::epaint::{text::TextWrapping};
-use egui::{
-    style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, Label, LayerId,
-    Layout, Response, Sense, TextStyle, Ui, Vec2,
-};
-use egui_extras::{Size, TableBuilder, TableRow};
+use eframe::epaint::text::TextWrapping;
 use im::vector;
 use join_str::jstr;
 use once_cell::sync::OnceCell;
 use std::process::Command;
 use uk_manager::mods::Mod;
+use uk_ui::egui::{
+    self, style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, Label,
+    LayerId, Layout, Response, Sense, TextStyle, Ui, Vec2,
+};
+use uk_ui::egui_extras::{Size, TableBuilder, TableRow};
 
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {

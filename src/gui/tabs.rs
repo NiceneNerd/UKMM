@@ -1,7 +1,9 @@
 use super::{visuals, Tabs};
 use eframe::epaint::text::TextWrapping;
-use egui::{text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText};
 use egui_dock::{NodeIndex, TabViewer, Tree};
+use uk_ui::egui::{
+    self, text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText,
+};
 
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Settings]);

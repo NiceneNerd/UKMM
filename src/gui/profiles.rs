@@ -1,8 +1,8 @@
 use super::{visuals, App, Message};
 use anyhow::Result;
-use egui::{text::LayoutJob, Layout, RichText, TextStyle, Ui};
 use fs_err as fs;
 use std::path::Path;
+use uk_ui::egui::{self, text::LayoutJob, Layout, RichText, TextStyle, Ui};
 use uk_ui::icons::IconButtonExt;
 
 #[derive(Debug, Default)]

@@ -7,8 +7,6 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-features = false, features = ["color-hex", "persistence"] }
 proc-macro2 = "1.0"
 quote = "1.0"
 syn = { version = "1.0", features = ["full"] }
-uk-ui = { path = "../uk-ui" }
