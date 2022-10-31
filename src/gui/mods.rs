@@ -1,5 +1,4 @@
 use super::{App, FocusedPane, Message, Sort};
-use eframe::epaint::{text::TextWrapping};
 use egui::{
     style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, Label, LayerId,
     Layout, Response, Sense, TextStyle, Ui, Vec2,
@@ -10,6 +9,7 @@ use join_str::jstr;
 use once_cell::sync::OnceCell;
 use std::process::Command;
 use uk_manager::mods::Mod;
+use uk_ui::ext::UiExt;
 
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {
@@ -277,27 +277,7 @@ impl App {
                 ctrl = ui.input().modifiers.ctrl;
             }));
             process_col_res(row.col(|ui| {
-                let mut job = LayoutJob::simple_singleline(
-                    mod_.meta.name.to_string(),
-                    ui.style()
-                        .text_styles
-                        .get(&TextStyle::Body)
-                        .unwrap()
-                        .clone(),
-                    ui.style().visuals.text_color(),
-                );
-                let unclipped = ui.fonts().layout_job(job.clone());
-                let max_width = ui.available_width();
-                job.wrap = TextWrapping {
-                    max_rows: 1,
-                    max_width,
-                    ..Default::default()
-                };
-                let clipped = ui.fonts().layout_job(job);
-                let res = ui.add(Label::new(clipped));
-                if unclipped.size().x > max_width {
-                    res.on_hover_text(mod_.meta.name.as_str());
-                }
+                ui.clipped_label(mod_.meta.name.as_str());
             }));
             for label in [
                 mod_.meta.category.as_str(),

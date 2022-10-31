@@ -455,6 +455,21 @@ macro_rules! impl_delete_map {
             }
 
             #[inline]
+            pub fn iter_full(&self) -> impl Iterator<Item = (&T, &(U, bool))> {
+                self.0.iter()
+            }
+
+            #[inline]
+            pub fn iter_mut(&mut self) -> impl Iterator<Item = (&T, &mut U)> {
+                self.0.iter_mut().filter_map(|(k, (v, del))| (!*del).then(|| (k, v)))
+            }
+
+            #[inline]
+            pub fn iter_full_mut(&mut self) -> impl Iterator<Item = (&T, &mut (U, bool))> {
+                self.0.iter_mut()
+            }
+
+            #[inline]
             pub fn keys(&self) -> impl Iterator<Item = &T> {
                 self.0.iter().filter_map(|(k, (_, del))| (!*del).then(|| k))
             }

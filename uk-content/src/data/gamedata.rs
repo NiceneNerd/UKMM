@@ -6,6 +6,7 @@ use roead::{
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 use uk_content_derive::BymlData;
+mod ui;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
 pub struct FlagData {

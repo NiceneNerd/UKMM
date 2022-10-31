@@ -1,10 +1,14 @@
-use egui::{mutex::RwLock, Direction, Id, Response, RichText, Ui};
+use egui::{
+    epaint::text::TextWrapping, mutex::RwLock, text::LayoutJob, Direction, Id, Response, RichText,
+    Ui,
+};
 use std::{hash::Hash, path::PathBuf, sync::Arc};
 
 pub trait UiExt {
     fn folder_picker(&mut self, value: &mut PathBuf) -> Response;
     fn file_picker(&mut self, value: &mut PathBuf) -> Response;
     fn strong_heading(&mut self, text: impl Into<String>) -> Response;
+    fn clipped_label(&mut self, text: impl Into<String>) -> Response;
     fn create_temp_string(&mut self, id: impl Hash, init: Option<String>);
     fn get_temp_string(&mut self, id: impl Hash) -> Option<Arc<RwLock<String>>>;
     fn clear_temp_string(&mut self, id: impl Hash);
@@ -62,6 +66,35 @@ impl UiExt for Ui {
                 .color(self.style().visuals.widgets.inactive.bg_fill)
                 .heading(),
         )
+    }
+
+    fn clipped_label(&mut self, text: impl Into<String>) -> Response {
+        let text = text.into();
+        let font = self
+            .style()
+            .text_styles
+            .get(&egui::TextStyle::Body)
+            .unwrap()
+            .clone();
+        let color = self.visuals().text_color();
+        let mut job = LayoutJob::simple_singleline(text.clone(), font.clone(), color);
+        let max_width = self.available_width();
+        job.wrap = TextWrapping {
+            break_anywhere: false,
+            max_rows: 1,
+            max_width,
+            ..Default::default()
+        };
+        let gallery = self
+            .fonts()
+            .layout(text.clone(), font, color, f32::INFINITY);
+        let width = gallery.size().x;
+        let res = self.label(job);
+        if width > self.available_width() {
+            res.on_hover_text(text)
+        } else {
+            res
+        }
     }
 
     #[inline]
