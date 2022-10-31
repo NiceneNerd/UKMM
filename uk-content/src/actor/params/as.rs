@@ -19,7 +19,7 @@ pub struct ElementParams {
     #[name = "FileName"]
     file_name: Option<String64>,
     #[name = "Morph"]
-    morph: Option<i32>,
+    morph: Option<f32>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
