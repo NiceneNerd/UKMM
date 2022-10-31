@@ -1,6 +1,7 @@
 mod info;
 mod mods;
 mod options;
+mod package;
 mod picker;
 mod profiles;
 mod settings;
@@ -13,11 +14,6 @@ use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::{text::TextWrapping, FontFamily},
     IconData, NativeOptions,
-};
-use egui::{
-    self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId,
-    Frame, Id, Label, LayerId, Layout, RichText, Rounding, Spinner, TextFormat, TextStyle, Ui,
-    Vec2,
 };
 use egui_dock::{NodeIndex, Tree};
 use egui_notify::Toast;
@@ -42,6 +38,11 @@ use uk_manager::{
     settings::Settings,
 };
 use uk_mod::Manifest;
+use uk_ui::egui::{
+    self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId,
+    Frame, Id, Label, LayerId, Layout, RichText, Rounding, Spinner, TextFormat, TextStyle, Ui,
+    Vec2,
+};
 use uk_ui::ext::UiExt;
 use uk_ui::icons::{Icon, IconButtonExt};
 pub use uk_ui::visuals;

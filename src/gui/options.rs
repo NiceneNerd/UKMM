@@ -1,6 +1,6 @@
 use super::{App, Message};
-use egui::{Align, Checkbox, Context, Layout, Vec2};
 use uk_mod::ModOptionGroup;
+use uk_ui::egui::{self, Align, Checkbox, Context, Layout, Vec2};
 
 impl App {
     pub fn render_option_picker(&mut self, ctx: &Context) {

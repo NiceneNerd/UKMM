@@ -1,8 +1,6 @@
 use super::Message;
 use anyhow::Result;
 use eframe::epaint::text::TextWrapping;
-use egui::{text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui};
-use egui_extras::RetainedImage;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rustc_hash::{FxHashMap, FxHasher};
@@ -14,6 +12,10 @@ use std::{
 };
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
+use uk_ui::egui::{
+    self, text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui,
+};
+use uk_ui::egui_extras::RetainedImage;
 use uk_ui::icons::IconButtonExt;
 
 pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {

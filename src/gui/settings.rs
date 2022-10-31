@@ -1,6 +1,5 @@
 use super::{App, Message};
 use anyhow::Result;
-use egui::{Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui};
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
@@ -12,6 +11,9 @@ use std::{
 };
 use uk_manager::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
+use uk_ui::egui::{
+    self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui,
+};
 use uk_ui::{ext::UiExt, icons};
 
 fn render_setting<R>(
@@ -379,9 +381,13 @@ impl App {
                     ui.add_enabled_ui(platform_config_changed, |ui| {
                         if ui.button("Save").clicked() {
                             if wiiu_changed {
-                                let wiiu_config = CONFIG.write().remove(&Platform::WiiU).unwrap().try_into();
+                                let wiiu_config_ui = CONFIG.write().get(&Platform::WiiU).unwrap().clone();
+                                let wiiu_config = wiiu_config_ui.try_into();
                                 match wiiu_config {
-                                    Ok(conf) => self.temp_settings.wiiu_config = Some(conf),
+                                    Ok(conf) => {
+                                        CONFIG.write().remove(&Platform::WiiU);
+                                        self.temp_settings.wiiu_config = Some(conf)
+                                    },
                                     Err(e) => {
                                         self.do_update(Message::Error(e));
                                         return;
@@ -389,9 +395,13 @@ impl App {
                                 }
                             }
                             if switch_changed {
-                                let switch_config = CONFIG.write().remove(&Platform::Switch).unwrap().try_into();
+                                let switch_config_ui = CONFIG.write().get(&Platform::Switch).unwrap().clone();
+                                let switch_config = switch_config_ui.try_into();
                                 match switch_config {
-                                    Ok(conf) => self.temp_settings.switch_config = Some(conf),
+                                    Ok(conf) => {
+                                        CONFIG.write().remove(&Platform::Switch);
+                                        self.temp_settings.switch_config = Some(conf)
+                                    },
                                     Err(e) => {
                                         self.do_update(Message::Error(e));
                                         return;

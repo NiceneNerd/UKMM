@@ -3757,7 +3757,6 @@ dependencies = [
 name = "uk-content-derive"
 version = "0.1.0"
 dependencies = [
- "darling 0.14.2",
  "proc-macro2 1.0.46",
  "quote 1.0.21",
  "syn 1.0.102",
@@ -3883,7 +3882,6 @@ dependencies = [
  "rfd",
  "roead",
  "rustc-hash",
- "serde_yaml 0.9.13",
  "smartstring",
  "syntect",
 ]
@@ -3892,11 +3890,9 @@ dependencies = [
 name = "uk-ui-derive"
 version = "0.1.0"
 dependencies = [
- "egui",
  "proc-macro2 1.0.46",
  "quote 1.0.21",
  "syn 1.0.102",
- "uk-ui",
 ]
 
 [[package]]
@@ -3910,11 +3906,9 @@ dependencies = [
  "dircpy",
  "dirs2",
  "eframe",
- "egui",
  "egui-notify",
  "egui-stylist",
  "egui_dock",
- "egui_extras",
  "enum-iterator",
  "env_logger",
  "flume",
