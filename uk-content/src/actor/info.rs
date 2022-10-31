@@ -1,6 +1,6 @@
 use crate::{
     prelude::*,
-    util::{BymlHashValue, SortedDeleteMap},
+    util::{bhash, BymlHashValue, SortedDeleteMap},
     Result, UKError,
 };
 use roead::byml::Byml;
@@ -43,19 +43,9 @@ impl TryFrom<&Byml> for ActorInfo {
 
 impl From<ActorInfo> for Byml {
     fn from(val: ActorInfo) -> Self {
-        Byml::Hash(
-            [
-                (
-                    "Actors".into(),
-                    Byml::Array(val.0.values().cloned().collect()),
-                ),
-                (
-                    "Hashes".into(),
-                    Byml::Array(val.0.keys().map(Byml::from).collect()),
-                ),
-            ]
-            .into_iter()
-            .collect(),
+        bhash!(
+            "Actors" => Byml::Array(val.0.values().cloned().collect()),
+            "Hashes" => Byml::Array(val.0.keys().map(Byml::from).collect())
         )
     }
 }

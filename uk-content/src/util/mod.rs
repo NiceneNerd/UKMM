@@ -1,5 +1,5 @@
-pub mod converts;
 mod collections;
+pub mod converts;
 
 pub use collections::*;
 use roead::aamp::*;
@@ -249,3 +249,24 @@ impl From<&BymlHashValue> for Byml {
         }
     }
 }
+
+/// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
+macro_rules! bhash {
+    (@single $($x:tt)*) => (());
+    (@count $($rest:expr),*) => (<[()]>::len(&[$(bhash!(@single $rest)),*]));
+
+    ($($key:expr => $value:expr,)+) => { bhash!($($key => $value),+) };
+    ($($key:expr => $value:expr),*) => {
+        {
+            let _cap = bhash!(@count $($key),*);
+            let mut _map = ::roead::byml::Hash::default();
+            _map.reserve(_cap);
+
+            $(
+                let _ = _map.insert(::smartstring::alias::String::from($key), $value);
+            )*
+            ::roead::byml::Byml::Hash(_map)
+        }
+    };
+}
+pub(crate) use bhash;

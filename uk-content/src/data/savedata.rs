@@ -1,6 +1,6 @@
 use crate::{
     prelude::*,
-    util::{HashMap, SortedDeleteSet},
+    util::{bhash, HashMap, SortedDeleteSet},
     Result, UKError,
 };
 use join_str::jstr;
@@ -107,29 +107,21 @@ impl TryFrom<&Byml> for SaveData {
 
 impl From<SaveData> for Byml {
     fn from(val: SaveData) -> Self {
-        [
-            (
-                "file_list",
-                [
-                    val.header.into(),
-                    val.flags.into_iter().map(Byml::from).collect::<Byml>(),
-                ]
-                .into_iter()
-                .collect::<Byml>(),
-            ),
-            (
-                "save_info",
-                Byml::Array(vec![[
-                    ("directory_num", Byml::I32(8)),
-                    ("is_build_machine", Byml::Bool(true)),
-                    ("revision", Byml::I32(18203)),
-                ]
-                .into_iter()
-                .collect::<Byml>()]),
-            ),
-        ]
-        .into_iter()
-        .collect()
+        bhash!(
+            "file_list" => [
+                val.header.into(),
+                val.flags.into_iter().map(Byml::from).collect::<Byml>(),
+            ]
+            .into_iter()
+            .collect::<Byml>(),
+            "save_info" => Byml::Array(vec![
+                bhash!(
+                    "directory_num" => Byml::I32(8),
+                    "is_build_machine" => Byml::Bool(true),
+                    "revision" => Byml::I32(18203),
+                )
+            ])
+        )
     }
 }
 

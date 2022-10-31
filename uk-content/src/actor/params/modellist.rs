@@ -150,22 +150,15 @@ impl InfoSource for ModelList {
         {
             info.insert(
                 "farModelCulling".into(),
-                [
-                    (
-                        "center",
-                        [
-                            ("X", fm_center.x.into()),
-                            ("Y", fm_center.y.into()),
-                            ("Z", fm_center.z.into()),
-                        ]
-                        .into_iter()
-                        .collect::<Byml>(),
+                bhash!(
+                    "center" => bhash!(
+                        "X" => fm_center.x.into(),
+                        "Y" => fm_center.y.into(),
+                        "Z" => fm_center.z.into()
                     ),
-                    ("height", (*fm_height).into()),
-                    ("radius", (*fm_radius).into()),
-                ]
-                .into_iter()
-                .collect::<Byml>(),
+                    "height" => (*fm_height).into(),
+                    "radius" => (*fm_radius).into(),
+                ),
             );
         }
         if let Some(Parameter::String64(bfres)) = self

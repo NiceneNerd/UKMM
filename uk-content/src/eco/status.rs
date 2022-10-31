@@ -1,4 +1,8 @@
-use crate::{prelude::*, util::DeleteVec, Result, UKError};
+use crate::{
+    prelude::*,
+    util::{bhash, DeleteVec},
+    Result, UKError,
+};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -64,9 +68,7 @@ impl TryFrom<&Byml> for StatusEffectValues {
 impl From<StatusEffectValues> for Byml {
     fn from(val: StatusEffectValues) -> Self {
         match val {
-            StatusEffectValues::Special => {
-                Self::Array(vec![[("special", Byml::Bool(true))].into_iter().collect()])
-            }
+            StatusEffectValues::Special => Self::Array(vec![bhash!("special" => Byml::Bool(true))]),
             StatusEffectValues::Normal(values) => [
                 [("special", Byml::Bool(false))]
                     .into_iter()
