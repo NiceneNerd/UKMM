@@ -180,19 +180,19 @@ fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
     ui.end_row();
     let mut changed = false;
     render_setting("Deploy Method", "There are three methods of deployment: copying, hard linking, and symlinking. Generally copying is slow and should be avoided if possible. For more on this, consult the docs.", ui, |ui| {
-        changed = changed || ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Copy, "Copy").changed();
-        changed = changed || ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::HardLink, "Hard Links").changed();
-        changed = changed || ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Symlink, "Symlink").changed();
+        changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Copy, "Copy").changed();
+        changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::HardLink, "Hard Links").changed();
+        changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Symlink, "Symlink").changed();
     });
     render_setting("Auto Deploy", "Whether to automatically deploy changes to the mod configuration every time they are applied.", ui, |ui| {
-        changed = changed || ui.checkbox(&mut config.auto, "").changed();
+        changed |= ui.checkbox(&mut config.auto, "").changed();
     });
     render_setting(
         "Output Folder",
         "Where to deploy the final merged mod pack.",
         ui,
         |ui| {
-            changed = changed || ui.folder_picker(&mut config.output).changed();
+            changed |= ui.folder_picker(&mut config.output).changed();
         },
     );
     changed
@@ -297,11 +297,11 @@ fn render_platform_config(
             host_path,
         } => {
             render_setting("WUA Path", "Blah blah", ui, |ui| {
-                changed = changed || ui.file_picker(host_path).changed();
+                changed |= ui.file_picker(host_path).changed();
             });
         }
     }
-    changed = changed || render_deploy_config(&mut config.deploy_config, ui);
+    changed |= render_deploy_config(&mut config.deploy_config, ui);
     changed
 }
 
@@ -360,14 +360,14 @@ impl App {
                     });
                 });
             });
-            switch_changed = switch_changed || {
+            switch_changed |= {
                 match (CONFIG.read().get(&Platform::Switch), self.temp_settings.switch_config.as_ref()) {
                     (None, None) | (None, Some(_)) => false,
                     (Some(config), None) => !config.dump.is_empty() || !config.deploy_config.output.as_os_str().is_empty(),
                     (Some(tmp_config), Some(config)) => tmp_config.ne(config),
                 }
             };
-            wiiu_changed = wiiu_changed || {
+            wiiu_changed |= {
                 match (CONFIG.read().get(&Platform::WiiU), self.temp_settings.wiiu_config.as_ref()) {
                     (None, None) | (None, Some(_)) => false,
                     (Some(config), None) => !config.dump.is_empty() || !config.deploy_config.output.as_os_str().is_empty(),
@@ -377,7 +377,7 @@ impl App {
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    let platform_config_changed = self.temp_settings.ne(self.core.settings().deref() )|| wiiu_changed || switch_changed;
+                    let platform_config_changed = self.temp_settings.ne(self.core.settings().deref() )|| wiiu_changed | switch_changed;
                     ui.add_enabled_ui(platform_config_changed, |ui| {
                         if ui.button("Save").clicked() {
                             if wiiu_changed {

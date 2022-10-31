@@ -147,7 +147,7 @@ fn edit_ui_pobj(
                         .map(|c| c.to_string())
                         .unwrap_or_else(|| k.hash().to_string()),
                 );
-                changed = changed || v.edit_ui(ui).changed();
+                changed |= v.edit_ui(ui).changed();
                 ui.end_row();
             });
         })
@@ -187,7 +187,7 @@ fn edit_ui_pobj_map(
         egui::CollapsingHeader::new(header)
             .id_source(id.with(key))
             .show(ui, |ui| {
-                changed = changed || edit_ui_pobj(val, ui, Some(key.hash())).changed();
+                changed |= edit_ui_pobj(val, ui, Some(key.hash())).changed();
             });
     });
     changed
@@ -232,7 +232,7 @@ fn edit_ui_plist_map(
             egui::CollapsingHeader::new(header)
                 .id_source(id.with(key))
                 .show(ui, |ui| {
-                    changed = changed || edit_ui_plist(val, ui, Some(key.hash())).changed();
+                    changed |= edit_ui_plist(val, ui, Some(key.hash())).changed();
                 });
         });
     changed
@@ -274,12 +274,12 @@ fn edit_ui_plist(
             egui::CollapsingHeader::new("objects")
                 .id_source(id.with("objects"))
                 .show(ui, |ui| {
-                    changed = changed || edit_ui_pobj_map(&mut plist.objects, ui, id, parent);
+                    changed |= edit_ui_pobj_map(&mut plist.objects, ui, id, parent);
                 });
             egui::CollapsingHeader::new("lists")
                 .id_source(id.with("lists"))
                 .show(ui, |ui| {
-                    changed = changed || edit_ui_plist_map(&mut plist.lists, ui, id, parent);
+                    changed |= edit_ui_plist_map(&mut plist.lists, ui, id, parent);
                 });
         })
         .response;
@@ -406,12 +406,12 @@ impl EditableValue for ParameterIO {
                         if !code_editor {
                             ui.label("version");
                             ui.horizontal(|ui| {
-                                changed = changed || self.version.edit_ui(ui).changed();
+                                changed |= self.version.edit_ui(ui).changed();
                             });
                             ui.end_row();
                             ui.label("type");
                             ui.horizontal(|ui| {
-                                changed = changed || self.data_type.edit_ui(ui).changed();
+                                changed |= self.data_type.edit_ui(ui).changed();
                             });
                             ui.end_row()
                         }

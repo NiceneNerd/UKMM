@@ -40,8 +40,7 @@ impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec
                                         })
                                         .changed();
                                 ui.scope(|ui| {
-                                    changed =
-                                        changed || val.edit_ui_with_id(ui, id.with(i)).changed();
+                                    changed |= val.edit_ui_with_id(ui, id.with(i)).changed();
                                 });
                             });
                         });
@@ -52,7 +51,7 @@ impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec
         if do_add {
             self.0.push((T::default(), false));
         }
-        if changed || do_add {
+        if changed | do_add {
             res.mark_changed();
         }
         res
@@ -73,7 +72,7 @@ where
         let mut res = ui
             .group(|ui| {
                 for (val, del) in self.0.iter_mut() {
-                    changed = changed || ui.checkbox(del, format!("{:#?}", val)).changed();
+                    changed |= ui.checkbox(del, format!("{:#?}", val)).changed();
                 }
                 let new_value = ui
                     .data()
@@ -116,7 +115,7 @@ where
         let mut res = ui
             .group(|ui| {
                 for (val, del) in self.0.iter_mut() {
-                    changed = changed || ui.checkbox(del, format!("{:#?}", val)).changed();
+                    changed |= ui.checkbox(del, format!("{:#?}", val)).changed();
                 }
                 let new_value = ui
                     .data()
@@ -189,7 +188,7 @@ where
                                 ui.add_enabled_ui(!*del, |ui| {
                                     let res =
                                         val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
-                                    changed = changed || res.changed();
+                                    changed |= res.changed();
                                     max_height = res.rect.height();
                                 });
                             });
@@ -223,7 +222,7 @@ where
                                             .changed();
                                     ui.add_enabled_ui(!*del, |ui| {
                                         let res = val.edit_ui_with_id(ui, id.with(key));
-                                        changed = changed || res.changed();
+                                        changed |= res.changed();
                                     });
                                     ui.allocate_space(
                                         [
@@ -307,7 +306,7 @@ where
                                 ui.add_enabled_ui(!*del, |ui| {
                                     let res =
                                         val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
-                                    changed = changed || res.changed();
+                                    changed |= res.changed();
                                     max_height = res.rect.height();
                                 });
                             });
@@ -341,7 +340,7 @@ where
                                             .changed();
                                     ui.add_enabled_ui(!*del, |ui| {
                                         let res = val.edit_ui_with_id(ui, id.with(key));
-                                        changed = changed || res.changed();
+                                        changed |= res.changed();
                                     });
                                     ui.allocate_space(
                                         [

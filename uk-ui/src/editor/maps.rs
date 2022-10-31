@@ -39,7 +39,7 @@ where
                                 .show(ui, |ui| {
                                     let res =
                                         val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
-                                    changed = changed || res.changed();
+                                    changed |= res.changed();
                                     max_height = res.rect.height();
                                 });
                         }
@@ -58,7 +58,7 @@ where
                                         ui.visuals().text_color(),
                                     );
                                     let res = val.edit_ui_with_id(ui, id.with(key));
-                                    changed = changed || res.changed();
+                                    changed |= res.changed();
                                     ui.allocate_space(
                                         [
                                             ui.available_width()
@@ -124,7 +124,7 @@ where
                                 .show(ui, |ui| {
                                     let res =
                                         val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
-                                    changed = changed || res.changed();
+                                    changed |= res.changed();
                                     max_height = res.rect.height();
                                 });
                         }
@@ -143,7 +143,7 @@ where
                                         ui.visuals().text_color(),
                                     );
                                     let res = val.edit_ui_with_id(ui, id.with(key));
-                                    changed = changed || res.changed();
+                                    changed |= res.changed();
                                     ui.allocate_space(
                                         [
                                             ui.available_width()
@@ -204,7 +204,7 @@ where
                             .id_source(id.with(key))
                             .show(ui, |ui| {
                                 let res = val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
-                                changed = changed || res.changed();
+                                changed |= res.changed();
                                 max_height = res.rect.height();
                             });
                     }
@@ -223,7 +223,7 @@ where
                                     ui.visuals().text_color(),
                                 );
                                 let res = val.edit_ui_with_id(ui, id.with(key));
-                                changed = changed || res.changed();
+                                changed |= res.changed();
                                 ui.allocate_space(
                                     [
                                         ui.available_width()
@@ -289,7 +289,7 @@ where
                                 .show(ui, |ui| {
                                     let res =
                                         val.edit_ui_with_id(ui, id.with(key).with("child-ui"));
-                                    changed = changed || res.changed();
+                                    changed |= res.changed();
                                     max_height = res.rect.height();
                                 });
                         }
@@ -308,7 +308,7 @@ where
                                         ui.visuals().text_color(),
                                     );
                                     let res = val.edit_ui_with_id(ui, id.with(key));
-                                    changed = changed || res.changed();
+                                    changed |= res.changed();
                                     ui.allocate_space(
                                         [
                                             ui.available_width()

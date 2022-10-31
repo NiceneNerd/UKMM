@@ -1,10 +1,11 @@
 use roead::byml::Byml;
-use std::sync::Arc;
+use std::ops::DerefMut;
 use uk_ui::{
     editor::{EditableDisplay, EditableValue},
     egui,
     egui_extras::{self, Size},
     ext::UiExt,
+    icons::IconButtonExt,
 };
 
 fn edit_flag_val(val: &mut Byml, ui: &mut egui::Ui, id: egui::Id) -> egui::Response {
@@ -55,8 +56,7 @@ fn edit_flag_ui(
         if *del {
             ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
         }
-        changed =
-            changed || edit_flag_val(&mut flag.init_value, ui, id.with("init_value")).changed();
+        changed |= edit_flag_val(&mut flag.init_value, ui, id.with("init_value")).changed();
     });
     row.col(|ui| {
         if *del {
@@ -112,13 +112,13 @@ fn edit_flag_ui(
         if *del {
             ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
         }
-        changed = changed || edit_flag_val(&mut flag.max_value, ui, id.with("max_value")).changed()
+        changed |= edit_flag_val(&mut flag.max_value, ui, id.with("max_value")).changed()
     });
     row.col(|ui| {
         if *del {
             ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
         }
-        changed = changed || edit_flag_val(&mut flag.min_value, ui, id.with("min_value")).changed()
+        changed |= edit_flag_val(&mut flag.min_value, ui, id.with("min_value")).changed()
     });
     row.col(|ui| {
         if *del {
@@ -134,7 +134,7 @@ fn edit_flag_ui(
         if *del {
             ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
         }
-        changed = changed || del.edit_ui_with_id(ui, id.with("delete")).changed();
+        changed |= del.edit_ui_with_id(ui, id.with("delete")).changed();
     });
     changed
 }
@@ -150,9 +150,11 @@ impl EditableValue for super::GameData {
         let mut changed = false;
         let base_height: f32 = ui.spacing().interact_size.y;
         let text_height = ui.text_style_height(&egui::TextStyle::Body);
+        let mut inner_id = egui::Id::new("");
         let res = egui::CollapsingHeader::new("GameData")
             .id_source(id)
             .show(ui, |ui| {
+                inner_id = ui.id();
                 egui_extras::TableBuilder::new(ui)
                     .resizable(true)
                     .column(Size::initial(text_height * 10.0))
@@ -198,11 +200,38 @@ impl EditableValue for super::GameData {
                     .body(|body| {
                         body.rows(base_height, self.flags.len(), |i, mut row| {
                             if let Some((hash, flag)) = self.flags.iter_full_mut().nth(i) {
-                                changed = changed || edit_flag_ui(flag, &mut row, id.with(hash));
+                                changed |= edit_flag_ui(flag, &mut row, id.with(hash));
                             }
                         });
                     });
+                let mut clear_flag = false;
+                let new_flag_id = id.with("new_flag");
+                if let Some(new_flag) = ui.get_temp_string(new_flag_id) {
+                    ui.horizontal(|ui| {
+                        changed = changed
+                            || ui
+                                .text_edit_singleline(new_flag.write().deref_mut())
+                                .changed();
+                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                            self.flags.insert(
+                                roead::aamp::hash_name(new_flag.read().as_str()),
+                                super::FlagData::default(),
+                            );
+                            clear_flag = true;
+                        }
+                    });
+                }
+                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                    ui.create_temp_string(new_flag_id, None);
+                }
+                if clear_flag {
+                    ui.clear_temp_string(new_flag_id);
+                }
             });
+        if res.header_response.changed() {
+            let table_id = inner_id.with("__table_resize");
+            ui.data().remove::<Vec<f32>>(table_id);
+        }
         let mut res = res.body_response.unwrap_or(res.header_response);
         if changed {
             res.mark_changed();

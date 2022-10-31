@@ -102,14 +102,14 @@ where
         let mut res = if self.len() < 5 {
             ui.horizontal(|ui| {
                 self.iter_mut().for_each(|v| {
-                    changed = changed || v.edit_ui(ui).changed();
+                    changed |= v.edit_ui(ui).changed();
                     ui.separator();
                 });
             })
         } else {
             ui.group(|ui| {
                 self.iter_mut().for_each(|v| {
-                    changed = changed || v.edit_ui(ui).changed();
+                    changed |= v.edit_ui(ui).changed();
                     ui.separator();
                 });
             })
@@ -128,14 +128,14 @@ impl<T: EditableValue> EditableValue for Vec<T> {
         let mut res = if self.len() < 5 {
             ui.horizontal(|ui| {
                 self.iter_mut().for_each(|v| {
-                    changed = changed || v.edit_ui(ui).changed();
+                    changed |= v.edit_ui(ui).changed();
                     ui.separator();
                 });
             })
         } else {
             ui.group(|ui| {
                 self.iter_mut().for_each(|v| {
-                    changed = changed || v.edit_ui(ui).changed();
+                    changed |= v.edit_ui(ui).changed();
                     ui.separator();
                 });
             })
@@ -158,14 +158,14 @@ impl<T: EditableValue + Default + PartialEq> EditableValue for Option<T> {
         let id = Id::new(id).with("value");
         let mut res = ui.vertical(|ui| {
             ui.horizontal(|ui| {
-                changed = changed || ui.radio_value(self, None, "None").clicked();
+                changed |= ui.radio_value(self, None, "None").clicked();
                 if ui.radio(self.is_some(), "Set Value").clicked() {
                     *self = Some(T::default());
                     changed = true;
                 }
             });
             if let Some(ref mut value) = self {
-                changed = changed || value.edit_ui_with_id(ui, id).changed();
+                changed |= value.edit_ui_with_id(ui, id).changed();
             }
         });
         if changed {
@@ -197,8 +197,8 @@ impl<T: EditableValue, U: EditableValue> EditableValue for (T, U) {
         let mut changed = false;
         let mut res = ui
             .group(|ui| {
-                changed = changed || self.0.edit_ui_with_id(ui, id.with("first")).changed();
-                changed = changed || self.1.edit_ui_with_id(ui, id.with("second")).changed();
+                changed |= self.0.edit_ui_with_id(ui, id.with("first")).changed();
+                changed |= self.1.edit_ui_with_id(ui, id.with("second")).changed();
             })
             .response;
         if changed {

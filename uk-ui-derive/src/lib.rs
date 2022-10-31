@@ -44,14 +44,14 @@ fn impl_struct_named_fields(
                 match <#ty as ::uk_ui::editor::EditableValue>::DISPLAY {
                     ::uk_ui::editor::EditableDisplay::Block => {
                         egui::CollapsingHeader::new(#str_name).id_source(id.with(#str_name)).show(ui, |ui| {
-                            changed = changed || self.#name.edit_ui_with_id(ui, child_id).changed();
+                            changed |= self.#name.edit_ui_with_id(ui, child_id).changed();
                         });
                     }
                     ::uk_ui::editor::EditableDisplay::Inline => {
                         ui.columns(2, |uis| {
                             uis[0].label(#str_name);
                             let res = self.#name.edit_ui_with_id(&mut uis[1], child_id);
-                            changed = changed || res.changed();
+                            changed |= res.changed();
                         });
                     }
                 }
@@ -81,7 +81,7 @@ fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStre
                     let id = egui::Id::new(id).with(#str_name);
                     let mut changed = false;
                     let mut res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
-                        changed = changed || self.0.edit_ui_with_id(ui, id.with("inner")).changed();
+                        changed |= self.0.edit_ui_with_id(ui, id.with("inner")).changed();
                     }).header_response;
                     if changed {
                         res.mark_changed();
@@ -93,7 +93,7 @@ fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStre
     } else {
         let field_impls = fields.unnamed.iter().enumerate().map(|(i, _)| {
             quote! {
-                changed = changed || self.#i.edit_ui_with_id(id.with(#i)).changed();
+                changed |= self.#i.edit_ui_with_id(id.with(#i)).changed();
             }
         });
         quote! {
@@ -180,7 +180,7 @@ fn impl_editable_enum(name: &Ident, enu: DataEnum) -> TokenStream {
         };
         quote! {
             let res = ui.add(egui::SelectableLabel::new(matches!(self, #path), #var_name));
-            changed = changed || res.changed();
+            changed |= res.changed();
             if res.clicked() {
                 *self = #def_path;
             }
