@@ -21,7 +21,7 @@ impl EditableValue for MessagePack {
                         .id_source(id.with(file.as_str()))
                         .show(ui, |ui| {
                             changed |= msyt
-                                .edit_ui_with_id(ui, id.with(&file).with("inner"))
+                                .edit_ui_with_id(ui, id.with(file).with("inner"))
                                 .changed();
                         });
                 });

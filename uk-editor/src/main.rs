@@ -1,11 +1,7 @@
-use roead::aamp::ParameterIO;
-
 use roead::byml::Byml;
 use roead::sarc::Sarc;
-use roead::yaz0;
 
-use uk_content::data::gamedata::GameData;
-use uk_content::resource::{AIProgram, GameDataPack};
+use uk_content::resource::GameDataPack;
 use uk_ui::editor::EditableValue;
 use uk_ui::egui;
 
@@ -52,10 +48,10 @@ fn main() {
         Sarc::new(std::fs::read("uk-content/test/GameData/gamedata.ssarc").unwrap()).unwrap()
     }
 
-    fn load_gamedata() -> Byml {
-        let gs = load_gamedata_sarc();
-        Byml::from_binary(gs.get_data("/bool_data_0.bgdata").unwrap().unwrap()).unwrap()
-    }
+    // fn load_gamedata() -> Byml {
+    //     let gs = load_gamedata_sarc();
+    //     Byml::from_binary(gs.get_data("/bool_data_0.bgdata").unwrap().unwrap()).unwrap()
+    // }
     let data = GameDataPack::from_sarc(&load_gamedata_sarc()).unwrap();
 
     eframe::run_native(
