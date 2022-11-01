@@ -1,4 +1,5 @@
 mod deser;
+mod ui;
 use crate::{prelude::*, Result, UKError};
 use join_str::jstr;
 use msyt::{
@@ -8,6 +9,7 @@ use msyt::{
 use roead::sarc::{Sarc, SarcWriter};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use uk_ui_derive::Editable;
 
 impl Mergeable for Msyt {
     fn diff(&self, other: &Self) -> Self {

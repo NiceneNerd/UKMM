@@ -3,6 +3,7 @@ use std::hash::Hash;
 pub mod aamp;
 pub mod byml;
 pub mod maps;
+pub mod msyt;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum EditableDisplay {

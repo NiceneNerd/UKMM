@@ -35,10 +35,9 @@ use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::{borrow::Cow, collections::BTreeMap};
+use uk_ui_derive::Editable;
 
-
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub enum MergeableResource {
     // Actor(Box<Actor>),
     ActorInfo(Box<ActorInfo>),

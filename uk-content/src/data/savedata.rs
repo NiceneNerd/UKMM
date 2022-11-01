@@ -1,3 +1,4 @@
+mod ui;
 use crate::{
     prelude::*,
     util::{bhash, HashMap, SortedDeleteSet},
@@ -11,6 +12,7 @@ use roead::{
 };
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
+use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
 pub struct SaveDataHeader {
@@ -166,7 +168,7 @@ impl SaveData {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct SaveDataPack(pub HashMap<String, SaveData>);
 
 impl SaveDataPack {

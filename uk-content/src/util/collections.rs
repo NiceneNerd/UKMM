@@ -346,8 +346,23 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
     }
 
     #[inline]
+    pub fn iter_full(&self) -> impl Iterator<Item = (&T, &bool)> {
+        self.0.iter()
+    }
+
+    #[inline]
+    pub fn iter_full_mut(&mut self) -> impl Iterator<Item = (&T, &mut bool)> {
+        self.0.iter_mut()
+    }
+
+    #[inline]
     pub fn contains(&self, item: impl Borrow<T>) -> bool {
         self.0.contains_key(item.borrow())
+    }
+
+    #[inline]
+    pub fn insert(&mut self, item: T) {
+        self.0.insert(item, false);
     }
 
     pub fn diff(&self, other: &Self) -> Self {

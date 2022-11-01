@@ -1,5 +1,10 @@
 use roead::byml::Byml;
-use std::ops::DerefMut;
+use std::{
+    cell::Cell,
+    ops::DerefMut,
+    rc::Rc,
+    sync::{atomic::AtomicUsize, Arc},
+};
 use uk_ui::{
     editor::{EditableDisplay, EditableValue},
     egui,
@@ -232,6 +237,95 @@ impl EditableValue for super::GameData {
             let table_id = inner_id.with("__table_resize");
             ui.data().remove::<Vec<f32>>(table_id);
         }
+        let mut res = res.body_response.unwrap_or(res.header_response);
+        if changed {
+            res.mark_changed();
+        }
+        res
+    }
+}
+
+static DATA_TYPES: &[&str] = &[
+    "bool_array_data",
+    "bool_data",
+    "f32_array_data",
+    "f32_data",
+    "revival_bool_data",
+    "revival_s32_data",
+    "s32_array_data",
+    "s32_data",
+    "string32_data",
+    "string64_array_data",
+    "string64_data",
+    "string256_array_data",
+    "string256_data",
+    "vector2f_array_data",
+    "vector2f_data",
+    "vector3f_array_data",
+    "vector3f_data",
+    "vector4f_data",
+];
+
+impl EditableValue for super::GameDataPack {
+    const DISPLAY: EditableDisplay = EditableDisplay::Block;
+    fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
+        self.edit_ui_with_id(ui, "game_data_pack")
+    }
+
+    fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl std::hash::Hash) -> egui::Response {
+        let id = egui::Id::new(id);
+        let mut changed = false;
+        let selected = ui
+            .data()
+            .get_temp_mut_or_default::<Arc<AtomicUsize>>(id.with("current"))
+            .clone();
+        let res = egui::CollapsingHeader::new("GameDataPack")
+            .id_source(id)
+            .show(ui, |ui| {
+                let mut select = selected.load(std::sync::atomic::Ordering::Relaxed);
+                if egui::ComboBox::new(id.with("combo"), "Data Type")
+                    .show_index(ui, &mut select, DATA_TYPES.len(), |i| {
+                        DATA_TYPES[i].to_owned()
+                    })
+                    .changed()
+                {
+                    selected.store(select, std::sync::atomic::Ordering::Relaxed);
+                }
+                changed |= match DATA_TYPES[selected.load(std::sync::atomic::Ordering::Relaxed)] {
+                    "bool_array_data" => self.bool_array_data.edit_ui_with_id(ui, id.with("inner")),
+                    "bool_data" => self.bool_data.edit_ui_with_id(ui, id.with("inner")),
+                    "f32_array_data" => self.f32_array_data.edit_ui_with_id(ui, id.with("inner")),
+                    "f32_data" => self.f32_data.edit_ui_with_id(ui, id.with("inner")),
+                    "revival_bool_data" => {
+                        self.revival_bool_data.edit_ui_with_id(ui, id.with("inner"))
+                    }
+                    "revival_s32_data" => {
+                        self.revival_s32_data.edit_ui_with_id(ui, id.with("inner"))
+                    }
+                    "s32_array_data" => self.s32_array_data.edit_ui_with_id(ui, id.with("inner")),
+                    "s32_data" => self.s32_data.edit_ui_with_id(ui, id.with("inner")),
+                    "string32_data" => self.string32_data.edit_ui_with_id(ui, id.with("inner")),
+                    "string64_array_data" => self
+                        .string64_array_data
+                        .edit_ui_with_id(ui, id.with("inner")),
+                    "string64_data" => self.string64_data.edit_ui_with_id(ui, id.with("inner")),
+                    "string256_array_data" => self
+                        .string256_array_data
+                        .edit_ui_with_id(ui, id.with("inner")),
+                    "string256_data" => self.string256_data.edit_ui_with_id(ui, id.with("inner")),
+                    "vector2f_array_data" => self
+                        .vector2f_array_data
+                        .edit_ui_with_id(ui, id.with("inner")),
+                    "vector2f_data" => self.vector2f_data.edit_ui_with_id(ui, id.with("inner")),
+                    "vector3f_array_data" => self
+                        .vector3f_array_data
+                        .edit_ui_with_id(ui, id.with("inner")),
+                    "vector3f_data" => self.vector3f_data.edit_ui_with_id(ui, id.with("inner")),
+                    "vector4f_data" => self.vector4f_data.edit_ui_with_id(ui, id.with("inner")),
+                    _ => unsafe { std::hint::unreachable_unchecked() },
+                }
+                .changed();
+            });
         let mut res = res.body_response.unwrap_or(res.header_response);
         if changed {
             res.mark_changed();

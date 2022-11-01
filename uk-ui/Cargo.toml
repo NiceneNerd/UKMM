@@ -8,11 +8,12 @@ egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-f
 egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
 hex = "0.4.3"
 indexmap = "1.9.1"
+msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }
 once_cell = "1.13.1"
 rfd = "0.10.0"
 roead = { version = "0.18.1", features = ["with-serde", "yaml"] }
 rustc-hash = "1.1.0"
-# serde_yaml = "0.9.13"
+serde_yaml = "0.9.13"
 smartstring = "1.0.1"
 syntect = { version = "5.0.0", default-features = false, features = ["yaml-load", "regex-fancy", "default-themes", "dump-load", "default-syntaxes"] }
 
