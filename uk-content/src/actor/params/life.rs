@@ -2,7 +2,7 @@ use crate::{
     actor::{InfoSource, ParameterResource},
     constants::{Time, Weather},
     prelude::*,
-    util::DeleteSet,
+    util::{params, DeleteSet},
     Result, UKError,
 };
 use join_str::jstr;
@@ -153,25 +153,19 @@ impl From<LifeCondition> for ParameterIO {
         if let Some(display_dist) = val.display_dist {
             pio.objects_mut().insert(
                 "DisplayDistance",
-                [("Item", Parameter::F32(display_dist))]
-                    .into_iter()
-                    .collect(),
+                params!("Item" => Parameter::F32(display_dist)),
             )
         }
         if let Some(auto_display_dist_algo) = val.auto_disp_dist_algo {
             pio.objects_mut().insert(
                 "AutoDisplayDistanceAlgorithm",
-                [("Item", Parameter::StringRef(auto_display_dist_algo))]
-                    .into_iter()
-                    .collect(),
+                params!("Item" => Parameter::StringRef(auto_display_dist_algo)),
             );
         }
         if let Some(y_limit_algo) = val.y_limit_algo {
             pio.objects_mut().insert(
                 "YLimitAlgorithm",
-                [("Item", Parameter::StringRef(y_limit_algo))]
-                    .into_iter()
-                    .collect(),
+                params!("Item" => Parameter::StringRef(y_limit_algo)),
             );
         }
         if let Some(weathers) = val.delete_weathers {

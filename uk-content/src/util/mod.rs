@@ -270,3 +270,66 @@ macro_rules! bhash {
     };
 }
 pub(crate) use bhash;
+
+/// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
+macro_rules! params {
+    (@single $($x:tt)*) => (());
+    (@count $($rest:expr),*) => (<[()]>::len(&[$(params!(@single $rest)),*]));
+
+    ($($key:expr => $value:expr,)+) => { params!($($key => $value),+) };
+    ($($key:expr => $value:expr),*) => {
+        {
+            let _cap = params!(@count $($key),*);
+            let mut _map = ::indexmap::IndexMap::<::roead::aamp::Name, ::roead::aamp::Parameter, ::std::hash::BuildHasherDefault<::rustc_hash::FxHasher>>::default();
+            _map.reserve(_cap);
+
+            $(
+                let _ = _map.insert($key.into(), $value);
+            )*
+            ::roead::aamp::ParameterObject(_map)
+        }
+    };
+}
+pub(crate) use params;
+
+/// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
+macro_rules! pobjs {
+    (@single $($x:tt)*) => (());
+    (@count $($rest:expr),*) => (<[()]>::len(&[$(pobjs!(@single $rest)),*]));
+
+    ($($key:expr => $value:expr,)+) => { pobjs!($($key => $value),+) };
+    ($($key:expr => $value:expr),*) => {
+        {
+            let _cap = pobjs!(@count $($key),*);
+            let mut _map = ::indexmap::IndexMap::<::roead::aamp::Name, ::roead::aamp::ParameterObject, ::std::hash::BuildHasherDefault<::rustc_hash::FxHasher>>::default();
+            _map.reserve(_cap);
+
+            $(
+                let _ = _map.insert($key.into(), $value);
+            )*
+            ::roead::aamp::ParameterObjectMap(_map)
+        }
+    };
+}
+pub(crate) use pobjs;
+
+/// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
+macro_rules! plists {
+    (@single $($x:tt)*) => (());
+    (@count $($rest:expr),*) => (<[()]>::len(&[$(plists!(@single $rest)),*]));
+
+    ($($key:expr => $value:expr,)+) => { plists!($($key => $value),+) };
+    ($($key:expr => $value:expr),*) => {
+        {
+            let _cap = plists!(@count $($key),*);
+            let mut _map = ::indexmap::IndexMap::<::roead::aamp::Name, ::roead::aamp::ParameterList, ::std::hash::BuildHasherDefault<::rustc_hash::FxHasher>>::default();
+            _map.reserve(_cap);
+
+            $(
+                let _ = _map.insert($key.into(), $value);
+            )*
+            ::roead::aamp::ParameterListMap(_map)
+        }
+    };
+}
+pub(crate) use plists;

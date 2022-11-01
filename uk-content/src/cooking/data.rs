@@ -1,6 +1,6 @@
 use crate::{
     prelude::*,
-    util::{self, DeleteVec},
+    util::{self, bhash, DeleteVec},
     Result, UKError,
 };
 use roead::byml::Byml;
@@ -44,13 +44,11 @@ impl TryFrom<&Byml> for CookData {
 
 impl From<CookData> for Byml {
     fn from(val: CookData) -> Self {
-        [
-            ("Recipes", val.recipes.into_iter().collect()),
-            ("SingleRecipes", val.single_recipes.into_iter().collect()),
-            ("System", val.system),
-        ]
-        .into_iter()
-        .collect()
+        bhash!(
+            "Recipes" => val.recipes.into_iter().collect(),
+            "SingleRecipes" => val.single_recipes.into_iter().collect(),
+            "System" => val.system,
+        )
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     prelude::*,
-    util::{BymlHashValue, SortedDeleteMap},
+    util::{bhash, BymlHashValue, SortedDeleteMap},
     Result, UKError,
 };
 use roead::byml::Byml;
@@ -73,36 +73,30 @@ impl TryFrom<&Byml> for ShopGameDataInfo {
 
 impl From<ShopGameDataInfo> for Byml {
     fn from(val: ShopGameDataInfo) -> Self {
-        [
-            ("ShopAreaInfo", {
+        bhash!(
+            "ShopAreaInfo" => {
                 let (hashes, values): (Vec<Byml>, Vec<Byml>) = val
                     .area_info
                     .into_iter()
                     .map(|(hash, value)| (hash.into(), value))
                     .unzip();
-                [
-                    ("Hashes", Byml::Array(hashes)),
-                    ("Values", Byml::Array(values)),
-                ]
-                .into_iter()
-                .collect()
-            }),
-            ("SoldOutInfo", {
+                bhash!(
+                    "Hashes" => Byml::Array(hashes),
+                    "Values" => Byml::Array(values),
+                )
+            },
+            "SoldOutInfo" => {
                 let (hashes, values): (Vec<Byml>, Vec<Byml>) = val
                     .sold_out_info
                     .into_iter()
                     .map(|(hash, value)| (hash.into(), value))
                     .unzip();
-                [
-                    ("Hashes", Byml::Array(hashes)),
-                    ("Values", Byml::Array(values)),
-                ]
-                .into_iter()
-                .collect()
-            }),
-        ]
-        .into_iter()
-        .collect()
+                bhash!(
+                    "Hashes" => Byml::Array(hashes),
+                    "Values" => Byml::Array(values),
+                )
+            }
+        )
     }
 }
 

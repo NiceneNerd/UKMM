@@ -1,7 +1,8 @@
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util, Result, UKError,
+    util::{self, plists, pobjs},
+    Result, UKError,
 };
 use join_str::jstr;
 use roead::{
@@ -78,48 +79,45 @@ impl TryFrom<&ParameterIO> for Chemical {
 
 impl From<Chemical> for ParameterIO {
     fn from(val: Chemical) -> Self {
-        ParameterIO::new().with_lists(
-            [(
-                "chemical_root",
-                ParameterList {
-                    objects: [(
-                        "chemical_header",
-                        [(
-                            hash_name("res_shape_num"),
-                            Parameter::U32(val.body.len() as u32),
-                        )]
-                        .into_iter()
-                        .chain(
-                            val.unknown
-                                .into_iter()
-                                .map(|v| (3635073347, Parameter::U32(v as u32))),
-                        )
-                        .collect(),
-                    )]
-                    .into_iter()
-                    .collect(),
-                    lists: [(
-                        "chemical_body",
-                        ParameterList {
-                            lists: Default::default(),
-                            objects: val
-                                .body
-                                .into_iter()
-                                .flat_map(|(i, body)| {
-                                    [
-                                        (format!("rigid_c_{:02}", i), body.rigid_c),
-                                        (format!("shape_{:02}", i), body.shape),
-                                    ]
-                                })
-                                .collect(),
-                        },
-                    )]
-                    .into_iter()
-                    .collect(),
-                },
-            )]
-            .into_iter(),
-        )
+        ParameterIO {
+            param_root: ParameterList {
+                lists: plists!(
+                    "chemical_root" => ParameterList {
+                        objects: pobjs!(
+                            "chemical_header" =>
+                            [(
+                                hash_name("res_shape_num"),
+                                Parameter::U32(val.body.len() as u32),
+                            )]
+                            .into_iter()
+                            .chain(
+                                val.unknown
+                                    .into_iter()
+                                    .map(|v| (3635073347, Parameter::U32(v as u32))),
+                            )
+                            .collect()
+                        ),
+                        lists: plists!(
+                            "chemical_body" => ParameterList {
+                                lists: Default::default(),
+                                objects: val
+                                    .body
+                                    .into_iter()
+                                    .flat_map(|(i, body)| {
+                                        [
+                                            (format!("rigid_c_{:02}", i), body.rigid_c),
+                                            (format!("shape_{:02}", i), body.shape),
+                                        ]
+                                    })
+                                    .collect(),
+                            }
+                        ),
+                    }
+                ),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
     }
 }
 

@@ -66,30 +66,22 @@ impl From<ModelList> for ParameterIO {
     fn from(val: ModelList) -> Self {
         Self {
             param_root: ParameterList {
-                objects: [
-                    ("ControllerInfo", val.controller_info),
-                    ("Attention", val.attention),
-                ]
-                .into_iter()
-                .collect(),
-                lists: [
-                    (
-                        "ModelData",
-                        ParameterList::new().with_lists(
+                objects: pobjs!(
+                    "ControllerInfo" => val.controller_info,
+                    "Attention" => val.attention,
+                ),
+                lists: plists!(
+                    "ModelData" => ParameterList::new()
+                        .with_lists(
                             val.model_data.into_iter().enumerate().map(|(i, list)| {
                                 (jstr!("ModelData_{&lexical::to_string(i)}"), list)
                             }),
                         ),
-                    ),
-                    (
-                        "AnmTarget",
-                        ParameterList::new().with_lists(val.anm_target.into_iter().map(
+                    "AnmTarget" => ParameterList::new()
+                        .with_lists(val.anm_target.into_iter().map(
                             |(i, target)| (jstr!("AnmTarget_{&lexical::to_string(i)}"), target),
                         )),
-                    ),
-                ]
-                .into_iter()
-                .collect(),
+                ),
             },
             ..Default::default()
         }

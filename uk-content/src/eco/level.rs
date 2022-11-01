@@ -1,4 +1,8 @@
-use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use crate::{
+    prelude::*,
+    util::{bhash, DeleteMap},
+    Result, UKError,
+};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
@@ -197,91 +201,64 @@ impl TryFrom<&Byml> for LevelSensor {
 
 impl From<LevelSensor> for Byml {
     fn from(val: LevelSensor) -> Self {
-        [
-            (
-                "enemy",
-                val.enemy
-                    .into_iter()
-                    .map(|(species, actors): (String, Series)| -> Byml {
-                        [
-                            (
-                                "actors",
-                                actors
-                                    .into_iter()
-                                    .map(|(actor, value)| -> Byml {
-                                        [
-                                            ("name", Byml::String(actor)),
-                                            ("value", Byml::Float(value)),
-                                        ]
-                                        .into_iter()
-                                        .collect()
-                                    })
-                                    .collect(),
-                            ),
-                            ("species", Byml::String(species)),
-                        ]
-                        .into_iter()
-                        .collect()
-                    })
-                    .collect(),
-            ),
-            (
-                "flag",
-                val.flag
-                    .into_iter()
-                    .map(|(flag, point)| -> Byml {
-                        [("name", Byml::String(flag)), ("point", Byml::Float(point))]
+        bhash!(
+            "enemy" => val.enemy
+                .into_iter()
+                .map(|(species, actors): (String, Series)| -> Byml {
+                    bhash!(
+                        "actors" =>  actors
                             .into_iter()
-                            .collect()
-                    })
-                    .collect(),
-            ),
-            (
-                "setting",
-                val.setting
-                    .into_iter()
-                    .map(|(setting, value)| (setting.to_string(), Byml::Float(value)))
-                    .collect(),
-            ),
-            (
-                "weapon",
-                val.weapon
-                    .into_iter()
-                    .flat_map(|(series, type_map)| -> Vec<Byml> {
-                        type_map
-                            .into_iter()
-                            .map(|(actor_type, weapons)| {
-                                [
-                                    ("actorType", actor_type.into()),
-                                    (
-                                        "actors",
-                                        weapons
-                                            .actors
-                                            .into_iter()
-                                            .map(|(name, (plus, value))| {
-                                                [
-                                                    ("name", name.into()),
-                                                    ("plus", plus.into()),
-                                                    ("value", value.into()),
-                                                ]
-                                                .into_iter()
-                                                .collect::<Byml>()
-                                            })
-                                            .collect::<Byml>(),
-                                    ),
-                                    ("not_rank_up", weapons.not_rank_up.into()),
-                                    ("series", series.clone().into()),
-                                ]
-                                .into_iter()
-                                .collect::<Byml>()
+                            .map(|(actor, value)| -> Byml {
+                                bhash!(
+                                    "name" => Byml::String(actor),
+                                    "value" => Byml::Float(value),
+                                )
                             })
-                            .collect::<Vec<Byml>>()
-                    })
-                    .collect(),
-            ),
-        ]
-        .into_iter()
-        .collect()
+                            .collect(),
+                        "species" => Byml::String(species)
+                    )
+                })
+                .collect(),
+            "flag" => val.flag
+                .into_iter()
+                .map(|(flag, point)| -> Byml {
+                    bhash!(
+                        "name" => Byml::String(flag),
+                        "point" => Byml::Float(point)
+                    )
+                })
+                .collect(),
+            "setting" => val.setting
+                .into_iter()
+                .map(|(setting, value)| (setting.to_string(), Byml::Float(value)))
+                .collect(),
+            "weapon" => val.weapon
+                .into_iter()
+                .flat_map(|(series, type_map)| -> Vec<Byml> {
+                    type_map
+                        .into_iter()
+                        .map(|(actor_type, weapons)| {
+                            bhash!(
+                                "actorType" => actor_type.into(),
+                                "actors" => weapons
+                                    .actors
+                                    .into_iter()
+                                    .map(|(name, (plus, value))| {
+                                        bhash!(
+                                            "name" => name.into(),
+                                            "plus" => plus.into(),
+                                            "value" => value.into()
+                                        )
+                                    })
+                                    .collect::<Byml>(),
+                                "not_rank_up" => weapons.not_rank_up.into(),
+                                "series" => series.clone().into(),
+                            )
+                        })
+                        .collect::<Vec<Byml>>()
+                })
+                .collect()
+        )
     }
 }
 

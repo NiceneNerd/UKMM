@@ -1,6 +1,6 @@
 use crate::{
     prelude::*,
-    util::{DeleteVec, SortedDeleteMap},
+    util::{bhash, DeleteVec, SortedDeleteMap},
     Result, UKError,
 };
 use roead::byml::Byml;
@@ -71,14 +71,12 @@ impl From<Location> for Byml {
                 entries
                     .into_iter()
                     .map(|pos| -> Byml {
-                        [
-                            ("MessageID", Byml::String(message.clone())),
-                            ("ShowLevel", Byml::I32(pos.show_level as i32)),
-                            ("Translate", pos.translate),
-                            ("Type", Byml::I32(pos.ltype as i32)),
-                        ]
-                        .into_iter()
-                        .collect()
+                        bhash!(
+                            "MessageID" => Byml::String(message.clone()),
+                            "ShowLevel" => Byml::I32(pos.show_level as i32),
+                            "Translate" => pos.translate,
+                            "Type" => Byml::I32(pos.ltype as i32),
+                        )
                     })
                     .collect()
             })

@@ -1,4 +1,8 @@
-use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use crate::{
+    prelude::*,
+    util::{bhash, DeleteMap},
+    Result, UKError,
+};
 use roead::{
     byml::Byml,
     sarc::{Sarc, SarcWriter},
@@ -79,15 +83,12 @@ impl TryFrom<&Byml> for GameData {
 
 impl From<GameData> for Byml {
     fn from(val: GameData) -> Self {
-        [(
-            val.data_type.to_string(),
-            val.flags
-                .into_iter()
-                .map(|(_, f)| -> Byml { f.into() })
-                .collect(),
-        )]
-        .into_iter()
-        .collect()
+        bhash!(
+            val.data_type => val.flags
+            .into_iter()
+            .map(|(_, f)| -> Byml { f.into() })
+            .collect()
+        )
     }
 }
 

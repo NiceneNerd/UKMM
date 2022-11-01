@@ -1,7 +1,7 @@
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{DeleteSet, IndexMap},
+    util::{params, plists, pobjs, DeleteSet, IndexMap},
     Result, UKError,
 };
 use join_str::jstr;
@@ -66,9 +66,8 @@ impl From<BoneControl> for ParameterIO {
         Self {
             param_root: ParameterList {
                 objects: val.objects,
-                lists: [(
-                    "BoneGroups",
-                    ParameterList {
+                lists: plists!(
+                    "BoneGroups" => ParameterList {
                         lists: val
                             .bone_groups
                             .into_iter()
@@ -77,42 +76,27 @@ impl From<BoneControl> for ParameterIO {
                                 (
                                     jstr!("Bone_{&lexical::to_string(i)}"),
                                     ParameterList {
-                                        objects: [
-                                            (
-                                                "Param",
-                                                [(
-                                                    "GroupName",
-                                                    Parameter::String64(Box::new(group)),
-                                                )]
+                                        objects: pobjs!(
+                                            "Param" => params!("GroupName" => Parameter::String64(Box::new(group))),
+                                            "Bones" => bones
                                                 .into_iter()
-                                                .collect(),
-                                            ),
-                                            (
-                                                "Bones",
-                                                bones
-                                                    .into_iter()
-                                                    .enumerate()
-                                                    .map(|(i, bone)| {
-                                                        (
-                                                            jstr!("Bone_{&lexical::to_string(i)}"),
-                                                            Parameter::String64(Box::new(bone)),
-                                                        )
-                                                    })
-                                                    .collect(),
-                                            ),
-                                        ]
-                                        .into_iter()
-                                        .collect(),
+                                                .enumerate()
+                                                .map(|(i, bone)| {
+                                                    (
+                                                        jstr!("Bone_{&lexical::to_string(i)}"),
+                                                        Parameter::String64(Box::new(bone)),
+                                                    )
+                                                })
+                                                .collect()
+                                        ),
                                         ..Default::default()
                                     },
                                 )
                             })
                             .collect(),
                         ..Default::default()
-                    },
-                )]
-                .into_iter()
-                .collect(),
+                    }
+                ),
             },
             ..Default::default()
         }

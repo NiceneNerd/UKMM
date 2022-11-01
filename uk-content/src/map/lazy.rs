@@ -1,4 +1,8 @@
-use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
+use crate::{
+    prelude::*,
+    util::{bhash, SortedDeleteMap},
+    Result, UKError,
+};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
@@ -52,12 +56,10 @@ impl From<LazyTraverseList> for Byml {
                     key.to_string(),
                     list.into_iter()
                         .map(|(id, name)| -> Byml {
-                            [
-                                ("HashId", Byml::U32(id)),
-                                ("UnitConfigName", Byml::String(name)),
-                            ]
-                            .into_iter()
-                            .collect()
+                            bhash!(
+                                "HashId" => Byml::U32(id),
+                                "UnitConfigName" => Byml::String(name),
+                            )
                         })
                         .collect(),
                 )

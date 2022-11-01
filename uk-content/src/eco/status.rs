@@ -68,23 +68,18 @@ impl TryFrom<&Byml> for StatusEffectValues {
 impl From<StatusEffectValues> for Byml {
     fn from(val: StatusEffectValues) -> Self {
         match val {
-            StatusEffectValues::Special => Self::Array(vec![bhash!("special" => Byml::Bool(true))]),
-            StatusEffectValues::Normal(values) => [
-                [("special", Byml::Bool(false))]
-                    .into_iter()
-                    .collect::<Byml>(),
-                [(
-                    "values",
-                    values
+            StatusEffectValues::Special => Byml::Array(vec![bhash!("special" => Byml::Bool(true))]),
+            StatusEffectValues::Normal(values) => Byml::Array(vec![
+                bhash!(
+                    "special" => Byml::Bool(false)
+                ),
+                bhash!(
+                    "values" => values
                         .into_iter()
-                        .map(|v| [("val", Byml::Float(v))].into_iter().collect::<Byml>())
-                        .collect::<Byml>(),
-                )]
-                .into_iter()
-                .collect::<Byml>(),
-            ]
-            .into_iter()
-            .collect::<Byml>(),
+                        .map(|v| bhash!("val" => Byml::Float(v)))
+                        .collect::<Byml>()
+                ),
+            ]),
         }
     }
 }

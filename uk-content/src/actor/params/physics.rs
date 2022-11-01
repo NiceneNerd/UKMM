@@ -1,7 +1,8 @@
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util, Result, UKError,
+    util::{self, params, pobjs},
+    Result, UKError,
 };
 use join_str::jstr;
 use roead::aamp::*;
@@ -98,18 +99,10 @@ impl From<ContactInfo> for ParameterList {
             Self {
                 objects: [(
                     3387849585,
-                    [
-                        (
-                            "contact_point_info_num",
-                            Parameter::Int(contact_point_info.len() as i32),
-                        ),
-                        (
-                            "collision_info_num",
-                            Parameter::Int(collision_info.len() as i32),
-                        ),
-                    ]
-                    .into_iter()
-                    .collect(),
+                    params!(
+                        "contact_point_info_num" => Parameter::Int(contact_point_info.len() as i32),
+                        "collision_info_num" => Parameter::Int(collision_info.len() as i32),
+                    ),
                 )]
                 .into_iter()
                 .chain(
@@ -189,7 +182,7 @@ impl TryFrom<&ParameterList> for CharacterController {
 impl From<CharacterController> for ParameterList {
     fn from(val: CharacterController) -> Self {
         Self {
-            objects: [(2311816730, val.header)].into_iter().collect(),
+            objects: pobjs!(2311816730 => val.header),
             lists: val
                 .forms
                 .into_iter()
@@ -274,17 +267,12 @@ impl From<Cloth> for ParameterList {
             objects: [
                 (
                     "ClothHeader".into(),
-                    [
-                        (
-                            "cloth_setup_file_path",
-                            Parameter::String256(Box::new(
+                    params!(
+                        "cloth_setup_file_path" => Parameter::String256(Box::new(
                                 val.setup_file_path.unwrap_or_default().into(),
-                            )),
-                        ),
-                        ("cloth_num", Parameter::Int(val.cloths.len() as i32)),
-                    ]
-                    .into_iter()
-                    .collect(),
+                        )),
+                        "cloth_num" => Parameter::Int(val.cloths.len() as i32)
+                    ),
                 ),
                 ("ClothSubWind".into(), val.subwind),
             ]
@@ -477,38 +465,21 @@ impl From<Physics> for ParameterIO {
                 ParameterList {
                     objects: [(
                         1258832850,
-                        [
-                            (
-                                "use_rigid_body_set_num",
-                                Parameter::Int(
-                                    val.rigid_body_set
-                                        .as_ref()
-                                        .map(|s| s.len() as i32)
-                                        .unwrap_or_default(),
-                                ),
+                        params!(
+                            "use_rigid_body_set_num" => Parameter::Int(
+                                val.rigid_body_set
+                                    .as_ref()
+                                    .map(|s| s.len() as i32)
+                                    .unwrap_or_default(),
                             ),
-                            ("use_ragdoll", Parameter::Bool(val.ragdoll.is_some())),
-                            ("use_cloth", Parameter::Bool(val.cloth.is_some())),
-                            (
-                                "use_support_bone",
-                                Parameter::Bool(val.support_bone.is_some()),
-                            ),
-                            (
-                                "use_character_controller",
-                                Parameter::Bool(val.character_controller.is_some()),
-                            ),
-                            (
-                                "use_contact_info",
-                                Parameter::Bool(val.rigid_contact_info.is_some()),
-                            ),
-                            ("use_edge_rigid_body_num", Parameter::Int(0)),
-                            (
-                                "use_system_group_handler",
-                                Parameter::Bool(val.use_system_group_handler.unwrap_or_default()),
-                            ),
-                        ]
-                        .into_iter()
-                        .collect(),
+                            "use_ragdoll" => Parameter::Bool(val.ragdoll.is_some()),
+                            "use_cloth" => Parameter::Bool(val.cloth.is_some()),
+                            "use_support_bone" => Parameter::Bool(val.support_bone.is_some()),
+                            "use_character_controller" => Parameter::Bool(val.character_controller.is_some()),
+                            "use_contact_info" => Parameter::Bool(val.rigid_contact_info.is_some()),
+                            "use_edge_rigid_body_num" => Parameter::Int(0),
+                            "use_system_group_handler" => Parameter::Bool(val.use_system_group_handler.unwrap_or_default())
+                        ),
                     )]
                     .into_iter()
                     .chain(

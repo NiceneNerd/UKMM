@@ -1,7 +1,7 @@
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{DeleteMap, IndexMap},
+    util::{params, plists, pobjs, DeleteMap, IndexMap},
     Result, UKError,
 };
 use join_str::jstr;
@@ -116,25 +116,21 @@ impl From<RagdollBlendWeight> for ParameterIO {
             (
                 jstr!("State_{&lexical::to_string(idx + 1)}"),
                 ParameterList {
-                    objects: [("Setting", key.into())].into_iter().collect(),
-                    lists: [(
-                        "InputWeightList",
-                        ParameterList::new().with_objects(state.into_iter().enumerate().map(
-                            |(i, (name, rate))| {
-                                (
-                                    jstr!("InputWeight_{&lexical::to_string(i + 1)}"),
-                                    [
-                                        ("RigidName", Parameter::String32(name)),
-                                        ("BlendRate", Parameter::F32(rate)),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                )
-                            },
-                        )),
-                    )]
-                    .into_iter()
-                    .collect(),
+                    objects: pobjs!("Setting" => key.into()),
+                    lists: plists!(
+                        "InputWeightList" => ParameterList::new()
+                            .with_objects(state.into_iter().enumerate().map(
+                                |(i, (name, rate))| {
+                                    (
+                                        jstr!("InputWeight_{&lexical::to_string(i + 1)}"),
+                                        params!(
+                                            "RigidName" => Parameter::String32(name),
+                                            "BlendRate" => Parameter::F32(rate),
+                                        ),
+                                    )
+                                },
+                            ))
+                    ),
                 },
             )
         }))

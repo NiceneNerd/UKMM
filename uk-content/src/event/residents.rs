@@ -1,4 +1,8 @@
-use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use crate::{
+    prelude::*,
+    util::{bhash, DeleteMap},
+    Result, UKError,
+};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
@@ -42,9 +46,10 @@ impl From<ResidentEvents> for Byml {
         val.0
             .into_iter()
             .map(|(entry, file)| -> Byml {
-                [("entry", Byml::String(entry)), ("file", Byml::String(file))]
-                    .into_iter()
-                    .collect()
+                bhash!(
+                    "entry" => Byml::String(entry),
+                    "file" => Byml::String(file)
+                )
             })
             .collect()
     }
