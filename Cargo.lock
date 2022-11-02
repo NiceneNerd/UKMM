@@ -362,18 +362,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cargo-lock"
-version = "8.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c4c54d47a4532db3494ef7332c257ab57b02750daae3250d49e01ee55201ce8"
-dependencies = [
- "semver",
- "serde",
- "toml",
- "url",
-]
-
-[[package]]
 name = "cargo-platform"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -393,16 +381,6 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "cargo_toml"
-version = "0.12.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a621d5d6d6c8d086dbaf1fe659981da41a1b63c6bdbba30b4dbb592c6d3bd49"
-dependencies = [
- "serde",
- "toml",
 ]
 
 [[package]]
@@ -1086,29 +1064,6 @@ version = "0.4.0"
 source = "git+https://github.com/NiceneNerd/egui-notify#ae2c44477b154133037f04f1adf8df60c2f0dc53"
 dependencies = [
  "egui",
-]
-
-[[package]]
-name = "egui-stylist"
-version = "0.2.0"
-source = "git+https://github.com/NiceneNerd/egui-stylist#428504f4742d6be0aadddfaf33553bdb17ae1f1f"
-dependencies = [
- "base64 0.13.0",
- "egui",
- "egui-theme",
- "serde",
-]
-
-[[package]]
-name = "egui-theme"
-version = "0.2.0"
-source = "git+https://github.com/NiceneNerd/egui-stylist#428504f4742d6be0aadddfaf33553bdb17ae1f1f"
-dependencies = [
- "cargo-lock",
- "cargo_toml",
- "egui",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -3909,7 +3864,6 @@ dependencies = [
  "dirs2",
  "eframe",
  "egui-notify",
- "egui-stylist",
  "egui_dock",
  "enum-iterator",
  "env_logger",

@@ -17,7 +17,6 @@ use eframe::{
 };
 use egui_dock::{NodeIndex, Tree};
 use egui_notify::Toast;
-use egui_stylist::StylistState;
 use flume::{Receiver, Sender};
 use font_loader::system_fonts::FontPropertyBuilder;
 use fs_err as fs;
@@ -142,7 +141,7 @@ pub enum Tabs {
     Mods,
     Log,
     Settings,
-    Theme,
+    Package,
 }
 
 impl std::fmt::Display for Tabs {
@@ -266,7 +265,6 @@ struct App {
     options_mod: Option<(Mod, bool)>,
     temp_settings: Settings,
     toasts: egui_notify::Toasts,
-    style: StylistState,
 }
 
 impl App {
@@ -309,7 +307,6 @@ impl App {
             options_mod: None,
             tree: Arc::new(RwLock::new(tabs::default_ui())),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
-            style: StylistState::default(),
         }
     }
 

@@ -6,7 +6,7 @@ use uk_ui::egui::{
 };
 
 pub fn default_ui() -> Tree<Tabs> {
-    let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Settings]);
+    let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Package, Tabs::Settings]);
     let [main, side] = tree.split_right(0.into(), 0.9, vec![Tabs::Info, Tabs::Install]);
     let [_side_top, _side_bottom] = tree.split_below(side, 0.6, vec![Tabs::Deploy]);
     let [main, _log] = tree.split_below(main, 0.99, vec![Tabs::Log]);
@@ -160,8 +160,8 @@ impl TabViewer for super::App {
             Tabs::Settings => {
                 self.render_settings(ui);
             }
-            Tabs::Theme => {
-                self.style.ui(ui);
+            Tabs::Package => {
+                self.render_packger(ui);
             }
         }
     }

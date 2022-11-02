@@ -17,7 +17,6 @@ eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
 # egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
 egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
 egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
-egui-stylist = { git = "https://github.com/NiceneNerd/egui-stylist" }
 enum-iterator = "1.2.0"
 env_logger = "0.9.0"
 flume = "0.10.14"

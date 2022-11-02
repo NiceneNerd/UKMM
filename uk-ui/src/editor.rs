@@ -26,7 +26,7 @@ impl EditableValue for bool {
     }
 }
 
-macro_rules! impl_num {
+macro_rules! impl_int {
     ($num:tt) => {
         impl EditableValue for $num {
             const DISPLAY: EditableDisplay = EditableDisplay::Inline;
@@ -37,18 +37,29 @@ macro_rules! impl_num {
     };
 }
 
-impl_num!(usize);
-impl_num!(u8);
-impl_num!(u16);
-impl_num!(u32);
-impl_num!(u64);
-impl_num!(isize);
-impl_num!(i8);
-impl_num!(i16);
-impl_num!(i32);
-impl_num!(i64);
-impl_num!(f32);
-impl_num!(f64);
+macro_rules! impl_float {
+    ($num:tt) => {
+        impl EditableValue for $num {
+            const DISPLAY: EditableDisplay = EditableDisplay::Inline;
+            fn edit_ui(&mut self, ui: &mut Ui) -> Response {
+                ui.add(DragValue::new(self).min_decimals(1).speed(0.1))
+            }
+        }
+    };
+}
+
+impl_int!(usize);
+impl_int!(u8);
+impl_int!(u16);
+impl_int!(u32);
+impl_int!(u64);
+impl_int!(isize);
+impl_int!(i8);
+impl_int!(i16);
+impl_int!(i32);
+impl_int!(i64);
+impl_float!(f32);
+impl_float!(f64);
 
 impl EditableValue for String {
     const DISPLAY: EditableDisplay = EditableDisplay::Inline;
@@ -158,13 +169,17 @@ impl<T: EditableValue + Default + PartialEq> EditableValue for Option<T> {
         let mut changed = false;
         let id = Id::new(id).with("value");
         let mut res = ui.vertical(|ui| {
-            ui.horizontal(|ui| {
-                changed |= ui.radio_value(self, None, "None").clicked();
-                if ui.radio(self.is_some(), "Set Value").clicked() {
+            let mut checked = self.is_some();
+            let label = if checked { "Enabled" } else { "Disabled" };
+            let res = ui.checkbox(&mut checked, label);
+            if res.changed() {
+                if checked {
                     *self = Some(T::default());
-                    changed = true;
+                } else {
+                    *self = None;
                 }
-            });
+                changed = true;
+            }
             if let Some(ref mut value) = self {
                 changed |= value.edit_ui_with_id(ui, id).changed();
             }
