@@ -9,7 +9,7 @@ pub trait UiExt {
     fn file_picker(&mut self, value: &mut PathBuf) -> Response;
     fn strong_heading(&mut self, text: impl Into<String>) -> Response;
     fn clipped_label(&mut self, text: impl Into<String>) -> Response;
-    fn create_temp_string(&mut self, id: impl Hash, init: Option<String>);
+    fn create_temp_string(&mut self, id: impl Hash, init: Option<String>) -> Arc<RwLock<String>>;
     fn get_temp_string(&mut self, id: impl Hash) -> Option<Arc<RwLock<String>>>;
     fn clear_temp_string(&mut self, id: impl Hash);
 }
@@ -98,9 +98,10 @@ impl UiExt for Ui {
     }
 
     #[inline]
-    fn create_temp_string(&mut self, id: impl Hash, init: Option<String>) {
-        self.data()
-            .insert_temp(Id::new(id), Arc::new(RwLock::new(init.unwrap_or_default())));
+    fn create_temp_string(&mut self, id: impl Hash, init: Option<String>) -> Arc<RwLock<String>> {
+        let string = Arc::new(RwLock::new(init.unwrap_or_default()));
+        self.data().insert_temp(Id::new(id), string.clone());
+        string
     }
 
     #[inline]

@@ -113,7 +113,31 @@ impl App {
                             })
                             .response
                     });
-                    render_field("URL", ui, |ui| {});
+                    render_field("URL", ui, |ui| {
+                        let id = id.with("url");
+                        let url = ui
+                            .get_temp_string(id.with("tmp"))
+                            .get_or_insert_with(|| {
+                                ui.create_temp_string(
+                                    id.with("tmp"),
+                                    builder.meta.url.as_ref().map(|u| u.as_str().into()),
+                                )
+                            })
+                            .clone();
+                        let res = {
+                            let mut url = url.write();
+                            url.edit_ui_with_id(ui, id)
+                        };
+                        if res.changed() {
+                            let url = url.read();
+                            builder.meta.url = if url.is_empty() {
+                                None
+                            } else {
+                                Some(url.as_str().into())
+                            };
+                        }
+                        res
+                    });
                 });
             ui.add_space(8.0);
             ui.label("Description");
