@@ -3813,6 +3813,7 @@ dependencies = [
  "minicbor-ser",
  "moka",
  "once_cell",
+ "parking_lot",
  "roead",
  "serde",
  "serde_json",

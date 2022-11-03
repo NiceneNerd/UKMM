@@ -6,6 +6,7 @@ mod zarchive;
 use self::{unpacked::Unpacked, zarchive::ZArchive};
 use anyhow::Context;
 use moka::sync::Cache;
+use parking_lot::RwLock;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
@@ -13,7 +14,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use uk_content::{canonicalize, platform_prefixes, prelude::Endian, resource::*};
+use uk_content::{canonicalize, platform_prefixes, prelude::Endian, resource::*, util::HashMap};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ROMError {
@@ -42,7 +43,7 @@ impl From<ROMError> for uk_content::UKError {
 }
 
 type ResourceCache = Cache<String, Arc<ResourceData>>;
-const CACHE_SIZE: u64 = 10_000;
+const CACHE_SIZE: u64 = 7777;
 pub type Result<T> = std::result::Result<T, ROMError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -73,6 +74,8 @@ pub struct ResourceReader {
     source: Box<dyn ResourceLoader>,
     #[serde(skip, default = "construct_cache")]
     cache: ResourceCache,
+    #[serde(skip)]
+    nest_map: Arc<RwLock<HashMap<String, Arc<str>>>>,
 }
 
 impl PartialEq for ResourceReader {
@@ -105,6 +108,7 @@ impl ResourceReader {
             source: Box::new(ZArchive::new(archive_path)?),
             cache: ResourceCache::new(CACHE_SIZE),
             bin_type: BinType::Nintendo,
+            nest_map: Default::default(),
         })
     }
 
@@ -117,6 +121,7 @@ impl ResourceReader {
             source: Box::new(Unpacked::new(content_dir, update_dir, aoc_dir, true)?),
             cache: ResourceCache::new(CACHE_SIZE),
             bin_type: BinType::Nintendo,
+            nest_map: Default::default(),
         })
     }
 
@@ -143,6 +148,7 @@ impl ResourceReader {
             source: Box::new(Unpacked::new(content_dir, None::<PathBuf>, aoc_dir, false)?),
             cache: ResourceCache::new(500),
             bin_type: BinType::Nintendo,
+            nest_map: Default::default(),
         })
     }
 
@@ -168,35 +174,56 @@ impl ResourceReader {
         canon: String,
     ) -> uk_content::Result<Arc<ResourceData>> {
         log::trace!("Loading resource {}", &canon);
-        let resource =
-            self.cache
-                .try_get_with(canon.clone(), || -> uk_content::Result<_> {
-                    log::trace!("Resource {} not in cache, pulling", &canon);
-                    let data = self.source.get_data(path.as_ref())?;
-                    let resource = match self.bin_type {
-                        BinType::Nintendo => {
-                            let data = roead::yaz0::decompress_if(data.as_slice());
-                            let res = ResourceData::from_binary(canon.as_str(), data.as_ref())?;
-                            if is_mergeable_sarc(canon.as_str(), data.as_ref()) {
-                                self.process_sarc(Sarc::new(data.as_ref())?)?;
-                            }
-                            res
+        match self
+            .cache
+            .try_get_with(canon.clone(), || -> uk_content::Result<_> {
+                log::trace!("Resource {} not in cache, pulling", &canon);
+                let data = self.source.get_data(path.as_ref())?;
+                let resource = match self.bin_type {
+                    BinType::Nintendo => {
+                        let data = roead::yaz0::decompress_if(data.as_slice());
+                        let res = ResourceData::from_binary(canon.as_str(), data.as_ref())?;
+                        if is_mergeable_sarc(canon.as_str(), data.as_ref()) {
+                            self.process_sarc(
+                                Sarc::new(data.as_ref())?,
+                                path.as_ref().display().to_string().as_str(),
+                            )?;
                         }
-                        BinType::MiniCbor => minicbor_ser::from_slice(data.as_slice())
-                            .map_err(anyhow::Error::from)?,
-                    };
-                    Ok(Arc::new(resource))
-                })
-                .map_err(|_| {
-                    ROMError::FileNotFound(
+                        res
+                    }
+                    BinType::MiniCbor => {
+                        minicbor_ser::from_slice(data.as_slice()).map_err(anyhow::Error::from)?
+                    }
+                };
+                Ok(Arc::new(resource))
+            }) {
+            Ok(res) => Ok(res),
+            Err(_) => {
+                let parent = self.nest_map.read().get(&canon).cloned();
+                match parent {
+                    Some(parent) => {
+                        let parent_canon = canonicalize(parent.as_ref());
+                        dbg!(&parent_canon);
+                        dbg!(&parent);
+                        self.get_or_add_resource(parent.as_ref(), parent_canon)?;
+                        Ok(self.cache.get(&canon).ok_or_else(|| {
+                            ROMError::FileNotFound(
+                                path.as_ref().to_string_lossy().into(),
+                                self.source.host_path().to_path_buf(),
+                            )
+                        })?)
+                    }
+                    None => Err(ROMError::FileNotFound(
                         path.as_ref().to_string_lossy().into(),
                         self.source.host_path().to_path_buf(),
                     )
-                })?;
-        Ok(resource)
+                    .into()),
+                }
+            }
+        }
     }
 
-    fn process_sarc(&self, sarc: roead::sarc::Sarc) -> uk_content::Result<()> {
+    fn process_sarc(&self, sarc: roead::sarc::Sarc, sarc_path: &str) -> uk_content::Result<()> {
         log::trace!("Resource is SARC, add contents to cache");
         for file in sarc.files() {
             let name = file.name().context("SARC file missing name")?.to_string();
@@ -206,9 +233,10 @@ impl ResourceReader {
                 let data = roead::yaz0::decompress_if(data);
                 let resource = ResourceData::from_binary(&name, data.as_ref())?;
                 if is_mergeable_sarc(canon.as_str(), data.as_ref()) {
-                    self.process_sarc(Sarc::new(data.as_ref())?)?;
+                    self.process_sarc(Sarc::new(data.as_ref())?, &name)?;
                 }
-                self.cache.insert(canon, Arc::new(resource));
+                self.cache.insert(canon.clone(), Arc::new(resource));
+                self.nest_map.write().insert(canon, sarc_path.into());
             }
         }
         Ok(())
