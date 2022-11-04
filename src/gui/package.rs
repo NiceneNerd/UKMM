@@ -85,6 +85,11 @@ impl App {
                 })
                 .clone();
             let mut builder = builder.write();
+            ui.allocate_ui_with_layout(
+                [ui.available_width(), ui.spacing().interact_size.y].into(),
+                Layout::right_to_left(egui::Align::Max),
+                |ui| ui.icon_button(uk_ui::icons::Icon::Help),
+            );
             egui::Grid::new("packer_grid1")
                 .num_columns(2)
                 .spacing([8.0, 8.0])
