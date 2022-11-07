@@ -24,6 +24,7 @@ use im::{vector, Vector};
 use join_str::jstr;
 use once_cell::sync::OnceCell;
 use picker::FilePickerState;
+use rustc_hash::FxHashSet;
 use std::{
     ops::DerefMut,
     path::PathBuf,
@@ -192,52 +193,55 @@ impl Sort {
 }
 
 pub enum Message {
-    Noop,
-    Log(Entry),
-    Confirm(Box<Message>, String),
+    AddMod(Mod),
+    AddProfile,
+    Apply,
+    ChangeProfile(String),
+    ChangeSort(Sort, bool),
+    ClearDrag,
+    ClearSelect,
+    CloseAbout,
     CloseConfirm,
     CloseError,
-    ShowAbout,
-    CloseAbout,
+    ClosePackagingOptions,
+    ClosePackagingDependencies,
     CloseProfiles,
-    SelectOnly(usize),
-    SelectAlso(usize),
+    Confirm(Box<Message>, String),
+    DeleteProfile(String),
+    Deploy,
     Deselect(usize),
-    ClearSelect,
-    StartDrag(usize),
-    ClearDrag,
-    MoveSelected(usize),
-    FilePickerUp,
+    DuplicateProfile(String),
+    Error(anyhow::Error),
     FilePickerBack,
     FilePickerSet(Option<PathBuf>),
-    ChangeProfile(String),
-    SetFocus(FocusedPane),
-    SelectFile,
-    OpenMod(PathBuf),
+    FilePickerUp,
     HandleMod(Mod),
-    RequestOptions(Mod, bool),
-    UpdateOptions(Mod),
     InstallMod(Mod),
-    UninstallMods(Option<Vector<Mod>>),
-    AddMod(Mod),
-    RemoveMods(Vector<Mod>),
-    ToggleMods(Option<Vector<Mod>>, bool),
-    DeleteProfile(String),
-    RenameProfile(String, String),
-    DuplicateProfile(String),
+    Log(Entry),
+    MoveSelected(usize),
     NewProfile,
-    AddProfile,
-    SelectProfileManage(smartstring::alias::String),
-    Apply,
-    Remerge,
-    // UpdateMods(Vector<Mod>),
-    Error(anyhow::Error),
-    ChangeSort(Sort, bool),
+    Noop,
+    OpenMod(PathBuf),
     RefreshModsDisplay,
+    Remerge,
+    RemoveMods(Vector<Mod>),
+    RenameProfile(String, String),
+    RequestOptions(Mod, bool),
     ResetMods,
-    Deploy,
     ResetSettings,
     SaveSettings,
+    SelectAlso(usize),
+    SelectFile,
+    SelectOnly(usize),
+    SelectProfileManage(smartstring::alias::String),
+    SetFocus(FocusedPane),
+    ShowAbout,
+    ShowPackagingOptions(FxHashSet<PathBuf>),
+    ShowPackagingDependencies,
+    StartDrag(usize),
+    ToggleMods(Option<Vector<Mod>>, bool),
+    UninstallMods(Option<Vector<Mod>>),
+    UpdateOptions(Mod),
 }
 
 struct App {
@@ -260,6 +264,8 @@ struct App {
     confirm: Option<(Message, String)>,
     busy: bool,
     show_about: bool,
+    show_package_deps: bool,
+    opt_folders: Option<FxHashSet<PathBuf>>,
     dirty: Manifest,
     sort: (Sort, bool),
     options_mod: Option<(Mod, bool)>,
@@ -301,6 +307,8 @@ impl App {
             new_profile: None,
             confirm: None,
             show_about: false,
+            show_package_deps: false,
+            opt_folders: None,
             busy: false,
             dirty: Manifest::default(),
             sort: (Sort::Priority, false),
@@ -318,6 +326,8 @@ impl App {
             || self.confirm.is_some()
             || self.show_about
             || self.new_profile.is_some()
+            || self.show_package_deps
+            || self.opt_folders.is_some()
     }
 
     fn do_update(&self, message: Message) {
@@ -684,6 +694,14 @@ impl App {
                     self.busy = false;
                     self.error = Some(error);
                 }
+                Message::ShowPackagingOptions(folders) => {
+                    self.opt_folders = Some(folders);
+                }
+                Message::ShowPackagingDependencies => {
+                    self.show_package_deps = true;
+                }
+                Message::ClosePackagingOptions => self.opt_folders = None,
+                Message::ClosePackagingDependencies => self.show_package_deps = false,
             }
             ctx.request_repaint();
         }
@@ -1088,6 +1106,7 @@ impl eframe::App for App {
         let clip_rect = ctx.available_rect();
         let id = Id::new("egui_dock::DockArea");
         let mut ui = Ui::new(ctx.clone(), layer_id, id, max_rect, clip_rect);
+        ui.spacing_mut().item_spacing = [8.0, 8.0].into();
         static DOCK_STYLE: OnceCell<egui_dock::Style> = OnceCell::new();
         egui_dock::DockArea::new(self.tree.clone().write().deref_mut())
             .style(

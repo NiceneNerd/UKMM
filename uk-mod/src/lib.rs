@@ -128,7 +128,7 @@ pub struct Meta {
     pub url: Option<String>,
     #[serde(rename = "option_groups")]
     pub options: Vec<OptionGroup>,
-    pub masters: IndexMap<String, f32>,
+    pub masters: IndexMap<usize, (String, f32)>,
 }
 
 #[allow(clippy::derive_hash_xor_eq)]
