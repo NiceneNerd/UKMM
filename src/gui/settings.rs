@@ -1,5 +1,6 @@
 use super::{App, Message};
 use anyhow::Result;
+use eframe::egui::Response;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
@@ -35,9 +36,7 @@ fn render_setting<R>(
         )
         .on_hover_text(description);
     });
-    let res = ui.with_layout(Layout::right_to_left(Align::Center), add_contents);
-    ui.end_row();
-    res
+    ui.horizontal(|ui| add_contents(ui))
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -176,25 +175,26 @@ static CONFIG: Lazy<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
 
 fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
     ui.label("Deployment");
-    ui.separator();
-    ui.end_row();
     let mut changed = false;
-    render_setting("Deploy Method", "There are three methods of deployment: copying, hard linking, and symlinking. Generally copying is slow and should be avoided if possible. For more on this, consult the docs.", ui, |ui| {
-        changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Copy, "Copy").changed();
-        changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::HardLink, "Hard Links").changed();
-        changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Symlink, "Symlink").changed();
+    ui.group(|ui| {
+        ui.allocate_space([ui.available_width(), -8.0].into());
+        render_setting("Deploy Method", "There are three methods of deployment: copying, hard linking, and symlinking. Generally copying is slow and should be avoided if possible. For more on this, consult the docs.", ui, |ui| {
+            changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Copy, "Copy").changed();
+            changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::HardLink, "Hard Links").changed();
+            changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Symlink, "Symlink").changed();
+        });
+        render_setting("Auto Deploy", "Whether to automatically deploy changes to the mod configuration every time they are applied.", ui, |ui| {
+            changed |= ui.checkbox(&mut config.auto, "").changed();
+        });
+        render_setting(
+            "Output Folder",
+            "Where to deploy the final merged mod pack.",
+            ui,
+            |ui| {
+                changed |= ui.folder_picker(&mut config.output).changed();
+            },
+        );
     });
-    render_setting("Auto Deploy", "Whether to automatically deploy changes to the mod configuration every time they are applied.", ui, |ui| {
-        changed |= ui.checkbox(&mut config.auto, "").changed();
-    });
-    render_setting(
-        "Output Folder",
-        "Where to deploy the final merged mod pack.",
-        ui,
-        |ui| {
-            changed |= ui.folder_picker(&mut config.output).changed();
-        },
-    );
     changed
 }
 
@@ -225,82 +225,84 @@ fn render_platform_config(
                 });
         },
     );
+    ui.add_space(8.0);
     ui.label("Game Dump");
-    ui.separator();
-    ui.end_row();
-    if platform == Platform::WiiU {
-        render_setting("Dump Type", "Blah blah", ui, |ui| {
-            if ui
-                .radio(matches!(config.dump, DumpType::Unpacked { .. }), "Unpacked")
-                .clicked()
-            {
-                config.dump = DumpType::Unpacked {
-                    host_path: Default::default(),
-                    content_dir: Default::default(),
-                    update_dir: Default::default(),
-                    aoc_dir: Default::default(),
-                };
-                changed = true;
-            }
-            if ui
-                .radio(matches!(config.dump, DumpType::ZArchive { .. }), "WUA")
-                .clicked()
-            {
-                config.dump = DumpType::ZArchive {
-                    content_dir: Default::default(),
-                    update_dir: Default::default(),
-                    aoc_dir: Default::default(),
-                    host_path: Default::default(),
-                };
-                changed = true;
-            }
-        });
-    }
-    match &mut config.dump {
-        DumpType::Unpacked {
-            host_path,
-            content_dir,
-            update_dir,
-            aoc_dir,
-        } => {
-            render_setting("Base Folder", "Blah blah", ui, |ui| {
+    ui.group(|ui| {
+        ui.allocate_space([ui.available_width(), -8.0].into());
+        if platform == Platform::WiiU {
+            render_setting("Dump Type", "Blah blah", ui, |ui| {
                 if ui
-                    .folder_picker(content_dir.get_or_insert_default())
-                    .changed()
+                    .radio(matches!(config.dump, DumpType::Unpacked { .. }), "Unpacked")
+                    .clicked()
                 {
+                    config.dump = DumpType::Unpacked {
+                        host_path: Default::default(),
+                        content_dir: Default::default(),
+                        update_dir: Default::default(),
+                        aoc_dir: Default::default(),
+                    };
                     changed = true;
-                    *host_path = "/".into();
+                }
+                if ui
+                    .radio(matches!(config.dump, DumpType::ZArchive { .. }), "WUA")
+                    .clicked()
+                {
+                    config.dump = DumpType::ZArchive {
+                        content_dir: Default::default(),
+                        update_dir: Default::default(),
+                        aoc_dir: Default::default(),
+                        host_path: Default::default(),
+                    };
+                    changed = true;
                 }
             });
-            if platform == Platform::WiiU {
-                render_setting("Update Folder", "Blah blah", ui, |ui| {
+        }
+        match &mut config.dump {
+            DumpType::Unpacked {
+                host_path,
+                content_dir,
+                update_dir,
+                aoc_dir,
+            } => {
+                render_setting("Base Folder", "Blah blah", ui, |ui| {
                     if ui
-                        .folder_picker(update_dir.get_or_insert_default())
+                        .folder_picker(content_dir.get_or_insert_default())
                         .changed()
                     {
                         changed = true;
                         *host_path = "/".into();
                     }
                 });
-            }
-            render_setting("DLC Folder", "Blah blah", ui, |ui| {
-                if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
-                    changed = true;
-                    *host_path = "/".into();
+                if platform == Platform::WiiU {
+                    render_setting("Update Folder", "Blah blah", ui, |ui| {
+                        if ui
+                            .folder_picker(update_dir.get_or_insert_default())
+                            .changed()
+                        {
+                            changed = true;
+                            *host_path = "/".into();
+                        }
+                    });
                 }
-            });
+                render_setting("DLC Folder", "Blah blah", ui, |ui| {
+                    if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
+                        changed = true;
+                        *host_path = "/".into();
+                    }
+                });
+            }
+            DumpType::ZArchive {
+                content_dir: _,
+                update_dir: _,
+                aoc_dir: _,
+                host_path,
+            } => {
+                render_setting("WUA Path", "Blah blah", ui, |ui| {
+                    changed |= ui.file_picker(host_path).changed();
+                });
+            }
         }
-        DumpType::ZArchive {
-            content_dir: _,
-            update_dir: _,
-            aoc_dir: _,
-            host_path,
-        } => {
-            render_setting("WUA Path", "Blah blah", ui, |ui| {
-                changed |= ui.file_picker(host_path).changed();
-            });
-        }
-    }
+    });
     changed |= render_deploy_config(&mut config.deploy_config, ui);
     changed
 }
@@ -315,50 +317,41 @@ impl App {
                 egui::CollapsingHeader::new("General")
                     .default_open(true)
                     .show(ui, |ui| {
-                        egui::Grid::new("general_settings")
-                            .num_columns(2)
-                            .spacing([8.0, 8.0])
-                            .show(ui, |ui| {
-                                render_setting("Current Mode", "Select whether to manage the Wii U or Switch version of the game", ui, |ui| {
-                                    ui.radio_value(
-                                        &mut settings.current_mode,
-                                        Platform::WiiU,
-                                        "Wii U",
-                                    );
-                                    ui.radio_value(
-                                        &mut settings.current_mode,
-                                        Platform::Switch,
-                                        "Switch",
-                                    );
-                                });
-                                render_setting(
-                                    "Storage Folder",
-                                    "UKMM will store mods, profiles, and similar data here.",
-                                    ui,
-                                    |ui| {
-                                        ui.folder_picker(&mut settings.storage_dir);
-                                    },
+                            render_setting("Current Mode", "Select whether to manage the Wii U or Switch version of the game", ui, |ui| {
+                                ui.radio_value(
+                                    &mut settings.current_mode,
+                                    Platform::WiiU,
+                                    "Wii U",
                                 );
-                                render_setting("Unpack Mods", "By default UKMM stores mods as ZIP files with ZSTD compression. Turn on this option to unpack them instead, which will improve performance at the cost of disk space.", ui, |ui| {
-                                    ui.add(Checkbox::new(&mut settings.unpack_mods, ""))
-                                });
-                                render_setting("Show Changelog", "Show a summary of recent changes after UKMM updates.", ui, |ui| {
-                                    ui.add(Checkbox::new(&mut settings.show_changelog, ""))
-                                });
+                                ui.radio_value(
+                                    &mut settings.current_mode,
+                                    Platform::Switch,
+                                    "Switch",
+                                );
+                            });
+                            render_setting(
+                                "Storage Folder",
+                                "UKMM will store mods, profiles, and similar data here.",
+                                ui,
+                                |ui| {
+                                    ui.folder_picker(&mut settings.storage_dir);
+                                },
+                            );
+                            render_setting("Unpack Mods", "By default UKMM stores mods as ZIP files with ZSTD compression. Turn on this option to unpack them instead, which will improve performance at the cost of disk space.", ui, |ui| {
+                                ui.add(Checkbox::new(&mut settings.unpack_mods, ""))
+                            });
+                            render_setting("Show Changelog", "Show a summary of recent changes after UKMM updates.", ui, |ui| {
+                                ui.add(Checkbox::new(&mut settings.show_changelog, ""))
                             });
                     });
                 egui::CollapsingHeader::new("Wii U Config")
                     .show(ui, |ui| {
-                        egui::Grid::new("wiiu_config").num_columns(2).spacing([8.0, 8.0]).show(ui, |ui| {
-                            wiiu_changed = render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
-                        });
+                        wiiu_changed = render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
                     });
                 egui::CollapsingHeader::new("Switch Config")
-                .show(ui, |ui| {
-                    egui::Grid::new("switch_config").num_columns(2).spacing([8.0, 8.0]).show(ui, |ui| {
+                    .show(ui, |ui| {
                         switch_changed = render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
                     });
-                });
             });
             switch_changed |= {
                 match (CONFIG.read().get(&Platform::Switch), self.temp_settings.switch_config.as_ref()) {

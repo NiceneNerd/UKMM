@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 use uk_manager::{mods::Mod, settings::Platform};
-use uk_mod::Meta;
+use uk_mod::{Meta, ModOptionGroup, OptionGroup};
 use uk_ui::{
     editor::EditableValue,
     egui::{self, text::LayoutJob, Align2, Context, Id, Layout, Response, RichText, TextStyle, Ui},
@@ -136,7 +136,38 @@ impl App {
         if let Some(ref folders) = self.opt_folders {
             egui::Window::new("Configure Mod Options")
                 .anchor(Align2::CENTER_CENTER, [0., 0.])
-                .show(ctx, |ui| {});
+                .show(ctx, |ui| {
+                    ui.allocate_ui_with_layout(
+                        [ui.available_width(), ui.spacing().interact_size.y].into(),
+                        Layout::right_to_left(Align::Center),
+                        |ui| {
+                            if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                                todo!()
+                            }
+                        },
+                    );
+                    let id = Id::new("opt-groups-");
+                    for (i, opt_group) in builder.meta.options.iter_mut().enumerate() {
+                        let group_name = if opt_group.name().is_empty() {
+                            "New Option Group"
+                        } else {
+                            opt_group.name()
+                        };
+                        egui::CollapsingHeader::new(group_name)
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label("Name");
+                                    opt_group.name_mut().edit_ui_with_id(ui, id.with(i));
+                                });
+                                ui.label("Description");
+                                ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
+                                    opt_group.description_mut(),
+                                ));
+                                ui.horizontal(|ui| {});
+                            });
+                    }
+                });
         }
     }
 

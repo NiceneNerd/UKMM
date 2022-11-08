@@ -67,6 +67,9 @@ pub trait ModOptionGroup {
     fn name(&self) -> &str;
     fn description(&self) -> &str;
     fn options(&self) -> &IndexSet<ModOption>;
+    fn name_mut(&mut self) -> &mut String;
+    fn description_mut(&mut self) -> &mut String;
+    fn options_mut(&mut self) -> &mut IndexSet<ModOption>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -87,6 +90,15 @@ impl ModOptionGroup for ExclusiveOptionGroup {
     fn options(&self) -> &IndexSet<ModOption> {
         &self.options
     }
+    fn name_mut(&mut self) -> &mut String {
+        &mut self.name
+    }
+    fn description_mut(&mut self) -> &mut String {
+        &mut self.description
+    }
+    fn options_mut(&mut self) -> &mut IndexSet<ModOption> {
+        &mut self.options
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -106,6 +118,15 @@ impl ModOptionGroup for MultipleOptionGroup {
     }
     fn options(&self) -> &IndexSet<ModOption> {
         &self.options
+    }
+    fn name_mut(&mut self) -> &mut String {
+        &mut self.name
+    }
+    fn description_mut(&mut self) -> &mut String {
+        &mut self.description
+    }
+    fn options_mut(&mut self) -> &mut IndexSet<ModOption> {
+        &mut self.options
     }
 }
 

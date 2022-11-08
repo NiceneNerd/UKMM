@@ -68,7 +68,7 @@ impl EditableValue for String {
     }
 }
 
-struct SmartStringWrapper<'a>(&'a mut smartstring::alias::String);
+pub struct SmartStringWrapper<'a>(pub &'a mut smartstring::alias::String);
 
 impl egui::TextBuffer for SmartStringWrapper<'_> {
     #[inline]
