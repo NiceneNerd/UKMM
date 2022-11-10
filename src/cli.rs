@@ -1,9 +1,10 @@
-use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
 use std::{
     io::{stdin, stdout, Write},
     path::{Path, PathBuf},
 };
+
+use anyhow::{Context, Result};
+use clap::{Parser, Subcommand};
 use uk_manager::{core, mods::LookupMod, settings};
 use uk_mod::{unpack::ModReader, Manifest};
 
@@ -23,12 +24,12 @@ pub enum Commands {
 #[clap(author, version, about, long_about = None)]
 pub struct Cli {
     #[clap(long)]
-    pub debug: bool,
+    pub debug:   bool,
     #[clap(subcommand)]
     pub command: Option<Commands>,
     /// Automatically deploy after running command (redunant with `deploy` command)
     #[clap(short, long)]
-    pub deploy: bool,
+    pub deploy:  bool,
 }
 
 macro_rules! input {
@@ -43,7 +44,7 @@ macro_rules! input {
 #[derive(Debug)]
 pub struct Runner {
     core: core::Manager,
-    cli: Cli,
+    cli:  Cli,
 }
 
 impl Runner {
@@ -62,13 +63,20 @@ impl Runner {
                 match uk_manager::mods::convert_gfx(path) {
                     Ok(path) => {
                         log::info!("Opening mod at {}", path.display());
-                        (ModReader::open(&path, vec![]).context("Failed to open converted mod")?, path)
-                    },
-                    Err(e2) => anyhow::bail!(
-                        "Could not open mod. Error when attempting to open as UKMM mod: {}. Error when attempting to open as legacy mod: {}.",
-                        e,
-                        e2
-                    )
+                        (
+                            ModReader::open(&path, vec![])
+                                .context("Failed to open converted mod")?,
+                            path,
+                        )
+                    }
+                    Err(e2) => {
+                        anyhow::bail!(
+                            "Could not open mod. Error when attempting to open as UKMM mod: {}. \
+                             Error when attempting to open as legacy mod: {}.",
+                            e,
+                            e2
+                        )
+                    }
                 }
             }
         };
@@ -171,6 +179,7 @@ impl Runner {
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+
     use uk_manager::settings::{self, DeployConfig, Platform};
     use uk_reader::ResourceReader;
 
@@ -189,7 +198,7 @@ mod tests {
                 .unwrap(),
             ),
             deploy_config: Some(DeployConfig {
-                auto: false,
+                auto:   false,
                 method: settings::DeployMethod::HardLink,
                 output: "/tmp/BreathOfTheWild_UKMM".into(),
             }),

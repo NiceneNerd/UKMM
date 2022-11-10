@@ -1,7 +1,8 @@
-use super::get_name;
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::*;
+
+use super::get_name;
 
 fn field_from_byml(
     ty: &Type,

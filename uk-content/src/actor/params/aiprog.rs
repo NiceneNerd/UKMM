@@ -1,15 +1,17 @@
+use std::collections::HashSet;
+
+use join_str::jstr;
+use roead::aamp::*;
+use serde::{Deserialize, Serialize};
+use uk_content_derive::ParamData;
+use uk_ui_derive::Editable;
+
 use crate::{
     actor::ParameterResource,
     prelude::*,
     util::{self, IndexMap},
     Result, UKError,
 };
-use join_str::jstr;
-use roead::aamp::*;
-use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use uk_content_derive::ParamData;
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable, ParamData)]
 pub struct AIDef {
@@ -243,15 +245,15 @@ impl Mergeable for ChildEntry {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct AIProgram {
-    pub demos: IndexMap<Name, ChildEntry>,
-    pub tree: IndexMap<String, AIEntry>,
+    pub demos:   IndexMap<Name, ChildEntry>,
+    pub tree:    IndexMap<String, AIEntry>,
     pub queries: IndexMap<String, ParameterList>,
 }
 
 impl Mergeable for AIProgram {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            demos: other
+            demos:   other
                 .demos
                 .iter()
                 .filter_map(|(k, v)| {
@@ -277,7 +279,7 @@ impl Mergeable for AIProgram {
                     }
                 })
                 .collect(),
-            tree: other
+            tree:    other
                 .tree
                 .iter()
                 .filter_map(|(k, v)| {
@@ -295,7 +297,7 @@ impl Mergeable for AIProgram {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            demos: {
+            demos:   {
                 let mut new = self.demos.clone();
                 for (k, v) in &diff.demos {
                     let merged = if let Some(entry) = new.get_mut(k) {
@@ -319,7 +321,7 @@ impl Mergeable for AIProgram {
                 }
                 new
             },
-            tree: {
+            tree:    {
                 let mut new = self.tree.clone();
                 for (k, v) in &diff.tree {
                     let merged = if let Some(entry) = new.get_mut(k) {
@@ -382,7 +384,8 @@ mod parse {
                                     .nth(idx - action_offset)
                                     .ok_or_else(|| {
                                         UKError::MissingAampKeyD(jstr!(
-                                            "AI program missing entry at {&lexical::to_string(idx)}"
+                                            "AI program missing entry at \
+                                             {&lexical::to_string(idx)}"
                                         ))
                                     })?,
                                 pio,
@@ -473,15 +476,14 @@ mod parse {
                 .list("Query")
                 .ok_or(UKError::MissingAampKey("AI program missing Query list"))?;
             Ok(Self {
-                tree: {
+                tree:    {
                     let child_indexes: HashSet<usize> = ai_list
                         .lists
                         .0
                         .values()
                         .filter_map(|ai| {
                             ai.object("ChildIdx").map(|ci| {
-                                ci.0
-                                    .values()
+                                ci.0.values()
                                     .flat_map(|i| i.as_int().map(|i| i as usize).ok())
                             })
                         })
@@ -502,9 +504,7 @@ mod parse {
                         .map(|root| -> Result<(String, AIEntry)> {
                             Ok((
                                 root.object("Def")
-                                    .ok_or(UKError::MissingAampKey(
-                                        "AI entry missing Def object",
-                                    ))?
+                                    .ok_or(UKError::MissingAampKey("AI entry missing Def object"))?
                                     .get("ClassName")
                                     .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
                                     .as_str()?
@@ -514,7 +514,7 @@ mod parse {
                         })
                         .collect::<Result<IndexMap<_, _>>>()?
                 },
-                demos: pio
+                demos:   pio
                     .object("DemoAIActionIdx")
                     .ok_or(UKError::MissingAampKey(
                         "AI program missing Demo action indexes",
@@ -534,17 +534,23 @@ mod parse {
                                         .nth(idx - action_offset)
                                         .ok_or_else(|| {
                                             UKError::MissingAampKeyD(jstr!(
-                                                "AI program missing entry at {&lexical::to_string(idx - action_offset)}"
+                                                "AI program missing entry at \
+                                                 {&lexical::to_string(idx - action_offset)}"
                                             ))
                                         })?,
                                     pio,
                                 )?)
                             } else {
-                                ChildEntry::AI(plist_to_ai(ai_list.lists.0.values().nth(idx).ok_or_else(|| {
-                                    UKError::MissingAampKeyD(jstr!(
-                                        "AI program missing entry at {&lexical::to_string(idx)}"
-                                    ))
-                                })?, pio, action_offset)?)
+                                ChildEntry::AI(plist_to_ai(
+                                    ai_list.lists.0.values().nth(idx).ok_or_else(|| {
+                                        UKError::MissingAampKeyD(jstr!(
+                                            "AI program missing entry at \
+                                             {&lexical::to_string(idx)}"
+                                        ))
+                                    })?,
+                                    pio,
+                                    action_offset,
+                                )?)
                             },
                         ))
                     })
@@ -561,7 +567,8 @@ mod parse {
                                 .ok_or(UKError::MissingAampKey("Query missing Def object"))?
                                 .get("ClassName")
                                 .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
-                                .as_str()?.into(),
+                                .as_str()?
+                                .into(),
                             query,
                         ))
                     })
@@ -579,9 +586,11 @@ mod write {
         1 + ai
             .children
             .values()
-            .filter_map(|c| match c {
-                ChildEntry::AI(ai) => Some(count_ais(ai)),
-                ChildEntry::Action(_) => None,
+            .filter_map(|c| {
+                match c {
+                    ChildEntry::AI(ai) => Some(count_ais(ai)),
+                    ChildEntry::Action(_) => None,
+                }
             })
             .sum::<usize>()
     }
@@ -713,69 +722,54 @@ mod write {
                 .unwrap()
                 .0
                 .extend(demos.into_iter().map(|(k, demo_child)| {
-                    (
-                        k,
-                        match demo_child {
-                            ChildEntry::AI(ai) => {
-                                let idx = self.ai_to_plist(ai);
-                                Parameter::Int(idx as i32)
-                            }
-                            ChildEntry::Action(action) => {
-                                let idx = self.action_to_plist(action);
-                                Parameter::Int((idx + self.action_offset) as i32)
-                            }
-                        },
-                    )
+                    (k, match demo_child {
+                        ChildEntry::AI(ai) => {
+                            let idx = self.ai_to_plist(ai);
+                            Parameter::Int(idx as i32)
+                        }
+                        ChildEntry::Action(action) => {
+                            let idx = self.action_to_plist(action);
+                            Parameter::Int((idx + self.action_offset) as i32)
+                        }
+                    })
                 }));
-            pio.set_list(
-                "AI",
-                ParameterList {
-                    lists: self
-                        .ais
-                        .iter()
-                        .enumerate()
-                        .map(|(i, p)| (jstr!("AI_{&lexical::to_string(i)}"), p.clone()))
-                        .collect(),
-                    objects: ParameterObjectMap::default(),
-                },
-            );
-            pio.set_list(
-                "Action",
-                ParameterList {
-                    lists: self
-                        .actions
-                        .iter()
-                        .enumerate()
-                        .map(|(i, p)| (jstr!("Action_{&lexical::to_string(i)}"), p.clone()))
-                        .collect(),
-                    objects: ParameterObjectMap::default(),
-                },
-            );
-            pio.set_list(
-                "Behavior",
-                ParameterList {
-                    lists: self
-                        .behaviors
-                        .iter()
-                        .enumerate()
-                        .map(|(i, p)| (jstr!("Behavior_{&lexical::to_string(i)}"), p.clone()))
-                        .collect(),
-                    objects: ParameterObjectMap::default(),
-                },
-            );
-            pio.set_list(
-                "Query",
-                ParameterList {
-                    lists: self
-                        .aiprog
-                        .queries
-                        .values()
-                        .enumerate()
-                        .map(|(i, p)| (jstr!("Query_{&lexical::to_string(i)}"), p.clone()))
-                        .collect(),
-                    objects: ParameterObjectMap::default(),
-                },
-            );
+            pio.set_list("AI", ParameterList {
+                lists:   self
+                    .ais
+                    .iter()
+                    .enumerate()
+                    .map(|(i, p)| (jstr!("AI_{&lexical::to_string(i)}"), p.clone()))
+                    .collect(),
+                objects: ParameterObjectMap::default(),
+            });
+            pio.set_list("Action", ParameterList {
+                lists:   self
+                    .actions
+                    .iter()
+                    .enumerate()
+                    .map(|(i, p)| (jstr!("Action_{&lexical::to_string(i)}"), p.clone()))
+                    .collect(),
+                objects: ParameterObjectMap::default(),
+            });
+            pio.set_list("Behavior", ParameterList {
+                lists:   self
+                    .behaviors
+                    .iter()
+                    .enumerate()
+                    .map(|(i, p)| (jstr!("Behavior_{&lexical::to_string(i)}"), p.clone()))
+                    .collect(),
+                objects: ParameterObjectMap::default(),
+            });
+            pio.set_list("Query", ParameterList {
+                lists:   self
+                    .aiprog
+                    .queries
+                    .values()
+                    .enumerate()
+                    .map(|(i, p)| (jstr!("Query_{&lexical::to_string(i)}"), p.clone()))
+                    .collect(),
+                objects: ParameterObjectMap::default(),
+            });
             pio
         }
     }
@@ -809,8 +803,9 @@ impl Resource for AIProgram {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::aamp::*;
+
+    use crate::prelude::*;
 
     #[test]
     fn serde() {

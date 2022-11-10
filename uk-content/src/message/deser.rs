@@ -1,5 +1,6 @@
-use super::*;
 use std::marker::PhantomData;
+
+use super::*;
 
 impl Serialize for MessagePack {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

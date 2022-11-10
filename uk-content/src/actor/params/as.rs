@@ -1,10 +1,12 @@
-use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
+use std::collections::BTreeMap;
+
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
+
+use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable, ParamData)]
 pub struct ElementParams {
@@ -24,9 +26,9 @@ pub struct ElementParams {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct Element {
-    pub params: ElementParams,
+    pub params:   ElementParams,
     pub children: Option<BTreeMap<usize, Element>>,
-    pub extend: Option<ParameterList>,
+    pub extend:   Option<ParameterList>,
 }
 
 impl Element {
@@ -35,7 +37,7 @@ impl Element {
         // is confirmed to exist.
         let element_list = unsafe { pio.list("Elements").unwrap_unchecked() };
         Ok(Self {
-            params: list
+            params:   list
                 .object("Parameters")
                 .ok_or(UKError::MissingAampKey("AS node missing parameters"))?
                 .try_into()?,
@@ -50,16 +52,12 @@ impl Element {
                             Ok((
                                 idx,
                                 Element::try_from_plist(
-                                    element_list
-                                        .lists
-                                        .0
-                                        .values()
-                                        .nth(idx)
-                                        .ok_or_else(|| {
-                                            UKError::MissingAampKeyD(jstr!(
-                                                "AS control node missing child at index {&lexical::to_string(idx)}"
-                                            ))
-                                        })?,
+                                    element_list.lists.0.values().nth(idx).ok_or_else(|| {
+                                        UKError::MissingAampKeyD(jstr!(
+                                            "AS control node missing child at index \
+                                             {&lexical::to_string(idx)}"
+                                        ))
+                                    })?,
                                     pio,
                                 )?,
                             ))
@@ -67,7 +65,7 @@ impl Element {
                         .collect::<Result<_>>()
                 })
                 .transpose()?,
-            extend: list.list("Extend").cloned(),
+            extend:   list.list("Extend").cloned(),
         })
     }
 }
@@ -75,7 +73,7 @@ impl Element {
 impl Mergeable for Element {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            params: other.params.clone(),
+            params:   other.params.clone(),
             children: other.children.as_ref().map(|other_children| {
                 self.children
                     .as_ref()
@@ -97,7 +95,7 @@ impl Mergeable for Element {
                     })
                     .unwrap_or_else(|| other_children.clone())
             }),
-            extend: other.extend.as_ref().map(|other_extend| {
+            extend:   other.extend.as_ref().map(|other_extend| {
                 self.extend
                     .as_ref()
                     .map(|self_extend| util::diff_plist(self_extend, other_extend))
@@ -108,7 +106,7 @@ impl Mergeable for Element {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            params: diff.params.clone(),
+            params:   diff.params.clone(),
             children: diff.children.as_ref().map(|diff_children| {
                 self.children
                     .as_ref()
@@ -126,7 +124,7 @@ impl Mergeable for Element {
                     })
                     .unwrap_or_else(|| diff_children.clone())
             }),
-            extend: diff.extend.as_ref().map(|diff_extend| {
+            extend:   diff.extend.as_ref().map(|diff_extend| {
                 self.extend
                     .as_ref()
                     .map(|self_extend| util::merge_plist(self_extend, diff_extend))
@@ -159,14 +157,14 @@ impl TryFrom<&ParameterIO> for AS {
 #[derive(Debug)]
 struct ParameterIOBuilder {
     as_val: AS,
-    done: Vec<Element>,
+    done:   Vec<Element>,
 }
 
 impl ParameterIOBuilder {
     fn new(val: AS) -> Self {
         Self {
             as_val: val,
-            done: Vec::new(),
+            done:   Vec::new(),
         }
     }
 
@@ -200,7 +198,7 @@ impl ParameterIOBuilder {
                         )
                     }))
                     .collect(),
-                lists: element
+                lists:   element
                     .extend
                     .iter()
                     .map(|extend| ("Extend", extend.clone()))
@@ -277,8 +275,9 @@ impl Resource for AS {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::aamp::*;
+
+    use crate::prelude::*;
 
     #[test]
     fn serde() {
@@ -348,7 +347,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/AS/Guardian_MaterialDefault.bas",
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/AS/Guardian_MaterialDefault.\
+             bas",
         );
         assert!(super::AS::path_matches(path));
     }

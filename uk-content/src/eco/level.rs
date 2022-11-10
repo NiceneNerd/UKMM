@@ -1,11 +1,12 @@
+use roead::byml::Byml;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     prelude::*,
     util::{bhash, DeleteMap},
     Result, UKError,
 };
-use roead::byml::Byml;
-use serde::{Deserialize, Serialize};
-use uk_ui_derive::Editable;
 
 type Series = DeleteMap<String, f32>;
 
@@ -33,10 +34,10 @@ impl Mergeable for WeaponSeries {
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct LevelSensor {
-    pub enemy: DeleteMap<String, Series>,
-    pub flag: Series,
+    pub enemy:   DeleteMap<String, Series>,
+    pub flag:    Series,
     pub setting: Series,
-    pub weapon: DeleteMap<String, DeleteMap<String, WeaponSeries>>,
+    pub weapon:  DeleteMap<String, DeleteMap<String, WeaponSeries>>,
 }
 
 impl TryFrom<&Byml> for LevelSensor {
@@ -45,7 +46,7 @@ impl TryFrom<&Byml> for LevelSensor {
     fn try_from(byml: &Byml) -> Result<Self> {
         let hash = byml.as_hash()?;
         Ok(Self {
-            enemy: hash
+            enemy:   hash
                 .get("enemy")
                 .ok_or(UKError::MissingBymlKey(
                     "Level sensor missing enemy section",
@@ -91,7 +92,7 @@ impl TryFrom<&Byml> for LevelSensor {
                     ))
                 })
                 .collect::<Result<_>>()?,
-            flag: hash
+            flag:    hash
                 .get("flag")
                 .ok_or(UKError::MissingBymlKey("Level sensor missing flag section"))?
                 .as_array()?
@@ -122,7 +123,7 @@ impl TryFrom<&Byml> for LevelSensor {
                 .iter()
                 .map(|(k, v)| -> Result<(String, f32)> { Ok((k.clone(), v.as_float()?)) })
                 .collect::<Result<_>>()?,
-            weapon: hash
+            weapon:  hash
                 .get("weapon")
                 .ok_or(UKError::MissingBymlKey(
                     "Level sensor missing weapon section",
@@ -149,49 +150,48 @@ impl TryFrom<&Byml> for LevelSensor {
                             ))?
                             .as_string()?
                             .clone();
-                            series_map.insert(
-                                actor_type,
-                                WeaponSeries {
-                                    actors: weapon
-                                        .get("actors")
-                                        .ok_or(UKError::MissingBymlKey(
-                                            "Level sensor weapon entry missing actor list",
-                                        ))?
-                                        .as_array()?
-                                        .iter()
-                                        .map(|actor| -> Result<(String, (i32, f32))> {
-                                            let actor = actor.as_hash()?;
-                                            Ok((
-                                                actor
-                                                    .get("name")
-                                                    .ok_or(UKError::MissingBymlKey(
-                                                        "Level sensor weapons actor entry missing name",
-                                                    ))?
-                                                    .as_string()?
-                                                    .clone(),
-                                                (
-                                                    actor
-                                                        .get("plus")
-                                                        .ok_or(UKError::MissingBymlKey(
-                                                            "Level sensor weapons actor entry missing plus value",
-                                                        ))?
-                                                        .as_i32()?,
-                                                    actor
-                                                        .get("value")
-                                                        .ok_or(UKError::MissingBymlKey(
-                                                            "Level sensor weapons actor entry missing value",
-                                                        ))?
-                                                        .as_float()?,
-                                                ),
-                                            ))
-                                        })
-                                        .collect::<Result<_>>()?,
-                                    not_rank_up: weapon
-                                        .get("not_rank_up")
-                                        .and_then(|v| v.as_bool().ok())
-                                        .unwrap_or_default(),
-                                },
-                            );
+                        series_map.insert(actor_type, WeaponSeries {
+                            actors: weapon
+                                .get("actors")
+                                .ok_or(UKError::MissingBymlKey(
+                                    "Level sensor weapon entry missing actor list",
+                                ))?
+                                .as_array()?
+                                .iter()
+                                .map(|actor| -> Result<(String, (i32, f32))> {
+                                    let actor = actor.as_hash()?;
+                                    Ok((
+                                        actor
+                                            .get("name")
+                                            .ok_or(UKError::MissingBymlKey(
+                                                "Level sensor weapons actor entry missing name",
+                                            ))?
+                                            .as_string()?
+                                            .clone(),
+                                        (
+                                            actor
+                                                .get("plus")
+                                                .ok_or(UKError::MissingBymlKey(
+                                                    "Level sensor weapons actor entry missing \
+                                                     plus value",
+                                                ))?
+                                                .as_i32()?,
+                                            actor
+                                                .get("value")
+                                                .ok_or(UKError::MissingBymlKey(
+                                                    "Level sensor weapons actor entry missing \
+                                                     value",
+                                                ))?
+                                                .as_float()?,
+                                        ),
+                                    ))
+                                })
+                                .collect::<Result<_>>()?,
+                            not_rank_up: weapon
+                                .get("not_rank_up")
+                                .and_then(|v| v.as_bool().ok())
+                                .unwrap_or_default(),
+                        });
                         Ok(weapons)
                     },
                 )?,
@@ -265,19 +265,19 @@ impl From<LevelSensor> for Byml {
 impl Mergeable for LevelSensor {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            enemy: self.enemy.deep_diff(&other.enemy),
-            flag: self.flag.diff(&other.flag),
+            enemy:   self.enemy.deep_diff(&other.enemy),
+            flag:    self.flag.diff(&other.flag),
             setting: self.setting.diff(&other.setting),
-            weapon: self.weapon.deep_diff(&other.weapon),
+            weapon:  self.weapon.deep_diff(&other.weapon),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            enemy: self.enemy.deep_merge(&diff.enemy),
-            flag: self.flag.merge(&diff.flag),
+            enemy:   self.enemy.deep_merge(&diff.enemy),
+            flag:    self.flag.merge(&diff.flag),
             setting: self.setting.merge(&diff.setting),
-            weapon: self.weapon.deep_merge(&diff.weapon),
+            weapon:  self.weapon.deep_merge(&diff.weapon),
         }
     }
 }
@@ -300,8 +300,9 @@ single_path!(LevelSensor, "Pack/Bootup.pack//Ecosystem/LevelSensor.sbyml");
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_sensor() -> Byml {
         Byml::from_binary(

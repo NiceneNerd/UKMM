@@ -1,8 +1,8 @@
-use crate::prelude::Mergeable;
+use std::{borrow::Borrow, collections::BTreeMap, hash::Hash};
+
 use itertools::Itertools;
-use std::borrow::Borrow;
-use std::collections::BTreeMap;
-use std::hash::Hash;
+
+use crate::prelude::Mergeable;
 mod ui;
 
 pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
@@ -50,6 +50,7 @@ impl<T: Clone + PartialEq> PartialEq for DeleteVec<T> {
 
 impl<T: Clone + PartialEq> IntoIterator for DeleteVec<T> {
     type Item = T;
+
     type IntoIter = impl Iterator<Item = T>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -160,6 +161,7 @@ pub struct DeleteSet<T: DeleteKey>(IndexMap<T, bool>);
 
 impl<T: DeleteKey> IntoIterator for DeleteSet<T> {
     type Item = T;
+
     type IntoIter = impl Iterator<Item = T>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -279,6 +281,7 @@ pub struct SortedDeleteSet<T: DeleteKey + Ord>(BTreeMap<T, bool>);
 
 impl<T: DeleteKey + Ord> IntoIterator for SortedDeleteSet<T> {
     type Item = T;
+
     type IntoIter = impl Iterator<Item = T>;
 
     fn into_iter(self) -> Self::IntoIter {

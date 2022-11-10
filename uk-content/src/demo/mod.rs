@@ -1,7 +1,8 @@
-use crate::prelude::*;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
+
+use crate::prelude::*;
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct Demo(pub ParameterIO);
@@ -42,8 +43,9 @@ impl Resource for Demo {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::aamp::ParameterIO;
+
+    use crate::prelude::*;
 
     fn load_demo() -> ParameterIO {
         ParameterIO::from_binary(&std::fs::read("test/Demo/Demo005_0.bdemo").unwrap()).unwrap()

@@ -1,18 +1,19 @@
+use join_str::jstr;
+use roead::{aamp::*, byml::Byml};
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
     util::{self, DeleteSet},
     Result, UKError,
 };
-use join_str::jstr;
-use roead::{aamp::*, byml::Byml};
-use serde::{Deserialize, Serialize};
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ActorLink {
     pub targets: ParameterObject,
-    pub tags: Option<DeleteSet<String>>,
+    pub tags:    Option<DeleteSet<String>>,
 }
 
 impl TryFrom<&ParameterIO> for ActorLink {
@@ -24,7 +25,7 @@ impl TryFrom<&ParameterIO> for ActorLink {
                 .object("LinkTarget")
                 .ok_or(UKError::MissingAampKey("Actor link missing link targets"))?
                 .clone(),
-            tags: pio.object("Tags").map(|tags| {
+            tags:    pio.object("Tags").map(|tags| {
                 tags.0
                     .values()
                     .filter_map(|v| v.as_str().ok().map(|s| (s.into(), false)))
@@ -76,7 +77,7 @@ impl Mergeable for ActorLink {
     fn diff(&self, other: &Self) -> Self {
         Self {
             targets: util::diff_pobj(&self.targets, &other.targets),
-            tags: other.tags.as_ref().map(|diff_tags| {
+            tags:    other.tags.as_ref().map(|diff_tags| {
                 if let Some(self_tags) = self.tags.as_ref() {
                     diff_tags
                         .iter()
@@ -111,7 +112,7 @@ impl Mergeable for ActorLink {
                 .chain(other.targets.0.iter())
                 .map(|(k, v)| (*k, v.clone()))
                 .collect(),
-            tags: {
+            tags:    {
                 if let Some(base_tags) = &self.tags {
                     if let Some(other_tags) = &other.tags {
                         Some(base_tags.merge(other_tags))
@@ -282,7 +283,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/ActorLink/Enemy_Guardian_A.bxml",
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/ActorLink/Enemy_Guardian_A.\
+             bxml",
         );
         assert!(super::ActorLink::path_matches(path));
     }

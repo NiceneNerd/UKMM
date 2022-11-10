@@ -1,3 +1,8 @@
+use join_str::jstr;
+use roead::aamp::*;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     actor::{InfoSource, ParameterResource},
     constants::{Time, Weather},
@@ -5,10 +10,6 @@ use crate::{
     util::{params, DeleteSet},
     Result, UKError,
 };
-use join_str::jstr;
-use roead::aamp::*;
-use serde::{Deserialize, Serialize};
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct LifeCondition {
@@ -478,14 +479,18 @@ mod tests {
         let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
         let mut info = roead::byml::Hash::default();
         lifecondition.update_info(&mut info).unwrap();
-        assert!(info["invalidTimes"]
-            .as_array()
-            .unwrap()
-            .contains(&Byml::String("Morning_B".into())));
-        assert!(info["invalidWeathers"]
-            .as_array()
-            .unwrap()
-            .contains(&Byml::String("ThunderRain".into())));
+        assert!(
+            info["invalidTimes"]
+                .as_array()
+                .unwrap()
+                .contains(&Byml::String("Morning_B".into()))
+        );
+        assert!(
+            info["invalidWeathers"]
+                .as_array()
+                .unwrap()
+                .contains(&Byml::String("ThunderRain".into()))
+        );
         assert_eq!(info["traverseDist"], Byml::Float(0.0));
         assert_eq!(info["yLimitAlgo"], Byml::String("NoLimit".into()));
     }
@@ -493,7 +498,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/LifeCondition/Enemy_Guardian_A.blifecondition",
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/LifeCondition/\
+             Enemy_Guardian_A.blifecondition",
         );
         assert!(super::LifeCondition::path_matches(path));
     }

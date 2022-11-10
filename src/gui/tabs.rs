@@ -1,9 +1,10 @@
-use super::{visuals, Tabs};
 use eframe::epaint::text::TextWrapping;
 use egui_dock::{NodeIndex, TabViewer, Tree};
 use uk_ui::egui::{
     self, text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText,
 };
+
+use super::{visuals, Tabs};
 
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Package, Tabs::Settings]);
@@ -100,17 +101,31 @@ impl TabViewer for super::App {
                                 });
                                 if !config.auto || self.core.deploy_manager().pending() {
                                     ui.add_space(4.);
-                                    ui.with_layout(Layout::from_main_dir_and_cross_align(egui::Direction::BottomUp, Align::Center), |ui| {
-                                        egui::Frame::none().show(ui, |ui| {
-                                            if ui.add_enabled(pending, Button::new("Deploy")).clicked()
-                                            {
-                                                self.do_update(super::Message::Deploy);
-                                            }
-                                            if config.auto {
-                                                ui.label(RichText::new("Auto deploy incomplete, please deploy manually").color(visuals::RED));
-                                            }
-                                        });
-                                    });
+                                    ui.with_layout(
+                                        Layout::from_main_dir_and_cross_align(
+                                            egui::Direction::BottomUp,
+                                            Align::Center,
+                                        ),
+                                        |ui| {
+                                            egui::Frame::none().show(ui, |ui| {
+                                                if ui
+                                                    .add_enabled(pending, Button::new("Deploy"))
+                                                    .clicked()
+                                                {
+                                                    self.do_update(super::Message::Deploy);
+                                                }
+                                                if config.auto {
+                                                    ui.label(
+                                                        RichText::new(
+                                                            "Auto deploy incomplete, please \
+                                                             deploy manually",
+                                                        )
+                                                        .color(visuals::RED),
+                                                    );
+                                                }
+                                            });
+                                        },
+                                    );
                                 }
                             });
                         });

@@ -1,15 +1,17 @@
+use std::collections::BTreeMap;
+
+use join_str::jstr;
+use roead::aamp::*;
+use serde::{Deserialize, Serialize};
+use uk_content_derive::ParamData;
+use uk_ui_derive::Editable;
+
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
     util::{self, params, pobjs},
     Result, UKError,
 };
-use join_str::jstr;
-use roead::aamp::*;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use uk_content_derive::ParamData;
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable, ParamData)]
 pub struct ContactInfoItem {
@@ -22,11 +24,12 @@ pub struct ContactInfoItem {
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ContactInfo {
     pub contact_point_info: Option<Vec<ContactInfoItem>>,
-    pub collision_info: Option<Vec<ContactInfoItem>>,
+    pub collision_info:     Option<Vec<ContactInfoItem>>,
 }
 
 impl TryFrom<&ParameterList> for ContactInfo {
     type Error = UKError;
+
     fn try_from(list: &ParameterList) -> Result<Self> {
         let point_count = list
             .objects
@@ -58,7 +61,7 @@ impl TryFrom<&ParameterList> for ContactInfo {
                     })
                     .collect::<Result<_>>()?,
             ),
-            collision_info: Some(
+            collision_info:     Some(
                 (0..collision_count)
                     .map(|i| -> Result<ContactInfoItem> {
                         list.object(&jstr!("CollisionInfo_{&lexical::to_string(i)}"))
@@ -133,7 +136,7 @@ impl Mergeable for ContactInfo {
             } else {
                 None
             },
-            collision_info: if other.collision_info != self.collision_info {
+            collision_info:     if other.collision_info != self.collision_info {
                 other.collision_info.clone()
             } else {
                 None
@@ -148,7 +151,7 @@ impl Mergeable for ContactInfo {
                 .as_ref()
                 .or(self.contact_point_info.as_ref())
                 .cloned(),
-            collision_info: diff
+            collision_info:     diff
                 .collision_info
                 .as_ref()
                 .or(self.collision_info.as_ref())
@@ -160,11 +163,12 @@ impl Mergeable for ContactInfo {
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct CharacterController {
     pub header: ParameterObject,
-    pub forms: BTreeMap<usize, ParameterList>,
+    pub forms:  BTreeMap<usize, ParameterList>,
 }
 
 impl TryFrom<&ParameterList> for CharacterController {
     type Error = UKError;
+
     fn try_from(list: &ParameterList) -> Result<Self> {
         Ok(Self {
             header: list
@@ -174,7 +178,7 @@ impl TryFrom<&ParameterList> for CharacterController {
                     "Physics character controller missing header",
                 ))?
                 .clone(),
-            forms: list.lists.0.values().cloned().enumerate().collect(),
+            forms:  list.lists.0.values().cloned().enumerate().collect(),
         })
     }
 }
@@ -183,7 +187,7 @@ impl From<CharacterController> for ParameterList {
     fn from(val: CharacterController) -> Self {
         Self {
             objects: pobjs!(2311816730 => val.header),
-            lists: val
+            lists:   val
                 .forms
                 .into_iter()
                 .map(|(i, form)| (jstr!("Form_{&lexical::to_string(i)}"), form))
@@ -196,14 +200,14 @@ impl Mergeable for CharacterController {
     fn diff(&self, other: &Self) -> Self {
         Self {
             header: util::diff_pobj(&self.header, &other.header),
-            forms: util::simple_index_diff(&self.forms, &other.forms),
+            forms:  util::simple_index_diff(&self.forms, &other.forms),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
             header: util::merge_pobj(&self.header, &diff.header),
-            forms: util::simple_index_merge(&self.forms, &diff.forms),
+            forms:  util::simple_index_merge(&self.forms, &diff.forms),
         }
     }
 }
@@ -217,6 +221,7 @@ pub struct Cloth {
 
 impl TryFrom<&ParameterList> for Cloth {
     type Error = UKError;
+
     fn try_from(list: &ParameterList) -> Result<Self> {
         let header = list
             .object("ClothHeader")
@@ -327,6 +332,7 @@ pub struct Physics {
 
 impl TryFrom<&ParameterIO> for Physics {
     type Error = UKError;
+
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         let param_set = pio
             .list("ParamSet")
@@ -755,7 +761,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/Physics/Npc_TripMaster_00.bphysics",
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/Physics/Npc_TripMaster_00.\
+             bphysics",
         );
         assert!(super::Physics::path_matches(path));
     }

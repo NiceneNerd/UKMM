@@ -1,10 +1,13 @@
+use std::{hash::Hash, ops::DerefMut, sync::Arc};
+
+use egui::{mutex::RwLock, Align, Id, Layout, Response, Ui};
+
 use super::EditableDisplay;
 use crate::{icons::IconButtonExt, visuals};
-use egui::{mutex::RwLock, Align, Id, Layout, Response, Ui};
-use std::{hash::Hash, ops::DerefMut, sync::Arc};
 
 impl super::EditableValue for roead::byml::Byml {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         let id = Id::new(&self);
         self.edit_ui_with_id(ui, id)

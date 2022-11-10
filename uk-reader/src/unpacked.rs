@@ -1,14 +1,16 @@
-use crate::{ROMError, Result};
+use std::path::{Path, PathBuf};
+
 use fs_err as fs;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+
+use crate::{ROMError, Result};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Unpacked {
-    host_path: PathBuf,
+    host_path:   PathBuf,
     content_dir: Option<PathBuf>,
-    update_dir: Option<PathBuf>,
-    aoc_dir: Option<PathBuf>,
+    update_dir:  Option<PathBuf>,
+    aoc_dir:     Option<PathBuf>,
 }
 
 impl Unpacked {
@@ -63,7 +65,7 @@ impl Unpacked {
             }
         }
         Ok(Self {
-            host_path: unsafe {
+            host_path:   unsafe {
                 common_path::common_path_all(
                     content_dir
                         .as_ref()
@@ -82,8 +84,8 @@ impl Unpacked {
                 .unwrap_unchecked()
             },
             content_dir: content_dir.map(|content| content.to_path_buf()),
-            update_dir: update_dir.map(|update| update.to_path_buf()),
-            aoc_dir: aoc_dir.map(|aoc| aoc.to_path_buf()),
+            update_dir:  update_dir.map(|update| update.to_path_buf()),
+            aoc_dir:     aoc_dir.map(|aoc| aoc.to_path_buf()),
         })
     }
 }

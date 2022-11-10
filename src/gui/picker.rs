@@ -1,10 +1,14 @@
-use super::{visuals, App, FocusedPane, Message};
+use std::path::{Path, PathBuf};
+
 use fs_err as fs;
 use im::Vector;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
-use uk_ui::egui::{self, Button, Key, Ui, Vec2};
-use uk_ui::icons::{get_icon, Icon, IconButtonExt};
+use uk_ui::{
+    egui::{self, Button, Key, Ui, Vec2},
+    icons::{get_icon, Icon, IconButtonExt},
+};
+
+use super::{visuals, App, FocusedPane, Message};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct FilePickerState {

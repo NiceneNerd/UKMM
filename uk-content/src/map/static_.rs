@@ -1,12 +1,14 @@
+use std::collections::BTreeMap;
+
+use roead::byml::Byml;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     prelude::*,
     util::{DeleteMap, DeleteVec},
     Result, UKError,
 };
-use roead::byml::Byml;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize, Editable)]
 pub struct EntryPos {
@@ -17,7 +19,7 @@ pub struct EntryPos {
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct Static {
-    pub general: BTreeMap<String, DeleteVec<Byml>>,
+    pub general:   BTreeMap<String, DeleteVec<Byml>>,
     pub start_pos: DeleteMap<String, DeleteMap<String, EntryPos>>,
 }
 
@@ -66,25 +68,19 @@ impl TryFrom<&Byml> for Static {
                             .map(|state| -> Result<String> { Ok(state.as_string()?.clone()) })
                             .transpose()?;
                         if let Some(map_entries) = entry_map.get_mut(&map) {
-                            map_entries.insert(
-                                pos_name,
-                                EntryPos {
-                                    rotate,
-                                    translate,
-                                    player_state,
-                                },
-                            );
+                            map_entries.insert(pos_name, EntryPos {
+                                rotate,
+                                translate,
+                                player_state,
+                            });
                         } else {
                             entry_map.insert(
                                 map,
-                                [(
-                                    pos_name,
-                                    EntryPos {
-                                        rotate,
-                                        translate,
-                                        player_state,
-                                    },
-                                )]
+                                [(pos_name, EntryPos {
+                                    rotate,
+                                    translate,
+                                    player_state,
+                                })]
                                 .into_iter()
                                 .collect(),
                             );
@@ -92,7 +88,7 @@ impl TryFrom<&Byml> for Static {
                         Ok(entry_map)
                     },
                 )?,
-            general: byml
+            general:   byml
                 .as_hash()?
                 .iter()
                 .filter(|(k, _)| k.as_str() != "StartPos")
@@ -144,7 +140,7 @@ impl From<Static> for Byml {
 impl Mergeable for Static {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            general: other
+            general:   other
                 .general
                 .iter()
                 .filter_map(|(key, diff_entries)| {
@@ -165,7 +161,7 @@ impl Mergeable for Static {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            general: self
+            general:   self
                 .general
                 .iter()
                 .map(|(key, self_entries)| {
@@ -199,8 +195,9 @@ impl Resource for Static {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_cdungeon_static() -> Byml {
         Byml::from_binary(

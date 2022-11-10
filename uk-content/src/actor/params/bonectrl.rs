@@ -1,18 +1,20 @@
+use std::collections::HashSet;
+
+use join_str::jstr;
+use roead::aamp::*;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     actor::ParameterResource,
     prelude::*,
     util::{params, plists, pobjs, DeleteSet, IndexMap},
     Result, UKError,
 };
-use join_str::jstr;
-use roead::aamp::*;
-use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct BoneControl {
-    pub objects: ParameterObjectMap,
+    pub objects:     ParameterObjectMap,
     pub bone_groups: IndexMap<String64, DeleteSet<String64>>,
 }
 
@@ -29,7 +31,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         Ok(Self {
-            objects: pio.objects().clone(),
+            objects:     pio.objects().clone(),
             bone_groups: pio
                 .list("BoneGroups")
                 .ok_or(UKError::MissingAampKey("Bone control missing BoneGroups"))?
@@ -66,7 +68,7 @@ impl From<BoneControl> for ParameterIO {
         Self {
             param_root: ParameterList {
                 objects: val.objects,
-                lists: plists!(
+                lists:   plists!(
                     "BoneGroups" => ParameterList {
                         lists: val
                             .bone_groups
@@ -106,7 +108,7 @@ impl From<BoneControl> for ParameterIO {
 impl Mergeable for BoneControl {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            objects: crate::util::diff_plist(
+            objects:     crate::util::diff_plist(
                 &ParameterList {
                     objects: self.objects.clone(),
                     ..Default::default()
@@ -137,7 +139,7 @@ impl Mergeable for BoneControl {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            objects: crate::util::merge_plist(
+            objects:     crate::util::merge_plist(
                 &ParameterList {
                     objects: self.objects.clone(),
                     ..Default::default()
@@ -265,7 +267,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/BoneControl/Npc_TripMaster_00.bbonectrl",
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/BoneControl/\
+             Npc_TripMaster_00.bbonectrl",
         );
         assert!(super::BoneControl::path_matches(path));
     }

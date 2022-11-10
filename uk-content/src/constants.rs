@@ -1,7 +1,9 @@
-use crate::UKError;
-use serde::{Deserialize, Serialize};
 use std::fmt;
+
+use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
+
+use crate::UKError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Editable)]
 pub enum Weather {

@@ -1,6 +1,7 @@
-use crate::prelude::Endian;
 use once_cell::sync::Lazy;
 use xxhash_rust::xxh3::xxh3_64;
+
+use crate::prelude::Endian;
 
 static HASH_BIN_U: &[u8] = include_bytes!("../data/hashes_u.bin");
 static HASH_BIN_NX: &[u8] = include_bytes!("../data/hashes_nx.bin");
@@ -16,7 +17,8 @@ impl ROMHashTable {
     }
 
     fn parse(data: &[u8]) -> Self {
-        // We know for sure this can't fail on any supported system because we made and included the data ourselves.
+        // We know for sure this can't fail on any supported system because we made and included the
+        // data ourselves.
         let data = unsafe { zstd::decode_all(std::io::Cursor::new(data)).unwrap_unchecked() };
         let count = (data.len() as f64 / 2. / 8.) as usize;
         let value_offset = (data.len() as f64 / 2.) as usize;

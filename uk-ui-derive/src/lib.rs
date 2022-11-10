@@ -127,11 +127,13 @@ fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStre
 fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
     let str_name = name.to_string();
     let (field_impls, display) = match struc.fields {
-        Fields::Named(ref fields) => (
-            impl_struct_named_fields(fields),
-            syn::parse_str::<Expr>("::uk_ui::editor::EditableDisplay::Block")
-                .expect("display variant should parse"),
-        ),
+        Fields::Named(ref fields) => {
+            (
+                impl_struct_named_fields(fields),
+                syn::parse_str::<Expr>("::uk_ui::editor::EditableDisplay::Block")
+                    .expect("display variant should parse"),
+            )
+        }
         Fields::Unnamed(ref fields) => return impl_struct_unnamed_fields(name, fields),
         Fields::Unit => unimplemented!(),
     };

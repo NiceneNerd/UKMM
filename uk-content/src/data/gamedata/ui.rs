@@ -1,8 +1,9 @@
-use roead::byml::Byml;
 use std::{
     ops::DerefMut,
     sync::{atomic::AtomicUsize, Arc},
 };
+
+use roead::byml::Byml;
 use uk_ui::{
     editor::{EditableDisplay, EditableValue},
     egui,
@@ -144,6 +145,7 @@ fn edit_flag_ui(
 
 impl EditableValue for super::GameData {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         self.edit_ui_with_id(ui, "game_data")
     }
@@ -266,6 +268,7 @@ static DATA_TYPES: &[&str] = &[
 
 impl EditableValue for super::GameDataPack {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         self.edit_ui_with_id(ui, "game_data_pack")
     }
@@ -303,21 +306,25 @@ impl EditableValue for super::GameDataPack {
                     "s32_array_data" => self.s32_array_data.edit_ui_with_id(ui, id.with("inner")),
                     "s32_data" => self.s32_data.edit_ui_with_id(ui, id.with("inner")),
                     "string32_data" => self.string32_data.edit_ui_with_id(ui, id.with("inner")),
-                    "string64_array_data" => self
-                        .string64_array_data
-                        .edit_ui_with_id(ui, id.with("inner")),
+                    "string64_array_data" => {
+                        self.string64_array_data
+                            .edit_ui_with_id(ui, id.with("inner"))
+                    }
                     "string64_data" => self.string64_data.edit_ui_with_id(ui, id.with("inner")),
-                    "string256_array_data" => self
-                        .string256_array_data
-                        .edit_ui_with_id(ui, id.with("inner")),
+                    "string256_array_data" => {
+                        self.string256_array_data
+                            .edit_ui_with_id(ui, id.with("inner"))
+                    }
                     "string256_data" => self.string256_data.edit_ui_with_id(ui, id.with("inner")),
-                    "vector2f_array_data" => self
-                        .vector2f_array_data
-                        .edit_ui_with_id(ui, id.with("inner")),
+                    "vector2f_array_data" => {
+                        self.vector2f_array_data
+                            .edit_ui_with_id(ui, id.with("inner"))
+                    }
                     "vector2f_data" => self.vector2f_data.edit_ui_with_id(ui, id.with("inner")),
-                    "vector3f_array_data" => self
-                        .vector3f_array_data
-                        .edit_ui_with_id(ui, id.with("inner")),
+                    "vector3f_array_data" => {
+                        self.vector3f_array_data
+                            .edit_ui_with_id(ui, id.with("inner"))
+                    }
                     "vector3f_data" => self.vector3f_data.edit_ui_with_id(ui, id.with("inner")),
                     "vector4f_data" => self.vector4f_data.edit_ui_with_id(ui, id.with("inner")),
                     _ => unsafe { std::hint::unreachable_unchecked() },

@@ -1,7 +1,8 @@
-use super::get_name;
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::*;
+
+use super::get_name;
 
 const fn hash_name(name: &str) -> u32 {
     let mut crc = 0xFFFFFFFF;

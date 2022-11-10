@@ -1,12 +1,14 @@
+use std::collections::BTreeMap;
+
+use roead::byml::Byml;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     prelude::*,
     util::{bhash, DeleteVec},
     Result, UKError,
 };
-use roead::byml::Byml;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub enum StatusEffectValues {
@@ -69,17 +71,19 @@ impl From<StatusEffectValues> for Byml {
     fn from(val: StatusEffectValues) -> Self {
         match val {
             StatusEffectValues::Special => Byml::Array(vec![bhash!("special" => Byml::Bool(true))]),
-            StatusEffectValues::Normal(values) => Byml::Array(vec![
-                bhash!(
-                    "special" => Byml::Bool(false)
-                ),
-                bhash!(
-                    "values" => values
-                        .into_iter()
-                        .map(|v| bhash!("val" => Byml::Float(v)))
-                        .collect::<Byml>()
-                ),
-            ]),
+            StatusEffectValues::Normal(values) => {
+                Byml::Array(vec![
+                    bhash!(
+                        "special" => Byml::Bool(false)
+                    ),
+                    bhash!(
+                        "values" => values
+                            .into_iter()
+                            .map(|v| bhash!("val" => Byml::Float(v)))
+                            .collect::<Byml>()
+                    ),
+                ])
+            }
         }
     }
 }
@@ -129,11 +133,12 @@ impl TryFrom<&Byml> for StatusEffectList {
 
 impl From<StatusEffectList> for Byml {
     fn from(val: StatusEffectList) -> Self {
-        Self::Array(vec![val
-            .0
-            .into_iter()
-            .map(|(effect, values)| (effect.to_string(), values.into()))
-            .collect::<Byml>()])
+        Self::Array(vec![
+            val.0
+                .into_iter()
+                .map(|(effect, values)| (effect.to_string(), values.into()))
+                .collect::<Byml>(),
+        ])
     }
 }
 
@@ -190,8 +195,9 @@ single_path!(
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_status() -> Byml {
         Byml::from_binary(

@@ -1,22 +1,24 @@
+use std::{collections::HashSet, sync::Arc};
+
+use join_str::jstr;
+use roead::aamp::*;
+use serde::{Deserialize, Serialize};
+use uk_content_derive::ParamData;
+use uk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
+
 use crate::{
     actor::ParameterResource,
     prelude::*,
     util::{params, plists, pobjs, DeleteMap, IndexMap},
     Result, UKError,
 };
-use join_str::jstr;
-use roead::aamp::*;
-use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, sync::Arc};
-use uk_content_derive::ParamData;
-use uk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
 
 #[derive(
     Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Serialize, Deserialize, ParamData,
 )]
 pub struct Key {
     #[name = "StateKey"]
-    pub state_key: String32,
+    pub state_key:  String32,
     #[name = "SystemKey"]
     pub system_key: String32,
 }
@@ -29,6 +31,7 @@ impl ToString for Key {
 
 impl uk_ui::editor::EditableValue for Key {
     const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Inline;
+
     fn edit_ui(&mut self, ui: &mut uk_ui::egui::Ui) -> uk_ui::egui::Response {
         self.edit_ui_with_id(ui, "rgbw_key")
     }
@@ -117,7 +120,7 @@ impl From<RagdollBlendWeight> for ParameterIO {
                 jstr!("State_{&lexical::to_string(idx + 1)}"),
                 ParameterList {
                     objects: pobjs!("Setting" => key.into()),
-                    lists: plists!(
+                    lists:   plists!(
                         "InputWeightList" => ParameterList::new()
                             .with_objects(state.into_iter().enumerate().map(
                                 |(i, (name, rate))| {
@@ -206,6 +209,7 @@ impl Resource for RagdollBlendWeight {
 
 impl EditableValue for RagdollBlendWeight {
     const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut uk_ui::egui::Ui) -> uk_ui::egui::Response {
         self.edit_ui_with_id(ui, "rgbw")
     }
@@ -336,7 +340,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Enemy_Moriblin_Junior.sbactorpack//Actor/RagdollBlendWeight/Moriblin.brgbw",
+            "content/Actor/Pack/Enemy_Moriblin_Junior.sbactorpack//Actor/RagdollBlendWeight/\
+             Moriblin.brgbw",
         );
         assert!(super::RagdollBlendWeight::path_matches(path));
     }

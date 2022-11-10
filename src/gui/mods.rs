@@ -1,15 +1,19 @@
-use super::{App, FocusedPane, Message, Sort};
+use std::process::Command;
+
 use im::vector;
 use join_str::jstr;
 use once_cell::sync::OnceCell;
-use std::process::Command;
 use uk_manager::mods::Mod;
-use uk_ui::egui::{
-    self, style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, LayerId,
-    Layout, Response, Sense, TextStyle, Ui, Vec2,
+use uk_ui::{
+    egui::{
+        self, style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, LayerId,
+        Layout, Response, Sense, TextStyle, Ui, Vec2,
+    },
+    egui_extras::{Size, TableBuilder, TableRow},
+    ext::UiExt,
 };
-use uk_ui::egui_extras::{Size, TableBuilder, TableRow};
-use uk_ui::ext::UiExt;
+
+use super::{App, FocusedPane, Message, Sort};
 
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {
@@ -36,9 +40,9 @@ impl App {
         egui::Frame::none()
             .inner_margin(Margin {
                 bottom: 4.0,
-                top: 4.0,
-                left: 4.0,
-                right: -12.0,
+                top:    4.0,
+                left:   4.0,
+                right:  -12.0,
             })
             .show(ui, |ui| {
                 ui.style_mut()
@@ -203,7 +207,7 @@ impl App {
                                 .column(Size::remainder())
                                 .column(Size::Absolute {
                                     initial: 80.,
-                                    range: (16., 240.),
+                                    range:   (16., 240.),
                                 })
                                 .column(Size::exact(numeric_col_width))
                                 .column(Size::exact(numeric_col_width))

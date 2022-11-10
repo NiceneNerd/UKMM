@@ -1,9 +1,10 @@
-use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
+
+use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable, ParamData)]
 pub struct AddRes {
@@ -17,8 +18,8 @@ pub struct AddRes {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ASList {
-    pub common: Option<ParameterObject>,
-    pub add_reses: DeleteMap<String, AddRes>,
+    pub common:     Option<ParameterObject>,
+    pub add_reses:  DeleteMap<String, AddRes>,
     pub as_defines: DeleteMap<String64, String64>,
     pub cf_defines: Option<DeleteMap<String, ParameterList>>,
 }
@@ -28,8 +29,8 @@ impl TryFrom<&ParameterIO> for ASList {
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         Ok(Self {
-            common: pio.object("Common").cloned(),
-            add_reses: pio
+            common:     pio.object("Common").cloned(),
+            add_reses:  pio
                 .list("AddReses")
                 .ok_or(UKError::MissingAampKey("AS list missing add reses"))?
                 .objects
@@ -140,10 +141,10 @@ impl From<ASList> for ParameterIO {
 impl Mergeable for ASList {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            common: (other.common != self.common)
+            common:     (other.common != self.common)
                 .then(|| other.common.clone())
                 .flatten(),
-            add_reses: self.add_reses.diff(&other.add_reses),
+            add_reses:  self.add_reses.diff(&other.add_reses),
             as_defines: self.as_defines.diff(&other.as_defines),
             cf_defines: self
                 .cf_defines
@@ -161,8 +162,8 @@ impl Mergeable for ASList {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            common: diff.common.clone().or_else(|| self.common.clone()),
-            add_reses: self.add_reses.merge(&diff.add_reses),
+            common:     diff.common.clone().or_else(|| self.common.clone()),
+            add_reses:  self.add_reses.merge(&diff.add_reses),
             as_defines: self.as_defines.merge(&diff.as_defines),
             cf_defines: diff
                 .cf_defines
@@ -200,9 +201,9 @@ impl Resource for ASList {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
-
     use roead::aamp::*;
+
+    use crate::prelude::*;
 
     #[test]
     fn serde() {
@@ -272,7 +273,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Npn_TripMaster_00.sbactorpack//Actor/ASList/Npc_TripMaster_00.baslist",
+            "content/Actor/Pack/Npn_TripMaster_00.sbactorpack//Actor/ASList/Npc_TripMaster_00.\
+             baslist",
         );
         assert!(super::ASList::path_matches(path));
     }

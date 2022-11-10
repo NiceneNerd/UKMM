@@ -1,6 +1,7 @@
 mod deser;
 mod ui;
-use crate::{prelude::*, Result, UKError};
+use std::collections::{BTreeMap, BTreeSet};
+
 use join_str::jstr;
 use msyt::{
     model::{Entry, MsbtInfo},
@@ -8,13 +9,13 @@ use msyt::{
 };
 use roead::sarc::{Sarc, SarcWriter};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
 
+use crate::{prelude::*, Result, UKError};
 
 impl Mergeable for Msyt {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            msbt: self.msbt.clone(),
+            msbt:    self.msbt.clone(),
             entries: other
                 .entries
                 .iter()
@@ -80,15 +81,19 @@ impl Mergeable for MessagePack {
         Self(
             files
                 .into_iter()
-                .map(|file| match (self.0.get(&file), diff.0.get(&file)) {
-                    (Some(self_text), Some(diff_text)) => {
-                        (file.clone(), self_text.merge(diff_text))
+                .map(|file| {
+                    match (self.0.get(&file), diff.0.get(&file)) {
+                        (Some(self_text), Some(diff_text)) => {
+                            (file.clone(), self_text.merge(diff_text))
+                        }
+                        (v1, v2) => {
+                            (file.clone(), unsafe {
+                                // We know this is sound because the key came from an entry
+                                // in one of these two maps.
+                                v2.or(v1).cloned().unwrap_unchecked()
+                            })
+                        }
                     }
-                    (v1, v2) => (file.clone(), unsafe {
-                        // We know this is sound because the key came from an entry
-                        // in one of these two maps.
-                        v2.or(v1).cloned().unwrap_unchecked()
-                    }),
                 })
                 .collect(),
         )

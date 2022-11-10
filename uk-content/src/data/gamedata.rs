@@ -1,15 +1,17 @@
-use crate::{
-    prelude::*,
-    util::{bhash, DeleteMap},
-    Result, UKError,
-};
+use std::hint::unreachable_unchecked;
+
 use roead::{
     byml::Byml,
     sarc::{Sarc, SarcWriter},
 };
 use serde::{Deserialize, Serialize};
-use std::hint::unreachable_unchecked;
 use uk_content_derive::BymlData;
+
+use crate::{
+    prelude::*,
+    util::{bhash, DeleteMap},
+    Result, UKError,
+};
 mod ui;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
@@ -45,7 +47,7 @@ pub struct FlagData {
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct GameData {
     pub data_type: String,
-    pub flags: DeleteMap<u32, FlagData>,
+    pub flags:     DeleteMap<u32, FlagData>,
 }
 
 impl TryFrom<&Byml> for GameData {
@@ -59,7 +61,7 @@ impl TryFrom<&Byml> for GameData {
                 .next()
                 .ok_or(UKError::MissingBymlKey("bgdata file missing data type key"))?
                 .clone(),
-            flags: hash
+            flags:     hash
                 .values()
                 .next()
                 .ok_or(UKError::MissingBymlKey("bgdata file missing data"))?
@@ -100,7 +102,7 @@ impl GameData {
         for _ in 0..total {
             out.push(GameData {
                 data_type: self.data_type.clone(),
-                flags: iter.by_ref().take(4096).collect(),
+                flags:     iter.by_ref().take(4096).collect(),
             });
         }
         out
@@ -116,7 +118,7 @@ impl Mergeable for GameData {
         );
         Self {
             data_type: self.data_type.clone(),
-            flags: self.flags.diff(&other.flags),
+            flags:     self.flags.diff(&other.flags),
         }
     }
 
@@ -128,7 +130,7 @@ impl Mergeable for GameData {
         );
         Self {
             data_type: self.data_type.clone(),
-            flags: self.flags.merge(&diff.flags),
+            flags:     self.flags.merge(&diff.flags),
         }
     }
 }
@@ -188,17 +190,21 @@ enum SarcSource<'a> {
 impl SarcSource<'_> {
     fn iter(&self) -> Box<dyn Iterator<Item = (&str, &[u8])> + '_> {
         match self {
-            Self::Reader(sarc) => Box::new(
-                sarc.files()
-                    .into_iter()
-                    .filter_map(|f| f.name.map(|n| (n, f.data))),
-            ),
-            Self::Writer(sarcwriter) => Box::new(
-                sarcwriter
-                    .files
-                    .iter()
-                    .map(|(f, d)| (f.as_ref(), d.as_ref())),
-            ),
+            Self::Reader(sarc) => {
+                Box::new(
+                    sarc.files()
+                        .into_iter()
+                        .filter_map(|f| f.name.map(|n| (n, f.data))),
+                )
+            }
+            Self::Writer(sarcwriter) => {
+                Box::new(
+                    sarcwriter
+                        .files
+                        .iter()
+                        .map(|(f, d)| (f.as_ref(), d.as_ref())),
+                )
+            }
         }
     }
 }
@@ -253,6 +259,9 @@ macro_rules! build_gamedata_pack {
 }
 
 impl GameDataPack {
+    const STAGES: &'static [&'static str] =
+        &["MainField", "AocField", "CDungeon", "MainFieldDungeon"];
+
     pub fn from_sarc_writer(sarc: &SarcWriter) -> Result<Self> {
         let source = SarcSource::Writer(sarc);
         if sarc
@@ -284,9 +293,6 @@ impl GameDataPack {
             Self::from_bcml_sarc(&source)
         }
     }
-
-    const STAGES: &'static [&'static str] =
-        &["MainField", "AocField", "CDungeon", "MainFieldDungeon"];
 
     fn from_bcml_sarc(sarc: &SarcSource) -> Result<Self> {
         let mut revival_bool_data = DeleteMap::with_capacity(32461);
@@ -362,23 +368,23 @@ impl GameDataPack {
         Ok(GameDataPack {
             bool_data: GameData {
                 data_type: "bool_data".into(),
-                flags: bool_data,
+                flags:     bool_data,
             },
             revival_bool_data: GameData {
                 data_type: "bool_data".into(),
-                flags: revival_bool_data,
+                flags:     revival_bool_data,
             },
             s32_data: GameData {
                 data_type: "s32_data".into(),
-                flags: s32_data,
+                flags:     s32_data,
             },
             revival_s32_data: GameData {
                 data_type: "s32_data".into(),
-                flags: revival_s32_data,
+                flags:     revival_s32_data,
             },
             string32_data: GameData {
                 data_type: "string_data".into(),
-                flags: string32_data,
+                flags:     string32_data,
             },
             bool_array_data: extract_gamedata_by_type(sarc, "bool_array_data")?,
             s32_array_data: extract_gamedata_by_type(sarc, "s32_array_data")?,
@@ -523,8 +529,9 @@ single_path!(GameDataPack, "Pack/Bootup.pack//GameData/gamedata.ssarc");
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::{byml::Byml, sarc::Sarc};
+
+    use crate::prelude::*;
 
     fn load_gamedata_sarc() -> Sarc<'static> {
         Sarc::new(std::fs::read("test/GameData/gamedata.ssarc").unwrap()).unwrap()

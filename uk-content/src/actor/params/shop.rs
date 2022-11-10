@@ -1,8 +1,9 @@
-use crate::{actor::ParameterResource, prelude::*, util::IndexMap, Result, UKError};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
+
+use crate::{actor::ParameterResource, prelude::*, util::IndexMap, Result, UKError};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ShopItem {
@@ -83,44 +84,35 @@ impl TryFrom<&ParameterIO> for ShopData {
                                 .get(&format!("ItemName{:03}", i))
                                 .ok_or(UKError::MissingAampKey("Shop table missing item name"))?
                                 .as_string64()?;
-                            Ok((
-                                *item_name,
-                                ShopItem {
-                                    sort: table_obj
-                                        .get(&format!("ItemSort{:03}", i))
-                                        .ok_or(UKError::MissingAampKey(
-                                            "Shop table missing item name",
-                                        ))?
-                                        .as_int()? as u8,
-                                    num: table_obj
-                                        .get(&format!("ItemNum{:03}", i))
-                                        .ok_or(UKError::MissingAampKey(
-                                            "Shop table missing item num",
-                                        ))?
-                                        .as_int()? as u8,
-                                    adjust_price: table_obj
-                                        .get(&format!("ItemAdjustPrice{:03}", i))
-                                        .ok_or(UKError::MissingAampKey(
-                                            "Shop table missing adjust price",
-                                        ))?
-                                        .as_int()?
-                                        as u8,
-                                    look_get_flag: table_obj
-                                        .get(&format!("ItemLookGetFlg{:03}", i))
-                                        .ok_or(UKError::MissingAampKey(
-                                            "Shop table missing look get flag",
-                                        ))?
-                                        .as_bool()?,
-                                    amount: table_obj
-                                        .get(&format!("ItemAmount{:03}", i))
-                                        .ok_or(UKError::MissingAampKey(
-                                            "Shop table missing item amount",
-                                        ))?
-                                        .as_int()?
-                                        as u8,
-                                    delete: false,
-                                },
-                            ))
+                            Ok((*item_name, ShopItem {
+                                sort: table_obj
+                                    .get(&format!("ItemSort{:03}", i))
+                                    .ok_or(UKError::MissingAampKey("Shop table missing item name"))?
+                                    .as_int()? as u8,
+                                num: table_obj
+                                    .get(&format!("ItemNum{:03}", i))
+                                    .ok_or(UKError::MissingAampKey("Shop table missing item num"))?
+                                    .as_int()? as u8,
+                                adjust_price: table_obj
+                                    .get(&format!("ItemAdjustPrice{:03}", i))
+                                    .ok_or(UKError::MissingAampKey(
+                                        "Shop table missing adjust price",
+                                    ))?
+                                    .as_int()? as u8,
+                                look_get_flag: table_obj
+                                    .get(&format!("ItemLookGetFlg{:03}", i))
+                                    .ok_or(UKError::MissingAampKey(
+                                        "Shop table missing look get flag",
+                                    ))?
+                                    .as_bool()?,
+                                amount: table_obj
+                                    .get(&format!("ItemAmount{:03}", i))
+                                    .ok_or(UKError::MissingAampKey(
+                                        "Shop table missing item amount",
+                                    ))?
+                                    .as_int()? as u8,
+                                delete: false,
+                            }))
                         })
                         .collect::<Result<ShopTable>>()?,
                 ),
@@ -358,7 +350,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/ShopData/Npc_TripMaster_00.bshop",
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/ShopData/Npc_TripMaster_00.\
+             bshop",
         );
         assert!(super::ShopData::path_matches(path));
     }

@@ -1,15 +1,16 @@
+use roead::byml::Byml;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     prelude::*,
     util::{bhash, BymlHashValue, SortedDeleteMap},
     Result, UKError,
 };
-use roead::byml::Byml;
-use serde::{Deserialize, Serialize};
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ShopGameDataInfo {
-    pub area_info: SortedDeleteMap<BymlHashValue, Byml>,
+    pub area_info:     SortedDeleteMap<BymlHashValue, Byml>,
     pub sold_out_info: SortedDeleteMap<BymlHashValue, Byml>,
 }
 
@@ -31,7 +32,7 @@ impl TryFrom<&Byml> for ShopGameDataInfo {
             ))?
             .as_hash()?;
         Ok(Self {
-            area_info: area_info
+            area_info:     area_info
                 .get("Hashes")
                 .ok_or(UKError::MissingBymlKey(
                     "Shop game data info missing area info hashes",
@@ -103,14 +104,14 @@ impl From<ShopGameDataInfo> for Byml {
 impl Mergeable for ShopGameDataInfo {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            area_info: self.area_info.diff(&other.area_info),
+            area_info:     self.area_info.diff(&other.area_info),
             sold_out_info: self.sold_out_info.diff(&other.sold_out_info),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            area_info: self.area_info.merge(&diff.area_info),
+            area_info:     self.area_info.merge(&diff.area_info),
             sold_out_info: self.sold_out_info.merge(&diff.sold_out_info),
         }
     }
@@ -132,8 +133,9 @@ impl Resource for ShopGameDataInfo {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_shopinfo() -> Byml {
         Byml::from_binary(

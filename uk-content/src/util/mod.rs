@@ -1,15 +1,14 @@
 mod collections;
 pub mod converts;
 
+use std::{collections::BTreeMap, str::FromStr};
+
 pub use collections::*;
-use roead::aamp::*;
-use roead::byml::Byml;
-use std::collections::BTreeMap;
-use std::str::FromStr;
+use roead::{aamp::*, byml::Byml};
 
 pub fn diff_plist<P: ParameterListing + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
-        lists: other
+        lists:   other
             .lists()
             .0
             .iter()
@@ -68,7 +67,7 @@ pub fn merge_plist<P: ParameterListing + From<ParameterList>>(base: &P, diff: &P
             }
             new
         },
-        lists: {
+        lists:   {
             let mut new = base.lists().clone();
             for (k, v) in &diff.lists().0 {
                 if !new.0.contains_key(k) {
@@ -109,12 +108,14 @@ pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
 
 pub fn merge_byml_shallow(base: &Byml, diff: &Byml) -> Byml {
     match (base, diff) {
-        (Byml::Hash(base), Byml::Hash(diff)) => Byml::Hash(
-            base.iter()
-                .chain(diff.iter())
-                .map(|(k, v)| (k.clone(), v.clone()))
-                .collect(),
-        ),
+        (Byml::Hash(base), Byml::Hash(diff)) => {
+            Byml::Hash(
+                base.iter()
+                    .chain(diff.iter())
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect(),
+            )
+        }
         (Byml::Hash(base), Byml::Null) => Byml::Hash(base.clone()),
         _ => panic!("Can only shallow merge BYML hashes"),
     }
@@ -168,7 +169,7 @@ impl TryFrom<Byml> for BymlHashValue {
                 return Err(crate::UKError::WrongBymlType(
                     "not an integer".into(),
                     "an integer",
-                ))
+                ));
             }
         })
     }
@@ -185,7 +186,7 @@ impl TryFrom<&Byml> for BymlHashValue {
                 return Err(crate::UKError::WrongBymlType(
                     "not an integer".into(),
                     "an integer",
-                ))
+                ));
             }
         })
     }
@@ -193,6 +194,7 @@ impl TryFrom<&Byml> for BymlHashValue {
 
 impl FromStr for BymlHashValue {
     type Err = crate::UKError;
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.parse::<u32>()
             .map_err(|_| crate::UKError::Other("Invalid BYML key"))

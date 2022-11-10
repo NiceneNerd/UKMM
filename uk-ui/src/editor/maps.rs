@@ -1,8 +1,3 @@
-use crate::{ext::UiExt, icons::IconButtonExt};
-
-use super::{EditableDisplay, EditableValue};
-use egui::Layout;
-use indexmap::map::IndexMap;
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Display},
@@ -10,6 +5,12 @@ use std::{
     ops::DerefMut,
     str::FromStr,
 };
+
+use egui::Layout;
+use indexmap::map::IndexMap;
+
+use super::{EditableDisplay, EditableValue};
+use crate::{ext::UiExt, icons::IconButtonExt};
 
 impl<T, U, S> EditableValue for IndexMap<T, U, S>
 where

@@ -1,4 +1,10 @@
-use crate::{Manifest, Meta, ModOptionGroup};
+use std::{
+    collections::BTreeSet,
+    io::Write,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+
 use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
@@ -9,12 +15,6 @@ use rayon::prelude::*;
 use roead::{sarc::Sarc, yaz0::decompress_if};
 use serde::Deserialize;
 use smartstring::alias::String;
-use std::{
-    collections::BTreeSet,
-    io::Write,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
 use uk_content::{
     canonicalize,
     hashes::{get_hash_table, ROMHashTable},
@@ -23,6 +23,8 @@ use uk_content::{
     resource::{is_mergeable_sarc, ResourceData},
 };
 use zip::{write::FileOptions, ZipWriter as ZipW};
+
+use crate::{Manifest, Meta, ModOptionGroup};
 
 pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
 
@@ -58,9 +60,9 @@ impl std::fmt::Debug for ModPacker {
 
 #[derive(Debug, Deserialize)]
 struct InfoJson {
-    name: String,
-    desc: String,
-    version: String,
+    name:     String,
+    desc:     String,
+    version:  String,
     platform: String,
 }
 
@@ -357,7 +359,7 @@ impl ModPacker {
                 })
                 .transpose()?
                 .unwrap_or_default(),
-            aoc_files: aoc_dir
+            aoc_files:     aoc_dir
                 .map(|aoc| {
                     log::info!("Collecting DLC resources");
                     self.collect_resources(&aoc)
@@ -416,11 +418,11 @@ impl ModPacker {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ModOption, MultipleOptionGroup, OptionGroup};
     use indexmap::IndexMap;
     use uk_reader::ResourceReader;
 
     use super::*;
+    use crate::{ModOption, MultipleOptionGroup, OptionGroup};
     #[test]
     fn pack_mod() {
         let source = Path::new("test/wiiu");

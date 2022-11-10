@@ -8,7 +8,14 @@ mod settings;
 mod tabs;
 mod tasks;
 mod util;
-use crate::logger::Entry;
+use std::{
+    ops::DerefMut,
+    path::PathBuf,
+    sync::{Arc, Once},
+    thread,
+    time::Duration,
+};
+
 use anyhow::{Context, Result};
 use eframe::{
     egui::{FontData, FontDefinitions},
@@ -25,27 +32,24 @@ use join_str::jstr;
 use once_cell::sync::OnceCell;
 use picker::FilePickerState;
 use rustc_hash::FxHashSet;
-use std::{
-    ops::DerefMut,
-    path::PathBuf,
-    sync::{Arc, Once},
-    thread,
-    time::Duration,
-};
 use uk_manager::{
     core::Manager,
     mods::{LookupMod, Mod},
     settings::Settings,
 };
 use uk_mod::Manifest;
-use uk_ui::egui::{
-    self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId,
-    Frame, Id, Label, LayerId, Layout, RichText, Rounding, Spinner, TextFormat, TextStyle, Ui,
-    Vec2,
-};
-use uk_ui::ext::UiExt;
-use uk_ui::icons::{Icon, IconButtonExt};
 pub use uk_ui::visuals;
+use uk_ui::{
+    egui::{
+        self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox,
+        FontId, Frame, Id, Label, LayerId, Layout, RichText, Rounding, Spinner, TextFormat,
+        TextStyle, Ui, Vec2,
+    },
+    ext::UiExt,
+    icons::{Icon, IconButtonExt},
+};
+
+use crate::logger::Entry;
 
 fn load_fonts(context: &egui::Context) {
     let mut fonts = FontDefinitions::default();
@@ -97,39 +101,27 @@ fn load_fonts(context: &egui::Context) {
 
 impl Entry {
     pub fn format(&self, job: &mut LayoutJob) {
-        job.append(
-            &jstr!("[{&self.timestamp}] "),
-            0.,
-            TextFormat {
-                color: Color32::GRAY,
-                font_id: FontId::monospace(10.),
-                ..Default::default()
+        job.append(&jstr!("[{&self.timestamp}] "), 0., TextFormat {
+            color: Color32::GRAY,
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
+        job.append(&jstr!("{&self.level} "), 0., TextFormat {
+            color: match self.level.as_str() {
+                "INFO" => visuals::GREEN,
+                "WARN" => visuals::ORGANGE,
+                "ERROR" => visuals::RED,
+                "DEBUG" => visuals::BLUE,
+                _ => visuals::YELLOW,
             },
-        );
-        job.append(
-            &jstr!("{&self.level} "),
-            0.,
-            TextFormat {
-                color: match self.level.as_str() {
-                    "INFO" => visuals::GREEN,
-                    "WARN" => visuals::ORGANGE,
-                    "ERROR" => visuals::RED,
-                    "DEBUG" => visuals::BLUE,
-                    _ => visuals::YELLOW,
-                },
-                font_id: FontId::monospace(10.),
-                ..Default::default()
-            },
-        );
-        job.append(
-            &self.args,
-            1.,
-            TextFormat {
-                color: Color32::WHITE,
-                font_id: FontId::monospace(10.),
-                ..Default::default()
-            },
-        );
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
+        job.append(&self.args, 1., TextFormat {
+            color: Color32::WHITE,
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
         job.append("\n", 0.0, Default::default());
     }
 }
@@ -178,15 +170,19 @@ impl Sort {
             Sort::Name => {
                 Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| a.meta.name.cmp(&b.meta.name))
             }
-            Sort::Category => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                a.meta.category.cmp(&b.meta.category)
-            }),
-            Sort::Version => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                a.meta
-                    .version
-                    .partial_cmp(&b.meta.version)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            }),
+            Sort::Category => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                    a.meta.category.cmp(&b.meta.category)
+                })
+            }
+            Sort::Version => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                    a.meta
+                        .version
+                        .partial_cmp(&b.meta.version)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+            }
             Sort::Priority => Box::new(|&(a, _), &(b, _)| a.cmp(&b)),
         }
     }
@@ -337,10 +333,10 @@ impl App {
     fn do_task(
         &mut self,
         task: impl 'static
-            + Send
-            + Sync
-            + FnOnce(Arc<Manager>) -> Result<Message>
-            + std::panic::UnwindSafe,
+        + Send
+        + Sync
+        + FnOnce(Arc<Manager>) -> Result<Message>
+        + std::panic::UnwindSafe,
     ) {
         let sender = self.channel.0.clone();
         let core = self.core.clone();
@@ -351,15 +347,17 @@ impl App {
                 .send(match std::panic::catch_unwind(|| task(core)) {
                     Ok(Ok(msg)) => msg,
                     Ok(Err(e)) => Message::Error(e),
-                    Err(e) => Message::Error(anyhow::format_err!(
-                        "{}",
-                        e.downcast::<String>().unwrap_or_else(|_| {
-                            Box::new(
-                                "An unknown error occured, check the log for possible details."
-                                    .to_string(),
-                            )
-                        })
-                    )),
+                    Err(e) => {
+                        Message::Error(anyhow::format_err!(
+                            "{}",
+                            e.downcast::<String>().unwrap_or_else(|_| {
+                                Box::new(
+                                    "An unknown error occured, check the log for possible details."
+                                        .to_string(),
+                                )
+                            })
+                        ))
+                    }
                 })
                 .unwrap();
         });
@@ -516,11 +514,13 @@ impl App {
                         };
                     }
                 }
-                Message::DeleteProfile(profile) => self.do_task(move |core| {
-                    let path = core.settings().profiles_dir().join(profile);
-                    fs::remove_dir_all(path)?;
-                    Ok(Message::Noop)
-                }),
+                Message::DeleteProfile(profile) => {
+                    self.do_task(move |core| {
+                        let path = core.settings().profiles_dir().join(profile);
+                        fs::remove_dir_all(path)?;
+                        Ok(Message::Noop)
+                    })
+                }
                 Message::DuplicateProfile(profile) => {
                     self.do_task(move |core| {
                         let profiles_dir = core.settings().profiles_dir();
@@ -531,11 +531,13 @@ impl App {
                         Ok(Message::Noop)
                     });
                 }
-                Message::RenameProfile(profile, rename) => self.do_task(move |core| {
-                    let profiles_dir = core.settings().profiles_dir();
-                    fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
-                    Ok(Message::Noop)
-                }),
+                Message::RenameProfile(profile, rename) => {
+                    self.do_task(move |core| {
+                        let profiles_dir = core.settings().profiles_dir();
+                        fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
+                        Ok(Message::Noop)
+                    })
+                }
                 Message::SelectProfileManage(name) => {
                     self.profiles_state.selected = Some(profiles::SelectedProfile::load(
                         &self.core.settings().profiles_dir(),
@@ -634,11 +636,13 @@ impl App {
                     let dirty = std::mem::take(&mut self.dirty);
                     self.do_task(move |core| tasks::apply_changes(&core, mods, Some(dirty)));
                 }
-                Message::Deploy => self.do_task(move |core| {
-                    log::info!("Deploying current mod configuration");
-                    core.deploy_manager().deploy()?;
-                    Ok(Message::ResetMods)
-                }),
+                Message::Deploy => {
+                    self.do_task(move |core| {
+                        log::info!("Deploying current mod configuration");
+                        core.deploy_manager().deploy()?;
+                        Ok(Message::ResetMods)
+                    })
+                }
                 Message::Remerge => {
                     self.do_task(|core| tasks::apply_changes(&core, vector![], None));
                 }
@@ -1165,8 +1169,8 @@ pub fn main() {
         NativeOptions {
             icon_data: Some(IconData {
                 height: 256,
-                width: 256,
-                rgba: image::load_from_memory(include_bytes!("../assets/ukmm.png"))
+                width:  256,
+                rgba:   image::load_from_memory(include_bytes!("../assets/ukmm.png"))
                     .unwrap()
                     .to_rgba8()
                     .into_vec(),

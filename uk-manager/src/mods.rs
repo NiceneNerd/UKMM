@@ -1,20 +1,22 @@
-use crate::{
-    settings::Settings,
-    util::{self, HashMap},
-};
-use anyhow::{Context, Result};
-use fs_err as fs;
-use once_cell::sync::Lazy;
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
 use std::{
     hash::{Hash, Hasher},
     io::BufReader,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
 };
+
+use anyhow::{Context, Result};
+use fs_err as fs;
+use once_cell::sync::Lazy;
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
+
+use crate::{
+    settings::Settings,
+    util::{self, HashMap},
+};
 
 type ManifestCache = Lazy<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Arc<Manifest>>>>>;
 
@@ -157,11 +159,12 @@ impl Profile {
 
 pub struct ModIterator<'a> {
     profile: &'a Profile,
-    index: usize,
+    index:   usize,
 }
 
 impl<'a> Iterator for ModIterator<'a> {
     type Item = Mod;
+
     fn next(&mut self) -> Option<Self::Item> {
         let mods = self.profile.mods.read();
         let loads = self.profile.load_order.read();
@@ -177,8 +180,8 @@ impl<'a> Iterator for ModIterator<'a> {
 
 #[derive(Debug)]
 pub struct Manager {
-    path: PathBuf,
-    profile: Profile,
+    path:     PathBuf,
+    profile:  Profile,
     settings: Weak<RwLock<Settings>>,
 }
 
@@ -195,8 +198,8 @@ impl Manager {
             log::info!("Creating profile at {}", path.display());
             fs::create_dir_all(path)?;
             let self_ = Self {
-                path: path.to_path_buf(),
-                profile: Default::default(),
+                path:     path.to_path_buf(),
+                profile:  Default::default(),
                 settings: Arc::downgrade(settings),
             };
             self_.save()?;
@@ -229,7 +232,7 @@ impl Manager {
     /// Iterate all mods, including disabled, in load order.
     pub fn all_mods(&self) -> ModIterator<'_> {
         ModIterator {
-            index: 0,
+            index:   0,
             profile: &self.profile,
         }
     }
@@ -237,7 +240,7 @@ impl Manager {
     /// Iterate all enabled mods in load order.
     pub fn mods(&self) -> impl Iterator<Item = Mod> + '_ {
         ModIterator {
-            index: 0,
+            index:   0,
             profile: &self.profile,
         }
         .filter(|m| m.enabled)
@@ -248,14 +251,16 @@ impl Manager {
         &'a self,
         ref_manifest: &'m Manifest,
     ) -> impl Iterator<Item = Mod> + 'm {
-        self.mods().filter(|mod_| match mod_.manifest() {
-            Ok(manifest) => {
-                !ref_manifest
-                    .content_files
-                    .is_disjoint(&manifest.content_files)
-                    || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+        self.mods().filter(|mod_| {
+            match mod_.manifest() {
+                Ok(manifest) => {
+                    !ref_manifest
+                        .content_files
+                        .is_disjoint(&manifest.content_files)
+                        || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+                }
+                Err(_) => false,
             }
-            Err(_) => false,
         })
     }
 

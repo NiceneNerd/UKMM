@@ -1,7 +1,8 @@
-use crate::prelude::*;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
+
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct EventInfo(pub Byml);
@@ -44,8 +45,9 @@ single_path!(EventInfo, "Pack/Bootup.pack//Event/EventInfo.product.sbyml");
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_eventinfo() -> Byml {
         Byml::from_binary(

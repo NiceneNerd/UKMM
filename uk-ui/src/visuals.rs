@@ -1,5 +1,5 @@
-use egui::epaint::{color_hex::color_from_hex, RectShape, Shadow, Tessellator};
 use egui::{
+    epaint::{color_hex::color_from_hex, RectShape, Shadow, Tessellator},
     style::{Margin, Selection, Spacing, WidgetVisuals, Widgets},
     Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
 };
@@ -86,44 +86,44 @@ pub fn default_dark(ctx: &egui::Context) {
             override_text_color: None,
             widgets: Widgets {
                 noninteractive: WidgetVisuals {
-                    bg_fill: from_hex!("#1C1E1F"),
+                    bg_fill:   from_hex!("#1C1E1F"),
                     bg_stroke: Stroke::new(1.0, from_hex!("#2F2E2A")),
                     fg_stroke: Stroke::new(1.0, from_hex!("#BCCAD1")),
-                    rounding: Rounding::same(0.0),
+                    rounding:  Rounding::same(0.0),
                     expansion: 0.0,
                 },
                 inactive: WidgetVisuals {
-                    bg_fill: from_hex!("#1d4e77"),
+                    bg_fill:   from_hex!("#1d4e77"),
                     bg_stroke: Stroke::new(1.0, from_hex!("#237ba3")),
                     fg_stroke: Stroke::new(1.0, from_hex!("#f0f0f0")),
-                    rounding: Rounding::same(2.0),
+                    rounding:  Rounding::same(2.0),
                     expansion: 0.0,
                 },
                 hovered: WidgetVisuals {
-                    bg_fill: from_hex!("#237ba3"),
+                    bg_fill:   from_hex!("#237ba3"),
                     bg_stroke: Stroke::new(1.0, from_hex!("#1d649a")),
                     fg_stroke: Stroke::new(1.5, from_hex!("#f0f0f0")),
-                    rounding: Rounding::same(2.0),
+                    rounding:  Rounding::same(2.0),
                     expansion: 1.0,
                 },
                 active: WidgetVisuals {
-                    bg_fill: from_hex!("#12384f"),
+                    bg_fill:   from_hex!("#12384f"),
                     bg_stroke: Stroke::new(1.0, from_hex!("#237ba3")),
                     fg_stroke: Stroke::new(1.5, from_hex!("#D9EEFF")),
-                    rounding: Rounding::same(2.0),
+                    rounding:  Rounding::same(2.0),
                     expansion: 1.0,
                 },
                 open: WidgetVisuals {
-                    bg_fill: from_hex!("#1C1E1F"),
+                    bg_fill:   from_hex!("#1C1E1F"),
                     bg_stroke: Stroke::new(1.0, from_hex!("#2F2E2A")),
                     fg_stroke: Stroke::new(1.0, from_hex!("#D9EEFF")),
-                    rounding: Rounding::same(2.0),
+                    rounding:  Rounding::same(2.0),
                     expansion: 0.0,
                 },
             },
             selection: Selection {
                 bg_fill: BLUE.linear_multiply(0.667),
-                stroke: Stroke::new(1.0, Color32::WHITE),
+                stroke:  Stroke::new(1.0, Color32::WHITE),
             },
             hyperlink_color: BLUE,
             faint_bg_color: from_hex!("#252729"),
@@ -137,7 +137,9 @@ pub fn default_dark(ctx: &egui::Context) {
             resize_corner_size: 8.0,
             text_cursor_width: 2.0,
             text_cursor_preview: false,
-            clip_rect_margin: 3.0, // should be at least half the size of the widest frame stroke + max WidgetVisuals::expansion
+            clip_rect_margin: 3.0, /* should be at least half the size of the widest
+                                    * frame stroke
+                                    * + max WidgetVisuals::expansion */
             button_frame: true,
             collapsing_header_frame: false,
         },

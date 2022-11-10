@@ -1,8 +1,9 @@
-use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
 use uk_ui_derive::Editable;
+
+use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable, BymlData)]
 pub struct TipData {
@@ -84,8 +85,9 @@ impl Resource for Tips {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_tips() -> Byml {
         Byml::from_binary(

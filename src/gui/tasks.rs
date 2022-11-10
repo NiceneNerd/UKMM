@@ -1,10 +1,12 @@
-use super::Message;
+use std::{io::BufReader, path::Path};
+
 use anyhow::{Context, Result};
 use fs_err as fs;
 use im::Vector;
-use std::{io::BufReader, path::Path};
 use uk_manager::{core::Manager, mods::Mod};
 use uk_mod::{unpack::ModReader, Manifest};
+
+use super::Message;
 
 fn is_probably_a_mod(path: &Path) -> bool {
     let ext = path
@@ -20,21 +22,23 @@ fn is_probably_a_mod(path: &Path) -> bool {
             .context("")
             .and_then(|f| zip::ZipArchive::new(BufReader::new(f)).context(""))
         {
-            Ok(zip) => zip.file_names().any(|n| {
-                [
-                    "content",
-                    "aoc",
-                    "romfs",
-                    "RomFS",
-                    "atmosphere",
-                    "contents",
-                    "01007EF00011E000",
-                    "01007EF00011F001",
-                    "BreathOfTheWild",
-                ]
-                .into_iter()
-                .any(|root| n.starts_with(root))
-            }),
+            Ok(zip) => {
+                zip.file_names().any(|n| {
+                    [
+                        "content",
+                        "aoc",
+                        "romfs",
+                        "RomFS",
+                        "atmosphere",
+                        "contents",
+                        "01007EF00011E000",
+                        "01007EF00011F001",
+                        "BreathOfTheWild",
+                    ]
+                    .into_iter()
+                    .any(|root| n.starts_with(root))
+                })
+            }
             Err(_) => false,
         }
     }

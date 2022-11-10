@@ -1,5 +1,6 @@
-use egui::{DragValue, Id, Response, Ui};
 use std::hash::Hash;
+
+use egui::{DragValue, Id, Response, Ui};
 pub mod aamp;
 pub mod byml;
 pub mod maps;
@@ -21,6 +22,7 @@ pub trait EditableValue {
 
 impl EditableValue for bool {
     const DISPLAY: EditableDisplay = EditableDisplay::Inline;
+
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         ui.checkbox(self, if *self { "True" } else { "False" })
     }
@@ -30,6 +32,7 @@ macro_rules! impl_int {
     ($num:tt) => {
         impl EditableValue for $num {
             const DISPLAY: EditableDisplay = EditableDisplay::Inline;
+
             fn edit_ui(&mut self, ui: &mut Ui) -> Response {
                 ui.add(DragValue::new(self))
             }
@@ -41,6 +44,7 @@ macro_rules! impl_float {
     ($num:tt) => {
         impl EditableValue for $num {
             const DISPLAY: EditableDisplay = EditableDisplay::Inline;
+
             fn edit_ui(&mut self, ui: &mut Ui) -> Response {
                 ui.add(DragValue::new(self).min_decimals(1).speed(0.1))
             }
@@ -63,6 +67,7 @@ impl_float!(f64);
 
 impl EditableValue for String {
     const DISPLAY: EditableDisplay = EditableDisplay::Inline;
+
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         ui.text_edit_singleline(self)
     }
@@ -98,6 +103,7 @@ impl egui::TextBuffer for SmartStringWrapper<'_> {
 
 impl EditableValue for smartstring::alias::String {
     const DISPLAY: EditableDisplay = EditableDisplay::Inline;
+
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         let mut text = SmartStringWrapper(self);
         ui.text_edit_singleline(&mut text)
@@ -109,6 +115,7 @@ where
     T: EditableValue,
 {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         let mut changed = false;
         let mut res = if self.len() < 5 {
@@ -135,6 +142,7 @@ where
 
 impl<T: EditableValue> EditableValue for Vec<T> {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         let mut changed = false;
         let mut res = if self.len() < 5 {
@@ -161,6 +169,7 @@ impl<T: EditableValue> EditableValue for Vec<T> {
 
 impl<T: EditableValue + Default + PartialEq> EditableValue for Option<T> {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         self.edit_ui_with_id(ui, "option")
     }
@@ -193,6 +202,7 @@ impl<T: EditableValue + Default + PartialEq> EditableValue for Option<T> {
 
 impl<T: EditableValue> EditableValue for Box<T> {
     const DISPLAY: EditableDisplay = T::DISPLAY;
+
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         self.edit_ui_with_id(ui, "boxed")
     }
@@ -204,6 +214,7 @@ impl<T: EditableValue> EditableValue for Box<T> {
 
 impl<T: EditableValue, U: EditableValue> EditableValue for (T, U) {
     const DISPLAY: EditableDisplay = T::DISPLAY;
+
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
         self.edit_ui_with_id(ui, "tuple")
     }

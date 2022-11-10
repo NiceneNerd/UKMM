@@ -1,9 +1,10 @@
+use std::path::PathBuf;
+
 #[cfg(windows)]
 use anyhow::Context;
 use once_cell::sync::Lazy;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 pub use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
-use std::path::PathBuf;
 
 pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
     #[cfg(windows)]

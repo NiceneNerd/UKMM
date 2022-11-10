@@ -1,14 +1,16 @@
+use std::collections::BTreeMap;
+
+use join_str::jstr;
+use roead::aamp::*;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     actor::{info_params_filtered, InfoSource, ParameterResource},
     prelude::*,
     util::*,
     Result, UKError,
 };
-use join_str::jstr;
-use roead::{aamp::*};
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ModelList {
@@ -20,6 +22,7 @@ pub struct ModelList {
 
 impl TryFrom<&ParameterIO> for ModelList {
     type Error = UKError;
+
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         Ok(Self {
             controller_info: pio
@@ -57,6 +60,7 @@ impl TryFrom<&ParameterIO> for ModelList {
 
 impl TryFrom<ParameterIO> for ModelList {
     type Error = UKError;
+
     fn try_from(pio: ParameterIO) -> Result<Self> {
         pio.try_into()
     }
@@ -70,7 +74,7 @@ impl From<ModelList> for ParameterIO {
                     "ControllerInfo" => val.controller_info,
                     "Attention" => val.attention,
                 ),
-                lists: plists!(
+                lists:   plists!(
                     "ModelData" => ParameterList::new()
                         .with_lists(
                             val.model_data.into_iter().enumerate().map(|(i, list)| {
@@ -282,7 +286,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/ModelList/Npc_TripMaster_00.bmodellist",
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/ModelList/Npc_TripMaster_00.\
+             bmodellist",
         );
         assert!(super::ModelList::path_matches(path));
     }

@@ -1,11 +1,12 @@
+use roead::byml::Byml;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     prelude::*,
     util::{self, bhash, DeleteVec},
     Result, UKError,
 };
-use roead::byml::Byml;
-use serde::{Deserialize, Serialize};
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct CookData {
@@ -88,8 +89,9 @@ single_path!(CookData, "Pack/Bootup.pack//Cooking/CookData.sbyml");
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_cookdata() -> Byml {
         Byml::from_binary(

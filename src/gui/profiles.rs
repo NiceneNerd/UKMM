@@ -1,15 +1,19 @@
-use super::{visuals, App, Message};
+use std::path::Path;
+
 use anyhow::Result;
 use fs_err as fs;
-use std::path::Path;
-use uk_ui::egui::{self, text::LayoutJob, Layout, RichText, TextStyle, Ui};
-use uk_ui::icons::IconButtonExt;
+use uk_ui::{
+    egui::{self, text::LayoutJob, Layout, RichText, TextStyle, Ui},
+    icons::IconButtonExt,
+};
+
+use super::{visuals, App, Message};
 
 #[derive(Debug, Default)]
 pub struct ProfileManagerState {
     pub selected: Option<Result<SelectedProfile>>,
-    pub rename: Option<String>,
-    pub show: bool,
+    pub rename:   Option<String>,
+    pub show:     bool,
 }
 
 #[derive(Debug, Clone)]

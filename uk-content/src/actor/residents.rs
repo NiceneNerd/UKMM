@@ -1,12 +1,13 @@
-use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
+use crate::{prelude::*, util::DeleteMap, Result, UKError};
+
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ResidentActorData {
     pub only_res: bool,
-    pub scale: Option<Byml>,
+    pub scale:    Option<Byml>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
@@ -38,7 +39,7 @@ impl TryFrom<&Byml> for ResidentActors {
                                             "Resident actors entry missing only_res",
                                         ))?
                                         .as_bool()?,
-                                    scale: actor.get("scale").cloned(),
+                                    scale:    actor.get("scale").cloned(),
                                 },
                             ))
                         },
@@ -102,8 +103,9 @@ single_path!(
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_residents() -> Byml {
         Byml::from_binary(&std::fs::read("test/Actor/ResidentActors.byml").unwrap()).unwrap()

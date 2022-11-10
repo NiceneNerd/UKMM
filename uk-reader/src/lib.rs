@@ -3,18 +3,20 @@
 mod unpacked;
 mod zarchive;
 
-use self::{unpacked::Unpacked, zarchive::ZArchive};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+
 use anyhow::Context;
 use moka::sync::Cache;
 use parking_lot::RwLock;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
 use uk_content::{canonicalize, platform_prefixes, prelude::Endian, resource::*, util::HashMap};
+
+use self::{unpacked::Unpacked, zarchive::ZArchive};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ROMError {
@@ -71,9 +73,9 @@ fn construct_cache() -> ResourceCache {
 #[derive(Serialize, Deserialize)]
 pub struct ResourceReader {
     bin_type: BinType,
-    source: Box<dyn ResourceLoader>,
+    source:   Box<dyn ResourceLoader>,
     #[serde(skip, default = "construct_cache")]
-    cache: ResourceCache,
+    cache:    ResourceCache,
     #[serde(skip)]
     nest_map: Arc<RwLock<HashMap<String, Arc<str>>>>,
 }
@@ -105,8 +107,8 @@ impl ResourceReader {
 
     pub fn from_zarchive(archive_path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
-            source: Box::new(ZArchive::new(archive_path)?),
-            cache: ResourceCache::new(CACHE_SIZE),
+            source:   Box::new(ZArchive::new(archive_path)?),
+            cache:    ResourceCache::new(CACHE_SIZE),
             bin_type: BinType::Nintendo,
             nest_map: Default::default(),
         })
@@ -118,8 +120,8 @@ impl ResourceReader {
         aoc_dir: Option<impl AsRef<Path>>,
     ) -> Result<Self> {
         Ok(Self {
-            source: Box::new(Unpacked::new(content_dir, update_dir, aoc_dir, true)?),
-            cache: ResourceCache::new(CACHE_SIZE),
+            source:   Box::new(Unpacked::new(content_dir, update_dir, aoc_dir, true)?),
+            cache:    ResourceCache::new(CACHE_SIZE),
             bin_type: BinType::Nintendo,
             nest_map: Default::default(),
         })
@@ -145,8 +147,8 @@ impl ResourceReader {
             None
         };
         Ok(Self {
-            source: Box::new(Unpacked::new(content_dir, None::<PathBuf>, aoc_dir, false)?),
-            cache: ResourceCache::new(500),
+            source:   Box::new(Unpacked::new(content_dir, None::<PathBuf>, aoc_dir, false)?),
+            cache:    ResourceCache::new(500),
             bin_type: BinType::Nintendo,
             nest_map: Default::default(),
         })
@@ -213,11 +215,13 @@ impl ResourceReader {
                             )
                         })?)
                     }
-                    None => Err(ROMError::FileNotFound(
-                        path.as_ref().to_string_lossy().into(),
-                        self.source.host_path().to_path_buf(),
-                    )
-                    .into()),
+                    None => {
+                        Err(ROMError::FileNotFound(
+                            path.as_ref().to_string_lossy().into(),
+                            self.source.host_path().to_path_buf(),
+                        )
+                        .into())
+                    }
                 }
             }
         }

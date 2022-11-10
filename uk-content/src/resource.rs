@@ -1,13 +1,21 @@
+use std::{borrow::Cow, collections::BTreeMap, path::Path};
+
+use anyhow::{Context, Result};
+use join_str::jstr;
+use roead::{aamp::ParameterIO, byml::Byml, sarc::Sarc};
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 pub use crate::{
     actor::{
         info::ActorInfo,
         params::{
-            aiprog::AIProgram, aischedule::AISchedule, animinfo::AnimationInfo, aslist::ASList,
-            atcl::AttClient, atcllist::AttClientList, aware::Awareness, bonectrl::BoneControl,
-            chemical::Chemical, damage::DamageParam, drop::DropTable, general::GeneralParamList,
-            life::LifeCondition, link::ActorLink, lod::Lod, modellist::ModelList, physics::Physics,
-            r#as::AS, recipe::Recipe, rgbw::RagdollBlendWeight, rgconfig::RagdollConfig,
-            rgconfiglist::RagdollConfigList, shop::ShopData, umii::UMii,
+            aiprog::AIProgram, aischedule::AISchedule, animinfo::AnimationInfo, r#as::AS,
+            aslist::ASList, atcl::AttClient, atcllist::AttClientList, aware::Awareness,
+            bonectrl::BoneControl, chemical::Chemical, damage::DamageParam, drop::DropTable,
+            general::GeneralParamList, life::LifeCondition, link::ActorLink, lod::Lod,
+            modellist::ModelList, physics::Physics, recipe::Recipe, rgbw::RagdollBlendWeight,
+            rgconfig::RagdollConfig, rgconfiglist::RagdollConfigList, shop::ShopData, umii::UMii,
         },
         residents::ResidentActors,
         // Actor,
@@ -27,15 +35,6 @@ pub use crate::{
     worldmgr::info::WorldInfo,
 };
 use crate::{prelude::*, util::SortedDeleteSet};
-use anyhow::{Context, Result};
-use join_str::jstr;
-use roead::aamp::ParameterIO;
-use roead::byml::Byml;
-use roead::sarc::Sarc;
-use serde::{Deserialize, Serialize};
-use std::path::Path;
-use std::{borrow::Cow, collections::BTreeMap};
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub enum MergeableResource {
@@ -317,10 +316,12 @@ impl Mergeable for MergeableResource {
             (Self::WorldInfo(a), Self::WorldInfo(b)) => Self::WorldInfo(Box::new(a.diff(b))),
             (Self::GenericByml(a), Self::GenericByml(b)) => Self::GenericByml(Box::new(a.diff(b))),
             (Self::GenericAamp(a), Self::GenericAamp(b)) => Self::GenericAamp(Box::new(a.diff(b))),
-            _ => panic!(
-                "Tried to diff incompatible resources: {} and {}",
-                &self, &other
-            ),
+            _ => {
+                panic!(
+                    "Tried to diff incompatible resources: {} and {}",
+                    &self, &other
+                )
+            }
         }
     }
 
@@ -407,10 +408,12 @@ impl Mergeable for MergeableResource {
             (Self::WorldInfo(a), Self::WorldInfo(b)) => Self::WorldInfo(Box::new(a.merge(b))),
             (Self::GenericByml(a), Self::GenericByml(b)) => Self::GenericByml(Box::new(a.merge(b))),
             (Self::GenericAamp(a), Self::GenericAamp(b)) => Self::GenericAamp(Box::new(a.merge(b))),
-            _ => panic!(
-                "Tried to merge incompatible resources: {} and {}",
-                &self, &diff
-            ),
+            _ => {
+                panic!(
+                    "Tried to merge incompatible resources: {} and {}",
+                    &self, &diff
+                )
+            }
         }
     }
 }

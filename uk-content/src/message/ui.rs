@@ -1,11 +1,13 @@
 use std::ops::DerefMut;
 
-use super::MessagePack;
 use ::msyt::model::MsbtInfo;
 use uk_ui::{editor::*, egui, ext::UiExt, icons::IconButtonExt};
 
+use super::MessagePack;
+
 impl EditableValue for MessagePack {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         self.edit_ui_with_id(ui, "message_pack")
     }
@@ -31,19 +33,16 @@ impl EditableValue for MessagePack {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_key.write().deref_mut());
                         if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
-                            self.0.insert(
-                                new_key.read().as_str().into(),
-                                ::msyt::Msyt {
-                                    msbt: MsbtInfo {
-                                        group_count: 0,
-                                        atr1_unknown: None,
-                                        ato1: None,
-                                        tsy1: None,
-                                        nli1: None,
-                                    },
-                                    entries: Default::default(),
+                            self.0.insert(new_key.read().as_str().into(), ::msyt::Msyt {
+                                msbt:    MsbtInfo {
+                                    group_count: 0,
+                                    atr1_unknown: None,
+                                    ato1: None,
+                                    tsy1: None,
+                                    nli1: None,
                                 },
-                            );
+                                entries: Default::default(),
+                            });
                             clear_tmp = true;
                         }
                     });

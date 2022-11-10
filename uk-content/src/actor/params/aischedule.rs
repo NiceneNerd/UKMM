@@ -1,8 +1,9 @@
-use crate::{actor::ParameterResource, prelude::*};
 use join_str::jstr;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
+
+use crate::{actor::ParameterResource, prelude::*};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct AISchedule(pub Byml);
@@ -120,7 +121,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/AISchedule/Npc_TripMaster_00.baischedule",
+            "content/Actor/Pack/Npc_TripMaster_00.sbactorpack//Actor/AISchedule/Npc_TripMaster_00.\
+             baischedule",
         );
         assert!(super::AISchedule::path_matches(path));
     }

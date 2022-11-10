@@ -1,3 +1,8 @@
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+
 use anyhow::{Context, Result};
 use enum_iterator::Sequence;
 use fs_err as fs;
@@ -5,10 +10,6 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
 use uk_reader::ResourceReader;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -142,7 +143,7 @@ impl From<Language> for &str {
 pub struct DeployConfig {
     pub output: PathBuf,
     pub method: DeployMethod,
-    pub auto: bool,
+    pub auto:   bool,
 }
 
 impl Default for DeployConfig {
@@ -150,7 +151,7 @@ impl Default for DeployConfig {
         DeployConfig {
             output: "".into(),
             method: DeployMethod::Copy,
-            auto: false,
+            auto:   false,
         }
     }
 }

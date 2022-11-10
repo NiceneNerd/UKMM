@@ -1,8 +1,9 @@
 #![doc(hidden)]
-use super::*;
+use std::{fmt, path::PathBuf};
+
 use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
-use std::fmt;
-use std::path::PathBuf;
+
+use super::*;
 
 impl<'de> Deserialize<'de> for ModReader {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>

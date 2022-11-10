@@ -1,9 +1,6 @@
-use roead::byml::Byml;
 use roead::sarc::Sarc;
-
 use uk_content::resource::GameDataPack;
-use uk_ui::editor::EditableValue;
-use uk_ui::egui;
+use uk_ui::{editor::EditableValue, egui};
 
 struct EditorTest<T> {
     value: T,

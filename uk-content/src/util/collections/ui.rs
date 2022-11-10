@@ -1,20 +1,21 @@
-use std::ops::DerefMut;
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{ops::DerefMut, str::FromStr, sync::Arc};
+
+use uk_ui::{
+    editor::{EditableDisplay, EditableValue},
+    egui::{self, mutex::RwLock, Layout},
+    ext::UiExt,
+    icons::IconButtonExt,
+};
 
 use super::*;
-use uk_ui::editor::{EditableDisplay, EditableValue};
-use uk_ui::egui::mutex::RwLock;
-use uk_ui::egui::{self, Layout};
-
-use uk_ui::ext::UiExt;
-use uk_ui::icons::IconButtonExt;
 
 impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec<T> {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         self.edit_ui_with_id(ui, "delete-vec")
     }
+
     fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl Hash) -> egui::Response {
         let id = egui::Id::new(id);
         let mut changed = false;
@@ -63,9 +64,11 @@ where
     T: std::fmt::Debug + for<'a> TryFrom<&'a str> + Default + DeleteKey,
 {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         self.edit_ui_with_id(ui, "delete_set")
     }
+
     fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl Hash) -> egui::Response {
         let id = egui::Id::new(id);
         let mut changed = false;
@@ -106,9 +109,11 @@ where
     T: std::fmt::Debug + for<'a> TryFrom<&'a str> + Default + DeleteKey + Ord,
 {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         self.edit_ui_with_id(ui, "delete_set")
     }
+
     fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl Hash) -> egui::Response {
         let id = egui::Id::new(id);
         let mut changed = false;

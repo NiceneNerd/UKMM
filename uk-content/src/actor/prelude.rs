@@ -1,5 +1,6 @@
-use crate::Result;
 use roead::{aamp::*, byml::Byml};
+
+use crate::Result;
 
 pub(crate) fn extract_info_param<T: TryFrom<Parameter> + Into<Byml> + Clone>(
     obj: &ParameterObject,

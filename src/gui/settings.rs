@@ -1,21 +1,23 @@
-use super::{App, Message};
-use anyhow::Result;
-use eframe::egui::Response;
-use once_cell::sync::Lazy;
-use parking_lot::RwLock;
-use rustc_hash::FxHashMap;
-use serde::Deserialize;
 use std::{
     ops::Deref,
     path::{Path, PathBuf},
     sync::Arc,
 };
+
+use anyhow::Result;
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
+use rustc_hash::FxHashMap;
+use serde::Deserialize;
 use uk_manager::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
-use uk_ui::egui::{
-    self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui,
+use uk_ui::{
+    egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
+    ext::UiExt,
+    icons,
 };
-use uk_ui::{ext::UiExt, icons};
+
+use super::{App, Message};
 
 fn render_setting<R>(
     name: &str,
@@ -27,10 +29,10 @@ fn render_setting<R>(
     ui.horizontal(|ui| {
         ui.label(RichText::new(name).family(egui::FontFamily::Name("Bold".into())));
         ui.add(
-            ImageButton::new(
-                icons::get_icon(ui.ctx(), icons::Icon::Info),
-                [icon_height, icon_height],
-            )
+            ImageButton::new(icons::get_icon(ui.ctx(), icons::Icon::Info), [
+                icon_height,
+                icon_height,
+            ])
             .frame(false)
             .tint(ui.visuals().text_color()),
         )
@@ -43,16 +45,16 @@ fn render_setting<R>(
 #[serde(tag = "type")]
 enum DumpType {
     Unpacked {
-        host_path: PathBuf,
+        host_path:   PathBuf,
         content_dir: Option<PathBuf>,
-        update_dir: Option<PathBuf>,
-        aoc_dir: Option<PathBuf>,
+        update_dir:  Option<PathBuf>,
+        aoc_dir:     Option<PathBuf>,
     },
     ZArchive {
         content_dir: PathBuf,
-        update_dir: PathBuf,
-        aoc_dir: Option<PathBuf>,
-        host_path: PathBuf,
+        update_dir:  PathBuf,
+        aoc_dir:     Option<PathBuf>,
+        host_path:   PathBuf,
     },
 }
 
@@ -110,10 +112,10 @@ impl Default for PlatformSettingsUI {
             language: Language::USen,
             profile: "Default".into(),
             dump: DumpType::Unpacked {
-                host_path: Default::default(),
+                host_path:   Default::default(),
                 content_dir: Default::default(),
-                update_dir: Default::default(),
-                aoc_dir: Default::default(),
+                update_dir:  Default::default(),
+                aoc_dir:     Default::default(),
             },
             deploy_config: Default::default(),
         }
@@ -122,6 +124,7 @@ impl Default for PlatformSettingsUI {
 
 impl TryFrom<PlatformSettingsUI> for PlatformSettings {
     type Error = anyhow::Error;
+
     fn try_from(settings: PlatformSettingsUI) -> Result<Self> {
         let dump = match settings.dump {
             DumpType::Unpacked {
@@ -129,11 +132,13 @@ impl TryFrom<PlatformSettingsUI> for PlatformSettings {
                 update_dir,
                 aoc_dir,
                 ..
-            } => Arc::new(ResourceReader::from_unpacked_dirs(
-                content_dir,
-                update_dir,
-                aoc_dir,
-            )?),
+            } => {
+                Arc::new(ResourceReader::from_unpacked_dirs(
+                    content_dir,
+                    update_dir,
+                    aoc_dir,
+                )?)
+            }
             DumpType::ZArchive { host_path, .. } => {
                 Arc::new(ResourceReader::from_zarchive(host_path)?)
             }
@@ -178,14 +183,45 @@ fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
     let mut changed = false;
     ui.group(|ui| {
         ui.allocate_space([ui.available_width(), -8.0].into());
-        render_setting("Deploy Method", "There are three methods of deployment: copying, hard linking, and symlinking. Generally copying is slow and should be avoided if possible. For more on this, consult the docs.", ui, |ui| {
-            changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Copy, "Copy").changed();
-            changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::HardLink, "Hard Links").changed();
-            changed |= ui.radio_value(&mut config.method, uk_manager::settings::DeployMethod::Symlink, "Symlink").changed();
-        });
-        render_setting("Auto Deploy", "Whether to automatically deploy changes to the mod configuration every time they are applied.", ui, |ui| {
-            changed |= ui.checkbox(&mut config.auto, "").changed();
-        });
+        render_setting(
+            "Deploy Method",
+            "There are three methods of deployment: copying, hard linking, and symlinking. \
+             Generally copying is slow and should be avoided if possible. For more on this, \
+             consult the docs.",
+            ui,
+            |ui| {
+                changed |= ui
+                    .radio_value(
+                        &mut config.method,
+                        uk_manager::settings::DeployMethod::Copy,
+                        "Copy",
+                    )
+                    .changed();
+                changed |= ui
+                    .radio_value(
+                        &mut config.method,
+                        uk_manager::settings::DeployMethod::HardLink,
+                        "Hard Links",
+                    )
+                    .changed();
+                changed |= ui
+                    .radio_value(
+                        &mut config.method,
+                        uk_manager::settings::DeployMethod::Symlink,
+                        "Symlink",
+                    )
+                    .changed();
+            },
+        );
+        render_setting(
+            "Auto Deploy",
+            "Whether to automatically deploy changes to the mod configuration every time they are \
+             applied.",
+            ui,
+            |ui| {
+                changed |= ui.checkbox(&mut config.auto, "").changed();
+            },
+        );
         render_setting(
             "Output Folder",
             "Where to deploy the final merged mod pack.",
@@ -236,10 +272,10 @@ fn render_platform_config(
                     .clicked()
                 {
                     config.dump = DumpType::Unpacked {
-                        host_path: Default::default(),
+                        host_path:   Default::default(),
                         content_dir: Default::default(),
-                        update_dir: Default::default(),
-                        aoc_dir: Default::default(),
+                        update_dir:  Default::default(),
+                        aoc_dir:     Default::default(),
                     };
                     changed = true;
                 }
@@ -249,9 +285,9 @@ fn render_platform_config(
                 {
                     config.dump = DumpType::ZArchive {
                         content_dir: Default::default(),
-                        update_dir: Default::default(),
-                        aoc_dir: Default::default(),
-                        host_path: Default::default(),
+                        update_dir:  Default::default(),
+                        aoc_dir:     Default::default(),
+                        host_path:   Default::default(),
                     };
                     changed = true;
                 }
@@ -317,88 +353,113 @@ impl App {
                 egui::CollapsingHeader::new("General")
                     .default_open(true)
                     .show(ui, |ui| {
-                            render_setting("Current Mode", "Select whether to manage the Wii U or Switch version of the game", ui, |ui| {
-                                ui.radio_value(
-                                    &mut settings.current_mode,
-                                    Platform::WiiU,
-                                    "Wii U",
-                                );
+                        render_setting(
+                            "Current Mode",
+                            "Select whether to manage the Wii U or Switch version of the game",
+                            ui,
+                            |ui| {
+                                ui.radio_value(&mut settings.current_mode, Platform::WiiU, "Wii U");
                                 ui.radio_value(
                                     &mut settings.current_mode,
                                     Platform::Switch,
                                     "Switch",
                                 );
-                            });
-                            render_setting(
-                                "Storage Folder",
-                                "UKMM will store mods, profiles, and similar data here.",
-                                ui,
-                                |ui| {
-                                    ui.folder_picker(&mut settings.storage_dir);
-                                },
-                            );
-                            render_setting("Unpack Mods", "By default UKMM stores mods as ZIP files with ZSTD compression. Turn on this option to unpack them instead, which will improve performance at the cost of disk space.", ui, |ui| {
-                                ui.add(Checkbox::new(&mut settings.unpack_mods, ""))
-                            });
-                            render_setting("Show Changelog", "Show a summary of recent changes after UKMM updates.", ui, |ui| {
-                                ui.add(Checkbox::new(&mut settings.show_changelog, ""))
-                            });
+                            },
+                        );
+                        render_setting(
+                            "Storage Folder",
+                            "UKMM will store mods, profiles, and similar data here.",
+                            ui,
+                            |ui| {
+                                ui.folder_picker(&mut settings.storage_dir);
+                            },
+                        );
+                        render_setting(
+                            "Unpack Mods",
+                            "By default UKMM stores mods as ZIP files with ZSTD compression. Turn \
+                             on this option to unpack them instead, which will improve \
+                             performance at the cost of disk space.",
+                            ui,
+                            |ui| ui.add(Checkbox::new(&mut settings.unpack_mods, "")),
+                        );
+                        render_setting(
+                            "Show Changelog",
+                            "Show a summary of recent changes after UKMM updates.",
+                            ui,
+                            |ui| ui.add(Checkbox::new(&mut settings.show_changelog, "")),
+                        );
                     });
-                egui::CollapsingHeader::new("Wii U Config")
-                    .show(ui, |ui| {
-                        wiiu_changed = render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
-                    });
-                egui::CollapsingHeader::new("Switch Config")
-                    .show(ui, |ui| {
-                        switch_changed = render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
-                    });
+                egui::CollapsingHeader::new("Wii U Config").show(ui, |ui| {
+                    wiiu_changed =
+                        render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
+                });
+                egui::CollapsingHeader::new("Switch Config").show(ui, |ui| {
+                    switch_changed =
+                        render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
+                });
             });
             switch_changed |= {
-                match (CONFIG.read().get(&Platform::Switch), self.temp_settings.switch_config.as_ref()) {
+                match (
+                    CONFIG.read().get(&Platform::Switch),
+                    self.temp_settings.switch_config.as_ref(),
+                ) {
                     (None, None) | (None, Some(_)) => false,
-                    (Some(config), None) => !config.dump.is_empty() || !config.deploy_config.output.as_os_str().is_empty(),
+                    (Some(config), None) => {
+                        !config.dump.is_empty()
+                            || !config.deploy_config.output.as_os_str().is_empty()
+                    }
                     (Some(tmp_config), Some(config)) => tmp_config.ne(config),
                 }
             };
             wiiu_changed |= {
-                match (CONFIG.read().get(&Platform::WiiU), self.temp_settings.wiiu_config.as_ref()) {
+                match (
+                    CONFIG.read().get(&Platform::WiiU),
+                    self.temp_settings.wiiu_config.as_ref(),
+                ) {
                     (None, None) | (None, Some(_)) => false,
-                    (Some(config), None) => !config.dump.is_empty() || !config.deploy_config.output.as_os_str().is_empty(),
+                    (Some(config), None) => {
+                        !config.dump.is_empty()
+                            || !config.deploy_config.output.as_os_str().is_empty()
+                    }
                     (Some(tmp_config), Some(config)) => tmp_config.ne(config),
                 }
             };
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    let platform_config_changed = self.temp_settings.ne(self.core.settings().deref() )|| wiiu_changed | switch_changed;
+                    let platform_config_changed =
+                        self.temp_settings.ne(self.core.settings().deref())
+                            || wiiu_changed | switch_changed;
                     ui.add_enabled_ui(platform_config_changed, |ui| {
                         if ui.button("Save").clicked() {
                             if wiiu_changed {
-                                let wiiu_config_ui = CONFIG.write().get(&Platform::WiiU).unwrap().clone();
+                                let wiiu_config_ui =
+                                    CONFIG.write().get(&Platform::WiiU).unwrap().clone();
                                 let wiiu_config = wiiu_config_ui.try_into();
                                 match wiiu_config {
                                     Ok(conf) => {
                                         CONFIG.write().remove(&Platform::WiiU);
                                         self.temp_settings.wiiu_config = Some(conf)
-                                    },
+                                    }
                                     Err(e) => {
                                         self.do_update(Message::Error(e));
                                         return;
-                                    },
+                                    }
                                 }
                             }
                             if switch_changed {
-                                let switch_config_ui = CONFIG.write().get(&Platform::Switch).unwrap().clone();
+                                let switch_config_ui =
+                                    CONFIG.write().get(&Platform::Switch).unwrap().clone();
                                 let switch_config = switch_config_ui.try_into();
                                 match switch_config {
                                     Ok(conf) => {
                                         CONFIG.write().remove(&Platform::Switch);
                                         self.temp_settings.switch_config = Some(conf)
-                                    },
+                                    }
                                     Err(e) => {
                                         self.do_update(Message::Error(e));
                                         return;
-                                    },
+                                    }
                                 }
                             }
                             self.do_update(Message::SaveSettings);

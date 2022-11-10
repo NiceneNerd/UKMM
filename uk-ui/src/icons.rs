@@ -124,10 +124,10 @@ impl IconButtonExt for Ui {
         let button_padding = self.spacing().button_padding;
         self.spacing_mut().button_padding = button_padding / 2.;
         let res = self.add(
-            ImageButton::new(
-                get_icon(self.ctx(), icon),
-                [self.spacing().icon_width, self.spacing().icon_width],
-            )
+            ImageButton::new(get_icon(self.ctx(), icon), [
+                self.spacing().icon_width,
+                self.spacing().icon_width,
+            ])
             .tint(self.style().visuals.widgets.inactive.fg_stroke.color),
         );
         self.spacing_mut().button_padding = button_padding;

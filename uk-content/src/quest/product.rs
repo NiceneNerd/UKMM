@@ -1,7 +1,8 @@
-use crate::{prelude::*, util::DeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
+
+use crate::{prelude::*, util::DeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct QuestProduct(pub DeleteMap<String, Byml>);
@@ -66,8 +67,9 @@ single_path!(
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_quests() -> Byml {
         Byml::from_binary(

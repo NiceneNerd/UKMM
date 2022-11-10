@@ -1,13 +1,13 @@
-use crate::actor::ParameterResource;
-use crate::Result;
-use crate::{
-    actor::{extract_info_param, InfoSource},
-    prelude::*,
-};
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
+
+use crate::{
+    actor::{extract_info_param, InfoSource, ParameterResource},
+    prelude::*,
+    Result,
+};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct GeneralParamList(pub ParameterIO);
@@ -366,7 +366,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/GeneralParamList/Guardian.bgparamlist",
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/GeneralParamList/Guardian.\
+             bgparamlist",
         );
         assert!(super::GeneralParamList::path_matches(path));
     }

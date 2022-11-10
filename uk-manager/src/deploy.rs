@@ -1,8 +1,8 @@
-use crate::{
-    mods,
-    settings::{DeployMethod, Platform, Settings},
-    util::{self, HashMap},
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, Weak},
 };
+
 use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
@@ -12,13 +12,15 @@ use roead::yaz0::{compress, decompress};
 use rstb::ResourceSizeTable;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use std::{
-    path::{Path, PathBuf},
-    sync::{Arc, Weak},
-};
 use uk_mod::{
     unpack::{ModReader, ModUnpacker},
     Manifest,
+};
+
+use crate::{
+    mods,
+    settings::{DeployMethod, Platform, Settings},
+    util::{self, HashMap},
 };
 
 #[inline(always)]
@@ -44,7 +46,7 @@ fn create_symlink(link: &Path, target: &Path) -> Result<()> {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct PendingLog {
-    files: Manifest,
+    files:  Manifest,
     delete: Manifest,
 }
 
@@ -114,7 +116,7 @@ impl Manager {
             Self::log_path(&self.settings.upgrade().unwrap().read()),
             &serde_yaml::to_string(&PendingLog {
                 delete: self.pending_delete.read().clone(),
-                files: self.pending_files.read().clone(),
+                files:  self.pending_files.read().clone(),
             })?,
         )?;
         Ok(())
@@ -147,21 +149,23 @@ impl Manager {
             }
         } else {
             if is_symlink(&config.output) {
-                anyhow::bail!("Deployment folder is currently a symlink or junction, but the current deployment method is not symlinking. Please manually remove the existing link at {} to prevent unexpected results.", config.output.display());
+                anyhow::bail!(
+                    "Deployment folder is currently a symlink or junction, but the current \
+                     deployment method is not symlinking. Please manually remove the existing \
+                     link at {} to prevent unexpected results.",
+                    config.output.display()
+                );
             }
             let (content, aoc) = uk_content::platform_prefixes(settings.current_mode.into());
             let deletes = self.pending_delete.read();
             log::debug!("Deployed files to delete:\n{:#?}", &deletes);
             let syncs = self.pending_files.read();
             log::debug!("Files to deploy\n{:#?}", &syncs);
-            log::info!(
-                "Deploying by {}",
-                match config.method {
-                    DeployMethod::Copy => "copy",
-                    DeployMethod::HardLink => "hard links",
-                    DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
-                }
-            );
+            log::info!("Deploying by {}", match config.method {
+                DeployMethod::Copy => "copy",
+                DeployMethod::HardLink => "hard links",
+                DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
+            });
             for (dir, dels, syncs) in [
                 (content, &deletes.content_files, &syncs.content_files),
                 (aoc, &deletes.aoc_files, &syncs.aoc_files),
@@ -193,14 +197,22 @@ impl Manager {
                             if out.exists() {
                                 fs::remove_file(&out)?;
                             }
-                            if let Err(e) = fs::hard_link(source.join(f.as_str()), &out).with_context(|| {
-                                format!("Failed to deploy {} to {}", f, out.display())
-                            }) {
-                                return Err(if e.root_cause().to_string().contains("os error 17") {
-                                    e.context("Hard linking failed because the output folder is on a different disk or partition than the storage folder.")
-                                } else {
-                                    e
-                                });
+                            if let Err(e) = fs::hard_link(source.join(f.as_str()), &out)
+                                .with_context(|| {
+                                    format!("Failed to deploy {} to {}", f, out.display())
+                                })
+                            {
+                                return Err(
+                                    if e.root_cause().to_string().contains("os error 17") {
+                                        e.context(
+                                            "Hard linking failed because the output folder is on \
+                                             a different disk or partition than the storage \
+                                             folder.",
+                                        )
+                                    } else {
+                                        e
+                                    },
+                                );
                             }
                             Ok(())
                         })?;

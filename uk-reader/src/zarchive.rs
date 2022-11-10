@@ -1,15 +1,17 @@
-use crate::{ROMError, Result};
-use serde::Serialize;
 use std::path::{Path, PathBuf};
+
+use serde::Serialize;
+
+use crate::{ROMError, Result};
 
 #[derive(Debug, Serialize)]
 pub(crate) struct ZArchive {
     #[serde(skip_serializing)]
-    archive: zarchive::reader::ZArchiveReader,
+    archive:     zarchive::reader::ZArchiveReader,
     content_dir: PathBuf,
-    update_dir: PathBuf,
-    aoc_dir: Option<PathBuf>,
-    host_path: PathBuf,
+    update_dir:  PathBuf,
+    aoc_dir:     Option<PathBuf>,
+    host_path:   PathBuf,
 }
 
 impl ZArchive {
@@ -84,10 +86,11 @@ impl super::ResourceLoader for ZArchive {
 }
 
 mod de {
-    use super::*;
+    use std::{fmt, path::PathBuf};
+
     use serde::de::{Deserialize, Deserializer, MapAccess, Visitor};
-    use std::fmt;
-    use std::path::PathBuf;
+
+    use super::*;
 
     impl<'de> Deserialize<'de> for ZArchive {
         fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>

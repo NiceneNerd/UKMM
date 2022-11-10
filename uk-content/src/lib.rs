@@ -11,8 +11,9 @@ use mimalloc::MiMalloc;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
-use smartstring::alias::String;
 use std::path::Path;
+
+use smartstring::alias::String;
 use thiserror::Error;
 
 pub mod actor;
@@ -154,8 +155,8 @@ pub mod prelude {
 
                 fn merge(&self, diff: &Self) -> Self {
                     Self(ParameterIO {
-                        data_type: self.$field.data_type.clone(),
-                        version: self.$field.version,
+                        data_type:  self.$field.data_type.clone(),
+                        version:    self.$field.version,
                         param_root: crate::util::merge_plist(
                             &self.$field.param_root,
                             &diff.$field.param_root,
@@ -169,16 +170,16 @@ pub mod prelude {
     impl Mergeable for roead::aamp::ParameterIO {
         fn diff(&self, other: &Self) -> Self {
             Self {
-                data_type: self.data_type.clone(),
-                version: self.version,
+                data_type:  self.data_type.clone(),
+                version:    self.version,
                 param_root: crate::util::diff_plist(&self.param_root, &other.param_root),
             }
         }
 
         fn merge(&self, diff: &Self) -> Self {
             Self {
-                data_type: self.data_type.clone(),
-                version: self.version,
+                data_type:  self.data_type.clone(),
+                version:    self.version,
                 param_root: crate::util::merge_plist(&self.param_root, &diff.param_root),
             }
         }
@@ -302,7 +303,7 @@ pub mod prelude {
 
     #[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
     pub struct ResourcePath {
-        pub path: Cow<'static, str>,
+        pub path:     Cow<'static, str>,
         pub location: ResourceLocation,
     }
 
@@ -333,7 +334,7 @@ pub mod prelude {
     macro_rules! single_path {
         ($type:ty, $path:expr) => {
             static PATH: crate::prelude::ResourcePath = crate::prelude::ResourcePath {
-                path: std::borrow::Cow::Borrowed($path),
+                path:     std::borrow::Cow::Borrowed($path),
                 location: ResourceLocation::Content,
             };
 
@@ -344,9 +345,9 @@ pub mod prelude {
             }
         };
 
-        ($type:ty, $path:expr, aoc) => {
+        ($type:ty, $path:expr,aoc) => {
             static PATH: crate::prelude::ResourcePath = crate::prelude::ResourcePath {
-                path: std::borrow::Cow::Borrowed($path),
+                path:     std::borrow::Cow::Borrowed($path),
                 location: ResourceLocation::Aoc,
             };
 

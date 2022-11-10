@@ -1,13 +1,16 @@
 #![feature(seek_stream_len, let_chains)]
-use anyhow::Context;
-use serde::{Deserialize, Serialize};
-use smartstring::alias::String;
 use std::{
     collections::{BTreeSet, HashSet},
     path::{Path, PathBuf},
 };
-use uk_content::prelude::Endian;
-use uk_content::util::{IndexMap, IndexSet};
+
+use anyhow::Context;
+use serde::{Deserialize, Serialize};
+use smartstring::alias::String;
+use uk_content::{
+    prelude::Endian,
+    util::{IndexMap, IndexSet},
+};
 pub mod pack;
 pub mod unpack;
 
@@ -16,7 +19,7 @@ pub struct Manifest {
     #[serde(rename = "content")]
     pub content_files: BTreeSet<String>,
     #[serde(rename = "aoc")]
-    pub aoc_files: BTreeSet<String>,
+    pub aoc_files:     BTreeSet<String>,
 }
 
 impl Manifest {
@@ -84,18 +87,23 @@ impl ModOptionGroup for ExclusiveOptionGroup {
     fn name(&self) -> &str {
         &self.name
     }
+
     fn description(&self) -> &str {
         &self.description
     }
+
     fn options(&self) -> &IndexSet<ModOption> {
         &self.options
     }
+
     fn name_mut(&mut self) -> &mut String {
         &mut self.name
     }
+
     fn description_mut(&mut self) -> &mut String {
         &mut self.description
     }
+
     fn options_mut(&mut self) -> &mut IndexSet<ModOption> {
         &mut self.options
     }
@@ -113,18 +121,23 @@ impl ModOptionGroup for MultipleOptionGroup {
     fn name(&self) -> &str {
         &self.name
     }
+
     fn description(&self) -> &str {
         &self.description
     }
+
     fn options(&self) -> &IndexSet<ModOption> {
         &self.options
     }
+
     fn name_mut(&mut self) -> &mut String {
         &mut self.name
     }
+
     fn description_mut(&mut self) -> &mut String {
         &mut self.description
     }
+
     fn options_mut(&mut self) -> &mut IndexSet<ModOption> {
         &mut self.options
     }

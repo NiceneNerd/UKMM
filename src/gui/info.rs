@@ -1,22 +1,24 @@
-use super::Message;
-use anyhow::Result;
-use eframe::epaint::text::TextWrapping;
-use once_cell::sync::Lazy;
-use parking_lot::RwLock;
-use rustc_hash::{FxHashMap, FxHasher};
 use std::{
     hash::{Hash, Hasher},
     io::{BufReader, Read},
     path::PathBuf,
     sync::Arc,
 };
+
+use anyhow::Result;
+use eframe::epaint::text::TextWrapping;
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
+use rustc_hash::{FxHashMap, FxHasher};
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
-use uk_ui::egui::{
-    self, text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui,
+use uk_ui::{
+    egui::{self, text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui},
+    egui_extras::RetainedImage,
+    icons::IconButtonExt,
 };
-use uk_ui::egui_extras::RetainedImage;
-use uk_ui::icons::IconButtonExt;
+
+use super::Message;
 
 pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
     fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
@@ -44,11 +46,13 @@ pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
     let mut preview = PREVIEW.write();
     preview
         .entry(mod_.hash())
-        .or_insert_with(|| match load_preview(mod_) {
-            Ok(pre) => pre,
-            Err(e) => {
-                log::error!("Error loading mod preview: {}", e);
-                None
+        .or_insert_with(|| {
+            match load_preview(mod_) {
+                Ok(pre) => pre,
+                Err(e) => {
+                    log::error!("Error loading mod preview: {}", e);
+                    None
+                }
             }
         })
         .clone()
@@ -127,16 +131,16 @@ impl super::App {
 // a directory, else considered a file.
 #[derive(Debug, Clone, Hash)]
 struct PathNode {
-    name: String,
-    path: Option<PathBuf>,
+    name:     String,
+    path:     Option<PathBuf>,
     children: Vec<PathNode>,
 }
 
 impl PathNode {
     fn new(name: &str) -> PathNode {
         PathNode {
-            name: name.into(),
-            path: None,
+            name:     name.into(),
+            path:     None,
             children: Vec::<PathNode>::new(),
         }
     }
@@ -195,19 +199,16 @@ fn render_dir(dir: &PathNode, ui: &mut Ui) {
                 })
             });
     } else {
-        let mut job = LayoutJob::single_section(
-            dir.name.clone(),
-            TextFormat {
-                font_id: FontId::proportional(
-                    ui.style()
-                        .text_styles
-                        .get(&egui::TextStyle::Body)
-                        .unwrap()
-                        .size,
-                ),
-                ..Default::default()
-            },
-        );
+        let mut job = LayoutJob::single_section(dir.name.clone(), TextFormat {
+            font_id: FontId::proportional(
+                ui.style()
+                    .text_styles
+                    .get(&egui::TextStyle::Body)
+                    .unwrap()
+                    .size,
+            ),
+            ..Default::default()
+        });
         job.wrap = TextWrapping {
             max_width: ui.available_width(),
             max_rows: 1,

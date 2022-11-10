@@ -1,8 +1,9 @@
+use std::{hash::Hash, path::PathBuf, sync::Arc};
+
 use egui::{
     epaint::text::TextWrapping, mutex::RwLock, text::LayoutJob, Direction, Id, Response, RichText,
     Ui,
 };
-use std::{hash::Hash, path::PathBuf, sync::Arc};
 
 pub trait UiExt {
     fn folder_picker(&mut self, value: &mut PathBuf) -> Response;
@@ -71,6 +72,7 @@ impl UiExt for Ui {
     fn folder_picker(&mut self, value: &mut PathBuf) -> Response {
         render_picker(true, self, value)
     }
+
     fn file_picker(&mut self, value: &mut PathBuf) -> Response {
         render_picker(false, self, value)
     }

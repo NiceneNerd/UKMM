@@ -1,15 +1,16 @@
-use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
+use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
+
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct MapUnit {
-    pub pos_x: Option<f32>,
-    pub pos_y: Option<f32>,
-    pub size: Option<f32>,
+    pub pos_x:   Option<f32>,
+    pub pos_y:   Option<f32>,
+    pub size:    Option<f32>,
     pub objects: SortedDeleteMap<u32, Byml>,
-    pub rails: SortedDeleteMap<u32, Byml>,
+    pub rails:   SortedDeleteMap<u32, Byml>,
 }
 
 impl TryFrom<&Byml> for MapUnit {
@@ -18,15 +19,15 @@ impl TryFrom<&Byml> for MapUnit {
     fn try_from(byml: &Byml) -> Result<Self> {
         let hash = byml.as_hash()?;
         Ok(Self {
-            pos_x: hash
+            pos_x:   hash
                 .get("LocationPosX")
                 .map(|v| -> Result<f32> { Ok(v.as_float()?) })
                 .transpose()?,
-            pos_y: hash
+            pos_y:   hash
                 .get("LocationPosY")
                 .map(|v| -> Result<f32> { Ok(v.as_float()?) })
                 .transpose()?,
-            size: hash
+            size:    hash
                 .get("LocationSize")
                 .map(|v| -> Result<f32> { Ok(v.as_float()?) })
                 .transpose()?,
@@ -44,7 +45,7 @@ impl TryFrom<&Byml> for MapUnit {
                     Ok((id, obj.clone()))
                 })
                 .collect::<Result<_>>()?,
-            rails: hash
+            rails:   hash
                 .get("Rails")
                 .ok_or(UKError::MissingBymlKey("Map unit missing rails"))?
                 .as_array()?
@@ -88,21 +89,21 @@ impl From<MapUnit> for Byml {
 impl Mergeable for MapUnit {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            pos_x: other.pos_x,
-            pos_y: other.pos_y,
-            size: other.size,
+            pos_x:   other.pos_x,
+            pos_y:   other.pos_y,
+            size:    other.size,
             objects: self.objects.diff(&other.objects),
-            rails: self.rails.diff(&other.rails),
+            rails:   self.rails.diff(&other.rails),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            pos_x: diff.pos_x,
-            pos_y: diff.pos_y,
-            size: diff.size,
+            pos_x:   diff.pos_x,
+            pos_y:   diff.pos_y,
+            size:    diff.size,
             objects: self.objects.merge(&diff.objects),
-            rails: self.rails.merge(&diff.rails),
+            rails:   self.rails.merge(&diff.rails),
         }
     }
 }
@@ -132,8 +133,9 @@ impl Resource for MapUnit {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_cdungeon_munt() -> Byml {
         Byml::from_binary(

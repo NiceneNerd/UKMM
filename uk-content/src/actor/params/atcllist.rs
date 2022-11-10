@@ -1,17 +1,18 @@
+use join_str::jstr;
+use roead::aamp::*;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     actor::ParameterResource,
     prelude::*,
     util::{self, DeleteMap},
     Result, UKError,
 };
-use join_str::jstr;
-use roead::aamp::*;
-use serde::{Deserialize, Serialize};
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct AttClientList {
-    pub att_pos: ParameterObject,
+    pub att_pos:     ParameterObject,
     pub att_clients: DeleteMap<String64, String64>,
 }
 
@@ -20,7 +21,7 @@ impl TryFrom<&ParameterIO> for AttClientList {
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         Ok(Self {
-            att_pos: pio
+            att_pos:     pio
                 .object("AttPos")
                 .ok_or(UKError::MissingAampKey(
                     "Attention client list missing AttPos",
@@ -74,14 +75,14 @@ impl From<AttClientList> for ParameterIO {
 impl Mergeable for AttClientList {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            att_pos: util::diff_pobj(&self.att_pos, &other.att_pos),
+            att_pos:     util::diff_pobj(&self.att_pos, &other.att_pos),
             att_clients: self.att_clients.diff(&other.att_clients),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            att_pos: util::merge_pobj(&self.att_pos, &diff.att_pos),
+            att_pos:     util::merge_pobj(&self.att_pos, &diff.att_pos),
             att_clients: self.att_clients.merge(&diff.att_clients),
         }
     }
@@ -179,7 +180,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/AttClientList/Guardian_A.batcllist",
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/AttClientList/Guardian_A.\
+             batcllist",
         );
         assert!(super::AttClientList::path_matches(path));
     }

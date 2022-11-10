@@ -1,9 +1,4 @@
 mod ui;
-use crate::{
-    prelude::*,
-    util::{bhash, HashMap, SortedDeleteSet},
-    Result, UKError,
-};
 use join_str::jstr;
 use roead::{
     aamp::hash_name,
@@ -13,6 +8,12 @@ use roead::{
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
 use uk_ui_derive::Editable;
+
+use crate::{
+    prelude::*,
+    util::{bhash, HashMap, SortedDeleteSet},
+    Result, UKError,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
 pub struct SaveDataHeader {
@@ -79,7 +80,7 @@ impl Ord for Flag {
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct SaveData {
     pub header: SaveDataHeader,
-    pub flags: SortedDeleteSet<Flag>,
+    pub flags:  SortedDeleteSet<Flag>,
 }
 
 impl TryFrom<&Byml> for SaveData {
@@ -96,7 +97,7 @@ impl TryFrom<&Byml> for SaveData {
                 .get(0)
                 .ok_or(UKError::MissingBymlKey("bgsvdata missing header"))?
                 .try_into()?,
-            flags: array
+            flags:  array
                 .get(1)
                 .ok_or(UKError::MissingBymlKey("bgsvdata missing flag array"))?
                 .as_array()?
@@ -136,7 +137,7 @@ impl Mergeable for SaveData {
         );
         Self {
             header: self.header.clone(),
-            flags: self.flags.diff(&other.flags),
+            flags:  self.flags.diff(&other.flags),
         }
     }
 
@@ -148,7 +149,7 @@ impl Mergeable for SaveData {
         );
         Self {
             header: self.header.clone(),
-            flags: self.flags.merge(&diff.flags),
+            flags:  self.flags.merge(&diff.flags),
         }
     }
 }
@@ -161,7 +162,7 @@ impl SaveData {
         for _ in 0..total {
             out.push(Self {
                 header: self.header.clone(),
-                flags: iter.by_ref().take(8192).collect(),
+                flags:  iter.by_ref().take(8192).collect(),
             });
         }
         out
@@ -288,8 +289,9 @@ single_path!(
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::{byml::Byml, sarc::Sarc};
+
+    use crate::prelude::*;
 
     fn load_savedata_sarc() -> Sarc<'static> {
         Sarc::new(std::fs::read("test/GameData/savedataformat.ssarc").unwrap()).unwrap()

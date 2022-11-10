@@ -1,13 +1,14 @@
+use join_str::jstr;
+use roead::{aamp::*, byml::Byml};
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
     util::IndexMap,
     Result, UKError,
 };
-use join_str::jstr;
-use roead::{aamp::*, byml::Byml};
-use serde::{Deserialize, Serialize};
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct DropTable(pub IndexMap<String64, ParameterObject>);
@@ -37,7 +38,7 @@ impl From<DropTable> for ParameterIO {
                     );
                     objs
                 },
-                lists: Default::default(),
+                lists:   Default::default(),
             },
             ..Default::default()
         }
@@ -260,7 +261,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/DropTable/Enemy_Guardian_A.bdrop",
+            "content/Actor/Pack/Enemy_Guardian_A.sbactorpack//Actor/DropTable/Enemy_Guardian_A.\
+             bdrop",
         );
         assert!(super::DropTable::path_matches(path));
     }

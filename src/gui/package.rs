@@ -1,22 +1,18 @@
-use super::{visuals, App, Message};
-use anyhow::Result;
+use std::{ops::DerefMut, path::PathBuf, sync::Arc};
+
 use eframe::emath::Align;
 use fs_err as fs;
 use parking_lot::RwLock;
-use rustc_hash::FxHashSet;
-use std::{
-    ops::DerefMut,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
-use uk_manager::{mods::Mod, settings::Platform};
+use uk_manager::settings::Platform;
 use uk_mod::{ExclusiveOptionGroup, Meta, ModOptionGroup, MultipleOptionGroup, OptionGroup};
 use uk_ui::{
     editor::EditableValue,
-    egui::{self, text::LayoutJob, Align2, Context, Id, Layout, Response, RichText, TextStyle, Ui},
+    egui::{self, Align2, Context, Id, Layout, Response, TextStyle, Ui},
     ext::UiExt,
     icons::IconButtonExt,
 };
+
+use super::{App, Message};
 
 pub static CATEGORIES: &[&str] = &[
     "Animations",
@@ -38,16 +34,16 @@ pub static CATEGORIES: &[&str] = &[
 
 pub struct ModPackerBuilder {
     pub source: PathBuf,
-    pub dest: PathBuf,
-    pub meta: Meta,
+    pub dest:   PathBuf,
+    pub meta:   Meta,
 }
 
 impl ModPackerBuilder {
     pub fn new(platform: Platform) -> Self {
         ModPackerBuilder {
             source: Default::default(),
-            dest: Default::default(),
-            meta: Meta {
+            dest:   Default::default(),
+            meta:   Meta {
                 name: Default::default(),
                 version: 1.0,
                 author: Default::default(),

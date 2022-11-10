@@ -1,13 +1,14 @@
 use std::{hash::Hash, ops::DerefMut, sync::Arc};
 
-use crate::icons::IconButtonExt;
-
-use super::{EditableDisplay, EditableValue};
 use egui::{self, mutex::RwLock, Align, Id, Layout, Response, Ui};
 use msyt::Msyt;
 
+use super::{EditableDisplay, EditableValue};
+use crate::icons::IconButtonExt;
+
 impl EditableValue for Msyt {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         self.edit_ui_with_id(ui, "msyt")
     }

@@ -1,5 +1,5 @@
+use std::ops::DerefMut;
 
-use std::ops::{DerefMut};
 use uk_ui::{
     editor::{EditableDisplay, EditableValue},
     egui,
@@ -9,6 +9,7 @@ use uk_ui::{
 
 impl EditableValue for super::SaveData {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
+
     fn edit_ui(&mut self, ui: &mut egui::Ui) -> egui::Response {
         self.edit_ui_with_id(ui, "save_data")
     }

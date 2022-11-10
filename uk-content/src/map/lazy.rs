@@ -1,17 +1,19 @@
+use roead::byml::Byml;
+use serde::{Deserialize, Serialize};
+use uk_ui_derive::Editable;
+
 use crate::{
     prelude::*,
     util::{bhash, SortedDeleteMap},
     Result, UKError,
 };
-use roead::byml::Byml;
-use serde::{Deserialize, Serialize};
-use uk_ui_derive::Editable;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct LazyTraverseList(pub SortedDeleteMap<String, SortedDeleteMap<u32, String>>);
 
 impl TryFrom<&Byml> for LazyTraverseList {
     type Error = UKError;
+
     fn try_from(byml: &Byml) -> Result<Self> {
         Ok(Self(
             byml.as_hash()?
@@ -99,8 +101,9 @@ single_path!(
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
     use roead::byml::Byml;
+
+    use crate::prelude::*;
 
     fn load_lazy() -> Byml {
         Byml::from_binary(

@@ -1,5 +1,11 @@
 mod de;
-use crate::{Manifest, Meta, ModOption};
+use std::{
+    collections::BTreeSet,
+    io::{BufReader, Read, Write},
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+
 use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
@@ -12,12 +18,6 @@ use rayon::prelude::*;
 use roead::{sarc::SarcWriter, yaz0::compress_if};
 use serde::Serialize;
 use smartstring::alias::String;
-use std::{
-    collections::BTreeSet,
-    io::{BufReader, Read, Write},
-    path::{Path, PathBuf},
-    sync::Arc,
-};
 use uk_content::{
     canonicalize, platform_prefixes,
     prelude::{Endian, Mergeable},
@@ -26,6 +26,8 @@ use uk_content::{
 };
 use uk_reader::{ResourceLoader, ResourceReader};
 
+use crate::{Manifest, Meta, ModOption};
+
 pub enum ZipData {
     Owned(Vec<u8>),
     Memory(Mmap),
@@ -33,6 +35,7 @@ pub enum ZipData {
 
 impl std::ops::Deref for ZipData {
     type Target = [u8];
+
     fn deref(&self) -> &Self::Target {
         match self {
             ZipData::Owned(d) => d.as_slice(),
@@ -61,10 +64,10 @@ impl std::fmt::Debug for ZipData {
 
 #[self_referencing]
 pub struct ParallelZipReader {
-    data: ZipData,
+    data:  ZipData,
     #[borrows(data)]
     #[covariant]
-    zip: piz::ZipArchive<'this>,
+    zip:   piz::ZipArchive<'this>,
     #[borrows(zip)]
     #[covariant]
     files: HashMap<&'this Path, &'this piz::read::FileMetadata<'this>>,
@@ -322,12 +325,12 @@ impl ModReader {
 
 #[derive(Debug)]
 pub struct ModUnpacker {
-    dump: Arc<ResourceReader>,
+    dump:     Arc<ResourceReader>,
     manifest: Option<Manifest>,
-    mods: Vec<ModReader>,
-    endian: Endian,
-    rstb: RwLock<HashMap<String, Option<u32>>>,
-    out_dir: PathBuf,
+    mods:     Vec<ModReader>,
+    endian:   Endian,
+    rstb:     RwLock<HashMap<String, Option<u32>>>,
+    out_dir:  PathBuf,
 }
 
 impl ModUnpacker {

@@ -1,9 +1,11 @@
-use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
+use std::collections::BTreeMap;
+
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use uk_ui_derive::Editable;
+
+use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct RagdollConfig {
@@ -165,7 +167,8 @@ mod tests {
     #[test]
     fn identify() {
         let path = std::path::Path::new(
-            "content/Actor/Pack/Enemy_Moriblin_Junior.sbactorpack//Actor/RagdollConfig/Moriblin_Blue_Bomb.brgconfig",
+            "content/Actor/Pack/Enemy_Moriblin_Junior.sbactorpack//Actor/RagdollConfig/\
+             Moriblin_Blue_Bomb.brgconfig",
         );
         assert!(super::RagdollConfig::path_matches(path));
     }
