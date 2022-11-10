@@ -101,7 +101,7 @@ impl ModOptionGroup for ExclusiveOptionGroup {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MultipleOptionGroup {
     pub name: String,
     pub description: String,
