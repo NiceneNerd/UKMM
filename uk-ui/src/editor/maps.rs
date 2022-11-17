@@ -10,7 +10,10 @@ use egui::Layout;
 use indexmap::map::IndexMap;
 
 use super::{EditableDisplay, EditableValue};
-use crate::{ext::UiExt, icons::IconButtonExt};
+use crate::{
+    ext::UiExt,
+    icons::{self, IconButtonExt},
+};
 
 impl<T, U, S> EditableValue for IndexMap<T, U, S>
 where
@@ -78,7 +81,7 @@ where
                 if let Some(new_key) = ui.get_temp_string(id.with("new_key")) {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_key.write().deref_mut());
-                        if ui.icon_button(crate::icons::Icon::Check).clicked() {
+                        if ui.icon_button(icons::Icon::Check).clicked() {
                             if let Ok(k) = <&str as TryInto<T>>::try_into(new_key.read().as_str()) {
                                 self.insert(k, U::default());
                                 ui.clear_temp_string(id.with("new_key"));
@@ -86,7 +89,7 @@ where
                         }
                     });
                 }
-                if ui.icon_button(crate::icons::Icon::Add).clicked() {
+                if ui.icon_button(icons::Icon::Add).clicked() {
                     ui.create_temp_string(id.with("new_key"), None);
                 }
             })
@@ -163,7 +166,7 @@ where
                 if let Some(new_key) = ui.get_temp_string(id.with("new_key")) {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_key.write().deref_mut());
-                        if ui.icon_button(crate::icons::Icon::Check).clicked() {
+                        if ui.icon_button(icons::Icon::Check).clicked() {
                             if let Ok(k) = new_key.read().as_str().parse() {
                                 self.insert(k, U::default());
                                 ui.clear_temp_string(id.with("new_key"));
@@ -171,7 +174,7 @@ where
                         }
                     });
                 }
-                if ui.icon_button(crate::icons::Icon::Add).clicked() {
+                if ui.icon_button(icons::Icon::Add).clicked() {
                     ui.create_temp_string(id.with("new_key"), None);
                 }
             })
@@ -243,7 +246,7 @@ where
             if let Some(new_key) = ui.get_temp_string(id.with("new_key")) {
                 ui.horizontal(|ui| {
                     ui.text_edit_singleline(new_key.write().deref_mut());
-                    if ui.icon_button(crate::icons::Icon::Check).clicked() {
+                    if ui.icon_button(icons::Icon::Check).clicked() {
                         if let Ok(k) = new_key.read().as_str().parse() {
                             map.insert(k, U::default());
                             ui.clear_temp_string(id.with("new_key"));
@@ -251,7 +254,7 @@ where
                     }
                 });
             }
-            if ui.icon_button(crate::icons::Icon::Add).clicked() {
+            if ui.icon_button(icons::Icon::Add).clicked() {
                 ui.create_temp_string(id.with("new_key"), None);
             }
         })
@@ -328,7 +331,7 @@ where
                 if let Some(new_key) = ui.get_temp_string(id.with("new_key")) {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_key.write().deref_mut());
-                        if ui.icon_button(crate::icons::Icon::Check).clicked() {
+                        if ui.icon_button(icons::Icon::Check).clicked() {
                             if let Ok(k) = <&str as TryInto<T>>::try_into(new_key.read().as_str()) {
                                 self.insert(k, U::default());
                                 ui.clear_temp_string(id.with("new_key"));
@@ -336,7 +339,7 @@ where
                         }
                     });
                 }
-                if ui.icon_button(crate::icons::Icon::Add).clicked() {
+                if ui.icon_button(icons::Icon::Add).clicked() {
                     ui.create_temp_string(id.with("new_key"), None);
                 }
             })

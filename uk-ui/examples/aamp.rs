@@ -17,7 +17,7 @@ impl<T: EditableValue> eframe::App for EditorTest<T> {
 fn main() {
     uk_ui::icons::load_icons();
     let pio = roead::aamp::ParameterIO::from_binary(
-        &std::fs::read("uk-content/test/Chemical/system.bchmres").unwrap(),
+        std::fs::read("uk-content/test/Chemical/system.bchmres").unwrap(),
     )
     .unwrap();
     eframe::run_native(

@@ -8,7 +8,7 @@ use std::{
 use anyhow::Result;
 use eframe::epaint::text::TextWrapping;
 use once_cell::sync::Lazy;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use rustc_hash::{FxHashMap, FxHasher};
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
@@ -87,7 +87,17 @@ impl super::App {
             });
             ui.label(RichText::new("Description").family(egui::FontFamily::Name("Bold".into())));
             ui.add_space(4.);
-            ui.add(Label::new(mod_.meta.description.as_str()).wrap(true));
+            let md_cache = ui
+                .data()
+                .get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
+                    egui::Id::new("md_cache"),
+                )
+                .clone();
+            egui_commonmark::CommonMarkViewer::new("mod_description").show(
+                ui,
+                md_cache.lock().deref_mut(),
+                &mod_.meta.description,
+            );
             ui.add_space(4.);
             if !mod_.meta.options.is_empty() {
                 ui.horizontal(|ui| {

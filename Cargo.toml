@@ -15,6 +15,7 @@ dirs2 = "3.0.1"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
 # egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-features = false, features = ["color-hex", "persistence"] }
 # egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
+egui_commonmark = { git = "https://github.com/NiceneNerd/egui_commonmark" }
 egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
 egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
 enum-iterator = "1.2.0"

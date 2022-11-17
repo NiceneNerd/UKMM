@@ -348,6 +348,59 @@ impl App {
         egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
             let mut wiiu_changed = false;
             let mut switch_changed = false;
+            ui.horizontal(|ui| {
+                let platform_config_changed = self.temp_settings.ne(self.core.settings().deref())
+                    || wiiu_changed
+                    || switch_changed;
+                ui.add_enabled_ui(platform_config_changed, |ui| {
+                    if ui
+                        .icon_button(icons::Icon::Save)
+                        .on_hover_text("Save")
+                        .clicked()
+                    {
+                        if wiiu_changed {
+                            let wiiu_config_ui =
+                                CONFIG.write().get(&Platform::WiiU).unwrap().clone();
+                            let wiiu_config = wiiu_config_ui.try_into();
+                            match wiiu_config {
+                                Ok(conf) => {
+                                    CONFIG.write().remove(&Platform::WiiU);
+                                    self.temp_settings.wiiu_config = Some(conf)
+                                }
+                                Err(e) => {
+                                    self.do_update(Message::Error(e));
+                                    return;
+                                }
+                            }
+                        }
+                        if switch_changed {
+                            let switch_config_ui =
+                                CONFIG.write().get(&Platform::Switch).unwrap().clone();
+                            let switch_config = switch_config_ui.try_into();
+                            match switch_config {
+                                Ok(conf) => {
+                                    CONFIG.write().remove(&Platform::Switch);
+                                    self.temp_settings.switch_config = Some(conf)
+                                }
+                                Err(e) => {
+                                    self.do_update(Message::Error(e));
+                                    return;
+                                }
+                            }
+                        }
+                        self.do_update(Message::SaveSettings);
+                    }
+                    if ui
+                        .icon_button(icons::Icon::Reset)
+                        .on_hover_text("Reset")
+                        .clicked()
+                    {
+                        CONFIG.write().clear();
+                        self.do_update(Message::ResetSettings);
+                    }
+                })
+            });
+            ui.add_space(8.0);
             ui.vertical(|ui| {
                 let settings = &mut self.temp_settings;
                 egui::CollapsingHeader::new("General")
@@ -429,7 +482,8 @@ impl App {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     let platform_config_changed =
                         self.temp_settings.ne(self.core.settings().deref())
-                            || wiiu_changed | switch_changed;
+                            || wiiu_changed
+                            || switch_changed;
                     ui.add_enabled_ui(platform_config_changed, |ui| {
                         if ui.button("Save").clicked() {
                             if wiiu_changed {
