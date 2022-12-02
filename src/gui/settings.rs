@@ -14,7 +14,7 @@ use uk_reader::ResourceReader;
 use uk_ui::{
     egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
     ext::UiExt,
-    icons,
+    icons::{self, IconButtonExt},
 };
 
 use super::{App, Message};

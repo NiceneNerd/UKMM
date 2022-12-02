@@ -2201,6 +2201,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "minicbor-ser"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c0834b86a9c56311671913d56f640d7f0b6da803df61121661cc890f0edc0eb1"
+dependencies = [
+ "minicbor",
+ "serde",
+]
+
+[[package]]
 name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3883,7 +3893,7 @@ dependencies = [
  "join_str",
  "jwalk",
  "log",
- "minicbor-ser",
+ "minicbor-ser 0.2.0",
  "mmap-rs",
  "ouroboros",
  "parking_lot",
@@ -3916,7 +3926,7 @@ dependencies = [
  "fs-err",
  "join_str",
  "log",
- "minicbor-ser",
+ "minicbor-ser 0.1.4",
  "moka",
  "once_cell",
  "parking_lot",

@@ -95,7 +95,7 @@ impl super::App {
                 .clone();
             egui_commonmark::CommonMarkViewer::new("mod_description").show(
                 ui,
-                md_cache.lock().deref_mut(),
+                &mut md_cache.lock(),
                 &mod_.meta.description,
             );
             ui.add_space(4.);

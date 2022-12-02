@@ -285,6 +285,7 @@ impl ModPacker {
         }
 
         let data = minicbor_ser::to_vec(&resource)
+            .map_err(|e| anyhow::format_err!("{:?}", e))
             .with_context(|| jstr!("Failed to serialize {&name}"))?;
         let zip_path = self
             .current_root

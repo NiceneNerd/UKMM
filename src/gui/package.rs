@@ -119,7 +119,35 @@ impl App {
 
     fn render_package_opts(&self, ctx: &Context, builder: &mut ModPackerBuilder) {
         if let Some(ref folders) = self.opt_folders {
-            return;
+            egui::Window::new("Configure Mod Options")
+                .anchor(Align2::CENTER_CENTER, [0., 0.])
+                .show(ctx, |ui| {
+                    egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
+                        ui.spacing_mut().item_spacing.y = 8.0;
+                        ui.horizontal(|ui| {
+                            if ui.icon_text_button("Add Option Group", Icon::Add).clicked() {
+                                builder
+                                    .meta
+                                    .options
+                                    .push(OptionGroup::Multiple(Default::default()));
+                            }
+                        });
+                        let id = Id::new("opt-groups-");
+                        for (i, opt_group) in builder.meta.options.iter_mut().enumerate() {
+                            render_opt(i, opt_group, id, ui);
+                        }
+                        ui.allocate_ui_with_layout(
+                            [ui.available_width(), ui.spacing().interact_size.y].into(),
+                            Layout::right_to_left(Align::Center),
+                            |ui| {
+                                if ui.button("OK").clicked() {
+                                    self.do_update(Message::ClosePackagingOptions);
+                                }
+                                ui.shrink_width_to_current();
+                            },
+                        );
+                    });
+                });
         }
 
         #[inline]
@@ -188,36 +216,6 @@ impl App {
                     }
                 });
         }
-
-        egui::Window::new("Configure Mod Options")
-            .anchor(Align2::CENTER_CENTER, [0., 0.])
-            .show(ctx, |ui| {
-                egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
-                    ui.spacing_mut().item_spacing.y = 8.0;
-                    ui.horizontal(|ui| {
-                        if ui.icon_text_button("Add Option Group", Icon::Add).clicked() {
-                            builder
-                                .meta
-                                .options
-                                .push(OptionGroup::Multiple(Default::default()));
-                        }
-                    });
-                    let id = Id::new("opt-groups-");
-                    for (i, opt_group) in builder.meta.options.iter_mut().enumerate() {
-                        render_opt(i, opt_group, id, ui);
-                    }
-                    ui.allocate_ui_with_layout(
-                        [ui.available_width(), ui.spacing().interact_size.y].into(),
-                        Layout::right_to_left(Align::Center),
-                        |ui| {
-                            if ui.button("OK").clicked() {
-                                self.do_update(Message::ClosePackagingOptions);
-                            }
-                            ui.shrink_width_to_current();
-                        },
-                    );
-                });
-            });
     }
 
     pub fn render_packger(&self, ui: &mut Ui) {
