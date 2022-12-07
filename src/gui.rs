@@ -30,6 +30,7 @@ use fs_err as fs;
 use im::{vector, Vector};
 use join_str::jstr;
 use once_cell::sync::OnceCell;
+use parking_lot::Mutex;
 use picker::FilePickerState;
 use rustc_hash::FxHashSet;
 use uk_manager::{
@@ -261,7 +262,7 @@ struct App {
     busy: bool,
     show_about: bool,
     show_package_deps: bool,
-    opt_folders: Option<FxHashSet<PathBuf>>,
+    opt_folders: Option<Mutex<FxHashSet<PathBuf>>>,
     dirty: Manifest,
     sort: (Sort, bool),
     options_mod: Option<(Mod, bool)>,
@@ -699,7 +700,7 @@ impl App {
                     self.error = Some(error);
                 }
                 Message::ShowPackagingOptions(folders) => {
-                    self.opt_folders = Some(folders);
+                    self.opt_folders = Some(Mutex::new(folders));
                 }
                 Message::ShowPackagingDependencies => {
                     self.show_package_deps = true;

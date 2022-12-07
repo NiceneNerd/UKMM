@@ -2,9 +2,12 @@ use std::{ops::DerefMut, path::PathBuf, sync::Arc};
 
 use eframe::emath::Align;
 use fs_err as fs;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
+use rustc_hash::FxHashSet;
 use uk_manager::settings::Platform;
-use uk_mod::{ExclusiveOptionGroup, Meta, ModOptionGroup, MultipleOptionGroup, OptionGroup};
+use uk_mod::{
+    ExclusiveOptionGroup, Meta, ModOption, ModOptionGroup, MultipleOptionGroup, OptionGroup,
+};
 use uk_ui::{
     editor::EditableValue,
     egui::{self, Align2, Context, Id, Layout, Response, TextStyle, Ui},
@@ -132,10 +135,12 @@ impl App {
                                     .push(OptionGroup::Multiple(Default::default()));
                             }
                         });
-                        let id = Id::new("opt-groups-");
-                        for (i, opt_group) in builder.meta.options.iter_mut().enumerate() {
-                            render_opt(i, opt_group, id, ui);
-                        }
+                        render_opt_groups(
+                            &mut builder.meta.options,
+                            folders,
+                            Id::new("opt-groups-"),
+                            ui,
+                        );
                         ui.allocate_ui_with_layout(
                             [ui.available_width(), ui.spacing().interact_size.y].into(),
                             Layout::right_to_left(Align::Center),
@@ -150,70 +155,129 @@ impl App {
                 });
         }
 
-        #[inline]
-        fn render_opt(i: usize, opt_group: &mut OptionGroup, id: Id, ui: &mut Ui) {
-            let group_name = if opt_group.name().is_empty() {
-                "New Option Group"
-            } else {
-                opt_group.name()
-            };
-            egui::CollapsingHeader::new(group_name)
-                .default_open(true)
-                .show(ui, |ui| {
-                    ui.label("Group Name");
-                    opt_group.name_mut().edit_ui_with_id(ui, id.with(i));
-                    ui.label("Group Description");
-                    ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
-                        opt_group.description_mut(),
-                    ));
-                    ui.label("Group Type");
-                    ui.horizontal(|ui| {
-                        if ui
-                            .radio(matches!(opt_group, OptionGroup::Exclusive(_)), "Exclusive")
-                            .clicked()
-                        {
-                            *opt_group = OptionGroup::Exclusive(ExclusiveOptionGroup {
-                                default: None,
-                                name: std::mem::take(opt_group.name_mut()),
-                                description: std::mem::take(opt_group.description_mut()),
-                                options: std::mem::take(opt_group.options_mut()),
-                            });
+        fn render_opt_groups(
+            opt_groups: &mut [OptionGroup],
+            folders: &Mutex<FxHashSet<PathBuf>>,
+            id: Id,
+            ui: &mut Ui,
+        ) {
+            for (i, opt_group) in opt_groups.iter_mut().enumerate() {
+                let id = id.with(i);
+                let group_name = if opt_group.name().is_empty() {
+                    "New Option Group"
+                } else {
+                    opt_group.name()
+                };
+                egui::CollapsingHeader::new(group_name)
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        ui.label("Group Name");
+                        opt_group.name_mut().edit_ui_with_id(ui, id.with(i));
+                        ui.label("Group Description");
+                        ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
+                            opt_group.description_mut(),
+                        ));
+                        ui.label("Group Type");
+                        ui.horizontal(|ui| {
+                            if ui
+                                .radio(matches!(opt_group, OptionGroup::Exclusive(_)), "Exclusive")
+                                .clicked()
+                            {
+                                *opt_group = OptionGroup::Exclusive(ExclusiveOptionGroup {
+                                    default: None,
+                                    name: std::mem::take(opt_group.name_mut()),
+                                    description: std::mem::take(opt_group.description_mut()),
+                                    options: std::mem::take(opt_group.options_mut()),
+                                });
+                            }
+                            if ui
+                                .radio(matches!(opt_group, OptionGroup::Multiple(_)), "Multiple")
+                                .clicked()
+                            {
+                                *opt_group = OptionGroup::Multiple(MultipleOptionGroup {
+                                    defaults: Default::default(),
+                                    name: std::mem::take(opt_group.name_mut()),
+                                    description: std::mem::take(opt_group.description_mut()),
+                                    options: std::mem::take(opt_group.options_mut()),
+                                });
+                            }
+                        });
+                        if let OptionGroup::Exclusive(group) = opt_group {
+                            let id = Id::new(group.name.as_str()).with("default");
+                            let def_name = group
+                                .default
+                                .as_ref()
+                                .and_then(|opt| {
+                                    group
+                                        .options
+                                        .iter()
+                                        .find_map(|o| o.path.eq(opt).then(|| o.name.as_str()))
+                                })
+                                .unwrap_or("None");
+                            egui::ComboBox::new(id, "Default Option")
+                                .selected_text(def_name)
+                                .show_ui(ui, |ui| {
+                                    group.options.iter().for_each(|opt| {
+                                        let selected = group.default.as_ref() == Some(&opt.path);
+                                        if ui
+                                            .selectable_label(selected, opt.name.as_str())
+                                            .clicked()
+                                        {
+                                            group.default = Some(opt.path.clone());
+                                        }
+                                    });
+                                });
                         }
-                        if ui
-                            .radio(matches!(opt_group, OptionGroup::Multiple(_)), "Multiple")
-                            .clicked()
-                        {
-                            *opt_group = OptionGroup::Multiple(MultipleOptionGroup {
-                                defaults: Default::default(),
-                                name: std::mem::take(opt_group.name_mut()),
-                                description: std::mem::take(opt_group.description_mut()),
-                                options: std::mem::take(opt_group.options_mut()),
-                            });
+                        ui.horizontal(|ui| {
+                            if ui.icon_text_button("Add Option", Icon::Add).clicked() {
+                                opt_group.options_mut().insert(ModOption {
+                                    name: Default::default(),
+                                    description: Default::default(),
+                                    path: Default::default(),
+                                    requires: vec![],
+                                });
+                            }
+                        });
+                        for (i, opt) in opt_group.options_mut().iter_mut().enumerate() {
+                            render_option(opt, folders, i, id, ui)
                         }
                     });
-                    if let OptionGroup::Exclusive(group) = opt_group {
-                        let id = Id::new(group.name.as_str()).with("default");
-                        let def_name = group
-                            .default
-                            .as_ref()
-                            .and_then(|opt| {
-                                group
-                                    .options
-                                    .iter()
-                                    .find_map(|o| o.path.eq(opt).then(|| o.name.as_str()))
-                            })
-                            .unwrap_or("None");
-                        egui::ComboBox::new(id, "Default Option")
-                            .selected_text(def_name)
-                            .show_ui(ui, |ui| {
-                                group.options.iter().for_each(|opt| {
-                                    let selected = group.default.as_ref() == Some(&opt.path);
-                                    if ui.selectable_label(selected, opt.name.as_str()).clicked() {
-                                        group.default = Some(opt.path.clone());
-                                    }
-                                });
+            }
+        }
+
+        fn render_option(
+            option: &mut ModOption,
+            folders: &Mutex<FxHashSet<PathBuf>>,
+            i: usize,
+            id: Id,
+            ui: &mut Ui,
+        ) {
+            let id = id.with(i);
+            let opt_name = if option.name.is_empty() {
+                "New Option Group"
+            } else {
+                option.name.as_str()
+            };
+            egui::CollapsingHeader::new(opt_name)
+                .default_open(true)
+                .show(ui, |ui| {
+                    ui.label("Option Name");
+                    option.name.edit_ui_with_id(ui, id.with("name"));
+                    ui.label("Option Description");
+                    ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
+                        &mut option.description,
+                    ));
+                    egui::ComboBox::new(id.with("path"), "Option Folder")
+                        .selected_text(option.path.display().to_string())
+                        .show_ui(ui, |ui| {
+                            folders.lock().iter().map(|folder| {
+                                let folder_name = folder.file_name().unwrap_or_default();
+                                ui.selectable_label(
+                                    option.path.as_os_str() == folder_name,
+                                    folder_name.to_str().unwrap_or_default(),
+                                );
                             });
-                    }
+                        });
                 });
         }
     }
