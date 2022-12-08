@@ -7,10 +7,7 @@ use std::{
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use uk_content::{
-    prelude::Endian,
-    util::{IndexMap, IndexSet},
-};
+use uk_content::{prelude::Endian, util::IndexMap};
 pub mod pack;
 pub mod unpack;
 
@@ -69,10 +66,10 @@ impl ModOption {
 pub trait ModOptionGroup {
     fn name(&self) -> &str;
     fn description(&self) -> &str;
-    fn options(&self) -> &IndexSet<ModOption>;
+    fn options(&self) -> &Vec<ModOption>;
     fn name_mut(&mut self) -> &mut String;
     fn description_mut(&mut self) -> &mut String;
-    fn options_mut(&mut self) -> &mut IndexSet<ModOption>;
+    fn options_mut(&mut self) -> &mut Vec<ModOption>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -80,7 +77,7 @@ pub struct ExclusiveOptionGroup {
     pub name: String,
     pub description: String,
     pub default: Option<PathBuf>,
-    pub options: IndexSet<ModOption>,
+    pub options: Vec<ModOption>,
 }
 
 impl ModOptionGroup for ExclusiveOptionGroup {
@@ -92,7 +89,7 @@ impl ModOptionGroup for ExclusiveOptionGroup {
         &self.description
     }
 
-    fn options(&self) -> &IndexSet<ModOption> {
+    fn options(&self) -> &Vec<ModOption> {
         &self.options
     }
 
@@ -104,7 +101,7 @@ impl ModOptionGroup for ExclusiveOptionGroup {
         &mut self.description
     }
 
-    fn options_mut(&mut self) -> &mut IndexSet<ModOption> {
+    fn options_mut(&mut self) -> &mut Vec<ModOption> {
         &mut self.options
     }
 }
@@ -114,7 +111,7 @@ pub struct MultipleOptionGroup {
     pub name: String,
     pub description: String,
     pub defaults: HashSet<PathBuf>,
-    pub options: IndexSet<ModOption>,
+    pub options: Vec<ModOption>,
 }
 
 impl ModOptionGroup for MultipleOptionGroup {
@@ -126,7 +123,7 @@ impl ModOptionGroup for MultipleOptionGroup {
         &self.description
     }
 
-    fn options(&self) -> &IndexSet<ModOption> {
+    fn options(&self) -> &Vec<ModOption> {
         &self.options
     }
 
@@ -138,7 +135,7 @@ impl ModOptionGroup for MultipleOptionGroup {
         &mut self.description
     }
 
-    fn options_mut(&mut self) -> &mut IndexSet<ModOption> {
+    fn options_mut(&mut self) -> &mut Vec<ModOption> {
         &mut self.options
     }
 }

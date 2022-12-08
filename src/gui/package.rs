@@ -124,6 +124,7 @@ impl App {
         if let Some(ref folders) = self.opt_folders {
             egui::Window::new("Configure Mod Options")
                 .anchor(Align2::CENTER_CENTER, [0., 0.])
+                .scroll2([false, true])
                 .show(ctx, |ui| {
                     egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
                         ui.spacing_mut().item_spacing.y = 8.0;
@@ -156,11 +157,12 @@ impl App {
         }
 
         fn render_opt_groups(
-            opt_groups: &mut [OptionGroup],
+            opt_groups: &mut Vec<OptionGroup>,
             folders: &Mutex<FxHashSet<PathBuf>>,
             id: Id,
             ui: &mut Ui,
         ) {
+            let mut delete = None;
             for (i, opt_group) in opt_groups.iter_mut().enumerate() {
                 let id = id.with(i);
                 let group_name = if opt_group.name().is_empty() {
@@ -171,6 +173,9 @@ impl App {
                 egui::CollapsingHeader::new(group_name)
                     .default_open(true)
                     .show(ui, |ui| {
+                        if ui.icon_text_button("Delete", Icon::Delete).clicked() {
+                            delete = Some(i);
+                        }
                         ui.label("Group Name");
                         opt_group.name_mut().edit_ui_with_id(ui, id.with(i));
                         ui.label("Group Description");
@@ -228,9 +233,9 @@ impl App {
                                     });
                                 });
                         }
-                        ui.horizontal(|ui| {
+                        ui.add_enabled_ui(!folders.lock().is_empty(), |ui| {
                             if ui.icon_text_button("Add Option", Icon::Add).clicked() {
-                                opt_group.options_mut().insert(ModOption {
+                                opt_group.options_mut().push(ModOption {
                                     name: Default::default(),
                                     description: Default::default(),
                                     path: Default::default(),
@@ -238,29 +243,41 @@ impl App {
                                 });
                             }
                         });
+                        let mut delete = None;
                         for (i, opt) in opt_group.options_mut().iter_mut().enumerate() {
-                            render_option(opt, folders, i, id, ui)
+                            render_option(opt, folders, &mut delete, i, id, ui)
+                        }
+                        if let Some(i) = delete {
+                            opt_group.options_mut().remove(i);
                         }
                     });
+            }
+            if let Some(i) = delete {
+                opt_groups.remove(i);
             }
         }
 
         fn render_option(
             option: &mut ModOption,
             folders: &Mutex<FxHashSet<PathBuf>>,
+            delete: &mut Option<usize>,
             i: usize,
             id: Id,
             ui: &mut Ui,
         ) {
             let id = id.with(i);
             let opt_name = if option.name.is_empty() {
-                "New Option Group"
+                "New Option"
             } else {
                 option.name.as_str()
             };
             egui::CollapsingHeader::new(opt_name)
+                .id_source(id.with("header"))
                 .default_open(true)
                 .show(ui, |ui| {
+                    if ui.icon_text_button("Delete", Icon::Delete).clicked() {
+                        *delete = Some(i);
+                    }
                     ui.label("Option Name");
                     option.name.edit_ui_with_id(ui, id.with("name"));
                     ui.label("Option Description");
@@ -270,13 +287,29 @@ impl App {
                     egui::ComboBox::new(id.with("path"), "Option Folder")
                         .selected_text(option.path.display().to_string())
                         .show_ui(ui, |ui| {
-                            folders.lock().iter().map(|folder| {
+                            let mut new_folder: Option<PathBuf> = None;
+                            folders.lock().iter().for_each(|folder| {
                                 let folder_name = folder.file_name().unwrap_or_default();
-                                ui.selectable_label(
-                                    option.path.as_os_str() == folder_name,
-                                    folder_name.to_str().unwrap_or_default(),
-                                );
+                                let selected = option.path.as_os_str() == folder_name;
+                                if ui
+                                    .selectable_label(
+                                        selected,
+                                        folder_name.to_str().unwrap_or_default(),
+                                    )
+                                    .clicked()
+                                    && !selected
+                                {
+                                    new_folder = Some(folder.clone());
+                                };
                             });
+                            if let Some(new_folder) = new_folder {
+                                let mut folders = folders.lock();
+                                folders.remove(&new_folder);
+                                if option.path != PathBuf::default() {
+                                    folders.insert(new_folder.with_file_name(&option.path));
+                                }
+                                option.path = new_folder.file_name().unwrap().into();
+                            }
                         });
                 });
         }
@@ -297,30 +330,30 @@ impl App {
             self.render_package_deps(ui.ctx(), &mut builder);
             self.render_package_opts(ui.ctx(), &mut builder);
             ui.horizontal(|ui| {
-                if ui.icon_text_button("Manage Options", Icon::Tune).clicked() {
-                    if let Ok(reader) = fs::read_dir(&builder.source) {
-                        self.do_update(Message::ShowPackagingOptions(
-                            reader
-                                .filter_map(|res| {
-                                    res.ok().and_then(|e| {
-                                        e.file_type()
-                                            .ok()
-                                            .and_then(|t| t.is_dir().then(|| e.path()))
-                                    })
-                                })
-                                .collect(),
-                        ));
-                    }
-                }
                 let source_set = builder.source.exists();
                 ui.add_enabled_ui(source_set, |ui| {
-                    if ui
-                        .icon_text_button("Set Dependencies", Icon::List)
-                        .clicked()
-                    {
-                        self.do_update(Message::ShowPackagingDependencies);
+                    if ui.icon_text_button("Manage Options", Icon::Tune).clicked() {
+                        if let Ok(reader) = fs::read_dir(&builder.source) {
+                            self.do_update(Message::ShowPackagingOptions(
+                                reader
+                                    .filter_map(|res| {
+                                        res.ok().and_then(|e| {
+                                            e.file_type()
+                                                .ok()
+                                                .and_then(|t| t.is_dir().then(|| e.path()))
+                                        })
+                                    })
+                                    .collect(),
+                            ));
+                        }
                     }
                 });
+                if ui
+                    .icon_text_button("Set Dependencies", Icon::List)
+                    .clicked()
+                {
+                    self.do_update(Message::ShowPackagingDependencies);
+                }
                 if ui.icon_text_button("Help", Icon::Help).clicked() {
                     open::that("https://nicenenerd.github.io/ukmm/packaging.html").unwrap_or(());
                 }
