@@ -142,7 +142,7 @@ mod tests {
         .unwrap();
         let rgconfiglist = super::RagdollConfigList::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(rgconfiglist.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let rgconfiglist2 = super::RagdollConfigList::try_from(&pio2).unwrap();
         assert_eq!(rgconfiglist, rgconfiglist2);
     }

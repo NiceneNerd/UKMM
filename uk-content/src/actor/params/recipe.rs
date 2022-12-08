@@ -182,7 +182,7 @@ mod tests {
         .unwrap();
         let recipe = super::Recipe::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(recipe.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let recipe2 = super::Recipe::try_from(&pio2).unwrap();
         assert_eq!(recipe, recipe2);
     }

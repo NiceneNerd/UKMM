@@ -73,7 +73,7 @@ mod tests {
 
     fn load_quests() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(std::fs::read("test/Quest/QuestProduct.sbquestpack").unwrap())
+            roead::yaz0::decompress(std::fs::read("test/Quest/QuestProduct.sbquestpack").unwrap())
                 .unwrap(),
         )
         .unwrap()
@@ -81,8 +81,8 @@ mod tests {
 
     fn load_mod_quests() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Quest/QuestProduct.mod.sbquestpack").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Quest/QuestProduct.mod.sbquestpack").unwrap(),
             )
             .unwrap(),
         )
@@ -94,7 +94,7 @@ mod tests {
         let byml = load_quests();
         let quests = super::QuestProduct::try_from(&byml).unwrap();
         let data = Byml::from(quests.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let quests2 = super::QuestProduct::try_from(&byml2).unwrap();
         assert_eq!(quests, quests2);
     }

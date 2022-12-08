@@ -107,8 +107,8 @@ mod tests {
 
     fn load_lazy() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Map/MainField/LazyTraverseList.smubin").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Map/MainField/LazyTraverseList.smubin").unwrap(),
             )
             .unwrap(),
         )
@@ -117,8 +117,8 @@ mod tests {
 
     fn load_mod_lazy() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Map/MainField/LazyTraverseList.mod.smubin").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Map/MainField/LazyTraverseList.mod.smubin").unwrap(),
             )
             .unwrap(),
         )
@@ -130,7 +130,7 @@ mod tests {
         let byml = load_lazy();
         let lazy = super::LazyTraverseList::try_from(&byml).unwrap();
         let data = Byml::from(lazy.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let lazy2 = super::LazyTraverseList::try_from(&byml2).unwrap();
         assert_eq!(lazy, lazy2);
     }

@@ -211,7 +211,7 @@ mod tests {
         .unwrap();
         let bonectrl = super::BoneControl::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(bonectrl.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let bonectrl2 = super::BoneControl::try_from(&pio2).unwrap();
         assert_eq!(bonectrl, bonectrl2);
     }

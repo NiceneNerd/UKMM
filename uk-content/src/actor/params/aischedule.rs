@@ -64,7 +64,7 @@ mod tests {
         .unwrap();
         let aischedule = super::AISchedule::from(&byml);
         let data = roead::byml::Byml::from(aischedule.clone()).to_binary(roead::Endian::Big);
-        let byml2 = roead::byml::Byml::from_binary(&data).unwrap();
+        let byml2 = roead::byml::Byml::from_binary(data).unwrap();
         let aischedule2 = super::AISchedule::from(&byml2);
         assert_eq!(aischedule, aischedule2);
     }

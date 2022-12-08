@@ -95,7 +95,7 @@ mod tests {
 
     fn load_cookdata() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Cooking/CookData.sbyml").unwrap())
+            roead::yaz0::decompress(std::fs::read("test/Cooking/CookData.sbyml").unwrap())
                 .unwrap(),
         )
         .unwrap()
@@ -103,7 +103,7 @@ mod tests {
 
     fn load_mod_cookdata() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Cooking/CookData.mod.sbyml").unwrap())
+            roead::yaz0::decompress(std::fs::read("test/Cooking/CookData.mod.sbyml").unwrap())
                 .unwrap(),
         )
         .unwrap()
@@ -114,7 +114,7 @@ mod tests {
         let byml = load_cookdata();
         let cookdata = super::CookData::try_from(&byml).unwrap();
         let data = Byml::from(cookdata.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let cookdata2 = super::CookData::try_from(&byml2).unwrap();
         assert_eq!(cookdata, cookdata2);
     }

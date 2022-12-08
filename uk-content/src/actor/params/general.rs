@@ -277,7 +277,7 @@ mod tests {
         .unwrap();
         let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(gparamlist.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let gparamlist2 = super::GeneralParamList::try_from(&pio2).unwrap();
         assert_eq!(gparamlist, gparamlist2);
     }

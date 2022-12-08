@@ -356,14 +356,14 @@ impl ModPacker {
             content_files: content_dir
                 .map(|content| {
                     log::info!("Collecting resources");
-                    self.collect_resources(&content)
+                    self.collect_resources(content)
                 })
                 .transpose()?
                 .unwrap_or_default(),
             aoc_files:     aoc_dir
                 .map(|aoc| {
                     log::info!("Collecting DLC resources");
-                    self.collect_resources(&aoc)
+                    self.collect_resources(aoc)
                 })
                 .transpose()?
                 .unwrap_or_default(),

@@ -201,8 +201,8 @@ mod tests {
 
     fn load_status() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Ecosystem/StatusEffectList.sbyml").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Ecosystem/StatusEffectList.sbyml").unwrap(),
             )
             .unwrap(),
         )
@@ -211,8 +211,8 @@ mod tests {
 
     fn load_mod_status() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Ecosystem/StatusEffectList.mod.sbyml").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Ecosystem/StatusEffectList.mod.sbyml").unwrap(),
             )
             .unwrap(),
         )
@@ -224,7 +224,7 @@ mod tests {
         let byml = load_status();
         let status = super::StatusEffectList::try_from(&byml).unwrap();
         let data = Byml::from(status.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let status2 = super::StatusEffectList::try_from(&byml2).unwrap();
         assert_eq!(status, status2);
     }

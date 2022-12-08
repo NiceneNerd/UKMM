@@ -312,7 +312,7 @@ mod tests {
         let byml = load_savedata();
         let savedata = super::SaveData::try_from(&byml).unwrap();
         let data = Byml::from(savedata.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let savedata2 = super::SaveData::try_from(&byml2).unwrap();
         assert_eq!(savedata, savedata2);
     }

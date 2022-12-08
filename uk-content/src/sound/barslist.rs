@@ -83,8 +83,8 @@ mod tests {
 
     fn load_barslist() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Sound/ResourceList/BarslistInfo.sbyml").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Sound/ResourceList/BarslistInfo.sbyml").unwrap(),
             )
             .unwrap(),
         )
@@ -93,8 +93,8 @@ mod tests {
 
     fn load_mod_barslist() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Sound/ResourceList/BarslistInfo.mod.sbyml").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Sound/ResourceList/BarslistInfo.mod.sbyml").unwrap(),
             )
             .unwrap(),
         )
@@ -106,7 +106,7 @@ mod tests {
         let byml = load_barslist();
         let barslist = super::BarslistInfo::try_from(&byml).unwrap();
         let data = Byml::from(barslist.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let barslist2 = super::BarslistInfo::try_from(&byml2).unwrap();
         assert_eq!(barslist, barslist2);
     }

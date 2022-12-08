@@ -92,11 +92,11 @@ mod tests {
     use crate::prelude::*;
 
     fn load_residents() -> Byml {
-        Byml::from_binary(&std::fs::read("test/Event/ResidentEvent.byml").unwrap()).unwrap()
+        Byml::from_binary(std::fs::read("test/Event/ResidentEvent.byml").unwrap()).unwrap()
     }
 
     fn load_mod_residents() -> Byml {
-        Byml::from_binary(&std::fs::read("test/Event/ResidentEvent.mod.byml").unwrap()).unwrap()
+        Byml::from_binary(std::fs::read("test/Event/ResidentEvent.mod.byml").unwrap()).unwrap()
     }
 
     #[test]
@@ -104,7 +104,7 @@ mod tests {
         let byml = load_residents();
         let residents = super::ResidentEvents::try_from(&byml).unwrap();
         let data = Byml::from(residents.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let residents2 = super::ResidentEvents::try_from(&byml2).unwrap();
         assert_eq!(residents, residents2);
     }

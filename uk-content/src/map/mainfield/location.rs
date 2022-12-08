@@ -119,7 +119,7 @@ mod tests {
 
     fn load_location() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Map/MainField/Location.smubin").unwrap())
+            roead::yaz0::decompress(std::fs::read("test/Map/MainField/Location.smubin").unwrap())
                 .unwrap(),
         )
         .unwrap()
@@ -127,8 +127,8 @@ mod tests {
 
     fn load_mod_location() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Map/MainField/Location.mod.smubin").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Map/MainField/Location.mod.smubin").unwrap(),
             )
             .unwrap(),
         )
@@ -140,7 +140,7 @@ mod tests {
         let byml = load_location();
         let location = super::Location::try_from(&byml).unwrap();
         let data = Byml::from(location.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let location2 = super::Location::try_from(&byml2).unwrap();
         assert_eq!(location, location2);
     }

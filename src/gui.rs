@@ -708,7 +708,7 @@ impl App {
                 }
                 Message::ClosePackagingOptions => self.opt_folders = None,
                 Message::ClosePackagingDependencies => self.show_package_deps = false,
-                Message::PackageMod(builder) => (),
+                Message::PackageMod(_builder) => (),
             }
             ctx.request_repaint();
         }
@@ -1155,7 +1155,7 @@ impl eframe::App for App {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         fs::write(
             self.core.settings().state_file(),
-            &serde_json::to_string_pretty(&self.picker_state).unwrap(),
+            serde_json::to_string_pretty(&self.picker_state).unwrap(),
         )
         .unwrap_or(());
         uk_manager::util::clear_temp();

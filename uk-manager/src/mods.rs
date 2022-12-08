@@ -417,7 +417,7 @@ pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
     let temp = util::get_temp_folder();
     log::debug!("Temp folder: {}", temp.display());
     log::info!("Attempting to convert mod...");
-    let packer = ModPacker::new(&path, &*temp, None, vec![])?;
+    let packer = ModPacker::new(path, &*temp, None, vec![])?;
     let result_path = packer.pack()?;
     log::info!("Conversion complete");
     Ok(result_path)

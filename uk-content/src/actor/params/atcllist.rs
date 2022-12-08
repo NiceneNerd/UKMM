@@ -124,7 +124,7 @@ mod tests {
         .unwrap();
         let atcllist = super::AttClientList::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(atcllist.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let atcllist2 = super::AttClientList::try_from(&pio2).unwrap();
         assert_eq!(atcllist, atcllist2);
     }

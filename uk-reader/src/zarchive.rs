@@ -50,8 +50,8 @@ impl ZArchive {
 impl super::ResourceLoader for ZArchive {
     fn get_data(&self, name: &Path) -> Result<Vec<u8>> {
         self.archive
-            .read_file(&self.update_dir.join(name))
-            .or_else(|| self.archive.read_file(&self.content_dir.join(name)))
+            .read_file(self.update_dir.join(name))
+            .or_else(|| self.archive.read_file(self.content_dir.join(name)))
             .ok_or_else(|| {
                 crate::ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
             })
@@ -61,7 +61,7 @@ impl super::ResourceLoader for ZArchive {
         self.aoc_dir
             .as_ref()
             .map(|dir| {
-                self.archive.read_file(&dir.join(name)).ok_or_else(|| {
+                self.archive.read_file(dir.join(name)).ok_or_else(|| {
                     crate::ROMError::FileNotFound(
                         name.to_string_lossy().into(),
                         self.host_path.clone(),

@@ -114,7 +114,7 @@ impl Manager {
     fn save(&self) -> Result<()> {
         fs::write(
             Self::log_path(&self.settings.upgrade().unwrap().read()),
-            &serde_yaml::to_string(&PendingLog {
+            serde_yaml::to_string(&PendingLog {
                 delete: self.pending_delete.read().clone(),
                 files:  self.pending_files.read().clone(),
             })?,

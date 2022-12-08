@@ -95,7 +95,7 @@ mod tests {
         .unwrap();
         let atcl = super::AttClient::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(atcl.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let atcl2 = super::AttClient::try_from(&pio2).unwrap();
         assert_eq!(atcl, atcl2);
     }

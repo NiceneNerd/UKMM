@@ -64,7 +64,7 @@ mod tests {
         .unwrap();
         let dmgparam = super::DamageParam::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(dmgparam.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let dmgparam2 = super::DamageParam::try_from(&pio2).unwrap();
         assert_eq!(dmgparam, dmgparam2);
     }

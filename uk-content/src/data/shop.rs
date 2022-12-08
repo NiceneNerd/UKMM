@@ -139,8 +139,8 @@ mod tests {
 
     fn load_shopinfo() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/GameData/ShopGameDataInfo.sbyml").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/GameData/ShopGameDataInfo.sbyml").unwrap(),
             )
             .unwrap(),
         )
@@ -149,8 +149,8 @@ mod tests {
 
     fn load_mod_shopinfo() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/GameData/ShopGameDataInfo.mod.sbyml").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/GameData/ShopGameDataInfo.mod.sbyml").unwrap(),
             )
             .unwrap(),
         )
@@ -162,7 +162,7 @@ mod tests {
         let byml = load_shopinfo();
         let shopinfo = super::ShopGameDataInfo::try_from(&byml).unwrap();
         let data = Byml::from(shopinfo.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let shopinfo2 = super::ShopGameDataInfo::try_from(&byml2).unwrap();
         assert_eq!(shopinfo, shopinfo2);
     }

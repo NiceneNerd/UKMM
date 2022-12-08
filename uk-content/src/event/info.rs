@@ -51,7 +51,7 @@ mod tests {
 
     fn load_eventinfo() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Event/EventInfo.product.sbyml").unwrap())
+            roead::yaz0::decompress(std::fs::read("test/Event/EventInfo.product.sbyml").unwrap())
                 .unwrap(),
         )
         .unwrap()
@@ -59,8 +59,8 @@ mod tests {
 
     fn load_mod_eventinfo() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Event/EventInfo.product.mod.sbyml").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Event/EventInfo.product.mod.sbyml").unwrap(),
             )
             .unwrap(),
         )
@@ -72,7 +72,7 @@ mod tests {
         let byml = load_eventinfo();
         let eventinfo = super::EventInfo::try_from(&byml).unwrap();
         let data = Byml::from(eventinfo.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let eventinfo2 = super::EventInfo::try_from(&byml2).unwrap();
         assert_eq!(eventinfo, eventinfo2);
     }

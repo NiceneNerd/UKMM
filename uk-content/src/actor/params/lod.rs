@@ -64,7 +64,7 @@ mod tests {
         .unwrap();
         let lod = super::Lod::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(lod.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let lod2 = super::Lod::try_from(&pio2).unwrap();
         assert_eq!(lod, lod2);
     }

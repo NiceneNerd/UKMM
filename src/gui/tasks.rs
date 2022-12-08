@@ -57,7 +57,7 @@ pub fn open_mod(path: &Path) -> Result<Message> {
                 log::info!("Maybe it's not a UKMM mod, let's to convert it");
                 let converted_path = uk_manager::mods::convert_gfx(path)?;
                 Mod::from_reader(
-                    ModReader::open_peek(&converted_path, vec![])
+                    ModReader::open_peek(converted_path, vec![])
                         .context("Failed to open converted mod")?,
                 )
             } else {

@@ -260,7 +260,7 @@ impl ModReader {
                 .borrow_files()
                 .get(Path::new("meta.toml"))
                 .context("Mod missing meta file")?;
-            size = meta.compressed_size as usize;
+            size = meta.compressed_size;
             let mut reader = zip.borrow_zip().read(meta)?;
             read = reader.read(&mut buffer)?;
             if read != size {
@@ -273,7 +273,7 @@ impl ModReader {
                 .borrow_files()
                 .get(Path::new("manifest.yml"))
                 .context("Mod missing manifest file")?;
-            size = manifest.compressed_size as usize;
+            size = manifest.compressed_size;
             let mut reader = zip.borrow_zip().read(manifest)?;
             read = reader.read(&mut buffer)?;
             if read != size {
@@ -287,7 +287,7 @@ impl ModReader {
                 .borrow_files()
                 .get(opt.manifest_path().as_path())
                 .context("Mod missing option manifest file")?;
-            size = opt_manifest.compressed_size as usize;
+            size = opt_manifest.compressed_size;
             let mut reader = zip.borrow_zip().read(opt_manifest)?;
             read = reader.read(&mut buffer)?;
             if read != size {

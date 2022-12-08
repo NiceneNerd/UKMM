@@ -204,7 +204,7 @@ mod tests {
         .unwrap();
         let actorlink = super::ActorLink::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(actorlink.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let actorlink2 = super::ActorLink::try_from(&pio2).unwrap();
         assert_eq!(actorlink, actorlink2);
     }

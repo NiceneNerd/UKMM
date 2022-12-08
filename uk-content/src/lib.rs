@@ -371,7 +371,7 @@ pub(crate) mod tests {
     pub fn test_base_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::new(
             roead::yaz0::decompress(
-                std::fs::read(&jstr!("test/Actor/Pack/{name}.sbactorpack")).unwrap(),
+                std::fs::read(jstr!("test/Actor/Pack/{name}.sbactorpack")).unwrap(),
             )
             .unwrap(),
         )
@@ -381,7 +381,7 @@ pub(crate) mod tests {
     pub fn test_mod_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::new(
             roead::yaz0::decompress(
-                std::fs::read(&jstr!("test/Actor/Pack/{name}_Mod.sbactorpack")).unwrap(),
+                std::fs::read(jstr!("test/Actor/Pack/{name}_Mod.sbactorpack")).unwrap(),
             )
             .unwrap(),
         )

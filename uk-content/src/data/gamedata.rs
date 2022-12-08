@@ -557,7 +557,7 @@ mod tests {
         let byml = load_gamedata();
         let gamedata = super::GameData::try_from(&byml).unwrap();
         let data = Byml::from(gamedata.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let gamedata2 = super::GameData::try_from(&byml2).unwrap();
         assert_eq!(gamedata, gamedata2);
     }

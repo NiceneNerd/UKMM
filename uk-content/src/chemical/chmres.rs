@@ -98,11 +98,11 @@ mod tests {
     use crate::prelude::*;
 
     fn load_chmres() -> ParameterIO {
-        ParameterIO::from_binary(&std::fs::read("test/Chemical/system.bchmres").unwrap()).unwrap()
+        ParameterIO::from_binary(std::fs::read("test/Chemical/system.bchmres").unwrap()).unwrap()
     }
 
     fn load_mod_chmres() -> ParameterIO {
-        ParameterIO::from_binary(&std::fs::read("test/Chemical/system.mod.bchmres").unwrap())
+        ParameterIO::from_binary(std::fs::read("test/Chemical/system.mod.bchmres").unwrap())
             .unwrap()
     }
 
@@ -111,7 +111,7 @@ mod tests {
         let pio = load_chmres();
         let chmres = super::ChemicalRes::try_from(&pio).unwrap();
         let data = ParameterIO::from(chmres.clone()).to_binary();
-        let pio2 = ParameterIO::from_binary(&data).unwrap();
+        let pio2 = ParameterIO::from_binary(data).unwrap();
         let chmres2 = super::ChemicalRes::try_from(&pio2).unwrap();
         assert_eq!(chmres, chmres2);
     }

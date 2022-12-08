@@ -139,8 +139,8 @@ mod tests {
 
     fn load_cdungeon_munt() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Map/CDungeon/Dungeon044/Dungeon044_Static.smubin").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Map/CDungeon/Dungeon044/Dungeon044_Static.smubin").unwrap(),
             )
             .unwrap(),
         )
@@ -149,8 +149,8 @@ mod tests {
 
     fn load_mod_cdungeon_munt() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Map/CDungeon/Dungeon044/Dungeon044_Static.mod.smubin")
+            roead::yaz0::decompress(
+                std::fs::read("test/Map/CDungeon/Dungeon044/Dungeon044_Static.mod.smubin")
                     .unwrap(),
             )
             .unwrap(),
@@ -160,8 +160,8 @@ mod tests {
 
     fn load_mainfield_munt() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Map/MainField/D-3/D-3_Dynamic.smubin").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Map/MainField/D-3/D-3_Dynamic.smubin").unwrap(),
             )
             .unwrap(),
         )
@@ -170,8 +170,8 @@ mod tests {
 
     fn load_mod_mainfield_munt() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Map/MainField/D-3/D-3_Dynamic.mod.smubin").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Map/MainField/D-3/D-3_Dynamic.mod.smubin").unwrap(),
             )
             .unwrap(),
         )
@@ -183,7 +183,7 @@ mod tests {
         let byml = load_mainfield_munt();
         let munt = super::MapUnit::try_from(&byml).unwrap();
         let data = Byml::from(munt.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let munt2 = super::MapUnit::try_from(&byml2).unwrap();
         assert_eq!(munt, munt2);
     }
@@ -193,7 +193,7 @@ mod tests {
         let byml = load_cdungeon_munt();
         let munt = super::MapUnit::try_from(&byml).unwrap();
         let data = Byml::from(munt.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let munt2 = super::MapUnit::try_from(&byml2).unwrap();
         assert_eq!(munt, munt2);
     }

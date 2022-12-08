@@ -91,14 +91,14 @@ mod tests {
 
     fn load_tips() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Tips/TipsWorld.sbyml").unwrap()).unwrap(),
+            roead::yaz0::decompress(std::fs::read("test/Tips/TipsWorld.sbyml").unwrap()).unwrap(),
         )
         .unwrap()
     }
 
     fn load_mod_tips() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Tips/TipsWorld.mod.sbyml").unwrap())
+            roead::yaz0::decompress(std::fs::read("test/Tips/TipsWorld.mod.sbyml").unwrap())
                 .unwrap(),
         )
         .unwrap()
@@ -109,7 +109,7 @@ mod tests {
         let byml = load_tips();
         let tips = super::Tips::try_from(&byml).unwrap();
         let data = Byml::from(tips.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let tips2 = super::Tips::try_from(&byml2).unwrap();
         assert_eq!(tips, tips2);
     }

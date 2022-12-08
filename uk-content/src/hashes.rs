@@ -71,8 +71,8 @@ mod tests {
     fn wiiu_hash_table() {
         let table = super::ROMHashTable::new(crate::prelude::Endian::Little);
         let stock_data = std::fs::read("test/WorldMgr/normal.bwinfo").unwrap();
-        assert!(!table.is_modified("WorldMgr/normal.bwinfo", &stock_data));
+        assert!(!table.is_modified("WorldMgr/normal.bwinfo", stock_data));
         let modded_data = std::fs::read("test/WorldMgr/normal.mod.bwinfo").unwrap();
-        assert!(table.is_modified("WorldMgr/normal.bwinfo", &modded_data));
+        assert!(table.is_modified("WorldMgr/normal.bwinfo", modded_data));
     }
 }

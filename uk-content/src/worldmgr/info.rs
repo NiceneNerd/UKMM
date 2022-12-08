@@ -50,11 +50,11 @@ mod tests {
     use crate::prelude::*;
 
     fn load_winfo() -> ParameterIO {
-        ParameterIO::from_binary(&std::fs::read("test/WorldMgr/normal.bwinfo").unwrap()).unwrap()
+        ParameterIO::from_binary(std::fs::read("test/WorldMgr/normal.bwinfo").unwrap()).unwrap()
     }
 
     fn load_mod_winfo() -> ParameterIO {
-        ParameterIO::from_binary(&std::fs::read("test/WorldMgr/normal.mod.bwinfo").unwrap())
+        ParameterIO::from_binary(std::fs::read("test/WorldMgr/normal.mod.bwinfo").unwrap())
             .unwrap()
     }
 
@@ -63,7 +63,7 @@ mod tests {
         let pio = load_winfo();
         let winfo = super::WorldInfo::try_from(&pio).unwrap();
         let data = ParameterIO::from(winfo.clone()).to_binary();
-        let pio2 = ParameterIO::from_binary(&data).unwrap();
+        let pio2 = ParameterIO::from_binary(data).unwrap();
         let winfo2 = super::WorldInfo::try_from(&pio2).unwrap();
         assert_eq!(winfo, winfo2);
     }

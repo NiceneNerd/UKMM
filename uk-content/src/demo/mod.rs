@@ -48,11 +48,11 @@ mod tests {
     use crate::prelude::*;
 
     fn load_demo() -> ParameterIO {
-        ParameterIO::from_binary(&std::fs::read("test/Demo/Demo005_0.bdemo").unwrap()).unwrap()
+        ParameterIO::from_binary(std::fs::read("test/Demo/Demo005_0.bdemo").unwrap()).unwrap()
     }
 
     fn load_mod_demo() -> ParameterIO {
-        ParameterIO::from_binary(&std::fs::read("test/Demo/Demo005_0.mod.bdemo").unwrap()).unwrap()
+        ParameterIO::from_binary(std::fs::read("test/Demo/Demo005_0.mod.bdemo").unwrap()).unwrap()
     }
 
     #[test]
@@ -60,7 +60,7 @@ mod tests {
         let pio = load_demo();
         let demo = super::Demo::try_from(&pio).unwrap();
         let data = ParameterIO::from(demo.clone()).to_binary();
-        let pio2 = ParameterIO::from_binary(&data).unwrap();
+        let pio2 = ParameterIO::from_binary(data).unwrap();
         let demo2 = super::Demo::try_from(&pio2).unwrap();
         assert_eq!(demo, demo2);
     }

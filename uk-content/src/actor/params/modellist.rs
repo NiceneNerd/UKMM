@@ -210,7 +210,7 @@ mod tests {
         .unwrap();
         let modellist = super::ModelList::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(modellist.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let modellist2 = super::ModelList::try_from(&pio2).unwrap();
         assert_eq!(modellist, modellist2);
     }

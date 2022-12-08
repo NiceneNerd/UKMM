@@ -64,7 +64,7 @@ mod tests {
         .unwrap();
         let animinfo = super::AnimationInfo::from(&byml);
         let data = roead::byml::Byml::from(animinfo.clone()).to_binary(roead::Endian::Big);
-        let byml2 = roead::byml::Byml::from_binary(&data).unwrap();
+        let byml2 = roead::byml::Byml::from_binary(data).unwrap();
         let animinfo2 = super::AnimationInfo::from(&byml2);
         assert_eq!(animinfo, animinfo2);
     }

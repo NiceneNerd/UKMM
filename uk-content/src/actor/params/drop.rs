@@ -176,7 +176,7 @@ mod tests {
         .unwrap();
         let drop = super::DropTable::try_from(&pio).unwrap();
         let data = roead::aamp::ParameterIO::from(drop.clone()).to_binary();
-        let pio2 = roead::aamp::ParameterIO::from_binary(&data).unwrap();
+        let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
         let drop2 = super::DropTable::try_from(&pio2).unwrap();
         assert_eq!(drop, drop2);
     }

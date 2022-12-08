@@ -306,7 +306,7 @@ mod tests {
 
     fn load_sensor() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(&std::fs::read("test/Ecosystem/LevelSensor.sbyml").unwrap())
+            roead::yaz0::decompress(std::fs::read("test/Ecosystem/LevelSensor.sbyml").unwrap())
                 .unwrap(),
         )
         .unwrap()
@@ -314,8 +314,8 @@ mod tests {
 
     fn load_mod_sensor() -> Byml {
         Byml::from_binary(
-            &roead::yaz0::decompress(
-                &std::fs::read("test/Ecosystem/LevelSensor.mod.sbyml").unwrap(),
+            roead::yaz0::decompress(
+                std::fs::read("test/Ecosystem/LevelSensor.mod.sbyml").unwrap(),
             )
             .unwrap(),
         )
@@ -327,7 +327,7 @@ mod tests {
         let byml = load_sensor();
         let sensor = super::LevelSensor::try_from(&byml).unwrap();
         let data = Byml::from(sensor.clone()).to_binary(roead::Endian::Big);
-        let byml2 = Byml::from_binary(&data).unwrap();
+        let byml2 = Byml::from_binary(data).unwrap();
         let sensor2 = super::LevelSensor::try_from(&byml2).unwrap();
         assert_eq!(sensor, sensor2);
     }
