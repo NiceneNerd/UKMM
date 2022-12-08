@@ -318,7 +318,7 @@ impl App {
     pub fn render_packger(&self, ui: &mut Ui) {
         egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
             let id = Id::new("packer_data");
-            let builder = ui
+            let builder_ref = ui
                 .data()
                 .get_temp_mut_or_insert_with::<Arc<RwLock<ModPackerBuilder>>>(id, || {
                     Arc::new(RwLock::new(ModPackerBuilder::new(
@@ -326,7 +326,7 @@ impl App {
                     )))
                 })
                 .clone();
-            let mut builder = builder.write();
+            let mut builder = builder_ref.write();
             self.render_package_deps(ui.ctx(), &mut builder);
             self.render_package_opts(ui.ctx(), &mut builder);
             ui.horizontal(|ui| {
@@ -414,10 +414,10 @@ impl App {
             ui.label("Description");
             ui.small("Some Markdown formatting supported");
             ui.add_space(4.0);
-            let string = ui
-                .get_temp_string(id.with("Description"))
-                .get_or_insert_default()
-                .clone();
+            let string = ui.create_temp_string(
+                id.with("Description"),
+                Some(builder.meta.description.as_str().into()),
+            );
             if egui::TextEdit::multiline(string.write().deref_mut())
                 .desired_width(f32::INFINITY)
                 .show(ui)
@@ -426,6 +426,22 @@ impl App {
             {
                 builder.meta.description = string.read().as_str().into();
             }
+            let is_valid = || {
+                builder.source != PathBuf::default()
+                    && builder.source.exists()
+                    && !builder.meta.name.is_empty()
+            };
+            ui.add_enabled_ui(is_valid(), |ui| {
+                ui.allocate_ui_with_layout(
+                    [ui.available_width(), ui.spacing().interact_size.y].into(),
+                    Layout::right_to_left(Align::Center),
+                    |ui| {
+                        if ui.button("Package Mod").clicked() {
+                            self.do_update(Message::PackageMod(builder_ref.clone()));
+                        }
+                    },
+                );
+            });
         });
     }
 }

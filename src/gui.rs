@@ -30,7 +30,7 @@ use fs_err as fs;
 use im::{vector, Vector};
 use join_str::jstr;
 use once_cell::sync::OnceCell;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use picker::FilePickerState;
 use rustc_hash::FxHashSet;
 use uk_manager::{
@@ -42,14 +42,14 @@ use uk_mod::Manifest;
 pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
-        self, mutex::RwLock, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox,
-        FontId, Frame, Id, Label, LayerId, Layout, RichText, Rounding, Spinner, TextFormat,
-        TextStyle, Ui, Vec2,
+        self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
+        Label, LayerId, Layout, RichText, Rounding, Spinner, TextFormat, TextStyle, Ui, Vec2,
     },
     ext::UiExt,
     icons::{Icon, IconButtonExt},
 };
 
+use self::package::ModPackerBuilder;
 use crate::logger::Entry;
 
 fn load_fonts(context: &egui::Context) {
@@ -219,6 +219,7 @@ pub enum Message {
     NewProfile,
     Noop,
     OpenMod(PathBuf),
+    PackageMod(Arc<RwLock<ModPackerBuilder>>),
     RefreshModsDisplay,
     Remerge,
     RemoveMods(Vector<Mod>),
@@ -707,6 +708,7 @@ impl App {
                 }
                 Message::ClosePackagingOptions => self.opt_folders = None,
                 Message::ClosePackagingDependencies => self.show_package_deps = false,
+                Message::PackageMod(builder) => (),
             }
             ctx.request_repaint();
         }
