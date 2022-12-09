@@ -334,7 +334,7 @@ impl App {
                 let source_set = builder.source.exists();
                 ui.add_enabled_ui(source_set, |ui| {
                     if ui.icon_text_button("Manage Options", Icon::Tune).clicked() {
-                        if let Ok(reader) = fs::read_dir(&builder.source.join("options")) {
+                        if let Ok(reader) = fs::read_dir(builder.source.join("options")) {
                             self.do_update(Message::ShowPackagingOptions(
                                 reader
                                     .filter_map(|res| {
