@@ -130,7 +130,7 @@ pub fn apply_changes(
 }
 
 pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message> {
-    let Some(dump) = core.settings().dump() else { 
+    let Some(dump) = core.settings().dump() else {
         anyhow::bail!("No dump for current platform")
     };
     uk_mod::pack::ModPacker::new(
@@ -138,7 +138,9 @@ pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message>
         builder.dest,
         Some(builder.meta),
         [dump].into_iter().collect(),
-    )?
-    .pack()?;
+    )
+    .context("Failed to initialize mod packager")?
+    .pack()
+    .context("Failed to package mod")?;
     Ok(Message::Noop)
 }

@@ -13,6 +13,7 @@ use parking_lot::{Mutex, RwLock};
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{sarc::Sarc, yaz0::decompress_if};
+pub use sanitise_file_name::sanitise;
 use serde::Deserialize;
 use smartstring::alias::String;
 use uk_content::{
@@ -154,11 +155,10 @@ impl ModPacker {
             );
         };
         let dest = dest.as_ref();
-        let dest_file = if dest.is_file() {
-            dest.to_path_buf()
+        let dest_file = if dest.is_dir() {
+            dest.join(sanitise(&meta.name)).with_extension("zip")
         } else {
-            dest.join(sanitise_file_name::sanitise(&meta.name))
-                .with_extension("zip")
+            dest.to_path_buf()
         };
         log::debug!("Using temp file at {}", dest_file.display());
         if dest_file.exists() {
@@ -368,6 +368,7 @@ impl ModPacker {
                 .transpose()?
                 .unwrap_or_default(),
         })?;
+        log::info!("Writing manifest");
         let mut zip = self.zip.lock();
         zip.start_file(
             root.as_ref()
@@ -407,12 +408,14 @@ impl ModPacker {
         }
         match Arc::try_unwrap(self.zip).map(|z| z.into_inner()) {
             Ok(mut zip) => {
+                log::info!("Writing meta");
                 zip.start_file("meta.toml", self._zip_opts)?;
                 zip.write_all(toml::to_string_pretty(&self.meta)?.as_bytes())?;
                 zip.finish()?
             }
-            Err(_) => panic!("Failed to finish writing zip, this is probably a big deal"),
+            Err(_) => anyhow::bail!("Failed to finish writing zip, this is probably a big deal"),
         };
+        log::info!("Completed packaging mod");
         Ok(self._out_file)
     }
 }

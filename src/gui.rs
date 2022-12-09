@@ -38,7 +38,7 @@ use uk_manager::{
     mods::{LookupMod, Mod},
     settings::Settings,
 };
-use uk_mod::Manifest;
+use uk_mod::{pack::sanitise, Manifest};
 pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
@@ -710,7 +710,13 @@ impl App {
                 Message::ClosePackagingDependencies => self.show_package_deps = false,
                 Message::PackageMod(builder) => {
                     let mut builder = ModPackerBuilder::clone(&builder.read());
-                    if let Some(dest) = rfd::FileDialog::new().pick_file() {
+                    let default_name = sanitise(&builder.meta.name) + ".zip";
+                    if let Some(dest) = rfd::FileDialog::new()
+                        .add_filter("UKMM Mod", &["zip"])
+                        .set_title("Save Mod Package")
+                        .set_file_name(&default_name)
+                        .save_file()
+                    {
                         builder.dest = dest;
                         self.do_task(move |core| tasks::package_mod(&core, builder));
                     }
