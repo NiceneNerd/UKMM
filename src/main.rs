@@ -2,6 +2,7 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+#![allow(stable_features)]
 #![feature(
     const_result_drop,
     let_else,

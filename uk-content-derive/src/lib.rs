@@ -1,3 +1,4 @@
+#![allow(stable_features)]
 #![feature(let_else)]
 mod aamp;
 mod byml;
