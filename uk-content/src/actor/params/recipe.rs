@@ -21,10 +21,13 @@ impl TryFrom<&ParameterIO> for Recipe {
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         let header = pio
             .object("Header")
-            .ok_or(UKError::MissingAampKey("Recipe missing header"))?;
+            .ok_or(UKError::MissingAampKey("Recipe missing header", None))?;
         let table_count = header
             .get("TableNum")
-            .ok_or(UKError::MissingAampKey("Recipe header missing table count"))?
+            .ok_or(UKError::MissingAampKey(
+                "Recipe header missing table count",
+                None,
+            ))?
             .as_int()?;
         let table_names = (0..table_count)
             .map(|i| -> Result<&String64> {
@@ -49,18 +52,25 @@ impl TryFrom<&ParameterIO> for Recipe {
                         *name,
                         (1..=table
                             .get("ColumnNum")
-                            .ok_or(UKError::MissingAampKey("Recipe table missing column num"))?
+                            .ok_or(UKError::MissingAampKey(
+                                "Recipe table missing column num",
+                                None,
+                            ))?
                             .as_int()?)
                             .map(|i| -> Result<(String64, u8)> {
                                 Ok((
                                     *table
                                         .get(&format!("ItemName{:02}", i))
-                                        .ok_or(UKError::MissingAampKey("Recipe missing item name"))?
+                                        .ok_or(UKError::MissingAampKey(
+                                            "Recipe missing item name",
+                                            None,
+                                        ))?
                                         .as_string64()?,
                                     table
                                         .get(&format!("ItemNum{:02}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Recipe missing item count",
+                                            None,
                                         ))?
                                         .as_int()? as u8,
                                 ))

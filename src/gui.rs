@@ -743,6 +743,15 @@ impl App {
                         });
                     });
                     ui.add_space(8.);
+                    if let Some(context) = err.chain().find_map(|e| {
+                        e.downcast_ref::<uk_content::UKError>()
+                            .and_then(|e| e.context_data())
+                    }) {
+                        egui::CollapsingHeader::new("Data Context").show(ui, |ui| {
+                            ui.label(format!("{:#?}", context));
+                        });
+                    }
+                    ui.add_space(8.);
                     let width = ui.min_size().x;
                     ui.horizontal(|ui| {
                         ui.allocate_ui_with_layout(

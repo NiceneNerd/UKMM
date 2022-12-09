@@ -37,16 +37,19 @@ impl TryFrom<&ParameterList> for ContactInfo {
             .get(&3387849585)
             .ok_or(UKError::MissingAampKey(
                 "Physics rigid contact info missing header",
+                None,
             ))?
             .get("contact_point_info_num")
             .ok_or(UKError::MissingAampKey(
                 "Physics rigid contact info header missing contact point info count",
+                None,
             ))?
             .as_int()? as usize;
         let collision_count = list.objects.0[&3387849585]
             .get("collision_info_num")
             .ok_or(UKError::MissingAampKey(
                 "Physics rigid contact info header missing collision info count",
+                None,
             ))?
             .as_int()? as usize;
         Ok(Self {
@@ -56,6 +59,7 @@ impl TryFrom<&ParameterList> for ContactInfo {
                         list.object(&jstr!("ContactPointInfo_{&lexical::to_string(i)}"))
                             .ok_or(UKError::MissingAampKey(
                                 "Physics rigid contact info missing entry",
+                                None,
                             ))?
                             .try_into()
                     })
@@ -67,6 +71,7 @@ impl TryFrom<&ParameterList> for ContactInfo {
                         list.object(&jstr!("CollisionInfo_{&lexical::to_string(i)}"))
                             .ok_or(UKError::MissingAampKey(
                                 "Physics rigid collision info missing entry",
+                                None,
                             ))?
                             .try_into()
                     })
@@ -176,6 +181,7 @@ impl TryFrom<&ParameterList> for CharacterController {
                 .get(2311816730)
                 .ok_or(UKError::MissingAampKey(
                     "Physics character controller missing header",
+                    None,
                 ))?
                 .clone(),
             forms:  list.lists.0.values().cloned().enumerate().collect(),
@@ -223,27 +229,33 @@ impl TryFrom<&ParameterList> for Cloth {
     type Error = UKError;
 
     fn try_from(list: &ParameterList) -> Result<Self> {
-        let header = list
-            .object("ClothHeader")
-            .ok_or(UKError::MissingAampKey("Physics missing cloth header"))?;
+        let header = list.object("ClothHeader").ok_or(UKError::MissingAampKey(
+            "Physics missing cloth header",
+            None,
+        ))?;
         Ok(Self {
             setup_file_path: Some(
                 header
                     .get("cloth_setup_file_path")
                     .ok_or(UKError::MissingAampKey(
                         "Physics cloth header missing setup file path",
+                        None,
                     ))?
                     .as_str()?
                     .into(),
             ),
             subwind: list
                 .object("ClothSubWind")
-                .ok_or(UKError::MissingAampKey("Physics cloth missing subwind"))?
+                .ok_or(UKError::MissingAampKey(
+                    "Physics cloth missing subwind",
+                    None,
+                ))?
                 .clone(),
             cloths: header
                 .get("cloth_num")
                 .ok_or(UKError::MissingAampKey(
                     "Physics cloth header missing cloth count",
+                    None,
                 ))?
                 .as_int()
                 .map(|count| -> Result<BTreeMap<usize, ParameterObject>> {
@@ -336,25 +348,30 @@ impl TryFrom<&ParameterIO> for Physics {
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         let param_set = pio
             .list("ParamSet")
-            .ok_or(UKError::MissingAampKey("Physics missing param set"))?;
+            .ok_or(UKError::MissingAampKey("Physics missing param set", None))?;
         let header = param_set
             .objects
             .get(1258832850)
-            .ok_or(UKError::MissingAampKey("Physics missing header"))?;
+            .ok_or(UKError::MissingAampKey("Physics missing header", None))?;
         Ok(Self {
             ragdoll: header
                 .get("use_ragdoll")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_ragdoll",
+                    None,
                 ))?
                 .as_bool()?
                 .then(|| -> Result<String> {
                     Ok(param_set
                         .object("Ragdoll")
-                        .ok_or(UKError::MissingAampKey("Physics missing ragdoll header"))?
+                        .ok_or(UKError::MissingAampKey(
+                            "Physics missing ragdoll header",
+                            None,
+                        ))?
                         .get("ragdoll_setup_file_path")
                         .ok_or(UKError::MissingAampKey(
                             "Physics ragdoll header missing setup file path",
+                            None,
                         ))?
                         .as_str()?
                         .into())
@@ -364,6 +381,7 @@ impl TryFrom<&ParameterIO> for Physics {
                 .get("use_support_bone")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_support_bone",
+                    None,
                 ))?
                 .as_bool()?
                 .then(|| -> Result<String> {
@@ -371,10 +389,12 @@ impl TryFrom<&ParameterIO> for Physics {
                         .object("SupportBone")
                         .ok_or(UKError::MissingAampKey(
                             "Physics missing support bone header",
+                            None,
                         ))?
                         .get("support_bone_setup_file_path")
                         .ok_or(UKError::MissingAampKey(
                             "Physics support bone header missing setup file path",
+                            None,
                         ))?
                         .as_str()?
                         .into())
@@ -384,6 +404,7 @@ impl TryFrom<&ParameterIO> for Physics {
                 .get("use_contact_info")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_contact_info",
+                    None,
                 ))?
                 .as_bool()?
                 .then(|| -> Result<ContactInfo> {
@@ -391,6 +412,7 @@ impl TryFrom<&ParameterIO> for Physics {
                         .list("RigidContactInfo")
                         .ok_or(UKError::MissingAampKey(
                             "Physics missing rigid contact info",
+                            None,
                         ))?
                         .try_into()
                 })
@@ -399,6 +421,7 @@ impl TryFrom<&ParameterIO> for Physics {
                 .get("use_rigid_body_set_num")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_rigid_body_set_num",
+                    None,
                 ))?
                 .as_int()
                 .map(|count| {
@@ -408,6 +431,7 @@ impl TryFrom<&ParameterIO> for Physics {
                                 .list("RigidBodySet")
                                 .ok_or(UKError::MissingAampKey(
                                     "Physics missing rigid body set list",
+                                    None,
                                 ))?;
                         (0..count)
                             .map(|i| -> Result<(usize, ParameterList)> {
@@ -417,6 +441,7 @@ impl TryFrom<&ParameterIO> for Physics {
                                         .list(&jstr!("RigidBodySet_{&lexical::to_string(i)}"))
                                         .ok_or(UKError::MissingAampKey(
                                             "Physics missing rigid body set entry",
+                                            None,
                                         ))?
                                         .clone(),
                                 ))
@@ -429,6 +454,7 @@ impl TryFrom<&ParameterIO> for Physics {
                 .get("use_character_controller")
                 .ok_or(UKError::MissingAampKey(
                     "Physics header missing use_character_controller",
+                    None,
                 ))?
                 .as_bool()?
                 .then(|| {
@@ -436,18 +462,25 @@ impl TryFrom<&ParameterIO> for Physics {
                         .list("CharacterController")
                         .ok_or(UKError::MissingAampKey(
                             "Physics missing character controller",
+                            None,
                         ))?
                         .try_into()
                 })
                 .transpose()?,
             cloth: header
                 .get("use_cloth")
-                .ok_or(UKError::MissingAampKey("Physics header missing use_cloth"))?
+                .ok_or(UKError::MissingAampKey(
+                    "Physics header missing use_cloth",
+                    None,
+                ))?
                 .as_bool()?
                 .then(|| -> Result<Cloth> {
                     param_set
                         .list("Cloth")
-                        .ok_or(UKError::MissingAampKey("Physics missing cloth section"))?
+                        .ok_or(UKError::MissingAampKey(
+                            "Physics missing cloth section",
+                            None,
+                        ))?
                         .try_into()
                 })
                 .transpose()?,
@@ -456,6 +489,7 @@ impl TryFrom<&ParameterIO> for Physics {
                     .get("use_system_group_handler")
                     .ok_or(UKError::MissingAampKey(
                         "Physics missing use_system_group_handler",
+                        None,
                     ))?
                     .as_bool()?,
             ),

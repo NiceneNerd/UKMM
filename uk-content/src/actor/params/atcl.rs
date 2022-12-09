@@ -23,7 +23,10 @@ impl TryFrom<&ParameterIO> for AttClient {
         Ok(Self {
             client_params: pio
                 .object("AttClientParams")
-                .ok_or(UKError::MissingAampKey("Attention client missing params"))?
+                .ok_or(UKError::MissingAampKey(
+                    "Attention client missing params",
+                    None,
+                ))?
                 .clone(),
             checks: pio.lists().0.values().cloned().collect(),
         })

@@ -39,25 +39,35 @@ impl TryFrom<&ParameterIO> for Chemical {
     type Error = UKError;
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
-        let chem_root = pio
-            .list("chemical_root")
-            .ok_or(UKError::MissingAampKey("Chemical missing chemical_root"))?;
+        let chem_root = pio.list("chemical_root").ok_or(UKError::MissingAampKey(
+            "Chemical missing chemical_root",
+            None,
+        ))?;
         let shape_num = chem_root
             .object("chemical_header")
-            .ok_or(UKError::MissingAampKey("Chemical missing chemical_header"))?
+            .ok_or(UKError::MissingAampKey(
+                "Chemical missing chemical_header",
+                None,
+            ))?
             .get("res_shape_num")
-            .ok_or(UKError::MissingAampKey("Chemical missing shape count"))?
+            .ok_or(UKError::MissingAampKey(
+                "Chemical missing shape count",
+                None,
+            ))?
             .as_u32()? as usize;
         let chemical_body = chem_root
             .list("chemical_body")
-            .ok_or(UKError::MissingAampKey("Chemical missing chemical_body"))?;
+            .ok_or(UKError::MissingAampKey(
+                "Chemical missing chemical_body",
+                None,
+            ))?;
         Ok(Self {
             unknown: chem_root
                 .object("chemical_header")
-                .ok_or(UKError::MissingAampKey("Chemical missing chemical_header"))?
+                .ok_or(UKError::MissingAampKey("Chemical missing chemical_header", None))?
                 .0
                 .get(&3635073347)
-                // .ok_or(UKError::MissingAampKey("Chemical missing 3635073347"))?
+                // .ok_or(UKError::MissingAampKey("Chemical missing 3635073347", None))?
                 .map(|x| x.as_u32().map(|x| x as usize))
                 .transpose()?,
             body:    (0..shape_num)
@@ -65,11 +75,17 @@ impl TryFrom<&ParameterIO> for Chemical {
                     Ok((i, ChemicalBody {
                         rigid_c: chemical_body
                             .object(&format!("rigid_c_{:02}", i))
-                            .ok_or(UKError::MissingAampKey("Chemical missing rigid_c entry"))
+                            .ok_or(UKError::MissingAampKey(
+                                "Chemical missing rigid_c entry",
+                                None,
+                            ))
                             .cloned()?,
                         shape:   chemical_body
                             .object(&format!("shape_{:02}", i))
-                            .ok_or(UKError::MissingAampKey("Chemical missing shape entry"))
+                            .ok_or(UKError::MissingAampKey(
+                                "Chemical missing shape entry",
+                                None,
+                            ))
                             .cloned()?,
                     }))
                 })

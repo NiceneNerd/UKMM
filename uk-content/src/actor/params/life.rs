@@ -53,10 +53,12 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                 pio.object("DisplayDistance")
                     .ok_or(UKError::MissingAampKey(
                         "Life condition missing display distance",
+                        None,
                     ))?
                     .get("Item")
                     .ok_or(UKError::MissingAampKey(
                         "Life condition display distance missing item",
+                        None,
                     ))?
                     .as_f32()?,
             ),
@@ -64,10 +66,12 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                 pio.object("AutoDisplayDistanceAlgorithm")
                     .ok_or(UKError::MissingAampKey(
                         "Life condition missing display distance",
+                        None,
                     ))?
                     .get("Item")
                     .ok_or(UKError::MissingAampKey(
                         "Life condition display distance missing item",
+                        None,
                     ))?
                     .as_str()?
                     .into(),
@@ -76,10 +80,12 @@ impl TryFrom<&ParameterIO> for LifeCondition {
                 pio.object("YLimitAlgorithm")
                     .ok_or(UKError::MissingAampKey(
                         "Life condition missing display distance",
+                        None,
                     ))?
                     .get("Item")
                     .ok_or(UKError::MissingAampKey(
                         "Life condition display distance missing item",
+                        None,
                     ))?
                     .as_str()?
                     .into(),

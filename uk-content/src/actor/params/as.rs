@@ -39,7 +39,7 @@ impl Element {
         Ok(Self {
             params:   list
                 .object("Parameters")
-                .ok_or(UKError::MissingAampKey("AS node missing parameters"))?
+                .ok_or(UKError::MissingAampKey("AS node missing parameters", None))?
                 .try_into()?,
             children: list
                 .object("Children")
@@ -143,7 +143,7 @@ impl TryFrom<&ParameterIO> for AS {
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         Ok(Self(
             pio.list("Elements")
-                .ok_or(UKError::MissingAampKey("AS missing elements list"))?
+                .ok_or(UKError::MissingAampKey("AS missing elements list", None))?
                 .lists
                 .0
                 .values()

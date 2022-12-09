@@ -53,7 +53,7 @@ fn field_from_param(
             let #field_var_name: #ty = obj
                 .get(#hash)
                 .cloned()
-                .ok_or(UKError::MissingAampKey(#err_msg))?
+                .ok_or(UKError::MissingAampKey(#err_msg, Some(obj.into())))?
                 .try_into()
                 .map_err(|param| crate::UKError::InvalidParameter(#field_src_name.into(), param))?;
         }

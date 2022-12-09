@@ -338,6 +338,8 @@ impl Mergeable for AIProgram {
 }
 
 mod parse {
+    use anyhow::Context;
+
     use super::*;
 
     fn plist_to_ai(
@@ -353,12 +355,16 @@ mod parse {
         Ok(AIEntry {
             def: list
                 .object("Def")
-                .ok_or(UKError::MissingAampKey("AI entry missing Def object"))?
+                .ok_or_else(|| {
+                    UKError::MissingAampKey("AI entry missing Def object", Some(list.into()))
+                })?
                 .try_into()?,
             params: list.object("SInst").cloned(),
             children: list
                 .object("ChildIdx")
-                .ok_or(UKError::MissingAampKey("AI entry missing ChildIdx object"))?
+                .ok_or_else(|| {
+                    UKError::MissingAampKey("AI entry missing ChildIdx object", Some(list.into()))
+                })?
                 .0
                 .iter()
                 .map(|(k, v)| -> Result<(Name, ChildEntry)> {
@@ -369,7 +375,8 @@ mod parse {
                             ChildEntry::AI(plist_to_ai(
                                 ai_list.lists.0.values().nth(idx).ok_or_else(|| {
                                     UKError::MissingAampKeyD(jstr!(
-                                        "AI program missing entry at {&lexical::to_string(idx)}"
+                                        "AI program missing AI entry at index \
+                                         {&lexical::to_string(idx)}"
                                     ))
                                 })?,
                                 pio,
@@ -384,7 +391,7 @@ mod parse {
                                     .nth(idx - action_offset)
                                     .ok_or_else(|| {
                                         UKError::MissingAampKeyD(jstr!(
-                                            "AI program missing entry at \
+                                            "AI program missing action entry at index \
                                              {&lexical::to_string(idx)}"
                                         ))
                                     })?,
@@ -428,7 +435,10 @@ mod parse {
         Ok(ActionEntry {
             def: list
                 .object("Def")
-                .ok_or(UKError::MissingAampKey("Action entry missing Def object"))?
+                .ok_or(UKError::MissingAampKey(
+                    "Action entry missing Def object",
+                    None,
+                ))?
                 .try_into()?,
             params: list.object("SInst").cloned(),
             behaviors: list
@@ -465,16 +475,21 @@ mod parse {
             let action_offset;
             let ai_list = pio
                 .list("AI")
-                .ok_or(UKError::MissingAampKey("AI program missing AI list"))?;
-            let action_list = pio
-                .list("Action")
-                .ok_or(UKError::MissingAampKey("AI program missing Action list"))?;
+                .ok_or(UKError::MissingAampKey("AI program missing AI list", None))?;
+            let action_list = pio.list("Action").ok_or(UKError::MissingAampKey(
+                "AI program missing Action list",
+                None,
+            ))?;
             if pio.list("Behavior").is_none() {
-                return Err(UKError::MissingAampKey("AI program missing Behavior list"));
+                return Err(UKError::MissingAampKey(
+                    "AI program missing Behavior list",
+                    None,
+                ));
             }
-            let query_list = pio
-                .list("Query")
-                .ok_or(UKError::MissingAampKey("AI program missing Query list"))?;
+            let query_list = pio.list("Query").ok_or(UKError::MissingAampKey(
+                "AI program missing Query list",
+                None,
+            ))?;
             Ok(Self {
                 tree:    {
                     let child_indexes: HashSet<usize> = ai_list
@@ -502,14 +517,24 @@ mod parse {
                     roots
                         .iter()
                         .map(|root| -> Result<(String, AIEntry)> {
+                            let def = root.object("Def").ok_or_else(|| {
+                                UKError::MissingAampKey(
+                                    "AI entry missing Def object",
+                                    Some(root.into()),
+                                )
+                            })?;
                             Ok((
-                                root.object("Def")
-                                    .ok_or(UKError::MissingAampKey("AI entry missing Def object"))?
-                                    .get("ClassName")
-                                    .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
+                                def.get("ClassName")
+                                    .ok_or_else(|| {
+                                        UKError::MissingAampKey(
+                                            "AI def missing ClassName",
+                                            Some(def.into()),
+                                        )
+                                    })?
                                     .as_str()?
                                     .into(),
-                                plist_to_ai(root, pio, action_offset)?,
+                                plist_to_ai(root, pio, action_offset)
+                                    .context("Failed to parse AI entry from parameter list")?,
                             ))
                         })
                         .collect::<Result<IndexMap<_, _>>>()?
@@ -518,6 +543,7 @@ mod parse {
                     .object("DemoAIActionIdx")
                     .ok_or(UKError::MissingAampKey(
                         "AI program missing Demo action indexes",
+                        None,
                     ))?
                     .0
                     .iter()
@@ -526,31 +552,37 @@ mod parse {
                         Ok((
                             *k,
                             if idx >= action_offset {
-                                ChildEntry::Action(plist_to_action(
-                                    action_list
-                                        .lists
-                                        .0
-                                        .values()
-                                        .nth(idx - action_offset)
-                                        .ok_or_else(|| {
+                                ChildEntry::Action(
+                                    plist_to_action(
+                                        action_list
+                                            .lists
+                                            .0
+                                            .values()
+                                            .nth(idx - action_offset)
+                                            .ok_or_else(|| {
+                                                UKError::MissingAampKeyD(jstr!(
+                                                    "AI program missing demo action at index \
+                                                     {&lexical::to_string(idx - action_offset)}"
+                                                ))
+                                            })?,
+                                        pio,
+                                    )
+                                    .context("Failed to parse action entry from parameter list")?,
+                                )
+                            } else {
+                                ChildEntry::AI(
+                                    plist_to_ai(
+                                        ai_list.lists.0.values().nth(idx).ok_or_else(|| {
                                             UKError::MissingAampKeyD(jstr!(
-                                                "AI program missing demo action at index \
-                                                 {&lexical::to_string(idx - action_offset)}"
+                                                "AI program missing demo AI at index \
+                                                 {&lexical::to_string(idx)}"
                                             ))
                                         })?,
-                                    pio,
-                                )?)
-                            } else {
-                                ChildEntry::AI(plist_to_ai(
-                                    ai_list.lists.0.values().nth(idx).ok_or_else(|| {
-                                        UKError::MissingAampKeyD(jstr!(
-                                            "AI program missing demo AI at index \
-                                             {&lexical::to_string(idx)}"
-                                        ))
-                                    })?,
-                                    pio,
-                                    action_offset,
-                                )?)
+                                        pio,
+                                        action_offset,
+                                    )
+                                    .context("Failed to parse AI entry from parameter list")?,
+                                )
                             },
                         ))
                     })
@@ -561,12 +593,20 @@ mod parse {
                     .values()
                     .cloned()
                     .map(|query| -> Result<(String, ParameterList)> {
+                        let def = query.object("Def").ok_or_else(|| {
+                            UKError::MissingAampKey(
+                                "Query missing Def object",
+                                Some((&query).into()),
+                            )
+                        })?;
                         Ok((
-                            query
-                                .object("Def")
-                                .ok_or(UKError::MissingAampKey("Query missing Def object"))?
-                                .get("ClassName")
-                                .ok_or(UKError::MissingAampKey("AI def missing ClassName"))?
+                            def.get("ClassName")
+                                .ok_or_else(|| {
+                                    UKError::MissingAampKey(
+                                        "AI def missing ClassName",
+                                        Some(def.into()),
+                                    )
+                                })?
                                 .as_str()?
                                 .into(),
                             query,

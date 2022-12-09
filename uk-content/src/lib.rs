@@ -34,10 +34,66 @@ pub mod tips;
 pub mod util;
 pub mod worldmgr;
 
+#[derive(Debug, Clone)]
+pub enum ContextData {
+    Parameter(roead::aamp::Parameter),
+    List(roead::aamp::ParameterList),
+    Object(roead::aamp::ParameterObject),
+    Byml(roead::byml::Byml),
+}
+
+impl From<roead::aamp::Parameter> for ContextData {
+    fn from(param: roead::aamp::Parameter) -> Self {
+        ContextData::Parameter(param)
+    }
+}
+
+impl From<&roead::aamp::Parameter> for ContextData {
+    fn from(param: &roead::aamp::Parameter) -> Self {
+        ContextData::Parameter(param.clone())
+    }
+}
+
+impl From<roead::aamp::ParameterList> for ContextData {
+    fn from(list: roead::aamp::ParameterList) -> Self {
+        ContextData::List(list)
+    }
+}
+
+impl From<roead::aamp::ParameterObject> for ContextData {
+    fn from(obj: roead::aamp::ParameterObject) -> Self {
+        ContextData::Object(obj)
+    }
+}
+
+impl From<&roead::aamp::ParameterList> for ContextData {
+    fn from(list: &roead::aamp::ParameterList) -> Self {
+        ContextData::List(list.clone())
+    }
+}
+
+impl From<&roead::aamp::ParameterObject> for ContextData {
+    fn from(obj: &roead::aamp::ParameterObject) -> Self {
+        ContextData::Object(obj.clone())
+    }
+}
+
+impl From<roead::byml::Byml> for ContextData {
+    fn from(by: roead::byml::Byml) -> Self {
+        ContextData::Byml(by)
+    }
+}
+
+impl From<&roead::byml::Byml> for ContextData {
+    fn from(by: &roead::byml::Byml) -> Self {
+        ContextData::Byml(by.clone())
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum UKError {
     #[error("Parameter file missing key: {0}")]
-    MissingAampKey(&'static str),
+    MissingAampKey(&'static str, Option<ContextData>),
     #[error("Parameter file missing key: {0}")]
     MissingAampKeyD(std::string::String),
     #[error("BYML file missing key: {0}")]
@@ -68,6 +124,17 @@ pub enum UKError {
     InvalidByml(String, roead::byml::Byml),
     #[error("Invalid parameter data for field {0}: {1:#?}")]
     InvalidParameter(String, roead::aamp::Parameter),
+}
+
+impl UKError {
+    pub fn context_data(&self) -> Option<ContextData> {
+        match self {
+            Self::MissingAampKey(_, data) => data.clone(),
+            Self::InvalidByml(_, data) => Some(ContextData::Byml(data.clone())),
+            Self::InvalidParameter(_, data) => Some(ContextData::Parameter(data.clone())),
+            _ => None,
+        }
+    }
 }
 
 pub type Result<T> = std::result::Result<T, UKError>;

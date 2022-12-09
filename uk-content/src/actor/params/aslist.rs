@@ -32,7 +32,7 @@ impl TryFrom<&ParameterIO> for ASList {
             common:     pio.object("Common").cloned(),
             add_reses:  pio
                 .list("AddReses")
-                .ok_or(UKError::MissingAampKey("AS list missing add reses"))?
+                .ok_or(UKError::MissingAampKey("AS list missing add reses", None))?
                 .objects
                 .0
                 .values()
@@ -43,18 +43,22 @@ impl TryFrom<&ParameterIO> for ASList {
                 .collect::<Result<_>>()?,
             as_defines: pio
                 .list("ASDefines")
-                .ok_or(UKError::MissingAampKey("AS list missing AS defines"))?
+                .ok_or(UKError::MissingAampKey("AS list missing AS defines", None))?
                 .objects
                 .0
                 .values()
                 .map(|obj| -> Result<(String64, String64)> {
                     Ok((
                         *obj.get("Name")
-                            .ok_or(UKError::MissingAampKey("AS list AS define missing name"))?
+                            .ok_or(UKError::MissingAampKey(
+                                "AS list AS define missing name",
+                                None,
+                            ))?
                             .as_string64()?,
                         *obj.get("Filename")
                             .ok_or(UKError::MissingAampKey(
                                 "AS list AS define missing filename",
+                                None,
                             ))?
                             .as_string64()?,
                     ))
@@ -70,10 +74,14 @@ impl TryFrom<&ParameterIO> for ASList {
                         .map(|list| -> Result<(String, ParameterList)> {
                             let pre_name = list
                                 .object("CFPre")
-                                .ok_or(UKError::MissingAampKey("AS list CF define missing CFPre"))?
+                                .ok_or(UKError::MissingAampKey(
+                                    "AS list CF define missing CFPre",
+                                    None,
+                                ))?
                                 .get("Name")
                                 .ok_or(UKError::MissingAampKey(
                                     "AS list CF define missing CFPre name",
+                                    None,
                                 ))?
                                 .as_str()?
                                 .into();

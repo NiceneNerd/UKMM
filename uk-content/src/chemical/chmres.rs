@@ -25,7 +25,10 @@ impl TryFrom<&ParameterIO> for ChemicalRes {
                 .map(|obj| -> Result<(String256, ParameterObject)> {
                     Ok((
                         *obj.get("label")
-                            .ok_or(UKError::MissingAampKey("Chemical res entry missing label"))?
+                            .ok_or(UKError::MissingAampKey(
+                                "Chemical res entry missing label",
+                                None,
+                            ))?
                             .as_string256()?,
                         obj.clone(),
                     ))

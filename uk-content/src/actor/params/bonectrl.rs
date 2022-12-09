@@ -34,7 +34,10 @@ impl TryFrom<&ParameterIO> for BoneControl {
             objects:     pio.objects().clone(),
             bone_groups: pio
                 .list("BoneGroups")
-                .ok_or(UKError::MissingAampKey("Bone control missing BoneGroups"))?
+                .ok_or(UKError::MissingAampKey(
+                    "Bone control missing BoneGroups",
+                    None,
+                ))?
                 .lists
                 .0
                 .values()
@@ -42,15 +45,20 @@ impl TryFrom<&ParameterIO> for BoneControl {
                     Ok((
                         *list
                             .object("Param")
-                            .ok_or(UKError::MissingAampKey("Bone control group missing param"))?
+                            .ok_or(UKError::MissingAampKey(
+                                "Bone control group missing param",
+                                None,
+                            ))?
                             .get("GroupName")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing group name",
+                                None,
                             ))?
                             .as_string64()?,
                         list.object("Bones")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing bone list",
+                                None,
                             ))?
                             .0
                             .values()

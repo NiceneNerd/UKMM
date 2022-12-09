@@ -23,7 +23,10 @@ impl TryFrom<&ParameterIO> for ActorLink {
         Ok(Self {
             targets: pio
                 .object("LinkTarget")
-                .ok_or(UKError::MissingAampKey("Actor link missing link targets"))?
+                .ok_or(UKError::MissingAampKey(
+                    "Actor link missing link targets",
+                    None,
+                ))?
                 .clone(),
             tags:    pio.object("Tags").map(|tags| {
                 tags.0

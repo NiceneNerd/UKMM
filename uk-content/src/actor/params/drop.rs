@@ -51,11 +51,12 @@ impl TryFrom<&ParameterIO> for DropTable {
     fn try_from(list: &ParameterIO) -> Result<Self> {
         let header = list
             .object("Header")
-            .ok_or(UKError::MissingAampKey("Drop table missing header"))?;
+            .ok_or(UKError::MissingAampKey("Drop table missing header", None))?;
         let table_count = header
             .get("TableNum")
             .ok_or(UKError::MissingAampKey(
                 "Drop table header missing table count",
+                None,
             ))?
             .as_int()? as usize;
         Ok(Self(
@@ -117,7 +118,10 @@ impl InfoSource for DropTable {
                     Ok((name.to_string(), {
                         let count = table
                             .get("ColumnNum")
-                            .ok_or(UKError::MissingAampKey("Drop table missing column count"))?
+                            .ok_or(UKError::MissingAampKey(
+                                "Drop table missing column count",
+                                None,
+                            ))?
                             .as_int()?;
                         (1..=count)
                             .map(|i| -> Result<Byml> {
@@ -126,6 +130,7 @@ impl InfoSource for DropTable {
                                         .get(&format!("ItemName{:02}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Drop table missing item name",
+                                            None,
                                         ))?
                                         .as_str()?
                                         .into(),

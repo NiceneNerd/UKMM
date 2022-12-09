@@ -29,15 +29,22 @@ impl TryFrom<&ParameterIO> for ModelList {
                 .object("ControllerInfo")
                 .ok_or(UKError::MissingAampKey(
                     "Model list missing controller info",
+                    None,
                 ))?
                 .clone(),
             attention: pio
                 .object("Attention")
-                .ok_or(UKError::MissingAampKey("Model list missing attention"))?
+                .ok_or(UKError::MissingAampKey(
+                    "Model list missing attention",
+                    None,
+                ))?
                 .clone(),
             model_data: pio
                 .list("ModelData")
-                .ok_or(UKError::MissingAampKey("Model list missing model data"))?
+                .ok_or(UKError::MissingAampKey(
+                    "Model list missing model data",
+                    None,
+                ))?
                 .lists
                 .0
                 .values()
@@ -47,6 +54,7 @@ impl TryFrom<&ParameterIO> for ModelList {
                 .list("AnmTarget")
                 .ok_or(UKError::MissingAampKey(
                     "Model list missing animation target",
+                    None,
                 ))?
                 .lists
                 .0
