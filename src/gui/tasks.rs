@@ -6,7 +6,7 @@ use im::Vector;
 use uk_manager::{core::Manager, mods::Mod};
 use uk_mod::{unpack::ModReader, Manifest};
 
-use super::Message;
+use super::{package::ModPackerBuilder, Message};
 
 fn is_probably_a_mod(path: &Path) -> bool {
     let ext = path
@@ -127,4 +127,18 @@ pub fn apply_changes(
     }
     log::info!("Done");
     Ok(Message::ResetMods)
+}
+
+pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message> {
+    let Some(dump) = core.settings().dump() else { 
+        anyhow::bail!("No dump for current platform")
+    };
+    uk_mod::pack::ModPacker::new(
+        builder.source,
+        builder.dest,
+        Some(builder.meta),
+        [dump].into_iter().collect(),
+    )?
+    .pack()?;
+    Ok(Message::Noop)
 }

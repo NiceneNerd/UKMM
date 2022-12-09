@@ -35,6 +35,7 @@ pub static CATEGORIES: &[&str] = &[
     "Skin/Texture",
 ];
 
+#[derive(Debug, Clone)]
 pub struct ModPackerBuilder {
     pub source: PathBuf,
     pub dest:   PathBuf,

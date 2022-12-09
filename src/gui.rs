@@ -708,7 +708,13 @@ impl App {
                 }
                 Message::ClosePackagingOptions => self.opt_folders = None,
                 Message::ClosePackagingDependencies => self.show_package_deps = false,
-                Message::PackageMod(_builder) => (),
+                Message::PackageMod(builder) => {
+                    let mut builder = ModPackerBuilder::clone(&builder.read());
+                    if let Some(dest) = rfd::FileDialog::new().pick_file() {
+                        builder.dest = dest;
+                        self.do_task(move |core| tasks::package_mod(&core, builder));
+                    }
+                }
             }
             ctx.request_repaint();
         }
