@@ -525,7 +525,7 @@ mod parse {
                         let idx = v.as_int()? as usize;
                         Ok((
                             *k,
-                            if idx > action_offset {
+                            if idx >= action_offset {
                                 ChildEntry::Action(plist_to_action(
                                     action_list
                                         .lists
@@ -534,7 +534,7 @@ mod parse {
                                         .nth(idx - action_offset)
                                         .ok_or_else(|| {
                                             UKError::MissingAampKeyD(jstr!(
-                                                "AI program missing entry at \
+                                                "AI program missing demo action at index \
                                                  {&lexical::to_string(idx - action_offset)}"
                                             ))
                                         })?,
@@ -544,7 +544,7 @@ mod parse {
                                 ChildEntry::AI(plist_to_ai(
                                     ai_list.lists.0.values().nth(idx).ok_or_else(|| {
                                         UKError::MissingAampKeyD(jstr!(
-                                            "AI program missing entry at \
+                                            "AI program missing demo AI at index \
                                              {&lexical::to_string(idx)}"
                                         ))
                                     })?,
@@ -636,19 +636,17 @@ mod write {
             if let Some(params) = ai.params {
                 list.objects_mut().insert("SInst", params);
             };
-            if !ai.children.is_empty() {
-                let mut children = ParameterObject::new();
-                for (key, action) in ai.children {
-                    let idx = match action {
-                        ChildEntry::AI(child_ai) => self.ai_to_plist(child_ai),
-                        ChildEntry::Action(child_action) => {
-                            self.action_to_plist(child_action) + self.action_offset
-                        }
-                    };
-                    children.0.insert(key, Parameter::Int(idx as i32));
-                }
-                list.objects_mut().insert("ChildIdx", children);
+            let mut children = ParameterObject::new();
+            for (key, action) in ai.children {
+                let idx = match action {
+                    ChildEntry::AI(child_ai) => self.ai_to_plist(child_ai),
+                    ChildEntry::Action(child_action) => {
+                        self.action_to_plist(child_action) + self.action_offset
+                    }
+                };
+                children.0.insert(key, Parameter::Int(idx as i32));
             }
+            list.objects_mut().insert("ChildIdx", children);
             if let Some(behaviors) = ai.behaviors {
                 let mut behavior_indexes = ParameterObject::new();
                 for (key, behavior) in behaviors {
@@ -815,6 +813,19 @@ mod tests {
                 .get_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap()
                 .unwrap(),
+        )
+        .unwrap();
+        let aiprog = super::AIProgram::try_from(&pio).unwrap();
+        let data = roead::aamp::ParameterIO::from(aiprog.clone()).to_binary();
+        let pio2 = ParameterIO::from_binary(data).unwrap();
+        let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
+        assert_eq!(aiprog, aiprog2);
+    }
+
+    #[test]
+    fn serde_woodball() {
+        let pio = ParameterIO::from_text(
+            std::fs::read_to_string("test/Actor/AIProgram/WoodBall_Golf.aiprog.yml").unwrap(),
         )
         .unwrap();
         let aiprog = super::AIProgram::try_from(&pio).unwrap();
