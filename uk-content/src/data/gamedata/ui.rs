@@ -7,7 +7,7 @@ use roead::byml::Byml;
 use uk_ui::{
     editor::{EditableDisplay, EditableValue},
     egui,
-    egui_extras::{self, Size},
+    egui_extras::{self, Column},
     ext::UiExt,
     icons::IconButtonExt,
 };
@@ -162,8 +162,8 @@ impl EditableValue for super::GameData {
                 inner_id = ui.id();
                 egui_extras::TableBuilder::new(ui)
                     .resizable(true)
-                    .column(Size::initial(text_height * 10.0))
-                    .columns(Size::remainder(), 12)
+                    .column(Column::initial(text_height * 10.0))
+                    .columns(Column::remainder(), 12)
                     .header(text_height, |mut header| {
                         header.col(|ui| {
                             ui.clipped_label("Flag");

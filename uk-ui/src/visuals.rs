@@ -1,27 +1,28 @@
+use color_hex::color_from_hex;
 use egui::{
-    epaint::{color_hex::color_from_hex, RectShape, Shadow, Tessellator},
+    epaint::{RectShape, Shadow, Tessellator},
     style::{Margin, Selection, Spacing, WidgetVisuals, Widgets},
     Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
 };
 use once_cell::sync::Lazy;
 
-macro_rules! from_hex {
+macro_rules! hex_color {
     ($hex:expr) => {{
         let _arr = color_from_hex!($hex);
         Color32::from_rgb(_arr[0], _arr[1], _arr[2])
     }};
 }
 
-pub const GREEN: Color32 = from_hex!("#528f24");
-pub const BLUE: Color32 = from_hex!("#38b6f1");
-pub const RED: Color32 = from_hex!("#F52331");
-pub const YELLOW: Color32 = from_hex!("#ffbc28");
-pub const ORGANGE: Color32 = from_hex!("#ff953f");
+pub const GREEN: Color32 = hex_color!("#528f24");
+pub const BLUE: Color32 = hex_color!("#38b6f1");
+pub const RED: Color32 = hex_color!("#F52331");
+pub const YELLOW: Color32 = hex_color!("#ffbc28");
+pub const ORGANGE: Color32 = hex_color!("#ff953f");
 
 #[inline(always)]
 pub fn error_bg(visuals: &Visuals) -> Color32 {
-    let mut color = egui::color::Hsva::from(RED);
-    color.v = egui::color::Hsva::from(visuals.window_fill()).v;
+    let mut color = egui::ecolor::Hsva::from(RED);
+    color.v = egui::ecolor::Hsva::from(visuals.window_fill()).v;
     color.into()
 }
 
@@ -86,37 +87,37 @@ pub fn default_dark(ctx: &egui::Context) {
             override_text_color: None,
             widgets: Widgets {
                 noninteractive: WidgetVisuals {
-                    bg_fill:   from_hex!("#1C1E1F"),
-                    bg_stroke: Stroke::new(1.0, from_hex!("#2F2E2A")),
-                    fg_stroke: Stroke::new(1.0, from_hex!("#BCCAD1")),
+                    bg_fill:   hex_color!("#1C1E1F"),
+                    bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
+                    fg_stroke: Stroke::new(1.0, hex_color!("#BCCAD1")),
                     rounding:  Rounding::same(0.0),
                     expansion: 0.0,
                 },
                 inactive: WidgetVisuals {
-                    bg_fill:   from_hex!("#1d4e77"),
-                    bg_stroke: Stroke::new(1.0, from_hex!("#237ba3")),
-                    fg_stroke: Stroke::new(1.0, from_hex!("#f0f0f0")),
+                    bg_fill:   hex_color!("#1d4e77"),
+                    bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
+                    fg_stroke: Stroke::new(1.0, hex_color!("#f0f0f0")),
                     rounding:  Rounding::same(2.0),
                     expansion: 0.0,
                 },
                 hovered: WidgetVisuals {
-                    bg_fill:   from_hex!("#237ba3"),
-                    bg_stroke: Stroke::new(1.0, from_hex!("#1d649a")),
-                    fg_stroke: Stroke::new(1.5, from_hex!("#f0f0f0")),
+                    bg_fill:   hex_color!("#237ba3"),
+                    bg_stroke: Stroke::new(1.0, hex_color!("#1d649a")),
+                    fg_stroke: Stroke::new(1.5, hex_color!("#f0f0f0")),
                     rounding:  Rounding::same(2.0),
                     expansion: 1.0,
                 },
                 active: WidgetVisuals {
-                    bg_fill:   from_hex!("#12384f"),
-                    bg_stroke: Stroke::new(1.0, from_hex!("#237ba3")),
-                    fg_stroke: Stroke::new(1.5, from_hex!("#D9EEFF")),
+                    bg_fill:   hex_color!("#12384f"),
+                    bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
+                    fg_stroke: Stroke::new(1.5, hex_color!("#D9EEFF")),
                     rounding:  Rounding::same(2.0),
                     expansion: 1.0,
                 },
                 open: WidgetVisuals {
-                    bg_fill:   from_hex!("#1C1E1F"),
-                    bg_stroke: Stroke::new(1.0, from_hex!("#2F2E2A")),
-                    fg_stroke: Stroke::new(1.0, from_hex!("#D9EEFF")),
+                    bg_fill:   hex_color!("#1C1E1F"),
+                    bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
+                    fg_stroke: Stroke::new(1.0, hex_color!("#D9EEFF")),
                     rounding:  Rounding::same(2.0),
                     expansion: 0.0,
                 },
@@ -126,14 +127,17 @@ pub fn default_dark(ctx: &egui::Context) {
                 stroke:  Stroke::new(1.0, Color32::WHITE),
             },
             hyperlink_color: BLUE,
-            faint_bg_color: from_hex!("#252729"),
-            extreme_bg_color: from_hex!("#030a0e"), // e.g. TextEdit background
+            faint_bg_color: hex_color!("#252729"),
+            extreme_bg_color: hex_color!("#030a0e"), // e.g. TextEdit background
             code_bg_color: Color32::from_gray(32),
             warn_fg_color: ORGANGE, // orange
             error_fg_color: RED,    // red
             window_rounding: Rounding::same(4.0),
             window_shadow: Shadow::big_dark(),
             popup_shadow: Shadow::small_dark(),
+            window_fill: hex_color!("#1C1E1F"),
+            window_stroke: Stroke::NONE,
+            panel_fill: hex_color!("#1C1E1F"),
             resize_corner_size: 8.0,
             text_cursor_width: 2.0,
             text_cursor_preview: false,

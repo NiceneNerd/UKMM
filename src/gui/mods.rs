@@ -9,7 +9,7 @@ use uk_ui::{
         self, style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, LayerId,
         Layout, Response, Sense, TextStyle, Ui, Vec2,
     },
-    egui_extras::{Size, TableBuilder, TableRow},
+    egui_extras::{Column, TableBuilder, TableRow},
     ext::UiExt,
 };
 
@@ -55,14 +55,11 @@ impl App {
                     .cell_sense(Sense::click_and_drag())
                     // .striped(true)
                     .cell_layout(Layout::left_to_right(Align::Center))
-                    .column(Size::exact(*icon_width))
-                    .column(Size::remainder())
-                    .column(Size::Absolute {
-                        initial: 100.,
-                        range: (16., 240.),
-                    })
-                    .column(Size::exact(*numeric_col_width))
-                    .column(Size::exact(*numeric_col_width))
+                    .column(Column::exact(*icon_width))
+                    .column(Column::remainder())
+                    .column(Column::initial(100.).at_least(16.).at_most(240.))
+                    .column(Column::exact(*numeric_col_width))
+                    .column(Column::exact(*numeric_col_width))
                     .header(*text_height, |mut header| {
                         header.col(|ui| {
                             let is_current = self.sort.0 == Sort::Enabled;
@@ -203,14 +200,11 @@ impl App {
                     let res = ui
                         .with_layer_id(layer_id, |ui| {
                             TableBuilder::new(ui)
-                                .column(Size::exact(icon_width))
-                                .column(Size::remainder())
-                                .column(Size::Absolute {
-                                    initial: 80.,
-                                    range:   (16., 240.),
-                                })
-                                .column(Size::exact(numeric_col_width))
-                                .column(Size::exact(numeric_col_width))
+                                .column(Column::exact(icon_width))
+                                .column(Column::remainder())
+                                .column(Column::initial(80.).at_least(16.).at_most(260.))
+                                .column(Column::exact(numeric_col_width))
+                                .column(Column::exact(numeric_col_width))
                                 .body(|body| {
                                     body.rows(
                                         text_height,
@@ -276,23 +270,32 @@ impl App {
                 row = row.selected(true);
             }
             let mut enabled = mod_.enabled;
-            process_col_res(row.col(|ui| {
-                toggled = ui.checkbox(&mut enabled, "").clicked();
-                ctrl = ui.input().modifiers.ctrl;
-            }));
-            process_col_res(row.col(|ui| {
-                ui.clipped_label(mod_.meta.name.as_str());
-            }));
+            process_col_res(
+                row.col(|ui| {
+                    toggled = ui.checkbox(&mut enabled, "").clicked();
+                    ctrl = ui.input().modifiers.ctrl;
+                })
+                .1,
+            );
+            process_col_res(
+                row.col(|ui| {
+                    ui.clipped_label(mod_.meta.name.as_str());
+                })
+                .1,
+            );
             for label in [
                 mod_.meta.category.as_str(),
                 mod_.meta.version.to_string().as_str(),
                 index.to_string().as_str(),
             ] {
-                process_col_res(row.col(|ui| {
-                    ui.centered_and_justified(|ui| {
-                        ui.label(label);
-                    });
-                }));
+                process_col_res(
+                    row.col(|ui| {
+                        ui.centered_and_justified(|ui| {
+                            ui.label(label);
+                        });
+                    })
+                    .1,
+                );
             }
             if toggled {
                 self.do_update(Message::ToggleMods(
