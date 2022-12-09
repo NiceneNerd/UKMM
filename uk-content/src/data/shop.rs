@@ -139,10 +139,8 @@ mod tests {
 
     fn load_shopinfo() -> Byml {
         Byml::from_binary(
-            roead::yaz0::decompress(
-                std::fs::read("test/GameData/ShopGameDataInfo.sbyml").unwrap(),
-            )
-            .unwrap(),
+            roead::yaz0::decompress(std::fs::read("test/GameData/ShopGameDataInfo.sbyml").unwrap())
+                .unwrap(),
         )
         .unwrap()
     }

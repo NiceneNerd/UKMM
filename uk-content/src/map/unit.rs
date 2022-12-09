@@ -150,8 +150,7 @@ mod tests {
     fn load_mod_cdungeon_munt() -> Byml {
         Byml::from_binary(
             roead::yaz0::decompress(
-                std::fs::read("test/Map/CDungeon/Dungeon044/Dungeon044_Static.mod.smubin")
-                    .unwrap(),
+                std::fs::read("test/Map/CDungeon/Dungeon044/Dungeon044_Static.mod.smubin").unwrap(),
             )
             .unwrap(),
         )

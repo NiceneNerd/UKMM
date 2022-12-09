@@ -314,10 +314,8 @@ mod tests {
 
     fn load_mod_sensor() -> Byml {
         Byml::from_binary(
-            roead::yaz0::decompress(
-                std::fs::read("test/Ecosystem/LevelSensor.mod.sbyml").unwrap(),
-            )
-            .unwrap(),
+            roead::yaz0::decompress(std::fs::read("test/Ecosystem/LevelSensor.mod.sbyml").unwrap())
+                .unwrap(),
         )
         .unwrap()
     }

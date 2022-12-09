@@ -54,8 +54,7 @@ mod tests {
     }
 
     fn load_mod_winfo() -> ParameterIO {
-        ParameterIO::from_binary(std::fs::read("test/WorldMgr/normal.mod.bwinfo").unwrap())
-            .unwrap()
+        ParameterIO::from_binary(std::fs::read("test/WorldMgr/normal.mod.bwinfo").unwrap()).unwrap()
     }
 
     #[test]

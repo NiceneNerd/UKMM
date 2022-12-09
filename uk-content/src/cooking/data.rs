@@ -95,8 +95,7 @@ mod tests {
 
     fn load_cookdata() -> Byml {
         Byml::from_binary(
-            roead::yaz0::decompress(std::fs::read("test/Cooking/CookData.sbyml").unwrap())
-                .unwrap(),
+            roead::yaz0::decompress(std::fs::read("test/Cooking/CookData.sbyml").unwrap()).unwrap(),
         )
         .unwrap()
     }
