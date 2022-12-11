@@ -17,15 +17,10 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use eframe::{
-    egui::{FontData, FontDefinitions},
-    epaint::{text::TextWrapping, FontFamily},
-    IconData, NativeOptions,
-};
+use eframe::{epaint::text::TextWrapping, IconData, NativeOptions};
 use egui_dock::{NodeIndex, Tree};
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
-use font_loader::system_fonts::FontPropertyBuilder;
 use fs_err as fs;
 use im::{vector, Vector};
 use join_str::jstr;
@@ -51,54 +46,6 @@ use uk_ui::{
 
 use self::package::ModPackerBuilder;
 use crate::logger::Entry;
-
-fn load_fonts(context: &egui::Context) {
-    let mut fonts = FontDefinitions::default();
-    let font_to_try = if cfg!(windows) {
-        "Segoe UI".to_owned()
-    } else {
-        std::process::Command::new("gsettings")
-            .args(["get", "org.gnome.desktop.interface", "font-name"])
-            .output()
-            .and_then(|o| {
-                String::from_utf8(o.stdout)
-                    .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Bah"))
-            })
-            .unwrap_or_else(|_| "Ubuntu".to_owned())
-    };
-    if let Some(system_font) =
-        font_loader::system_fonts::get(&FontPropertyBuilder::new().family(&font_to_try).build())
-    {
-        fonts
-            .font_data
-            .insert("System".to_owned(), FontData::from_owned(system_font.0));
-    }
-    if let Some(system_font) = font_loader::system_fonts::get(
-        &FontPropertyBuilder::new()
-            .family(&font_to_try)
-            .bold()
-            .build(),
-    )
-    .or_else(|| {
-        let property = FontPropertyBuilder::new()
-            .family(&(font_to_try + " Bold"))
-            .build();
-        font_loader::system_fonts::get(&property)
-    }) {
-        fonts
-            .font_data
-            .insert("Bold".to_owned(), FontData::from_owned(system_font.0));
-    }
-    fonts
-        .families
-        .get_mut(&FontFamily::Proportional)
-        .unwrap()
-        .insert(0, "System".to_owned());
-    fonts
-        .families
-        .insert(FontFamily::Name("Bold".into()), vec!["Bold".to_owned()]);
-    context.set_fonts(fonts);
-}
 
 impl Entry {
     pub fn format(&self, job: &mut LayoutJob) {
@@ -273,9 +220,9 @@ struct App {
 
 impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
-        load_fonts(&cc.egui_ctx);
-        // cc.egui_ctx.set_pixels_per_point(1.);
-        visuals::default_dark(&cc.egui_ctx);
+        uk_ui::icons::load_icons();
+        uk_ui::load_fonts(&cc.egui_ctx);
+        uk_ui::visuals::default_dark(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
         let mods: Vector<_> = core.mod_manager().all_mods().collect();
         let (send, recv) = flume::unbounded();
@@ -1184,7 +1131,6 @@ impl eframe::App for App {
 }
 
 pub fn main() {
-    uk_ui::icons::load_icons();
     crate::logger::init();
     log::debug!("Logger initialized");
     log::info!("Started ukmm");

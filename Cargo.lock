@@ -2997,11 +2997,10 @@ dependencies = [
 
 [[package]]
 name = "rayon"
-version = "1.6.0"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e060280438193c554f654141c9ea9417886713b7acd75974c85b18a69a88e0b"
+checksum = "6db3a213adf02b3bcfd2d3846bb41cb22857d131789e01df434fb7e7bc0759b7"
 dependencies = [
- "crossbeam-deque",
  "either",
  "rayon-core",
 ]
@@ -3979,7 +3978,10 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "egui_dock",
+ "flume",
+ "rfd",
  "roead",
+ "serde",
  "uk-content",
  "uk-mod",
  "uk-ui",
@@ -4089,6 +4091,7 @@ dependencies = [
  "eframe",
  "egui",
  "egui_extras",
+ "font-loader",
  "hex",
  "indexmap",
  "msyt",
@@ -4127,7 +4130,6 @@ dependencies = [
  "enum-iterator",
  "env_logger",
  "flume",
- "font-loader",
  "fs-err",
  "im",
  "image",

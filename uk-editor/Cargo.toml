@@ -6,8 +6,11 @@ edition = "2021"
 [dependencies]
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
 egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
+flume = "0.10.14"
+rfd = "0.10.0"
 roead = { version = "0.18.1", features = ["with-serde", "yaml"] }
 uk-content = { path = "../uk-content" }
 uk-mod = { path = "../uk-mod" }
 uk-ui = { path = "../uk-ui" }
 uk-ui-derive = { path = "../uk-ui-derive" }
+serde = { version = "1.0.149", features = ["derive"] }

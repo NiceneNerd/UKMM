@@ -135,7 +135,7 @@ impl From<LifeCondition> for ParameterIO {
                     .enumerate()
                     .map(|(i, weather)| {
                         (
-                            format!("Item{:03}", i),
+                            format!("Item{:03}", i + 1),
                             Parameter::String64(Box::new(weather.into())),
                         )
                     })
@@ -150,7 +150,7 @@ impl From<LifeCondition> for ParameterIO {
                     .enumerate()
                     .map(|(i, time)| {
                         (
-                            format!("Item{:03}", i),
+                            format!("Item{:03}", i + 1),
                             Parameter::String64(Box::new(time.into())),
                         )
                     })
@@ -183,7 +183,7 @@ impl From<LifeCondition> for ParameterIO {
                     .enumerate()
                     .map(|(i, weather)| {
                         (
-                            format!("Item{:03}", i),
+                            format!("Item{:03}", i + 1),
                             Parameter::String64(Box::new(weather.into())),
                         )
                     })
@@ -198,7 +198,7 @@ impl From<LifeCondition> for ParameterIO {
                     .enumerate()
                     .map(|(i, time)| {
                         (
-                            format!("Item{:03}", i),
+                            format!("Item{:03}", i + 1),
                             Parameter::String64(Box::new(time.into())),
                         )
                     })

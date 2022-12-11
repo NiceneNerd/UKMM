@@ -7,7 +7,7 @@ use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct MapUnit {
     pub pos_x:   Option<f32>,
-    pub pos_y:   Option<f32>,
+    pub pos_z:   Option<f32>,
     pub size:    Option<f32>,
     pub objects: SortedDeleteMap<u32, Byml>,
     pub rails:   SortedDeleteMap<u32, Byml>,
@@ -23,8 +23,8 @@ impl TryFrom<&Byml> for MapUnit {
                 .get("LocationPosX")
                 .map(|v| -> Result<f32> { Ok(v.as_float()?) })
                 .transpose()?,
-            pos_y:   hash
-                .get("LocationPosY")
+            pos_z:   hash
+                .get("LocationPosZ")
                 .map(|v| -> Result<f32> { Ok(v.as_float()?) })
                 .transpose()?,
             size:    hash
@@ -76,7 +76,7 @@ impl From<MapUnit> for Byml {
         .chain(
             [
                 ("LocationPosX", val.pos_x),
-                ("LocationPosY", val.pos_y),
+                ("LocationPosZ", val.pos_z),
                 ("LocationSize", val.size),
             ]
             .into_iter()
@@ -90,7 +90,7 @@ impl Mergeable for MapUnit {
     fn diff(&self, other: &Self) -> Self {
         Self {
             pos_x:   other.pos_x,
-            pos_y:   other.pos_y,
+            pos_z:   other.pos_z,
             size:    other.size,
             objects: self.objects.diff(&other.objects),
             rails:   self.rails.diff(&other.rails),
@@ -100,7 +100,7 @@ impl Mergeable for MapUnit {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             pos_x:   diff.pos_x,
-            pos_y:   diff.pos_y,
+            pos_z:   diff.pos_z,
             size:    diff.size,
             objects: self.objects.merge(&diff.objects),
             rails:   self.rails.merge(&diff.rails),

@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
@@ -9,7 +10,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
-pub struct ActorInfo(pub SortedDeleteMap<BymlHashValue, Byml>);
+pub struct ActorInfo(pub SortedDeleteMap<u32, Byml>);
 
 impl TryFrom<&Byml> for ActorInfo {
     type Error = UKError;
@@ -20,33 +21,45 @@ impl TryFrom<&Byml> for ActorInfo {
             .get("Actors")
             .ok_or(UKError::MissingBymlKey("Actor info missing Actors"))?
             .as_array()?;
-        let hashes = actorinfo
-            .get("Hashes")
-            .ok_or(UKError::MissingBymlKey("Actor info missing Hashes"))?
-            .as_array()?;
-        if actors.len() != hashes.len() {
-            Err(UKError::Other(
-                "Invalid actor info: actor count and hash count not equal",
-            ))
-        } else {
-            Ok(Self(
-                actors
-                    .iter()
-                    .zip(hashes.iter())
-                    .map(|(actor, hash)| -> Result<(BymlHashValue, Byml)> {
-                        Ok((hash.try_into()?, actor.clone()))
-                    })
-                    .collect::<Result<_>>()?,
-            ))
-        }
+
+        Ok(Self(
+            actors
+                .iter()
+                .map(|actor| -> Result<(u32, Byml)> {
+                    let name = actor
+                        .as_hash()
+                        .context("Actor info entry isn't a hash?")?
+                        .get("name")
+                        .ok_or(UKError::MissingBymlKey("Actor info entry missing name"))?
+                        .as_string()
+                        .context("Actor info entry name isn't a string")?;
+                    let hash = roead::aamp::hash_name(&name);
+                    Ok((hash, actor.clone()))
+                })
+                .collect::<Result<_>>()?,
+        ))
     }
 }
 
 impl From<ActorInfo> for Byml {
     fn from(val: ActorInfo) -> Self {
+        let (hashes, actors) = val
+            .0
+            .into_iter()
+            .map(|(hash, actor)| {
+                (
+                    if hash > i32::MAX as u32 {
+                        Byml::U32(hash)
+                    } else {
+                        Byml::I32(hash as i32)
+                    },
+                    actor,
+                )
+            })
+            .unzip();
         bhash!(
-            "Actors" => Byml::Array(val.0.values().cloned().collect()),
-            "Hashes" => Byml::Array(val.0.keys().map(Byml::from).collect())
+            "Actors" => Byml::Array(actors),
+            "Hashes" => Byml::Array(hashes)
         )
     }
 }

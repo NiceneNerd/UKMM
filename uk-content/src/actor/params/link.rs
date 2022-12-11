@@ -12,8 +12,9 @@ use crate::{
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ActorLink {
-    pub targets: ParameterObject,
-    pub tags:    Option<DeleteSet<String>>,
+    pub targets:  ParameterObject,
+    pub tags:     Option<DeleteSet<String>>,
+    pub fit_tags: Option<DeleteSet<String>>,
 }
 
 impl TryFrom<&ParameterIO> for ActorLink {
@@ -21,14 +22,20 @@ impl TryFrom<&ParameterIO> for ActorLink {
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         Ok(Self {
-            targets: pio
+            targets:  pio
                 .object("LinkTarget")
                 .ok_or(UKError::MissingAampKey(
                     "Actor link missing link targets",
                     None,
                 ))?
                 .clone(),
-            tags:    pio.object("Tags").map(|tags| {
+            tags:     pio.object("Tags").map(|tags| {
+                tags.0
+                    .values()
+                    .filter_map(|v| v.as_str().ok().map(|s| (s.into(), false)))
+                    .collect()
+            }),
+            fit_tags: pio.object(1115720914).map(|tags| {
                 tags.0
                     .values()
                     .filter_map(|v| v.as_str().ok().map(|s| (s.into(), false)))
@@ -71,7 +78,8 @@ impl From<ActorLink> for ParameterIO {
                 },
                 ..Default::default()
             },
-            ..Default::default()
+            version:    0,
+            data_type:  "xml".into(),
         }
     }
 }
@@ -79,26 +87,17 @@ impl From<ActorLink> for ParameterIO {
 impl Mergeable for ActorLink {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            targets: util::diff_pobj(&self.targets, &other.targets),
-            tags:    other.tags.as_ref().map(|diff_tags| {
+            targets:  util::diff_pobj(&self.targets, &other.targets),
+            tags:     other.tags.as_ref().map(|diff_tags| {
                 if let Some(self_tags) = self.tags.as_ref() {
-                    diff_tags
-                        .iter()
-                        .filter_map(|tag| {
-                            if !self_tags.contains(tag) {
-                                Some((tag.clone(), false))
-                            } else {
-                                None
-                            }
-                        })
-                        .chain(self_tags.iter().filter_map(|tag| {
-                            if diff_tags.contains(tag) {
-                                None
-                            } else {
-                                Some((tag.clone(), true))
-                            }
-                        }))
-                        .collect()
+                    self_tags.diff(diff_tags)
+                } else {
+                    diff_tags.clone()
+                }
+            }),
+            fit_tags: other.fit_tags.as_ref().map(|diff_tags| {
+                if let Some(self_tags) = self.fit_tags.as_ref() {
+                    self_tags.diff(diff_tags)
                 } else {
                     diff_tags.clone()
                 }
@@ -108,14 +107,14 @@ impl Mergeable for ActorLink {
 
     fn merge(&self, other: &Self) -> Self {
         Self {
-            targets: self
+            targets:  self
                 .targets
                 .0
                 .iter()
                 .chain(other.targets.0.iter())
                 .map(|(k, v)| (*k, v.clone()))
                 .collect(),
-            tags:    {
+            tags:     {
                 if let Some(base_tags) = &self.tags {
                     if let Some(other_tags) = &other.tags {
                         Some(base_tags.merge(other_tags))
@@ -124,6 +123,17 @@ impl Mergeable for ActorLink {
                     }
                 } else {
                     other.tags.clone()
+                }
+            },
+            fit_tags: {
+                if let Some(base_tags) = &self.fit_tags {
+                    if let Some(other_tags) = &other.fit_tags {
+                        Some(base_tags.merge(other_tags))
+                    } else {
+                        self.fit_tags.clone()
+                    }
+                } else {
+                    other.fit_tags.clone()
                 }
             },
         }

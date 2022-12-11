@@ -164,7 +164,7 @@ impl TryFrom<Byml> for BymlHashValue {
     fn try_from(value: Byml) -> crate::Result<Self> {
         Ok(match value {
             Byml::U32(v) => Self(v),
-            Byml::I32(v) => Self(v as u32),
+            Byml::I32(v) => Self(u32::from_le_bytes(v.to_le_bytes())),
             _ => {
                 return Err(crate::UKError::WrongBymlType(
                     "not an integer".into(),
@@ -181,7 +181,7 @@ impl TryFrom<&Byml> for BymlHashValue {
     fn try_from(value: &Byml) -> crate::Result<Self> {
         Ok(match value {
             Byml::U32(v) => Self(*v),
-            Byml::I32(v) => Self(*v as u32),
+            Byml::I32(v) => Self(u32::from_le_bytes(v.to_le_bytes())),
             _ => {
                 return Err(crate::UKError::WrongBymlType(
                     "not an integer".into(),
@@ -210,7 +210,7 @@ impl From<u32> for BymlHashValue {
 
 impl From<i32> for BymlHashValue {
     fn from(val: i32) -> Self {
-        Self(val as u32)
+        Self(u32::from_le_bytes(val.to_le_bytes()))
     }
 }
 
@@ -234,20 +234,20 @@ impl From<BymlHashValue> for i32 {
 
 impl From<BymlHashValue> for Byml {
     fn from(val: BymlHashValue) -> Self {
-        if val.0 > 0x80000000 {
-            Byml::I32(val.0 as i32)
-        } else {
+        if val.0 >= 0x80000000 {
             Byml::U32(val.0)
+        } else {
+            Byml::I32(i32::from_le_bytes(val.0.to_le_bytes()))
         }
     }
 }
 
 impl From<&BymlHashValue> for Byml {
     fn from(val: &BymlHashValue) -> Self {
-        if val.0 > 0x80000000 {
-            Byml::I32(val.0 as i32)
-        } else {
+        if val.0 >= 0x80000000 {
             Byml::U32(val.0)
+        } else {
+            Byml::I32(i32::from_le_bytes(val.0.to_le_bytes()))
         }
     }
 }

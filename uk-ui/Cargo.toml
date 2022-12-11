@@ -7,6 +7,7 @@ edition = "2021"
 color-hex = "0.2.0"
 egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-features = false, features = ["color-hex", "persistence"] }
 egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
+font-loader = "0.11.0"
 hex = "0.4.3"
 indexmap = "1.9.1"
 msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }

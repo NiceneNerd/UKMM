@@ -1,59 +1,106 @@
+mod project;
+
+use std::path::PathBuf;
+
+use flume::{Receiver, Sender};
 use roead::sarc::Sarc;
-use uk_content::resource::GameDataPack;
+use uk_content::resource::{GameDataPack, ResourceData};
+use uk_mod::{unpack::ParallelZipReader, Meta};
 use uk_ui::{editor::EditableValue, egui};
 
-struct EditorTest<T> {
-    value: T,
+use crate::project::Project;
+
+#[derive(Debug, Clone)]
+enum Message {}
+
+struct App {
+    project:  Option<Project>,
+    projects: Vec<Project>,
+    channel:  (Sender<Message>, Receiver<Message>),
+    opened:   Vec<ResourceData>,
 }
 
-impl<T: EditableValue> eframe::App for EditorTest<T> {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            egui::ScrollArea::new([false, true]).show(ui, |ui| {
-                self.value.edit_ui_with_id(ui, "aamp-test");
-            });
+impl App {
+    fn new(cc: &eframe::CreationContext) -> Self {
+        uk_ui::icons::load_icons();
+        uk_ui::load_fonts(&cc.egui_ctx);
+        uk_ui::visuals::default_dark(&cc.egui_ctx);
+        Self {
+            project:  None,
+            projects: vec![],
+            channel:  flume::unbounded(),
+            opened:   vec![],
+        }
+    }
+
+    fn file_menu(&self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        if ui.button("New Project…").clicked() {
+            ui.close_menu();
+            todo!("New Project");
+        }
+        if ui.button("Import Mod…").clicked() {
+            ui.close_menu();
+            todo!("Open Mod");
+        }
+        if ui.button("Open Project…").clicked() {
+            ui.close_menu();
+            todo!("Open Project");
+        }
+        ui.separator();
+        ui.add_enabled_ui(self.project.is_some(), |ui| {
+            if ui.button("Save").clicked() {
+                ui.close_menu();
+                todo!("Save project");
+            }
+            if ui.button("Save As…").clicked() {
+                ui.close_menu();
+                todo!("Save project as");
+            }
+            if ui.button("Package…").clicked() {
+                ui.close_menu();
+                todo!("Package mod");
+            }
         });
+        ui.separator();
+        if ui.button("Exit").clicked() {
+            frame.close();
+        }
+    }
+}
+
+impl eframe::App for App {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::top("menu")
+            .exact_height(ctx.style().spacing.interact_size.y)
+            .show(ctx, |ui| {
+                ui.style_mut().visuals.button_frame = false;
+                ui.menu_button("File", |ui| self.file_menu(ui, frame));
+            });
     }
 }
 
 fn main() {
-    uk_ui::icons::load_icons();
-    // let data = ResidentActors::try_from(
-    //     &Byml::from_binary(&std::fs::read("uk-content/test/Actor/ResidentActors.byml").unwrap())
-    //         .unwrap(),
-    // )
-    // .unwrap();
-    // let actor = Sarc::new(
-    //     yaz0::decompress(
-    //         &std::fs::read("uk-content/test/Actor/Pack/Npc_TripMaster_00.sbactorpack").unwrap(),
-    //     )
-    //     .unwrap(),
-    // )
-    // .unwrap();
-    // let data = AIProgram::try_from(
-    //     &ParameterIO::from_binary(
-    //         actor
-    //             .get_file("Actor/AIProgram/NpcTripMaster.baiprog")
-    //             .unwrap()
-    //             .unwrap()
-    //             .data,
-    //     )
-    //     .unwrap(),
-    // )
-    // .unwrap();
-    fn load_gamedata_sarc() -> Sarc<'static> {
-        Sarc::new(std::fs::read("uk-content/test/GameData/gamedata.ssarc").unwrap()).unwrap()
-    }
-
-    // fn load_gamedata() -> Byml {
-    //     let gs = load_gamedata_sarc();
-    //     Byml::from_binary(gs.get_data("/bool_data_0.bgdata").unwrap().unwrap()).unwrap()
-    // }
-    let data = GameDataPack::from_sarc(&load_gamedata_sarc()).unwrap();
-
     eframe::run_native(
         "U-King Mod Editor",
         eframe::NativeOptions::default(),
-        Box::new(move |_cc| Box::new(EditorTest { value: data })),
+        Box::new(|cc| Box::new(App::new(cc))),
     )
 }
+
+// match self {
+//     ResourceData::Binary(bin) => {
+//         let mut changed = false;
+//         let mut res = ui.vertical(|ui| {
+//             ui.label("{} byte file with CRC hash {:#x}.");
+//             if ui.small_button("Replace…").clicked() && let Some(path) =  {
+
+//             }
+//         }).response;
+//         if changed {
+//             res.mark_changed();
+//         }
+//         res
+//     },
+//     ResourceData::Mergeable(_) => todo!(),
+//     ResourceData::Sarc(_) => todo!(),
+// }
