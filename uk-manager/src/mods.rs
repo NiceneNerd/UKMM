@@ -372,7 +372,7 @@ impl Manager {
     }
 }
 
-pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
+pub fn convert_gfx(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     log::info!("Attempting to convert mod at {}", path.display());
     let path = if path.is_file() {
         let ext = path
@@ -417,7 +417,11 @@ pub fn convert_gfx(path: &Path) -> Result<PathBuf> {
     let temp = util::get_temp_folder();
     log::debug!("Temp folder: {}", temp.display());
     log::info!("Attempting to convert mod...");
-    let packer = ModPacker::new(path, &*temp, None, vec![])?;
+    let packer = ModPacker::new(path, &*temp, None, vec![
+        core.settings()
+            .dump()
+            .context("No dump available for current platform")?,
+    ])?;
     let result_path = packer.pack()?;
     log::info!("Conversion complete");
     Ok(result_path)

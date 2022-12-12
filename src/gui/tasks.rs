@@ -44,7 +44,7 @@ fn is_probably_a_mod(path: &Path) -> bool {
     }
 }
 
-pub fn open_mod(path: &Path) -> Result<Message> {
+pub fn open_mod(core: &Manager, path: &Path) -> Result<Message> {
     log::info!("Opening mod at {}", path.display());
     let mod_ = match ModReader::open_peek(path, vec![]) {
         Ok(reader) => Mod::from_reader(reader),
@@ -55,7 +55,7 @@ pub fn open_mod(path: &Path) -> Result<Message> {
                 && is_probably_a_mod(path)
             {
                 log::info!("Maybe it's not a UKMM mod, let's to convert it");
-                let converted_path = uk_manager::mods::convert_gfx(path)?;
+                let converted_path = uk_manager::mods::convert_gfx(core, path)?;
                 Mod::from_reader(
                     ModReader::open_peek(converted_path, vec![])
                         .context("Failed to open converted mod")?,

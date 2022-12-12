@@ -497,20 +497,22 @@ impl App {
                     self.focused = pane;
                 }
                 Message::SelectFile => {
+                    let core = self.core.clone();
                     self.do_task(move |_| {
                         if let Some(path) = rfd::FileDialog::new()
                             .add_filter("UKMM Mod (*.zip)", &["zip"])
                             .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
                             .pick_file()
                         {
-                            tasks::open_mod(&path)
+                            tasks::open_mod(&core, &path)
                         } else {
                             Ok(Message::Noop)
                         }
                     });
                 }
                 Message::OpenMod(path) => {
-                    self.do_task(move |_| tasks::open_mod(&path));
+                    let core = self.core.clone();
+                    self.do_task(move |_| tasks::open_mod(&core, &path));
                 }
                 Message::HandleMod(mod_) => {
                     self.busy = false;
