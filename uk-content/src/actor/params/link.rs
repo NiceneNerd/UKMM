@@ -74,6 +74,21 @@ impl From<ActorLink> for ParameterIO {
                                 .collect(),
                         );
                     }
+                    if let Some(fit_tags) = val.fit_tags {
+                        objects.insert(
+                            1115720914,
+                            fit_tags
+                                .into_iter()
+                                .enumerate()
+                                .map(|(i, tag)| {
+                                    (
+                                        jstr!("Tag{&lexical::to_string(i)}"),
+                                        Parameter::StringRef(tag),
+                                    )
+                                })
+                                .collect(),
+                        );
+                    }
                     objects
                 },
                 ..Default::default()
