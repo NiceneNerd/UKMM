@@ -3976,13 +3976,20 @@ dependencies = [
 name = "uk-editor"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "eframe",
  "egui_dock",
  "flume",
+ "fs-err",
+ "minicbor-ser 0.2.0",
+ "rayon",
  "rfd",
  "roead",
+ "ron",
  "serde",
+ "toml",
  "uk-content",
+ "uk-manager",
  "uk-mod",
  "uk-ui",
  "uk-ui-derive",

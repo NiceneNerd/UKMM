@@ -4,13 +4,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.66"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
 egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
 flume = "0.10.14"
+fs-err = "2.9.0"
+minicbor-ser = "0.2.0"
+rayon = "1.6.1"
 rfd = "0.10.0"
 roead = { version = "0.18.1", features = ["with-serde", "yaml"] }
+toml = "0.5.9"
 uk-content = { path = "../uk-content" }
+uk-manager = { path ="../uk-manager" }
 uk-mod = { path = "../uk-mod" }
 uk-ui = { path = "../uk-ui" }
 uk-ui-derive = { path = "../uk-ui-derive" }
 serde = { version = "1.0.149", features = ["derive"] }
+ron = "0.8.0"
+# serde_yaml = "0.9.14"

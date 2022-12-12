@@ -365,4 +365,9 @@ impl Settings {
     pub fn state_file(&self) -> PathBuf {
         Self::config_dir().join("ui.json")
     }
+
+    #[inline]
+    pub fn projects_dir(&self) -> PathBuf {
+        self.storage_dir.join("projects")
+    }
 }

@@ -1,10 +1,12 @@
+#![feature(let_chains)]
 mod project;
 
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use flume::{Receiver, Sender};
 use roead::sarc::Sarc;
 use uk_content::resource::{GameDataPack, ResourceData};
+use uk_manager::core::Manager;
 use uk_mod::{unpack::ParallelZipReader, Meta};
 use uk_ui::{editor::EditableValue, egui};
 
@@ -14,6 +16,7 @@ use crate::project::Project;
 enum Message {}
 
 struct App {
+    core:     Arc<Manager>,
     project:  Option<Project>,
     projects: Vec<Project>,
     channel:  (Sender<Message>, Receiver<Message>),
@@ -26,6 +29,7 @@ impl App {
         uk_ui::load_fonts(&cc.egui_ctx);
         uk_ui::visuals::default_dark(&cc.egui_ctx);
         Self {
+            core:     Arc::new(Manager::init().expect("Core manager failed to initialize")),
             project:  None,
             projects: vec![],
             channel:  flume::unbounded(),
@@ -81,7 +85,7 @@ impl eframe::App for App {
 
 fn main() {
     eframe::run_native(
-        "U-King Mod Editor",
+        "U-King Mod Maker",
         eframe::NativeOptions::default(),
         Box::new(|cc| Box::new(App::new(cc))),
     )

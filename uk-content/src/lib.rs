@@ -216,7 +216,8 @@ pub mod prelude {
                             &self.$field.param_root,
                             &other.$field.param_root,
                         ),
-                        ..Default::default()
+                        version:    self.$field.version,
+                        data_type:  self.$field.data_type.clone(),
                     })
                 }
 

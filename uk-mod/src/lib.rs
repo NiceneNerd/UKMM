@@ -10,6 +10,7 @@ use smartstring::alias::String;
 use uk_content::{prelude::Endian, util::IndexMap};
 pub mod pack;
 pub mod unpack;
+pub use zstd;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Manifest {
