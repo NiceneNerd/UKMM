@@ -279,6 +279,11 @@ mod tests {
         let static2 = super::Static::try_from(&byml2).unwrap();
         let diff = static_.diff(&static2);
         let merged = static_.merge(&diff);
+        assert!(
+            merged
+                .start_pos
+                .contains_key(&smartstring::alias::String::from("Dungeon200"))
+        );
         assert_eq!(merged, static2);
     }
 
