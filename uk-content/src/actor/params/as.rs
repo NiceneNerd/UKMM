@@ -190,8 +190,8 @@ impl ParameterIOBuilder {
                                         self.add_element(child, idx + count + 1);
                                     child_lists.extend(child_list);
                                     (
-                                        jstr!("Child{&lexical::to_string(*i + 1)}"),
-                                        Parameter::Int(index as i32),
+                                        jstr!("Child{&lexical::to_string(index)}"),
+                                        Parameter::Int((*i + 1) as i32),
                                     )
                                 })
                                 .collect(),
@@ -317,6 +317,7 @@ mod tests {
         .unwrap();
         let as_data2 = super::AS::try_from(&pio2).unwrap();
         let _diff = as_data.diff(&as_data2);
+        dbg!(_diff);
     }
 
     #[test]

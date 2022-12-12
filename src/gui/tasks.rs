@@ -51,7 +51,7 @@ pub fn open_mod(core: &Manager, path: &Path) -> Result<Message> {
         Err(err) => {
             log::warn!("Could not open mod, let's find out why");
             let err_msg = err.to_string();
-            if (err_msg.contains("meta file") || err_msg.contains("Invalid Zip"))
+            if (err_msg.contains("meta file") || err_msg.contains("d Zip"))
                 && is_probably_a_mod(path)
             {
                 log::info!("Maybe it's not a UKMM mod, let's to convert it");

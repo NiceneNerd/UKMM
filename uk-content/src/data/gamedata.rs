@@ -437,6 +437,8 @@ impl GameDataPack {
 
     pub fn into_sarc_writer(self, endian: Endian) -> SarcWriter {
         let mut sarc = SarcWriter::new(endian.into());
+        sarc.set_min_alignment(4)
+            .expect("4 is a valid alignment, weirdo");
         build_gamedata_pack!(
             self,
             sarc,

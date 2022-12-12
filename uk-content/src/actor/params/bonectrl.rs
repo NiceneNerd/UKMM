@@ -84,7 +84,7 @@ impl From<BoneControl> for ParameterIO {
                             .enumerate()
                             .map(|(i, (group, bones))| {
                                 (
-                                    jstr!("Bone_{&lexical::to_string(i)}"),
+                                    jstr!("BoneGroup_{&lexical::to_string(i)}"),
                                     ParameterList {
                                         objects: pobjs!(
                                             "Param" => params!("GroupName" => Parameter::String64(Box::new(group))),
