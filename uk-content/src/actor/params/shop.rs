@@ -52,24 +52,11 @@ impl TryFrom<&ParameterIO> for ShopData {
         let header = pio
             .object("Header")
             .ok_or(UKError::MissingAampKey("Shop data missing header", None))?;
-        let table_count = header
-            .get("TableNum")
-            .ok_or(UKError::MissingAampKey(
-                "Shop data missing table count",
-                None,
-            ))?
-            .as_int()? as usize;
-        let tables: Vec<_> = (1..=table_count)
-            .filter_map(|i| {
-                header
-                    .get(&format!("Table{:02}", i))
-                    .and_then(|p| p.as_string64().ok().copied())
-            })
-            .collect();
+        let tables: Vec<_> = header.iter().filter_map(|(_, v)| v.as_str().ok()).collect();
         let mut shop_tables = IndexMap::default();
-        shop_tables.reserve(table_count);
+        shop_tables.reserve(tables.len());
         for table_name in tables {
-            let table_obj = pio.object(table_name.as_str()).ok_or_else(|| {
+            let table_obj = pio.object(table_name).ok_or_else(|| {
                 UKError::MissingAampKeyD(jstr!("Table {&table_name} in shop data missing"))
             })?;
             let column_num = table_obj
@@ -80,7 +67,7 @@ impl TryFrom<&ParameterIO> for ShopData {
                 ))?
                 .as_int()? as usize;
             shop_tables.insert(
-                table_name,
+                table_name.into(),
                 Some(
                     (1..=column_num)
                         .map(|i| -> Result<(String64, ShopItem)> {

@@ -53,24 +53,14 @@ impl TryFrom<&ParameterIO> for DropTable {
         let header = list
             .object("Header")
             .ok_or(UKError::MissingAampKey("Drop table missing header", None))?;
-        let table_count = header
-            .get("TableNum")
-            .ok_or(UKError::MissingAampKey(
-                "Drop table header missing table count",
-                None,
-            ))?
-            .as_int()? as usize;
         Ok(Self(
-            (1..=table_count)
-                .into_iter()
-                .filter_map(|i| {
-                    header
-                        .get(&format!("Table{:02}", i))
-                        .and_then(|name| name.as_string64().ok())
-                        .and_then(|name| {
-                            list.object(name.as_str())
-                                .map(|table| (*name, table.clone()))
-                        })
+            header
+                .iter()
+                .filter_map(|(_, name)| {
+                    name.as_string64().map(|v| v).ok().and_then(|name| {
+                        list.object(name.as_str())
+                            .map(|table| (*name, table.clone()))
+                    })
                 })
                 .collect(),
         ))

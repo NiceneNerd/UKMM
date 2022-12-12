@@ -190,8 +190,8 @@ impl ParameterIOBuilder {
                                         self.add_element(child, idx + count + 1);
                                     child_lists.extend(child_list);
                                     (
-                                        jstr!("Child{&lexical::to_string(index)}"),
-                                        Parameter::Int((*i + 1) as i32),
+                                        jstr!("Child{&lexical::to_string(index - 1)}"),
+                                        Parameter::Int(*i as i32),
                                     )
                                 })
                                 .collect(),

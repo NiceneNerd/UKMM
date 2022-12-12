@@ -18,6 +18,7 @@ pub struct ModelList {
     pub attention: ParameterObject,
     pub model_data: DeleteVec<ParameterList>,
     pub anm_target: BTreeMap<usize, ParameterList>,
+    pub locators: DeleteVec<ParameterObject>,
 }
 
 impl TryFrom<&ParameterIO> for ModelList {
@@ -62,6 +63,11 @@ impl TryFrom<&ParameterIO> for ModelList {
                 .cloned()
                 .enumerate()
                 .collect(),
+            locators: (0..)
+                .map(|i| pio.object(format!("Locator_{}", i)).cloned())
+                .fuse()
+                .filter_map(|v| v)
+                .collect(),
         })
     }
 }
@@ -94,7 +100,13 @@ impl From<ModelList> for ParameterIO {
                             |(i, target)| (jstr!("AnmTarget_{&lexical::to_string(i)}"), target),
                         )),
                 ),
-            },
+            }
+            .with_objects(
+                val.locators
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, obj)| (jstr!("Locator_{&lexical::to_string(i)}"), obj)),
+            ),
             version:    0,
             data_type:  "xml".into(),
         }
@@ -108,6 +120,7 @@ impl Mergeable for ModelList {
             attention: diff_pobj(&self.attention, &other.attention),
             model_data: self.model_data.diff(&other.model_data),
             anm_target: simple_index_diff(&self.anm_target, &other.anm_target),
+            locators: self.locators.diff(&other.locators),
         }
     }
 
@@ -117,6 +130,7 @@ impl Mergeable for ModelList {
             attention: merge_pobj(&self.attention, &diff.attention),
             model_data: self.model_data.merge(&diff.model_data),
             anm_target: simple_index_merge(&self.anm_target, &diff.anm_target),
+            locators: self.locators.merge(&diff.locators),
         }
     }
 }

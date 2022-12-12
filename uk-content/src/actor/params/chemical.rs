@@ -17,8 +17,8 @@ use crate::{
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ChemicalBody {
-    pub rigid_c: ParameterObject,
     pub shape:   ParameterObject,
+    pub rigid_c: ParameterObject,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
@@ -122,8 +122,8 @@ impl From<Chemical> for ParameterIO {
                                     .into_iter()
                                     .flat_map(|(i, body)| {
                                         [
-                                            (format!("rigid_c_{:02}", i), body.rigid_c),
                                             (format!("shape_{:02}", i), body.shape),
+                                            (format!("rigid_c_{:02}", i), body.rigid_c),
                                         ]
                                     })
                                     .collect(),
