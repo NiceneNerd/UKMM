@@ -43,7 +43,7 @@ impl From<RagdollConfig> for ParameterIO {
                 .with_lists(
                     val.impact_impulse_info
                         .into_iter()
-                        .map(|(i, list)| (format!("ImpactImpulseInfo{:02}", i), list)),
+                        .map(|(i, list)| (format!("ImpactImpulseInfo{:02}", i + 1), list)),
                 ),
         )
     }

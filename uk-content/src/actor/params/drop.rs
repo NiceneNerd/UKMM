@@ -40,7 +40,8 @@ impl From<DropTable> for ParameterIO {
                 },
                 lists:   Default::default(),
             },
-            ..Default::default()
+            version:    0,
+            data_type:  "xml".into(),
         }
     }
 }

@@ -7,11 +7,11 @@ use crate::{actor::ParameterResource, prelude::*, util::IndexMap, Result, UKErro
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ShopItem {
-    pub sort: u8,
-    pub num: u8,
-    pub adjust_price: u8,
+    pub sort: i32,
+    pub num: i32,
+    pub adjust_price: i32,
     pub look_get_flag: bool,
-    pub amount: u8,
+    pub amount: i32,
     pub delete: bool,
 }
 
@@ -98,21 +98,21 @@ impl TryFrom<&ParameterIO> for ShopData {
                                         "Shop table missing item name",
                                         None,
                                     ))?
-                                    .as_int()? as u8,
+                                    .as_int()?,
                                 num: table_obj
                                     .get(&format!("ItemNum{:03}", i))
                                     .ok_or(UKError::MissingAampKey(
                                         "Shop table missing item num",
                                         None,
                                     ))?
-                                    .as_int()? as u8,
+                                    .as_int()?,
                                 adjust_price: table_obj
                                     .get(&format!("ItemAdjustPrice{:03}", i))
                                     .ok_or(UKError::MissingAampKey(
                                         "Shop table missing adjust price",
                                         None,
                                     ))?
-                                    .as_int()? as u8,
+                                    .as_int()?,
                                 look_get_flag: table_obj
                                     .get(&format!("ItemLookGetFlg{:03}", i))
                                     .ok_or(UKError::MissingAampKey(
@@ -126,7 +126,7 @@ impl TryFrom<&ParameterIO> for ShopData {
                                         "Shop table missing item amount",
                                         None,
                                     ))?
-                                    .as_int()? as u8,
+                                    .as_int()?,
                                 delete: false,
                             }))
                         })
@@ -169,21 +169,15 @@ impl From<ShopData> for ParameterIO {
                                 .flat_map(|(i, (name, data))| {
                                     let i = i + 1;
                                     [
-                                        (
-                                            format!("ItemSort{:03}", i),
-                                            Parameter::Int(data.sort as i32),
-                                        ),
+                                        (format!("ItemSort{:03}", i), Parameter::Int(data.sort)),
                                         (
                                             format!("ItemName{:03}", i),
                                             Parameter::String64(Box::new(name)),
                                         ),
-                                        (
-                                            format!("ItemNum{:03}", i),
-                                            Parameter::Int(data.num as i32),
-                                        ),
+                                        (format!("ItemNum{:03}", i), Parameter::Int(data.num)),
                                         (
                                             format!("ItemAdjustPrice{:03}", i),
-                                            Parameter::Int(data.adjust_price as i32),
+                                            Parameter::Int(data.adjust_price),
                                         ),
                                         (
                                             format!("ItemLookGetFlg{:03}", i),
@@ -191,7 +185,7 @@ impl From<ShopData> for ParameterIO {
                                         ),
                                         (
                                             format!("ItemAmount{:03}", i),
-                                            Parameter::Int(data.amount as i32),
+                                            Parameter::Int(data.amount),
                                         ),
                                     ]
                                 }),

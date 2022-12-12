@@ -320,11 +320,11 @@ impl Mergeable for Cloth {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            setup_file_path: if diff.setup_file_path != self.setup_file_path {
-                diff.setup_file_path.clone()
-            } else {
-                None
-            },
+            setup_file_path: diff
+                .setup_file_path
+                .as_ref()
+                .or_else(|| self.setup_file_path.as_ref())
+                .cloned(),
             subwind: util::merge_pobj(&self.subwind, &diff.subwind),
             cloths: util::simple_index_merge(&self.cloths, &diff.cloths),
         }

@@ -133,7 +133,8 @@ impl From<Chemical> for ParameterIO {
                 ),
                 ..Default::default()
             },
-            ..Default::default()
+            data_type:  "xml".into(),
+            version:    0,
         }
     }
 }

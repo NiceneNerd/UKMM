@@ -108,7 +108,8 @@ impl From<BoneControl> for ParameterIO {
                     }
                 ),
             },
-            ..Default::default()
+            data_type:  "xml".into(),
+            version:    0,
         }
     }
 }

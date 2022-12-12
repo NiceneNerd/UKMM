@@ -95,7 +95,8 @@ impl From<ModelList> for ParameterIO {
                         )),
                 ),
             },
-            ..Default::default()
+            version:    0,
+            data_type:  "xml".into(),
         }
     }
 }
