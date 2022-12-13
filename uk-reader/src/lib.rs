@@ -5,7 +5,7 @@ mod zarchive;
 
 use std::{
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Once},
 };
 
 use anyhow::Context;
@@ -45,6 +45,7 @@ impl From<ROMError> for uk_content::UKError {
     }
 }
 
+static NEST_MAP: &str = include_str!("../data/nest_map.json");
 type ResourceCache = Cache<String, Arc<ResourceData>>;
 const CACHE_SIZE: u64 = 7777;
 pub type Result<T> = std::result::Result<T, ROMError>;
@@ -206,15 +207,29 @@ impl ResourceReader {
             Ok(res) => Ok(res),
             Err(e) => {
                 log::trace!("Failed to get file from dump: {e}. Performing parent lookup...");
+                static NEST_INIT: Once = Once::new();
+                NEST_INIT.call_once(|| {
+                    log::trace!("Initializing nest map...");
+                    if self.source.typetag_name() == "Unpacked" {
+                        let stock: HashMap<String, Arc<str>> =
+                            serde_json::from_str(NEST_MAP).unwrap();
+                        self.nest_map.write().extend(stock)
+                    }
+                });
                 let parent = self.nest_map.read().get(&canon).cloned();
+                log::trace!("{canon} has parent? {}", parent.is_some());
                 match parent {
                     Some(parent) => {
                         log::trace!("Parent found at {parent}");
                         let parent_canon = canonicalize(parent.as_ref());
                         dbg!(&parent_canon);
                         dbg!(&parent);
-                        self.get_or_add_resource(parent.as_ref(), parent_canon)?;
+                        self.get_or_add_resource(parent.as_ref(), parent_canon)
+                            .with_context(|| {
+                                jstr!("Failed to get parent {&parent} for file {&canon}")
+                            })?;
                         Ok(self.cache.get(&canon).ok_or_else(|| {
+                            log::warn!("Failed to get {canon}");
                             ROMError::FileNotFound(
                                 path.as_ref().to_string_lossy().into(),
                                 self.source.host_path().to_path_buf(),
@@ -246,6 +261,8 @@ impl ResourceReader {
                     self.process_sarc(Sarc::new(data.as_ref())?, &name)?;
                 }
                 self.cache.insert(canon.clone(), Arc::new(resource));
+            }
+            if !self.nest_map.read().contains_key(&canon) {
                 self.nest_map.write().insert(canon, sarc_path.into());
             }
         }

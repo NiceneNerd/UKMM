@@ -268,10 +268,10 @@ impl ModPacker {
                 master
                     .get_resource(canon.as_str())
                     .or_else(|err| {
-                        log::warn!("{err}");
+                        log::trace!("{err}");
                         master.get_data(ref_name)
                     })
-                    .inspect_err(|err| log::warn!("{err}"))
+                    .inspect_err(|err| log::trace!("{err}"))
                     .ok()
             })
             .last();
@@ -280,7 +280,7 @@ impl ModPacker {
             && let Some(ref_res) = ref_res_data.as_mergeable()
             && let ResourceData::Mergeable(res) = &resource
         {
-            if ref_res == res && !in_new_sarc {
+            if ref_res == res {
                 log::trace!("{} not modded, skipping", &canon);
                 return Ok(());
             }
