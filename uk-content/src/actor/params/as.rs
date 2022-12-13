@@ -238,7 +238,11 @@ impl From<AS> for ParameterIO {
 impl Mergeable for AS {
     fn diff(&self, other: &Self) -> Self {
         if let Some(self_as) = self.0.as_ref() && let Some(other_as) = other.0.as_ref() {
-            Self(Some(self_as.diff(other_as)))
+            if self_as == other_as {
+                Self(None)
+            } else {
+                Self(Some(self_as.diff(other_as)))
+            }
         } else {
             Self(other.0.clone())
         }
