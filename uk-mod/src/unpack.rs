@@ -545,3 +545,203 @@ mod tests {
         super::unzip_mod(mod_path.as_ref(), out_path.as_ref()).unwrap();
     }
 }
+
+#[cfg(test)]
+mod bonus {
+    use std::{cell::RefCell, ops::Deref, path::Path, rc::Rc, sync::Arc};
+
+    use parking_lot::Mutex;
+    use path_slash::PathExt;
+    use rayon::prelude::*;
+    use roead::sarc::Sarc;
+    use smartstring::alias::String;
+    use uk_content::{canonicalize, resource::MergeableResource, util::HashMap};
+
+    #[test]
+    fn nest_map() {
+        let base =
+            Path::new("/media/mrm/Data/Games/Cemu/mlc01/usr/title/00050000/101C9400/content");
+        let update =
+            Path::new("/media/mrm/Data/Games/Cemu/mlc01/usr/title/0005000E/101C9400/content");
+        let dlc =
+            Path::new("/media/mrm/Data/Games/Cemu/mlc01/usr/title/0005000C/101C9400/content/0010");
+
+        let nest_map = Arc::new(Mutex::new(HashMap::<String, String>::default()));
+
+        fn get_sarc_paths(sarc: &Sarc, path: &str, map: Arc<Mutex<HashMap<String, String>>>) {
+            sarc.files().for_each(|file| {
+                if let Some(name) = file.name {
+                    let full_path = String::from(path) + "//" + name;
+                    if file.data.len() > 0x40
+                        && file.is_sarc()
+                        && !matches!(
+                            Path::new(file.unwrap_name())
+                                .extension()
+                                .unwrap_or_default()
+                                .to_str()
+                                .unwrap_or_default(),
+                            "sblarc"
+                                | "ssarc"
+                                | "sstera"
+                                | "sstats"
+                                | "sarc"
+                                | "stera"
+                                | "stats"
+                                | "blarc"
+                        )
+                    {
+                        let sarc = Sarc::new(file.data).unwrap();
+                        get_sarc_paths(&sarc, &full_path, map.clone());
+                    }
+                    map.lock().insert(
+                        if path.starts_with("Aoc") {
+                            (String::from("Aoc/0010/") + &name.replace(".s", ".")).into()
+                        } else {
+                            name.replace(".s", ".").into()
+                        },
+                        full_path,
+                    );
+                }
+            });
+        }
+
+        for root in [base, update] {
+            jwalk::WalkDir::new(root)
+                .into_iter()
+                .par_bridge()
+                .filter_map(|e| e.ok().map(|e| e.path()))
+                .filter(|p| {
+                    let ext = p
+                        .extension()
+                        .unwrap_or_default()
+                        .to_str()
+                        .unwrap_or_default();
+                    botw_utils::extensions::SARC_EXTS.contains(&ext)
+                        && !matches!(ext, "ssarc" | "sstera" | "sstats")
+                })
+                .for_each(|path| {
+                    let sarc = Sarc::new(fs_err::read(&path).unwrap()).unwrap();
+                    get_sarc_paths(
+                        &sarc,
+                        &path.strip_prefix(root).unwrap().to_slash_lossy(),
+                        nest_map.clone(),
+                    );
+                });
+        }
+        jwalk::WalkDir::new(dlc)
+            .into_iter()
+            .par_bridge()
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| {
+                let ext = p
+                    .extension()
+                    .unwrap_or_default()
+                    .to_str()
+                    .unwrap_or_default();
+                botw_utils::extensions::SARC_EXTS.contains(&ext)
+                    && !matches!(ext, "ssarc" | "sstera" | "sstats")
+            })
+            .for_each(|path| {
+                let sarc = Sarc::new(fs_err::read(&path).unwrap()).unwrap();
+                get_sarc_paths(
+                    &sarc,
+                    &path.strip_prefix(dlc).unwrap().to_slash_lossy(),
+                    nest_map.clone(),
+                );
+            });
+
+        fs_err::write(
+            "nest_map.json",
+            serde_json::to_string_pretty(&(Arc::try_unwrap(nest_map).unwrap().into_inner()))
+                .unwrap(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn dump_cache() {
+        let base =
+            Path::new("/media/mrm/Data/Games/Cemu/mlc01/usr/title/00050000/101C9400/content");
+        let update =
+            Path::new("/media/mrm/Data/Games/Cemu/mlc01/usr/title/0005000E/101C9400/content");
+        let dlc =
+            Path::new("/media/mrm/Data/Games/Cemu/mlc01/usr/title/0005000C/101C9400/content/0010");
+
+        let res_map = Arc::new(Mutex::new(HashMap::<String, MergeableResource>::default()));
+
+        fn process_sarc_resources(
+            sarc: &Sarc,
+            path: &str,
+            map: Arc<Mutex<HashMap<String, MergeableResource>>>,
+        ) {
+            sarc.files().for_each(|file| {
+                if let Some(name) = file.name &&
+                    let Some(res) = MergeableResource::from_binary(name.as_ref(), file.data).unwrap()
+                {
+                    map.lock().insert(if path.starts_with("Aoc") {
+                        (String::from("Aoc/0010/") + &name.replace(".s", ".")).into()
+                    } else {
+                        name.replace(".s", ".").into()
+                    }, res);
+                }
+            });
+        }
+
+        for root in [base, update] {
+            jwalk::WalkDir::new(root)
+                .into_iter()
+                .par_bridge()
+                .filter_map(|e| e.ok().map(|e| e.path()))
+                .filter(|p| {
+                    let ext = p
+                        .extension()
+                        .unwrap_or_default()
+                        .to_str()
+                        .unwrap_or_default();
+                    botw_utils::extensions::SARC_EXTS.contains(&ext)
+                        && !matches!(ext, "ssarc" | "sstera" | "sstats")
+                })
+                .for_each(|path| {
+                    let sarc = Sarc::new(fs_err::read(&path).unwrap()).unwrap();
+                    process_sarc_resources(
+                        &sarc,
+                        &path.strip_prefix(root).unwrap().to_slash_lossy(),
+                        res_map.clone(),
+                    );
+                });
+        }
+        jwalk::WalkDir::new(dlc)
+            .into_iter()
+            .par_bridge()
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| {
+                let ext = p
+                    .extension()
+                    .unwrap_or_default()
+                    .to_str()
+                    .unwrap_or_default();
+                botw_utils::extensions::SARC_EXTS.contains(&ext)
+                    && !matches!(ext, "ssarc" | "sstera" | "sstats")
+            })
+            .for_each(|path| {
+                let sarc = Sarc::new(fs_err::read(&path).unwrap()).unwrap();
+                process_sarc_resources(
+                    &sarc,
+                    &path.strip_prefix(dlc).unwrap().to_slash_lossy(),
+                    res_map.clone(),
+                );
+            });
+
+        fs_err::write(
+            "dump.bin",
+            zstd::encode_all(
+                minicbor_ser::to_vec(res_map.lock().deref())
+                    .unwrap()
+                    .as_slice(),
+                0,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    }
+}

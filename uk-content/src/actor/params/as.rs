@@ -185,7 +185,7 @@ impl ParameterIOBuilder {
                             children
                                 .iter()
                                 .enumerate()
-                                .map(|(count, (i, child))| {
+                                .map(|(count, (_i, child))| {
                                     let (index, child_list) =
                                         self.add_element(child, idx + count + 1);
                                     child_lists.extend(child_list);
