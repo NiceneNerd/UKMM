@@ -87,9 +87,9 @@ impl log::Log for Logger {
             } else {
                 self.queue.lock().push(entry);
             }
-        }
-        if self.enabled(record.metadata()) {
-            self.inner.log(record);
+            if self.enabled(record.metadata()) {
+                self.inner.log(record);
+            }
         }
     }
 

@@ -412,11 +412,10 @@ impl ModUnpacker {
         let mut versions = std::collections::VecDeque::with_capacity(
             (self.mods.len() as f32 / 2.).ceil() as usize,
         );
-        match self
-            .dump
-            .get_data(file)
-            .or_else(|_| self.dump.get_resource(file))
-        {
+        match self.dump.get_data(file).or_else(|e| {
+            dbg!(e);
+            self.dump.get_resource(file)
+        }) {
             Ok(ref_res) => versions.push_back(ref_res),
             Err(e) => {
                 dbg!(e);

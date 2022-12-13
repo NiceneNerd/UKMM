@@ -6,6 +6,7 @@ mod zarchive;
 use std::{
     path::{Path, PathBuf},
     sync::{Arc, Once},
+    time::Duration,
 };
 
 use anyhow::Context;
@@ -47,7 +48,7 @@ impl From<ROMError> for uk_content::UKError {
 
 static NEST_MAP: &str = include_str!("../data/nest_map.json");
 type ResourceCache = Cache<String, Arc<ResourceData>>;
-const CACHE_SIZE: u64 = 7777;
+const CACHE_SIZE: usize = 10000;
 pub type Result<T> = std::result::Result<T, ROMError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,7 +70,11 @@ fn construct_cache() -> ResourceCache {
         "Initializing resource cache (up to {} resources)",
         CACHE_SIZE
     );
-    ResourceCache::new(CACHE_SIZE)
+    ResourceCache::builder()
+        .max_capacity(CACHE_SIZE as u64)
+        .initial_capacity(CACHE_SIZE / 10)
+        .time_to_idle(Duration::from_secs(30))
+        .build()
 }
 
 #[derive(Serialize, Deserialize)]
@@ -110,7 +115,7 @@ impl ResourceReader {
     pub fn from_zarchive(archive_path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
             source:   Box::new(ZArchive::new(archive_path)?),
-            cache:    ResourceCache::new(CACHE_SIZE),
+            cache:    construct_cache(),
             bin_type: BinType::Nintendo,
             nest_map: Default::default(),
         })
@@ -123,7 +128,7 @@ impl ResourceReader {
     ) -> Result<Self> {
         Ok(Self {
             source:   Box::new(Unpacked::new(content_dir, update_dir, aoc_dir, true)?),
-            cache:    ResourceCache::new(CACHE_SIZE),
+            cache:    construct_cache(),
             bin_type: BinType::Nintendo,
             nest_map: Default::default(),
         })
