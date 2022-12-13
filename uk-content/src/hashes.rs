@@ -75,4 +75,25 @@ mod tests {
         let modded_data = std::fs::read("test/WorldMgr/normal.mod.bwinfo").unwrap();
         assert!(table.is_modified("WorldMgr/normal.bwinfo", modded_data));
     }
+
+    #[test]
+    fn convert_bcml_hash_tables() {
+        for platform in ["wiiu", "switch"] {
+            let file = std::path::Path::new(r"E:\Downloads")
+                .join(platform)
+                .with_extension("sjson");
+            let data = std::fs::read(file).unwrap();
+            let hashes: rustc_hash::FxHashMap<String, rustc_hash::FxHashSet<u32>> =
+                serde_json::from_slice(&roead::yaz0::decompress(data).unwrap()).unwrap();
+            let new_data =
+                zstd::encode_all(minicbor_ser::to_vec(&hashes).unwrap().as_slice(), 0).unwrap();
+            std::fs::write(
+                std::path::Path::new("data/hashes")
+                    .join(platform)
+                    .with_extension("bin.zst"),
+                new_data,
+            )
+            .unwrap();
+        }
+    }
 }

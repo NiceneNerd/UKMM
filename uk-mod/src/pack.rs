@@ -1,4 +1,5 @@
 use std::{
+    cell::LazyCell,
     collections::BTreeSet,
     io::Write,
     path::{Path, PathBuf},
@@ -6,9 +7,11 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use botw_utils::hashes::{get_hash_table, StockHashTable};
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
+use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use path_slash::PathExt;
 use rayon::prelude::*;
@@ -17,9 +20,7 @@ pub use sanitise_file_name::sanitise;
 use serde::Deserialize;
 use smartstring::alias::String;
 use uk_content::{
-    canonicalize,
-    hashes::{get_hash_table, ROMHashTable},
-    platform_prefixes,
+    canonicalize, platform_prefixes,
     prelude::{Endian, Mergeable},
     resource::{is_mergeable_sarc, ResourceData},
 };
@@ -29,6 +30,11 @@ use crate::{Manifest, Meta, ModOptionGroup};
 
 pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
 
+static NX_HASH_TABLE: Lazy<StockHashTable> =
+    Lazy::new(|| StockHashTable::new(&botw_utils::hashes::Platform::Switch));
+static WIIU_HASH_TABLE: Lazy<StockHashTable> =
+    Lazy::new(|| StockHashTable::new(&botw_utils::hashes::Platform::WiiU));
+
 pub struct ModPacker {
     source_dir: PathBuf,
     current_root: PathBuf,
@@ -37,7 +43,7 @@ pub struct ModPacker {
     endian: Endian,
     built_resources: Arc<RwLock<BTreeSet<String>>>,
     masters: Vec<Arc<uk_reader::ResourceReader>>,
-    hash_table: &'static ROMHashTable,
+    hash_table: &'static StockHashTable,
     _zip_opts: FileOptions,
     _out_file: PathBuf,
 }
@@ -172,7 +178,10 @@ impl ModPacker {
             endian,
             zip,
             masters,
-            hash_table: get_hash_table(meta.platform),
+            hash_table: match meta.platform {
+                Endian::Little => &NX_HASH_TABLE,
+                Endian::Big => &WIIU_HASH_TABLE,
+            },
             meta,
             built_resources: Arc::new(RwLock::new(BTreeSet::new())),
             _zip_opts: FileOptions::default().compression_method(zip::CompressionMethod::Stored),
@@ -204,7 +213,7 @@ impl ModPacker {
                 let file_data = fs::read(&path)?;
                 let file_data = decompress_if(&file_data);
 
-                if !self.hash_table.is_modified(&canon, &*file_data) {
+                if !self.hash_table.is_file_modded(&canon, &*file_data, true) {
                     log::trace!("Resource {} not modded, ignoring", &canon);
                     return Ok(None);
                 }
@@ -220,7 +229,7 @@ impl ModPacker {
                     );
                     self.process_sarc(
                         Sarc::new(file_data.as_ref())?,
-                        !self.hash_table.contains(&canon),
+                        self.hash_table.is_file_new(&canon),
                     )
                     .with_context(|| jstr!("Failed to process SARC file {&canon}"))?;
                 }
@@ -311,7 +320,7 @@ impl ModPacker {
             let canon = canonicalize(name);
             let file_data = decompress_if(file.data);
 
-            if !self.hash_table.is_modified(&canon, &*file_data) && !is_new_sarc {
+            if !self.hash_table.is_file_modded(&canon, &*file_data, true) && !is_new_sarc {
                 log::trace!("{} not modded, skipping", &canon);
                 continue;
             }
@@ -429,6 +438,7 @@ mod tests {
     use crate::{ModOption, MultipleOptionGroup, OptionGroup};
     #[test]
     fn pack_mod() {
+        env_logger::init();
         let source = Path::new("test/wiiu");
         let dest = Path::new("test/wiiu.zip");
         let rom_reader = serde_yaml::from_str::<ResourceReader>(

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.66"
+botw-utils = "0.3.1"
 configparser = "3.0.1"
 enum_dispatch = "0.3.8"
 fs-err = "2.7.0"
@@ -12,8 +13,9 @@ indexmap = "1.8.0"
 join_str = "0.1.0"
 jwalk = "0.6.0"
 log = "0.4.17"
-mmap-rs = "0.4.0"
 minicbor-ser = "0.2.0"
+mmap-rs = "0.4.0"
+once_cell = "1.16.0"
 ouroboros = "0.15.5"
 parking_lot = "0.12.1"
 path-slash = "0.2.0"
@@ -30,9 +32,9 @@ typetag = "0.2.1"
 toml = "0.5.9"
 uk-content = { path = "../uk-content" }
 uk-reader = { path = "../uk-reader" }
-xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
 zip = { version = "0.6.2", default-features = false, features = ["deflate"]}
 zstd = "0.11.2"
 
 [dev-dependencies]
+env_logger = "0.10.0"
 tempfile = "3.3.0"

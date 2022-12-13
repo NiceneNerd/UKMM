@@ -9,6 +9,7 @@ use std::{
 };
 
 use anyhow::Context;
+use join_str::jstr;
 use moka::sync::Cache;
 use parking_lot::RwLock;
 use roead::sarc::Sarc;
@@ -180,7 +181,10 @@ impl ResourceReader {
             .cache
             .try_get_with(canon.clone(), || -> uk_content::Result<_> {
                 log::trace!("Resource {} not in cache, pulling", &canon);
-                let data = self.source.get_data(path.as_ref())?;
+                let data = self
+                    .source
+                    .get_data(path.as_ref())
+                    .with_context(|| jstr!("File {&canon} not found in dump"))?;
                 let resource = match self.bin_type {
                     BinType::Nintendo => {
                         let data = roead::yaz0::decompress_if(data.as_slice());
@@ -200,10 +204,12 @@ impl ResourceReader {
                 Ok(Arc::new(resource))
             }) {
             Ok(res) => Ok(res),
-            Err(_) => {
+            Err(e) => {
+                log::trace!("Failed to get file from dump: {e}. Performing parent lookup...");
                 let parent = self.nest_map.read().get(&canon).cloned();
                 match parent {
                     Some(parent) => {
+                        log::trace!("Parent found at {parent}");
                         let parent_canon = canonicalize(parent.as_ref());
                         dbg!(&parent_canon);
                         dbg!(&parent);
