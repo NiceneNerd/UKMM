@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use itertools::Itertools;
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
@@ -65,8 +66,7 @@ impl TryFrom<&ParameterIO> for ModelList {
                 .collect(),
             locators: (0..)
                 .map(|i| pio.object(format!("Locator_{}", i)).cloned())
-                .fuse()
-                .filter_map(|v| v)
+                .while_some()
                 .collect(),
         })
     }

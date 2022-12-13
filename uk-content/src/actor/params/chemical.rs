@@ -122,8 +122,8 @@ impl From<Chemical> for ParameterIO {
                                     .into_iter()
                                     .flat_map(|(i, body)| {
                                         [
-                                            (format!("shape_{:02}", i), body.shape),
                                             (format!("rigid_c_{:02}", i), body.rigid_c),
+                                            (format!("shape_{:02}", i), body.shape),
                                         ]
                                     })
                                     .collect(),
