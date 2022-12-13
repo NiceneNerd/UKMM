@@ -220,7 +220,7 @@ impl ModPacker {
 
                 let resource = ResourceData::from_binary(name.as_str(), &*file_data)
                     .with_context(|| jstr!("Failed to parse resource {&name}"))?;
-                self.process_resource(name, canon.clone(), resource, false)
+                self.process_resource(name.clone(), canon.clone(), resource, false)
                     .with_context(|| jstr!("Failed to process resource {&canon}"))?;
                 if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                     log::trace!(
@@ -229,6 +229,7 @@ impl ModPacker {
                     );
                     self.process_sarc(
                         Sarc::new(file_data.as_ref())?,
+                        name.as_str().as_ref(),
                         self.hash_table.is_file_new(&canon),
                     )
                     .with_context(|| jstr!("Failed to process SARC file {&canon}"))?;
@@ -266,7 +267,11 @@ impl ModPacker {
             .filter_map(|master| {
                 master
                     .get_resource(canon.as_str())
-                    .or_else(|_| master.get_data(ref_name))
+                    .or_else(|err| {
+                        log::warn!("{err}");
+                        master.get_data(ref_name)
+                    })
+                    .inspect_err(|err| log::warn!("{err}"))
                     .ok()
             })
             .last();
@@ -312,7 +317,7 @@ impl ModPacker {
         Ok(())
     }
 
-    fn process_sarc(&self, sarc: Sarc, is_new_sarc: bool) -> Result<()> {
+    fn process_sarc(&self, sarc: Sarc, path: &Path, is_new_sarc: bool) -> Result<()> {
         for file in sarc.files() {
             let name = file
                 .name()
@@ -321,20 +326,24 @@ impl ModPacker {
             let file_data = decompress_if(file.data);
 
             if !self.hash_table.is_file_modded(&canon, &*file_data, true) && !is_new_sarc {
-                log::trace!("{} not modded, skipping", &canon);
+                log::trace!("{} in SARC {} not modded, skipping", &canon, path.display());
                 continue;
             }
 
-            let resource = ResourceData::from_binary(name, &*file_data)
-                .with_context(|| jstr!("Failed to parse resource {&canon}"))?;
+            let resource = ResourceData::from_binary(name, &*file_data).with_context(|| {
+                jstr!("Failed to parse resource {&canon} in SARC {&path.display().to_string()}")
+            })?;
             self.process_resource(name.into(), canon.clone(), resource, is_new_sarc)?;
             if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                 log::trace!(
-                    "Resource {} is a mergeable SARC, processing contents",
-                    &canon
+                    "Resource {} in SARC {} is a mergeable SARC, processing contents",
+                    &canon,
+                    path.display()
                 );
-                self.process_sarc(Sarc::new(file_data.as_ref())?, is_new_sarc)
-                    .with_context(|| jstr!("Failed to process SARC file {&canon}"))?;
+                self.process_sarc(Sarc::new(file_data.as_ref())?, name.as_ref(), is_new_sarc)
+                    .with_context(|| {
+                        jstr!("Failed to process {&canon} in SARC {&path.display().to_string()}")
+                    })?;
             }
         }
         Ok(())
