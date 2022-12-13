@@ -33,7 +33,7 @@ impl TryFrom<&Byml> for ActorInfo {
                         .ok_or(UKError::MissingBymlKey("Actor info entry missing name"))?
                         .as_string()
                         .context("Actor info entry name isn't a string")?;
-                    let hash = roead::aamp::hash_name(&name);
+                    let hash = roead::aamp::hash_name(name);
                     Ok((hash, actor.clone()))
                 })
                 .collect::<Result<_>>()?,

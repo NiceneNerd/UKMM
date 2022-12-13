@@ -57,7 +57,7 @@ impl TryFrom<&ParameterIO> for DropTable {
             header
                 .iter()
                 .filter_map(|(_, name)| {
-                    name.as_string64().map(|v| v).ok().and_then(|name| {
+                    name.as_string64().ok().and_then(|name| {
                         list.object(name.as_str())
                             .map(|table| (*name, table.clone()))
                     })

@@ -323,7 +323,7 @@ impl Mergeable for Cloth {
             setup_file_path: diff
                 .setup_file_path
                 .as_ref()
-                .or_else(|| self.setup_file_path.as_ref())
+                .or(self.setup_file_path.as_ref())
                 .cloned(),
             subwind: util::merge_pobj(&self.subwind, &diff.subwind),
             cloths: util::simple_index_merge(&self.cloths, &diff.cloths),

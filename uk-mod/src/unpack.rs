@@ -110,7 +110,7 @@ impl ParallelZipReader {
         Ok(self_)
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = &&'a std::path::Path> {
+    pub fn iter(&self) -> impl Iterator<Item = &&std::path::Path> {
         self.borrow_files().iter().map(|(f, _)| f)
     }
 
