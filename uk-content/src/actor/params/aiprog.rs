@@ -15,7 +15,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{self, DeleteMap, IndexMap},
+    util::{self, DeleteMap, HashMap, IndexMap, IndexSet},
     Result, UKError,
 };
 
@@ -61,6 +61,119 @@ pub struct AIEntry {
     pub params: Option<ParameterObject>,
     pub behaviors: Option<IndexMap<Name, usize>>,
     pub children: Option<IndexMap<Name, AIEntry>>,
+}
+
+impl Mergeable for AIEntry {
+    fn diff(&self, other: &Self) -> Self {
+        Self {
+            category: self.category,
+            def: other.def.clone(),
+            params: other.params.as_ref().map(|other_params| {
+                self.params
+                    .as_ref()
+                    .map(|self_params| util::diff_pobj(self_params, other_params))
+                    .unwrap_or_else(|| other_params.clone())
+            }),
+            behaviors: other.behaviors.as_ref().map(|other_behaviors| {
+                self.behaviors
+                    .as_ref()
+                    .map(|self_behaviors| {
+                        other_behaviors
+                            .iter()
+                            .filter_map(|(k, v)| {
+                                (self_behaviors.get(k) != Some(v)).then_some((*k, *v))
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_else(|| other_behaviors.clone())
+            }),
+            children: other.children.as_ref().map(|other_children| {
+                self.children
+                    .as_ref()
+                    .map(|self_children| {
+                        other_children
+                            .iter()
+                            .filter_map(|(k, other_entry)| {
+                                if let Some(self_entry) = self_children.get(k) {
+                                    (self_entry != other_entry)
+                                        .then(|| (*k, self_entry.diff(other_entry)))
+                                } else {
+                                    Some((*k, other_entry.clone()))
+                                }
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_else(|| other_children.clone())
+            }),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self {
+            category: self.category,
+            def: diff.def.clone(),
+            params: diff
+                .params
+                .as_ref()
+                .map(|diff_params| {
+                    self.params
+                        .as_ref()
+                        .map(|self_params| util::merge_pobj(self_params, diff_params))
+                        .unwrap_or_else(|| diff_params.clone())
+                })
+                .or_else(|| self.params.clone()),
+            behaviors: diff
+                .behaviors
+                .as_ref()
+                .map(|diff_behaviors| {
+                    self.behaviors
+                        .as_ref()
+                        .map(|self_behaviors| {
+                            self_behaviors
+                                .iter()
+                                .chain(diff_behaviors.iter())
+                                .map(|(k, v)| (*k, *v))
+                                .collect()
+                        })
+                        .unwrap_or_else(|| diff_behaviors.clone())
+                })
+                .or_else(|| self.behaviors.clone()),
+            children: diff
+                .children
+                .as_ref()
+                .map(|diff_children| {
+                    self.children
+                        .as_ref()
+                        .map(|self_children| {
+                            let all_keys = diff_children
+                                .keys()
+                                .chain(self_children.keys())
+                                .collect::<IndexSet<_>>();
+                            all_keys
+                                .into_iter()
+                                .map(|key| {
+                                    if let Some(self_child) = self_children.get(key)
+                            && let Some(diff_child) = diff_children.get(key)
+                        {
+                            (*key, self_child.merge(diff_child))
+                        } else {
+                            (
+                                *key,
+                                self_children
+                                    .get(key)
+                                    .or_else(|| diff_children.get(key))
+                                    .cloned()
+                                    .expect("This key has to exist, nutcase")
+                            )
+                        }
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_else(|| diff_children.clone())
+                })
+                .or_else(|| self.children.clone()),
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
@@ -125,15 +238,15 @@ impl<'a> Parser<'a> {
             .iter()
             .map(|(k, v)| -> Result<(Name, AIEntry)> {
                 let index = v.as_int().context("Demo index not an integer")? as usize;
-                let (index, parent, category) = if index > self.query_offset {
+                let (index, parent, category) = if index >= self.query_offset {
                     (index - self.query_offset, self.queries, Category::Query)
-                } else if index > self.behavior_offset {
+                } else if index >= self.behavior_offset {
                     (
                         index - self.behavior_offset,
                         self.behaviors,
                         Category::Behavior,
                     )
-                } else if index > self.action_offset {
+                } else if index >= self.action_offset {
                     (index - self.action_offset, self.actions, Category::Action)
                 } else {
                     (index, self.ais, Category::AI)
@@ -199,15 +312,15 @@ impl<'a> Parser<'a> {
                                     .unwrap_or_else(|| def.class_name.as_str())
                             )
                         })? as usize;
-                        let (index, parent, category) = if index > self.query_offset {
+                        let (index, parent, category) = if index >= self.query_offset {
                             (index - self.query_offset, self.queries, Category::Query)
-                        } else if index > self.behavior_offset {
+                        } else if index >= self.behavior_offset {
                             (
                                 index - self.behavior_offset,
                                 self.behaviors,
                                 Category::Behavior,
                             )
-                        } else if index > self.action_offset {
+                        } else if index >= self.action_offset {
                             (index - self.action_offset, self.actions, Category::Action)
                         } else {
                             (index, self.ais, Category::AI)
@@ -326,9 +439,174 @@ impl<'a> Parser<'a> {
     }
 }
 
+#[derive(Default)]
+struct Writer {
+    action_offset: usize,
+    aiprog: AIProgram,
+    demos: ParameterObject,
+    ais: ParameterListMap,
+    actions: ParameterListMap,
+    behaviors: ParameterListMap,
+    queries: ParameterListMap,
+    finished: HashMap<AIDef, usize>,
+}
+
+impl Writer {
+    fn count_ais(entry: &AIEntry) -> usize {
+        match entry.category {
+            Category::AI => {
+                1 + entry
+                    .children
+                    .as_ref()
+                    .map(|children| children.values().map(Self::count_ais).sum())
+                    .unwrap_or(0)
+            }
+            _ => 0,
+        }
+    }
+
+    fn new(aiprog: AIProgram) -> Self {
+        Self {
+            action_offset: aiprog.roots.values().map(Self::count_ais).sum(),
+            aiprog,
+            ..Default::default()
+        }
+    }
+
+    fn entry_to_list(&mut self, entry: AIEntry) -> usize {
+        if matches!(entry.category, Category::AI | Category::Action)
+            && let Some(index) = self.finished.get(&entry.def)
+        {
+            *index
+        } else {
+            let mut list = ParameterList::new();
+            list.set_object("Def", entry.def.into());
+            if let Some(children) = entry.children {
+                list.set_object("ChildIdx", children.into_iter().map(|(k, entry)| {
+                    (k, Parameter::Int(self.entry_to_list(entry) as i32))
+                }).collect());
+            }
+            if let Some(behaviors) = entry.behaviors {
+                list.set_object("BehaviorIdx", behaviors.into_iter().map(|(k, idx)| {
+                    (k, Parameter::Int(idx as i32))
+                }).collect())
+            }
+            if let Some(params) = entry.params {
+                list.set_object("SInst", params);
+            }
+            match entry.category {
+                Category::AI => {
+                    let index = self.ais.len();
+                    self.ais.insert(format!("AI_{}", index), list);
+                    index
+                },
+                Category::Action => {
+                    let index = self.action_offset + self.actions.len();
+                    self.actions.insert(format!("Action_{}", self.actions.len()), list);
+                    index
+                },
+                Category::Behavior => {
+                    self.behaviors.insert(format!("Behavior_{}", self.behaviors.len()), list);
+                    0
+                },
+                Category::Query => {
+                    self.queries.insert(format!("Query_{}", self.queries.len()), list);
+                    0
+                },
+            }
+        }
+    }
+
+    fn write(mut self) -> ParameterIO {
+        let AIProgram {
+            behaviors,
+            demos,
+            queries,
+            roots,
+        } = std::mem::take(&mut self.aiprog);
+        for behavior in behaviors.into_values() {
+            self.entry_to_list(behavior);
+        }
+        for query in queries.into_values() {
+            self.entry_to_list(query);
+        }
+        for root in roots.into_values() {
+            self.entry_to_list(root);
+        }
+        let demos = demos
+            .into_iter()
+            .map(|(k, entry)| (k, Parameter::Int(self.entry_to_list(entry) as i32)))
+            .collect();
+        let Self {
+            ais,
+            actions,
+            behaviors,
+            queries,
+            ..
+        } = self;
+        ParameterIO::new()
+            .with_object("DemoAIActionIdx", demos)
+            .with_list("AI", ParameterList {
+                lists: ais,
+                ..Default::default()
+            })
+            .with_list("Action", ParameterList {
+                lists: actions,
+                ..Default::default()
+            })
+            .with_list("Behavior", ParameterList {
+                lists: behaviors,
+                ..Default::default()
+            })
+            .with_list("Query", ParameterList {
+                lists: queries,
+                ..Default::default()
+            })
+    }
+}
+
 impl Mergeable for AIProgram {
     fn diff(&self, other: &Self) -> Self {
-        todo!()
+        AIProgram {
+            demos:     other
+                .demos
+                .iter()
+                .filter_map(|(k, v)| {
+                    if let Some(self_demo) = self.demos.get(k) {
+                        (self_demo != v).then(|| (*k, self_demo.diff(v)))
+                    } else {
+                        Some((*k, v.clone()))
+                    }
+                })
+                .collect(),
+            behaviors: other
+                .behaviors
+                .iter()
+                .filter_map(|(k, v)| (Some(v) != self.behaviors.get(k)).then_some((*k, *v)))
+                .collect(),
+            queries:   other
+                .queries
+                .iter()
+                .filter_map(|(k, v)| {
+                    if let Some(self_demo) = self.queries.get(k) {
+                        (self_demo != v).then(|| (*k, self_demo.diff(v)))
+                    } else {
+                        Some((*k, v.clone()))
+                    }
+                })
+                .collect(),
+            roots:     other
+                .roots
+                .iter()
+                .filter_map(|(k, v)| {
+                    if let Some(self_demo) = self.roots.get(k) {
+                        (self_demo != v).then(|| (k.clone(), self_demo.diff(v)))
+                    } else {
+                        Some((k.clone(), v.clone()))
+                    }
+                })
+                .collect(),
+        }
     }
 
     fn merge(&self, diff: &Self) -> Self {
@@ -346,7 +624,7 @@ impl TryFrom<&ParameterIO> for AIProgram {
 
 impl From<AIProgram> for ParameterIO {
     fn from(aiprog: AIProgram) -> Self {
-        todo!()
+        Writer::new(aiprog).write()
     }
 }
 
