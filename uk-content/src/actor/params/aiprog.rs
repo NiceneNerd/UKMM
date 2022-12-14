@@ -7,6 +7,7 @@ use std::{
 use anyhow::Context;
 use join_str::jstr;
 use roead::aamp::*;
+use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
@@ -26,11 +27,11 @@ pub struct BehaviorMap(pub IndexMap<u32, String32>);
 )]
 pub struct AIDef {
     #[name = "Name"]
-    pub name: String,
+    pub name: Option<String>,
     #[name = "ClassName"]
     pub class_name: String32,
     #[name = "GroupName"]
-    pub group_name: String,
+    pub group_name: Option<String>,
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Hash, Eq, Deserialize, Serialize, Editable)]
@@ -64,13 +65,14 @@ pub struct AIEntry {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct AIProgram {
-    pub demos:     IndexMap<Name, AIDef>,
+    pub demos:     IndexMap<Name, AIEntry>,
     pub behaviors: BTreeMap<usize, AIEntry>,
     pub queries:   BTreeMap<usize, AIEntry>,
     pub roots:     IndexMap<String, AIEntry>,
 }
 
 struct Parser<'a> {
+    demos: &'a ParameterObject,
     ais: &'a ParameterList,
     action_offset: usize,
     actions: &'a ParameterList,
@@ -82,6 +84,12 @@ struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     fn new(pio: &'a ParameterIO) -> Result<Parser<'a>> {
+        let demos = pio
+            .object("DemoAIActionIdx")
+            .ok_or(UKError::MissingAampKey(
+                "AI program missing DemoAIActionIdx",
+                None,
+            ))?;
         let ais = pio
             .list("AI")
             .ok_or(UKError::MissingAampKey("AI program missing AI list", None))?;
@@ -101,6 +109,7 @@ impl<'a> Parser<'a> {
             None,
         ))?;
         Ok(Self {
+            demos,
             ais,
             action_offset,
             actions,
@@ -111,8 +120,39 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn find_demos(&self) -> Result<IndexMap<Name, AIDef>> {
-        todo!()
+    fn find_demos(&self) -> Result<IndexMap<Name, AIEntry>> {
+        self.demos
+            .iter()
+            .map(|(k, v)| -> Result<(Name, AIEntry)> {
+                let index = v.as_int().context("Demo index not an integer")? as usize;
+                let (index, parent, category) = if index > self.query_offset {
+                    (index - self.query_offset, self.queries, Category::Query)
+                } else if index > self.behavior_offset {
+                    (
+                        index - self.behavior_offset,
+                        self.behaviors,
+                        Category::Behavior,
+                    )
+                } else if index > self.action_offset {
+                    (index - self.action_offset, self.actions, Category::Action)
+                } else {
+                    (index, self.ais, Category::AI)
+                };
+                let entry = parent
+                    .lists
+                    .0
+                    .values()
+                    .nth(index)
+                    .ok_or_else(|| {
+                        UKError::MissingAampKeyD(format!(
+                            "AI program missing demo at index {}",
+                            index
+                        ))
+                    })
+                    .and_then(|list| self.entry_from_list(list, category))?;
+                Ok((*k, entry))
+            })
+            .collect()
     }
 
     fn entry_from_list(&self, list: &ParameterList, category: Category) -> Result<AIEntry> {
@@ -131,9 +171,15 @@ impl<'a> Parser<'a> {
                     .map(|(k, v)| -> Result<(Name, usize)> {
                         Ok((
                             *k,
-                            v.as_int()
-                                .with_context(|| format!("Bad behavior index for {}", def.name))?
-                                as usize,
+                            v.as_int().with_context(|| {
+                                format!(
+                                    "Bad behavior index for {}",
+                                    def.name
+                                        .as_ref()
+                                        .map(|n| n.as_str())
+                                        .unwrap_or_else(|| def.class_name.as_str())
+                                )
+                            })? as usize,
                         ))
                     })
                     .collect()
@@ -144,10 +190,15 @@ impl<'a> Parser<'a> {
             .map(|obj| -> Result<IndexMap<Name, AIEntry>> {
                 obj.iter()
                     .map(|(k, idx)| -> Result<(Name, AIEntry)> {
-                        let index = idx
-                            .as_int()
-                            .with_context(|| format!("Bad child index for {}", def.name))?
-                            as usize;
+                        let index = idx.as_int().with_context(|| {
+                            format!(
+                                "Bad child index for {}",
+                                def.name
+                                    .as_ref()
+                                    .map(|n| n.as_str())
+                                    .unwrap_or_else(|| def.class_name.as_str())
+                            )
+                        })? as usize;
                         let (index, parent, category) = if index > self.query_offset {
                             (index - self.query_offset, self.queries, Category::Query)
                         } else if index > self.behavior_offset {
@@ -176,6 +227,9 @@ impl<'a> Parser<'a> {
                                     "Failed to parse child {} of AI entry {}",
                                     k.hash(),
                                     def.name
+                                        .as_ref()
+                                        .map(|n| n.as_str())
+                                        .unwrap_or_else(|| def.class_name.as_str())
                                 )
                             })?;
                         Ok((*k, entry))
@@ -193,7 +247,82 @@ impl<'a> Parser<'a> {
     }
 
     fn parse(self) -> Result<AIProgram> {
-        todo!()
+        let demos = self
+            .find_demos()
+            .context("Failed to parse AI program demos")?;
+        let behaviors = self
+            .behaviors
+            .lists
+            .0
+            .values()
+            .enumerate()
+            .map(|(i, list)| {
+                let entry = self.entry_from_list(list, Category::Behavior)?;
+                Ok((i, entry))
+            })
+            .collect::<Result<_>>()
+            .context("Failed to collect AI program behaviors")?;
+        let queries = self
+            .queries
+            .lists
+            .0
+            .values()
+            .enumerate()
+            .map(|(i, list)| {
+                let entry = self.entry_from_list(list, Category::Query)?;
+                Ok((i, entry))
+            })
+            .collect::<Result<_>>()
+            .context("Failed to collect AI program queries")?;
+        let children: FxHashSet<usize> = self
+            .ais
+            .lists
+            .0
+            .values()
+            .filter_map(|list| {
+                let children = list.object("ChildIdx")?;
+                Some(
+                    children
+                        .0
+                        .values()
+                        .filter_map(|v| v.as_int().ok().map(|i| i as usize)),
+                )
+            })
+            .flatten()
+            .collect();
+        let roots = self
+            .ais
+            .lists
+            .0
+            .values()
+            .enumerate()
+            .filter_map(|(i, list)| {
+                (!children.contains(&i)).then(|| -> Result<(String, AIEntry)> {
+                    let entry = self.entry_from_list(list, Category::AI)?;
+                    Ok((
+                        entry
+                            .def
+                            .name
+                            .as_ref()
+                            .ok_or_else(|| {
+                                UKError::MissingAampKey(
+                                    "AI entry def missing name",
+                                    Some(list.into()),
+                                )
+                            })?
+                            .clone(),
+                        entry,
+                    ))
+                })
+            })
+            .collect::<Result<_>>()
+            .context("Failed to collect AI program tree roots")?;
+        Ok(AIProgram {
+            demos,
+            behaviors,
+            queries,
+            roots,
+        })
     }
 }
 
@@ -211,7 +340,7 @@ impl TryFrom<&ParameterIO> for AIProgram {
     type Error = UKError;
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
-        todo!()
+        Parser::new(pio).and_then(|p| p.parse())
     }
 }
 
