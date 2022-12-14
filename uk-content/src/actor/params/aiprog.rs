@@ -1,3 +1,4 @@
+mod ui;
 use std::collections::HashSet;
 
 use join_str::jstr;
@@ -9,9 +10,12 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{self, IndexMap},
+    util::{self, DeleteMap, IndexMap},
     Result, UKError,
 };
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+pub struct BehaviorMap(pub IndexMap<u32, String32>);
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable, ParamData)]
 pub struct AIDef {
@@ -28,12 +32,14 @@ pub struct AIEntry {
     pub def: AIDef,
     pub params: Option<ParameterObject>,
     pub children: IndexMap<Name, ChildEntry>,
-    pub behaviors: Option<IndexMap<Name, ParameterList>>,
+    pub behaviors: Option<BehaviorMap>,
 }
 
 impl AIEntry {
-    fn full_name(&self) -> String {
-        self.def.name.clone() + self.def.class_name.as_str() + self.def.group_name.as_str()
+    fn id(&self) -> String {
+        serde_json::to_string(&self)
+            .expect("Whoa failed to serialize AI entry to JSON")
+            .into()
     }
 }
 
@@ -56,18 +62,15 @@ impl Mergeable for AIEntry {
         if self.behaviors != other.behaviors {
             if let Some(self_behaviors) = &self.behaviors {
                 diff.behaviors = other.behaviors.as_ref().map(|behaviors| {
-                    behaviors
-                        .iter()
-                        .filter_map(|(k, v)| {
-                            if !self_behaviors.contains_key(k) {
-                                Some((*k, v.clone()))
-                            } else if self_behaviors[k] != *v {
-                                Some((*k, util::diff_plist(&self_behaviors[k], v)))
-                            } else {
-                                None
-                            }
-                        })
-                        .collect()
+                    BehaviorMap(
+                        behaviors
+                            .0
+                            .iter()
+                            .filter_map(|(k, v)| {
+                                (Some(v) != self_behaviors.0.get(k)).then(|| (*k, *v))
+                            })
+                            .collect(),
+                    )
                 });
             } else {
                 diff.behaviors = other.behaviors.clone();
@@ -102,13 +105,14 @@ impl Mergeable for AIEntry {
         }
         if let Some(diff_behaviors) = &diff.behaviors {
             if let Some(base_behaviors) = &self.behaviors {
-                new.behaviors = Some(
+                new.behaviors = Some(BehaviorMap(
                     base_behaviors
+                        .0
                         .iter()
-                        .chain(diff_behaviors.iter())
-                        .map(|(k, v)| (*k, v.clone()))
+                        .chain(diff_behaviors.0.iter())
+                        .map(|(k, v)| (*k, *v))
                         .collect(),
-                );
+                ));
             } else {
                 new.behaviors = diff.behaviors.clone();
             }
@@ -128,12 +132,14 @@ impl Mergeable for AIEntry {
 pub struct ActionEntry {
     pub def: AIDef,
     pub params: Option<ParameterObject>,
-    pub behaviors: Option<IndexMap<Name, ParameterList>>,
+    pub behaviors: Option<BehaviorMap>,
 }
 
 impl ActionEntry {
-    fn full_name(&self) -> String {
-        self.def.name.clone() + self.def.class_name.as_str() + self.def.group_name.as_str()
+    fn id(&self) -> String {
+        serde_json::to_string(&self)
+            .expect("Whoa failed to serialize AI entry to JSON")
+            .into()
     }
 }
 
@@ -156,18 +162,15 @@ impl Mergeable for ActionEntry {
         if self.behaviors != other.behaviors {
             if let Some(self_behaviors) = &self.behaviors {
                 diff.behaviors = other.behaviors.as_ref().map(|behaviors| {
-                    behaviors
-                        .iter()
-                        .filter_map(|(k, v)| {
-                            if !self_behaviors.contains_key(k) {
-                                Some((*k, v.clone()))
-                            } else if self_behaviors[k] != *v {
-                                Some((*k, util::diff_plist(&self_behaviors[k], v)))
-                            } else {
-                                None
-                            }
-                        })
-                        .collect()
+                    BehaviorMap(
+                        behaviors
+                            .0
+                            .iter()
+                            .filter_map(|(k, v)| {
+                                (Some(v) != self_behaviors.0.get(k)).then(|| (*k, *v))
+                            })
+                            .collect(),
+                    )
                 });
             } else {
                 diff.behaviors = other.behaviors.clone();
@@ -188,13 +191,14 @@ impl Mergeable for ActionEntry {
         }
         if let Some(diff_behaviors) = &diff.behaviors {
             if let Some(base_behaviors) = &self.behaviors {
-                new.behaviors = Some(
+                new.behaviors = Some(BehaviorMap(
                     base_behaviors
+                        .0
                         .iter()
-                        .chain(diff_behaviors.iter())
-                        .map(|(k, v)| (*k, v.clone()))
+                        .chain(diff_behaviors.0.iter())
+                        .map(|(k, v)| (*k, *v))
                         .collect(),
-                );
+                ));
             } else {
                 new.behaviors = diff.behaviors.clone();
             }
@@ -245,15 +249,16 @@ impl Mergeable for ChildEntry {
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
 pub struct AIProgram {
-    pub demos:   IndexMap<Name, ChildEntry>,
-    pub tree:    IndexMap<String, AIEntry>,
+    pub demos: IndexMap<Name, ChildEntry>,
+    pub tree: IndexMap<String, AIEntry>,
+    pub behaviors: DeleteMap<String32, ParameterList>,
     pub queries: IndexMap<String, ParameterList>,
 }
 
 impl Mergeable for AIProgram {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            demos:   other
+            demos: other
                 .demos
                 .iter()
                 .filter_map(|(k, v)| {
@@ -279,7 +284,7 @@ impl Mergeable for AIProgram {
                     }
                 })
                 .collect(),
-            tree:    other
+            tree: other
                 .tree
                 .iter()
                 .filter_map(|(k, v)| {
@@ -292,12 +297,13 @@ impl Mergeable for AIProgram {
                     }
                 })
                 .collect(),
+            behaviors: self.behaviors.diff(&other.behaviors),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            demos:   {
+            demos: {
                 let mut new = self.demos.clone();
                 for (k, v) in &diff.demos {
                     let merged = if let Some(entry) = new.get_mut(k) {
@@ -321,7 +327,7 @@ impl Mergeable for AIProgram {
                 }
                 new
             },
-            tree:    {
+            tree: {
                 let mut new = self.tree.clone();
                 for (k, v) in &diff.tree {
                     let merged = if let Some(entry) = new.get_mut(k) {
@@ -333,6 +339,7 @@ impl Mergeable for AIProgram {
                 }
                 new
             },
+            behaviors: self.behaviors.merge(&diff.behaviors),
         }
     }
 }
@@ -403,26 +410,35 @@ mod parse {
                 .collect::<Result<IndexMap<_, _>>>()?,
             behaviors: list
                 .object("BehaviorIdx")
-                .map(|obj| -> Result<IndexMap<Name, ParameterList>> {
-                    obj.iter()
-                        .map(|(k, v)| -> Result<(Name, ParameterList)> {
-                            Ok((
-                                *k,
-                                behavior_list
-                                    .lists
-                                    .0
-                                    .values()
-                                    .nth(v.as_int()? as usize)
+                .map(|behaviors| -> Result<_> {
+                    Ok(BehaviorMap(
+                        behaviors
+                            .iter()
+                            .map(|(k, v)| -> Result<(u32, String32)> {
+                                let idx = v.as_int().context("Behavior index not an integer")?;
+                                let behavior = behavior_list
+                                    .list(&format!("Behavior_{}", idx))
                                     .ok_or_else(|| {
                                         UKError::MissingAampKeyD(format!(
-                                            "AI program missing behavior at {:?}",
-                                            v
+                                            "AI program missing behavior at index {}",
+                                            idx
                                         ))
-                                    })?
-                                    .clone(),
-                            ))
-                        })
-                        .collect()
+                                    })?;
+                                let def = behavior.object("Def").ok_or(UKError::MissingAampKey(
+                                    "AI program behavior missing Def object",
+                                    Some(behavior.into()),
+                                ))?;
+                                let name = def
+                                    .get("ClassName")
+                                    .ok_or(UKError::MissingAampKey(
+                                        "AI program behavior def missing ClassName",
+                                        Some(def.into()),
+                                    ))?
+                                    .as_string32()?;
+                                Ok((k.hash(), *name))
+                            })
+                            .collect::<Result<_>>()?,
+                    ))
                 })
                 .transpose()?,
         })
@@ -443,26 +459,35 @@ mod parse {
             params: list.object("SInst").cloned(),
             behaviors: list
                 .object("BehaviorIdx")
-                .map(|obj| -> Result<IndexMap<Name, ParameterList>> {
-                    obj.iter()
-                        .map(|(k, v)| -> Result<(Name, ParameterList)> {
-                            Ok((
-                                *k,
-                                behavior_list
-                                    .lists
-                                    .0
-                                    .values()
-                                    .nth(v.as_int()? as usize)
+                .map(|behaviors| -> Result<_> {
+                    Ok(BehaviorMap(
+                        behaviors
+                            .iter()
+                            .map(|(k, v)| -> Result<(u32, String32)> {
+                                let idx = v.as_int().context("Behavior index not an integer")?;
+                                let behavior = behavior_list
+                                    .list(&format!("Behavior_{}", idx))
                                     .ok_or_else(|| {
                                         UKError::MissingAampKeyD(format!(
-                                            "AI program missing behavior at {:?}",
-                                            v
+                                            "AI program missing behavior at index {}",
+                                            idx
                                         ))
-                                    })?
-                                    .clone(),
-                            ))
-                        })
-                        .collect()
+                                    })?;
+                                let def = behavior.object("Def").ok_or(UKError::MissingAampKey(
+                                    "AI program behavior missing Def object",
+                                    Some(behavior.into()),
+                                ))?;
+                                let name = def
+                                    .get("ClassName")
+                                    .ok_or(UKError::MissingAampKey(
+                                        "AI program behavior def missing ClassName",
+                                        Some(def.into()),
+                                    ))?
+                                    .as_string32()?;
+                                Ok((k.hash(), *name))
+                            })
+                            .collect::<Result<_>>()?,
+                    ))
                 })
                 .transpose()?,
         })
@@ -490,8 +515,12 @@ mod parse {
                 "AI program missing Query list",
                 None,
             ))?;
+            let behavior_list = pio.list("Behavior").ok_or(UKError::MissingAampKey(
+                "AI program missing Behavior list",
+                None,
+            ))?;
             Ok(Self {
-                tree:    {
+                tree: {
                     let child_indexes: HashSet<usize> = ai_list
                         .lists
                         .0
@@ -539,7 +568,7 @@ mod parse {
                         })
                         .collect::<Result<IndexMap<_, _>>>()?
                 },
-                demos:   pio
+                demos: pio
                     .object("DemoAIActionIdx")
                     .ok_or(UKError::MissingAampKey(
                         "AI program missing Demo action indexes",
@@ -613,6 +642,30 @@ mod parse {
                         ))
                     })
                     .collect::<Result<IndexMap<_, _>>>()?,
+                behaviors: behavior_list
+                    .lists()
+                    .0
+                    .values()
+                    .map(|behavior| -> Result<(String32, ParameterList)> {
+                        let name = behavior
+                            .object("Def")
+                            .ok_or_else(|| {
+                                UKError::MissingAampKey(
+                                    "Behavior missing Def object",
+                                    Some(behavior.clone().into()),
+                                )
+                            })?
+                            .get("ClassName")
+                            .ok_or_else(|| {
+                                UKError::MissingAampKey(
+                                    "Behavior def missing ClassName",
+                                    Some(behavior.clone().into()),
+                                )
+                            })?
+                            .as_string32()?;
+                        Ok((*name, behavior.clone()))
+                    })
+                    .collect::<Result<_>>()?,
             })
         }
     }
@@ -665,7 +718,7 @@ mod write {
         }
 
         fn ai_to_plist(&mut self, ai: AIEntry) -> usize {
-            let name = ai.full_name();
+            let name = ai.id();
             if let Some(idx) = self.done_ais.get(&name) {
                 return *idx;
             }
@@ -688,22 +741,24 @@ mod write {
             }
             list.objects_mut().insert("ChildIdx", children);
             if let Some(behaviors) = ai.behaviors {
-                let mut behavior_indexes = ParameterObject::new();
-                for (key, behavior) in behaviors {
-                    behavior_indexes.0.insert(
-                        key,
-                        Parameter::Int(if let Some(pos) =
-                            self.behaviors.iter().position(|p| p == &behavior)
-                        {
-                            pos
-                        } else {
-                            let idx = self.behaviors.len();
-                            self.behaviors.push(behavior.clone());
-                            idx
-                        } as i32),
-                    );
-                }
-                list.objects_mut().insert("BehaviorIdx", behavior_indexes);
+                let behavior_idxs = behaviors
+                    .0
+                    .into_iter()
+                    .map(|(k, v)| -> (Name, Parameter) {
+                        (
+                            k.into(),
+                            Parameter::Int(
+                                self.aiprog
+                                    .behaviors
+                                    .keys()
+                                    .position(|k| *k == v)
+                                    .expect("Behavior index missing")
+                                    as i32,
+                            ),
+                        )
+                    })
+                    .collect();
+                list.objects_mut().insert("BehaviorIdx", behavior_idxs);
             };
             self.done_ais.insert(name, idx);
             std::mem::swap(&mut list, self.ais.get_mut(idx).unwrap());
@@ -711,7 +766,7 @@ mod write {
         }
 
         fn action_to_plist(&mut self, action: ActionEntry) -> usize {
-            let name = action.full_name();
+            let name = action.id();
             if let Some(idx) = self.done_actions.get(&name) {
                 return *idx;
             }
@@ -721,22 +776,24 @@ mod write {
                 list.objects_mut().insert("SInst", params);
             }
             if let Some(behaviors) = action.behaviors {
-                let mut behavior_indexes = ParameterObject::new();
-                for (key, behavior) in behaviors {
-                    behavior_indexes.0.insert(
-                        key,
-                        Parameter::Int(if let Some(pos) =
-                            self.behaviors.iter().position(|p| p == &behavior)
-                        {
-                            pos
-                        } else {
-                            let idx = self.behaviors.len();
-                            self.behaviors.push(behavior.clone());
-                            idx
-                        } as i32),
-                    );
-                }
-                list.objects_mut().insert("BehaviorIdx", behavior_indexes);
+                let behavior_idxs = behaviors
+                    .0
+                    .into_iter()
+                    .map(|(k, v)| -> (Name, Parameter) {
+                        (
+                            k.into(),
+                            Parameter::Int(
+                                self.aiprog
+                                    .behaviors
+                                    .keys()
+                                    .position(|k| *k == v)
+                                    .expect("Behavior index missing")
+                                    as i32,
+                            ),
+                        )
+                    })
+                    .collect();
+                list.objects_mut().insert("BehaviorIdx", behavior_idxs);
             };
             let idx = self.actions.len();
             self.done_actions.insert(name, idx);
@@ -750,6 +807,7 @@ mod write {
                 .insert("DemoAIActionIdx", ParameterObject::new());
             let mut tree: IndexMap<String, AIEntry> = IndexMap::default();
             std::mem::swap(&mut tree, &mut self.aiprog.tree);
+            self.behaviors = self.aiprog.behaviors.values().cloned().collect();
             let roots: Vec<AIEntry> = tree.into_iter().map(|(_, root)| root).collect();
             for root in roots {
                 self.ai_to_plist(root);
@@ -896,6 +954,7 @@ mod tests {
         .unwrap();
         let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
         let _diff = aiprog.diff(&aiprog2);
+        dbg!(_diff);
     }
 
     #[test]

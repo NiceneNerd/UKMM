@@ -18,7 +18,7 @@ pub static LOGGER: Lazy<Logger> = Lazy::new(|| {
 
 pub fn init() {
     log::set_logger(LOGGER.deref()).unwrap();
-    let level = log::max_level();
+    let level = LOGGER.inner.filter();
     log::set_max_level(level.max(log::LevelFilter::Debug));
 }
 
@@ -65,7 +65,11 @@ impl Logger {
 
     pub fn flush_queue(&self) {
         if let Some(sender) = self.sender.get() {
-            for entry in self.queue.lock().drain(..) {
+            let mut queue = self.queue.lock();
+            if queue.len() > 1000 {
+                queue.drain(..500).count();
+            }
+            for entry in queue.drain(..) {
                 sender.send(Message::Log(entry)).unwrap();
             }
         }

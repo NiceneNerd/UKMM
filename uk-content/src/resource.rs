@@ -4,7 +4,6 @@ use anyhow::{Context, Result};
 use join_str::jstr;
 use roead::{aamp::ParameterIO, byml::Byml, sarc::Sarc};
 use serde::{Deserialize, Serialize};
-use uk_ui::editor::EditableValue;
 use uk_ui_derive::Editable;
 
 pub use crate::{

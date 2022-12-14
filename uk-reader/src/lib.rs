@@ -48,6 +48,7 @@ impl From<ROMError> for uk_content::UKError {
 
 static NEST_MAP: &str = include_str!("../data/nest_map.json");
 type ResourceCache = Cache<String, Arc<ResourceData>>;
+type SarcCache = Cache<String, Arc<Sarc<'static>>>;
 const CACHE_SIZE: usize = 10000;
 pub type Result<T> = std::result::Result<T, ROMError>;
 
@@ -65,7 +66,7 @@ pub trait ResourceLoader: std::fmt::Debug + Send + Sync {
     fn host_path(&self) -> &Path;
 }
 
-fn construct_cache() -> ResourceCache {
+fn construct_res_cache() -> ResourceCache {
     log::debug!(
         "Initializing resource cache (up to {} resources)",
         CACHE_SIZE
@@ -77,12 +78,18 @@ fn construct_cache() -> ResourceCache {
         .build()
 }
 
+fn construct_sarc_cache() -> SarcCache {
+    Cache::new(100)
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ResourceReader {
     bin_type: BinType,
-    source:   Box<dyn ResourceLoader>,
-    #[serde(skip, default = "construct_cache")]
-    cache:    ResourceCache,
+    source: Box<dyn ResourceLoader>,
+    #[serde(skip, default = "construct_res_cache")]
+    cache: ResourceCache,
+    #[serde(skip, default = "construct_sarc_cache")]
+    sarc_cache: SarcCache,
     #[serde(skip)]
     nest_map: Arc<RwLock<HashMap<String, Arc<str>>>>,
 }
@@ -114,8 +121,9 @@ impl ResourceReader {
 
     pub fn from_zarchive(archive_path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
-            source:   Box::new(ZArchive::new(archive_path)?),
-            cache:    construct_cache(),
+            source: Box::new(ZArchive::new(archive_path)?),
+            cache: construct_res_cache(),
+            sarc_cache: construct_sarc_cache(),
             bin_type: BinType::Nintendo,
             nest_map: Default::default(),
         })
@@ -127,8 +135,9 @@ impl ResourceReader {
         aoc_dir: Option<impl AsRef<Path>>,
     ) -> Result<Self> {
         Ok(Self {
-            source:   Box::new(Unpacked::new(content_dir, update_dir, aoc_dir, true)?),
-            cache:    construct_cache(),
+            source: Box::new(Unpacked::new(content_dir, update_dir, aoc_dir, true)?),
+            cache: construct_res_cache(),
+            sarc_cache: construct_sarc_cache(),
             bin_type: BinType::Nintendo,
             nest_map: Default::default(),
         })
@@ -154,8 +163,9 @@ impl ResourceReader {
             None
         };
         Ok(Self {
-            source:   Box::new(Unpacked::new(content_dir, None::<PathBuf>, aoc_dir, false)?),
-            cache:    ResourceCache::new(500),
+            source: Box::new(Unpacked::new(content_dir, None::<PathBuf>, aoc_dir, false)?),
+            cache: construct_res_cache(),
+            sarc_cache: construct_sarc_cache(),
             bin_type: BinType::Nintendo,
             nest_map: Default::default(),
         })
@@ -175,6 +185,48 @@ impl ResourceReader {
     pub fn get_data(&self, path: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
         let canon = canonicalize(path.as_ref());
         Ok(self.get_or_add_resource(path, canon)?)
+    }
+
+    fn get_from_sarc(&self, canon: &str, nest_path: &str) -> uk_content::Result<Arc<ResourceData>> {
+        let parts = nest_path.split("//").collect::<Vec<_>>();
+        let root = self
+            .sarc_cache
+            .try_get_with(
+                canonicalize(parts[0]),
+                || -> anyhow::Result<Arc<Sarc<'static>>> {
+                    let sarc = self.source().get_data(parts[0].as_ref())?;
+                    Ok(Arc::new(Sarc::new(sarc)?))
+                },
+            )
+            .map_err(|e| Arc::try_unwrap(e).expect("Eh"))?;
+        let nested_parent = if parts.len() == 3 {
+            let root = root.clone();
+            Some(
+                self.sarc_cache
+                    .try_get_with(canonicalize(parts[1]), || -> uk_content::Result<_> {
+                        let sarc = Sarc::new(
+                            root.get_data(parts[1])?
+                                .context("Couldn't get nested SARC")?
+                                .to_vec(),
+                        )?;
+                        Ok(Arc::new(sarc))
+                    })
+                    .map_err(|e| Arc::try_unwrap(e).expect("Eh"))?,
+            )
+        } else {
+            None
+        };
+        let parent = nested_parent.as_ref().unwrap_or(&root);
+        let data = roead::yaz0::decompress_if(
+            parent
+                .get_data(canon)?
+                .context("COuld not get nested file")?,
+        );
+        let resource = ResourceData::from_binary(canon, data.as_ref())?;
+        if is_mergeable_sarc(canon, data.as_ref()) {
+            self.process_sarc(Sarc::new(data.as_ref())?, parts[2])?;
+        }
+        Ok(self.cache.get_with(canon.into(), || Arc::new(resource)))
     }
 
     fn get_or_add_resource(
@@ -221,19 +273,12 @@ impl ResourceReader {
                         self.nest_map.write().extend(stock)
                     }
                 });
-                let parent = self.nest_map.read().get(&canon).cloned();
-                log::trace!("{canon} has parent? {}", parent.is_some());
-                match parent {
+                let nest_path = self.nest_map.read().get(&canon).cloned();
+                log::trace!("{canon} has parent? {}", nest_path.is_some());
+                match nest_path {
                     Some(parent) => {
-                        log::trace!("Parent found at {parent}");
-                        let parent_canon = canonicalize(parent.as_ref());
-                        dbg!(&parent_canon);
-                        dbg!(&parent);
-                        self.get_or_add_resource(parent.as_ref(), parent_canon)
-                            .with_context(|| {
-                                jstr!("Failed to get parent {&parent} for file {&canon}")
-                            })?;
-                        Ok(self.cache.get(&canon).ok_or_else(|| {
+                        log::trace!("Full path found at {parent}");
+                        Ok(self.get_from_sarc(&canon, &parent).with_context(|| {
                             log::warn!("Failed to get {canon}");
                             ROMError::FileNotFound(
                                 path.as_ref().to_string_lossy().into(),
@@ -267,9 +312,9 @@ impl ResourceReader {
                 }
                 self.cache.insert(canon.clone(), Arc::new(resource));
             }
-            if !self.nest_map.read().contains_key(&canon) {
-                self.nest_map.write().insert(canon, sarc_path.into());
-            }
+            // if !self.nest_map.read().contains_key(&canon) {
+            //     self.nest_map.write().insert(canon, sarc_path.into());
+            // }
         }
         Ok(())
     }

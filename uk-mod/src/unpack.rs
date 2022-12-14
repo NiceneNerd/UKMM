@@ -413,12 +413,12 @@ impl ModUnpacker {
             (self.mods.len() as f32 / 2.).ceil() as usize,
         );
         match self.dump.get_data(file).or_else(|e| {
-            dbg!(e);
+            log::trace!("{e}");
             self.dump.get_resource(file)
         }) {
             Ok(ref_res) => versions.push_back(ref_res),
             Err(e) => {
-                dbg!(e);
+                log::trace!("{e}");
             }
         }
         for (data, mod_) in self.mods.iter().filter_map(|mod_| {
@@ -548,9 +548,14 @@ mod tests {
 
 #[cfg(test)]
 mod bonus {
-    use std::{cell::RefCell, ops::Deref, path::Path, rc::Rc, sync::Arc};
+    use std::{
+        cell::RefCell,
+        ops::Deref,
+        path::Path,
+        rc::Rc,
+        sync::{Arc, Mutex},
+    };
 
-    use parking_lot::Mutex;
     use path_slash::PathExt;
     use rayon::prelude::*;
     use roead::sarc::Sarc;
@@ -593,7 +598,7 @@ mod bonus {
                         let sarc = Sarc::new(file.data).unwrap();
                         get_sarc_paths(&sarc, &full_path, map.clone());
                     }
-                    map.lock().insert(
+                    map.lock().unwrap().insert(
                         if path.starts_with("Aoc") {
                             (String::from("Aoc/0010/") + &name.replace(".s", ".")).into()
                         } else {
@@ -652,20 +657,19 @@ mod bonus {
 
         fs_err::write(
             "nest_map.json",
-            serde_json::to_string_pretty(&(Arc::try_unwrap(nest_map).unwrap().into_inner()))
-                .unwrap(),
+            serde_json::to_string_pretty(
+                &(Arc::try_unwrap(nest_map).unwrap().into_inner().unwrap()),
+            )
+            .unwrap(),
         )
         .unwrap();
     }
 
     #[test]
     fn dump_cache() {
-        let base =
-            Path::new("/media/mrm/Data/Games/Cemu/mlc01/usr/title/00050000/101C9400/content");
-        let update =
-            Path::new("/media/mrm/Data/Games/Cemu/mlc01/usr/title/0005000E/101C9400/content");
-        let dlc =
-            Path::new("/media/mrm/Data/Games/Cemu/mlc01/usr/title/0005000C/101C9400/content/0010");
+        let base = Path::new(r"D:\Cemu\mlc01\usr\title\00050000\101C9400\content");
+        let update = Path::new(r"D:\Cemu\mlc01\usr\title\0005000E\101C9400\content");
+        let dlc = Path::new(r"D:\Cemu\mlc01\usr\title\0005000C\101C9400\content\0010");
 
         let res_map = Arc::new(Mutex::new(HashMap::<String, MergeableResource>::default()));
 
@@ -675,14 +679,38 @@ mod bonus {
             map: Arc<Mutex<HashMap<String, MergeableResource>>>,
         ) {
             sarc.files().for_each(|file| {
-                if let Some(name) = file.name &&
-                    let Some(res) = MergeableResource::from_binary(name.as_ref(), file.data).unwrap()
-                {
-                    map.lock().insert(if path.starts_with("Aoc") {
-                        (String::from("Aoc/0010/") + &name.replace(".s", ".")).into()
-                    } else {
-                        name.replace(".s", ".").into()
-                    }, res);
+                if let Some(name) = file.name {
+                    if let Some(res) =
+                        MergeableResource::from_binary(name.as_ref(), file.data).unwrap()
+                    {
+                        let canon = if path.starts_with("Aoc") {
+                            (String::from("Aoc/0010/") + &name.replace(".s", ".")).into()
+                        } else {
+                            name.replace(".s", ".").into()
+                        };
+                        let mut map = map.lock().unwrap();
+                        map.insert(canon, res);
+                    } else if file.data.len() > 0x40
+                        && file.is_sarc()
+                        && !matches!(
+                            Path::new(name)
+                                .extension()
+                                .unwrap_or_default()
+                                .to_str()
+                                .unwrap_or_default(),
+                            "sblarc"
+                                | "ssarc"
+                                | "sstera"
+                                | "sstats"
+                                | "sarc"
+                                | "stera"
+                                | "stats"
+                                | "blarc"
+                        )
+                    {
+                        let sarc = Sarc::new(file.data).unwrap();
+                        process_sarc_resources(&sarc, path, map.clone())
+                    }
                 }
             });
         }
@@ -690,7 +718,8 @@ mod bonus {
         for root in [base, update] {
             jwalk::WalkDir::new(root)
                 .into_iter()
-                .par_bridge()
+                .collect::<Vec<_>>()
+                .into_par_iter()
                 .filter_map(|e| e.ok().map(|e| e.path()))
                 .filter(|p| {
                     let ext = p
@@ -712,7 +741,8 @@ mod bonus {
         }
         jwalk::WalkDir::new(dlc)
             .into_iter()
-            .par_bridge()
+            .collect::<Vec<_>>()
+            .into_par_iter()
             .filter_map(|e| e.ok().map(|e| e.path()))
             .filter(|p| {
                 let ext = p
@@ -735,7 +765,7 @@ mod bonus {
         fs_err::write(
             "dump.bin",
             zstd::encode_all(
-                minicbor_ser::to_vec(res_map.lock().deref())
+                minicbor_ser::to_vec(&Arc::try_unwrap(res_map).unwrap().into_inner().unwrap())
                     .unwrap()
                     .as_slice(),
                 0,
