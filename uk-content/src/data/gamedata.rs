@@ -312,7 +312,7 @@ impl GameDataPack {
                             .get("DataName")
                             .ok_or(UKError::MissingBymlKey("Game data entry missing DataName"))?
                             .as_string()?;
-                        let parts = name.split('_').collect::<Vec<_>>();
+                        let mut parts = name.split('_');
                         let hash_value = item
                             .as_hash()?
                             .get("HashValue")
@@ -320,7 +320,9 @@ impl GameDataPack {
                                 "bgdata file entry missing HashValue",
                             ))?
                             .as_i32()? as u32;
-                        if Self::STAGES.contains(&parts[0]) && !name.contains("HiddenKorok") {
+                        if Self::STAGES.contains(&parts.next().unwrap_or(""))
+                            && !name.contains("HiddenKorok")
+                        {
                             revival_bool_data.insert(hash_value, (&item).try_into()?);
                         } else {
                             bool_data.insert(hash_value, (&item).try_into()?);
@@ -335,7 +337,7 @@ impl GameDataPack {
                             .get("DataName")
                             .ok_or(UKError::MissingBymlKey("Game data entry missing DataName"))?
                             .as_string()?;
-                        let parts = name.split('_').collect::<Vec<_>>();
+                        let mut parts = name.split('_');
                         let hash_value = item
                             .as_hash()?
                             .get("HashValue")
@@ -343,7 +345,7 @@ impl GameDataPack {
                                 "bgdata file entry missing HashValue",
                             ))?
                             .as_i32()? as u32;
-                        if Self::STAGES.contains(&parts[0]) {
+                        if Self::STAGES.contains(&parts.next().unwrap_or("")) {
                             revival_s32_data.insert(hash_value, (&item).try_into()?);
                         } else {
                             s32_data.insert(hash_value, (&item).try_into()?);
