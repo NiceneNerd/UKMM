@@ -416,7 +416,7 @@ impl<'a> Parser<'a> {
                     .0
                     .values()
                     .enumerate()
-                    .map(|(i, v)| ((i + self.action_offset, v, Category::Action))),
+                    .map(|(i, v)| (i + self.action_offset, v, Category::Action)),
             )
             .filter_map(|(i, list, category)| {
                 (!children.contains(&i)).then(|| -> Result<(String, AIEntry)> {

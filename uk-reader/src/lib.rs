@@ -198,7 +198,7 @@ impl ResourceReader {
                     Ok(Arc::new(Sarc::new(sarc)?))
                 },
             )
-            .map_err(|e| Arc::try_unwrap(e).expect("Eh"))?;
+            .map_err(|e| Arc::try_unwrap(e).unwrap_or_else(|e| anyhow::format_err!("{e}")))?;
         let nested_parent = if parts.len() == 3 {
             let root = root.clone();
             Some(
