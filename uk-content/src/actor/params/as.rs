@@ -22,6 +22,10 @@ pub struct ElementParams {
     file_name: Option<String64>,
     #[name = "Morph"]
     morph: Option<f32>,
+    #[name = "ResetMorph"]
+    reset_morph: Option<f32>,
+    #[name = "SequenceLoop"]
+    sequence_loop: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
