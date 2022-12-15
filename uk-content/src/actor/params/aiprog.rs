@@ -153,19 +153,19 @@ impl Mergeable for AIEntry {
                                 .into_iter()
                                 .map(|key| {
                                     if let Some(self_child) = self_children.get(key)
-                            && let Some(diff_child) = diff_children.get(key)
-                        {
-                            (*key, self_child.merge(diff_child))
-                        } else {
-                            (
-                                *key,
-                                self_children
-                                    .get(key)
-                                    .or_else(|| diff_children.get(key))
-                                    .cloned()
-                                    .expect("This key has to exist, nutcase")
-                            )
-                        }
+                                        && let Some(diff_child) = diff_children.get(key)
+                                    {
+                                        (*key, self_child.merge(diff_child))
+                                    } else {
+                                        (
+                                            *key,
+                                            self_children
+                                                .get(key)
+                                                .or_else(|| diff_children.get(key))
+                                                .cloned()
+                                                .expect("This key has to exist, nutcase")
+                                        )
+                                    }
                                 })
                                 .collect()
                         })
@@ -409,9 +409,18 @@ impl<'a> Parser<'a> {
             .0
             .values()
             .enumerate()
-            .filter_map(|(i, list)| {
+            .map(|(i, v)| (i, v, Category::AI))
+            .chain(
+                self.actions
+                    .lists
+                    .0
+                    .values()
+                    .enumerate()
+                    .map(|(i, v)| ((i + self.action_offset, v, Category::Action))),
+            )
+            .filter_map(|(i, list, category)| {
                 (!children.contains(&i)).then(|| -> Result<(String, AIEntry)> {
-                    let entry = self.entry_from_list(list, Category::AI)?;
+                    let entry = self.entry_from_list(list, category)?;
                     Ok((
                         entry
                             .def
@@ -452,22 +461,42 @@ struct Writer {
 }
 
 impl Writer {
-    fn count_ais(entry: &AIEntry) -> usize {
+    fn count_ais<'list, 'entry: 'list>(
+        entry: &'entry AIEntry,
+        checked: &'list mut FxHashSet<&'entry AIDef>,
+    ) -> usize {
+        let self_count = if checked.contains(&entry.def) {
+            0
+        } else {
+            checked.insert(&entry.def);
+            1
+        };
         match entry.category {
             Category::AI => {
-                1 + entry
-                    .children
-                    .as_ref()
-                    .map(|children| children.values().map(Self::count_ais).sum())
-                    .unwrap_or(0)
+                self_count
+                    + entry
+                        .children
+                        .as_ref()
+                        .map(|children| {
+                            children
+                                .values()
+                                .map(|entry| Self::count_ais(entry, checked))
+                                .sum()
+                        })
+                        .unwrap_or(0)
             }
             _ => 0,
         }
     }
 
     fn new(aiprog: AIProgram) -> Self {
+        let mut checked: FxHashSet<&AIDef> = Default::default();
         Self {
-            action_offset: aiprog.roots.values().map(Self::count_ais).sum(),
+            action_offset: aiprog
+                .roots
+                .values()
+                .map(|root| Self::count_ais(root, &mut checked))
+                .sum(),
             aiprog,
             ..Default::default()
         }
@@ -480,7 +509,7 @@ impl Writer {
             *index
         } else {
             let mut list = ParameterList::new();
-            list.set_object("Def", entry.def.into());
+            list.set_object("Def", entry.def.clone().into());
             if let Some(children) = entry.children {
                 list.set_object("ChildIdx", children.into_iter().map(|(k, entry)| {
                     (k, Parameter::Int(self.entry_to_list(entry) as i32))
@@ -498,11 +527,13 @@ impl Writer {
                 Category::AI => {
                     let index = self.ais.len();
                     self.ais.insert(format!("AI_{}", index), list);
+                    self.finished.insert(entry.def, index);
                     index
                 },
                 Category::Action => {
                     let index = self.action_offset + self.actions.len();
                     self.actions.insert(format!("Action_{}", self.actions.len()), list);
+                    self.finished.insert(entry.def, index);
                     index
                 },
                 Category::Behavior => {
@@ -582,7 +613,7 @@ impl Mergeable for AIProgram {
             behaviors: other
                 .behaviors
                 .iter()
-                .filter_map(|(k, v)| (Some(v) != self.behaviors.get(k)).then_some((*k, *v)))
+                .filter_map(|(k, v)| (Some(v) != self.behaviors.get(k)).then(|| (*k, v.clone())))
                 .collect(),
             queries:   other
                 .queries
@@ -610,7 +641,97 @@ impl Mergeable for AIProgram {
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        todo!()
+        Self {
+            demos:     {
+                let all_keys: HashSet<_> = self.demos.keys().chain(diff.demos.keys()).collect();
+                all_keys
+                    .into_iter()
+                    .map(|key| {
+                        if let Some(self_demo) = self.demos.get(key)
+                            && let Some(diff_demo) = diff.demos.get(key)
+                        {
+                            (*key, self_demo.merge(diff_demo))
+                        } else {
+                            (
+                                *key,
+                                self.demos
+                                    .get(key)
+                                    .or_else(|| diff.demos.get(key))
+                                    .cloned()
+                                    .expect("This key has to exist, nutcase")
+                            )
+                        }
+                    })
+                    .collect()
+            },
+            behaviors: {
+                let all_keys: HashSet<_> =
+                    self.behaviors.keys().chain(diff.behaviors.keys()).collect();
+                all_keys
+                    .into_iter()
+                    .map(|key| {
+                        if let Some(self_behavior) = self.behaviors.get(key)
+                            && let Some(diff_behavior) = diff.behaviors.get(key)
+                        {
+                            (*key, self_behavior.merge(diff_behavior))
+                        } else {
+                            (
+                                *key,
+                                self.behaviors
+                                    .get(key)
+                                    .or_else(|| diff.behaviors.get(key))
+                                    .cloned()
+                                    .expect("This key has to exist, nutcase")
+                            )
+                        }
+                    })
+                    .collect()
+            },
+            queries:   {
+                let all_keys: HashSet<_> = self.queries.keys().chain(diff.queries.keys()).collect();
+                all_keys
+                    .into_iter()
+                    .map(|key| {
+                        if let Some(self_query) = self.queries.get(key)
+                            && let Some(diff_query) = diff.queries.get(key)
+                        {
+                            (*key, self_query.merge(diff_query))
+                        } else {
+                            (
+                                *key,
+                                self.queries
+                                    .get(key)
+                                    .or_else(|| diff.queries.get(key))
+                                    .cloned()
+                                    .expect("This key has to exist, nutcase")
+                            )
+                        }
+                    })
+                    .collect()
+            },
+            roots:     {
+                let all_keys: HashSet<_> = self.roots.keys().chain(diff.roots.keys()).collect();
+                all_keys
+                    .into_iter()
+                    .map(|key| {
+                        if let Some(self_root) = self.roots.get(key)
+                            && let Some(diff_root) = diff.roots.get(key)
+                        {
+                            (key.clone(), self_root.merge(diff_root))
+                        } else {
+                            (
+                                key.clone(),
+                                self.roots
+                                    .get(key)
+                                    .or_else(|| diff.roots.get(key))
+                                    .cloned()
+                                    .expect("This key has to exist, nutcase")
+                            )
+                        }
+                    })
+                    .collect()
+            },
+        }
     }
 }
 
