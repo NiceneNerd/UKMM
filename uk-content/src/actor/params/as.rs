@@ -51,10 +51,11 @@ impl Element {
                     children
                         .0
                         .values()
-                        .map(|idx| -> Result<(usize, Element)> {
+                        .enumerate()
+                        .map(|(pos, idx)| -> Result<(usize, Element)> {
                             let idx = idx.as_int()? as usize;
                             Ok((
-                                idx,
+                                pos,
                                 Element::try_from_plist(
                                     element_list.lists.0.values().nth(idx).ok_or_else(|| {
                                         UKError::MissingAampKeyD(jstr!(
@@ -139,14 +140,18 @@ impl Mergeable for Element {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
-pub struct AS(pub Option<Element>);
+pub struct AS {
+    pub root: Option<Element>,
+    pub common_params: Option<ParameterObject>,
+}
 
 impl TryFrom<&ParameterIO> for AS {
     type Error = UKError;
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
-        Ok(Self(
-            pio.list("Elements")
+        Ok(Self {
+            root: pio
+                .list("Elements")
                 .ok_or(UKError::MissingAampKey("AS missing elements list", None))?
                 .lists
                 .0
@@ -154,109 +159,191 @@ impl TryFrom<&ParameterIO> for AS {
                 .next()
                 .map(|list| Element::try_from_plist(list, pio))
                 .transpose()?,
-        ))
+            common_params: pio.object("CommonParams").cloned(),
+        })
     }
 }
 
-#[derive(Debug)]
-struct ParameterIOBuilder {
-    as_val: AS,
-    done:   Vec<Element>,
-}
+// #[derive(Debug)]
+// struct ParameterIOBuilder {
+//     as_val: AS,
+//     done:   Vec<Element>,
+// }
 
-impl ParameterIOBuilder {
-    fn new(val: AS) -> Self {
-        Self {
-            as_val: val,
-            done:   Vec::new(),
-        }
-    }
+// impl ParameterIOBuilder {
+//     fn new(val: AS) -> Self {
+//         Self {
+//             as_val: val,
+//             done:   Vec::new(),
+//         }
+//     }
 
-    fn add_element(&mut self, element: &Element, next: usize) -> (usize, Vec<ParameterList>) {
-        if let Some(idx) = self.done.iter().position(|e| e == element) {
-            (idx, vec![])
-        } else {
-            let idx = next;
-            let mut child_lists: Vec<ParameterList> =
-                Vec::with_capacity(element.children.as_ref().map(|cl| cl.len()).unwrap_or(1));
-            self.done.push(element.clone());
-            let list = ParameterList {
-                objects: [("Parameters", element.params.clone().into())]
-                    .into_iter()
-                    .chain(element.children.iter().map(|children| {
-                        (
-                            "Children",
-                            children
-                                .iter()
-                                .enumerate()
-                                .map(|(count, (_i, child))| {
-                                    let (index, child_list) =
-                                        self.add_element(child, idx + count + 1);
-                                    child_lists.extend(child_list);
-                                    (
-                                        jstr!("Child{&lexical::to_string(count)}"),
-                                        Parameter::Int(index as i32),
-                                    )
-                                })
-                                .collect(),
-                        )
-                    }))
-                    .collect(),
-                lists:   element
-                    .extend
-                    .iter()
-                    .map(|extend| ("Extend", extend.clone()))
-                    .collect(),
-            };
-            child_lists.insert(0, list);
-            (idx, child_lists)
-        }
-    }
+//     fn add_element(&mut self, element: &Element, next: usize) -> (usize, Vec<ParameterList>) {
+//         if let Some(idx) = self.done.iter().position(|e| e == element) {
+//             (idx, vec![])
+//         } else {
+//             let idx = next;
+//             let mut child_lists: Vec<ParameterList> =
+//                 Vec::with_capacity(element.children.as_ref().map(|cl| cl.len()).unwrap_or(1));
+//             self.done.push(element.clone());
+//             let list = ParameterList {
+//                 objects: [("Parameters", element.params.clone().into())]
+//                     .into_iter()
+//                     .chain(element.children.iter().map(|children| {
+//                         (
+//                             "Children",
+//                             children
+//                                 .iter()
+//                                 .map(|(i, child)| {
+//                                     let (index, child_list) = self.add_element(child, idx + i +
+// 1);                                     child_lists.extend(child_list);
+//                                     (
+//                                         jstr!("Child{&lexical::to_string(*i)}"),
+//                                         Parameter::Int(index as i32),
+//                                     )
+//                                 })
+//                                 .collect(),
+//                         )
+//                     }))
+//                     .collect(),
+//                 lists:   element
+//                     .extend
+//                     .iter()
+//                     .map(|extend| ("Extend", extend.clone()))
+//                     .collect(),
+//             };
+//             child_lists.insert(0, list);
+//             (idx, child_lists)
+//         }
+//     }
 
-    fn build(mut self) -> ParameterIO {
-        let root = std::mem::take(&mut self.as_val.0);
-        ParameterIO::new().with_list(
-            "Elements",
-            root.map(|element| {
-                let (_, elements) = self.add_element(&element, 0);
-                ParameterList {
-                    lists: elements
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, list)| (jstr!("Element{&lexical::to_string(i)}"), list))
-                        .collect(),
-                    ..Default::default()
-                }
-            })
-            .unwrap_or_default(),
-        )
-    }
-}
+//     fn build(mut self) -> ParameterIO {
+//         let as_val = std::mem::take(&mut self.as_val);
+//         ParameterIO::new()
+//             .with_list(
+//                 "Elements",
+//                 as_val
+//                     .root
+//                     .map(|element| {
+//                         let (_, elements) = self.add_element(&element, 0);
+//                         ParameterList {
+//                             lists: elements
+//                                 .into_iter()
+//                                 .enumerate()
+//                                 .map(|(i, list)| (jstr!("Element{&lexical::to_string(i)}"),
+// list))                                 .collect(),
+//                             ..Default::default()
+//                         }
+//                     })
+//                     .unwrap_or_default(),
+//             )
+//             .with_objects(
+//                 as_val
+//                     .common_params
+//                     .into_iter()
+//                     .map(|p| ("CommonParams", p)),
+//             )
+//     }
+// }
 
 impl From<AS> for ParameterIO {
     fn from(val: AS) -> Self {
-        ParameterIOBuilder::new(val).build()
+        fn count_elements(element: &Element) -> usize {
+            1 + element
+                .children
+                .as_ref()
+                .map(|children| children.values().map(count_elements).sum())
+                .unwrap_or(0)
+        }
+
+        fn add_element(element: Element, done: &mut Vec<(Element, ParameterList)>) -> usize {
+            if let Some(idx) = done.iter().position(|(e, _)| e == &element) {
+                idx
+            } else {
+                let index = done.len();
+                done.push((element.clone(), Default::default()));
+                let mut list = ParameterList::new();
+                list.set_object("Parameters", element.params.into());
+                if let Some(children) = element.children.as_ref() {
+                    list.set_object(
+                        "Children",
+                        children
+                            .iter()
+                            .map(|(i, child)| {
+                                (
+                                    jstr!("Child{&lexical::to_string(*i)}"),
+                                    Parameter::Int(add_element(child.clone(), done) as i32),
+                                )
+                            })
+                            .collect(),
+                    );
+                }
+                if let Some(extend) = element.extend.as_ref() {
+                    list.set_list("Extend", extend.clone());
+                }
+                done[index].1 = list;
+                index
+            }
+        }
+
+        let mut elements = Vec::with_capacity(val.root.as_ref().map(count_elements).unwrap_or(0));
+        if let Some(root) = val.root {
+            add_element(root, &mut elements);
+        }
+        ParameterIO::new()
+            .with_objects(val.common_params.into_iter().map(|p| ("CommonParams", p)))
+            .with_list(
+                "Elements",
+                ParameterList::new().with_lists(
+                    elements
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, (_, list))| (jstr!("Element{&lexical::to_string(i)}"), list)),
+                ),
+            )
     }
 }
 
 impl Mergeable for AS {
     fn diff(&self, other: &Self) -> Self {
-        if let Some(self_as) = self.0.as_ref() && let Some(other_as) = other.0.as_ref() {
-            if self_as == other_as {
-                Self(None)
-            } else {
-                Self(Some(self_as.diff(other_as)))
-            }
-        } else {
-            Self(other.0.clone())
+        Self {
+            root: other.root.as_ref().map(|other_root| {
+                self.root
+                    .as_ref()
+                    .map(|self_root| self_root.diff(other_root))
+                    .unwrap_or_else(|| other_root.clone())
+            }),
+            common_params: other.common_params.as_ref().map(|other_params| {
+                self.common_params
+                    .as_ref()
+                    .map(|self_params| util::diff_pobj(self_params, other_params))
+                    .unwrap_or_else(|| other_params.clone())
+            }),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        if let Some(self_as) = self.0.as_ref() && let Some(diff_as) = diff.0.as_ref() {
-            Self(Some(self_as.merge(diff_as)))
-        } else {
-            Self(diff.0.clone().or_else(|| self.0.clone()))
+        Self {
+            root: diff
+                .root
+                .as_ref()
+                .map(|diff_root| {
+                    self.root
+                        .as_ref()
+                        .map(|self_root| self_root.merge(diff_root))
+                        .unwrap_or_else(|| diff_root.clone())
+                })
+                .or_else(|| self.root.clone()),
+            common_params: diff
+                .common_params
+                .as_ref()
+                .map(|diff_params| {
+                    self.common_params
+                        .as_ref()
+                        .map(|self_params| util::merge_pobj(self_params, diff_params))
+                        .unwrap_or_else(|| diff_params.clone())
+                })
+                .or_else(|| self.common_params.clone()),
         }
     }
 }
