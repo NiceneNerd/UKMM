@@ -1332,6 +1332,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enumflags2"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e75d4cd21b95383444831539909fbb14b9dc3fdceb2a6f5d36577329a1f55ccb"
+dependencies = [
+ "enumflags2_derive",
+]
+
+[[package]]
+name = "enumflags2_derive"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f58dc3c5e468259f19f2d46304a6b28f1c3d034442e14b322d2b850e36f6d5ae"
+dependencies = [
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.105",
+]
+
+[[package]]
 name = "enumset"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1628,6 +1648,27 @@ dependencies = [
  "cmake",
  "libc",
  "pkg-config",
+]
+
+[[package]]
+name = "from_variants"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cf36180ca6f3c021e91b194e16b670ef5cbdd0cea48354ff6f5f83e3c2d1629"
+dependencies = [
+ "from_variants_impl",
+]
+
+[[package]]
+name = "from_variants_impl"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13abfd95d43eabb051a8d4b408ef92dfe6d8d4aa17651e5786d5c761e5e6e7ad"
+dependencies = [
+ "darling 0.13.4",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.105",
 ]
 
 [[package]]
@@ -2889,6 +2930,48 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
+name = "phf"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "928c6535de93548188ef63bb7c4036bd415cd8f36ad25af44b9789b2ee72a48c"
+dependencies = [
+ "phf_macros",
+ "phf_shared",
+]
+
+[[package]]
+name = "phf_generator"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1181c94580fa345f50f19d738aaa39c0ed30a600d95cb2d3e23f94266f14fbf"
+dependencies = [
+ "phf_shared",
+ "rand",
+]
+
+[[package]]
+name = "phf_macros"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92aacdc5f16768709a569e913f7451034034178b05bdc8acda226659a3dccc66"
+dependencies = [
+ "phf_generator",
+ "phf_shared",
+ "proc-macro2 1.0.47",
+ "quote 1.0.21",
+ "syn 1.0.105",
+]
+
+[[package]]
+name = "phf_shared"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1fb5f6f826b772a8d4c0394209441e7d37cbbb967ae9c7e0e8134365c9ee676"
+dependencies = [
+ "siphasher",
+]
+
+[[package]]
 name = "pico-args"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3270,6 +3353,30 @@ dependencies = [
 
 [[package]]
 name = "roead"
+version = "0.16.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0670032ff14b3ec0b32c0855360e58229c4b6e698817580c6b3b555a55697df4"
+dependencies = [
+ "almost",
+ "binrw",
+ "cxx",
+ "cxx-build",
+ "enumflags2",
+ "from_variants",
+ "indexmap",
+ "join_str",
+ "num-integer",
+ "once_cell",
+ "parking_lot",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "smartstring",
+ "thiserror",
+]
+
+[[package]]
+name = "roead"
 version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e87d257829c239e4feb64ee9a09207c9407a48d3ac12b719eb2c68e3ce226368"
@@ -3324,13 +3431,15 @@ dependencies = [
 
 [[package]]
 name = "rstb"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6327dd01f888376271da32535b0acaa4de10363ab60a56faa9b602c2e9b00a31"
+checksum = "49f785d6d4123b3aa255e93e713ff6106d96ab67147861bc7f869141e23f9f99"
 dependencies = [
  "crc 2.1.0",
  "lazy_static",
  "nom",
+ "phf",
+ "roead 0.16.5",
  "serde",
  "serde_json",
  "thiserror",
@@ -4104,7 +4213,7 @@ dependencies = [
  "minicbor-ser 0.2.0",
  "msyt",
  "once_cell",
- "roead",
+ "roead 0.18.3",
  "rstb",
  "rustc-hash",
  "serde",
@@ -4139,7 +4248,7 @@ dependencies = [
  "minicbor-ser 0.2.0",
  "rayon",
  "rfd",
- "roead",
+ "roead 0.18.3",
  "ron",
  "serde",
  "toml",
@@ -4168,7 +4277,7 @@ dependencies = [
  "parking_lot",
  "rayon",
  "remove_dir_all 0.7.0",
- "roead",
+ "roead 0.18.3",
  "rstb",
  "rustc-hash",
  "sanitise-file-name",
@@ -4207,7 +4316,7 @@ dependencies = [
  "path-slash",
  "piz",
  "rayon",
- "roead",
+ "roead 0.18.3",
  "rstb",
  "sanitise-file-name",
  "serde",
@@ -4236,7 +4345,7 @@ dependencies = [
  "moka",
  "once_cell",
  "parking_lot",
- "roead",
+ "roead 0.18.3",
  "serde",
  "serde_json",
  "smartstring",
@@ -4261,7 +4370,7 @@ dependencies = [
  "msyt",
  "once_cell",
  "rfd",
- "roead",
+ "roead 0.18.3",
  "rustc-hash",
  "serde_yaml 0.9.14",
  "smartstring",
