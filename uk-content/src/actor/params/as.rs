@@ -267,11 +267,21 @@ impl From<AS> for ParameterIO {
         impl Eq for ElementData<'_> {}
         impl PartialOrd for ElementData<'_> {
             fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-                Some(
-                    self.refs
-                        .cmp(&other.refs)
-                        .then_with(|| self.tree_len.cmp(&other.tree_len)),
-                )
+                Some(self.refs.cmp(&other.refs).then_with(|| {
+                    self.element
+                        .children
+                        .as_ref()
+                        .map(|c| c.len())
+                        .unwrap_or(0)
+                        .cmp(
+                            &other
+                                .element
+                                .children
+                                .as_ref()
+                                .map(|c| c.len())
+                                .unwrap_or(0),
+                        )
+                }))
             }
         }
         impl Ord for ElementData<'_> {
@@ -337,8 +347,8 @@ impl From<AS> for ParameterIO {
                         })
                         .sorted_unstable_by(|(_, _, d1), (_, _, d2)| d1.cmp(d2))
                     {
-                        if let Some(index) = data.index.get() {
-                            idx_map.insert(i, index);
+                        if let Some(done_index) = data.index.get() && done_index > index {
+                            idx_map.insert(i, done_index);
                         } else {
                             self.write_element(child, current);
                             data.index.set(Some(current));
@@ -354,6 +364,7 @@ impl From<AS> for ParameterIO {
                             .collect(),
                     );
                 }
+                assert!(!self.map.borrow().contains_key(&index));
                 self.map.borrow_mut().insert(index, list);
             }
 
