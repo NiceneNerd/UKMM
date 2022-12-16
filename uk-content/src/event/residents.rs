@@ -1,56 +1,59 @@
+use std::rc::Rc;
+
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
-    util::{bhash, DeleteMap},
+    util::{bhash, DeleteMap, DeleteSet},
     Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
-pub struct ResidentEvents(pub DeleteMap<String, String>);
+pub struct ResidentEvents(pub DeleteMap<String, DeleteSet<String>>);
 
 impl TryFrom<&Byml> for ResidentEvents {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        Ok(Self(
-            byml.as_array()?
-                .iter()
-                .map(|event| -> Result<(String, String)> {
-                    let event = event.as_hash()?;
-                    Ok((
-                        event
-                            .get("entry")
-                            .ok_or(UKError::MissingBymlKey(
-                                "Resident events entry missing entry name",
-                            ))?
-                            .as_string()?
-                            .clone(),
-                        event
-                            .get("file")
-                            .ok_or(UKError::MissingBymlKey(
-                                "Resident events entry missing file name",
-                            ))?
-                            .as_string()?
-                            .clone(),
-                    ))
-                })
-                .collect::<Result<_>>()?,
-        ))
+        let arr = byml.as_array()?;
+        Ok(Self(arr.iter().try_fold(
+            DeleteMap::<String, DeleteSet<String>>::with_capacity(arr.len()),
+            |mut events, event| -> Result<_> {
+                let event = event.as_hash()?;
+                let entry_name = event
+                    .get("entry")
+                    .ok_or(UKError::MissingBymlKey(
+                        "Resident events entry missing entry name",
+                    ))?
+                    .as_string()?
+                    .clone();
+                let file_name = event
+                    .get("file")
+                    .ok_or(UKError::MissingBymlKey(
+                        "Resident events entry missing file name",
+                    ))?
+                    .as_string()?
+                    .clone();
+                events.get_or_insert_default(entry_name).insert(file_name);
+                Ok(events)
+            },
+        )?))
     }
 }
 
 impl From<ResidentEvents> for Byml {
     fn from(val: ResidentEvents) -> Self {
         val.0
-            .into_iter()
-            .map(|(entry, file)| -> Byml {
-                bhash!(
-                    "entry" => Byml::String(entry),
-                    "file" => Byml::String(file)
-                )
+            .iter()
+            .flat_map(|(entry, files)| {
+                files.iter().map(|file| {
+                    bhash!(
+                        "entry" => Byml::String(entry.clone()),
+                        "file" => Byml::String(file.clone())
+                    )
+                })
             })
             .collect()
     }

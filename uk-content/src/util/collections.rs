@@ -219,6 +219,11 @@ impl<T: DeleteKey> DeleteSet<T> {
     }
 
     #[inline]
+    pub fn insert(&mut self, item: T) {
+        self.0.insert(item, false);
+    }
+
+    #[inline]
     pub fn contains(&self, item: impl Borrow<T>) -> bool {
         self.0.contains_key(item.borrow())
     }
