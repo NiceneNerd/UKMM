@@ -4209,6 +4209,7 @@ dependencies = [
  "itertools",
  "join_str",
  "lexical",
+ "lexical-core",
  "mimalloc",
  "minicbor-ser 0.2.0",
  "msyt",

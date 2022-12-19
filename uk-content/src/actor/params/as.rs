@@ -1,6 +1,4 @@
-use std::{
-    collections::BTreeMap,
-};
+use std::collections::BTreeMap;
 
 use itertools::Itertools;
 use join_str::jstr;
@@ -186,13 +184,22 @@ impl From<AS> for ParameterIO {
                 let mut list = ParameterList::new();
                 list.set_object("Parameters", element.params.into());
                 if let Some(children) = element.children.as_ref() {
+                    let mut buf = Vec::from(b"Child".as_slice());
+                    buf.reserve(u16::MAX as usize);
                     list.set_object(
                         "Children",
                         children
                             .iter()
                             .map(|(i, child)| {
                                 (
-                                    jstr!("Child{&lexical::to_string(*i)}"),
+                                    unsafe {
+                                        buf.set_len(u16::MAX as usize);
+                                        let len =
+                                            lexical_core::write_unchecked(*i as u16, &mut buf[5..])
+                                                .len();
+                                        buf.set_len(len + 5);
+                                        std::string::String::from_utf8_unchecked(buf.clone())
+                                    },
                                     Parameter::Int(add_element(child.clone(), done) as i32),
                                 )
                             })
