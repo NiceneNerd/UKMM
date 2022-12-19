@@ -1,5 +1,4 @@
 use std::{
-    cell::LazyCell,
     collections::BTreeSet,
     io::Write,
     path::{Path, PathBuf},
@@ -7,7 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use botw_utils::hashes::{get_hash_table, StockHashTable};
+use botw_utils::hashes::{StockHashTable};
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;

@@ -298,7 +298,7 @@ impl ResourceReader {
         }
     }
 
-    fn process_sarc(&self, sarc: roead::sarc::Sarc, sarc_path: &str) -> uk_content::Result<()> {
+    fn process_sarc(&self, sarc: roead::sarc::Sarc, _sarc_path: &str) -> uk_content::Result<()> {
         log::trace!("Resource is SARC, add contents to cache");
         for file in sarc.files() {
             let name = file.name().context("SARC file missing name")?.to_string();

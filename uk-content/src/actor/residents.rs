@@ -2,7 +2,7 @@ use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
-use crate::{prelude::*, resource::SortedDeleteMap, util::DeleteMap, Result, UKError};
+use crate::{prelude::*, resource::SortedDeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ResidentActorData {
