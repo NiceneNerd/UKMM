@@ -168,233 +168,61 @@ impl TryFrom<&ParameterIO> for AS {
     }
 }
 
-// #[derive(Debug)]
-// struct ParameterIOBuilder {
-//     as_val: AS,
-//     done:   Vec<Element>,
-// }
-
-// impl ParameterIOBuilder {
-//     fn new(val: AS) -> Self {
-//         Self {
-//             as_val: val,
-//             done:   Vec::new(),
-//         }
-//     }
-
-//     fn add_element(&mut self, element: &Element, next: usize) -> (usize, Vec<ParameterList>) {
-//         if let Some(idx) = self.done.iter().position(|e| e == element) {
-//             (idx, vec![])
-//         } else {
-//             let idx = next;
-//             let mut child_lists: Vec<ParameterList> =
-//                 Vec::with_capacity(element.children.as_ref().map(|cl| cl.len()).unwrap_or(1));
-//             self.done.push(element.clone());
-//             let list = ParameterList {
-//                 objects: [("Parameters", element.params.clone().into())]
-//                     .into_iter()
-//                     .chain(element.children.iter().map(|children| {
-//                         (
-//                             "Children",
-//                             children
-//                                 .iter()
-//                                 .map(|(i, child)| {
-//                                     let (index, child_list) = self.add_element(child, idx + i +
-// 1);                                     child_lists.extend(child_list);
-//                                     (
-//                                         jstr!("Child{&lexical::to_string(*i)}"),
-//                                         Parameter::Int(index as i32),
-//                                     )
-//                                 })
-//                                 .collect(),
-//                         )
-//                     }))
-//                     .collect(),
-//                 lists:   element
-//                     .extend
-//                     .iter()
-//                     .map(|extend| ("Extend", extend.clone()))
-//                     .collect(),
-//             };
-//             child_lists.insert(0, list);
-//             (idx, child_lists)
-//         }
-//     }
-
-//     fn build(mut self) -> ParameterIO {
-//         let as_val = std::mem::take(&mut self.as_val);
-//         ParameterIO::new()
-//             .with_list(
-//                 "Elements",
-//                 as_val
-//                     .root
-//                     .map(|element| {
-//                         let (_, elements) = self.add_element(&element, 0);
-//                         ParameterList {
-//                             lists: elements
-//                                 .into_iter()
-//                                 .enumerate()
-//                                 .map(|(i, list)| (jstr!("Element{&lexical::to_string(i)}"),
-// list))                                 .collect(),
-//                             ..Default::default()
-//                         }
-//                     })
-//                     .unwrap_or_default(),
-//             )
-//             .with_objects(
-//                 as_val
-//                     .common_params
-//                     .into_iter()
-//                     .map(|p| ("CommonParams", p)),
-//             )
-//     }
-// }
-
 impl From<AS> for ParameterIO {
     fn from(val: AS) -> Self {
-        #[derive(Debug)]
-        struct ElementData<'el> {
-            element:  &'el Element,
-            refs:     Cell<usize>,
-            tree_len: usize,
-            index:    Cell<Option<usize>>,
-        }
-        impl PartialEq for ElementData<'_> {
-            fn eq(&self, other: &Self) -> bool {
-                self.element.eq(other.element)
-            }
-        }
-        impl Eq for ElementData<'_> {}
-        impl PartialOrd for ElementData<'_> {
-            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-                Some(self.refs.cmp(&other.refs).then_with(|| {
-                    self.element
-                        .children
-                        .as_ref()
-                        .map(|c| c.len())
-                        .unwrap_or(0)
-                        .cmp(
-                            &other
-                                .element
-                                .children
-                                .as_ref()
-                                .map(|c| c.len())
-                                .unwrap_or(0),
-                        )
-                }))
-            }
-        }
-        impl Ord for ElementData<'_> {
-            fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-                self.partial_cmp(&other).unwrap()
-            }
+        fn count_elements(element: &Element) -> usize {
+            1 + element
+                .children
+                .as_ref()
+                .map(|children| children.values().map(count_elements).sum())
+                .unwrap_or(0)
         }
 
-        #[derive(Debug)]
-        struct Builder<'a> {
-            as_val: &'a AS,
-            elements: Vec<ElementData<'a>>,
-            map: RefCell<BTreeMap<usize, ParameterList>>,
-        }
-
-        impl<'a> Builder<'a> {
-            fn new(as_val: &'a AS) -> Self {
-                Self {
-                    as_val,
-                    elements: vec![],
-                    map: Default::default(),
-                }
-            }
-
-            fn collect_elements(&mut self, element: &'a Element) -> usize {
-                if let Some(data) = self.elements.iter().find(|d| d.element == element) {
-                    data.refs.set(data.refs.get() + 1);
-                    0
-                } else {
-                    let mut data = ElementData {
-                        element,
-                        refs: Cell::new(0),
-                        tree_len: 1,
-                        index: Default::default(),
-                    };
-                    let mut len = 1;
-                    if let Some(children) = element.children.as_ref() {
-                        for child in children.values() {
-                            len += self.collect_elements(child);
-                        }
-                    }
-                    data.tree_len = len;
-                    self.elements.push(data);
-                    len
-                }
-            }
-
-            fn write_element(&self, element: &'a Element, index: usize) {
-                let mut list = ParameterList::new()
-                    .with_object("Parameters", element.params.clone().into())
-                    .with_lists(element.extend.as_ref().map(|ex| ("Extend", ex.clone())));
+        fn add_element(element: Element, done: &mut Vec<(Element, ParameterList)>) -> usize {
+            if let Some(idx) = done.iter().position(|(e, _)| e == &element) {
+                idx
+            } else {
+                let index = done.len();
+                done.push((element.clone(), Default::default()));
+                let mut list = ParameterList::new();
+                list.set_object("Parameters", element.params.into());
                 if let Some(children) = element.children.as_ref() {
-                    let mut current = index + 1;
-                    let mut idx_map = BTreeMap::new();
-                    for (i, child, data) in children
-                        .iter()
-                        .map(|(i, child)| {
-                            (
-                                i,
-                                child,
-                                self.elements.iter().find(|el| el.element == child).unwrap(),
-                            )
-                        })
-                        .sorted_unstable_by(|(_, _, d1), (_, _, d2)| d1.cmp(d2))
-                    {
-                        if let Some(done_index) = data.index.get() && done_index > index {
-                            idx_map.insert(i, done_index);
-                        } else {
-                            self.write_element(child, current);
-                            data.index.set(Some(current));
-                            idx_map.insert(i, current);
-                            current += data.tree_len;
-                        }
-                    }
                     list.set_object(
                         "Children",
-                        idx_map
-                            .into_iter()
-                            .map(|(i, idx)| (format!("Child{i}"), Parameter::Int(idx as i32)))
+                        children
+                            .iter()
+                            .map(|(i, child)| {
+                                (
+                                    jstr!("Child{&lexical::to_string(*i)}"),
+                                    Parameter::Int(add_element(child.clone(), done) as i32),
+                                )
+                            })
                             .collect(),
                     );
                 }
-                assert!(!self.map.borrow().contains_key(&index));
-                self.map.borrow_mut().insert(index, list);
-            }
-
-            fn build(mut self) -> ParameterIO {
-                if let Some(root) = self.as_val.root.as_ref() {
-                    self.collect_elements(root);
-                    self.elements.sort();
-                    self.write_element(root, 0);
+                if let Some(extend) = element.extend.as_ref() {
+                    list.set_list("Extend", extend.clone());
                 }
-
-                ParameterIO::new()
-                    .with_objects(
-                        self.as_val
-                            .common_params
-                            .iter()
-                            .map(|p| ("CommonParams", p.clone())),
-                    )
-                    .with_list(
-                        "Elements",
-                        ParameterList::new().with_lists(
-                            self.map
-                                .into_inner()
-                                .into_iter()
-                                .map(|(i, list)| (format!("Element{i}"), list)),
-                        ),
-                    )
+                done[index].1 = list;
+                index
             }
         }
 
-        Builder::new(&val).build()
+        let mut elements = Vec::with_capacity(val.root.as_ref().map(count_elements).unwrap_or(0));
+        if let Some(root) = val.root {
+            add_element(root, &mut elements);
+        }
+        ParameterIO::new()
+            .with_objects(val.common_params.into_iter().map(|p| ("CommonParams", p)))
+            .with_list(
+                "Elements",
+                ParameterList::new().with_lists(
+                    elements
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, (_, list))| (jstr!("Element{&lexical::to_string(i)}"), list)),
+                ),
+            )
     }
 }
 
