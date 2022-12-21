@@ -198,4 +198,23 @@ mod tests {
     fn read_meta() {
         dbg!(Meta::read("test/wiiu.zip").unwrap());
     }
+
+    #[test]
+    fn create_meta() {
+        println!(
+            "{}",
+            toml::to_string_pretty(&Meta {
+                name: "Test Mod".into(),
+                description: "A sample UKMM mod".into(),
+                category: "Other".into(),
+                author: "Nicene Nerd".into(),
+                platform: Endian::Big,
+                url: None,
+                version: 1.0,
+                masters: Default::default(),
+                options: Default::default(),
+            })
+            .unwrap()
+        );
+    }
 }

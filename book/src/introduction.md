@@ -18,8 +18,8 @@ everything BCML did and more, written in pure Rust and compiled to a single
 binary. UKMM incorporates all of the lessons, skills, and general experience
 accumulated through the whole history of BOTW modding since BCML first began in
 a smooth, reliable, and robust mod management solution which solves nearly
-everything that made people (sometimes justifiably) rage and screech about
-BCML.[^1]
+everything that made people (ever so often even justifiably) rage and screech
+about BCML.[^1]
 
 [^1]: Except, of course, the requirement to have a complete game dump. There
 will never be a way around that, guys.
