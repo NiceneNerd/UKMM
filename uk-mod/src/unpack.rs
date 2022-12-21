@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use botw_utils::hashes::StockHashTable;
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
@@ -334,6 +335,7 @@ pub struct ModUnpacker {
     mods:     Vec<ModReader>,
     endian:   Endian,
     rstb:     RwLock<HashMap<String, Option<u32>>>,
+    hashes:   StockHashTable,
     out_dir:  PathBuf,
 }
 
@@ -350,6 +352,10 @@ impl ModUnpacker {
             mods,
             endian,
             rstb: RwLock::new(HashMap::default()),
+            hashes: StockHashTable::new(&match endian {
+                Endian::Little => botw_utils::hashes::Platform::Switch,
+                Endian::Big => botw_utils::hashes::Platform::WiiU,
+            }),
             out_dir,
         }
     }
@@ -402,8 +408,11 @@ impl ModUnpacker {
             let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
             writer.write_all(&compress_if(data.as_ref(), &out_file))?;
             let canon = canonicalize(out_file.strip_prefix(&self.out_dir).unwrap());
-            let size = rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
-            self.rstb.write().insert(canon, size);
+            if self.hashes.is_file_modded(&canon, &data, true) {
+                let size =
+                    rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
+                self.rstb.write().insert(canon, size);
+            }
             Ok(())
         })
     }
@@ -479,8 +488,11 @@ impl ModUnpacker {
                 compress_if(data.as_ref(), file.as_str()).as_ref(),
             );
             let canon = canonicalize(file.as_str());
-            let size = rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
-            self.rstb.write().insert(canon, size);
+            if self.hashes.is_file_modded(&canon, &data, true) {
+                let size =
+                    rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
+                self.rstb.write().insert(canon, size);
+            }
         }
         Ok(writer.to_binary())
     }

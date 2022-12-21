@@ -1332,26 +1332,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "enumflags2"
-version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e75d4cd21b95383444831539909fbb14b9dc3fdceb2a6f5d36577329a1f55ccb"
-dependencies = [
- "enumflags2_derive",
-]
-
-[[package]]
-name = "enumflags2_derive"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f58dc3c5e468259f19f2d46304a6b28f1c3d034442e14b322d2b850e36f6d5ae"
-dependencies = [
- "proc-macro2 1.0.47",
- "quote 1.0.21",
- "syn 1.0.105",
-]
-
-[[package]]
 name = "enumset"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1648,27 +1628,6 @@ dependencies = [
  "cmake",
  "libc",
  "pkg-config",
-]
-
-[[package]]
-name = "from_variants"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cf36180ca6f3c021e91b194e16b670ef5cbdd0cea48354ff6f5f83e3c2d1629"
-dependencies = [
- "from_variants_impl",
-]
-
-[[package]]
-name = "from_variants_impl"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13abfd95d43eabb051a8d4b408ef92dfe6d8d4aa17651e5786d5c761e5e6e7ad"
-dependencies = [
- "darling 0.13.4",
- "proc-macro2 1.0.47",
- "quote 1.0.21",
- "syn 1.0.105",
 ]
 
 [[package]]
@@ -3353,30 +3312,6 @@ dependencies = [
 
 [[package]]
 name = "roead"
-version = "0.16.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0670032ff14b3ec0b32c0855360e58229c4b6e698817580c6b3b555a55697df4"
-dependencies = [
- "almost",
- "binrw",
- "cxx",
- "cxx-build",
- "enumflags2",
- "from_variants",
- "indexmap",
- "join_str",
- "num-integer",
- "once_cell",
- "parking_lot",
- "rustc-hash",
- "serde",
- "serde_json",
- "smartstring",
- "thiserror",
-]
-
-[[package]]
-name = "roead"
 version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e87d257829c239e4feb64ee9a09207c9407a48d3ac12b719eb2c68e3ce226368"
@@ -3431,15 +3366,15 @@ dependencies = [
 
 [[package]]
 name = "rstb"
-version = "0.4.0"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49f785d6d4123b3aa255e93e713ff6106d96ab67147861bc7f869141e23f9f99"
+checksum = "808685a6071e00890af2ce800fed5f6059414312e9e0f4972c693e32b962d602"
 dependencies = [
  "crc 2.1.0",
  "lazy_static",
  "nom",
  "phf",
- "roead 0.16.5",
+ "roead",
  "serde",
  "serde_json",
  "thiserror",
@@ -4214,7 +4149,7 @@ dependencies = [
  "minicbor-ser 0.2.0",
  "msyt",
  "once_cell",
- "roead 0.18.3",
+ "roead",
  "rstb",
  "rustc-hash",
  "serde",
@@ -4249,7 +4184,7 @@ dependencies = [
  "minicbor-ser 0.2.0",
  "rayon",
  "rfd",
- "roead 0.18.3",
+ "roead",
  "ron",
  "serde",
  "toml",
@@ -4278,7 +4213,7 @@ dependencies = [
  "parking_lot",
  "rayon",
  "remove_dir_all 0.7.0",
- "roead 0.18.3",
+ "roead",
  "rstb",
  "rustc-hash",
  "sanitise-file-name",
@@ -4317,7 +4252,7 @@ dependencies = [
  "path-slash",
  "piz",
  "rayon",
- "roead 0.18.3",
+ "roead",
  "rstb",
  "sanitise-file-name",
  "serde",
@@ -4346,7 +4281,7 @@ dependencies = [
  "moka",
  "once_cell",
  "parking_lot",
- "roead 0.18.3",
+ "roead",
  "serde",
  "serde_json",
  "smartstring",
@@ -4371,7 +4306,7 @@ dependencies = [
  "msyt",
  "once_cell",
  "rfd",
- "roead 0.18.3",
+ "roead",
  "rustc-hash",
  "serde_yaml 0.9.14",
  "smartstring",
