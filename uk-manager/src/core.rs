@@ -7,8 +7,8 @@ use crate::{deploy, mods, settings::Settings};
 
 #[derive(Debug, Clone)]
 pub struct Manager {
-    mod_manager: Arc<mods::Manager>,
-    deploy_manager: Arc<deploy::Manager>,
+    mod_manager: Arc<RwLock<mods::Manager>>,
+    deploy_manager: Arc<RwLock<deploy::Manager>>,
     settings: Arc<RwLock<Settings>>,
 }
 
@@ -17,28 +17,32 @@ impl std::panic::RefUnwindSafe for Manager {}
 impl Manager {
     pub fn init() -> Result<Self> {
         let settings = Settings::load();
-        let mod_manager = Arc::new(
+        let mod_manager = Arc::new(RwLock::new(
             mods::Manager::open_current_profile(&settings)
                 .context("Failed to initialize mod manager")?,
-        );
+        ));
         Ok(Self {
-            deploy_manager: Arc::new(
+            deploy_manager: Arc::new(RwLock::new(
                 deploy::Manager::init(&settings, &mod_manager)
                     .context("Failed to initialize deployment manager")?,
-            ),
+            )),
             mod_manager,
             settings,
         })
     }
 
-    pub fn reload(&mut self) -> Result<()> {
-        *self = Self::init()?;
+    pub fn reload(&self) -> Result<()> {
+        self.settings.write().reload();
+        *self.mod_manager.write() = mods::Manager::open_current_profile(&self.settings)
+            .context("Failed to initialize mod manager")?;
+        *self.deploy_manager.write() = deploy::Manager::init(&self.settings, &self.mod_manager)
+            .context("Failed to initialize deployment manager")?;
         Ok(())
     }
 
-    pub fn change_profile(&mut self, profile: impl AsRef<str>) -> Result<()> {
+    pub fn change_profile(&self, profile: impl AsRef<str>) -> Result<()> {
         let profile_path = self.settings.read().profiles_dir().join(profile.as_ref());
-        self.mod_manager = Arc::new(mods::Manager::open_profile(&profile_path, &self.settings)?);
+        *self.mod_manager.write() = mods::Manager::open_profile(&profile_path, &self.settings)?;
         if let Some(config) = self.settings.write().platform_config_mut() {
             config.profile = profile.as_ref().into();
         }
@@ -56,12 +60,17 @@ impl Manager {
     }
 
     #[inline(always)]
-    pub fn mod_manager(&self) -> Arc<mods::Manager> {
-        self.mod_manager.clone()
+    pub fn mod_manager(&self) -> RwLockReadGuard<mods::Manager> {
+        self.mod_manager.read()
     }
 
     #[inline(always)]
-    pub fn deploy_manager(&self) -> Arc<deploy::Manager> {
-        self.deploy_manager.clone()
+    pub fn mod_manager_mut(&self) -> RwLockWriteGuard<mods::Manager> {
+        self.mod_manager.write()
+    }
+
+    #[inline(always)]
+    pub fn deploy_manager(&self) -> RwLockReadGuard<deploy::Manager> {
+        self.deploy_manager.read()
     }
 }

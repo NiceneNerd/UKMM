@@ -53,7 +53,7 @@ struct PendingLog {
 #[derive(Debug)]
 pub struct Manager {
     settings: Weak<RwLock<Settings>>,
-    mod_manager: Weak<mods::Manager>,
+    mod_manager: Weak<RwLock<mods::Manager>>,
     pending_files: RwLock<Manifest>,
     pending_delete: RwLock<Manifest>,
 }
@@ -66,7 +66,7 @@ impl Manager {
 
     pub fn init(
         settings: &Arc<RwLock<Settings>>,
-        mod_manager: &Arc<mods::Manager>,
+        mod_manager: &Arc<RwLock<mods::Manager>>,
     ) -> Result<Self> {
         log::info!("Initializing deployment manager");
         let pending = match fs::read_to_string(Self::log_path(&settings.read()))
@@ -351,6 +351,7 @@ impl Manager {
             log::info!("Manifest provided, applying limited changes");
             let mut total_manifest = Manifest::default();
             let mods = mod_manager
+                .read()
                 .mods_by_manifest(&manifest)
                 .map(|m| {
                     ModReader::open(&m.path, m.enabled_options.clone())
@@ -371,6 +372,7 @@ impl Manager {
             log::info!("Manifest not provided, remerging all mods");
             let mut total_manifest = Manifest::default();
             let mods = mod_manager
+                .read()
                 .mods()
                 .map(|m| {
                     ModReader::open(&m.path, m.enabled_options.clone())

@@ -449,7 +449,7 @@ impl App {
                     }
                 }
                 Message::ChangeProfile(profile) => {
-                    match Arc::make_mut(&mut self.core).change_profile(profile) {
+                    match self.core.change_profile(profile) {
                         Ok(()) => self.do_update(Message::ResetMods),
                         Err(e) => self.do_update(Message::Error(e)),
                     };
@@ -457,7 +457,7 @@ impl App {
                 Message::NewProfile => self.new_profile = Some("".into()),
                 Message::AddProfile => {
                     if let Some(profile) = self.new_profile.take() {
-                        match Arc::make_mut(&mut self.core).change_profile(profile) {
+                        match self.core.change_profile(profile) {
                             Ok(()) => self.do_update(Message::ResetMods),
                             Err(e) => self.do_update(Message::Error(e)),
                         };
@@ -602,7 +602,7 @@ impl App {
                 }
                 Message::SaveSettings => {
                     match self.temp_settings.save().and_then(|_| {
-                        Arc::make_mut(&mut self.core).reload()?;
+                        self.core.reload()?;
                         Ok(())
                     }) {
                         Ok(()) => {

@@ -111,7 +111,7 @@ impl Runner {
         Ok(())
     }
 
-    pub fn run(mut self) -> Result<()> {
+    pub fn run(self) -> Result<()> {
         match self.cli.command.as_ref().unwrap() {
             Commands::Mode { platform } => {
                 self.core

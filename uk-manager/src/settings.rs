@@ -256,6 +256,20 @@ impl Settings {
         }))
     }
 
+    pub fn reload(&mut self) {
+        *self = match Settings::read(Self::path()) {
+            Ok(settings) => {
+                log::debug!("{:#?}", settings);
+                settings
+            }
+            Err(e) => {
+                log::error!("Failed to read settings file:\n{}", e);
+                log::info!("Loading default settings instead");
+                Settings::default()
+            }
+        }
+    }
+
     pub fn read(path: &Path) -> Result<Self> {
         Ok(serde_yaml::from_str(&fs::read_to_string(path)?)?)
     }
