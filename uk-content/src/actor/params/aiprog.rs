@@ -452,7 +452,6 @@ impl<'a> Parser<'a> {
 struct Writer {
     action_offset: usize,
     aiprog: AIProgram,
-    demos: ParameterObject,
     ais: ParameterListMap,
     actions: ParameterListMap,
     behaviors: ParameterListMap,

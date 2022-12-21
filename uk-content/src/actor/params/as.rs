@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use itertools::Itertools;
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
