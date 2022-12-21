@@ -1,0 +1,18 @@
+# Installation
+
+Once you have all your prerequisites in order, you can begin to use UKMM.
+
+UKMM consists of a single binary with all dependencies statically linked, making
+installation over 9000 times easier than BCML.
+
+## Steps
+
+- [Download the latest UKMM release for your operating system from
+  GitHub](https://github.com/NiceneNerd/ukmm/releases/latest)
+- Extract the archive (ZIP on Windows, tar on Linux) wherever suits you
+- (Linux only) You may need to set the executable bit: `chmod +x ./ukmm`
+- Run the executable. You have UKMM ready to go!
+
+## 
+
+![See, that wasn't so hard!](../images/that-wasnt-so-hard.gif)

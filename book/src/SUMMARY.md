@@ -1,5 +1,15 @@
 [Introduction](./introduction.md)
 
-# Summary
+# Setup
 
-- [Packaging Mods](packaging.md)
+- [Prerequisites](setup/prerequisites.md)
+  - [Game Dump](setup/dump.md)
+- [Installation](setup/installation.md)
+- [Configuration](setup/configuration.md)
+  - [Dump Settings](setup/dump-settings.md)
+  - [Deployment Config](setup/deploy.md)
+
+# General
+
+- [Mod Format](mod_format.md)
+- [Troubleshooting](troubleshooting.md)
