@@ -91,7 +91,13 @@ impl log::Log for Logger {
             } else {
                 self.queue.lock().push(entry);
             }
-            if self.enabled(record.metadata()) {
+            if self.enabled(record.metadata())
+                && record
+                    .args()
+                    .as_str()
+                    .map(|s| !s.starts_with("PROGRESS"))
+                    .unwrap_or(true)
+            {
                 self.inner.log(record);
             }
         }

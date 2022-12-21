@@ -3,7 +3,7 @@ use std::{
     collections::BTreeSet,
     io::{BufReader, Read, Write},
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{atomic::AtomicUsize, Arc},
 };
 
 use anyhow::{Context, Result};
@@ -387,9 +387,14 @@ impl ModUnpacker {
                 .collect();
         }
         let (content, aoc) = platform_prefixes(self.endian);
+        let total = content_files.len() + aoc_files.len();
+        let current = AtomicUsize::new(0);
         std::thread::scope(|s| -> Result<()> {
-            let s1 = s.spawn(|| self.unpack_files(content_files, self.out_dir.join(content)));
-            let s2 = s.spawn(|| self.unpack_files(aoc_files, self.out_dir.join(aoc)));
+            let s1 = s.spawn(|| {
+                self.unpack_files(content_files, self.out_dir.join(content), total, &current)
+            });
+            let s2 =
+                s.spawn(|| self.unpack_files(aoc_files, self.out_dir.join(aoc), total, &current));
             s1.join().expect("Failed to join thread")?;
             s2.join().expect("Failed to join thread")?;
             Ok(())
@@ -398,7 +403,13 @@ impl ModUnpacker {
     }
 
     #[allow(irrefutable_let_patterns)]
-    fn unpack_files(&self, files: BTreeSet<&String>, dir: PathBuf) -> Result<()> {
+    fn unpack_files(
+        &self,
+        files: BTreeSet<&String>,
+        dir: PathBuf,
+        total_files: usize,
+        current_file: &AtomicUsize,
+    ) -> Result<()> {
         files.into_par_iter().try_for_each(|file| -> Result<()> {
             let data = self.build_file(file.as_str())?;
             let out_file = dir.join(file.as_str());
@@ -412,6 +423,12 @@ impl ModUnpacker {
                 let size =
                     rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
                 self.rstb.write().insert(canon, size);
+            }
+            let progress = 1 + current_file.load(std::sync::atomic::Ordering::Relaxed);
+            current_file.store(progress, std::sync::atomic::Ordering::Relaxed);
+            let remainder = progress % 5;
+            if matches!(remainder, 0 | 2 | 3) {
+                log::info!("PROGRESSBuilt file {} of {}", progress, total_files);
             }
             Ok(())
         })

@@ -2,11 +2,11 @@ use std::{
     collections::BTreeSet,
     io::Write,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{atomic::AtomicUsize, Arc},
 };
 
 use anyhow::{Context, Result};
-use botw_utils::hashes::{StockHashTable};
+use botw_utils::hashes::StockHashTable;
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
@@ -197,6 +197,8 @@ impl ModPacker {
                     .and_then(|f| f.file_type().is_file().then(|| f.path()))
             })
             .collect::<Vec<PathBuf>>();
+        let total_files = files.len();
+        let current_file = AtomicUsize::new(0);
         log::debug!("Resources found in root {}:\n{:#?}", root.display(), &files);
         Ok(files
             .into_par_iter()
@@ -232,6 +234,13 @@ impl ModPacker {
                         self.hash_table.is_file_new(&canon),
                     )
                     .with_context(|| jstr!("Failed to process SARC file {&canon}"))?;
+                }
+
+                let progress = current_file.load(std::sync::atomic::Ordering::Relaxed) + 1;
+                current_file.store(progress, std::sync::atomic::Ordering::Relaxed);
+                let remainder = progress % 5;
+                if matches!(remainder, 0 | 2 | 3) {
+                    log::info!("PROGRESSCollected resource {} of {}", progress, total_files);
                 }
 
                 Ok(Some(

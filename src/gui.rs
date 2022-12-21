@@ -317,14 +317,18 @@ impl App {
             match msg {
                 Message::Noop => self.busy = false,
                 Message::Log(entry) => {
-                    entry.format(&mut self.log);
-                    self.logs.push_back(entry);
-                    if self.logs.len() > 100 {
-                        self.logs.pop_front();
-                        for _ in 0..4 {
-                            self.log.sections.remove(0);
+                    if !entry.args.starts_with("PROGRESS") {
+                        entry.format(&mut self.log);
+                        if self.logs.len() > 100 {
+                            self.logs.pop_front();
+                            for _ in 0..4 {
+                                if !self.log.sections.is_empty() {
+                                    self.log.sections.remove(0);
+                                }
+                            }
                         }
                     }
+                    self.logs.push_back(entry);
                 }
                 Message::ResetMods => {
                     self.busy = false;
@@ -814,8 +818,10 @@ impl App {
                                     self.logs
                                         .iter()
                                         .rev()
-                                        .find(|l| l.level == "INFO")
-                                        .map(|l| l.args.as_str())
+                                        .find(|l| {
+                                            l.level == "INFO" || l.args.starts_with("PROGRESS")
+                                        })
+                                        .map(|l| l.args.as_str().trim_start_matches("PROGRESS"))
                                         .unwrap_or_default()
                                         .to_owned(),
                                     TextFormat::default(),
