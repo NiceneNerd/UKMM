@@ -171,12 +171,14 @@ impl ResourceLoader for ModReader {
                 return Ok(fs::read(path)?);
             }
         }
-        Err(anyhow::anyhow!(
-            "Failed to read file {} (canonical path {}) from mod",
-            name.display(),
-            canon
-        )
-        .into())
+        self.get_aoc_file_data(name).map_err(|_| {
+            anyhow::anyhow!(
+                "Failed to read file {} (canonical path {}) from mod",
+                name.display(),
+                canon
+            )
+            .into()
+        })
     }
 
     #[allow(irrefutable_let_patterns)]

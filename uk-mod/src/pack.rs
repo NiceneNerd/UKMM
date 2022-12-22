@@ -210,7 +210,7 @@ impl ModPacker {
                     .to_slash_lossy()
                     .into();
                 // We know this is sound because we got `path` by iterating the contents of `root`.
-                let canon = canonicalize(unsafe { path.strip_prefix(root).unwrap_unchecked() });
+                let canon = canonicalize(name.as_str());
                 let file_data = fs::read(&path)?;
                 let file_data = decompress_if(&file_data);
 
@@ -232,6 +232,7 @@ impl ModPacker {
                         Sarc::new(file_data.as_ref())?,
                         name.as_str().as_ref(),
                         self.hash_table.is_file_new(&canon),
+                        canon.starts_with("Aoc"),
                     )
                     .with_context(|| jstr!("Failed to process SARC file {&canon}"))?;
                 }
@@ -325,12 +326,15 @@ impl ModPacker {
         Ok(())
     }
 
-    fn process_sarc(&self, sarc: Sarc, path: &Path, is_new_sarc: bool) -> Result<()> {
+    fn process_sarc(&self, sarc: Sarc, path: &Path, is_new_sarc: bool, is_aoc: bool) -> Result<()> {
         for file in sarc.files() {
             let name = file
                 .name()
                 .with_context(|| jstr!("File in SARC missing name"))?;
-            let canon = canonicalize(name);
+            let mut canon = canonicalize(name);
+            if is_aoc {
+                canon.insert_str(0, "Aoc/0010/");
+            }
             let file_data = decompress_if(file.data);
 
             if !self.hash_table.is_file_modded(&canon, &*file_data, true) && !is_new_sarc {
@@ -348,10 +352,15 @@ impl ModPacker {
                     &canon,
                     path.display()
                 );
-                self.process_sarc(Sarc::new(file_data.as_ref())?, name.as_ref(), is_new_sarc)
-                    .with_context(|| {
-                        jstr!("Failed to process {&canon} in SARC {&path.display().to_string()}")
-                    })?;
+                self.process_sarc(
+                    Sarc::new(file_data.as_ref())?,
+                    name.as_ref(),
+                    is_new_sarc,
+                    is_aoc,
+                )
+                .with_context(|| {
+                    jstr!("Failed to process {&canon} in SARC {&path.display().to_string()}")
+                })?;
             }
         }
         Ok(())
