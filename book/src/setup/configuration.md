@@ -34,5 +34,7 @@ these is below:
 The rest of the platform-specific settings will be covered in more detail in
 the next two sections.
 
+---
+
 [^1] Should I really have to specify this? Probably not. Does *someone
 somewhere* need me to? Yes.

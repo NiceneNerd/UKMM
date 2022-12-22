@@ -23,5 +23,7 @@ about BCML.[^1]
 
 ![Dawn of a New Day](images/new-day.jpeg)
 
+---
+
 [^1]: Except, of course, the requirement to have a complete game dump. There
 will never be a way around that, guys.

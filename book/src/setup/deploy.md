@@ -102,6 +102,8 @@ So, in sum:
 
 **Best for**: Linux systems, or advanced users on Windows
 
+---
+
 [^1] Starting back in Windows 10, build 14972, it has been possible to create
 symbolic links on Windows without administrator permissions, but it's not
 automatic. Check [the Windows blog
