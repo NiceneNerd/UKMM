@@ -6,9 +6,9 @@ One of the most important (and most lamented) prerequisites for BOTW mod managem
 
 UKMM supports only the latest version of BOTW (1.5.0 on Wii U or 1.6.0 on Switch). Supported formats include:
 
-- Unpacked MLC ![Wii U](../../images/u.png) or RomFS ![Switch](../../images/nx.png) dump
-- ![Wii U](../../images/u.png) WUA (aka ZArchive, Cemu-specific)
-- ~~![Switch](../../images/nx.png) NSP~~ (in progress)
+- Unpacked MLC ![Wii U](../images/u.png) or RomFS ![Switch](../images/nx.png) dump
+- ![Wii U](../images/u.png) WUA (aka [ZArchive](https://github.com/Exzap/ZArchive), Cemu-specific)
+- ~~![Switch](../images/nx.png) NSP~~ (in progress)
 
 ## Dumping Guides
 

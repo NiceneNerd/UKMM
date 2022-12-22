@@ -13,6 +13,15 @@ installation over 9000 times easier than BCML.
 - (Linux only) You may need to set the executable bit: `chmod +x ./ukmm`
 - Run the executable. You have UKMM ready to go!
 
+## Configuration Storage
+
+By default, UKMM will store your settings and similar data in an appropriate
+configuration folder for your platform. On Windows this should be
+`%APPDATA%\ukmm` and on Linux `~/.config/ukmm`.
+
+You can alternatively launch UKMM with the `--portable` flag, in which case it
+will use a `config` folder next to the UKMM executable.
+
 ## 
 
 ![See, that wasn't so hard!](../images/that-wasnt-so-hard.gif)

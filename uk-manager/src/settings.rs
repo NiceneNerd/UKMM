@@ -234,7 +234,7 @@ impl Settings {
                     .expect("No current executable???")
                     .parent()
                     .expect("Executable has no parent???")
-                    .to_path_buf()
+                    .join("config")
             } else {
                 dirs2::config_dir().unwrap().join("ukmm")
             }
