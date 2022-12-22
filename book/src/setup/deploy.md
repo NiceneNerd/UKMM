@@ -3,6 +3,14 @@
 When you actually want to use your merged mods, they will need to be deployed.
 This is the most critical step to actually using mods when you play the game.
 
+Note that you have the option to deploy automatically or not. If you do not
+deploy automatically, you can make whatever changes to your load order, and even
+apply them, but still not export the final merged mod to its destination until
+you're ready. This is most useful for console players, who, for example, might
+want to manage mods on the PC at any time but wait until they're ready to insert
+their SD card before deploying the final pack. For emulator users, it is
+generally more useful to use automatic deployment.
+
 ## Deployment Locations
 
 Where should you deploy your mods? It depends mostly on where you play your
