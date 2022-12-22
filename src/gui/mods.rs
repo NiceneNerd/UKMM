@@ -37,6 +37,7 @@ impl App {
                 .size()
                 .x
         });
+        static CATEGORY_WIDTH: OnceCell<f32> = OnceCell::new();
         egui::Frame::none()
             .inner_margin(Margin {
                 bottom: 4.0,
@@ -51,24 +52,37 @@ impl App {
                     .noninteractive
                     .fg_stroke
                     .color = ui.style().visuals.strong_text_color();
+                let max_width = ui.available_width();
                 TableBuilder::new(ui)
                     .cell_sense(Sense::click_and_drag())
-                    // .striped(true)
                     .cell_layout(Layout::left_to_right(Align::Center))
                     .column(Column::exact(*icon_width))
-                    .column(Column::remainder())
-                    .column(Column::initial(100.).at_least(16.).at_most(240.))
-                    .column(Column::exact(*numeric_col_width))
-                    .column(Column::exact(*numeric_col_width))
+                    .column(
+                        CATEGORY_WIDTH
+                            .get()
+                            .map(|w| {
+                                Column::exact(
+                                    max_width
+                                        - *icon_width
+                                        - (*numeric_col_width * 2.0)
+                                        - *w
+                                        - (8.0 * 5.0),
+                                )
+                            })
+                            .unwrap_or_else(Column::remainder),
+                    )
+                    .column(
+                        CATEGORY_WIDTH
+                            .get()
+                            .map(|w| Column::exact(*w))
+                            .unwrap_or_else(|| Column::initial(100.).at_least(16.).at_most(240.)),
+                    )
+                    .columns(Column::exact(*numeric_col_width), 2)
                     .header(*text_height, |mut header| {
                         header.col(|ui| {
                             let is_current = self.sort.0 == Sort::Enabled;
                             let label = if is_current {
-                                if self.sort.1 {
-                                    "⏷"
-                                } else {
-                                    "⏶"
-                                }
+                                if self.sort.1 { "⏷" } else { "⏶" }
                             } else {
                                 "  "
                             };
@@ -95,35 +109,46 @@ impl App {
                         ]
                         .into_iter()
                         .for_each(|(label, sort)| {
-                            header.col(|ui| {
-                                let is_current = self.sort.0 == sort;
-                                let mut label = label.to_owned();
-                                if is_current {
-                                    if self.sort.1 {
-                                        label += " ⏷";
+                            let width = header
+                                .col(|ui| {
+                                    let is_current = self.sort.0 == sort;
+                                    let mut label = label.to_owned();
+                                    if is_current {
+                                        if self.sort.1 {
+                                            label += " ⏷";
+                                        } else {
+                                            label += " ⏶";
+                                        }
                                     } else {
-                                        label += " ⏶";
+                                        label += "  ";
                                     }
-                                } else {
-                                    label += "  ";
-                                }
-                                ui.centered_and_justified(|ui| {
-                                    ui.style_mut().visuals.widgets.inactive.bg_stroke.width = 0.0;
-                                    if ui
-                                        .add(Button::new(label).small().fill(Color32::TRANSPARENT))
-                                        .clicked()
-                                    {
-                                        self.do_update(Message::ChangeSort(
-                                            sort,
-                                            if is_current {
-                                                !self.sort.1
-                                            } else {
-                                                self.sort.1
-                                            },
-                                        ));
-                                    }
-                                });
-                            });
+                                    ui.centered_and_justified(|ui| {
+                                        ui.style_mut().visuals.widgets.inactive.bg_stroke.width =
+                                            0.0;
+                                        if ui
+                                            .add(
+                                                Button::new(label)
+                                                    .small()
+                                                    .fill(Color32::TRANSPARENT),
+                                            )
+                                            .clicked()
+                                        {
+                                            self.do_update(Message::ChangeSort(
+                                                sort,
+                                                if is_current {
+                                                    !self.sort.1
+                                                } else {
+                                                    self.sort.1
+                                                },
+                                            ));
+                                        }
+                                    });
+                                })
+                                .0
+                                .width();
+                            if CATEGORY_WIDTH.get().is_none() && label == "Category" {
+                                CATEGORY_WIDTH.set(width).unwrap();
+                            }
                         });
                     })
                     .body(|body| {
