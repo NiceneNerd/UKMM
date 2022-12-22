@@ -13,8 +13,6 @@ clap = { version = "3.2.17", features = ["derive"] }
 dircpy = "0.3.12"
 dirs2 = "3.0.1"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
-# egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-features = false, features = ["color-hex", "persistence"] }
-# egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
 egui_commonmark = { git = "https://github.com/NiceneNerd/egui_commonmark" }
 egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
 egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
@@ -25,7 +23,7 @@ fs-err = "2.8.1"
 im = { version = "15.1.0", features = ["serde"] }
 image = { version = "0.24.4", features = ["jpeg", "png"] }
 indoc = "1.0"
-jwalk = "0.6.0"
+jwalk = "0.8.1"
 join_str = "0.1.0"
 log = "0.4.17"
 once_cell = "1.13.1"
