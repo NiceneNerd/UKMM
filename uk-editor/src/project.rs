@@ -1,17 +1,11 @@
-use std::{
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
 use uk_content::{resource::ResourceData, util::IndexMap};
 use uk_manager::{core::Manager, settings::Platform};
-use uk_mod::{
-    pack::sanitise,
-    unpack::{ParallelZipReader},
-    Meta,
-};
+use uk_mod::{pack::sanitise, unpack::ParallelZipReader, Meta};
 
 #[derive(Debug, Clone)]
 pub struct Project {

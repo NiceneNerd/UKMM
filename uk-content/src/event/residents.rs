@@ -1,5 +1,3 @@
-
-
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
