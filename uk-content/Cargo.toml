@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.57"
-cow-utils = "0.1.2"
 indexmap = "1.8.0"
 itertools = "0.10.3"
 join_str = "0.1.0"
@@ -25,5 +24,4 @@ smartstring = { version = "1.0.1", features = ["serde"] }
 uk-content-derive = { path = "../uk-content-derive" }
 uk-ui = { path = "../uk-ui" }
 uk-ui-derive = { path = "../uk-ui-derive" }
-xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
 zstd = "0.11.2"

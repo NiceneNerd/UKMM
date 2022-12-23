@@ -773,12 +773,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cow-utils"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79bb3adfaf5f75d24b01aee375f7555907840fa2800e5ec8fa3b9e2031830173"
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2000,12 +1994,6 @@ dependencies = [
  "hashbrown",
  "serde",
 ]
-
-[[package]]
-name = "indoc"
-version = "1.0.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da2d6f23ffea9d7e76c53eee25dfb67bcd8fde7f1198b0855350698c9f07c780"
 
 [[package]]
 name = "instant"
@@ -4149,7 +4137,6 @@ name = "uk-content"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cow-utils",
  "indexmap",
  "itertools",
  "join_str",
@@ -4169,7 +4156,6 @@ dependencies = [
  "uk-content-derive",
  "uk-ui",
  "uk-ui-derive",
- "xxhash-rust",
  "zstd",
 ]
 
@@ -4298,7 +4284,6 @@ dependencies = [
  "thiserror",
  "typetag",
  "uk-content",
- "xxhash-rust",
  "zarchive",
 ]
 
@@ -4352,7 +4337,6 @@ dependencies = [
  "fs-err",
  "im",
  "image",
- "indoc",
  "join_str",
  "jwalk 0.8.1",
  "log",
@@ -5095,12 +5079,6 @@ name = "xmlwriter"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
-
-[[package]]
-name = "xxhash-rust"
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "735a71d46c4d68d71d4b24d03fdc2b98e38cea81730595801db779c04fe80d70"
 
 [[package]]
 name = "yaml-rust"

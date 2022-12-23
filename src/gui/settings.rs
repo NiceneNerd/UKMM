@@ -12,7 +12,6 @@ use serde::Deserialize;
 use uk_manager::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
 use uk_ui::{
-    editor::EditableValue,
     egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
     ext::UiExt,
     icons::{self, IconButtonExt},

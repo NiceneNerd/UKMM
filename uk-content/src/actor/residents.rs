@@ -96,11 +96,6 @@ impl Resource for ResidentActors {
     }
 }
 
-single_path!(
-    ResidentActors,
-    "Pack/TitleBG.pack//Actor/ResidentActors.byml"
-);
-
 #[cfg(test)]
 mod tests {
     use roead::byml::Byml;

@@ -94,11 +94,6 @@ impl Resource for LazyTraverseList {
     }
 }
 
-single_path!(
-    LazyTraverseList,
-    "Pack/Bootup.pack//Map/MainField/LazyTraverseList.smubin"
-);
-
 #[cfg(test)]
 mod tests {
     use roead::byml::Byml;

@@ -580,10 +580,7 @@ mod tests {
 #[cfg(test)]
 mod bonus {
     use std::{
-        cell::RefCell,
-        ops::Deref,
         path::Path,
-        rc::Rc,
         sync::{Arc, Mutex},
     };
 
@@ -591,7 +588,7 @@ mod bonus {
     use rayon::prelude::*;
     use roead::sarc::Sarc;
     use smartstring::alias::String;
-    use uk_content::{canonicalize, resource::MergeableResource, util::HashMap};
+    use uk_content::{resource::MergeableResource, util::HashMap};
 
     #[test]
     fn nest_map() {
@@ -631,7 +628,7 @@ mod bonus {
                     }
                     map.lock().unwrap().insert(
                         if path.starts_with("Aoc") {
-                            (String::from("Aoc/0010/") + &name.replace(".s", ".")).into()
+                            String::from("Aoc/0010/") + &name.replace(".s", ".")
                         } else {
                             name.replace(".s", ".").into()
                         },
@@ -715,7 +712,7 @@ mod bonus {
                         MergeableResource::from_binary(name.as_ref(), file.data).unwrap()
                     {
                         let canon = if path.starts_with("Aoc") {
-                            (String::from("Aoc/0010/") + &name.replace(".s", ".")).into()
+                            String::from("Aoc/0010/") + &name.replace(".s", ".")
                         } else {
                             name.replace(".s", ".").into()
                         };

@@ -21,5 +21,4 @@ smartstring = { version = "1.0.1", features = ["serde"] }
 thiserror = "1.0.31"
 typetag = "0.2.1"
 uk-content = { path = "../uk-content" }
-xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
 zarchive = "0.1.1"

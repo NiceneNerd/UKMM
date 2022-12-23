@@ -284,11 +284,6 @@ impl Resource for SaveDataPack {
     }
 }
 
-single_path!(
-    SaveDataPack,
-    "Pack/Bootup.pack//GameData/savedataformat.ssarc"
-);
-
 #[cfg(test)]
 mod tests {
     use roead::{byml::Byml, sarc::Sarc};

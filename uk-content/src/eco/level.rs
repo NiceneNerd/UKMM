@@ -296,8 +296,6 @@ impl Resource for LevelSensor {
     }
 }
 
-single_path!(LevelSensor, "Pack/Bootup.pack//Ecosystem/LevelSensor.sbyml");
-
 #[cfg(test)]
 mod tests {
     use roead::byml::Byml;

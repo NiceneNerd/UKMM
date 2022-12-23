@@ -192,12 +192,10 @@ pub fn canonicalize(path: impl AsRef<Path>) -> String {
 }
 
 pub mod prelude {
-    use cow_utils::CowUtils;
     pub(crate) use smartstring::alias::String;
     pub type String32 = roead::types::FixedSafeString<32>;
     pub type String64 = roead::types::FixedSafeString<64>;
     pub type String256 = roead::types::FixedSafeString<256>;
-    use std::borrow::Cow;
 
     pub trait Mergeable {
         #[must_use]
@@ -279,7 +277,6 @@ pub mod prelude {
     }
 
     pub(crate) use impl_simple_byml;
-    use join_str::jstr;
 
     #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
     pub enum Endian {
@@ -360,73 +357,6 @@ pub mod prelude {
         fn into_binary(self, endian: Endian) -> Vec<u8>;
         fn path_matches(path: impl AsRef<std::path::Path>) -> bool;
     }
-
-    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-    pub enum ResourceLocation {
-        #[default]
-        Content,
-        Aoc,
-    }
-
-    #[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-    pub struct ResourcePath {
-        pub path:     Cow<'static, str>,
-        pub location: ResourceLocation,
-    }
-
-    impl ResourcePath {
-        pub fn canonical(&self) -> Cow<str> {
-            let path = if let Some(pos) = self.path.find("//") {
-                &self.path[pos + 2..]
-            } else {
-                self.path.as_ref()
-            };
-            return match self.location {
-                ResourceLocation::Content => {
-                    if path.ends_with(".sarc") {
-                        path.into()
-                    } else {
-                        path.cow_replace(".s", ".")
-                    }
-                }
-                ResourceLocation::Aoc => jstr!("Aoc/0010/{path}").into(),
-            };
-        }
-    }
-
-    pub trait SingleResource: Resource {
-        fn path() -> &'static ResourcePath;
-    }
-
-    macro_rules! single_path {
-        ($type:ty, $path:expr) => {
-            static PATH: crate::prelude::ResourcePath = crate::prelude::ResourcePath {
-                path:     std::borrow::Cow::Borrowed($path),
-                location: ResourceLocation::Content,
-            };
-
-            impl SingleResource for $type {
-                fn path() -> &'static crate::prelude::ResourcePath {
-                    &PATH
-                }
-            }
-        };
-
-        ($type:ty, $path:expr,aoc) => {
-            static PATH: crate::prelude::ResourcePath = crate::prelude::ResourcePath {
-                path:     std::borrow::Cow::Borrowed($path),
-                location: ResourceLocation::Aoc,
-            };
-
-            impl SingleResource for $type {
-                fn path() -> &'static crate::prelude::ResourcePath {
-                    &PATH
-                }
-            }
-        };
-    }
-
-    pub(crate) use single_path;
 }
 
 #[cfg(test)]

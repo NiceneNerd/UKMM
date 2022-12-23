@@ -41,8 +41,6 @@ impl Resource for WorldInfo {
     }
 }
 
-single_path!(WorldInfo, "Pack/TitleBG.pack//World/WorldInfo.bwinfo");
-
 #[cfg(test)]
 mod tests {
     use roead::aamp::ParameterIO;

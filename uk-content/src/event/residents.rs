@@ -81,11 +81,6 @@ impl Resource for ResidentEvents {
     }
 }
 
-single_path!(
-    ResidentEvents,
-    "Pack/TitleBG.pack//Event/ResidentEvent.byml"
-);
-
 #[cfg(test)]
 mod tests {
     use roead::byml::Byml;
