@@ -12,6 +12,7 @@ use serde::Deserialize;
 use uk_manager::settings::{DeployConfig, Language, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
 use uk_ui::{
+    editor::EditableValue,
     egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
     ext::UiExt,
     icons::{self, IconButtonExt},
@@ -104,6 +105,7 @@ struct PlatformSettingsUI {
     pub profile: String,
     pub dump: DumpType,
     pub deploy_config: DeployConfig,
+    pub cemu_rules: bool,
 }
 
 impl Default for PlatformSettingsUI {
@@ -118,6 +120,7 @@ impl Default for PlatformSettingsUI {
                 aoc_dir:     Default::default(),
             },
             deploy_config: Default::default(),
+            cemu_rules: false,
         }
     }
 }
@@ -146,6 +149,7 @@ impl TryFrom<PlatformSettingsUI> for PlatformSettings {
         Ok(Self {
             language: settings.language,
             profile: settings.profile.into(),
+            cemu_rules: settings.cemu_rules,
             dump,
             deploy_config: if settings.deploy_config.output.as_os_str().is_empty() {
                 None
@@ -163,6 +167,7 @@ impl From<&PlatformSettings> for PlatformSettingsUI {
             profile: settings.profile.to_string(),
             dump: settings.dump.as_ref().into(),
             deploy_config: settings.deploy_config.as_ref().cloned().unwrap_or_default(),
+            cemu_rules: settings.cemu_rules,
         }
     }
 }
@@ -172,6 +177,7 @@ impl PartialEq<PlatformSettings> for PlatformSettingsUI {
         self.language == other.language
             && other.deploy_config.contains(&self.deploy_config)
             && self.dump.host_path() == other.dump.source().host_path()
+            && self.cemu_rules == other.cemu_rules
     }
 }
 
@@ -253,15 +259,25 @@ fn render_platform_config(
                 .selected_text(config.language.to_str())
                 .show_ui(ui, |ui| {
                     enum_iterator::all::<Language>().for_each(|lang| {
-                        changed = changed
-                            || ui
-                                .selectable_value(&mut config.language, lang, lang.to_str())
-                                .changed();
+                        changed |= ui
+                            .selectable_value(&mut config.language, lang, lang.to_str())
+                            .changed();
                     });
                 });
         },
     );
     ui.add_space(8.0);
+    if platform == Platform::WiiU {
+        render_setting(
+            "Deploy rules.txt",
+            "Automatically adds a rules.txt file when deploying for Cemu integration.",
+            ui,
+            |ui| {
+                changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
+            },
+        );
+        ui.add_space(8.0);
+    }
     ui.label("Game Dump");
     ui.group(|ui| {
         ui.allocate_space([ui.available_width(), -8.0].into());

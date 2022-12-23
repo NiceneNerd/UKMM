@@ -203,6 +203,7 @@ mod tests {
                 output: "/tmp/BreathOfTheWild_UKMM".into(),
             }),
             profile: "Default".into(),
+            cemu_rules: false,
         });
         std::fs::write(
             "/home/nn/.config/ukmm/settings.toml",

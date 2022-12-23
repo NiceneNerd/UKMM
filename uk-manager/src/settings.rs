@@ -12,8 +12,9 @@ use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use uk_reader::ResourceReader;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Platform {
+    #[default]
     WiiU,
     Switch,
 }
@@ -180,6 +181,8 @@ pub struct PlatformSettings {
     pub profile: String,
     pub dump: Arc<ResourceReader>,
     pub deploy_config: Option<DeployConfig>,
+    #[serde(default)]
+    pub cemu_rules: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -193,16 +196,28 @@ impl Default for UiSettings {
     }
 }
 
+#[inline]
+fn default_storage() -> PathBuf {
+    dirs2::data_local_dir().unwrap().join("ukmm")
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Settings {
+    #[serde(default)]
     pub current_mode: Platform,
+    #[serde(default = "default_storage")]
     pub storage_dir: PathBuf,
+    #[serde(default)]
     pub unpack_mods: bool,
+    #[serde(default)]
     pub check_updates: bool,
+    #[serde(default)]
     pub show_changelog: bool,
+    #[serde(default)]
     pub wiiu_config: Option<PlatformSettings>,
+    #[serde(default)]
     pub switch_config: Option<PlatformSettings>,
-    #[serde(rename = "ui")]
+    #[serde(rename = "ui", default)]
     pub ui_config: UiSettings,
 }
 
@@ -210,7 +225,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             current_mode: Platform::WiiU,
-            storage_dir: dirs2::data_local_dir().unwrap().join("ukmm"),
+            storage_dir: default_storage(),
             unpack_mods: false,
             wiiu_config: None,
             switch_config: None,

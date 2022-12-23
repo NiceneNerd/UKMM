@@ -217,10 +217,17 @@ impl Manager {
                             Ok(())
                         })?;
                     }
-                    DeployMethod::Symlink => unreachable!(),
+                    DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
                 }
             }
             log::info!("Deployment complete");
+        }
+        if settings.current_mode == Platform::WiiU
+            && settings.platform_config().map(|c| c.cemu_rules).unwrap_or(false)
+            && let rules_path = config.output.join("rules.txt")
+            && !rules_path.exists() 
+        {
+            fs::write(rules_path, include_str!("../../assets/rules.txt"))?;
         }
         self.pending_delete.write().clear();
         self.pending_files.write().clear();

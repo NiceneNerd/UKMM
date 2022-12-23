@@ -1,0 +1,8 @@
+[Definition]
+titleIds = 00050000101C9300,00050000101C9400,00050000101C9500
+name = UKMM
+path = The Legend of Zelda: Breath of the Wild/Mods/UKMM
+description = Provides U-King Mod Manager integration. Disable to turn off all UKMM mods. Do not use alongside BCML or file replacement graphic packs.
+version = 7
+default = true
+fsPriority = 9999
