@@ -160,6 +160,7 @@ pub enum Message {
     FilePickerSet(Option<PathBuf>),
     FilePickerUp,
     HandleMod(Mod),
+    ImportCemu,
     InstallMod(Mod),
     Log(Entry),
     MoveSelected(usize),
@@ -602,7 +603,9 @@ impl App {
                     self.do_task(|core| tasks::apply_changes(&core, vector![], None));
                 }
                 Message::ResetSettings => {
+                    self.busy = false;
                     self.temp_settings = self.core.settings().clone();
+                    settings::CONFIG.write().clear();
                 }
                 Message::SaveSettings => {
                     match self.temp_settings.save().and_then(|_| {
@@ -672,6 +675,17 @@ impl App {
                     {
                         builder.dest = dest;
                         self.do_task(move |core| tasks::package_mod(&core, builder));
+                    }
+                }
+                Message::ImportCemu => {
+                    let mut dialog = rfd::FileDialog::new()
+                        .add_filter("Cemu executable", &["exe", "AppImage", "*"])
+                        .set_title("Select Cemu Executable");
+                    if cfg!(windows) {
+                        dialog = dialog.set_file_name("Cemu.exe");
+                    }
+                    if let Some(path) = dialog.pick_file() {
+                        self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
                     }
                 }
             }

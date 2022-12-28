@@ -30,6 +30,7 @@ open = "3.0.3"
 parking_lot = { version = "0.12.1", features = ["serde"] }
 rayon = "1.5.3"
 rfd = "0.10.0"
+roxmltree = "0.16.0"
 rustc-hash = "1.1.0"
 serde = { version = "1.0.144", features = ["derive", "rc"] }
 serde_json = "1.0.85"

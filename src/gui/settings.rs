@@ -43,7 +43,7 @@ fn render_setting<R>(
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(tag = "type")]
-enum DumpType {
+pub enum DumpType {
     Unpacked {
         host_path:   PathBuf,
         content_dir: Option<PathBuf>,
@@ -99,7 +99,7 @@ impl From<&ResourceReader> for DumpType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct PlatformSettingsUI {
+pub struct PlatformSettingsUI {
     pub language: Language,
     pub profile: String,
     pub dump: DumpType,
@@ -180,7 +180,7 @@ impl PartialEq<PlatformSettings> for PlatformSettingsUI {
     }
 }
 
-static CONFIG: Lazy<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
+pub static CONFIG: Lazy<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
     Lazy::new(|| RwLock::new(Default::default()));
 
 fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
@@ -458,6 +458,16 @@ impl App {
                         );
                     });
                 egui::CollapsingHeader::new("Wii U Config").show(ui, |ui| {
+                    if ui
+                        .icon_text_button("Import Cemu Settings", icons::Icon::Import)
+                        .clicked()
+                    {
+                        self.channel
+                            .0
+                            .clone()
+                            .send(Message::ImportCemu)
+                            .expect("Broken channel");
+                    }
                     wiiu_changed =
                         render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
                 });

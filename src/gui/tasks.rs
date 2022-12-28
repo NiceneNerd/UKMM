@@ -1,10 +1,21 @@
-use std::{io::BufReader, path::Path};
+use std::{
+    io::BufReader,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::{Context, Result};
 use fs_err as fs;
 use im::Vector;
-use uk_manager::{core::Manager, mods::Mod};
+use join_str::jstr;
+use serde::{Deserialize, Serialize};
+use uk_manager::{
+    core::Manager,
+    mods::Mod,
+    settings::{DeployConfig, Platform, PlatformSettings},
+};
 use uk_mod::{unpack::ModReader, Manifest};
+use uk_reader::ResourceReader;
 
 use super::{package::ModPackerBuilder, Message};
 
@@ -143,4 +154,100 @@ pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message>
     .pack()
     .context("Failed to package mod")?;
     Ok(Message::Noop)
+}
+
+#[allow(irrefutable_let_patterns)]
+pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
+    let settings_path = if let path = path.with_file_name("settings.xml") && path.exists() {
+        path
+    } else if let path = dirs2::config_dir().expect("YIKES").join("Cemu/settings.xml") && path.exists() {
+        path
+    } else {
+        anyhow::bail!("Could not find Cemu settings file")
+    };
+    let text = fs::read_to_string(settings_path).context("Failed to open Cemu settings file")?;
+    let tree = roxmltree::Document::parse(&text)
+        .context("Failed to parse Cemu settings file: invalid XML")?;
+    let mlc_path = tree
+        .descendants()
+        .find_map(|n| {
+            (n.tag_name().name() == "mlc_path")
+                .then(|| {
+                    n.text()
+                        .and_then(|s| (!s.is_empty()).then(|| PathBuf::from(s)))
+                })
+                .flatten()
+        })
+        .or_else(|| {
+            log::warn!("No MLC folder found in Cemu settings. Let's guess instead…");
+            let path = path.with_file_name("mlc01");
+            path.exists().then_some(path)
+        })
+        .or_else(|| {
+            let path = dirs2::data_local_dir().expect("YIKES").join("Cemu/mlc01");
+            path.exists().then_some(path)
+        });
+    let (base, update, dlc) = mlc_path
+        .as_ref()
+        .map(|mlc_path| {
+            let title_path = mlc_path.join("usr/title");
+            static REGIONS: &[&str] = &[
+                "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
+            ];
+            let base_folder = REGIONS.iter().find_map(|r| {
+                let path = title_path.join(jstr!("00050000/{r}/content"));
+                path.exists().then_some(path)
+            });
+            let update_folder = REGIONS.iter().find_map(|r| {
+                let path = title_path.join(jstr!("0005000E/{r}/content"));
+                path.exists().then_some(path)
+            });
+            let dlc_folder = REGIONS.iter().find_map(|r| {
+                let path = title_path.join(jstr!("0005000C/{r}/content/0010"));
+                path.exists().then_some(path)
+            });
+            (base_folder, update_folder, dlc_folder)
+        })
+        .ok_or_else(|| anyhow::anyhow!("Could not find game dump from Cemu settings"))?;
+    let gfx_folder = if let path = path.with_file_name("graphicPacks") && path.exists() {
+        Some(path)
+    } else if let path = dirs2::data_local_dir().expect("YIKES").join("Cemu/graphicPacks") && path.exists() {
+        Some(path)
+    } else {
+        log::warn!("Cemu graphic pack folder not found");
+        None
+    };
+    let mut settings = core.settings_mut();
+    settings.current_mode = Platform::WiiU;
+    let dump = Arc::new(
+        ResourceReader::from_unpacked_dirs(base, update, dlc)
+            .context("Failed to validate game dump")?,
+    );
+    if let Some(wiiu_config) = settings.wiiu_config.as_mut() {
+        wiiu_config.cemu_rules = true;
+        if mlc_path.is_some() {
+            wiiu_config.dump = dump;
+        }
+        if let Some(gfx_folder) = gfx_folder {
+            let mut deploy_config = wiiu_config.deploy_config.get_or_insert_default();
+            deploy_config.auto = true;
+            deploy_config.output = gfx_folder.join("BreathOfTheWild_UKMM");
+        }
+    } else {
+        settings.wiiu_config = Some(PlatformSettings {
+            language: uk_manager::settings::Language::USen,
+            profile: "Default".into(),
+            dump,
+            deploy_config: gfx_folder.map(|gfx_folder| {
+                DeployConfig {
+                    auto:   true,
+                    method: uk_manager::settings::DeployMethod::Copy,
+                    output: gfx_folder.join("BreathOfTheWild_UKMM"),
+                }
+            }),
+            cemu_rules: true,
+        })
+    };
+    settings.save()?;
+    Ok(Message::ResetSettings)
 }
