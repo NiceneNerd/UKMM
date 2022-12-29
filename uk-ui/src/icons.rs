@@ -74,7 +74,7 @@ pub fn load_icons() {
     map.insert(Icon::Add, RetainedImage::from_svg_str("add", ADD).unwrap());
     map.insert(
         Icon::Import,
-        RetainedImage::from_svg_str("import", INFO).unwrap(),
+        RetainedImage::from_svg_str("import", IMPORT).unwrap(),
     );
     map.insert(
         Icon::Info,

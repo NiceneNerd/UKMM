@@ -1,8 +1,8 @@
 use std::{hash::Hash, path::PathBuf, sync::Arc};
 
 use egui::{
-    epaint::text::TextWrapping, mutex::RwLock, text::LayoutJob, Direction, Id, Response, RichText,
-    Ui,
+    epaint::text::TextWrapping, mutex::RwLock, text::LayoutJob, Button, Direction, Id, NumExt,
+    Response, RichText, Ui,
 };
 
 pub trait UiExt {
@@ -19,10 +19,15 @@ fn render_picker(folder: bool, ui: &mut Ui, value: &mut PathBuf) -> Response {
     let mut path = value.display().to_string();
     ui.scope(|ui| {
         ui.spacing_mut().item_spacing.x = 4.0;
+        let button_size = egui::Vec2::new(
+            ui.spacing().interact_size.x,
+            (ui.text_style_height(&egui::TextStyle::Body) + (ui.spacing().button_padding.y * 2.0))
+                .at_least(ui.spacing().interact_size.y),
+        );
         if ui.layout().main_dir() == Direction::LeftToRight {
             let mut changed = false;
             let mut res = ui.text_edit_singleline(&mut path);
-            if ui.button("Browse…").clicked()
+            if ui.add(Button::new("Browse…").small().min_size(button_size)).clicked()
                 && let Some(folder) = {
                     if folder {
                         rfd::FileDialog::new().pick_folder()
@@ -43,7 +48,7 @@ fn render_picker(folder: bool, ui: &mut Ui, value: &mut PathBuf) -> Response {
             res
         } else {
             let mut changed = false;
-            if ui.button("Browse…").clicked()
+            if ui.add(Button::new("Browse…").small().min_size(button_size)).clicked()
                 && let Some(folder) = {
                     if folder {
                         rfd::FileDialog::new().pick_folder()
