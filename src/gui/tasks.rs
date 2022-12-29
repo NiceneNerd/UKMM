@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use im::Vector;
 use join_str::jstr;
-use serde::{Deserialize, Serialize};
+
 use uk_manager::{
     core::Manager,
     mods::Mod,
