@@ -356,7 +356,7 @@ impl App {
                     self.do_update(Message::ShowPackagingDependencies);
                 }
                 if ui.icon_text_button("Help", Icon::Help).clicked() {
-                    open::that("https://nicenenerd.github.io/ukmm/packaging.html").unwrap_or(());
+                    open::that("https://nicenenerd.github.io/ukmm/mod_format.html").unwrap_or(());
                 }
             });
             ui.add_space(8.0);
