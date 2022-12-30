@@ -7,6 +7,7 @@ use rustc_hash::FxHashSet;
 use uk_manager::settings::Platform;
 use uk_mod::{
     ExclusiveOptionGroup, Meta, ModOption, ModOptionGroup, MultipleOptionGroup, OptionGroup,
+    CATEGORIES,
 };
 use uk_ui::{
     editor::EditableValue,
@@ -16,24 +17,6 @@ use uk_ui::{
 };
 
 use super::{App, Message};
-
-pub static CATEGORIES: &[&str] = &[
-    "Animations",
-    "Balance",
-    "Crafting",
-    "Customization",
-    "Difficulty",
-    "Enemies",
-    "Expansion",
-    "Meme/Gimmick",
-    "Other",
-    "Overhaul",
-    "Overworld",
-    "Player",
-    "Quest",
-    "Shrine",
-    "Skin/Texture",
-];
 
 #[derive(Debug, Clone)]
 pub struct ModPackerBuilder {

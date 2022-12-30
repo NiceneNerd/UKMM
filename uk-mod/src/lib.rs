@@ -149,6 +149,24 @@ pub enum OptionGroup {
     Multiple(MultipleOptionGroup),
 }
 
+pub static CATEGORIES: &[&str] = &[
+    "Animations",
+    "Balance",
+    "Crafting",
+    "Customization",
+    "Difficulty",
+    "Enemies",
+    "Expansion",
+    "Meme/Gimmick",
+    "Other",
+    "Overhaul",
+    "Overworld",
+    "Player",
+    "Quest",
+    "Shrine",
+    "Skin/Texture",
+];
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Meta {
     pub name: String,

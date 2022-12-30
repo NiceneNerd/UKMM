@@ -60,7 +60,7 @@ impl Runner {
         let (mod_, path) = match ModReader::open(path, vec![]) {
             Ok(mod_) => (mod_, path.to_path_buf()),
             Err(e) => {
-                match uk_manager::mods::convert_gfx(&self.core, path) {
+                match uk_manager::mods::convert_gfx(&self.core, path, None) {
                     Ok(path) => {
                         log::info!("Opening mod at {}", path.display());
                         (

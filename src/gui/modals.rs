@@ -1,4 +1,89 @@
+use uk_manager::settings::Platform;
+use uk_mod::{Meta, CATEGORIES};
+use uk_ui::editor::EditableValue;
+
 use super::*;
+
+#[derive(Debug, Default)]
+pub struct MetaInputModal(Option<Meta>);
+
+impl MetaInputModal {
+    pub fn clear(&mut self) {
+        self.0 = None;
+    }
+
+    pub fn take(&mut self) -> Option<Meta> {
+        self.0.take()
+    }
+
+    pub fn open(&mut self, platform: Platform) {
+        self.0 = Some(Meta {
+            name: Default::default(),
+            description: Default::default(),
+            category: "Other".into(),
+            author: Default::default(),
+            masters: Default::default(),
+            options: Default::default(),
+            platform: platform.into(),
+            url: Default::default(),
+            version: 1.0,
+        })
+    }
+
+    pub fn ui(&mut self, ctx: &egui::Context) {
+        if let Some(info) = self.0.as_mut() {
+            egui::Window::new("Provide Mod Information")
+                .collapsible(false)
+                .anchor(Align2::CENTER_CENTER, Vec2::default())
+                .auto_sized()
+                .frame(Frame::window(&ctx.style()).inner_margin(8.))
+                .show(ctx, |ui| {
+                    ui.label(
+                        "The mod you selected does not include any metadata. Please provide the \
+                         basics below:",
+                    );
+                    ui.label("Name");
+                    info.name.edit_ui_with_id(ui, "mod-meta-name");
+                    egui::ComboBox::new("mod-meta-cat", "Category")
+                        .selected_text(info.category.as_str())
+                        .show_ui(ui, |ui| {
+                            CATEGORIES.iter().for_each(|cat| {
+                                ui.selectable_value(&mut info.category, (*cat).into(), *cat);
+                            });
+                        });
+                    ui.label("Description");
+                    ui.small("Some Markdown formatting supported");
+                    let string = ui.create_temp_string(
+                        "mod-meta-desc",
+                        Some(info.description.as_str().into()),
+                    );
+                    if egui::TextEdit::multiline(string.write().deref_mut())
+                        .desired_width(f32::INFINITY)
+                        .show(ui)
+                        .response
+                        .changed()
+                    {
+                        info.description = string.read().as_str().into();
+                    }
+                    ui.horizontal(|ui| {
+                        ui.allocate_ui_with_layout(
+                            Vec2::new(ui.available_width(), ui.min_size().y),
+                            Layout::right_to_left(Align::Center),
+                            |ui| {
+                                if ui.button("OK").clicked() {
+                                    self.do_update(Message::AddProfile);
+                                }
+                                if ui.button("Close").clicked() {
+                                    self.clear();
+                                }
+                                ui.shrink_width_to_current();
+                            },
+                        );
+                    });
+                });
+        }
+    }
+}
 
 impl App {
     pub fn render_error(&mut self, ctx: &egui::Context) {

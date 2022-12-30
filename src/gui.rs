@@ -174,6 +174,7 @@ pub enum Message {
     Remerge,
     RemoveMods(Vector<Mod>),
     RenameProfile(String, String),
+    RequestMeta(PathBuf),
     RequestOptions(Mod, bool),
     ResetMods,
     ResetSettings,
@@ -202,6 +203,7 @@ struct App {
     hover_index: Option<usize>,
     picker_state: FilePickerState,
     profiles_state: profiles::ProfileManagerState,
+    meta_input: modals::MetaInputModal,
     closed_tabs: im::HashMap<Tabs, NodeIndex>,
     tree: Arc<RwLock<Tree<Tabs>>>,
     focused: FocusedPane,
@@ -243,6 +245,7 @@ impl App {
             hover_index: None,
             picker_state,
             profiles_state: Default::default(),
+            meta_input: Default::default(),
             displayed_mods: mods.clone(),
             mods,
             temp_settings,
@@ -511,7 +514,7 @@ impl App {
                             .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
                             .pick_file()
                         {
-                            tasks::open_mod(&core, &path)
+                            tasks::open_mod(&core, &path, None)
                         } else {
                             Ok(Message::Noop)
                         }
@@ -519,7 +522,8 @@ impl App {
                 }
                 Message::OpenMod(path) => {
                     let core = self.core.clone();
-                    self.do_task(move |_| tasks::open_mod(&core, &path));
+                    let meta = self.meta_input.take();
+                    self.do_task(move |_| tasks::open_mod(&core, &path, meta));
                 }
                 Message::HandleMod(mod_) => {
                     self.busy = false;
@@ -691,6 +695,7 @@ impl App {
                         self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
                     }
                 }
+                Message::RequestMeta(path) => todo!(),
             }
             ctx.request_repaint();
         }

@@ -8,33 +8,40 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use im::Vector;
 use join_str::jstr;
-
 use uk_manager::{
     core::Manager,
     mods::Mod,
     settings::{DeployConfig, Platform, PlatformSettings},
 };
-use uk_mod::{unpack::ModReader, Manifest};
+use uk_mod::{unpack::ModReader, Manifest, Meta};
 use uk_reader::ResourceReader;
 
 use super::{package::ModPackerBuilder, Message};
 
-fn is_probably_a_mod(path: &Path) -> bool {
+fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
     let ext = path
         .extension()
         .and_then(|e| e.to_str().map(|e| e.to_lowercase()))
         .unwrap_or_default();
     if ext != "zip" && ext != "7z" {
-        false
+        (false, false)
     } else if ext == "7z" {
-        true
+        (true, false)
+    } else if path
+        .file_name()
+        .unwrap_or_default()
+        .to_str()
+        .unwrap_or_default()
+        == "rules.txt"
+    {
+        (true, true)
     } else {
         match fs::File::open(path)
             .context("")
             .and_then(|f| zip::ZipArchive::new(BufReader::new(f)).context(""))
         {
             Ok(zip) => {
-                zip.file_names().any(|n| {
+                let is_a_mod = zip.file_names().any(|n| {
                     [
                         "content",
                         "aoc",
@@ -48,25 +55,34 @@ fn is_probably_a_mod(path: &Path) -> bool {
                     ]
                     .into_iter()
                     .any(|root| n.starts_with(root))
-                })
+                });
+                let has_meta = zip.file_names().any(|n| n == "rules.txt");
+                (is_a_mod, has_meta)
             }
-            Err(_) => false,
+            Err(_) => (false, false),
         }
     }
 }
 
-pub fn open_mod(core: &Manager, path: &Path) -> Result<Message> {
+pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Message> {
     log::info!("Opening mod at {}", path.display());
     let mod_ = match ModReader::open_peek(path, vec![]) {
         Ok(reader) => Mod::from_reader(reader),
         Err(err) => {
             log::warn!("Could not open mod, let's find out why");
             let err_msg = err.to_string();
-            if (err_msg.contains("meta file") || err_msg.contains("d Zip"))
-                && is_probably_a_mod(path)
+            if (err_msg.contains("meta file")
+                || err_msg.contains("meta.toml")
+                || err_msg.contains("d Zip"))
+                && let (is_mod, has_meta) = is_probably_a_mod_and_has_meta(path)
+                && is_mod
             {
                 log::info!("Maybe it's not a UKMM mod, let's to convert it");
-                let converted_path = uk_manager::mods::convert_gfx(core, path)?;
+                if !has_meta && meta.is_none() {
+                    log::info!("Mod has no meta info, requesting manual input");
+                    return Ok(Message::RequestMeta(path.to_path_buf()));
+                }
+                let converted_path = uk_manager::mods::convert_gfx(core, path, meta)?;
                 Mod::from_reader(
                     ModReader::open_peek(converted_path, vec![])
                         .context("Failed to open converted mod")?,
