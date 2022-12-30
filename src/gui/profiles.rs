@@ -152,10 +152,22 @@ impl App {
                                     ui.group(|ui| {
                                         ui.vertical(|ui| {
                                             settings.profiles().for_each(|p| {
+                                                let font = ui
+                                                    .style()
+                                                    .text_styles
+                                                    .get(&TextStyle::Body)
+                                                    .expect("Body style is real, bro")
+                                                    .clone();
+                                                let color = ui.style().visuals.text_color();
+                                                let label = ui.fonts().layout_no_wrap(
+                                                    p.as_str().into(),
+                                                    font,
+                                                    color,
+                                                );
                                                 if ui
                                                     .selectable_label(
                                                         current_profile.name == p,
-                                                        p.as_str(),
+                                                        label,
                                                     )
                                                     .clicked()
                                                 {
