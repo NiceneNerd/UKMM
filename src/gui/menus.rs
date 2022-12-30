@@ -1,12 +1,12 @@
 use super::*;
 
 impl App {
-    pub fn render_menu(&mut self, ctx: &egui::Context) {
+    pub fn render_menu(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             ui.style_mut().visuals.button_frame = false;
             ui.set_enabled(!self.modal_open());
             ui.horizontal(|ui| {
-                ui.menu_button("File", |ui| self.file_menu(ui));
+                ui.menu_button("File", |ui| self.file_menu(ui, frame));
                 ui.menu_button("Tools", |ui| self.tool_menu(ui));
                 ui.menu_button("Window", |ui| self.window_menu(ui));
                 ui.menu_button("Help", |ui| self.help_menu(ui))
@@ -14,10 +14,13 @@ impl App {
         });
     }
 
-    pub fn file_menu(&self, ui: &mut Ui) {
+    pub fn file_menu(&self, ui: &mut Ui, frame: &mut eframe::Frame) {
         if ui.button("Open mod…").clicked() {
             ui.close_menu();
             self.do_update(Message::SelectFile);
+        }
+        if ui.button("Exit").clicked() {
+            frame.close();
         }
     }
 

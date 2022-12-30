@@ -709,13 +709,13 @@ impl App {
 static LAYOUT_FIX: Once = Once::new();
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         self.handle_update(ctx);
         self.render_error(ctx);
         self.render_confirm(ctx);
         self.render_new_profile(ctx);
         self.render_about(ctx);
-        self.render_menu(ctx);
+        self.render_menu(ctx, frame);
         self.render_option_picker(ctx);
         self.render_profiles_modal(ctx);
         self.meta_input.ui(ctx);

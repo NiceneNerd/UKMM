@@ -200,7 +200,6 @@ fn build_tree(node: &mut PathNode, parts: &Vec<String>, depth: usize) {
 
 fn render_dir(dir: &PathNode, ui: &mut Ui) {
     if !dir.children.is_empty() {
-        ui.spacing_mut().icon_width_inner = 4.;
         egui::CollapsingHeader::new(dir.name.as_str())
             .id_source(dir)
             .show(ui, |ui| {

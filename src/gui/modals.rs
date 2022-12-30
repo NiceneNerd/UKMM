@@ -55,7 +55,6 @@ impl MetaInputModal {
             egui::Window::new("Provide Mod Information")
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
-                // .auto_sized()
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     ui.spacing_mut().item_spacing.y = 8.0;
