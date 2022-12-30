@@ -4,20 +4,34 @@ use uk_ui::editor::EditableValue;
 
 use super::*;
 
-#[derive(Debug, Default)]
-pub struct MetaInputModal(Option<Meta>);
+#[derive(Debug)]
+pub struct MetaInputModal {
+    meta:   Option<Meta>,
+    path:   Option<PathBuf>,
+    sender: Sender<Message>,
+}
 
 impl MetaInputModal {
+    pub fn new(sender: Sender<Message>) -> Self {
+        Self {
+            meta: None,
+            path: None,
+            sender,
+        }
+    }
+
     pub fn clear(&mut self) {
-        self.0 = None;
+        self.meta = None;
+        self.path = None;
+        self.sender.send(Message::Noop).expect("Broken channel");
     }
 
     pub fn take(&mut self) -> Option<Meta> {
-        self.0.take()
+        self.meta.take()
     }
 
-    pub fn open(&mut self, platform: Platform) {
-        self.0 = Some(Meta {
+    pub fn open(&mut self, path: PathBuf, platform: Platform) {
+        self.meta = Some(Meta {
             name: Default::default(),
             description: Default::default(),
             category: "Other".into(),
@@ -27,35 +41,42 @@ impl MetaInputModal {
             platform: platform.into(),
             url: Default::default(),
             version: 1.0,
-        })
+        });
+        self.path = Some(path);
+    }
+
+    pub fn is_open(&self) -> bool {
+        self.meta.is_some()
     }
 
     pub fn ui(&mut self, ctx: &egui::Context) {
-        if let Some(info) = self.0.as_mut() {
+        let mut should_clear = false;
+        if let Some(meta) = self.meta.as_mut() {
             egui::Window::new("Provide Mod Information")
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
-                .auto_sized()
+                // .auto_sized()
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
+                    ui.spacing_mut().item_spacing.y = 8.0;
                     ui.label(
                         "The mod you selected does not include any metadata. Please provide the \
                          basics below:",
                     );
                     ui.label("Name");
-                    info.name.edit_ui_with_id(ui, "mod-meta-name");
+                    meta.name.edit_ui_with_id(ui, "mod-meta-name");
                     egui::ComboBox::new("mod-meta-cat", "Category")
-                        .selected_text(info.category.as_str())
+                        .selected_text(meta.category.as_str())
                         .show_ui(ui, |ui| {
                             CATEGORIES.iter().for_each(|cat| {
-                                ui.selectable_value(&mut info.category, (*cat).into(), *cat);
+                                ui.selectable_value(&mut meta.category, (*cat).into(), *cat);
                             });
                         });
                     ui.label("Description");
                     ui.small("Some Markdown formatting supported");
                     let string = ui.create_temp_string(
                         "mod-meta-desc",
-                        Some(info.description.as_str().into()),
+                        Some(meta.description.as_str().into()),
                     );
                     if egui::TextEdit::multiline(string.write().deref_mut())
                         .desired_width(f32::INFINITY)
@@ -63,7 +84,7 @@ impl MetaInputModal {
                         .response
                         .changed()
                     {
-                        info.description = string.read().as_str().into();
+                        meta.description = string.read().as_str().into();
                     }
                     ui.horizontal(|ui| {
                         ui.allocate_ui_with_layout(
@@ -71,16 +92,25 @@ impl MetaInputModal {
                             Layout::right_to_left(Align::Center),
                             |ui| {
                                 if ui.button("OK").clicked() {
-                                    self.do_update(Message::AddProfile);
+                                    self.sender
+                                        .send(Message::OpenMod(
+                                            self.path
+                                                .take()
+                                                .expect("There should be a mod path here"),
+                                        ))
+                                        .expect("Broken channel");
                                 }
                                 if ui.button("Close").clicked() {
-                                    self.clear();
+                                    should_clear = true;
                                 }
                                 ui.shrink_width_to_current();
                             },
                         );
                     });
                 });
+            if should_clear {
+                self.clear();
+            }
         }
     }
 }

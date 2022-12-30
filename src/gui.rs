@@ -47,7 +47,7 @@ use uk_ui::{
 };
 
 use self::package::ModPackerBuilder;
-use crate::logger::Entry;
+use crate::{gui::modals::MetaInputModal, logger::Entry};
 
 impl Entry {
     pub fn format(&self, job: &mut LayoutJob) {
@@ -239,13 +239,13 @@ impl App {
             .and_then(|s| serde_json::from_str(&s).context(""))
             .unwrap_or_default();
         Self {
-            channel: (send, recv),
             selected: mods.front().cloned().into_iter().collect(),
             drag_index: None,
             hover_index: None,
             picker_state,
             profiles_state: Default::default(),
-            meta_input: Default::default(),
+            meta_input: MetaInputModal::new(send.clone()),
+            channel: (send, recv),
             displayed_mods: mods.clone(),
             mods,
             temp_settings,
@@ -279,6 +279,7 @@ impl App {
             || self.new_profile.is_some()
             || self.show_package_deps
             || self.opt_folders.is_some()
+            || self.meta_input.is_open()
     }
 
     fn do_update(&self, message: Message) {
@@ -695,7 +696,10 @@ impl App {
                         self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
                     }
                 }
-                Message::RequestMeta(path) => todo!(),
+                Message::RequestMeta(path) => {
+                    self.meta_input
+                        .open(path, self.core.settings().current_mode);
+                }
             }
             ctx.request_repaint();
         }
@@ -714,6 +718,7 @@ impl eframe::App for App {
         self.render_menu(ctx);
         self.render_option_picker(ctx);
         self.render_profiles_modal(ctx);
+        self.meta_input.ui(ctx);
         let layer_id = LayerId::background();
         let max_rect = ctx.available_rect();
         let clip_rect = ctx.available_rect();
