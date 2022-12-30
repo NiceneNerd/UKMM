@@ -12,6 +12,8 @@
 # Usage
 
 - [Interface](interface.md)
+- [Using Mods](using-mods.md)
+- [Load Order](load-order.md)
 
 # General
 
