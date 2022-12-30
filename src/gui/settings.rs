@@ -41,7 +41,7 @@ fn render_setting<R>(
     ui.horizontal(|ui| add_contents(ui))
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(tag = "type")]
 pub enum DumpType {
     Unpacked {
@@ -98,7 +98,7 @@ impl From<&ResourceReader> for DumpType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlatformSettingsUI {
     pub language: Language,
     pub profile: String,
