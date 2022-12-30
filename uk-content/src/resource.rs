@@ -585,11 +585,11 @@ impl MergeableResource {
             Ok(Some(Self::WorldInfo(Box::new(WorldInfo::from_binary(
                 data,
             )?))))
-        } else if &data[0..4] == b"AAMP" {
+        } else if data.len() > 4 && &data[0..4] == b"AAMP" {
             Ok(Some(Self::GenericAamp(Box::new(
                 roead::aamp::ParameterIO::from_binary(data)?,
             ))))
-        } else if let magic = &data[0..2] && (magic == b"BY" || magic == b"YB") {
+        } else if data.len() > 2 && let magic = &data[0..2] && (magic == b"BY" || magic == b"YB") {
             Ok(Some(Self::GenericByml(Box::new(
                 Byml::from_binary(data)?,
             ))))
