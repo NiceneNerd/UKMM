@@ -53,11 +53,11 @@ There are three folders to specify for an unpacked game dump.
 
 - **Base Folder**: On Switch, following the usual guides with `nxdumptool`, this
   will usually be the combined base game and v1.6.0 update files. The path will
-  probably contain the title ID of `01007EF00011E000` and end in `romfs`.
+  probably contain the title ID of `01007EF00011E800` and end in `romfs`.
 
   You can verify the path is correct if it contains over 7000 files in the
   `Actor/Pack` folder.
 - **DLC Folder**: This contains most of the assets for the BOTW DLC. The path
-  will probably contain a title ID like `01007EF00011E001` and end in `romfs`.
+  will probably contain a title ID like `01007EF00011F001` and end in `romfs`.
 
   You can verify the path is correct if it contains `Pack/AocMainField.pack`.
