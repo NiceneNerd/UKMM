@@ -1,6 +1,5 @@
 /target
 /.vscode
-/.cargo
 tmp.txt
 /uk-mod/test
 jsconfig.json
