@@ -3310,9 +3310,9 @@ dependencies = [
 
 [[package]]
 name = "roead"
-version = "0.18.3"
+version = "0.18.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e87d257829c239e4feb64ee9a09207c9407a48d3ac12b719eb2c68e3ce226368"
+checksum = "5729037c979b6da114e6432b073d83bd0477e9f2d39683909fd7226f6d3c17f8"
 dependencies = [
  "almost",
  "base64 0.13.1",

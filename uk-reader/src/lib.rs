@@ -213,7 +213,7 @@ impl ResourceReader {
                 self.sarc_cache
                     .try_get_with(canonicalize(parts[1]), || -> uk_content::Result<_> {
                         let sarc = Sarc::new(
-                            root.get_data(parts[1])?
+                            root.get_data(parts[1])
                                 .context("Couldn't get nested SARC")?
                                 .to_vec(),
                         )?;
@@ -227,7 +227,7 @@ impl ResourceReader {
         let parent = nested_parent.as_ref().unwrap_or(&root);
         Ok(roead::yaz0::decompress_if(
             parent
-                .get_data(canon)?
+                .get_data(canon)
                 .context("Could not get nested file")?,
         )
         .into())

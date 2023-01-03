@@ -12,7 +12,7 @@ fs-err = "2.9.0"
 minicbor-ser = "0.2.0"
 rayon = "1.6.1"
 rfd = "0.10.0"
-roead = { version = "0.18.3", features = ["with-serde", "yaml"] }
+roead = { version = "0.18.4", features = ["with-serde", "yaml"] }
 toml = "0.5.9"
 uk-content = { path = "../uk-content" }
 uk-manager = { path ="../uk-manager" }
