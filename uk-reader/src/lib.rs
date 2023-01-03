@@ -187,7 +187,7 @@ impl ResourceReader {
         Ok(self.get_or_add_resource(path, canon)?)
     }
 
-    fn get_from_sarc(&self, canon: &str, nest_path: &str) -> uk_content::Result<Arc<ResourceData>> {
+    pub fn get_bytes_from_sarc(&self, canon: &str, nest_path: &str) -> uk_content::Result<Vec<u8>> {
         let parts = nest_path.split("//").collect::<Vec<_>>();
         let root = self
             .sarc_cache
@@ -217,14 +217,26 @@ impl ResourceReader {
             None
         };
         let parent = nested_parent.as_ref().unwrap_or(&root);
-        let data = roead::yaz0::decompress_if(
+        Ok(roead::yaz0::decompress_if(
             parent
                 .get_data(canon)?
-                .context("COuld not get nested file")?,
-        );
-        let resource = ResourceData::from_binary(canon, data.as_ref())?;
-        if is_mergeable_sarc(canon, data.as_ref()) {
-            self.process_sarc(Sarc::new(data.as_ref())?, parts[2])?;
+                .context("Could not get nested file")?,
+        )
+        .into())
+    }
+
+    pub fn get_from_sarc(
+        &self,
+        canon: &str,
+        nest_path: &str,
+    ) -> uk_content::Result<Arc<ResourceData>> {
+        let data = self.get_bytes_from_sarc(canon, nest_path)?;
+        let resource = ResourceData::from_binary(canon, &data)?;
+        if is_mergeable_sarc(canon, &data) {
+            self.process_sarc(
+                Sarc::new(&data)?,
+                nest_path.split("//").last().unwrap_or_default(),
+            )?;
         }
         Ok(self.cache.get_with(canon.into(), || Arc::new(resource)))
     }

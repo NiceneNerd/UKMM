@@ -1,10 +1,15 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::{Context, Result};
 use roead::{aamp::ParameterIO, byml::Byml};
 use tempfile::tempdir;
 use uk_mod::Meta;
+use uk_reader::ResourceReader;
 mod actorinfo;
+mod areadata;
 
 #[derive(Debug)]
 struct BnpConverter<'core> {
@@ -15,6 +20,11 @@ struct BnpConverter<'core> {
 }
 
 impl BnpConverter<'_> {
+    #[inline(always)]
+    fn dump(&self) -> Option<Arc<ResourceReader>> {
+        self.core.settings().dump()
+    }
+
     fn convert(self) -> Result<PathBuf> {
         Ok(todo!())
     }
