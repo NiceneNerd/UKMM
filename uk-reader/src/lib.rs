@@ -187,6 +187,14 @@ impl ResourceReader {
         Ok(self.get_or_add_resource(path, canon)?)
     }
 
+    pub fn get_bytes_uncached(&self, path: impl AsRef<Path>) -> Result<Vec<u8>> {
+        self.source().get_data(path.as_ref())
+    }
+
+    pub fn get_aoc_bytes_uncached(&self, path: impl AsRef<Path>) -> Result<Vec<u8>> {
+        self.source().get_aoc_file_data(path.as_ref())
+    }
+
     pub fn get_bytes_from_sarc(&self, canon: &str, nest_path: &str) -> uk_content::Result<Vec<u8>> {
         let parts = nest_path.split("//").collect::<Vec<_>>();
         let root = self
