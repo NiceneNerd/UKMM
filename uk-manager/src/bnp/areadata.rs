@@ -31,17 +31,14 @@ impl BnpConverter<'_> {
                 .context("No dump for current mode")?
                 .get_from_sarc(
                     "Ecosystem/AreaData.byml",
-                    "content/Pack/Bootup.pack//Ecosystem/AreaData.sbyml",
+                    "Pack/Bootup.pack//Ecosystem/AreaData.sbyml",
                 )?;
             if let Some(MergeableResource::AreaData(data)) = areadata.as_mergeable() {
-                fs::write(
-                    self.path
-                        .join(self.content)
-                        .join("Actor/AreaData.product.sbyml"),
-                    compress(
-                        data.merge(&diff)
-                            .into_binary(self.core.settings().current_mode.into()),
-                    ),
+                self.inject_into_sarc(
+                    "Pack/Bootup.pack//Ecosystem/AreaData.sbyml",
+                    data.merge(&diff)
+                        .into_binary(self.core.settings().current_mode.into()),
+                    false,
                 )?;
             }
         }

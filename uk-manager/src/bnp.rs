@@ -16,6 +16,7 @@ use uk_mod::Meta;
 use uk_reader::ResourceReader;
 mod actorinfo;
 mod areadata;
+mod deepmerge;
 
 #[derive(Debug)]
 struct BnpConverter<'core> {
@@ -79,6 +80,8 @@ impl BnpConverter<'_> {
     }
 
     fn convert(self) -> Result<PathBuf> {
+        self.handle_actorinfo()?;
+        self.handle_areadata()?;
         Ok(todo!())
     }
 }
