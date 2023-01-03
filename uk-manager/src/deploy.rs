@@ -225,7 +225,7 @@ impl Manager {
         if settings.current_mode == Platform::WiiU
             && settings.platform_config().map(|c| c.cemu_rules).unwrap_or(false)
             && let rules_path = config.output.join("rules.txt")
-            && !rules_path.exists() 
+            && !rules_path.exists()
         {
             fs::write(rules_path, include_str!("../../assets/rules.txt"))?;
         }
