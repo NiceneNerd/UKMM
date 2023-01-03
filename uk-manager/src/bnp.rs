@@ -9,6 +9,7 @@ use roead::{
     aamp::ParameterIO,
     byml::Byml,
     sarc::{Sarc, SarcWriter},
+    yaz0::compress_if,
 };
 use tempfile::tempdir;
 use uk_mod::Meta;
@@ -55,7 +56,25 @@ impl BnpConverter<'_> {
                     .filter_map(|file| file.name.map(|name| (name.into(), file.data.to_vec()))),
             );
         }
-        todo!();
+        let mut nested = None;
+        if parts.len() == 3 {
+            let nested_path = parts[1];
+            nested = Some(SarcWriter::from_sarc(&Sarc::new(
+                sarc.files.get(nested_path).context("Missing nested SARC")?,
+            )?));
+        }
+        let parent = nested.as_mut().unwrap_or(&mut sarc);
+        let dest_path = *parts.iter().last().expect("This exists");
+        let data = compress_if(&data, dest_path);
+        parent.files.insert(dest_path.into(), data.to_vec());
+        if let Some(mut nested) = nested {
+            let nested_path = parts[1];
+            sarc.files.insert(
+                nested_path.into(),
+                compress_if(&nested.to_binary(), nested_path).to_vec(),
+            );
+        }
+        fs::write(&base_path, compress_if(&sarc.to_binary(), &base_path))?;
         Ok(())
     }
 
