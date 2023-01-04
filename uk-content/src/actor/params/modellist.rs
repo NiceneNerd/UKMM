@@ -227,7 +227,6 @@ mod tests {
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -244,7 +243,6 @@ mod tests {
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -253,7 +251,6 @@ mod tests {
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -267,7 +264,6 @@ mod tests {
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -276,7 +272,6 @@ mod tests {
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -293,7 +288,6 @@ mod tests {
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_data("Actor/ModelList/Npc_TripMaster_00.bmodellist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();

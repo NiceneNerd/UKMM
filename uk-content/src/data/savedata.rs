@@ -296,12 +296,12 @@ mod tests {
 
     fn load_savedata() -> Byml {
         let sv = load_savedata_sarc();
-        Byml::from_binary(sv.get_data("/saveformat_0.bgsvdata").unwrap().unwrap()).unwrap()
+        Byml::from_binary(sv.get_data("/saveformat_0.bgsvdata").unwrap()).unwrap()
     }
 
     fn load_mod_savedata() -> Byml {
         let sv = load_savedata_sarc();
-        Byml::from_binary(sv.get_data("/saveformat_0.mod.bgsvdata").unwrap().unwrap()).unwrap()
+        Byml::from_binary(sv.get_data("/saveformat_0.mod.bgsvdata").unwrap()).unwrap()
     }
 
     #[test]

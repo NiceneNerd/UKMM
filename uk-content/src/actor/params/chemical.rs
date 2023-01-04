@@ -215,10 +215,7 @@ mod tests {
     fn serde() {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor
-                .get_data("Actor/Chemical/NPC.bchemical")
-                .unwrap()
-                .unwrap(),
+            actor.get_data("Actor/Chemical/NPC.bchemical").unwrap(),
         )
         .unwrap();
         let chemical = super::Chemical::try_from(&pio).unwrap();
@@ -232,19 +229,13 @@ mod tests {
     fn diff() {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor
-                .get_data("Actor/Chemical/NPC.bchemical")
-                .unwrap()
-                .unwrap(),
+            actor.get_data("Actor/Chemical/NPC.bchemical").unwrap(),
         )
         .unwrap();
         let chemical = super::Chemical::try_from(&pio).unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio2 = roead::aamp::ParameterIO::from_binary(
-            actor2
-                .get_data("Actor/Chemical/NPC.bchemical")
-                .unwrap()
-                .unwrap(),
+            actor2.get_data("Actor/Chemical/NPC.bchemical").unwrap(),
         )
         .unwrap();
         let chemical2 = super::Chemical::try_from(&pio2).unwrap();
@@ -255,19 +246,13 @@ mod tests {
     fn merge() {
         let actor = crate::tests::test_base_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor
-                .get_data("Actor/Chemical/NPC.bchemical")
-                .unwrap()
-                .unwrap(),
+            actor.get_data("Actor/Chemical/NPC.bchemical").unwrap(),
         )
         .unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let chemical = super::Chemical::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
-            actor2
-                .get_data("Actor/Chemical/NPC.bchemical")
-                .unwrap()
-                .unwrap(),
+            actor2.get_data("Actor/Chemical/NPC.bchemical").unwrap(),
         )
         .unwrap();
         let chemical2 = super::Chemical::try_from(&pio2).unwrap();
@@ -280,10 +265,7 @@ mod tests {
     fn info() {
         let actor = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor
-                .get_data("Actor/Chemical/NPC.bchemical")
-                .unwrap()
-                .unwrap(),
+            actor.get_data("Actor/Chemical/NPC.bchemical").unwrap(),
         )
         .unwrap();
         let chemical = super::Chemical::try_from(&pio).unwrap();

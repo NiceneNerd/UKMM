@@ -780,7 +780,6 @@ mod tests {
         let pio = ParameterIO::from_binary(
             actor
                 .get_data("Actor/AIProgram/Guardian_A.baiprog")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -810,7 +809,6 @@ mod tests {
         let pio = ParameterIO::from_binary(
             actor
                 .get_data("Actor/AIProgram/Guardian_A.baiprog")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -819,7 +817,6 @@ mod tests {
         let pio2 = ParameterIO::from_binary(
             actor2
                 .get_data("Actor/AIProgram/Guardian_A.baiprog")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -834,7 +831,6 @@ mod tests {
         let pio = ParameterIO::from_binary(
             actor
                 .get_data("Actor/AIProgram/Guardian_A.baiprog")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -843,7 +839,6 @@ mod tests {
         let pio2 = ParameterIO::from_binary(
             actor2
                 .get_data("Actor/AIProgram/Guardian_A.baiprog")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();

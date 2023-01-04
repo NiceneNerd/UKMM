@@ -58,7 +58,6 @@ mod tests {
         let byml = roead::byml::Byml::from_binary(
             actor
                 .get_data("Actor/AnimationInfo/Npc_TripMaster_00.baniminfo")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -75,7 +74,6 @@ mod tests {
         let byml = roead::byml::Byml::from_binary(
             actor
                 .get_data("Actor/AnimationInfo/Npc_TripMaster_00.baniminfo")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -84,7 +82,6 @@ mod tests {
         let byml2 = roead::byml::Byml::from_binary(
             actor2
                 .get_data("Actor/AnimationInfo/Npc_TripMaster_00.baniminfo")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -99,7 +96,6 @@ mod tests {
         let byml = roead::byml::Byml::from_binary(
             actor
                 .get_data("Actor/AnimationInfo/Npc_TripMaster_00.baniminfo")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -108,7 +104,6 @@ mod tests {
         let byml2 = roead::byml::Byml::from_binary(
             actor2
                 .get_data("Actor/AnimationInfo/Npc_TripMaster_00.baniminfo")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();

@@ -281,7 +281,6 @@ mod tests {
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -298,7 +297,6 @@ mod tests {
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -307,7 +305,6 @@ mod tests {
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -322,7 +319,6 @@ mod tests {
         let pio = roead::aamp::ParameterIO::from_binary(
             actor
                 .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -331,7 +327,6 @@ mod tests {
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_data("Actor/RagdollBlendWeight/Moriblin.brgbw")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();

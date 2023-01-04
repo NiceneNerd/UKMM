@@ -56,10 +56,7 @@ mod tests {
     fn serde() {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor
-                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
-                .unwrap()
-                .unwrap(),
+            actor.get_data("Actor/LOD/EnemyNoCalcSkip.blod").unwrap(),
         )
         .unwrap();
         let lod = super::Lod::try_from(&pio).unwrap();
@@ -73,19 +70,13 @@ mod tests {
     fn diff() {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor
-                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
-                .unwrap()
-                .unwrap(),
+            actor.get_data("Actor/LOD/EnemyNoCalcSkip.blod").unwrap(),
         )
         .unwrap();
         let lod = super::Lod::try_from(&pio).unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
-            actor2
-                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
-                .unwrap()
-                .unwrap(),
+            actor2.get_data("Actor/LOD/EnemyNoCalcSkip.blod").unwrap(),
         )
         .unwrap();
         let lod2 = super::Lod::try_from(&pio2).unwrap();
@@ -96,19 +87,13 @@ mod tests {
     fn merge() {
         let actor = crate::tests::test_base_actorpack("Enemy_Guardian_A");
         let pio = roead::aamp::ParameterIO::from_binary(
-            actor
-                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
-                .unwrap()
-                .unwrap(),
+            actor.get_data("Actor/LOD/EnemyNoCalcSkip.blod").unwrap(),
         )
         .unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let lod = super::Lod::try_from(&pio).unwrap();
         let pio2 = roead::aamp::ParameterIO::from_binary(
-            actor2
-                .get_data("Actor/LOD/EnemyNoCalcSkip.blod")
-                .unwrap()
-                .unwrap(),
+            actor2.get_data("Actor/LOD/EnemyNoCalcSkip.blod").unwrap(),
         )
         .unwrap();
         let lod2 = super::Lod::try_from(&pio2).unwrap();

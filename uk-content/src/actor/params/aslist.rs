@@ -219,7 +219,6 @@ mod tests {
         let pio = ParameterIO::from_binary(
             actor
                 .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -236,7 +235,6 @@ mod tests {
         let pio = ParameterIO::from_binary(
             actor
                 .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -245,7 +243,6 @@ mod tests {
         let pio2 = ParameterIO::from_binary(
             actor2
                 .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -259,7 +256,6 @@ mod tests {
         let pio = ParameterIO::from_binary(
             actor
                 .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
@@ -268,7 +264,6 @@ mod tests {
         let pio2 = ParameterIO::from_binary(
             actor2
                 .get_data("Actor/ASList/Npc_TripMaster_00.baslist")
-                .unwrap()
                 .unwrap(),
         )
         .unwrap();
