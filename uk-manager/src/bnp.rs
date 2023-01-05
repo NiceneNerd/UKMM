@@ -123,6 +123,9 @@ impl BnpConverter<'_> {
         self.handle_areadata()?;
         println!("Deepmerge");
         self.handle_deepmerge()?;
+        println!("Drops");
+        self.handle_drops()?;
+
         Ok(todo!())
     }
 }
@@ -144,6 +147,6 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 #[cfg(test)]
 #[test]
 fn test_convert() {
-    let path = "/home/nn/Downloads/link_bmkarmoroverhaul_v35.bnp";
+    let path = "/home/mrm/Downloads/rebalance.bnp";
     convert_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }
