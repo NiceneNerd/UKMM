@@ -15,7 +15,7 @@ use super::BnpConverter;
 
 type DiffMap = FxHashMap<String, DiffEntry>;
 
-enum DiffEntry {
+pub enum DiffEntry {
     Sarc(DiffMap),
     Aamp(ParameterList),
 }
@@ -39,6 +39,7 @@ impl DiffEntry {
 }
 
 fn handle_diff_entry(sarc: &mut SarcWriter, nest_root: &str, contents: &DiffEntry) -> Result<()> {
+    dbg!(sarc.files.keys().collect::<Vec<_>>());
     let nested_bytes = sarc
         .files
         .get(nest_root)
@@ -109,33 +110,23 @@ impl BnpConverter<'_> {
                 .try_for_each(|(root, contents)| -> Result<()> {
                     println!("{root}");
                     let base_path = self.path.join(&root);
+                    base_path.parent().iter().try_for_each(fs::create_dir_all)?;
                     match contents {
                         DiffEntry::Sarc(map) => {
-                            let mut sarc = self.open_or_create_sarc(
-                                &base_path,
-                                root.trim_start_matches(self.aoc)
-                                    .trim_start_matches(self.content)
-                                    .trim_start_matches('/')
-                                    .trim_start_matches('\\'),
-                            )?;
-                            map.iter()
-                                .try_for_each(|(nest_root, contents)| handle_diff_entry(&mut sarc, nest_root, contents))?;
+                            let mut sarc =
+                                self.open_or_create_sarc(&base_path, self.trim_prefixes(&root))?;
+                            map.iter().try_for_each(|(nest_root, contents)| {
+                                handle_diff_entry(&mut sarc, nest_root, contents)
+                            })?;
+                            fs::write(&base_path, compress_if(&sarc.to_binary(), &root))?;
                         }
                         DiffEntry::Aamp(plist) => {
                             let mut pio = ParameterIO::from_binary(
                                 self.dump()
                                     .context("No dump for current mode")?
-                                    .get_bytes_uncached(
-                                        root.trim_start_matches(self.aoc)
-                                            .trim_start_matches(self.content),
-                                    )?,
+                                    .get_bytes_uncached(self.trim_prefixes(&root))?,
                             )?;
                             pio.param_root = merge_plist(&pio.param_root, &plist);
-                            if let parent = base_path.parent().map(PathBuf::from).unwrap_or_default()
-                                && parent.exists()
-                            {
-                                fs::create_dir_all(parent)?;
-                            }
                             fs::write(base_path, pio.to_binary())?;
                         }
                     }

@@ -17,6 +17,7 @@ use uk_reader::ResourceReader;
 mod actorinfo;
 mod areadata;
 mod deepmerge;
+mod packs;
 
 #[derive(Debug)]
 struct BnpConverter<'core> {
@@ -32,24 +33,57 @@ impl BnpConverter<'_> {
         self.core.settings().dump()
     }
 
-    fn open_or_create_sarc(&self, base_path: &Path, root_path: &str) -> Result<SarcWriter> {
-        let mut sarc = SarcWriter::new(self.core.settings().current_mode.into());
-        if !base_path.exists() {
-            fs::write(
-                base_path,
-                self.dump()
-                    .context("No dump for current mode")?
-                    .get_bytes_uncached(root_path)?,
-            )?;
+    #[inline(always)]
+    fn trim_prefixes<'f>(&self, file: &'f str) -> &'f str {
+        file.trim_start_matches(self.content)
+            .trim_start_matches(self.aoc)
+            .trim_start_matches('/')
+            .trim_start_matches('\\')
+    }
+
+    fn open_or_create_sarc(&self, dest_path: &Path, root_path: &str) -> Result<SarcWriter> {
+        let base_sarc = self
+            .dump()
+            .context("No dump for current mode")?
+            .get_bytes_uncached(root_path);
+        if !dest_path.exists() {
+            let base_sarc = base_sarc?;
+            fs::write(dest_path, &base_sarc)?;
+            Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc)?))
         } else {
-            let existing = Sarc::new(fs::read(base_path)?)?;
-            sarc.files.extend(
-                existing
-                    .files()
-                    .filter_map(|file| file.name.map(|name| (name.into(), file.data.to_vec()))),
-            );
+            let stripped = Sarc::new(fs::read(dest_path)?)?;
+            let mut sarc = SarcWriter::from_sarc(&stripped);
+            if let Ok(base_sarc) =
+                base_sarc.and_then(|data| Ok(Sarc::new(data).map_err(anyhow::Error::from)?))
+            {
+                sarc.files.extend(base_sarc.files().filter_map(|file| {
+                    file.name().and_then(|name| {
+                        match (stripped.get(name), file.is_sarc()) {
+                            // If it's not in the stripped SARC, add it from the base game
+                            (None, _) => Some((name.into(), file.data.to_vec())),
+                            // If it is in the stripped SARC, but it's not a nested SARC, skip it
+                            (Some(_), false) => None,
+                            // If it is in the stripped SARC, and it's a nested SARC, fill it up
+                            (Some(stripped_file), true) => {
+                                let stripped_nested = Sarc::new(stripped_file.data).ok()?;
+                                let base_nested = Sarc::new(file.data).ok()?;
+                                let mut nested_merged = SarcWriter::from_sarc(&base_nested);
+                                nested_merged
+                                    .files
+                                    .extend(stripped_nested.files().filter_map(|file| {
+                                        file.name().map(|name| (name.into(), file.data.to_vec()))
+                                    }));
+                                Some((
+                                    name.into(),
+                                    compress_if(&nested_merged.to_binary(), name).to_vec(),
+                                ))
+                            }
+                        }
+                    })
+                }))
+            }
+            Ok(sarc)
         }
-        Ok(sarc)
     }
 
     fn inject_into_sarc(&self, nest_path: &str, data: Vec<u8>, dlc: bool) -> Result<()> {
@@ -112,6 +146,6 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 #[cfg(test)]
 #[test]
 fn test_convert() {
-    let path = "/home/nn/Downloads/SecondWindv1.9.13.bnp";
+    let path = "/home/mrm/Downloads/link_bmkarmoroverhaul_v35.bnp";
     convert_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }

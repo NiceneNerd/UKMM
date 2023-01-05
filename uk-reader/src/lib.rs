@@ -195,7 +195,7 @@ impl ResourceReader {
         self.source().get_aoc_file_data(path.as_ref())
     }
 
-    pub fn get_bytes_from_sarc(&self, canon: &str, nest_path: &str) -> uk_content::Result<Vec<u8>> {
+    pub fn get_bytes_from_sarc(&self, nest_path: &str) -> uk_content::Result<Vec<u8>> {
         let parts = nest_path.split("//").collect::<Vec<_>>();
         let root = self
             .sarc_cache
@@ -238,7 +238,7 @@ impl ResourceReader {
         canon: &str,
         nest_path: &str,
     ) -> uk_content::Result<Arc<ResourceData>> {
-        let data = self.get_bytes_from_sarc(canon, nest_path)?;
+        let data = self.get_bytes_from_sarc(nest_path)?;
         let resource = ResourceData::from_binary(canon, &data)?;
         if is_mergeable_sarc(canon, &data) {
             self.process_sarc(
