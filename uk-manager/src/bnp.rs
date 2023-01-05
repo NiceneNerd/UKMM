@@ -100,7 +100,7 @@ impl BnpConverter<'_> {
         if parts.len() == 3 {
             let nested_path = parts[1];
             nested = Some(SarcWriter::from_sarc(&Sarc::new(
-                sarc.files.get(nested_path).context("Missing nested SARC")?,
+                sarc.get_file(nested_path).context("Missing nested SARC")?,
             )?));
         }
         let parent = nested.as_mut().unwrap_or(&mut sarc);
@@ -109,10 +109,7 @@ impl BnpConverter<'_> {
         parent.files.insert(dest_path.into(), data.to_vec());
         if let Some(mut nested) = nested {
             let nested_path = parts[1];
-            sarc.files.insert(
-                nested_path.into(),
-                compress_if(&nested.to_binary(), nested_path).to_vec(),
-            );
+            sarc.add_file(nested_path, compress_if(&nested.to_binary(), nested_path));
         }
         fs::write(&base_path, compress_if(&sarc.to_binary(), &base_path))?;
         Ok(())
@@ -146,6 +143,6 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 #[cfg(test)]
 #[test]
 fn test_convert() {
-    let path = "/home/mrm/Downloads/link_bmkarmoroverhaul_v35.bnp";
+    let path = "/home/nn/Downloads/link_bmkarmoroverhaul_v35.bnp";
     convert_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }

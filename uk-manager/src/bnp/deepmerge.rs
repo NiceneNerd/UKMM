@@ -39,10 +39,8 @@ impl DiffEntry {
 }
 
 fn handle_diff_entry(sarc: &mut SarcWriter, nest_root: &str, contents: &DiffEntry) -> Result<()> {
-    dbg!(sarc.files.keys().collect::<Vec<_>>());
     let nested_bytes = sarc
-        .files
-        .get(nest_root)
+        .get_file(nest_root)
         .with_context(|| format!("SARC missing file at {nest_root}"))?;
     match contents {
         DiffEntry::Sarc(nest_map) => {
