@@ -49,7 +49,7 @@ support is planned.
 
 ### Unpacked Dump
 
-There are three folders to specify for an unpacked game dump.
+There are two folders to specify for an unpacked game dump.
 
 - **Base Folder**: On Switch, following the usual guides with `nxdumptool`, this
   will usually be the combined base game and v1.6.0 update files. The path will
