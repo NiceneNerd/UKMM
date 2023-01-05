@@ -17,6 +17,7 @@ use uk_reader::ResourceReader;
 mod actorinfo;
 mod areadata;
 mod deepmerge;
+mod drops;
 mod packs;
 
 #[derive(Debug)]
