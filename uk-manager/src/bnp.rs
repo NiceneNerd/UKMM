@@ -32,6 +32,26 @@ impl BnpConverter<'_> {
         self.core.settings().dump()
     }
 
+    fn open_or_create_sarc(&self, base_path: &Path, root_path: &str) -> Result<SarcWriter> {
+        let mut sarc = SarcWriter::new(self.core.settings().current_mode.into());
+        if !base_path.exists() {
+            fs::write(
+                base_path,
+                self.dump()
+                    .context("No dump for current mode")?
+                    .get_bytes_uncached(root_path)?,
+            )?;
+        } else {
+            let existing = Sarc::new(fs::read(base_path)?)?;
+            sarc.files.extend(
+                existing
+                    .files()
+                    .filter_map(|file| file.name.map(|name| (name.into(), file.data.to_vec()))),
+            );
+        }
+        Ok(sarc)
+    }
+
     fn inject_into_sarc(&self, nest_path: &str, data: Vec<u8>, dlc: bool) -> Result<()> {
         let parts = nest_path.split("//").collect::<Vec<_>>();
         if parts.len() < 2 {
@@ -41,22 +61,7 @@ impl BnpConverter<'_> {
             .path
             .join(if dlc { self.aoc } else { self.content })
             .join(parts[0]);
-        let mut sarc = SarcWriter::new(self.core.settings().current_mode.into());
-        if !base_path.exists() {
-            fs::write(
-                &base_path,
-                self.dump()
-                    .context("No dump for current mode")?
-                    .get_bytes_uncached(parts[0])?,
-            )?;
-        } else {
-            let existing = Sarc::new(fs::read(&base_path)?)?;
-            sarc.files.extend(
-                existing
-                    .files()
-                    .filter_map(|file| file.name.map(|name| (name.into(), file.data.to_vec()))),
-            );
-        }
+        let mut sarc = self.open_or_create_sarc(&base_path, parts[0])?;
         let mut nested = None;
         if parts.len() == 3 {
             let nested_path = parts[1];
@@ -80,14 +85,19 @@ impl BnpConverter<'_> {
     }
 
     fn convert(self) -> Result<PathBuf> {
+        println!("Actor info");
         self.handle_actorinfo()?;
+        println!("Areadata");
         self.handle_areadata()?;
+        println!("Deepmerge");
+        self.handle_deepmerge()?;
         Ok(todo!())
     }
 }
 
 pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = tempdir()?.into_path();
+    dbg!(&tempdir);
     sevenz_rust::decompress_file(path, &tempdir).context("Failed to extract BNP")?;
     let (content, aoc) = uk_content::platform_prefixes(core.settings().current_mode.into());
     let converter = BnpConverter {
@@ -97,4 +107,11 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
         aoc,
     };
     converter.convert()
+}
+
+#[cfg(test)]
+#[test]
+fn test_convert() {
+    let path = "/home/nn/Downloads/SecondWindv1.9.13.bnp";
+    convert_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }

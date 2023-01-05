@@ -31,7 +31,7 @@ impl BnpConverter<'_> {
                 .settings()
                 .dump()
                 .context("No dump for current platform")?
-                .get_resource("Actor/ActorInfo.product.sbyml")?;
+                .get_data("Actor/ActorInfo.product.sbyml")?;
             if let Some(MergeableResource::ActorInfo(info)) = actorinfo.as_mergeable() {
                 fs::write(
                     self.path

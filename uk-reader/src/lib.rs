@@ -227,8 +227,8 @@ impl ResourceReader {
         let parent = nested_parent.as_ref().unwrap_or(&root);
         Ok(roead::yaz0::decompress_if(
             parent
-                .get_data(canon)
-                .context("Could not get nested file")?,
+                .get_data(parts[parts.len() - 1])
+                .with_context(|| format!("Could not get nested file at {nest_path}"))?,
         )
         .into())
     }
