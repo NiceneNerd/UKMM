@@ -1,6 +1,9 @@
 use anyhow::{Context, Result};
 use fs_err as fs;
-use roead::byml::{Byml, Hash};
+use roead::{
+    byml::{Byml, Hash},
+    yaz0::{compress, decompress},
+};
 use rustc_hash::FxHashMap;
 use smartstring::alias::String;
 
@@ -54,11 +57,11 @@ impl BnpConverter<'_> {
                 .into_iter()
                 .map(|(cat, entries)| -> Result<(String, Hash)> { Ok((cat, entries.into_hash()?)) })
                 .collect::<Result<_>>()?;
-            let mut base: FxHashMap<String, Hash> = Byml::from_binary(
+            let mut base: FxHashMap<String, Hash> = Byml::from_binary(decompress(
                 self.dump()
                     .context("No dump for current mode")?
                     .get_aoc_bytes_uncached("Map/MainField/Static.smubin")?,
-            )?
+            )?)?
             .into_hash()?
             .into_iter()
             .map(|(cat, entries)| -> Result<(String, Hash)> {
@@ -82,7 +85,8 @@ impl BnpConverter<'_> {
                 .map(|(cat, entries)| (cat, entries.into_values().collect()))
                 .collect();
             let dest_path = self.path.join(self.aoc).join("Map/MainField/Static.smubin");
-            fs::write(dest_path, output.to_binary(self.platform.into()))?;
+            dest_path.parent().iter().try_for_each(fs::create_dir_all)?;
+            fs::write(dest_path, compress(output.to_binary(self.platform.into())))?;
         }
         Ok(())
     }

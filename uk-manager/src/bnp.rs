@@ -135,6 +135,8 @@ impl BnpConverter<'_> {
         self.handle_events()?;
         println!("MainfieldStatic");
         self.handle_mainfield_static()?;
+        println!("Maps");
+        self.handle_maps()?;
         Ok(todo!())
     }
 }
