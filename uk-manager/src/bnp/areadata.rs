@@ -1,11 +1,11 @@
-use std::collections::BTreeMap;
+
 
 use anyhow::{Context, Result};
 use fs_err as fs;
-use roead::{aamp::hash_name, byml::Byml, yaz0::compress};
+use roead::{byml::Byml};
 use uk_content::{
     prelude::{Mergeable, Resource},
-    resource::{AreaData, MergeableResource, ResourceData},
+    resource::{AreaData, MergeableResource},
 };
 
 use super::BnpConverter;
