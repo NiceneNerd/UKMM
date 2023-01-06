@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(windows)]
 use anyhow::Context;
@@ -29,4 +29,34 @@ pub fn clear_temp() {
     TEMP_FOLDERS.write().iter().for_each(|tmp| {
         remove_dir_all(tmp).unwrap_or(());
     });
+}
+
+pub fn extract_7z(file: &Path, folder: &Path) -> anyhow::Result<()> {
+    static SX_EXISTS: Lazy<bool> = Lazy::new(|| {
+        match std::process::Command::new("7z").spawn() {
+            Ok(_) => {
+                log::trace!("7z found");
+                true
+            }
+            Err(_) => {
+                log::trace!("7z not found");
+                false
+            }
+        }
+    });
+
+    if *SX_EXISTS {
+        let output = std::process::Command::new("7z")
+            .arg("x")
+            .arg(file)
+            .arg(format!("-o{}", folder.display()))
+            .output()?;
+        if !output.stderr.is_empty() {
+            anyhow::bail!("{}", std::string::String::from_utf8_lossy(&output.stderr))
+        } else {
+            Ok(())
+        }
+    } else {
+        Ok(sevenz_rust::decompress_file(file, folder)?)
+    }
 }

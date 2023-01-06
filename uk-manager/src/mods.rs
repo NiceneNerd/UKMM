@@ -15,7 +15,7 @@ use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
 
 use crate::{
     settings::Settings,
-    util::{self, HashMap},
+    util::{self, extract_7z, HashMap},
 };
 
 type ManifestCache = Lazy<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Arc<Manifest>>>>>;
@@ -410,7 +410,7 @@ pub fn convert_gfx(
         } else if ext == "7Z" {
             log::info!("Extracting 7Z file...");
             let tmpdir = util::get_temp_folder();
-            sevenz_rust::decompress_file(path, &*tmpdir).context("Failed to extract 7Z file")?;
+            extract_7z(path, &*tmpdir).context("Failed to extract 7Z file")?;
             if meta.is_none() {
                 find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
             } else {

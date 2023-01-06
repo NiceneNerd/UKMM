@@ -12,7 +12,7 @@ use roead::{
 use tempfile::tempdir;
 use uk_reader::ResourceReader;
 
-use crate::settings::Platform;
+use crate::{settings::Platform, util::extract_7z};
 mod actorinfo;
 mod areadata;
 mod deepmerge;
@@ -136,7 +136,7 @@ impl BnpConverter {
 pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = tempdir()?.into_path();
     dbg!(&tempdir);
-    sevenz_rust::decompress_file(path, &tempdir).context("Failed to extract BNP")?;
+    extract_7z(path, &tempdir).context("Failed to extract BNP")?;
     let (content, aoc) = uk_content::platform_prefixes(core.settings().current_mode.into());
     let converter = BnpConverter {
         platform: core.settings().current_mode,
