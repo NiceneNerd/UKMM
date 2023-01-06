@@ -71,16 +71,12 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
     Ok(())
 }
 
-impl BnpConverter<'_> {
+impl BnpConverter {
     pub fn handle_maps(&self) -> Result<()> {
         let maps_path = self.path.join("logs/map.yml");
         if maps_path.exists() {
             let diff = Byml::from_text(fs::read_to_string(maps_path)?)?.into_hash()?;
-            let base_pack = Sarc::new(
-                self.dump()
-                    .context("No dump for current mode")?
-                    .get_aoc_bytes_uncached("Pack/AocMainField.pack")?,
-            )?;
+            let base_pack = Sarc::new(self.dump.get_aoc_bytes_uncached("Pack/AocMainField.pack")?)?;
             let mut merged_pack = SarcWriter::from_sarc(&base_pack);
             merged_pack.files.par_extend(
                 diff.into_par_iter()
@@ -96,7 +92,7 @@ impl BnpConverter<'_> {
                                 .map(|d| d.to_vec())
                                 .with_context(|| jstr!("AocMainField.pack missing map {&path}"))
                                 .or_else(|e| {
-                                    unsafe { self.dump().unwrap_unchecked() }
+                                    self.dump
                                         .get_aoc_bytes_uncached(&path)
                                         .context(e)
                                         .with_context(|| jstr!("Game dump missing map {&path}"))

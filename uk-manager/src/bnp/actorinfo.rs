@@ -8,7 +8,7 @@ use uk_content::{
 
 use super::BnpConverter;
 
-impl BnpConverter<'_> {
+impl BnpConverter {
     pub fn handle_actorinfo(&self) -> Result<()> {
         let path = self.path.join("logs/actorinfo.yml");
         if path.exists() {
@@ -24,12 +24,7 @@ impl BnpConverter<'_> {
                     })
                     .collect::<Result<_>>()
                     .map(ActorInfo)?;
-            let actorinfo = self
-                .core
-                .settings()
-                .dump()
-                .context("No dump for current platform")?
-                .get_data("Actor/ActorInfo.product.sbyml")?;
+            let actorinfo = self.dump.get_data("Actor/ActorInfo.product.sbyml")?;
             if let Some(MergeableResource::ActorInfo(info)) = actorinfo.as_mergeable() {
                 fs::create_dir_all(self.path.join(self.content).join("Actor"))?;
                 fs::write(

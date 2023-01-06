@@ -24,20 +24,15 @@ mod maps;
 mod packs;
 
 #[derive(Debug)]
-struct BnpConverter<'core> {
-    core: &'core crate::core::Manager,
+struct BnpConverter {
+    dump: Arc<ResourceReader>,
     platform: Platform,
     path: PathBuf,
     content: &'static str,
     aoc: &'static str,
 }
 
-impl BnpConverter<'_> {
-    #[inline(always)]
-    fn dump(&self) -> Option<Arc<ResourceReader>> {
-        self.core.settings().dump()
-    }
-
+impl BnpConverter {
     #[inline(always)]
     fn trim_prefixes<'f>(&self, file: &'f str) -> &'f str {
         file.trim_start_matches(self.content)
@@ -47,10 +42,7 @@ impl BnpConverter<'_> {
     }
 
     fn open_or_create_sarc(&self, dest_path: &Path, root_path: &str) -> Result<SarcWriter> {
-        let base_sarc = self
-            .dump()
-            .context("No dump for current mode")?
-            .get_bytes_uncached(root_path);
+        let base_sarc = self.dump.get_bytes_uncached(root_path);
         if !dest_path.exists() {
             let base_sarc = base_sarc?;
             fs::write(dest_path, &base_sarc)?;
@@ -148,7 +140,7 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
     let (content, aoc) = uk_content::platform_prefixes(core.settings().current_mode.into());
     let converter = BnpConverter {
         platform: core.settings().current_mode,
-        core,
+        dump: core.settings().dump().context("No dump for current mode")?,
         path: tempdir,
         content,
         aoc,

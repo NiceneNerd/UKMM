@@ -10,14 +10,13 @@ use uk_content::bhash;
 
 use super::BnpConverter;
 
-impl BnpConverter<'_> {
+impl BnpConverter {
     pub fn handle_dungeon_static(&self) -> Result<()> {
         let dstatic_path = self.path.join("logs/dstatic.yml");
         if dstatic_path.exists() {
             let dstatic_diff = Byml::from_text(fs::read_to_string(&dstatic_path)?)?;
             let base = Byml::from_binary(decompress(
-                self.dump()
-                    .context("No dump for current mode")?
+                self.dump
                     .get_aoc_bytes_uncached("Map/CDungeon/Static.smubin")?,
             )?)?;
             let mut dstatic: FxHashMap<String, Byml> = base

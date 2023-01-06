@@ -61,7 +61,7 @@ fn handle_diff_entry(sarc: &mut SarcWriter, nest_root: &str, contents: &DiffEntr
     Ok(())
 }
 
-impl BnpConverter<'_> {
+impl BnpConverter {
     #[allow(irrefutable_let_patterns)]
     pub fn handle_deepmerge(&self) -> Result<()> {
         let deepmerge_path = self.path.join("logs/deepmerge.aamp");
@@ -117,9 +117,7 @@ impl BnpConverter<'_> {
                         }
                         DiffEntry::Aamp(plist) => {
                             let mut pio = ParameterIO::from_binary(
-                                self.dump()
-                                    .context("No dump for current mode")?
-                                    .get_bytes_uncached(self.trim_prefixes(&root))?,
+                                self.dump.get_bytes_uncached(self.trim_prefixes(&root))?,
                             )?;
                             pio.param_root = merge_plist(&pio.param_root, &plist);
                             fs::write(base_path, pio.to_binary())?;

@@ -19,7 +19,7 @@ struct DropTable {
     items: FxHashMap<String, f32>,
 }
 
-impl BnpConverter<'_> {
+impl BnpConverter {
     pub fn handle_drops(&self) -> Result<()> {
         let drops_path = self.path.join("logs/drops.json");
         if drops_path.exists() {

@@ -48,7 +48,7 @@ fn get_id(item: &Hash) -> Result<String> {
     ) + find_name(item))
 }
 
-impl BnpConverter<'_> {
+impl BnpConverter {
     pub fn handle_mainfield_static(&self) -> Result<()> {
         let mstatic_path = self.path.join("logs/mainstatic.yml");
         if mstatic_path.exists() {
@@ -58,8 +58,7 @@ impl BnpConverter<'_> {
                 .map(|(cat, entries)| -> Result<(String, Hash)> { Ok((cat, entries.into_hash()?)) })
                 .collect::<Result<_>>()?;
             let mut base: FxHashMap<String, Hash> = Byml::from_binary(decompress(
-                self.dump()
-                    .context("No dump for current mode")?
+                self.dump
                     .get_aoc_bytes_uncached("Map/MainField/Static.smubin")?,
             )?)?
             .into_hash()?

@@ -8,7 +8,7 @@ use uk_content::{
 
 use super::BnpConverter;
 
-impl BnpConverter<'_> {
+impl BnpConverter {
     pub fn handle_areadata(&self) -> Result<()> {
         let path = self.path.join("logs/areadata.yml");
         if path.exists() {
@@ -24,13 +24,10 @@ impl BnpConverter<'_> {
                     })
                     .collect::<Result<_>>()
                     .map(AreaData)?;
-            let areadata = self
-                .dump()
-                .context("No dump for current mode")?
-                .get_from_sarc(
-                    "Ecosystem/AreaData.byml",
-                    "Pack/Bootup.pack//Ecosystem/AreaData.sbyml",
-                )?;
+            let areadata = self.dump.get_from_sarc(
+                "Ecosystem/AreaData.byml",
+                "Pack/Bootup.pack//Ecosystem/AreaData.sbyml",
+            )?;
             if let Some(MergeableResource::AreaData(data)) = areadata.as_mergeable() {
                 self.inject_into_sarc(
                     "Pack/Bootup.pack//Ecosystem/AreaData.sbyml",

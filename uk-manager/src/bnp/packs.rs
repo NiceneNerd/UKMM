@@ -5,7 +5,7 @@ use rustc_hash::FxHashMap;
 
 use super::{deepmerge::DiffEntry, BnpConverter};
 
-impl BnpConverter<'_> {
+impl BnpConverter {
     pub fn handle_packs(&self, _merge_diff: &DiffEntry) -> Result<()> {
         let packs_path = self.path.join("logs/packs.json");
         if packs_path.exists() {
@@ -16,8 +16,7 @@ impl BnpConverter<'_> {
                 .par_bridge()
                 .try_for_each(|file| -> Result<()> {
                     let base_path = self.path.join(file);
-                    let _sarc =
-                        self.open_or_create_sarc(&base_path, self.trim_prefixes(file))?;
+                    let _sarc = self.open_or_create_sarc(&base_path, self.trim_prefixes(file))?;
                     Ok(())
                 })?;
         }
