@@ -3,7 +3,7 @@ use fs_err as fs;
 use roead::byml::Byml;
 use uk_content::{
     prelude::Mergeable,
-    resource::{EventInfo, MergeableResource, ResourceData},
+    resource::{EventInfo, MergeableResource},
     util::converts::FromByml,
 };
 

@@ -9,9 +9,7 @@ use roead::{
     sarc::{FileName, Sarc, SarcWriter},
     yaz0::{compress, decompress},
 };
-use rustc_hash::{FxHashMap, FxHashSet};
-use smartstring::alias::String;
-use uk_content::util::merge_byml_shallow;
+use rustc_hash::FxHashMap;
 
 use super::BnpConverter;
 
@@ -84,8 +82,8 @@ impl BnpConverter<'_> {
                     .get_aoc_bytes_uncached("Pack/AocMainField.pack")?,
             )?;
             let mut merged_pack = SarcWriter::from_sarc(&base_pack);
-            merged_pack.files.extend(
-                diff.into_iter()
+            merged_pack.files.par_extend(
+                diff.into_par_iter()
                     .map(|(section, diff)| -> Result<(FileName, Vec<u8>)> {
                         let parts = section.split('_').collect::<Vec<_>>();
                         let path = jstr!("Map/MainField/{&parts[0]}/{&section}.smubin");
@@ -107,7 +105,8 @@ impl BnpConverter<'_> {
                         merge_map(&mut base, diff)?;
                         Ok((path.into(), compress(base.to_binary(self.platform.into()))))
                     })
-                    .collect::<Result<BTreeMap<FileName, Vec<u8>>>>()?,
+                    .collect::<Result<BTreeMap<FileName, Vec<u8>>>>()?
+                    .into_par_iter(),
             );
             let dest_path = self.path.join(self.aoc).join("Pack/AocMainField.pack");
             dest_path.parent().iter().try_for_each(fs::create_dir_all)?;
