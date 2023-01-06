@@ -10,20 +10,25 @@ use roead::{
     yaz0::compress_if,
 };
 use tempfile::tempdir;
-
 use uk_reader::ResourceReader;
+
+use crate::settings::Platform;
 mod actorinfo;
 mod areadata;
 mod deepmerge;
 mod drops;
+mod dstatic;
+mod events;
+mod mainstatic;
 mod packs;
 
 #[derive(Debug)]
 struct BnpConverter<'core> {
-    core:    &'core crate::core::Manager,
-    path:    PathBuf,
+    core: &'core crate::core::Manager,
+    platform: Platform,
+    path: PathBuf,
     content: &'static str,
-    aoc:     &'static str,
+    aoc: &'static str,
 }
 
 impl BnpConverter<'_> {
@@ -123,7 +128,10 @@ impl BnpConverter<'_> {
         self.handle_deepmerge()?;
         println!("Drops");
         self.handle_drops()?;
-
+        println!("DungeonStatic");
+        self.handle_dungeon_static()?;
+        println!("EventInfo");
+        self.handle_events()?;
         Ok(todo!())
     }
 }
@@ -134,6 +142,7 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
     sevenz_rust::decompress_file(path, &tempdir).context("Failed to extract BNP")?;
     let (content, aoc) = uk_content::platform_prefixes(core.settings().current_mode.into());
     let converter = BnpConverter {
+        platform: core.settings().current_mode,
         core,
         path: tempdir,
         content,

@@ -1,5 +1,3 @@
-
-
 use anyhow::{Context, Result};
 use fs_err as fs;
 use roead::{byml::Byml, yaz0::compress};
@@ -38,10 +36,7 @@ impl BnpConverter<'_> {
                     self.path
                         .join(self.content)
                         .join("Actor/ActorInfo.product.sbyml"),
-                    compress(
-                        info.merge(&diff)
-                            .into_binary(self.core.settings().current_mode.into()),
-                    ),
+                    compress(info.merge(&diff).into_binary(self.platform.into())),
                 )?;
             }
         }

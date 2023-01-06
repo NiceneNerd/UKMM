@@ -253,6 +253,7 @@ impl From<&BymlHashValue> for Byml {
 }
 
 /// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
+#[macro_export]
 macro_rules! bhash {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$(bhash!(@single $rest)),*]));
@@ -271,9 +272,10 @@ macro_rules! bhash {
         }
     };
 }
-pub(crate) use bhash;
+pub use bhash;
 
 /// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
+#[macro_export]
 macro_rules! params {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$(params!(@single $rest)),*]));
@@ -292,9 +294,10 @@ macro_rules! params {
         }
     };
 }
-pub(crate) use params;
+pub use params;
 
 /// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
+#[macro_export]
 macro_rules! pobjs {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$(pobjs!(@single $rest)),*]));
@@ -313,9 +316,10 @@ macro_rules! pobjs {
         }
     };
 }
-pub(crate) use pobjs;
+pub use pobjs;
 
 /// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
+#[macro_export]
 macro_rules! plists {
     (@single $($x:tt)*) => (());
     (@count $($rest:expr),*) => (<[()]>::len(&[$(plists!(@single $rest)),*]));
@@ -334,4 +338,4 @@ macro_rules! plists {
         }
     };
 }
-pub(crate) use plists;
+pub use plists;

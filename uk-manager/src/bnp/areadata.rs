@@ -1,8 +1,6 @@
-
-
 use anyhow::{Context, Result};
 use fs_err as fs;
-use roead::{byml::Byml};
+use roead::byml::Byml;
 use uk_content::{
     prelude::{Mergeable, Resource},
     resource::{AreaData, MergeableResource},
@@ -36,8 +34,7 @@ impl BnpConverter<'_> {
             if let Some(MergeableResource::AreaData(data)) = areadata.as_mergeable() {
                 self.inject_into_sarc(
                     "Pack/Bootup.pack//Ecosystem/AreaData.sbyml",
-                    data.merge(&diff)
-                        .into_binary(self.core.settings().current_mode.into()),
+                    data.merge(&diff).into_binary(self.platform.into()),
                     false,
                 )?;
             }
