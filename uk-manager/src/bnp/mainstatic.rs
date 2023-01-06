@@ -3,13 +3,14 @@ use roead::byml::Hash;
 
 use super::BnpConverter;
 
-#[inline]
-fn key_from_coords(x: f32, y: f32, z: f32) -> String {
-    format!("{}{}{}", x.ceil(), y.ceil(), z.ceil())
-}
-
 fn get_id(item: &Hash) -> Result<String> {
-    fn find_name<'h>(item: &'h Hash) -> &'h str {
+    #[inline]
+    fn key_from_coords(x: f32, y: f32, z: f32) -> String {
+        format!("{}{}{}", x.ceil(), y.ceil(), z.ceil())
+    }
+
+    #[inline]
+    fn find_name(item: &Hash) -> &str {
         item.iter()
             .find_map(|(k, v)| {
                 k.to_lowercase()
