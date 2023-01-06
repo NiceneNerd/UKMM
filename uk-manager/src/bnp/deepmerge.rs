@@ -1,5 +1,3 @@
-
-
 use anyhow::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
@@ -9,7 +7,7 @@ use roead::{
     yaz0::compress_if,
 };
 use rustc_hash::FxHashMap;
-use uk_content::{util::merge_plist};
+use uk_content::util::merge_plist;
 
 use super::BnpConverter;
 
@@ -106,7 +104,6 @@ impl BnpConverter<'_> {
                 )?;
             diff.into_par_iter()
                 .try_for_each(|(root, contents)| -> Result<()> {
-                    println!("{root}");
                     let base_path = self.path.join(&root);
                     base_path.parent().iter().try_for_each(fs::create_dir_all)?;
                     match contents {
