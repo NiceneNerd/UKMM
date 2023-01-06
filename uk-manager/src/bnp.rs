@@ -20,6 +20,7 @@ mod drops;
 mod dstatic;
 mod events;
 mod mainstatic;
+mod maps;
 mod packs;
 
 #[derive(Debug)]
@@ -132,6 +133,8 @@ impl BnpConverter<'_> {
         self.handle_dungeon_static()?;
         println!("EventInfo");
         self.handle_events()?;
+        println!("MainfieldStatic");
+        self.handle_mainfield_static()?;
         Ok(todo!())
     }
 }
