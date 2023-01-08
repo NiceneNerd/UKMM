@@ -33,7 +33,10 @@ pub fn clear_temp() {
 
 pub fn extract_7z(file: &Path, folder: &Path) -> anyhow::Result<()> {
     static SX_EXISTS: Lazy<bool> = Lazy::new(|| {
-        match std::process::Command::new("7z").spawn() {
+        match std::process::Command::new("7z")
+            .stdout(std::process::Stdio::null())
+            .spawn()
+        {
             Ok(_) => {
                 log::trace!("7z found");
                 true

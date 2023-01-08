@@ -410,7 +410,7 @@ pub fn convert_gfx(
         } else if ext == "7Z" {
             log::info!("Extracting 7Z file...");
             let tmpdir = util::get_temp_folder();
-            extract_7z(path, &*tmpdir).context("Failed to extract 7Z file")?;
+            extract_7z(path, &tmpdir).context("Failed to extract 7Z file")?;
             if meta.is_none() {
                 find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
             } else {
