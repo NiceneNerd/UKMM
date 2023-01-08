@@ -27,6 +27,7 @@ serde_with = "2.0.1"
 serde_yaml = "0.9.10"
 sevenz-rust = "0.1.1"
 smartstring = { version = "1.0.1", features = ["serde"] }
+split-iter = "0.1.0"
 tempfile = "3.3.0"
 uk-content = { path = "../uk-content" }
 uk-mod = { path = "../uk-mod" }

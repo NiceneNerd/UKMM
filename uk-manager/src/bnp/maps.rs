@@ -10,6 +10,8 @@ use roead::{
     yaz0::{compress, decompress},
 };
 use rustc_hash::FxHashMap;
+use smartstring::alias::String;
+use split_iter::Splittable;
 
 use super::BnpConverter;
 
@@ -78,32 +80,42 @@ impl BnpConverter {
             let diff = Byml::from_text(fs::read_to_string(maps_path)?)?.into_hash()?;
             let base_pack = Sarc::new(self.dump.get_aoc_bytes_uncached("Pack/AocMainField.pack")?)?;
             let mut merged_pack = SarcWriter::from_sarc(&base_pack);
-            merged_pack.files.par_extend(
-                diff.into_par_iter()
-                    .map(|(section, diff)| -> Result<(FileName, Vec<u8>)> {
-                        let parts = section.split('_').collect::<Vec<_>>();
-                        let path = jstr!("Map/MainField/{&parts[0]}/{&section}.smubin");
-                        if !parts.len() == 2 {
-                            anyhow::bail!("Bad map diff");
-                        }
-                        let mut base = Byml::from_binary(decompress(
-                            base_pack
-                                .get_data(&path)
-                                .map(|d| d.to_vec())
-                                .with_context(|| jstr!("AocMainField.pack missing map {&path}"))
-                                .or_else(|e| {
-                                    self.dump
-                                        .get_aoc_bytes_uncached(&path)
-                                        .context(e)
-                                        .with_context(|| jstr!("Game dump missing map {&path}"))
-                                })?,
-                        )?)?;
-                        merge_map(&mut base, diff)?;
-                        Ok((path.into(), compress(base.to_binary(self.platform.into()))))
-                    })
-                    .collect::<Result<BTreeMap<FileName, Vec<u8>>>>()?
-                    .into_par_iter(),
-            );
+            let (statics, dynamics) = diff
+                .into_par_iter()
+                .map(|(section, diff)| -> Result<(String, Vec<u8>)> {
+                    let parts = section.split('_').collect::<Vec<_>>();
+                    let path = jstr!("Map/MainField/{&parts[0]}/{&section}.smubin");
+                    if !parts.len() == 2 {
+                        anyhow::bail!("Bad map diff");
+                    }
+                    let mut base = Byml::from_binary(decompress(
+                        base_pack
+                            .get_data(&path)
+                            .map(|d| d.to_vec())
+                            .with_context(|| jstr!("AocMainField.pack missing map {&path}"))
+                            .or_else(|e| {
+                                self.dump
+                                    .get_aoc_bytes_uncached(&path)
+                                    .context(e)
+                                    .with_context(|| jstr!("Game dump missing map {&path}"))
+                            })?,
+                    )?)?;
+                    merge_map(&mut base, diff)?;
+                    Ok((path.into(), compress(base.to_binary(self.platform.into()))))
+                })
+                .collect::<Result<BTreeMap<String, Vec<u8>>>>()?
+                .into_iter()
+                .split(|(k, _)| k.ends_with("Dynamic.smubin"));
+            merged_pack.add_files(statics.into_iter());
+            dynamics
+                .collect::<BTreeMap<String, Vec<u8>>>()
+                .into_par_iter()
+                .try_for_each(|(path, data)| -> Result<()> {
+                    let dest_path = self.path.join(self.aoc).join(path.as_str());
+                    dest_path.parent().iter().try_for_each(fs::create_dir_all)?;
+                    fs::write(dest_path, data)?;
+                    Ok(())
+                })?;
             let dest_path = self.path.join(self.aoc).join("Pack/AocMainField.pack");
             dest_path.parent().iter().try_for_each(fs::create_dir_all)?;
             fs::write(dest_path, merged_pack.to_binary())?;

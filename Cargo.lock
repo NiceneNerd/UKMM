@@ -3764,6 +3764,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "split-iter"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f2b15926089e5526bb2dd738a2eb0e59034356e06eb71e1cd912358c0e62c4d"
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4228,6 +4234,7 @@ dependencies = [
  "serde_yaml 0.9.16",
  "sevenz-rust",
  "smartstring",
+ "split-iter",
  "tempfile",
  "uk-content",
  "uk-mod",
