@@ -16,12 +16,12 @@ impl BnpConverter {
             let diff = EventInfo::from_byml(&Byml::from_text(fs::read_to_string(events_path)?)?)?;
             let base = self.dump.get_from_sarc(
                 "Events/EventInfo.product.byml",
-                "Bootup.pack//Events/Event/EventInfo.product.sbyml",
+                "Pack/Bootup.pack//Event/EventInfo.product.sbyml",
             )?;
             if let Some(MergeableResource::EventInfo(base)) = base.as_mergeable() {
                 let events = base.merge(&diff);
                 self.inject_into_sarc(
-                    "Pack/Bootup.pack//Events/EventInfo.product.sbyml",
+                    "Pack/Bootup.pack//Event/EventInfo.product.sbyml",
                     MergeableResource::EventInfo(Box::new(events))
                         .into_binary(self.platform.into()),
                     false,

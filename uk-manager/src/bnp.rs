@@ -151,6 +151,6 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 #[cfg(test)]
 #[test]
 fn test_convert() {
-    let path = "/home/mrm/Downloads/rebalance.bnp";
+    let path = dirs2::download_dir().unwrap().join("SecondWindv1.9.13.bnp");
     convert_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }
