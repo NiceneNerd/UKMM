@@ -22,6 +22,7 @@ mod events;
 mod mainstatic;
 mod maps;
 mod packs;
+mod quests;
 
 #[derive(Debug)]
 struct BnpConverter {
@@ -129,6 +130,8 @@ impl BnpConverter {
         self.handle_mainfield_static()?;
         println!("Maps");
         self.handle_maps()?;
+        println!("Quests");
+        self.handle_quests()?;
         Ok(todo!())
     }
 }
