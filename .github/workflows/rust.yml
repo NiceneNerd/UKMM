@@ -8,31 +8,38 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Zshare-generics"
 
 jobs:
-  build_linux:
-
+  check_changes:
+    name: Check changes
     runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.get_changes.outputs.code }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: get_changes
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'Cargo.*'
+              - 'build.rs'
+              - 'uk-*/**'
 
+  build_and_test:
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.code == 'true' }}
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v3
     - name: Install GTK
+      if: matrix.platform == 'ubuntu-latest'
       run: sudo apt install libgtk-3-dev	
-    - name: Install latest nightly
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-    - name: Build
-      run: cargo +nightly build --verbose --release
-    - name: Run `uk-content` tests
-      run: cargo +nightly test --package uk-content
-  
-  build_windows:
-
-    runs-on: windows-latest
-
-    steps:
-    - uses: actions/checkout@v3
     - name: Install latest nightly
       uses: actions-rs/toolchain@v1
       with:
