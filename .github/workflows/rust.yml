@@ -39,7 +39,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install GTK
       if: matrix.platform == 'ubuntu-latest'
-      run: sudo apt install libgtk-3-dev	
+      run: sudo apt update && sudo apt install libgtk-3-dev	
     - name: Install latest nightly
       uses: actions-rs/toolchain@v1
       with:

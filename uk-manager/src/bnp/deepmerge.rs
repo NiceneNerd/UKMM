@@ -19,13 +19,13 @@ pub enum DiffEntry {
 }
 
 impl DiffEntry {
-    pub fn as_sarc(&self) -> &DiffMap {
-        if let DiffEntry::Sarc(ref map) = self {
-            map
-        } else {
-            panic!("Not a SARC entry")
-        }
-    }
+    // pub fn as_sarc(&self) -> &DiffMap {
+    //     if let DiffEntry::Sarc(ref map) = self {
+    //         map
+    //     } else {
+    //         panic!("Not a SARC entry")
+    //     }
+    // }
 
     pub fn as_mut_sarc(&mut self) -> &mut DiffMap {
         if let DiffEntry::Sarc(ref mut map) = self {
