@@ -6,7 +6,7 @@ use join_str::jstr;
 use rayon::prelude::*;
 use roead::{
     byml::{Byml, Hash},
-    sarc::{FileName, Sarc, SarcWriter},
+    sarc::{Sarc, SarcWriter},
     yaz0::{compress, decompress},
 };
 use rustc_hash::FxHashMap;

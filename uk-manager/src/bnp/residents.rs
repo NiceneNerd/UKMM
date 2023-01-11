@@ -1,16 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use fs_err as fs;
-use roead::{
-    byml::Byml,
-    yaz0::{compress, decompress, decompress_if},
-};
-use rustc_hash::FxHashMap;
-use smartstring::alias::String;
+use roead::byml::Byml;
 use uk_content::{
-    actor::residents::ResidentActorData,
-    prelude::{Mergeable, Resource},
-    resource::{EventInfo, MergeableResource},
-    util::converts::FromByml,
+    actor::residents::ResidentActorData, prelude::Resource, resource::MergeableResource,
 };
 
 use super::BnpConverter;
