@@ -1,4 +1,4 @@
-use roead::byml::Byml;
+use roead::byml::{Byml, Hash};
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
@@ -8,6 +8,22 @@ use crate::{prelude::*, resource::SortedDeleteMap, Result, UKError};
 pub struct ResidentActorData {
     pub only_res: bool,
     pub scale:    Option<Byml>,
+}
+
+impl TryFrom<&Hash> for ResidentActorData {
+    type Error = UKError;
+
+    fn try_from(val: &Hash) -> std::result::Result<Self, Self::Error> {
+        Ok(ResidentActorData {
+            only_res: val
+                .get("only_res")
+                .ok_or(UKError::MissingBymlKey(
+                    "Resident actors entry missing only_res",
+                ))?
+                .as_bool()?,
+            scale:    val.get("scale").cloned(),
+        })
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
@@ -32,15 +48,7 @@ impl TryFrom<&Byml> for ResidentActors {
                                     ))?
                                     .as_string()?
                                     .clone(),
-                                ResidentActorData {
-                                    only_res: actor
-                                        .get("only_res")
-                                        .ok_or(UKError::MissingBymlKey(
-                                            "Resident actors entry missing only_res",
-                                        ))?
-                                        .as_bool()?,
-                                    scale:    actor.get("scale").cloned(),
-                                },
+                                actor.try_into()?,
                             ))
                         },
                     )

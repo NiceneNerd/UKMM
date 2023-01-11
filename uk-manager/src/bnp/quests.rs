@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use roead::{
     byml::Byml,
-    yaz0::{compress, decompress},
+    yaz0::{compress, decompress, decompress_if},
 };
 use rustc_hash::FxHashMap;
 use smartstring::alias::String;
@@ -19,10 +19,10 @@ impl BnpConverter {
         let quests_path = self.path.join("logs/quests.yml");
         if quests_path.exists() {
             let mut diff = Byml::from_text(&fs::read_to_string(quests_path)?)?.into_hash()?;
-            let mut quests = Byml::from_binary(decompress(
+            let mut quests = Byml::from_binary(
                 self.dump
                     .get_bytes_from_sarc("Pack/TitleBG.pack//Quest/QuestProduct.sbquestpack")?,
-            )?)?
+            )?
             .into_array()?;
             let quest_hashes: FxHashMap<String, usize> = quests
                 .iter()

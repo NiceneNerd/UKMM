@@ -23,6 +23,7 @@ mod mainstatic;
 mod maps;
 mod packs;
 mod quests;
+mod residents;
 
 #[derive(Debug)]
 struct BnpConverter {
@@ -132,6 +133,8 @@ impl BnpConverter {
         self.handle_maps()?;
         println!("Quests");
         self.handle_quests()?;
+        println!("Residents");
+        self.handle_residents()?;
         Ok(todo!())
     }
 }
