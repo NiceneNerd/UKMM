@@ -40,7 +40,13 @@ fn create_symlink(link: &Path, target: &Path) -> Result<()> {
     #[cfg(windows)]
     junction::create(target, link).or_else(|_| std::os::windows::fs::symlink_dir(target, link))?;
     #[cfg(unix)]
-    std::os::unix::fs::symlink(target, link)?;
+    std::os::unix::fs::symlink(target, link).with_context(|| {
+        format!(
+            "Failed to symlink {} to {}",
+            target.display(),
+            link.display()
+        )
+    })?;
     Ok(())
 }
 
