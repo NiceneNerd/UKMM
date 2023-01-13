@@ -54,7 +54,7 @@ impl TryFrom<&ParameterIO> for Chemical {
                 "Chemical missing shape count",
                 None,
             ))?
-            .as_u32()? as usize;
+            .as_int()?;
         let chemical_body = chem_root
             .list("chemical_body")
             .ok_or(UKError::MissingAampKey(
@@ -64,11 +64,13 @@ impl TryFrom<&ParameterIO> for Chemical {
         Ok(Self {
             unknown: chem_root
                 .object("chemical_header")
-                .ok_or(UKError::MissingAampKey("Chemical missing chemical_header", None))?
+                .ok_or(UKError::MissingAampKey(
+                    "Chemical missing chemical_header",
+                    None,
+                ))?
                 .0
                 .get(&3635073347)
-                // .ok_or(UKError::MissingAampKey("Chemical missing 3635073347", None))?
-                .map(|x| x.as_u32().map(|x| x as usize))
+                .map(|x| x.as_int())
                 .transpose()?,
             body:    (0..shape_num)
                 .map(|i| -> Result<(usize, ChemicalBody)> {

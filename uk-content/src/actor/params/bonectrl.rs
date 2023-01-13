@@ -8,7 +8,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{params, plists, pobjs, DeleteSet, IndexMap},
+    util::{params, plists, pobjs, DeleteSet, IndexMap, ParameterExt},
     Result, UKError,
 };
 
@@ -43,8 +43,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
                 .values()
                 .map(|list| -> Result<(String64, DeleteSet<String64>)> {
                     Ok((
-                        *list
-                            .object("Param")
+                        list.object("Param")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing param",
                                 None,
@@ -54,7 +53,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
                                 "Bone control group missing group name",
                                 None,
                             ))?
-                            .as_string64()?,
+                            .as_safe_string()?,
                         list.object("Bones")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing bone list",
@@ -62,7 +61,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
                             ))?
                             .0
                             .values()
-                            .filter_map(|v| v.as_string64().ok().map(|s| (*s, false)))
+                            .filter_map(|v| v.as_safe_string().ok())
                             .collect(),
                     ))
                 })

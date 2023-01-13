@@ -39,7 +39,7 @@ impl TryFrom<&Byml> for Location {
                         .ok_or(UKError::MissingBymlKey(
                             "Main field location entry missing ShowLevel",
                         ))?
-                        .as_i32()? as usize,
+                        .as_int()?,
                     translate: loc
                         .get("Translate")
                         .ok_or(UKError::MissingBymlKey(
@@ -51,7 +51,7 @@ impl TryFrom<&Byml> for Location {
                         .ok_or(UKError::MissingBymlKey(
                             "Main field location entry missing Type",
                         ))?
-                        .as_i32()? as usize,
+                        .as_int()?,
                 };
                 if let Some(message_locs) = locs.get_mut(&message) {
                     message_locs.push(pos);

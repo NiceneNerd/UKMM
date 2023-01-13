@@ -4,7 +4,7 @@ pub mod converts;
 use std::{collections::BTreeMap, str::FromStr};
 
 pub use collections::*;
-use roead::{aamp::*, byml::Byml};
+use roead::{aamp::*, byml::Byml, types::FixedSafeString};
 
 pub fn diff_plist<P: ParameterListing + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
@@ -339,3 +339,45 @@ macro_rules! plists {
     };
 }
 pub use plists;
+
+pub trait ParameterExt {
+    fn as_safe_string<const N: usize>(&self) -> roead::Result<FixedSafeString<N>>;
+}
+
+impl ParameterExt for Parameter {
+    fn as_safe_string<const N: usize>(&self) -> roead::Result<FixedSafeString<N>> {
+        match self {
+            Self::String32(s) => Ok(s.as_str().into()),
+            Self::String64(s) => Ok(s.as_str().into()),
+            Self::String256(s) => Ok(s.as_str().into()),
+            Self::StringRef(s) => Ok(s.as_str().into()),
+            _ => {
+                Err(roead::Error::TypeError(
+                    format!("{self:#?}").into(),
+                    "a string",
+                ))
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn test_any_safe_string() {
+    let ss1 = Parameter::String32(
+        "Bob and I go back. Way back. Back before ludicrous seat belt laws.".into(),
+    );
+    let ss2 = Parameter::String64(Box::new("jimmy".into()));
+    let ss3 = Parameter::String256(Box::new("interesting indeed my friend".into()));
+    let ss4 = Parameter::StringRef("A string".into());
+    assert_eq!(
+        ss1.as_safe_string::<64>().unwrap(),
+        "Bob and I go back. Way back. Bac".into()
+    );
+    assert_eq!(ss2.as_safe_string::<64>().unwrap(), "jimmy".into());
+    assert_eq!(
+        ss3.as_safe_string::<32>().unwrap(),
+        "interesting indeed my friend".into()
+    );
+    assert_eq!(ss4.as_safe_string::<32>().unwrap(), "A string".into());
+}

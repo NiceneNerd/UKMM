@@ -6,7 +6,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util::IndexMap,
+    util::{IndexMap, ParameterExt},
     Result, UKError,
 };
 
@@ -21,7 +21,7 @@ impl From<DropTable> for ParameterIO {
                     let mut objs = ParameterObjectMap::default();
                     objs.insert(
                         hash_name("Header"),
-                        [("TableNum".into(), Parameter::Int(drop.0.len() as i32))]
+                        [("TableNum".into(), Parameter::I32(drop.0.len() as i32))]
                             .into_iter()
                             .chain(drop.0.keys().enumerate().map(|(i, name)| {
                                 (
@@ -57,9 +57,9 @@ impl TryFrom<&ParameterIO> for DropTable {
             header
                 .iter()
                 .filter_map(|(_, name)| {
-                    name.as_string64().ok().and_then(|name| {
+                    name.as_safe_string().ok().and_then(|name| {
                         list.object(name.as_str())
-                            .map(|table| (*name, table.clone()))
+                            .map(|table| (name, table.clone()))
                     })
                 })
                 .collect(),

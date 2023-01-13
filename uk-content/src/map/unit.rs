@@ -41,7 +41,7 @@ impl TryFrom<&Byml> for MapUnit {
                     let id = hash
                         .get("HashId")
                         .ok_or(UKError::MissingBymlKey("Map unit object missing hash ID"))?
-                        .as_u32()?;
+                        .as_int()?;
                     Ok((id, obj.clone()))
                 })
                 .collect::<Result<_>>()?,
@@ -55,7 +55,7 @@ impl TryFrom<&Byml> for MapUnit {
                     let id = hash
                         .get("HashId")
                         .ok_or(UKError::MissingBymlKey("Map unit rail missing hash ID"))?
-                        .as_u32()?;
+                        .as_int()?;
                     Ok((id, obj.clone()))
                 })
                 .collect::<Result<_>>()?,

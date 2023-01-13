@@ -6,7 +6,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util::DeleteMap,
+    util::{DeleteMap, ParameterExt},
     Result, UKError,
 };
 
@@ -30,7 +30,7 @@ impl TryFrom<&ParameterIO> for Recipe {
             ))?
             .as_int()?;
         let table_names = (0..table_count)
-            .map(|i| -> Result<&String64> {
+            .map(|i| -> Result<String64> {
                 Ok(header
                     .get(format!("Table{:02}", i + 1).as_str())
                     .ok_or_else(|| {
@@ -38,7 +38,7 @@ impl TryFrom<&ParameterIO> for Recipe {
                             "Recipe header missing table name {&lexical::to_string(i + 1)}"
                         ))
                     })?
-                    .as_string64()?)
+                    .as_safe_string()?)
             })
             .collect::<Result<Vec<_>>>()?;
         Ok(Self(
@@ -49,7 +49,7 @@ impl TryFrom<&ParameterIO> for Recipe {
                         UKError::MissingAampKeyD(jstr!("Recipe missing table {&name}"))
                     })?;
                     Ok((
-                        *name,
+                        name,
                         (1..=table
                             .get("ColumnNum")
                             .ok_or(UKError::MissingAampKey(
@@ -59,20 +59,20 @@ impl TryFrom<&ParameterIO> for Recipe {
                             .as_int()?)
                             .map(|i| -> Result<(String64, u8)> {
                                 Ok((
-                                    *table
+                                    table
                                         .get(&format!("ItemName{:02}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Recipe missing item name",
                                             None,
                                         ))?
-                                        .as_string64()?,
+                                        .as_safe_string()?,
                                     table
                                         .get(&format!("ItemNum{:02}", i))
                                         .ok_or(UKError::MissingAampKey(
                                             "Recipe missing item count",
                                             None,
                                         ))?
-                                        .as_int()? as u8,
+                                        .as_int()?,
                                 ))
                             })
                             .collect::<Result<_>>()?,
@@ -88,7 +88,7 @@ impl From<Recipe> for ParameterIO {
         Self::new()
             .with_object(
                 "Header",
-                [("TableNum".into(), Parameter::Int(val.0.len() as i32))]
+                [("TableNum".into(), Parameter::I32(val.0.len() as i32))]
                     .into_iter()
                     .chain(val.0.keys().enumerate().map(|(i, n)| {
                         (
@@ -101,7 +101,7 @@ impl From<Recipe> for ParameterIO {
             .with_objects(val.0.into_iter().map(|(name, table)| {
                 (
                     name,
-                    [("ColumnNum".into(), Parameter::Int(table.len() as i32))]
+                    [("ColumnNum".into(), Parameter::I32(table.len() as i32))]
                         .into_iter()
                         .chain(
                             table
@@ -116,7 +116,7 @@ impl From<Recipe> for ParameterIO {
                                         ),
                                         (
                                             format!("ItemNum{:02}", i + 1),
-                                            Parameter::Int(count as i32),
+                                            Parameter::I32(count as i32),
                                         ),
                                     ]
                                 }),

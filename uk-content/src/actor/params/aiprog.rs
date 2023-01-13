@@ -237,7 +237,7 @@ impl<'a> Parser<'a> {
         self.demos
             .iter()
             .map(|(k, v)| -> Result<(Name, AIEntry)> {
-                let index = v.as_int().context("Demo index not an integer")? as usize;
+                let index = v.as_int::<usize>().context("Demo index not an integer")?;
                 let (index, parent, category) = if index >= self.query_offset {
                     (index - self.query_offset, self.queries, Category::Query)
                 } else if index >= self.behavior_offset {
@@ -292,7 +292,7 @@ impl<'a> Parser<'a> {
                                         .map(|n| n.as_str())
                                         .unwrap_or_else(|| def.class_name.as_str())
                                 )
-                            })? as usize,
+                            })?,
                         ))
                     })
                     .collect()
@@ -303,7 +303,7 @@ impl<'a> Parser<'a> {
             .map(|obj| -> Result<IndexMap<Name, AIEntry>> {
                 obj.iter()
                     .map(|(k, idx)| -> Result<(Name, AIEntry)> {
-                        let index = idx.as_int().with_context(|| {
+                        let index: usize = idx.as_int().with_context(|| {
                             format!(
                                 "Bad child index for {}",
                                 def.name
@@ -311,7 +311,7 @@ impl<'a> Parser<'a> {
                                     .map(|n| n.as_str())
                                     .unwrap_or_else(|| def.class_name.as_str())
                             )
-                        })? as usize;
+                        })?;
                         let (index, parent, category) = if index >= self.query_offset {
                             (index - self.query_offset, self.queries, Category::Query)
                         } else if index >= self.behavior_offset {
@@ -394,12 +394,7 @@ impl<'a> Parser<'a> {
             .values()
             .filter_map(|list| {
                 let children = list.object("ChildIdx")?;
-                Some(
-                    children
-                        .0
-                        .values()
-                        .filter_map(|v| v.as_int().ok().map(|i| i as usize)),
-                )
+                Some(children.0.values().filter_map(|v| v.as_int().ok()))
             })
             .flatten()
             .collect();
@@ -511,12 +506,12 @@ impl Writer {
             list.set_object("Def", entry.def.clone().into());
             if let Some(children) = entry.children {
                 list.set_object("ChildIdx", children.into_iter().map(|(k, entry)| {
-                    (k, Parameter::Int(self.entry_to_list(entry) as i32))
+                    (k, Parameter::I32(self.entry_to_list(entry) as i32))
                 }).collect());
             }
             if let Some(behaviors) = entry.behaviors {
                 list.set_object("BehaviorIdx", behaviors.into_iter().map(|(k, idx)| {
-                    (k, Parameter::Int(idx as i32))
+                    (k, Parameter::I32(idx as i32))
                 }).collect())
             }
             if let Some(params) = entry.params {
@@ -565,7 +560,7 @@ impl Writer {
         }
         let demos = demos
             .into_iter()
-            .map(|(k, entry)| (k, Parameter::Int(self.entry_to_list(entry) as i32)))
+            .map(|(k, entry)| (k, Parameter::I32(self.entry_to_list(entry) as i32)))
             .collect();
         let Self {
             ais,

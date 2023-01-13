@@ -31,7 +31,7 @@ impl BnpConverter {
                         .with_object(
                             "Header",
                             ParameterObject::new()
-                                .with_parameter("TableNum", Parameter::Int(tables.len() as i32))
+                                .with_parameter("TableNum", Parameter::I32(tables.len() as i32))
                                 .with_parameters(tables.keys().enumerate().map(|(i, name)| {
                                     (
                                         format!("Table{:02}", i + 1),
@@ -45,23 +45,23 @@ impl BnpConverter {
                                 ParameterObject::new()
                                     .with_parameter(
                                         "RepeatNumMin",
-                                        Parameter::Int(table.repeat_num_min),
+                                        Parameter::I32(table.repeat_num_min),
                                     )
                                     .with_parameter(
                                         "RepeatNumMax",
-                                        Parameter::Int(table.repeat_num_max),
+                                        Parameter::I32(table.repeat_num_max),
                                     )
                                     .with_parameter(
                                         "ApproachType",
-                                        Parameter::Int(table.approach_type),
+                                        Parameter::I32(table.approach_type),
                                     )
                                     .with_parameter(
                                         "OccurrenceSpeedType",
-                                        Parameter::Int(table.occurrence_speed_type),
+                                        Parameter::I32(table.occurrence_speed_type),
                                     )
                                     .with_parameter(
                                         "ColumnNum",
-                                        Parameter::Int(table.items.len() as i32),
+                                        Parameter::I32(table.items.len() as i32),
                                     )
                                     .with_parameters(table.items.into_iter().enumerate().flat_map(
                                         |(i, (name, prob))| {

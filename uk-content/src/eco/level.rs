@@ -175,7 +175,7 @@ impl TryFrom<&Byml> for LevelSensor {
                                                     "Level sensor weapons actor entry missing \
                                                      plus value",
                                                 ))?
-                                                .as_i32()?,
+                                                .as_int()?,
                                             actor
                                                 .get("value")
                                                 .ok_or(UKError::MissingBymlKey(

@@ -6,7 +6,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{self, DeleteMap},
+    util::{self, DeleteMap, ParameterExt},
     Result, UKError,
 };
 
@@ -39,18 +39,18 @@ impl TryFrom<&ParameterIO> for AttClientList {
                 .values()
                 .map(|obj| -> Result<(String64, String64)> {
                     Ok((
-                        *obj.get("Name")
+                        obj.get("Name")
                             .ok_or(UKError::MissingAampKey(
                                 "Attention client list client missing name",
                                 None,
                             ))?
-                            .as_string64()?,
-                        *obj.get("FileName")
+                            .as_safe_string()?,
+                        obj.get("FileName")
                             .ok_or(UKError::MissingAampKey(
                                 "Attention client list client missing filename",
                                 None,
                             ))?
-                            .as_string64()?,
+                            .as_safe_string()?,
                     ))
                 })
                 .collect::<Result<_>>()?,

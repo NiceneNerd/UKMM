@@ -53,7 +53,7 @@ impl Element {
                         .values()
                         .enumerate()
                         .map(|(pos, idx)| -> Result<(usize, Element)> {
-                            let idx = idx.as_int()? as usize;
+                            let idx = idx.as_int()?;
                             Ok((
                                 pos,
                                 Element::try_from_plist(
@@ -199,7 +199,7 @@ impl From<AS> for ParameterIO {
                                         buf.set_len(len + 5);
                                         std::string::String::from_utf8_unchecked(buf.clone())
                                     },
-                                    Parameter::Int(add_element(child.clone(), done) as i32),
+                                    Parameter::I32(add_element(child.clone(), done) as i32),
                                 )
                             })
                             .collect(),

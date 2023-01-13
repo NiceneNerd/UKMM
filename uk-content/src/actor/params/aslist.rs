@@ -4,7 +4,12 @@ use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
 
-use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
+use crate::{
+    actor::ParameterResource,
+    prelude::*,
+    util::{DeleteMap, ParameterExt},
+    Result, UKError,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable, ParamData)]
 pub struct AddRes {
@@ -49,18 +54,18 @@ impl TryFrom<&ParameterIO> for ASList {
                 .values()
                 .map(|obj| -> Result<(String64, String64)> {
                     Ok((
-                        *obj.get("Name")
+                        obj.get("Name")
                             .ok_or(UKError::MissingAampKey(
                                 "AS list AS define missing name",
                                 None,
                             ))?
-                            .as_string64()?,
-                        *obj.get("Filename")
+                            .as_safe_string()?,
+                        obj.get("Filename")
                             .ok_or(UKError::MissingAampKey(
                                 "AS list AS define missing filename",
                                 None,
                             ))?
-                            .as_string64()?,
+                            .as_safe_string()?,
                     ))
                 })
                 .collect::<Result<_>>()?,

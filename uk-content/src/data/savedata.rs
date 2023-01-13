@@ -208,8 +208,7 @@ impl SaveDataPack {
 
     pub fn into_sarc_writer(mut self, endian: Endian) -> SarcWriter {
         let mut out = SarcWriter::new(endian.into());
-        out.set_min_alignment(4)
-            .expect("4 is a valid alignment, weirdo");
+        out.set_min_alignment(4);
         if let Some(game) = self.0.remove("game_data.sav") {
             out.add_files(game.divide().into_iter().enumerate().map(|(i, data)| {
                 let name = jstr!("/saveformat_{&lexical::to_string(i)}.bgsvdata");

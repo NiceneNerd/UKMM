@@ -31,7 +31,7 @@ impl TryFrom<&Byml> for LazyTraverseList {
                                         .ok_or(UKError::MissingBymlKey(
                                             "Lazy traverse list unit missing hash ID",
                                         ))?
-                                        .as_u32()?;
+                                        .as_int()?;
                                     let name = unit
                                         .get("UnitConfigName")
                                         .ok_or(UKError::MissingBymlKey(

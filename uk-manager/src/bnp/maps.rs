@@ -26,17 +26,17 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
             .filter_map(|(i, obj)| {
                 obj.as_hash()
                     .ok()
-                    .and_then(|h| h.get("HashId").and_then(|h| h.as_u32().ok()))
+                    .and_then(|h| h.get("HashId").and_then(|h| h.as_int().ok()))
                     .map(|h| (h, i))
             })
-            .collect::<FxHashMap<_, _>>();
+            .collect::<FxHashMap<u32, _>>();
         if let Some(Byml::Array(adds)) = diff.remove("add") {
             base.extend(adds.into_iter().filter(|obj| {
                 obj.as_hash()
                     .ok()
                     .and_then(|h| {
                         h.get("HashId")
-                            .and_then(|h| h.as_u32().ok().map(|h| !hashes.contains_key(&h)))
+                            .and_then(|h| h.as_int().ok().map(|h| !hashes.contains_key(&h)))
                     })
                     .unwrap_or(false)
             }));

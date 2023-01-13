@@ -44,14 +44,14 @@ impl TryFrom<&ParameterList> for ContactInfo {
                 "Physics rigid contact info header missing contact point info count",
                 None,
             ))?
-            .as_int()? as usize;
+            .as_int()?;
         let collision_count = list.objects.0[&3387849585]
             .get("collision_info_num")
             .ok_or(UKError::MissingAampKey(
                 "Physics rigid contact info header missing collision info count",
                 None,
             ))?
-            .as_int()? as usize;
+            .as_int()?;
         Ok(Self {
             contact_point_info: Some(
                 (0..point_count)
@@ -108,8 +108,8 @@ impl From<ContactInfo> for ParameterList {
                 objects: [(
                     3387849585,
                     params!(
-                        "contact_point_info_num" => Parameter::Int(contact_point_info.len() as i32),
-                        "collision_info_num" => Parameter::Int(collision_info.len() as i32),
+                        "contact_point_info_num" => Parameter::I32(contact_point_info.len() as i32),
+                        "collision_info_num" => Parameter::I32(collision_info.len() as i32),
                     ),
                 )]
                 .into_iter()
@@ -288,7 +288,7 @@ impl From<Cloth> for ParameterList {
                         "cloth_setup_file_path" => Parameter::String256(Box::new(
                                 val.setup_file_path.unwrap_or_default().into(),
                         )),
-                        "cloth_num" => Parameter::Int(val.cloths.len() as i32)
+                        "cloth_num" => Parameter::I32(val.cloths.len() as i32)
                     ),
                 ),
                 ("ClothSubWind".into(), val.subwind),
@@ -506,7 +506,7 @@ impl From<Physics> for ParameterIO {
                     objects: [(
                         1258832850,
                         params!(
-                            "use_rigid_body_set_num" => Parameter::Int(
+                            "use_rigid_body_set_num" => Parameter::I32(
                                 val.rigid_body_set
                                     .as_ref()
                                     .map(|s| s.len() as i32)
@@ -517,7 +517,7 @@ impl From<Physics> for ParameterIO {
                             "use_support_bone" => Parameter::Bool(val.support_bone.is_some()),
                             "use_character_controller" => Parameter::Bool(val.character_controller.is_some()),
                             "use_contact_info" => Parameter::Bool(val.rigid_contact_info.is_some()),
-                            "use_edge_rigid_body_num" => Parameter::Int(0),
+                            "use_edge_rigid_body_num" => Parameter::I32(0),
                             "use_system_group_handler" => Parameter::Bool(val.use_system_group_handler.unwrap_or_default())
                         ),
                     )]

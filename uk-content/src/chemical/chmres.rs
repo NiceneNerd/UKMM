@@ -3,7 +3,11 @@ use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
-use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use crate::{
+    prelude::*,
+    util::{DeleteMap, ParameterExt},
+    Result, UKError,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ChemicalRes {
@@ -24,12 +28,12 @@ impl TryFrom<&ParameterIO> for ChemicalRes {
                 .values()
                 .map(|obj| -> Result<(String256, ParameterObject)> {
                     Ok((
-                        *obj.get("label")
+                        obj.get("label")
                             .ok_or(UKError::MissingAampKey(
                                 "Chemical res entry missing label",
                                 None,
                             ))?
-                            .as_string256()?,
+                            .as_safe_string()?,
                         obj.clone(),
                     ))
                 })

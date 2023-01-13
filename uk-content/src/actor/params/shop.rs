@@ -3,7 +3,12 @@ use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
-use crate::{actor::ParameterResource, prelude::*, util::IndexMap, Result, UKError};
+use crate::{
+    actor::ParameterResource,
+    prelude::*,
+    util::{IndexMap, ParameterExt},
+    Result, UKError,
+};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ShopItem {
@@ -65,7 +70,7 @@ impl TryFrom<&ParameterIO> for ShopData {
                     "Shop data table missing column count",
                     None,
                 ))?
-                .as_int()? as usize;
+                .as_int()?;
             shop_tables.insert(
                 table_name.into(),
                 Some(
@@ -77,8 +82,8 @@ impl TryFrom<&ParameterIO> for ShopData {
                                     "Shop table missing item name",
                                     None,
                                 ))?
-                                .as_string64()?;
-                            Ok((*item_name, ShopItem {
+                                .as_safe_string()?;
+                            Ok((item_name, ShopItem {
                                 sort: table_obj
                                     .get(&format!("ItemSort{:03}", i))
                                     .ok_or(UKError::MissingAampKey(
@@ -130,7 +135,7 @@ impl From<ShopData> for ParameterIO {
         let mut pio = ParameterIO::new();
         pio.objects_mut().insert(
             "Header",
-            [("TableNum".into(), Parameter::Int(val.0.len() as i32))]
+            [("TableNum".into(), Parameter::I32(val.0.len() as i32))]
                 .into_iter()
                 .chain(val.0.keys().enumerate().map(|(i, name)| {
                     (
@@ -146,7 +151,7 @@ impl From<ShopData> for ParameterIO {
             .for_each(|(name, table)| {
                 pio.objects_mut().insert(
                     name.as_str(),
-                    [("ColumnNum".into(), Parameter::Int(table.len() as i32))]
+                    [("ColumnNum".into(), Parameter::I32(table.len() as i32))]
                         .into_iter()
                         .chain(
                             table
@@ -156,15 +161,15 @@ impl From<ShopData> for ParameterIO {
                                 .flat_map(|(i, (name, data))| {
                                     let i = i + 1;
                                     [
-                                        (format!("ItemSort{:03}", i), Parameter::Int(data.sort)),
+                                        (format!("ItemSort{:03}", i), Parameter::I32(data.sort)),
                                         (
                                             format!("ItemName{:03}", i),
                                             Parameter::String64(Box::new(name)),
                                         ),
-                                        (format!("ItemNum{:03}", i), Parameter::Int(data.num)),
+                                        (format!("ItemNum{:03}", i), Parameter::I32(data.num)),
                                         (
                                             format!("ItemAdjustPrice{:03}", i),
-                                            Parameter::Int(data.adjust_price),
+                                            Parameter::I32(data.adjust_price),
                                         ),
                                         (
                                             format!("ItemLookGetFlg{:03}", i),
@@ -172,7 +177,7 @@ impl From<ShopData> for ParameterIO {
                                         ),
                                         (
                                             format!("ItemAmount{:03}", i),
-                                            Parameter::Int(data.amount),
+                                            Parameter::I32(data.amount),
                                         ),
                                     ]
                                 }),

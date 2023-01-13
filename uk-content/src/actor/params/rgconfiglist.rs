@@ -7,7 +7,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{self, DeleteMap},
+    util::{self, DeleteMap, ParameterExt},
     Result, UKError,
 };
 
@@ -58,13 +58,13 @@ impl TryFrom<&ParameterIO> for RagdollConfigList {
                 .values()
                 .map(|body_param| -> Result<(String64, BodyParam)> {
                     Ok((
-                        *body_param
+                        body_param
                             .get("RigidName")
                             .ok_or(UKError::MissingAampKey(
                                 "Ragdoll config list missing body param name",
                                 None,
                             ))?
-                            .as_string64()?,
+                            .as_safe_string()?,
                         BodyParam::try_from(body_param)?,
                     ))
                 })

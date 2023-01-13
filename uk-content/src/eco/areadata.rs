@@ -21,7 +21,7 @@ impl TryFrom<&Byml> for AreaData {
                             .ok_or(UKError::MissingBymlKey(
                                 "Area data entry missing area number",
                             ))?
-                            .as_i32()? as usize,
+                            .as_int()?,
                         area.clone(),
                     ))
                 })

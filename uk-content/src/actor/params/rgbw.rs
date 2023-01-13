@@ -9,7 +9,7 @@ use uk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{params, plists, pobjs, DeleteMap, IndexMap},
+    util::{params, plists, pobjs, DeleteMap, IndexMap, ParameterExt},
     Result, UKError,
 };
 
@@ -95,12 +95,12 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
                             .values()
                             .map(|obj| -> Result<(String32, f32)> {
                                 Ok((
-                                    *obj.get("RigidName")
+                                    obj.get("RigidName")
                                         .ok_or(UKError::MissingAampKey(
                                             "Ragdoll blend weight state input missing rigid name",
                                             None,
                                         ))?
-                                        .as_string32()?,
+                                        .as_safe_string()?,
                                     obj.get("BlendRate")
                                         .ok_or(UKError::MissingAampKey(
                                             "Ragdoll blend weight state input missing blend rate",

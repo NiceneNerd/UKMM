@@ -96,7 +96,7 @@ impl EditableValue for Parameter {
         match self {
             Parameter::Bool(v) => v.edit_ui(ui),
             Parameter::F32(v) => v.edit_ui(ui),
-            Parameter::Int(v) => v.edit_ui(ui),
+            Parameter::I32(v) => v.edit_ui(ui),
             Parameter::Vec2(v) => v.edit_ui(ui),
             Parameter::Vec3(v) => v.edit_ui(ui),
             Parameter::Vec4(v) => v.edit_ui(ui),

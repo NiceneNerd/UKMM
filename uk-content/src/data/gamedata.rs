@@ -74,7 +74,7 @@ impl TryFrom<&Byml> for GameData {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_i32()? as u32,
+                            .as_int()?,
                         item.try_into()?,
                     ))
                 })
@@ -229,7 +229,7 @@ fn extract_gamedata_by_type(sarc: &SarcSource, key: &str) -> Result<GameData> {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_i32()? as u32,
+                            .as_int::<u32>()?,
                         (&item).try_into()?,
                     );
                 }
@@ -319,7 +319,7 @@ impl GameDataPack {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_i32()? as u32;
+                            .as_int::<u32>()?;
                         if Self::STAGES.contains(&parts.next().unwrap_or(""))
                             && !name.contains("HiddenKorok")
                         {
@@ -344,7 +344,7 @@ impl GameDataPack {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_i32()? as u32;
+                            .as_int::<u32>()?;
                         if Self::STAGES.contains(&parts.next().unwrap_or("")) {
                             revival_s32_data.insert(hash_value, (&item).try_into()?);
                         } else {
@@ -361,7 +361,7 @@ impl GameDataPack {
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing HashValue",
                             ))?
-                            .as_i32()? as u32;
+                            .as_int::<u32>()?;
                         string32_data.insert(hash_value, (&item).try_into()?);
                     }
                 }
@@ -439,8 +439,7 @@ impl GameDataPack {
 
     pub fn into_sarc_writer(self, endian: Endian) -> SarcWriter {
         let mut sarc = SarcWriter::new(endian.into());
-        sarc.set_min_alignment(4)
-            .expect("4 is a valid alignment, weirdo");
+        sarc.set_min_alignment(4);
         build_gamedata_pack!(
             self,
             sarc,
