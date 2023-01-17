@@ -6,9 +6,11 @@ use std::{
 use anyhow::{Context, Result};
 use fs_err as fs;
 use roead::{
+    aamp::{ParameterIO, ParameterList, ParameterListing},
     sarc::{Sarc, SarcWriter},
     yaz0::compress_if,
 };
+use rustc_hash::FxHashMap;
 use tempfile::tempdir;
 use uk_reader::ResourceReader;
 
@@ -24,6 +26,64 @@ mod maps;
 mod packs;
 mod quests;
 mod residents;
+mod shops;
+
+type AampDiffMap = FxHashMap<String, AampDiffEntry>;
+
+pub enum AampDiffEntry {
+    Sarc(AampDiffMap),
+    Aamp(ParameterList),
+}
+
+impl AampDiffEntry {
+    pub fn as_mut_sarc(&mut self) -> &mut AampDiffMap {
+        if let AampDiffEntry::Sarc(ref mut map) = self {
+            map
+        } else {
+            panic!("Not a SARC entry")
+        }
+    }
+}
+
+pub fn parse_aamp_diff(header_name: &str, pio: &ParameterIO) -> Result<AampDiffMap> {
+    pio.object(header_name)
+        .context("Deepmerge log missing file table")?
+        .0
+        .values()
+        .filter_map(|s| s.as_str().ok())
+        .try_fold(
+            FxHashMap::default(),
+            |mut acc, file| -> Result<FxHashMap<String, AampDiffEntry>> {
+                let parts = file.split("//").collect::<Vec<_>>();
+                if parts.is_empty() {
+                    anyhow::bail!("Why are there no diff path parts?");
+                }
+                let root_path = parts[0];
+                let root = acc
+                    .entry(root_path.to_string())
+                    .or_insert_with(|| AampDiffEntry::Sarc(Default::default()))
+                    .as_mut_sarc();
+                let parent = if parts.len() == 3 {
+                    root.entry(parts[1].into())
+                        .or_insert_with(|| AampDiffEntry::Sarc(Default::default()))
+                        .as_mut_sarc()
+                } else if parts.len() == 2 {
+                    root
+                } else {
+                    &mut acc
+                };
+                let plist = pio
+                    .list(file)
+                    .cloned()
+                    .context("Missing entry in deepmerge log")?;
+                parent.insert(
+                    parts[parts.len() - 1].to_string(),
+                    AampDiffEntry::Aamp(plist),
+                );
+                Ok(acc)
+            },
+        )
+}
 
 #[derive(Debug)]
 struct BnpConverter {

@@ -3,10 +3,10 @@ use fs_err as fs;
 use rayon::prelude::*;
 use rustc_hash::FxHashMap;
 
-use super::{deepmerge::DiffEntry, BnpConverter};
+use super::BnpConverter;
 
 impl BnpConverter {
-    pub fn handle_packs(&self, _merge_diff: &DiffEntry) -> Result<()> {
+    pub fn handle_packs(&self) -> Result<()> {
         let packs_path = self.path.join("logs/packs.json");
         if packs_path.exists() {
             let packs: FxHashMap<String, String> =

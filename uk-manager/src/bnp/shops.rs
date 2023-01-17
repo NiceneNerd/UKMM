@@ -31,7 +31,7 @@ fn handle_diff_entry(
         }
         AampDiffEntry::Aamp(plist) => {
             let mut pio = ParameterIO::from_binary(nested_bytes)?;
-            pio.param_root = merge_plist(&pio.param_root, plist);
+            todo!("Merge shop diff");
             let data = pio.to_binary();
             let data = compress_if(&data, nest_root);
             sarc.files.insert(nest_root.into(), data.to_vec());
@@ -41,12 +41,11 @@ fn handle_diff_entry(
 }
 
 impl BnpConverter {
-    #[allow(irrefutable_let_patterns)]
-    pub fn handle_deepmerge(&self) -> Result<()> {
-        let deepmerge_path = self.path.join("logs/deepmerge.aamp");
-        if deepmerge_path.exists() {
-            let pio = ParameterIO::from_binary(fs::read(deepmerge_path)?)?;
-            let diff = parse_aamp_diff("FileTable", &pio)?;
+    fn handle_shops(&self) -> Result<()> {
+        let shops_path = self.path.join("logs/shop.aamp");
+        if shops_path.exists() {
+            let pio = ParameterIO::from_binary(fs::read(shops_path)?)?;
+            let diff = parse_aamp_diff("Filenames", &pio)?;
             diff.into_par_iter()
                 .try_for_each(|(root, contents)| -> Result<()> {
                     let base_path = self.path.join(&root);
