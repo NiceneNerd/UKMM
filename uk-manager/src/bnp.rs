@@ -27,6 +27,7 @@ mod packs;
 mod quests;
 mod residents;
 mod shops;
+mod texts;
 
 type AampDiffMap = FxHashMap<String, AampDiffEntry>;
 

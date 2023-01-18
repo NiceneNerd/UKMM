@@ -6,7 +6,7 @@ use roead::{
     sarc::{Sarc, SarcWriter},
     yaz0::compress_if,
 };
-use rustc_hash::FxHashMap;
+
 use uk_content::{
     actor::params::shop::*,
     prelude::{Mergeable, Resource, String64},

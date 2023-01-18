@@ -3,7 +3,7 @@ mod ui;
 use std::collections::{BTreeMap, BTreeSet};
 
 use join_str::jstr;
-use msyt::{
+pub use msyt::{
     model::{Entry, MsbtInfo},
     Endianness, Msyt,
 };
