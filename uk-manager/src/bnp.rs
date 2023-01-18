@@ -195,6 +195,8 @@ impl BnpConverter {
         self.handle_quests()?;
         println!("Residents");
         self.handle_residents()?;
+        println!("Shops");
+        self.handle_shops()?;
         Ok(todo!())
     }
 }

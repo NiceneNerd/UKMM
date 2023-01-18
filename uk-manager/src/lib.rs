@@ -1,4 +1,4 @@
-#![feature(let_chains, result_option_inspect)]
+#![feature(let_chains, result_option_inspect, option_get_or_insert_default)]
 
 pub mod bnp;
 pub mod core;
