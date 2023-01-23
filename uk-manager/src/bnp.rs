@@ -14,7 +14,10 @@ use rustc_hash::FxHashMap;
 use tempfile::tempdir;
 use uk_reader::ResourceReader;
 
-use crate::{settings::Platform, util::extract_7z};
+use crate::{
+    settings::{Language, Platform},
+    util::extract_7z,
+};
 mod actorinfo;
 mod areadata;
 mod deepmerge;
@@ -89,6 +92,7 @@ pub fn parse_aamp_diff(header_name: &str, pio: &ParameterIO) -> Result<AampDiffM
 #[derive(Debug)]
 struct BnpConverter {
     dump: Arc<ResourceReader>,
+    game_lang: Language,
     platform: Platform,
     path: PathBuf,
     content: &'static str,
@@ -198,6 +202,8 @@ impl BnpConverter {
         self.handle_residents()?;
         println!("Shops");
         self.handle_shops()?;
+        println!("Texts");
+        self.handle_texts()?;
         Ok(todo!())
     }
 }
@@ -209,6 +215,11 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
     let (content, aoc) = uk_content::platform_prefixes(core.settings().current_mode.into());
     let converter = BnpConverter {
         platform: core.settings().current_mode,
+        game_lang: core
+            .settings()
+            .platform_config()
+            .context("No config for current platform")?
+            .language,
         dump: core.settings().dump().context("No dump for current mode")?,
         path: tempdir,
         content,
@@ -220,6 +231,6 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 #[cfg(test)]
 #[test]
 fn test_convert() {
-    let path = dirs2::download_dir().unwrap().join("SecondWindv1.9.13.bnp");
+    let path = dirs2::download_dir().unwrap().join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
     convert_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }

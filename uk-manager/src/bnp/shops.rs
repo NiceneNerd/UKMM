@@ -2,11 +2,13 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
 use roead::{
-    aamp::{ParameterIO, ParameterList, ParameterListing, ParameterObject},
+    aamp::{
+        get_default_name_table, Parameter, ParameterIO, ParameterList, ParameterListing,
+        ParameterObject,
+    },
     sarc::{Sarc, SarcWriter},
     yaz0::compress_if,
 };
-
 use uk_content::{
     actor::params::shop::*,
     prelude::{Mergeable, Resource, String64},
@@ -15,79 +17,102 @@ use uk_content::{
 
 use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
 
-fn plist_to_diff(list: &ParameterList) -> Result<ShopData> {
-    fn pobj_to_item(index: usize, obj: &ParameterObject, removals: bool) -> Result<ShopItem> {
-        Ok(ShopItem {
-            sort: index as i32,
-            num: obj
-                .get("ItemNum")
-                .context("Shop item missing ItemNum")?
-                .as_int()?,
-            adjust_price: obj
-                .get("ItemAdjustPrice")
-                .context("Shop item missing ItemAdjustPrice")?
-                .as_int()?,
-            look_get_flag: obj
-                .get("ItemLookGetFlg")
-                .context("Shop item missing ItemLookGetFlg")?
-                .as_bool()?,
-            amount: obj
-                .get("ItemAmount")
-                .context("Shop item missing ItemAmount")?
-                .as_int()?,
-            delete: removals,
-        })
+fn update_name_table(list: &ParameterList, base: Option<&ShopData>) {
+    let name_table = get_default_name_table();
+    for obj in list.objects.0.values() {
+        for param in obj.0.values() {
+            if let Ok(string) = param.as_str() {
+                name_table.add_name(string.to_string());
+            }
+        }
     }
+    for list in list.lists.0.values() {
+        update_name_table(list, None);
+    }
+    if let Some(base) = base {
+        for table in base.0.values().flatten() {
+            for name in table.keys() {
+                name_table.add_name(name.as_str().to_string());
+            }
+        }
+    }
+}
 
-    let mut shop_data: IndexMap<String64, Option<ShopTable>> = list
+fn merge(data: &mut ShopData, diff: &ParameterList) -> Result<()> {
+    update_name_table(diff, Some(data));
+    for (name, table) in diff
         .list("Additions")
         .context("Shop diff missing Additions")?
         .lists
         .iter_by_name()
-        .map(|(n, list)| -> Result<(String64, Option<ShopTable>)> {
-            Ok((
-                n.map(|n| n.as_ref().into()).unwrap_or_default(),
-                Some(
-                    list.objects
-                        .0
-                        .values()
-                        .enumerate()
-                        .map(|(i, obj)| -> Result<(String64, ShopItem)> {
-                            let name = obj
-                                .get("ItemName")
-                                .context("Shop item missing name")?
-                                .as_string64()?;
-                            Ok((*name, pobj_to_item(i, obj, false)?))
-                        })
-                        .collect::<Result<_>>()?,
-                ),
-            ))
-        })
-        .collect::<Result<_>>()?;
-    for (name, list) in list
+    {
+        let name: String64 = name.expect("Bad shop diff").as_ref().into();
+        let base = data.0.entry(name).or_default().get_or_insert_default();
+        for (i, (name, params)) in table.objects.iter_by_name().enumerate() {
+            let name: String64 = name
+                .ok()
+                .map(|n| n.as_ref().into())
+                .or_else(|| {
+                    params
+                        .get("ItemName")
+                        .and_then(|n| n.as_str().ok())
+                        .map(|n| n.into())
+                })
+                .expect("Bad shop diff");
+            let num = params.get("ItemNum");
+            let adjust = params.get("ItemAdjustPrice");
+            let look_get = params.get("ItemLookGetFlg");
+            let amount = params.get("ItemAmount");
+            match base.get_mut(&name) {
+                Some(base) => {
+                    base.sort = i as i32;
+                    if let Some(num) = num {
+                        base.num = num.as_int()?;
+                    }
+                    if let Some(adjust) = adjust {
+                        base.adjust_price = adjust.as_int()?;
+                    }
+                    if let Some(look_get) = look_get {
+                        base.look_get_flag = look_get.as_bool()?;
+                    }
+                    if let Some(amount) = amount {
+                        base.amount = amount.as_int()?;
+                    }
+                }
+                None => {
+                    base.insert(name, ShopItem {
+                        sort: i as i32,
+                        num: num.context("Shop diff item missing num")?.as_int()?,
+                        adjust_price: adjust
+                            .context("Shop diff item missing adjust_price")?
+                            .as_int()?,
+                        look_get_flag: look_get
+                            .context("Shop diff item missing look_get_flag")?
+                            .as_bool()?,
+                        amount: amount.context("Shop diff item missing amount")?.as_int()?,
+                        delete: false,
+                    });
+                }
+            }
+        }
+    }
+    for (name, table) in diff
         .list("Removals")
         .context("Shop diff missing Removals")?
         .lists
         .iter_by_name()
     {
-        let name = name.map(|n| n.as_ref().into()).unwrap_or_default();
-        let table = shop_data.entry(name).or_default().get_or_insert_default();
-        table.extend(
-            list.objects
-                .0
-                .values()
-                .enumerate()
-                .map(|(i, obj)| -> Result<(String64, ShopItem)> {
-                    let name = obj
-                        .get("ItemName")
-                        .context("Shop item missing name")?
-                        .as_string64()?;
-                    Ok((*name, pobj_to_item(i, obj, true)?))
-                })
-                .collect::<Result<IndexMap<String64, ShopItem>>>()?,
-        );
+        let name: String64 = name.expect("Bad shop diff").as_ref().into();
+        if let Some(base) = data.0.get_mut(&name).and_then(|n| n.as_mut()) {
+            for name in table.objects.iter_by_name().filter_map(|(k, _)| k.ok()) {
+                let name: String64 = name.as_ref().into();
+                if let Some(base) = base.get_mut(&name) {
+                    base.delete = true;
+                }
+            }
+        }
     }
-    Ok(ShopData(shop_data))
+    Ok(())
 }
 
 fn handle_diff_entry(
@@ -109,12 +134,9 @@ fn handle_diff_entry(
             sarc.files.insert(nest_root.into(), data.to_vec());
         }
         AampDiffEntry::Aamp(plist) => {
-            let base = ShopData::from_binary(nested_bytes)?;
-            let diff = plist_to_diff(plist)?;
-            let data = base
-                .merge(&diff)
-                .into_binary(uk_content::prelude::Endian::Little);
-            let data = compress_if(&data, nest_root);
+            let mut base = ShopData::from_binary(nested_bytes)?;
+            merge(&mut base, plist)?;
+            let data = base.into_binary(uk_content::prelude::Endian::Little);
             sarc.files.insert(nest_root.into(), data.to_vec());
         }
     }
