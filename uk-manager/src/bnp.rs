@@ -29,6 +29,7 @@ mod maps;
 mod packs;
 mod quests;
 mod residents;
+mod savedata;
 mod shops;
 mod texts;
 

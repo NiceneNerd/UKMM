@@ -29,9 +29,9 @@ pub struct SaveDataHeader {
 #[derive(Debug, Clone, Default, Deserialize, Serialize, BymlData)]
 pub struct Flag {
     #[name = "DataName"]
-    name: String,
+    pub name: String,
     #[name = "HashValue"]
-    hash: i32,
+    pub hash: i32,
 }
 
 impl From<String> for Flag {

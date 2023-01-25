@@ -354,6 +354,11 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
     }
 
     #[inline]
+    pub fn extend(&mut self, iter: impl IntoIterator<Item = T>) {
+        self.0.extend(iter.into_iter().map(|t| (t, false)));
+    }
+
+    #[inline]
     pub fn iter_full(&self) -> impl Iterator<Item = (&T, &bool)> {
         self.0.iter()
     }

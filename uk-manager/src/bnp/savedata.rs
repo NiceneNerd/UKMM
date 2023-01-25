@@ -1,0 +1,53 @@
+use std::collections::BTreeMap;
+
+use anyhow::{Context, Result};
+use fs_err as fs;
+use join_str::jstr;
+use rayon::prelude::*;
+use roead::{
+    byml::{Byml, Hash},
+    sarc::{Sarc, SarcWriter},
+    yaz0::{compress, decompress},
+};
+use rustc_hash::FxHashMap;
+use smartstring::alias::String;
+use split_iter::Splittable;
+use uk_content::resource::MergeableResource;
+
+use super::BnpConverter;
+
+impl BnpConverter {
+    pub fn handle_savedata(&self) -> Result<()> {
+        let save_path = self.path.join("logs/savedata.yml");
+        if save_path.exists() {
+            let mut diff = Byml::from_text(&fs::read_to_string(save_path)?)?.into_hash()?;
+            let base = self.dump.get_from_sarc(
+                "GameData/savedataformat.sarc",
+                "Pack/Bootup.pack//GameData/savedataformat.ssarc",
+            )?;
+            if let Some(MergeableResource::SaveDataPack(mut base)) = base.as_mergeable().cloned() {
+                if let Some(data) = base.0.get_mut("game_data.sav") {
+                    if let Some(add) = diff.remove("add") {
+                        data.flags.extend(
+                            add.as_array()?
+                                .iter()
+                                .filter_map(|flag| flag.try_into().ok()),
+                        )
+                    }
+                    if let Some(del) = diff.remove("del") {
+                        for hash in del.as_array()?.into_iter() {
+                            if let Some(flag) = data
+                                .flags
+                                .iter_full_mut()
+                                .find(|f| f.0.hash == hash.as_i32().unwrap_or(0))
+                            {
+                                *flag.1 = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
