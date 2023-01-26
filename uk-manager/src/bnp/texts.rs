@@ -1,6 +1,4 @@
-use std::{fmt::format, sync::Arc};
-
-use anyhow::{Context, Result};
+use anyhow::Result;
 use fs_err as fs;
 use roead::sarc::SarcWriter;
 use rustc_hash::FxHashMap;

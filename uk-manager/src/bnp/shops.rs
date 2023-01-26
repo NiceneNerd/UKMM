@@ -2,17 +2,14 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
 use roead::{
-    aamp::{
-        get_default_name_table, Parameter, ParameterIO, ParameterList, ParameterListing,
-        ParameterObject,
-    },
+    aamp::{get_default_name_table, ParameterIO, ParameterList, ParameterListing},
     sarc::{Sarc, SarcWriter},
     yaz0::compress_if,
 };
 use uk_content::{
     actor::params::shop::*,
-    prelude::{Mergeable, Resource, String64},
-    util::{merge_plist, IndexMap},
+    prelude::{Resource, String64},
+    util::merge_plist,
 };
 
 use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};

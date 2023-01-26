@@ -2,11 +2,10 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
 use roead::{
-    aamp::{ParameterIO},
+    aamp::ParameterIO,
     sarc::{Sarc, SarcWriter},
     yaz0::compress_if,
 };
-
 use uk_content::util::merge_plist;
 
 use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
