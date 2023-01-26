@@ -23,7 +23,7 @@ pub struct FlagData {
     #[name = "DeleteRev"]
     delete_rev: i32,
     #[name = "HashValue"]
-    hash_value: i32,
+    pub hash_value: i32,
     #[name = "InitValue"]
     init_value: Byml,
     #[name = "IsEventAssociated"]
@@ -259,7 +259,7 @@ macro_rules! build_gamedata_pack {
 }
 
 impl GameDataPack {
-    const STAGES: &'static [&'static str] =
+    pub const STAGES: &'static [&'static str] =
         &["MainField", "AocField", "CDungeon", "MainFieldDungeon"];
 
     pub fn from_sarc_writer(sarc: &SarcWriter) -> Result<Self> {

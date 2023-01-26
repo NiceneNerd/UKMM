@@ -24,6 +24,7 @@ mod deepmerge;
 mod drops;
 mod dstatic;
 mod events;
+mod gamedata;
 mod mainstatic;
 mod maps;
 mod packs;
@@ -193,6 +194,8 @@ impl BnpConverter {
         self.handle_dungeon_static()?;
         println!("EventInfo");
         self.handle_events()?;
+        println!("Gamedata");
+        self.handle_gamedata()?;
         println!("MainfieldStatic");
         self.handle_mainfield_static()?;
         println!("Maps");
