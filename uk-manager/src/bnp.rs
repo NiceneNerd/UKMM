@@ -201,6 +201,8 @@ impl BnpConverter {
         self.handle_quests()?;
         println!("Residents");
         self.handle_residents()?;
+        println!("Savedata");
+        self.handle_savedata()?;
         println!("Shops");
         self.handle_shops()?;
         println!("Texts");
@@ -232,6 +234,6 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 #[cfg(test)]
 #[test]
 fn test_convert() {
-    let path = dirs2::download_dir().unwrap().join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
+    let path = dirs2::download_dir().unwrap().join("SecondWindv1.9.13.bnp"); //join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
     convert_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }
