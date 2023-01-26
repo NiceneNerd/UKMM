@@ -5,12 +5,13 @@ use std::{
 
 use anyhow::{Context, Result};
 use fs_err as fs;
+use parking_lot::Mutex;
 use roead::{
     aamp::{ParameterIO, ParameterList, ParameterListing},
     sarc::{Sarc, SarcWriter},
     yaz0::compress_if,
 };
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use tempfile::tempdir;
 use uk_reader::ResourceReader;
 
@@ -99,6 +100,7 @@ struct BnpConverter {
     path: PathBuf,
     content: &'static str,
     aoc: &'static str,
+    packs: Arc<Mutex<FxHashSet<PathBuf>>>,
 }
 
 impl BnpConverter {
@@ -117,6 +119,7 @@ impl BnpConverter {
             fs::write(dest_path, &base_sarc)?;
             Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc)?))
         } else {
+            self.packs.lock().remove(dest_path);
             let stripped = Sarc::new(fs::read(dest_path)?)?;
             let mut sarc = SarcWriter::from_sarc(&stripped);
             if let Ok(base_sarc) =
@@ -230,6 +233,7 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
         path: tempdir,
         content,
         aoc,
+        packs: Default::default(),
     };
     converter.convert()
 }
