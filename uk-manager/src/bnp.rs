@@ -21,6 +21,7 @@ use crate::{
 };
 mod actorinfo;
 mod areadata;
+mod aslist;
 mod deepmerge;
 mod drops;
 mod dstatic;
@@ -187,6 +188,8 @@ impl BnpConverter {
     fn convert(self) -> Result<PathBuf> {
         println!("Actor info");
         self.handle_actorinfo()?;
+        println!("ASlist");
+        self.handle_aslist()?;
         println!("Areadata");
         self.handle_areadata()?;
         println!("Deepmerge");
@@ -241,6 +244,8 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 #[cfg(test)]
 #[test]
 fn test_convert() {
-    let path = dirs2::download_dir().unwrap().join("SecondWindv1.9.13.bnp"); //join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
+    let path = dirs2::download_dir()
+        .unwrap()
+        .join("girly_animation_pack_v80.bnp"); //join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
     convert_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }
