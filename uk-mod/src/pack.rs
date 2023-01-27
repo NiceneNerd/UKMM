@@ -98,7 +98,7 @@ impl ModPacker {
         })
     }
 
-    fn parse_info(path: PathBuf) -> Result<Meta> {
+    pub fn parse_info(path: PathBuf) -> Result<Meta> {
         let info: InfoJson = serde_json::from_reader(fs::File::open(path)?)?;
         Ok(Meta {
             name: info.name,

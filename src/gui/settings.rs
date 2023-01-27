@@ -282,35 +282,37 @@ fn render_platform_config(
         ui.allocate_space([ui.available_width(), -8.0].into());
         if platform == Platform::WiiU {
             render_setting(
-            "Dump Type", 
-            "For Wii U, you have two supported dump options: / 
-            unpacked MLC files (most common) or a .wua file (Cemu-specific format).", 
-            ui, |ui| {
-                if ui
-                    .radio(matches!(config.dump, DumpType::Unpacked { .. }), "Unpacked")
-                    .clicked()
-                {
-                    config.dump = DumpType::Unpacked {
-                        host_path:   Default::default(),
-                        content_dir: Default::default(),
-                        update_dir:  Default::default(),
-                        aoc_dir:     Default::default(),
-                    };
-                    changed = true;
-                }
-                if ui
-                    .radio(matches!(config.dump, DumpType::ZArchive { .. }), "WUA")
-                    .clicked()
-                {
-                    config.dump = DumpType::ZArchive {
-                        content_dir: Default::default(),
-                        update_dir:  Default::default(),
-                        aoc_dir:     Default::default(),
-                        host_path:   Default::default(),
-                    };
-                    changed = true;
-                }
-            });
+                "Dump Type",
+                "For Wii U, you have two supported dump options: / 
+            unpacked MLC files (most common) or a .wua file (Cemu-specific format).",
+                ui,
+                |ui| {
+                    if ui
+                        .radio(matches!(config.dump, DumpType::Unpacked { .. }), "Unpacked")
+                        .clicked()
+                    {
+                        config.dump = DumpType::Unpacked {
+                            host_path:   Default::default(),
+                            content_dir: Default::default(),
+                            update_dir:  Default::default(),
+                            aoc_dir:     Default::default(),
+                        };
+                        changed = true;
+                    }
+                    if ui
+                        .radio(matches!(config.dump, DumpType::ZArchive { .. }), "WUA")
+                        .clicked()
+                    {
+                        config.dump = DumpType::ZArchive {
+                            content_dir: Default::default(),
+                            update_dir:  Default::default(),
+                            aoc_dir:     Default::default(),
+                            host_path:   Default::default(),
+                        };
+                        changed = true;
+                    }
+                },
+            );
         }
         match &mut config.dump {
             DumpType::Unpacked {
@@ -320,83 +322,98 @@ fn render_platform_config(
                 aoc_dir,
             } => {
                 if platform == Platform::WiiU {
-					render_setting(
-					"Base Folder", 
-					"This folder is the root of the plain, v1.0 BOTW assets which were included on the / 
+                    render_setting(
+                        "Base Folder",
+                        "This folder is the root of the plain, v1.0 BOTW assets which were \
+                         included on the / 
 					disk. If you are using Cemu, it will usually be in your MLC folder, with a path such / 
 					as this (part of the title ID will be different for the EU or JP versions): / 
-					mlc01/usr/title/00050000/101C9400/content", 
-					ui, |ui| {
-						if ui
-							.folder_picker(content_dir.get_or_insert_default())
-							.changed()
-						{
-							changed = true;
-							*host_path = "/".into();
-						}
-					});
-				}	
+					mlc01/usr/title/00050000/101C9400/content",
+                        ui,
+                        |ui| {
+                            if ui
+                                .folder_picker(content_dir.get_or_insert_default())
+                                .changed()
+                            {
+                                changed = true;
+                                *host_path = "/".into();
+                            }
+                        },
+                    );
+                }
                 if platform == Platform::Switch {
-					render_setting(
-					"Base with Update Folder", 
-					"Following the usual guides with nxdumptool, this will usually be the / 
-					combined base game and v1.6.0 update files. The path will probably / 
-					contain the title ID of 01007EF00011E800 and end in romfs.", 
-					ui, |ui| {
-						if ui
-							.folder_picker(content_dir.get_or_insert_default())
-							.changed()
-						{
-							changed = true;
-							*host_path = "/".into();
-						}
-					});
-				}	
-                if platform == Platform::WiiU {
                     render_setting(
-                    "Update Folder", 
-                    "The contains the BOTW v1.5.0 update data. It is absolutely necessary for the / 
-                    game to even run. If you are using Cemu, it will usually have a similar path / 
-                    to the base folder, but with an E at the end of the first half of the title ID: / 
-                    mlc01/usr/title/0005000E/101C9400/content", 
-                    ui, |ui| {
-                        if ui
-                            .folder_picker(update_dir.get_or_insert_default())
-                            .changed()
-                        {
-                            changed = true;
-                            *host_path = "/".into();
-                        }
-                    });
+                        "Base with Update Folder",
+                        "Following the usual guides with nxdumptool, this will usually be the / 
+					combined base game and v1.6.0 update files. The path will probably / 
+					contain the title ID of 01007EF00011E800 and end in romfs.",
+                        ui,
+                        |ui| {
+                            if ui
+                                .folder_picker(content_dir.get_or_insert_default())
+                                .changed()
+                            {
+                                changed = true;
+                                *host_path = "/".into();
+                            }
+                        },
+                    );
                 }
                 if platform == Platform::WiiU {
-					render_setting(
-					"DLC Folder", 
-					"This contains most of the assets for the BOTW DLC. This one does not usually end / 
+                    render_setting(
+                        "Update Folder",
+                        "The contains the BOTW v1.5.0 update data. It is absolutely necessary for \
+                         the / 
+                    game to even run. If you are using Cemu, it will usually have a similar path / 
+                    to the base folder, but with an E at the end of the first half of the title \
+                         ID: / 
+                    mlc01/usr/title/0005000E/101C9400/content",
+                        ui,
+                        |ui| {
+                            if ui
+                                .folder_picker(update_dir.get_or_insert_default())
+                                .changed()
+                            {
+                                changed = true;
+                                *host_path = "/".into();
+                            }
+                        },
+                    );
+                }
+                if platform == Platform::WiiU {
+                    render_setting(
+                        "DLC Folder",
+                        "This contains most of the assets for the BOTW DLC. This one does not \
+                         usually end / 
 					in content, but must go one level further into a 0010 folder because of the way / 
 					multiple kinds of add-on content are handled. If you are using Cemu, it will usually / 
-					have a similar path to the base folder, but with a C at the end of the first half of the title ID: / 
-					mlc01/usr/title/0005000C/101C9400/content/0010", 
-					ui, |ui| {
-						if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
-							changed = true;
-							*host_path = "/".into();
-						}
-					});
-				}	
+					have a similar path to the base folder, but with a C at the end of the first half of the title ID: \
+                         / 
+					mlc01/usr/title/0005000C/101C9400/content/0010",
+                        ui,
+                        |ui| {
+                            if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
+                                changed = true;
+                                *host_path = "/".into();
+                            }
+                        },
+                    );
+                }
                 if platform == Platform::Switch {
-					render_setting(
-					"DLC Folder", 
-					"This contains most of the assets for the BOTW DLC. The path will probably / 
-					contain a title ID like 01007EF00011F001 and end in romfs.", 
-					ui, |ui| {
-						if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
-							changed = true;
-							*host_path = "/".into();
-						}
-					});
-				}	
-
+                    render_setting(
+                        "DLC Folder",
+                        "This contains most of the assets for the BOTW DLC. The path will \
+                         probably / 
+					contain a title ID like 01007EF00011F001 and end in romfs.",
+                        ui,
+                        |ui| {
+                            if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
+                                changed = true;
+                                *host_path = "/".into();
+                            }
+                        },
+                    );
+                }
             }
             DumpType::ZArchive {
                 content_dir: _,
@@ -405,12 +422,14 @@ fn render_platform_config(
                 host_path,
             } => {
                 render_setting(
-                "WUA Path", 
-                "This should contain the entire BOTW game with the Base, Update, and DLC / 
-                and should have a file extension of .wua", 
-                ui, |ui| {
-                    changed |= ui.file_picker(host_path).changed();
-                });
+                    "WUA Path",
+                    "This should contain the entire BOTW game with the Base, Update, and DLC / 
+                and should have a file extension of .wua",
+                    ui,
+                    |ui| {
+                        changed |= ui.file_picker(host_path).changed();
+                    },
+                );
             }
         }
     });

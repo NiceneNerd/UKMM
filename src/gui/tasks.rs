@@ -9,6 +9,7 @@ use fs_err as fs;
 use im::Vector;
 use join_str::jstr;
 use uk_manager::{
+    bnp::convert_bnp,
     core::Manager,
     mods::Mod,
     settings::{DeployConfig, Platform, PlatformSettings},
@@ -66,6 +67,19 @@ fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
 
 pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Message> {
     log::info!("Opening mod at {}", path.display());
+    if path
+        .extension()
+        .unwrap_or_default()
+        .to_str()
+        .unwrap_or_default()
+        .to_lowercase()
+        == "bnp"
+    {
+        let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKKM mod")?;
+        return Ok(Message::HandleMod(Mod::from_reader(
+            ModReader::open_peek(mod_, vec![]).context("Failed to open converted mod")?,
+        )));
+    }
     let mod_ = match ModReader::open_peek(path, vec![]) {
         Ok(reader) => Mod::from_reader(reader),
         Err(err) => {

@@ -6,6 +6,7 @@ use std::{
 use anyhow::{Context, Result};
 use fs_err as fs;
 use parking_lot::Mutex;
+use rayon::prelude::*;
 use roead::{
     aamp::{ParameterIO, ParameterList, ParameterListing},
     sarc::{Sarc, SarcWriter},
@@ -13,6 +14,7 @@ use roead::{
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use tempfile::tempdir;
+use uk_mod::pack::ModPacker;
 use uk_reader::ResourceReader;
 
 use crate::{
@@ -187,47 +189,75 @@ impl BnpConverter {
     }
 
     fn convert(self) -> Result<PathBuf> {
-        println!("Actor info");
-        self.handle_actorinfo()?;
-        println!("ASlist");
-        self.handle_aslist()?;
-        println!("Areadata");
-        self.handle_areadata()?;
-        println!("Deepmerge");
-        self.handle_deepmerge()?;
-        println!("Drops");
-        self.handle_drops()?;
-        println!("DungeonStatic");
-        self.handle_dungeon_static()?;
-        println!("EventInfo");
-        self.handle_events()?;
-        println!("Gamedata");
-        self.handle_gamedata()?;
-        println!("MainfieldStatic");
-        self.handle_mainfield_static()?;
-        println!("Maps");
-        self.handle_maps()?;
-        println!("Quests");
-        self.handle_quests()?;
-        println!("Residents");
-        self.handle_residents()?;
-        println!("Savedata");
-        self.handle_savedata()?;
-        println!("Shops");
-        self.handle_shops()?;
-        println!("StatusEffectList");
-        self.handle_effects()?;
-        println!("Texts");
-        self.handle_texts()?;
-        Ok(todo!())
+        log::debug!("Processing actor info log");
+        self.handle_actorinfo()
+            .context("Failed to process actor info log")?;
+        log::debug!("Processing AS list log");
+        self.handle_aslist()
+            .context("Failed to process AS list log")?;
+        log::debug!("Processing areadata log");
+        self.handle_areadata()
+            .context("Failed to process areadata log")?;
+        log::debug!("Processing deepmerge log");
+        self.handle_deepmerge()
+            .context("Failed to process deepmerge log")?;
+        log::debug!("Processing drops log");
+        self.handle_drops().context("Failed to process drops log")?;
+        log::debug!("Processing dungeon static log");
+        self.handle_dungeon_static()
+            .context("Failed to process dungeon static log")?;
+        log::debug!("Processing eventinfo log");
+        self.handle_events()
+            .context("Failed to process eventinfo log")?;
+        log::debug!("Processing gamedata log");
+        self.handle_gamedata()
+            .context("Failed to process gamedata log")?;
+        log::debug!("Processing mainfield static log");
+        self.handle_mainfield_static()
+            .context("Failed to process mainfield static log")?;
+        log::debug!("Processing maps log");
+        self.handle_maps().context("Failed to process maps log")?;
+        log::debug!("Processing quests log");
+        self.handle_quests()
+            .context("Failed to process quests log")?;
+        log::debug!("Processing residents log");
+        self.handle_residents()
+            .context("Failed to process residents log")?;
+        log::debug!("Processing savedata log");
+        self.handle_savedata()
+            .context("Failed to process savedata log")?;
+        log::debug!("Processing shops log");
+        self.handle_shops().context("Failed to process shops log")?;
+        log::debug!("Processing status effect log");
+        self.handle_effects()
+            .context("Failed to process status effect log")?;
+        log::debug!("Processing texts log");
+        self.handle_texts().context("Failed to process texts log")?;
+
+        let packs = self.packs.lock().clone();
+        packs.into_par_iter().try_for_each(|file| -> Result<()> {
+            self.open_or_create_sarc(
+                &file,
+                self.trim_prefixes(
+                    file.strip_prefix(&self.path)
+                        .expect("Impossible")
+                        .to_str()
+                        .unwrap_or_default(),
+                ),
+            )?;
+            Ok(())
+        })?;
+
+        Ok(self.path)
     }
 }
 
-pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
+pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = tempdir()?.into_path();
-    dbg!(&tempdir);
+    log::info!("Extracting BNP…");
     extract_7z(path, &tempdir).context("Failed to extract BNP")?;
     let (content, aoc) = uk_content::platform_prefixes(core.settings().current_mode.into());
+    log::info!("Processing BNP logs…");
     let converter = BnpConverter {
         platform: core.settings().current_mode,
         game_lang: core
@@ -236,12 +266,38 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
             .context("No config for current platform")?
             .language,
         dump: core.settings().dump().context("No dump for current mode")?,
-        path: tempdir,
         content,
         aoc,
-        packs: Default::default(),
+        packs: {
+            let mut packs: FxHashSet<PathBuf> = Default::default();
+            let packs_path = tempdir.join("logs/packs.json");
+            if packs_path.exists() {
+                let log: FxHashMap<String, String> = serde_json::from_str(
+                    &fs::read_to_string(packs_path).context("Failed to read packs.json")?,
+                )
+                .context("Failed to parse packs.json")?;
+                packs.extend(
+                    log.into_values()
+                        .map(|p| tempdir.join(p.replace('\\', "/"))),
+                );
+            }
+            Arc::new(Mutex::new(packs))
+        },
+        path: tempdir,
     };
-    converter.convert()
+    let path = converter.convert()?;
+    log::info!("BNP unpacked");
+    Ok(path)
+}
+
+pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
+    let tempdir = unpack_bnp(core, path).context("Failed to unpack BNP")?;
+    let tempfile = tempfile::NamedTempFile::new()?.into_temp_path();
+    let meta =
+        ModPacker::parse_info(tempdir.join("info.json")).context("Failed to parse BNP metadata")?;
+    let new_mod = ModPacker::new(tempdir, &tempfile, Some(meta), vec![])
+        .context("Failed to package converted BNP")?;
+    new_mod.pack()
 }
 
 #[cfg(test)]
@@ -250,5 +306,5 @@ fn test_convert() {
     let path = dirs2::download_dir()
         .unwrap()
         .join("girly_animation_pack_v80.bnp"); //join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
-    convert_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
+    unpack_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }

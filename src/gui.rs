@@ -512,6 +512,7 @@ impl App {
                     self.do_task(move |_| {
                         if let Some(path) = rfd::FileDialog::new()
                             .add_filter("UKMM Mod (*.zip)", &["zip"])
+                            .add_filter("BCML Mod (*.bnp)", &["bnp"])
                             .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
                             .pick_file()
                         {
