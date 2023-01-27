@@ -2,79 +2,16 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
 use roead::{
-    aamp::{Parameter, ParameterIO, ParameterList},
+    aamp::ParameterIO,
     sarc::{Sarc, SarcWriter},
     yaz0::compress_if,
 };
-use rustc_hash::FxHashSet;
 use uk_content::{
-    prelude::{Mergeable, Resource, String64},
+    prelude::{Mergeable, Resource},
     resource::ASList,
-    util::{IndexMap, IndexSet, ParameterExt},
 };
 
 use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
-
-fn merge_plist(base: &mut ParameterList, diff: &ParameterList) -> Result<()> {
-    fn merge_addres(base: &mut ParameterList, diff: &ParameterList) {
-        let bfres: IndexSet<String64> = base
-            .objects
-            .0
-            .values()
-            .chain(diff.objects.0.values())
-            .filter_map(|obj| obj.get("Anim").and_then(|a| a.as_safe_string().ok()))
-            .collect();
-        for (i, v) in bfres.into_iter().enumerate() {
-            let key = format!("AddRes_{}", i);
-            let obj = base.objects.entry(key).or_default();
-            obj.insert("Anim", Parameter::String64(v.into()));
-        }
-    }
-
-    fn merge_asdefine(base: &mut ParameterList, diff: &ParameterList) {
-        let listing: IndexMap<String64, usize> = base
-            .objects
-            .0
-            .values()
-            .enumerate()
-            .filter_map(|(i, obj)| {
-                obj.get("Name")
-                    .and_then(|n| n.as_safe_string().ok().map(|n| (n, i)))
-            })
-            .collect();
-        let defs: IndexMap<String64, String64> = diff
-            .objects
-            .0
-            .values()
-            .filter_map(|obj| {
-                obj.get("Name")
-                    .and_then(|n| n.as_safe_string().ok())
-                    .and_then(|n| {
-                        obj.get("Filename")
-                            .and_then(|f| f.as_safe_string().ok())
-                            .map(|f| (n, f))
-                    })
-            })
-            .collect();
-        let mut new_idx = listing.len();
-        for (k, v) in defs {
-            let key;
-            if let Some(index) = listing.get(&k) {
-                key = format!("ASDefine_{}", index);
-            } else {
-                key = format!("ASDefine_{}", new_idx);
-                let obj = base.objects.entry(key.clone()).or_default();
-                obj.insert("Name", k.into());
-                new_idx += 1;
-            }
-            if let Some(obj) = base.objects.get_mut(&key) {
-                obj.insert("Filename", v.into());
-            }
-        }
-    }
-
-    Ok(())
-}
 
 fn handle_diff_entry(
     sarc: &mut SarcWriter,
