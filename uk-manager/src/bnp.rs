@@ -25,6 +25,7 @@ mod aslist;
 mod deepmerge;
 mod drops;
 mod dstatic;
+mod effects;
 mod events;
 mod gamedata;
 mod mainstatic;
@@ -214,6 +215,8 @@ impl BnpConverter {
         self.handle_savedata()?;
         println!("Shops");
         self.handle_shops()?;
+        println!("StatusEffectList");
+        self.handle_effects()?;
         println!("Texts");
         self.handle_texts()?;
         Ok(todo!())
