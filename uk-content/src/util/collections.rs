@@ -6,6 +6,7 @@ use crate::prelude::Mergeable;
 mod ui;
 
 pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
+pub type HashSet<K> = rustc_hash::FxHashSet<K>;
 pub type IndexMap<K, V> =
     indexmap::IndexMap<K, V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
 pub type IndexSet<V> = indexmap::IndexSet<V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;

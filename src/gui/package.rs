@@ -228,8 +228,19 @@ impl App {
                             }
                         });
                         let mut delete = None;
+                        let mut defaults = if let OptionGroup::Multiple(group) = opt_group {
+                            Some(group.defaults.clone())
+                        } else {
+                            None
+                        };
                         for (i, opt) in opt_group.options_mut().iter_mut().enumerate() {
-                            render_option(opt, folders, &mut delete, i, id, ui)
+                            render_option(opt, defaults.as_mut(), folders, &mut delete, i, id, ui);
+                        }
+                        if let OptionGroup::Multiple(group) = opt_group
+                            && let Some(defaults) = defaults
+                            && defaults != group.defaults
+                        {
+                            group.defaults = defaults;
                         }
                         if let Some(i) = delete {
                             opt_group.options_mut().remove(i);
@@ -243,6 +254,7 @@ impl App {
 
         fn render_option(
             option: &mut ModOption,
+            mut defaults: Option<&mut FxHashSet<PathBuf>>,
             folders: &Mutex<FxHashSet<PathBuf>>,
             delete: &mut Option<usize>,
             i: usize,
@@ -268,6 +280,16 @@ impl App {
                     ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
                         &mut option.description,
                     ));
+                    if let Some(ref mut defaults) = defaults {
+                        let mut default = defaults.contains(&option.path);
+                        if ui.checkbox(&mut default, "Enable by default").changed() {
+                            if default {
+                                defaults.insert(option.path.clone());
+                            } else {
+                                defaults.remove(&option.path);
+                            }
+                        }
+                    }
                     egui::ComboBox::new(id.with("path"), "Option Folder")
                         .selected_text(option.path.display().to_string())
                         .show_ui(ui, |ui| {
@@ -287,12 +309,17 @@ impl App {
                                 };
                             });
                             if let Some(new_folder) = new_folder {
+                                let old_folder = option.path.clone();
                                 let mut folders = folders.lock();
                                 folders.remove(&new_folder);
                                 if option.path != PathBuf::default() {
                                     folders.insert(new_folder.with_file_name(&option.path));
                                 }
                                 option.path = new_folder.file_name().unwrap().into();
+                                if let Some(defaults) = defaults && defaults.contains(&old_folder) {
+                                    defaults.remove(&old_folder);
+                                    defaults.insert(option.path.clone());
+                                }
                             }
                         });
                 });

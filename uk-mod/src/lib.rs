@@ -1,13 +1,16 @@
 #![feature(result_option_inspect, seek_stream_len, let_chains, once_cell)]
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::BTreeSet,
     path::{Path, PathBuf},
 };
 
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use uk_content::{prelude::Endian, util::IndexMap};
+use uk_content::{
+    prelude::Endian,
+    util::{HashSet, IndexMap},
+};
 pub mod pack;
 pub mod unpack;
 pub use zstd;
