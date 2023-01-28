@@ -9,7 +9,7 @@ impl BnpConverter {
     pub fn handle_savedata(&self) -> Result<()> {
         let save_path = self.path.join("logs/savedata.yml");
         if save_path.exists() {
-            let mut diff = Byml::from_text(&fs::read_to_string(save_path)?)?.into_hash()?;
+            let mut diff = Byml::from_text(fs::read_to_string(save_path)?)?.into_hash()?;
             let base = self.dump.get_from_sarc(
                 "GameData/savedataformat.sarc",
                 "Pack/Bootup.pack//GameData/savedataformat.ssarc",

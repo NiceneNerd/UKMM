@@ -11,7 +11,7 @@ impl BnpConverter {
     pub fn handle_residents(&self) -> Result<()> {
         let residents_path = self.path.join("logs/residents.yml");
         if residents_path.exists() {
-            let diff = Byml::from_text(&fs::read_to_string(residents_path)?)?.into_hash()?;
+            let diff = Byml::from_text(fs::read_to_string(residents_path)?)?.into_hash()?;
             let residents = self
                 .dump
                 .get_from_sarc(

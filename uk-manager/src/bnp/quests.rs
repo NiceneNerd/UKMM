@@ -10,7 +10,7 @@ impl BnpConverter {
     pub fn handle_quests(&self) -> Result<()> {
         let quests_path = self.path.join("logs/quests.yml");
         if quests_path.exists() {
-            let mut diff = Byml::from_text(&fs::read_to_string(quests_path)?)?.into_hash()?;
+            let mut diff = Byml::from_text(fs::read_to_string(quests_path)?)?.into_hash()?;
             let mut quests = Byml::from_binary(
                 self.dump
                     .get_bytes_from_sarc("Pack/TitleBG.pack//Quest/QuestProduct.sbquestpack")?,
