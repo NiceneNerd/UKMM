@@ -41,7 +41,7 @@ jobs:
         with:
           name: ukmm-${{ github.event.release.tag_name }}-${{ matrix.platform.name }}.${{ matrix.platform.arch }}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          path: ukmm-${{ github.event.release.tag_name }}-${{ matrix.platform.name }}.${{ matrix.platform.arch }}
+          path: target/release/ukmm-${{ github.event.release.tag_name }}-${{ matrix.platform.name }}.${{ matrix.platform.arch }}
     env:
       CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 1
       CARGO_PROFILE_RELEASE_LTO: "true"
