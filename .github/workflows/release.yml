@@ -31,11 +31,11 @@ jobs:
         run: cargo +nightly build --release
       - name: Archive Release
         uses: thedoctor0/zip-release@main
-        working-directory: target/release
         with:
           type: ${{ matrix.platform.arch }}
           filename: ukmm-${{ github.event.release.tag_name }}-${{ matrix.platform.name }}.${{ matrix.platform.arch }}
           path: ukmm${{ matrix.platform.ext }}
+          directory: target/release
       - uses: Shopify/upload-to-release@v1.0.1
         name: Upload artifacts
         with:
