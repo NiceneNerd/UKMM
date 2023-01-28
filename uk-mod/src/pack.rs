@@ -94,7 +94,7 @@ impl ModPacker {
             options: vec![],
             platform: Endian::Big,
             url: Default::default(),
-            version: 0.1,
+            version: "0.1.0".into(),
         })
     }
 
@@ -113,7 +113,7 @@ impl ModPacker {
                 _ => anyhow::bail!("Invalid platform value in info.json"),
             },
             url: Default::default(),
-            version: info.version[0..3].parse::<f32>()?,
+            version: info.version,
         })
     }
 
@@ -477,7 +477,7 @@ mod tests {
             Some(Meta {
                 platform: Endian::Big,
                 name: "Test Mod".into(),
-                version: 0.1,
+                version: "0.1.0".into(),
                 category: "Overhaul".into(),
                 author: "Lord Caleb".into(),
                 description: "A test mod".into(),

@@ -40,7 +40,7 @@ impl MetaInputModal {
             options: Default::default(),
             platform: platform.into(),
             url: Default::default(),
-            version: 1.0,
+            version: "1.0.0".into(),
         });
         self.path = Some(path);
     }

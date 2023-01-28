@@ -530,6 +530,15 @@ impl App {
                 Message::HandleMod(mod_) => {
                     self.busy = false;
                     log::debug!("{:#?}", &mod_);
+                    for (hash, (name, version)) in mod_.meta.masters.iter() {
+                        if !self.mods.iter().any(|m| m.hash() == *hash) {
+                            self.do_update(Message::Error(anyhow::anyhow!(
+                                "Could not find required mod dependency {} (version {})",
+                                name,
+                                version
+                            )));
+                        }
+                    }
                     if !mod_.meta.options.is_empty() {
                         self.do_update(Message::RequestOptions(mod_, false));
                     } else {

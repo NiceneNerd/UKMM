@@ -173,7 +173,7 @@ pub static CATEGORIES: &[&str] = &[
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Meta {
     pub name: String,
-    pub version: f32,
+    pub version: String,
     pub author: String,
     pub category: String,
     pub description: String,
@@ -181,14 +181,14 @@ pub struct Meta {
     pub url: Option<String>,
     #[serde(rename = "option_groups")]
     pub options: Vec<OptionGroup>,
-    pub masters: IndexMap<usize, (String, f32)>,
+    pub masters: IndexMap<usize, (String, String)>,
 }
 
 #[allow(clippy::derive_hash_xor_eq)]
 impl std::hash::Hash for Meta {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.name.hash(state);
-        self.version.to_bits().hash(state);
+        self.version.hash(state);
         self.author.hash(state);
         self.platform.hash(state);
         self.description.hash(state);
@@ -231,7 +231,7 @@ mod tests {
                 author: "Nicene Nerd".into(),
                 platform: Endian::Big,
                 url: None,
-                version: 1.0,
+                version: "1.0.0".into(),
                 masters: Default::default(),
                 options: Default::default(),
             })

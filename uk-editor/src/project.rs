@@ -26,7 +26,7 @@ impl Project {
                 options: Default::default(),
                 platform: platform.into(),
                 url: Default::default(),
-                version: 0.1,
+                version: "0.1.0".into(),
             },
         }
     }

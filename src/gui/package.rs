@@ -32,7 +32,7 @@ impl ModPackerBuilder {
             dest:   Default::default(),
             meta:   Meta {
                 name: Default::default(),
-                version: 1.0,
+                version: "1.0.0".into(),
                 author: Default::default(),
                 category: "Other".into(),
                 description: Default::default(),
@@ -82,7 +82,7 @@ impl App {
                                     if in_deps {
                                         builder.meta.masters.insert(
                                             mod_.hash(),
-                                            (mod_.meta.name.clone(), mod_.meta.version),
+                                            (mod_.meta.name.clone(), mod_.meta.version.clone()),
                                         );
                                     } else {
                                         builder.meta.masters.shift_remove(&mod_.hash());
@@ -375,13 +375,19 @@ impl App {
                 builder.meta.name.edit_ui_with_id(ui, id.with("Name"))
             });
             render_field("Version", ui, |ui| {
-                ui.add(
-                    egui::DragValue::new(&mut builder.meta.version)
-                        .clamp_range(0.0..=3000.0)
-                        .speed(0.1)
-                        .max_decimals(2)
-                        .min_decimals(1),
-                )
+                let tmp_version = ui.create_temp_string(
+                    "mod-builder-version",
+                    Some(builder.meta.version.as_str().into()),
+                );
+                let res = tmp_version.write().edit_ui(ui);
+                if res.changed() {
+                    let ver = tmp_version.read();
+                    match lenient_semver::Version::parse(ver.as_str()) {
+                        Ok(_) => builder.meta.version = ver.as_str().into(),
+                        Err(_) => (),
+                    }
+                }
+                res
             });
             render_field("Author", ui, |ui| {
                 builder.meta.author.edit_ui_with_id(ui, id.with("Author"))
