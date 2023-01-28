@@ -382,9 +382,8 @@ impl App {
                 let res = tmp_version.write().edit_ui(ui);
                 if res.changed() {
                     let ver = tmp_version.read();
-                    match lenient_semver::Version::parse(ver.as_str()) {
-                        Ok(_) => builder.meta.version = ver.as_str().into(),
-                        Err(_) => (),
+                    if lenient_semver::Version::parse(ver.as_str()).is_ok() {
+                        builder.meta.version = ver.as_str().into()
                     }
                 }
                 res

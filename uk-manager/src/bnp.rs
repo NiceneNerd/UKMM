@@ -32,7 +32,6 @@ mod events;
 mod gamedata;
 mod mainstatic;
 mod maps;
-mod packs;
 mod quests;
 mod residents;
 mod savedata;

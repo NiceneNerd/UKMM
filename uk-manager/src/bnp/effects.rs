@@ -1,9 +1,6 @@
-use anyhow::{Result};
+use anyhow::Result;
 use fs_err as fs;
 use roead::{byml::Byml, yaz0::compress};
-use uk_content::{
-    prelude::{Resource},
-};
 
 use super::BnpConverter;
 
@@ -12,8 +9,7 @@ impl BnpConverter {
         let effects_path = self.path.join("logs/effects.yml");
         if effects_path.exists() {
             let mut base = Byml::from_binary(
-                self
-                    .dump
+                self.dump
                     .get_bytes_from_sarc("Pack/Bootup.pack//Ecosystem/StatusEffectList.sbyml")?,
             )?
             .into_array()?
