@@ -3,7 +3,10 @@ use std::{
     collections::BTreeSet,
     io::{BufReader, Read, Write},
     path::{Path, PathBuf},
-    sync::{atomic::AtomicUsize, Arc},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
 };
 
 use anyhow::{Context, Result};
@@ -328,6 +331,40 @@ impl ModReader {
     pub fn manifest(&self) -> &Manifest {
         &self.manifest
     }
+
+    #[allow(irrefutable_let_patterns)]
+    pub fn get_versions(&self, name: &Path) -> Result<Vec<Vec<u8>>> {
+        let canon = canonicalize(name);
+        let mut versions = Vec::with_capacity(1);
+        if let Some(zip) = self.zip.as_ref() {
+            if let Ok(data) =  zip.get_file(canon.as_str()) {
+                versions.push(zstd::decode_all(data.as_slice()).with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+            }
+        } else if let path = self.path.join(canon.as_str()) && path.exists() {
+            versions.push(fs::read(path)?);
+        }
+        for opt in &self.options {
+            let path = Path::new("options").join(&opt.path).join(canon.as_str());
+            if let Some(zip) = self.zip.as_ref() {
+                if let Ok(data) =  zip.get_file(path) {
+                    versions.push(zstd::decode_all(data.as_slice()).with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+                }
+            } else if let path = self.path.join(path) && path.exists() {
+                versions.push(fs::read(path)?);
+            }
+        }
+        if let Ok(data) = self.get_aoc_file_data(name) {
+            versions.push(data);
+        }
+        if versions.is_empty() {
+            anyhow::bail!(
+                "Failed to find file {} (canonical path {}) from mod",
+                name.display(),
+                canon
+            )
+        }
+        Ok(versions)
+    }
 }
 
 #[derive(Debug)]
@@ -426,8 +463,8 @@ impl ModUnpacker {
                     rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
                 self.rstb.write().insert(canon, size);
             }
-            let progress = 1 + current_file.load(std::sync::atomic::Ordering::Relaxed);
-            current_file.store(progress, std::sync::atomic::Ordering::Relaxed);
+            let progress = 1 + current_file.load(Ordering::Relaxed);
+            current_file.store(progress, Ordering::Relaxed);
             let remainder = progress % 5;
             if matches!(remainder, 0 | 2 | 3) {
                 log::info!("PROGRESSBuilt file {} of {}", progress, total_files);
@@ -449,11 +486,16 @@ impl ModUnpacker {
                 log::trace!("{e}");
             }
         }
-        for (data, mod_) in self.mods.iter().filter_map(|mod_| {
-            mod_.get_data(file.as_ref())
-                .ok()
-                .map(|d| (d, &mod_.meta.name))
-        }) {
+        for (data, mod_) in self
+            .mods
+            .iter()
+            .filter_map(|mod_| {
+                mod_.get_versions(file.as_ref())
+                    .ok()
+                    .map(|d| d.into_iter().map(|d| (d, &mod_.meta.name)))
+            })
+            .flatten()
+        {
             versions.push_back(Arc::new(minicbor_ser::from_slice(&data).with_context(
                 || jstr!(r#"Failed to parse mod resource {&file} in mod '{mod_}'"#),
             )?));
