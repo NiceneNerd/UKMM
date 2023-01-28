@@ -633,7 +633,8 @@ impl App {
                         Err(e) => self.do_update(Message::Error(e)),
                     };
                 }
-                Message::RequestOptions(mod_, update) => {
+                Message::RequestOptions(mut mod_, update) => {
+                    mod_.enable_default_options();
                     self.options_mod = Some((mod_, update));
                 }
                 Message::UpdateOptions(mod_) => {

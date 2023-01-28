@@ -96,6 +96,33 @@ impl Mod {
     pub fn hash(&self) -> usize {
         self.hash
     }
+
+    pub fn enable_default_options(&mut self) {
+        if !self.meta.options.is_empty() {
+            for group in self.meta.options.iter_mut() {
+                self.enabled_options = match group {
+                    uk_mod::OptionGroup::Exclusive(group) => {
+                        group
+                            .default
+                            .iter()
+                            .filter_map(|path| {
+                                group.options.iter().find(|o| &o.path == path).cloned()
+                            })
+                            .collect()
+                    }
+                    uk_mod::OptionGroup::Multiple(group) => {
+                        group
+                            .defaults
+                            .iter()
+                            .filter_map(|path| {
+                                group.options.iter().find(|o| &o.path == path).cloned()
+                            })
+                            .collect()
+                    }
+                };
+            }
+        }
+    }
 }
 
 pub trait LookupMod {
