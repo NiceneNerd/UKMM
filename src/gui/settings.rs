@@ -283,7 +283,7 @@ fn render_platform_config(
         if platform == Platform::WiiU {
             render_setting(
                 "Dump Type",
-                "For Wii U, you have two supported dump options: \ 
+                "For Wii U, you have two supported dump options: \
                  unpacked MLC files (most common) or a .wua file (Cemu-specific format).",
                 ui,
                 |ui| {
