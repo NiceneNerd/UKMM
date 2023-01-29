@@ -283,8 +283,8 @@ fn render_platform_config(
         if platform == Platform::WiiU {
             render_setting(
                 "Dump Type",
-                "For Wii U, you have two supported dump options: / 
-            unpacked MLC files (most common) or a .wua file (Cemu-specific format).",
+                "For Wii U, you have two supported dump options: \ 
+                 unpacked MLC files (most common) or a .wua file (Cemu-specific format).",
                 ui,
                 |ui| {
                     if ui
@@ -324,11 +324,10 @@ fn render_platform_config(
                 if platform == Platform::WiiU {
                     render_setting(
                         "Base Folder",
-                        "This folder is the root of the plain, v1.0 BOTW assets which were \
-                         included on the / 
-					disk. If you are using Cemu, it will usually be in your MLC folder, with a path such / 
-					as this (part of the title ID will be different for the EU or JP versions): / 
-					mlc01/usr/title/00050000/101C9400/content",
+                        "This folder is the root of the plain, v1.0 BOTW assets which were included \
+                         on the disk. If you are using Cemu, it will usually be in your MLC folder, \
+                         with a path such as this (part of the title ID will be different for the \
+                         EU or JP versions): mlc01/usr/title/00050000/101C9400/content",
                         ui,
                         |ui| {
                             if ui
@@ -344,9 +343,9 @@ fn render_platform_config(
                 if platform == Platform::Switch {
                     render_setting(
                         "Base with Update Folder",
-                        "Following the usual guides with nxdumptool, this will usually be the / 
-					combined base game and v1.6.0 update files. The path will probably / 
-					contain the title ID of 01007EF00011E800 and end in romfs.",
+                        "Following the usual guides with nxdumptool, this will usually be the \
+                         combined base game and v1.6.0 update files. The path will probably \
+                         contain the title ID of 01007EF00011E800 and end in romfs.",
                         ui,
                         |ui| {
                             if ui
@@ -363,11 +362,9 @@ fn render_platform_config(
                     render_setting(
                         "Update Folder",
                         "The contains the BOTW v1.5.0 update data. It is absolutely necessary for \
-                         the / 
-                    game to even run. If you are using Cemu, it will usually have a similar path / 
-                    to the base folder, but with an E at the end of the first half of the title \
-                         ID: / 
-                    mlc01/usr/title/0005000E/101C9400/content",
+                         the game to even run. If you are using Cemu, it will usually have a \
+                         similar path to the base folder, but with an E at the end of the \
+                         first half of the title ID: mlc01/usr/title/0005000E/101C9400/content",
                         ui,
                         |ui| {
                             if ui
@@ -384,12 +381,11 @@ fn render_platform_config(
                     render_setting(
                         "DLC Folder",
                         "This contains most of the assets for the BOTW DLC. This one does not \
-                         usually end / 
-					in content, but must go one level further into a 0010 folder because of the way / 
-					multiple kinds of add-on content are handled. If you are using Cemu, it will usually / 
-					have a similar path to the base folder, but with a C at the end of the first half of the title ID: \
-                         / 
-					mlc01/usr/title/0005000C/101C9400/content/0010",
+                         usually end in content, but must go one level further into a 0010 \
+                         folder because of the way multiple kinds of add-on content are \
+                         handled. If you are using Cemu, it will usually have a similar path \
+                         to the base folder, but with a C at the end of the first half of the \
+                         title ID: mlc01/usr/title/0005000C/101C9400/content/0010",
                         ui,
                         |ui| {
                             if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
@@ -403,8 +399,8 @@ fn render_platform_config(
                     render_setting(
                         "DLC Folder",
                         "This contains most of the assets for the BOTW DLC. The path will \
-                         probably / 
-					contain a title ID like 01007EF00011F001 and end in romfs.",
+                         probably contain a title ID like 01007EF00011F001 \
+                         and end in romfs.",
                         ui,
                         |ui| {
                             if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
@@ -423,8 +419,8 @@ fn render_platform_config(
             } => {
                 render_setting(
                     "WUA Path",
-                    "This should contain the entire BOTW game with the Base, Update, and DLC / 
-                and should have a file extension of .wua",
+                    "This should contain the entire BOTW game with the Base, Update, and DLC \
+                     and should have a file extension of .wua",
                     ui,
                     |ui| {
                         changed |= ui.file_picker(host_path).changed();
