@@ -20,7 +20,9 @@ impl App {
                         .show(ui, |ui| {
                             ui.vertical(|ui| {
                                 ui.spacing_mut().item_spacing.y = 8.0;
-                                ui.label(group.description());
+                                if !group.description().is_empty() {
+                                    ui.label(group.description());
+                                }
                                 match group {
                                     uk_mod::OptionGroup::Exclusive(group) => {
                                         group.options.iter().for_each(|opt| {
@@ -35,6 +37,9 @@ impl App {
                                                     .retain(|o| !group.options.contains(o));
                                                 mod_.enabled_options.push(opt.clone());
                                             }
+                                            if !opt.description.is_empty() {
+                                                ui.small(opt.description.as_str());
+                                            }
                                         });
                                     }
                                     uk_mod::OptionGroup::Multiple(group) => {
@@ -48,6 +53,9 @@ impl App {
                                                     mod_.enabled_options.push(opt.clone());
                                                 } else {
                                                     mod_.enabled_options.retain(|o| o != opt);
+                                                }
+                                                if !opt.description.is_empty() {
+                                                    ui.small(opt.description.as_str());
                                                 }
                                             }
                                         });
