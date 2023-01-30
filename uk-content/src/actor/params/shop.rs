@@ -148,40 +148,32 @@ impl From<ShopData> for ParameterIO {
         val.0
             .into_iter()
             .filter_map(|(name, table)| table.map(|t| (name, t)))
-            .for_each(|(name, table)| {
+            .for_each(|(name, mut table)| {
+                table.retain(|_, item| !item.delete);
                 pio.objects_mut().insert(
                     name.as_str(),
                     [("ColumnNum".into(), Parameter::I32(table.len() as i32))]
                         .into_iter()
-                        .chain(
-                            table
-                                .into_iter()
-                                .filter(|(_, data)| !data.delete)
-                                .enumerate()
-                                .flat_map(|(i, (name, data))| {
-                                    let i = i + 1;
-                                    [
-                                        (format!("ItemSort{:03}", i), Parameter::I32(data.sort)),
-                                        (
-                                            format!("ItemName{:03}", i),
-                                            Parameter::String64(Box::new(name)),
-                                        ),
-                                        (format!("ItemNum{:03}", i), Parameter::I32(data.num)),
-                                        (
-                                            format!("ItemAdjustPrice{:03}", i),
-                                            Parameter::I32(data.adjust_price),
-                                        ),
-                                        (
-                                            format!("ItemLookGetFlg{:03}", i),
-                                            Parameter::Bool(data.look_get_flag),
-                                        ),
-                                        (
-                                            format!("ItemAmount{:03}", i),
-                                            Parameter::I32(data.amount),
-                                        ),
-                                    ]
-                                }),
-                        )
+                        .chain(table.into_iter().enumerate().flat_map(|(i, (name, data))| {
+                            let i = i + 1;
+                            [
+                                (format!("ItemSort{:03}", i), Parameter::I32(data.sort)),
+                                (
+                                    format!("ItemName{:03}", i),
+                                    Parameter::String64(Box::new(name)),
+                                ),
+                                (format!("ItemNum{:03}", i), Parameter::I32(data.num)),
+                                (
+                                    format!("ItemAdjustPrice{:03}", i),
+                                    Parameter::I32(data.adjust_price),
+                                ),
+                                (
+                                    format!("ItemLookGetFlg{:03}", i),
+                                    Parameter::Bool(data.look_get_flag),
+                                ),
+                                (format!("ItemAmount{:03}", i), Parameter::I32(data.amount)),
+                            ]
+                        }))
                         .collect(),
                 );
             });

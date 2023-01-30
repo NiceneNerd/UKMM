@@ -63,7 +63,7 @@ impl<T: Clone + PartialEq> IntoIterator for DeleteVec<T> {
 
 impl<T: Clone + PartialEq> DeleteVec<T> {
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.iter().count()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -252,7 +252,7 @@ impl<T: DeleteKey> DeleteSet<T> {
     }
 
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.iter().count()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -341,7 +341,7 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
 
     #[inline]
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.iter().count()
     }
 
     #[inline]
@@ -440,7 +440,7 @@ macro_rules! impl_delete_map {
 
             #[inline]
             pub fn len(&self) -> usize {
-                self.0.len()
+                self.iter().count()
             }
 
             #[inline]
