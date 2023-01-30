@@ -100,24 +100,18 @@ impl Mod {
     pub fn enable_default_options(&mut self) {
         if !self.meta.options.is_empty() {
             for group in self.meta.options.iter_mut() {
-                self.enabled_options = match group {
+                match group {
                     uk_mod::OptionGroup::Exclusive(group) => {
-                        group
-                            .default
-                            .iter()
-                            .filter_map(|path| {
+                        self.enabled_options
+                            .extend(group.default.iter().filter_map(|path| {
                                 group.options.iter().find(|o| &o.path == path).cloned()
-                            })
-                            .collect()
+                            }));
                     }
                     uk_mod::OptionGroup::Multiple(group) => {
-                        group
-                            .defaults
-                            .iter()
-                            .filter_map(|path| {
+                        self.enabled_options
+                            .extend(group.defaults.iter().filter_map(|path| {
                                 group.options.iter().find(|o| &o.path == path).cloned()
-                            })
-                            .collect()
+                            }));
                     }
                 };
             }
