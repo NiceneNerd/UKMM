@@ -19,7 +19,7 @@ use uk_reader::ResourceReader;
 
 use crate::{
     settings::{Language, Platform},
-    util::extract_7z,
+    util::{extract_7z, get_temp_file},
 };
 mod actorinfo;
 mod areadata;
@@ -252,7 +252,7 @@ impl BnpConverter {
 }
 
 pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
-    let tempdir = tempdir()?.into_path();
+    let tempdir = crate::util::get_temp_folder();
     log::info!("Extracting BNP…");
     extract_7z(path, &tempdir).context("Failed to extract BNP")?;
     let (content, aoc) = uk_content::platform_prefixes(core.settings().current_mode.into());
@@ -282,7 +282,7 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
             }
             Arc::new(Mutex::new(packs))
         },
-        path: tempdir,
+        path: tempdir.clone(),
     };
     let path = converter.convert()?;
     log::info!("BNP unpacked");
@@ -291,10 +291,10 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
 
 pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = unpack_bnp(core, path).context("Failed to unpack BNP")?;
-    let tempfile = tempfile::NamedTempFile::new()?.into_temp_path();
+    let tempfile = get_temp_file();
     let meta =
         ModPacker::parse_info(tempdir.join("info.json")).context("Failed to parse BNP metadata")?;
-    let new_mod = ModPacker::new(tempdir, &tempfile, Some(meta), vec![])
+    let new_mod = ModPacker::new(tempdir, tempfile.as_path(), Some(meta), vec![])
         .context("Failed to package converted BNP")?;
     new_mod.pack()
 }
@@ -302,8 +302,6 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 #[cfg(test)]
 #[test]
 fn test_convert() {
-    let path = dirs2::download_dir()
-        .unwrap()
-        .join("girly_animation_pack_v80.bnp"); //join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
+    let path = dirs2::download_dir().unwrap().join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
     unpack_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }

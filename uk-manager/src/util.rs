@@ -15,19 +15,31 @@ pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
     Ok(())
 }
 
-static TEMP_FOLDERS: Lazy<RwLock<HashSet<PathBuf>>> = Lazy::new(|| RwLock::new(HashSet::default()));
+static TEMP_FS: Lazy<RwLock<HashSet<PathBuf>>> = Lazy::new(|| RwLock::new(HashSet::default()));
 
 pub fn get_temp_folder() -> MappedRwLockReadGuard<'static, PathBuf> {
     let temp = tempfile::tempdir().unwrap().into_path();
-    TEMP_FOLDERS.write().insert(temp.clone());
-    RwLockReadGuard::map(TEMP_FOLDERS.read(), |tmps| unsafe {
+    TEMP_FS.write().insert(temp.clone());
+    RwLockReadGuard::map(TEMP_FS.read(), |tmps| unsafe {
+        tmps.get(&temp).unwrap_unchecked()
+    })
+}
+
+pub fn get_temp_file() -> MappedRwLockReadGuard<'static, PathBuf> {
+    let temp = tempfile::NamedTempFile::new().unwrap().keep().unwrap().1;
+    TEMP_FS.write().insert(temp.clone());
+    RwLockReadGuard::map(TEMP_FS.read(), |tmps| unsafe {
         tmps.get(&temp).unwrap_unchecked()
     })
 }
 
 pub fn clear_temp() {
-    TEMP_FOLDERS.write().iter().for_each(|tmp| {
-        remove_dir_all(tmp).unwrap_or(());
+    TEMP_FS.write().drain().for_each(|tmp| {
+        if tmp.is_file() {
+            fs_err::remove_file(tmp).unwrap_or(());
+        } else {
+            remove_dir_all(tmp).unwrap_or(());
+        }
     });
 }
 
