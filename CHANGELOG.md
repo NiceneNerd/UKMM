@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Fixed mod option default display
+- Fixed problem with delete collection length
+- Improved temp file cleanup
+- Fixed some tooltip formatting
+
 ## [0.2.0] - 2023-01-28
 
 ### Added 
