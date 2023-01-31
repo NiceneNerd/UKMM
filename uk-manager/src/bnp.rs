@@ -140,6 +140,9 @@ impl BnpConverter {
                                 let stripped_nested = Sarc::new(stripped_file.data).ok()?;
                                 let base_nested = Sarc::new(file.data).ok()?;
                                 let mut nested_merged = SarcWriter::from_sarc(&base_nested);
+                                if name.ends_with("arc") {
+                                    nested_merged.set_legacy_mode(true);
+                                }
                                 nested_merged
                                     .files
                                     .extend(stripped_nested.files().filter_map(|file| {
@@ -235,7 +238,7 @@ impl BnpConverter {
 
         let packs = self.packs.lock().clone();
         packs.into_par_iter().try_for_each(|file| -> Result<()> {
-            self.open_or_create_sarc(
+            let mut sarc = self.open_or_create_sarc(
                 &file,
                 self.trim_prefixes(
                     file.strip_prefix(&self.path)
@@ -244,6 +247,9 @@ impl BnpConverter {
                         .unwrap_or_default(),
                 ),
             )?;
+            let data = sarc.to_binary();
+            let data = compress_if(&data, &file);
+            fs::write(file, data)?;
             Ok(())
         })?;
 
@@ -302,6 +308,8 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 #[cfg(test)]
 #[test]
 fn test_convert() {
-    let path = dirs2::download_dir().unwrap().join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
+    let path = dirs2::download_dir()
+        .unwrap()
+        .join("clearcameraui_nodetection.bnp"); // join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
     unpack_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }

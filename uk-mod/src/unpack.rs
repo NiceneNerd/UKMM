@@ -539,8 +539,8 @@ impl ModUnpacker {
     }
 
     fn build_sarc(&self, sarc: SarcMap) -> Result<Vec<u8>> {
-        let mut writer = SarcWriter::new(self.endian.into());
-        for file in sarc.0.into_iter() {
+        let mut writer = SarcWriter::new(self.endian.into()).with_min_alignment(sarc.alignment);
+        for file in sarc.files.into_iter() {
             let data = self
                 .build_file(&file)
                 .with_context(|| jstr!("Failed to build file {&file} for SARC"))?;

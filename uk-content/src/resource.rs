@@ -670,50 +670,41 @@ impl ResourceRegister for std::cell::RefCell<BTreeMap<String, ResourceData>> {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-pub struct SarcMap(pub SortedDeleteSet<String>);
+pub struct SarcMap {
+    pub alignment: usize,
+    pub files:     SortedDeleteSet<String>,
+}
 
 impl Mergeable for SarcMap {
     fn diff(&self, other: &Self) -> Self {
-        Self(self.0.diff(&other.0))
+        Self {
+            alignment: self.alignment,
+            files:     self.files.diff(&other.files),
+        }
     }
 
     fn merge(&self, diff: &Self) -> Self {
-        Self(self.0.merge(&diff.0))
+        Self {
+            alignment: self.alignment,
+            files:     self.files.merge(&diff.files),
+        }
     }
 }
 
 impl SarcMap {
     pub fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
         let sarc = Sarc::new(data.as_ref())?;
-        let sarc_map = Self(
-            sarc.files()
+        let sarc_map = Self {
+            alignment: sarc.guess_min_alignment(),
+            files:     sarc
+                .files()
                 .map(|file| -> Result<String> {
                     Ok(file.name().context("SARC file missing name")?.into())
                 })
                 .collect::<Result<_>>()?,
-        );
+        };
         Ok(sarc_map)
     }
-
-    // pub fn to_binary(
-    //     &self,
-    //     endian: crate::prelude::Endian,
-    //     resources: &BTreeMap<String, ResourceData>,
-    // ) -> Result<roead::Bytes> {
-    //     let mut sarc = SarcWriter::new(endian.into());
-    //     sarc.files = self
-    //         .0
-    //         .iter()
-    //         .map(|(path, canon)| -> Result<(std::string::String, Vec<u8>)> {
-    //             let resource = resources
-    //                 .get(canon)
-    //                 .with_context(|| jstr!("Missing resource for SARC: {&canon}"))?;
-    //             let data = resource.to_binary(endian, resources)?;
-    //             Ok((path.to_string(), data.into()))
-    //         })
-    //         .collect::<Result<_>>()?;
-    //     Ok(sarc.to_binary())
-    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -785,18 +776,7 @@ impl ResourceData {
         }
     }
 
-    // pub fn to_binary(
-    //     &self,
-    //     endian: Endian,
-    //     resources: &BTreeMap<String, ResourceData>,
-    // ) -> Result<Binary> {
-    //     Ok(match self {
-    //         ResourceData::Binary(data) => data.clone(),
-    //         ResourceData::Mergeable(resource) => resource.clone().into_binary(endian).into(),
-    //         ResourceData::Sarc(sarc) => sarc.to_binary(endian, resources)?.into(),
-    //     })
-    // }
-
+    #[inline]
     pub fn take_mergeable(self) -> Option<MergeableResource> {
         match self {
             ResourceData::Mergeable(resource) => Some(resource),
@@ -804,6 +784,7 @@ impl ResourceData {
         }
     }
 
+    #[inline]
     pub fn as_mergeable(&self) -> Option<&MergeableResource> {
         match self {
             ResourceData::Mergeable(resource) => Some(resource),
@@ -811,6 +792,7 @@ impl ResourceData {
         }
     }
 
+    #[inline]
     pub fn take_binary(self) -> Option<Vec<u8>> {
         match self {
             ResourceData::Binary(data) => Some(data),
@@ -818,6 +800,7 @@ impl ResourceData {
         }
     }
 
+    #[inline]
     pub fn as_binary(&self) -> Option<&[u8]> {
         match self {
             ResourceData::Binary(data) => Some(data),
@@ -825,6 +808,7 @@ impl ResourceData {
         }
     }
 
+    #[inline]
     pub fn take_sarc(self) -> Option<SarcMap> {
         match self {
             ResourceData::Sarc(sarc) => Some(sarc),
@@ -832,6 +816,7 @@ impl ResourceData {
         }
     }
 
+    #[inline]
     pub fn as_sarc(&self) -> Option<&SarcMap> {
         match self {
             ResourceData::Sarc(sarc) => Some(sarc),

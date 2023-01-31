@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Fixed mod option descriptions
+- Updated roead to fix SARC debugging
+- Fixed BNP SARC inflation (partially fixes #23)
+- Added alignment to SARC info
 
 ## [0.2.1] - 2023-01-30
 
