@@ -144,6 +144,7 @@ impl BnpConverter {
     pub fn handle_shops(&self) -> Result<()> {
         let shops_path = self.path.join("logs/shop.aamp");
         if shops_path.exists() {
+            log::debug!("Processing shops log");
             let pio = ParameterIO::from_binary(fs::read(shops_path)?)?;
             let diff = parse_aamp_diff("Filenames", &pio)?;
             diff.into_par_iter()

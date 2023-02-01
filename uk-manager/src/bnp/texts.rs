@@ -14,6 +14,7 @@ impl BnpConverter {
     pub fn handle_texts(&self) -> Result<()> {
         let texts_path = self.path.join("logs/texts.json");
         if texts_path.exists() {
+            log::debug!("Processing texts log");
             let mut diff: TextsLog = serde_json::from_str(&fs::read_to_string(texts_path)?)?;
             let langs = diff.keys().copied().collect::<Vec<_>>();
             let lang = self.game_lang.nearest(&langs);

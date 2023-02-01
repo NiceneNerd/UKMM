@@ -12,6 +12,7 @@ impl BnpConverter {
     pub fn handle_actorinfo(&self) -> Result<()> {
         let path = self.path.join("logs/actorinfo.yml");
         if path.exists() {
+            log::debug!("Processing actor info log");
             let diff =
                 Byml::from_text(fs::read_to_string(path).context("Failed to read actorinfo log")?)
                     .context("Failed to parse actorinfo log")?

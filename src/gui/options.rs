@@ -1,5 +1,9 @@
+use eframe::egui::Button;
 use uk_mod::ModOptionGroup;
-use uk_ui::egui::{self, Align, Checkbox, Context, Layout, Vec2};
+use uk_ui::{
+    egui::{self, Align, Checkbox, Context, Layout, Vec2},
+    visuals,
+};
 
 use super::{App, Message};
 
@@ -14,6 +18,7 @@ impl App {
             .anchor(egui::Align2::CENTER_CENTER, Vec2::default())
             .show(ctx, |ui| {
                 let mod_ = unsafe { &mut self.options_mod.as_mut().unwrap_unchecked().0 };
+                let mut done = true;
                 mod_.meta.options.iter().for_each(|group| {
                     egui::CollapsingHeader::new(group.name())
                         .default_open(true)
@@ -26,6 +31,19 @@ impl App {
                                 match group {
                                     uk_mod::OptionGroup::Exclusive(group) => {
                                         group.options.iter().for_each(|opt| {
+                                            if !group.required
+                                                && ui
+                                                    .radio(
+                                                        !group.options.iter().any(|opt| {
+                                                            mod_.enabled_options.contains(opt)
+                                                        }),
+                                                        "None",
+                                                    )
+                                                    .clicked()
+                                            {
+                                                mod_.enabled_options
+                                                    .retain(|opt| !group.options.contains(opt));
+                                            }
                                             if ui
                                                 .radio(
                                                     mod_.enabled_options.contains(opt),
@@ -63,10 +81,21 @@ impl App {
                                 }
                             });
                         });
+                    if group.required()
+                        && !group
+                            .options()
+                            .iter()
+                            .any(|opt| mod_.enabled_options.contains(opt))
+                    {
+                        done = false;
+                    }
                 });
+                if !done {
+                    ui.colored_label(visuals::RED, "You must set all required option groups");
+                }
                 ui.horizontal(|ui| {
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if ui.button("OK").clicked() {
+                        if ui.add_enabled(done, Button::new("OK")).clicked() {
                             let (mod_, update) = self.options_mod.take().unwrap();
                             if update {
                                 self.do_update(Message::UpdateOptions(mod_));

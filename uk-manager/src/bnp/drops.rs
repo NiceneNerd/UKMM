@@ -23,6 +23,7 @@ impl BnpConverter {
     pub fn handle_drops(&self) -> Result<()> {
         let drops_path = self.path.join("logs/drops.json");
         if drops_path.exists() {
+            log::debug!("Processing drops log");
             let drops: DropDiff = serde_json::from_str(&fs::read_to_string(drops_path)?)?;
             drops
                 .into_par_iter()

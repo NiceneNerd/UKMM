@@ -77,6 +77,7 @@ impl BnpConverter {
     pub fn handle_maps(&self) -> Result<()> {
         let maps_path = self.path.join("logs/map.yml");
         if maps_path.exists() {
+            log::debug!("Processing maps log");
             let diff = Byml::from_text(fs::read_to_string(maps_path)?)?.into_hash()?;
             let base_pack = Sarc::new(self.dump.get_aoc_bytes_uncached("Pack/AocMainField.pack")?)?;
             let mut merged_pack = SarcWriter::from_sarc(&base_pack);

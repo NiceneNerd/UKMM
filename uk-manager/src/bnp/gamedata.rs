@@ -16,6 +16,7 @@ impl BnpConverter {
     pub fn handle_gamedata(&self) -> Result<()> {
         let gamedata_path = self.path.join("logs/gamedata.yml");
         if gamedata_path.exists() {
+            log::debug!("Processing gamedata log");
             let diff = Byml::from_text(fs::read_to_string(gamedata_path)?)?.into_hash()?;
             let base = self.dump.get_from_sarc(
                 "GameData/gamedata.sarc",

@@ -14,6 +14,7 @@ impl BnpConverter {
     pub fn handle_dungeon_static(&self) -> Result<()> {
         let dstatic_path = self.path.join("logs/dstatic.yml");
         if dstatic_path.exists() {
+            log::debug!("Processing dungeon static log");
             let dstatic_diff = Byml::from_text(fs::read_to_string(&dstatic_path)?)?;
             let base = Byml::from_binary(decompress(
                 self.dump

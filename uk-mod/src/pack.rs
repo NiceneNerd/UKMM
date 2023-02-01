@@ -25,7 +25,10 @@ use uk_content::{
 };
 use zip::{write::FileOptions, ZipWriter as ZipW};
 
-use crate::{Manifest, Meta, ModOptionGroup};
+use crate::{
+    ExclusiveOptionGroup, Manifest, Meta, ModOption, ModOptionGroup, MultipleOptionGroup,
+    OptionGroup,
+};
 
 pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
 
@@ -70,6 +73,65 @@ struct InfoJson {
     desc:     String,
     version:  String,
     platform: String,
+    options:  BnpOptions,
+}
+
+#[derive(Debug, Deserialize)]
+struct BnpOptions {
+    multi:  Vec<BnpOption>,
+    single: Vec<BnpGroup>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BnpOption {
+    name:    String,
+    desc:    String,
+    folder:  PathBuf,
+    default: Option<bool>,
+}
+
+impl From<BnpOption> for ModOption {
+    fn from(opt: BnpOption) -> Self {
+        Self {
+            name: opt.name,
+            description: opt.desc,
+            path: opt.folder,
+            requires: vec![],
+        }
+    }
+}
+
+fn multi_from_bnp_multi(opts: Vec<BnpOption>) -> OptionGroup {
+    OptionGroup::Multiple(MultipleOptionGroup {
+        name: "Optional Components".into(),
+        description: "Select one or more of these".into(),
+        defaults: opts
+            .iter()
+            .filter_map(|opt| opt.default.unwrap_or(false).then_some(opt.folder.clone()))
+            .collect(),
+        options: opts.into_iter().map(|opt| opt.into()).collect(),
+        required: false,
+    })
+}
+
+#[derive(Debug, Deserialize)]
+struct BnpGroup {
+    name:     String,
+    desc:     String,
+    required: String,
+    options:  Vec<BnpOption>,
+}
+
+impl From<BnpGroup> for ExclusiveOptionGroup {
+    fn from(group: BnpGroup) -> Self {
+        Self {
+            name: group.name,
+            description: group.desc,
+            default: None,
+            options: group.options.into_iter().map(|opt| opt.into()).collect(),
+            required: !group.required.is_empty(),
+        }
+    }
 }
 
 impl ModPacker {
@@ -106,7 +168,16 @@ impl ModPacker {
             category: Default::default(),
             author: Default::default(),
             masters: Default::default(),
-            options: vec![],
+            options: (!info.options.multi.is_empty())
+                .then(|| multi_from_bnp_multi(info.options.multi))
+                .into_iter()
+                .chain(
+                    info.options
+                        .single
+                        .into_iter()
+                        .map(|grp| OptionGroup::Exclusive(grp.into())),
+                )
+                .collect(),
             platform: match info.platform.as_str() {
                 "wiiu" => Endian::Big,
                 "switch" => Endian::Little,
@@ -495,6 +566,7 @@ mod tests {
                     }]
                     .into_iter()
                     .collect(),
+                    required: false,
                 })],
             }),
             vec![Arc::new(rom_reader)],

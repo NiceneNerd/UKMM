@@ -12,6 +12,7 @@ impl BnpConverter {
     pub fn handle_areadata(&self) -> Result<()> {
         let path = self.path.join("logs/areadata.yml");
         if path.exists() {
+            log::debug!("Processing areadata log");
             let diff =
                 Byml::from_text(fs::read_to_string(path).context("Failed to read areadata log")?)
                     .context("Failed to parse areadata log")?

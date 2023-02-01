@@ -49,6 +49,7 @@ impl BnpConverter {
     pub fn handle_aslist(&self) -> Result<()> {
         let aslist_path = self.path.join("logs/aslist.aamp");
         if aslist_path.exists() {
+            log::debug!("Processing AS list log");
             let pio = ParameterIO::from_binary(fs::read(aslist_path)?)?;
             let diff = parse_aamp_diff("FileTable", &pio)?;
             diff.into_par_iter()

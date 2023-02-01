@@ -238,11 +238,15 @@ impl ResourceReader {
         canon: &str,
         nest_path: &str,
     ) -> uk_content::Result<Arc<ResourceData>> {
-        let data = self.get_bytes_from_sarc(nest_path)?;
-        let resource = ResourceData::from_binary(canon, &data)?;
+        let data = self
+            .get_bytes_from_sarc(nest_path)
+            .with_context(|| format!("Failed to read {} from SARC at path {}", canon, nest_path))?;
+        let resource = ResourceData::from_binary(canon, &data)
+            .with_context(|| jstr!("Failed to parse resource {canon}"))?;
         if is_mergeable_sarc(canon, &data) {
             self.process_sarc(
-                Sarc::new(&data)?,
+                Sarc::new(&data)
+                    .with_context(|| format!("Failed to parse nested SARC at {}", nest_path))?,
                 nest_path.split("//").last().unwrap_or_default(),
             )?;
         }
@@ -299,7 +303,7 @@ impl ResourceReader {
                     Some(parent) => {
                         log::trace!("Full path found at {parent}");
                         Ok(self.get_from_sarc(&canon, &parent).with_context(|| {
-                            log::warn!("Failed to get {canon}");
+                            log::warn!("Failed to get {canon} from {parent}");
                             ROMError::FileNotFound(
                                 path.as_ref().to_string_lossy().into(),
                                 self.source.host_path().to_path_buf(),

@@ -52,6 +52,7 @@ impl BnpConverter {
     pub fn handle_mainfield_static(&self) -> Result<()> {
         let mstatic_path = self.path.join("logs/mainstatic.yml");
         if mstatic_path.exists() {
+            log::debug!("Processing mainfield static log");
             let diff: FxHashMap<String, Hash> = Byml::from_text(fs::read_to_string(mstatic_path)?)?
                 .into_hash()?
                 .into_iter()

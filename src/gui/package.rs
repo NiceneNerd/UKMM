@@ -177,6 +177,7 @@ impl App {
                                     name: std::mem::take(opt_group.name_mut()),
                                     description: std::mem::take(opt_group.description_mut()),
                                     options: std::mem::take(opt_group.options_mut()),
+                                    required: opt_group.required(),
                                 });
                             }
                             if ui
@@ -188,9 +189,12 @@ impl App {
                                     name: std::mem::take(opt_group.name_mut()),
                                     description: std::mem::take(opt_group.description_mut()),
                                     options: std::mem::take(opt_group.options_mut()),
+                                    required: opt_group.required(),
                                 });
                             }
                         });
+                        ui.checkbox(opt_group.required_mut(), "Required")
+                            .on_hover_text("Require the user to select an option in this group");
                         if let OptionGroup::Exclusive(group) = opt_group {
                             let id = Id::new(group.name.as_str()).with("default");
                             let def_name = group

@@ -74,39 +74,58 @@ pub trait ModOptionGroup {
     fn name_mut(&mut self) -> &mut String;
     fn description_mut(&mut self) -> &mut String;
     fn options_mut(&mut self) -> &mut Vec<ModOption>;
+    fn required(&self) -> bool;
+    fn required_mut(&mut self) -> &mut bool;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExclusiveOptionGroup {
     pub name: String,
     pub description: String,
+    pub required: bool,
     pub default: Option<PathBuf>,
     pub options: Vec<ModOption>,
 }
 
 impl ModOptionGroup for ExclusiveOptionGroup {
+    #[inline(always)]
     fn name(&self) -> &str {
         &self.name
     }
 
+    #[inline(always)]
     fn description(&self) -> &str {
         &self.description
     }
 
+    #[inline(always)]
     fn options(&self) -> &Vec<ModOption> {
         &self.options
     }
 
+    #[inline(always)]
     fn name_mut(&mut self) -> &mut String {
         &mut self.name
     }
 
+    #[inline(always)]
     fn description_mut(&mut self) -> &mut String {
         &mut self.description
     }
 
+    #[inline(always)]
     fn options_mut(&mut self) -> &mut Vec<ModOption> {
         &mut self.options
+    }
+
+    #[inline(always)]
+    fn required(&self) -> bool {
+        self.required
+    }
+
+    #[inline(always)]
+    fn required_mut(&mut self) -> &mut bool {
+        &mut self.required
     }
 }
 
@@ -114,33 +133,50 @@ impl ModOptionGroup for ExclusiveOptionGroup {
 pub struct MultipleOptionGroup {
     pub name: String,
     pub description: String,
+    pub required: bool,
     pub defaults: HashSet<PathBuf>,
     pub options: Vec<ModOption>,
 }
 
 impl ModOptionGroup for MultipleOptionGroup {
+    #[inline(always)]
     fn name(&self) -> &str {
         &self.name
     }
 
+    #[inline(always)]
     fn description(&self) -> &str {
         &self.description
     }
 
+    #[inline(always)]
     fn options(&self) -> &Vec<ModOption> {
         &self.options
     }
 
+    #[inline(always)]
     fn name_mut(&mut self) -> &mut String {
         &mut self.name
     }
 
+    #[inline(always)]
     fn description_mut(&mut self) -> &mut String {
         &mut self.description
     }
 
+    #[inline(always)]
     fn options_mut(&mut self) -> &mut Vec<ModOption> {
         &mut self.options
+    }
+
+    #[inline(always)]
+    fn required(&self) -> bool {
+        self.required
+    }
+
+    #[inline(always)]
+    fn required_mut(&mut self) -> &mut bool {
+        &mut self.required
     }
 }
 
@@ -170,6 +206,7 @@ pub static CATEGORIES: &[&str] = &[
     "Skin/Texture",
 ];
 
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Meta {
     pub name: String,

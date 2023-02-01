@@ -7,11 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [0.2.2] - 2023-02-01
 
+### Added
+
+- Added required setting for option groups
+- Added support for converting BNP options
+
+### Fixed
+
+- Fixed BNP conversion missing dump reference
 - Fixed mod option descriptions
 - Updated roead to fix SARC debugging
 - Fixed BNP SARC inflation (partially fixes #23)
+
+### Changed
+
 - Added alignment to SARC info
 
 ## [0.2.1] - 2023-01-30
