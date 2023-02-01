@@ -8,6 +8,18 @@ So, you have everything set up. How does using mods actually work now?
     - Click the Open icon in the Install tab.
     - Select the mod in the Install tab's file browser.
 
+   > **Note**: 
+   > UKMM supports installing mods in three formats:
+   > - Mods packaged by UKMM (obviously)
+   > - BCML 3 BNPs
+   > - Graphic pack/RomFS mods
+   >
+   > Note that for graphic pack or RomFS mods, the folder structure needs to match
+   > what is described in the [UKMM mod format](mod_format.md) instructions. By
+   > default UKMM will try to read any relevant metadata from a `rules.txt` or
+   > `info.json` file, but if those are absent it will prompt for the basic
+   > information.
+
 2. Enable any mods you are ready to use. Mods start disabled until you check the
    box.
 
@@ -25,7 +37,7 @@ So, you have everything set up. How does using mods actually work now?
 For Cemu users, auto deploy is recommended and the destination is usually a
 specific graphic pack folder, in which case your usual process will be only 1-3.
 
-This is the basic workflow. More details will are addressed where relevant. For
+This is the basic workflow. More details will be addressed where relevant. For
 information about how to use SDCafiine or LayeredFS to apply your mods on
 console, check [the guide on
 ZeldaMods](https://zeldamods.org/wiki/Help:Using_mods).

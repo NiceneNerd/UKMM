@@ -19,3 +19,4 @@
 
 - [Mod Format](mod_format.md)
 - [Troubleshooting](troubleshooting.md)
+- [Migrating from BCML](migration.md)
