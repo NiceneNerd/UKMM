@@ -206,6 +206,12 @@ pub static CATEGORIES: &[&str] = &[
     "Skin/Texture",
 ];
 
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Hash)]
+pub enum ModPlatform {
+    Specific(Endian),
+    Universal,
+}
+
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Meta {
@@ -214,7 +220,7 @@ pub struct Meta {
     pub author: String,
     pub category: String,
     pub description: String,
-    pub platform: Endian,
+    pub platform: ModPlatform,
     pub url: Option<String>,
     #[serde(rename = "option_groups")]
     pub options: Vec<OptionGroup>,
@@ -266,7 +272,7 @@ mod tests {
                 description: "A sample UKMM mod".into(),
                 category: "Other".into(),
                 author: "Nicene Nerd".into(),
-                platform: Endian::Big,
+                platform: ModPlatform::Specific(Endian::Big),
                 url: None,
                 version: "1.0.0".into(),
                 masters: Default::default(),

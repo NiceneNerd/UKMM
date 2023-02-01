@@ -24,7 +24,7 @@ impl Project {
                 description: Default::default(),
                 masters: IndexMap::default(),
                 options: Default::default(),
-                platform: platform.into(),
+                platform: uk_mod::ModPlatform::Specific(platform.into()),
                 url: Default::default(),
                 version: "0.1.0".into(),
             },

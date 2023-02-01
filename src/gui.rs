@@ -33,9 +33,9 @@ use rustc_hash::FxHashSet;
 use uk_manager::{
     core::Manager,
     mods::{LookupMod, Mod},
-    settings::Settings,
+    settings::{Platform, Settings},
 };
-use uk_mod::{pack::sanitise, Manifest};
+use uk_mod::{pack::sanitise, Manifest, ModPlatform};
 pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
@@ -538,6 +538,15 @@ impl App {
                                 version
                             )));
                         }
+                    }
+                    if let ModPlatform::Specific(platform) = mod_.meta.platform
+                        && Platform::from(platform) != self.core.settings().current_mode
+                    {
+                        self.do_update(Message::Error(anyhow::anyhow!(
+                            "Mod is for {}, current mode is {}",
+                            platform,
+                            self.core.settings().current_mode
+                        )));
                     }
                     if !mod_.meta.options.is_empty() {
                         self.do_update(Message::RequestOptions(mod_, false));

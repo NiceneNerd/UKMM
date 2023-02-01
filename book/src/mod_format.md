@@ -59,6 +59,16 @@ Options are placed in groups, offering either multiple or exclusive choice.
 While there are no requirements about how multiple-choice options are grouped,
 for exclusive choice, only one option in that group can be selected.
 
+## Cross-platform Mods
+
+UKMM has limited support for mods that work with both the Wii U and Switch
+versions of the game. This is possible if and only if the mod consists solely of
+mergeable assets. While I cannot easily provide a complete list of mergeable
+assets (other than by referring you to the source code), in general this most
+commonly excludes models, textures, audio, and Havok physics. To create a
+cross-platform mod, check the "Mark as cross-platform" option in the mod
+packaging view.
+
 ## Internal Format Details
 
 UKMM mods are packaged in ordinary ZIP files. The contents include mod metadata,

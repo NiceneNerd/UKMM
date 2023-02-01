@@ -38,7 +38,7 @@ impl MetaInputModal {
             author: Default::default(),
             masters: Default::default(),
             options: Default::default(),
-            platform: platform.into(),
+            platform: uk_mod::ModPlatform::Specific(platform.into()),
             url: Default::default(),
             version: "1.0.0".into(),
         });

@@ -26,8 +26,8 @@ use uk_content::{
 use zip::{write::FileOptions, ZipWriter as ZipW};
 
 use crate::{
-    ExclusiveOptionGroup, Manifest, Meta, ModOption, ModOptionGroup, MultipleOptionGroup,
-    OptionGroup,
+    ExclusiveOptionGroup, Manifest, Meta, ModOption, ModOptionGroup, ModPlatform,
+    MultipleOptionGroup, OptionGroup,
 };
 
 pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
@@ -138,7 +138,7 @@ impl ModPacker {
     fn parse_rules(path: PathBuf) -> Result<Meta> {
         use configparser::ini::Ini;
         let mut rules = Ini::new();
-        rules.load(path).map_err(|e| anyhow::anyhow!(e))?;
+        rules.load(&path).map_err(|e| anyhow::anyhow!(e))?;
         Ok(Meta {
             name: rules
                 .get("Definition", "name")
@@ -154,7 +154,11 @@ impl ModPacker {
             author: Default::default(),
             masters: Default::default(),
             options: vec![],
-            platform: Endian::Big,
+            platform: if path.join("content").exists() || path.join("aoc").exists() {
+                ModPlatform::Specific(Endian::Big)
+            } else {
+                ModPlatform::Specific(Endian::Little)
+            },
             url: Default::default(),
             version: "0.1.0".into(),
         })
@@ -179,8 +183,8 @@ impl ModPacker {
                 )
                 .collect(),
             platform: match info.platform.as_str() {
-                "wiiu" => Endian::Big,
-                "switch" => Endian::Little,
+                "wiiu" => ModPlatform::Specific(Endian::Big),
+                "switch" => ModPlatform::Specific(Endian::Little),
                 _ => anyhow::bail!("Invalid platform value in info.json"),
             },
             url: Default::default(),
@@ -248,7 +252,7 @@ impl ModPacker {
             endian,
             zip,
             masters,
-            hash_table: match meta.platform {
+            hash_table: match endian {
                 Endian::Little => &NX_HASH_TABLE,
                 Endian::Big => &WIIU_HASH_TABLE,
             },
@@ -284,6 +288,10 @@ impl ModPacker {
                 let canon = canonicalize(name.as_str());
                 let file_data = fs::read(&path)?;
                 let file_data = decompress_if(&file_data);
+
+                if name.ends_with("sizetable") {
+                    return Ok(None);
+                }
 
                 if !self.hash_table.is_file_modded(&canon, &*file_data, true) {
                     log::trace!("Resource {} not modded, ignoring", &canon);
@@ -335,6 +343,15 @@ impl ModPacker {
         if self.built_resources.read().contains(&canon) {
             log::trace!("Already processed {}, skipping", &canon);
             return Ok(());
+        }
+        if resource.as_binary().is_some() && self.meta.platform == ModPlatform::Universal {
+            anyhow::bail!(
+                "The resource {} is not a mergeable asset. Cross-platform mods must consist only \
+                 of mergeable assets. While there is no ready-made comprehensive list of \
+                 mergeable assets, common unmergeable assets include models, textures, music, and \
+                 Havok physics data.",
+                canon
+            );
         }
         let prefixes = platform_prefixes(self.endian);
         let ref_name = name
@@ -546,7 +563,7 @@ mod tests {
             source,
             dest,
             Some(Meta {
-                platform: Endian::Big,
+                platform: ModPlatform::Specific(Endian::Big),
                 name: "Test Mod".into(),
                 version: "0.1.0".into(),
                 category: "Overhaul".into(),

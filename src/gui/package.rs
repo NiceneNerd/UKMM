@@ -6,8 +6,8 @@ use parking_lot::{Mutex, RwLock};
 use rustc_hash::FxHashSet;
 use uk_manager::settings::Platform;
 use uk_mod::{
-    ExclusiveOptionGroup, Meta, ModOption, ModOptionGroup, MultipleOptionGroup, OptionGroup,
-    CATEGORIES,
+    ExclusiveOptionGroup, Meta, ModOption, ModOptionGroup, ModPlatform, MultipleOptionGroup,
+    OptionGroup, CATEGORIES,
 };
 use uk_ui::{
     editor::EditableValue,
@@ -36,7 +36,7 @@ impl ModPackerBuilder {
                 author: Default::default(),
                 category: "Other".into(),
                 description: Default::default(),
-                platform: platform.into(),
+                platform: uk_mod::ModPlatform::Specific(platform.into()),
                 url: Default::default(),
                 options: Default::default(),
                 masters: Default::default(),
@@ -375,6 +375,19 @@ impl App {
             });
             ui.add_space(8.0);
             render_field("Source", ui, |ui| ui.folder_picker(&mut builder.source));
+            let mut cross = matches!(builder.meta.platform, ModPlatform::Universal);
+            if ui
+                .checkbox(&mut cross, " Mark as cross-platform")
+                .on_hover_text("Allow mod to be used for Switch or Wii U")
+                .changed()
+            {
+                if cross {
+                    builder.meta.platform = ModPlatform::Universal;
+                } else {
+                    builder.meta.platform =
+                        ModPlatform::Specific(self.core.settings().current_mode.into());
+                }
+            }
             render_field("Name", ui, |ui| {
                 builder.meta.name.edit_ui_with_id(ui, id.with("Name"))
             });
@@ -383,7 +396,10 @@ impl App {
                     "mod-builder-version",
                     Some(builder.meta.version.as_str().into()),
                 );
-                let res = tmp_version.write().edit_ui(ui);
+                let res = tmp_version
+                    .write()
+                    .edit_ui(ui)
+                    .on_hover_text("Must conform to semantic versioning");
                 if res.changed() {
                     let ver = tmp_version.read();
                     if lenient_semver::Version::parse(ver.as_str()).is_ok() {
