@@ -26,10 +26,10 @@ use flume::{Receiver, Sender};
 use fs_err as fs;
 use im::{vector, Vector};
 use join_str::jstr;
-use once_cell::sync::OnceCell;
 use parking_lot::{Mutex, RwLock};
 use picker::FilePickerState;
 use rustc_hash::FxHashSet;
+use serde::{Deserialize, Serialize};
 use uk_manager::{
     core::Manager,
     mods::{LookupMod, Mod},
@@ -184,6 +184,7 @@ pub enum Message {
     SelectOnly(usize),
     SelectProfileManage(smartstring::alias::String),
     SetFocus(FocusedPane),
+    SetTheme(uk_ui::visuals::Theme),
     ShowAbout,
     ShowPackagingOptions(FxHashSet<PathBuf>),
     ShowPackagingDependencies,
@@ -191,6 +192,12 @@ pub enum Message {
     ToggleMods(Option<Vector<Mod>>, bool),
     UninstallMods(Option<Vector<Mod>>),
     UpdateOptions(Mod),
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+struct UiState {
+    theme: uk_ui::visuals::Theme,
+    picker_state: FilePickerState,
 }
 
 struct App {
@@ -221,28 +228,30 @@ struct App {
     options_mod: Option<(Mod, bool)>,
     temp_settings: Settings,
     toasts: egui_notify::Toasts,
+    theme: uk_ui::visuals::Theme,
+    dock_style: egui_dock::Style,
 }
 
 impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
         uk_ui::icons::load_icons();
         uk_ui::load_fonts(&cc.egui_ctx);
-        uk_ui::visuals::default_dark(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
+        let ui_state: UiState = fs::read_to_string(core.settings().state_file())
+            .context("")
+            .and_then(|s| serde_json::from_str(&s).context(""))
+            .unwrap_or_default();
+        ui_state.theme.set_theme(&cc.egui_ctx);
         let mods: Vector<_> = core.mod_manager().all_mods().collect();
         let (send, recv) = flume::unbounded();
         crate::logger::LOGGER.set_sender(send.clone());
         log::info!("Logger initialized");
         let temp_settings = core.settings().clone();
-        let picker_state = fs::read_to_string(core.settings().state_file())
-            .context("")
-            .and_then(|s| serde_json::from_str(&s).context(""))
-            .unwrap_or_default();
         Self {
             selected: mods.front().cloned().into_iter().collect(),
             drag_index: None,
             hover_index: None,
-            picker_state,
+            picker_state: ui_state.picker_state,
             profiles_state: Default::default(),
             meta_input: MetaInputModal::new(send.clone()),
             channel: (send, recv),
@@ -266,7 +275,28 @@ impl App {
             options_mod: None,
             tree: Arc::new(RwLock::new(tabs::default_ui())),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
+            theme: ui_state.theme,
+            dock_style: Self::style_dock(&cc.egui_ctx.style()),
         }
+    }
+
+    fn style_dock(style: &egui::Style) -> egui_dock::Style {
+        egui_dock::StyleBuilder::from_egui(style)
+            .show_close_buttons(false)
+            .with_tab_rounding(Rounding {
+                ne: 2.0,
+                nw: 2.0,
+                ..Default::default()
+            })
+            .with_tab_text_color_focused(style.visuals.strong_text_color())
+            .with_tab_text_color_unfocused(style.visuals.weak_text_color())
+            .with_tab_outline_color(style.visuals.widgets.noninteractive.bg_stroke.color)
+            .with_border_width(1.0)
+            .with_border_color(style.visuals.widgets.noninteractive.bg_stroke.color)
+            .with_separator_width(1.0)
+            .with_separator_color(style.visuals.widgets.noninteractive.bg_stroke.color)
+            .with_padding(Margin::default())
+            .build()
     }
 
     #[inline(always)]
@@ -507,6 +537,11 @@ impl App {
                 Message::SetFocus(pane) => {
                     self.focused = pane;
                 }
+                Message::SetTheme(theme) => {
+                    theme.set_theme(ctx);
+                    self.theme = theme;
+                    self.dock_style = Self::style_dock(&ctx.style());
+                }
                 Message::SelectFile => {
                     let core = self.core.clone();
                     self.do_task(move |_| {
@@ -723,7 +758,6 @@ impl App {
                         .open(path, self.core.settings().current_mode);
                 }
             }
-            ctx.request_repaint();
         }
     }
 }
@@ -747,36 +781,8 @@ impl eframe::App for App {
         let id = Id::new("egui_dock::DockArea");
         let mut ui = Ui::new(ctx.clone(), layer_id, id, max_rect, clip_rect);
         ui.spacing_mut().item_spacing = [8.0, 8.0].into();
-        static DOCK_STYLE: OnceCell<egui_dock::Style> = OnceCell::new();
         egui_dock::DockArea::new(self.tree.clone().write().deref_mut())
-            .style(
-                DOCK_STYLE
-                    .get_or_init(|| {
-                        egui_dock::StyleBuilder::from_egui(&ui.ctx().style())
-                            .show_close_buttons(false)
-                            .with_tab_rounding(Rounding {
-                                ne: 2.0,
-                                nw: 2.0,
-                                ..Default::default()
-                            })
-                            .with_tab_text_color_focused(ui.style().visuals.strong_text_color())
-                            .with_tab_text_color_unfocused(ui.style().visuals.weak_text_color())
-                            .with_tab_outline_color(
-                                ui.style().visuals.widgets.noninteractive.bg_stroke.color,
-                            )
-                            .with_border_width(1.0)
-                            .with_border_color(
-                                ui.style().visuals.widgets.noninteractive.bg_stroke.color,
-                            )
-                            .with_separator_width(1.0)
-                            .with_separator_color(
-                                ui.style().visuals.widgets.noninteractive.bg_stroke.color,
-                            )
-                            .with_padding(Margin::default())
-                            .build()
-                    })
-                    .clone(),
-            )
+            .style(self.dock_style.clone())
             .show_inside(&mut ui, self);
         self.render_busy(ctx);
         self.toasts.show(ctx);
@@ -786,9 +792,13 @@ impl eframe::App for App {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        let ui_state = UiState {
+            theme: self.theme,
+            picker_state: std::mem::take(&mut self.picker_state),
+        };
         fs::write(
             self.core.settings().state_file(),
-            serde_json::to_string_pretty(&self.picker_state).unwrap(),
+            serde_json::to_string_pretty(&ui_state).unwrap(),
         )
         .unwrap_or(());
         uk_manager::util::clear_temp();

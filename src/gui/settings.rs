@@ -15,6 +15,7 @@ use uk_ui::{
     egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
     ext::UiExt,
     icons::{self, IconButtonExt},
+    visuals::Theme,
 };
 
 use super::{App, Message};
@@ -283,8 +284,8 @@ fn render_platform_config(
         if platform == Platform::WiiU {
             render_setting(
                 "Dump Type",
-                "For Wii U, you have two supported dump options: \
-                 unpacked MLC files (most common) or a .wua file (Cemu-specific format).",
+                "For Wii U, you have two supported dump options: unpacked MLC files (most common) \
+                 or a .wua file (Cemu-specific format).",
                 ui,
                 |ui| {
                     if ui
@@ -324,10 +325,11 @@ fn render_platform_config(
                 if platform == Platform::WiiU {
                     render_setting(
                         "Base Folder",
-                        "This folder is the root of the plain, v1.0 BOTW assets which were included \
-                         on the disk. If you are using Cemu, it will usually be in your MLC folder, \
-                         with a path such as this (part of the title ID will be different for the \
-                         EU or JP versions): mlc01/usr/title/00050000/101C9400/content",
+                        "This folder is the root of the plain, v1.0 BOTW assets which were \
+                         included on the disk. If you are using Cemu, it will usually be in your \
+                         MLC folder, with a path such as this (part of the title ID will be \
+                         different for the EU or JP versions): \
+                         mlc01/usr/title/00050000/101C9400/content",
                         ui,
                         |ui| {
                             if ui
@@ -363,8 +365,8 @@ fn render_platform_config(
                         "Update Folder",
                         "The contains the BOTW v1.5.0 update data. It is absolutely necessary for \
                          the game to even run. If you are using Cemu, it will usually have a \
-                         similar path to the base folder, but with an E at the end of the \
-                         first half of the title ID: mlc01/usr/title/0005000E/101C9400/content",
+                         similar path to the base folder, but with an E at the end of the first \
+                         half of the title ID: mlc01/usr/title/0005000E/101C9400/content",
                         ui,
                         |ui| {
                             if ui
@@ -381,11 +383,11 @@ fn render_platform_config(
                     render_setting(
                         "DLC Folder",
                         "This contains most of the assets for the BOTW DLC. This one does not \
-                         usually end in content, but must go one level further into a 0010 \
-                         folder because of the way multiple kinds of add-on content are \
-                         handled. If you are using Cemu, it will usually have a similar path \
-                         to the base folder, but with a C at the end of the first half of the \
-                         title ID: mlc01/usr/title/0005000C/101C9400/content/0010",
+                         usually end in content, but must go one level further into a 0010 folder \
+                         because of the way multiple kinds of add-on content are handled. If you \
+                         are using Cemu, it will usually have a similar path to the base folder, \
+                         but with a C at the end of the first half of the title ID: \
+                         mlc01/usr/title/0005000C/101C9400/content/0010",
                         ui,
                         |ui| {
                             if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
@@ -399,8 +401,7 @@ fn render_platform_config(
                     render_setting(
                         "DLC Folder",
                         "This contains most of the assets for the BOTW DLC. The path will \
-                         probably contain a title ID like 01007EF00011F001 \
-                         and end in romfs.",
+                         probably contain a title ID like 01007EF00011F001 and end in romfs.",
                         ui,
                         |ui| {
                             if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
@@ -419,8 +420,8 @@ fn render_platform_config(
             } => {
                 render_setting(
                     "WUA Path",
-                    "This should contain the entire BOTW game with the Base, Update, and DLC \
-                     and should have a file extension of .wua",
+                    "This should contain the entire BOTW game with the Base, Update, and DLC and \
+                     should have a file extension of .wua",
                     ui,
                     |ui| {
                         changed |= ui.file_picker(host_path).changed();
@@ -493,9 +494,29 @@ impl App {
             ui.add_space(8.0);
             ui.vertical(|ui| {
                 let settings = &mut self.temp_settings;
+                let mut theme_change: Option<Theme> = None;
                 egui::CollapsingHeader::new("General")
                     .default_open(true)
                     .show(ui, |ui| {
+                        render_setting("Theme", "User interface theme", ui, |ui| {
+                            egui::ComboBox::new("ui-theme", "")
+                                .selected_text(self.theme.name())
+                                .show_ui(ui, |ui| {
+                                    let mut current_theme = self.theme;
+                                    for theme in uk_ui::visuals::Theme::iter() {
+                                        if ui
+                                            .selectable_value(
+                                                &mut current_theme,
+                                                theme,
+                                                theme.name(),
+                                            )
+                                            .clicked()
+                                        {
+                                            theme_change = Some(theme);
+                                        }
+                                    }
+                                });
+                        });
                         render_setting(
                             "Current Mode",
                             "Select whether to manage the Wii U or Switch version of the game",
@@ -550,6 +571,9 @@ impl App {
                     switch_changed =
                         render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
                 });
+                if let Some(theme) = theme_change {
+                    self.do_update(Message::SetTheme(theme));
+                }
             });
             switch_changed |= {
                 match (

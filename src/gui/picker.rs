@@ -10,7 +10,7 @@ use uk_ui::{
 
 use super::{visuals, App, FocusedPane, Message};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FilePickerState {
     pub path: PathBuf,
     pub history: Vec<PathBuf>,

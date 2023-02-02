@@ -13,12 +13,13 @@ minicbor-ser = "0.2.0"
 rayon = "1.6.1"
 rfd = "0.10.0"
 roead = { version = "0.19.1", features = ["with-serde", "yaml"] }
-toml = "0.5.9"
+toml = "0.7.1"
 uk-content = { path = "../uk-content" }
 uk-manager = { path ="../uk-manager" }
 uk-mod = { path = "../uk-mod" }
 uk-ui = { path = "../uk-ui" }
 uk-ui-derive = { path = "../uk-ui-derive" }
 serde = { version = "1.0.149", features = ["derive"] }
+serde_json = "1.0.85"
 ron = "0.8.0"
 # serde_yaml = "0.9.14"

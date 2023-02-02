@@ -3,7 +3,10 @@ mod project;
 
 use std::sync::Arc;
 
+use anyhow::Context;
 use flume::{Receiver, Sender};
+use fs_err as fs;
+use serde::Deserialize;
 use uk_content::resource::ResourceData;
 use uk_manager::core::Manager;
 use uk_ui::egui;
@@ -12,6 +15,11 @@ use crate::project::Project;
 
 #[derive(Debug, Clone)]
 enum Message {}
+
+#[derive(Debug, Default, Deserialize)]
+struct UiState {
+    theme: uk_ui::visuals::Theme,
+}
 
 struct App {
     core:     Arc<Manager>,
@@ -25,13 +33,18 @@ impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
         uk_ui::icons::load_icons();
         uk_ui::load_fonts(&cc.egui_ctx);
-        uk_ui::visuals::default_dark(&cc.egui_ctx);
+        let core = Arc::new(Manager::init().expect("Core manager failed to initialize"));
+        let ui_state: UiState = fs::read_to_string(core.settings().state_file())
+            .context("")
+            .and_then(|s| serde_json::from_str(&s).context(""))
+            .unwrap_or_default();
+        ui_state.theme.set_theme(&cc.egui_ctx);
         Self {
-            core:     Arc::new(Manager::init().expect("Core manager failed to initialize")),
-            project:  None,
+            core,
+            project: None,
             projects: vec![],
-            channel:  flume::unbounded(),
-            opened:   vec![],
+            channel: flume::unbounded(),
+            opened: vec![],
         }
     }
 
@@ -88,21 +101,3 @@ fn main() {
         Box::new(|cc| Box::new(App::new(cc))),
     )
 }
-
-// match self {
-//     ResourceData::Binary(bin) => {
-//         let mut changed = false;
-//         let mut res = ui.vertical(|ui| {
-//             ui.label("{} byte file with CRC hash {:#x}.");
-//             if ui.small_button("Replace…").clicked() && let Some(path) =  {
-
-//             }
-//         }).response;
-//         if changed {
-//             res.mark_changed();
-//         }
-//         res
-//     },
-//     ResourceData::Mergeable(_) => todo!(),
-//     ResourceData::Sarc(_) => todo!(),
-// }

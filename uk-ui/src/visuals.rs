@@ -5,6 +5,7 @@ use egui::{
     Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
 };
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 
 macro_rules! hex_color {
     ($hex:expr) => {{
@@ -79,88 +80,122 @@ pub fn slate_grid(ui: &mut Ui) {
     });
 }
 
-pub fn default_dark(ctx: &egui::Context) {
-    ctx.set_style(Style {
-        animation_time: 0.2,
-        visuals: Visuals {
-            dark_mode: true,
-            override_text_color: None,
-            widgets: Widgets {
-                noninteractive: WidgetVisuals {
-                    bg_fill:   hex_color!("#1C1E1F"),
-                    bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
-                    fg_stroke: Stroke::new(1.0, hex_color!("#BCCAD1")),
-                    rounding:  Rounding::same(0.0),
-                    expansion: 0.0,
-                },
-                inactive: WidgetVisuals {
-                    bg_fill:   hex_color!("#1d4e77"),
-                    bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
-                    fg_stroke: Stroke::new(1.0, hex_color!("#f0f0f0")),
-                    rounding:  Rounding::same(2.0),
-                    expansion: 0.0,
-                },
-                hovered: WidgetVisuals {
-                    bg_fill:   hex_color!("#237ba3"),
-                    bg_stroke: Stroke::new(1.0, hex_color!("#1d649a")),
-                    fg_stroke: Stroke::new(1.5, hex_color!("#f0f0f0")),
-                    rounding:  Rounding::same(2.0),
-                    expansion: 1.0,
-                },
-                active: WidgetVisuals {
-                    bg_fill:   hex_color!("#12384f"),
-                    bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
-                    fg_stroke: Stroke::new(1.5, hex_color!("#D9EEFF")),
-                    rounding:  Rounding::same(2.0),
-                    expansion: 1.0,
-                },
-                open: WidgetVisuals {
-                    bg_fill:   hex_color!("#1C1E1F"),
-                    bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
-                    fg_stroke: Stroke::new(1.0, hex_color!("#D9EEFF")),
-                    rounding:  Rounding::same(2.0),
-                    expansion: 0.0,
-                },
-            },
-            selection: Selection {
-                bg_fill: BLUE.linear_multiply(0.667),
-                stroke:  Stroke::new(1.0, Color32::WHITE),
-            },
-            hyperlink_color: BLUE,
-            faint_bg_color: hex_color!("#252729"),
-            extreme_bg_color: hex_color!("#030a0e"), // e.g. TextEdit background
-            code_bg_color: Color32::from_gray(32),
-            warn_fg_color: ORGANGE, // orange
-            error_fg_color: RED,    // red
-            window_rounding: Rounding::same(4.0),
-            window_shadow: Shadow::big_dark(),
-            popup_shadow: Shadow::small_dark(),
-            window_fill: hex_color!("#1C1E1F"),
-            window_stroke: Stroke::NONE,
-            panel_fill: hex_color!("#1C1E1F"),
-            resize_corner_size: 8.0,
-            text_cursor_width: 2.0,
-            text_cursor_preview: false,
-            clip_rect_margin: 3.0, /* should be at least half the size of the widest
-                                    * frame stroke
-                                    * + max WidgetVisuals::expansion */
-            button_frame: true,
-            collapsing_header_frame: false,
-        },
-        spacing: Spacing {
-            button_padding: [4.0, 2.0].into(),
-            icon_spacing: 4.0,
-            menu_margin: Margin::same(4.0),
-            scroll_bar_width: 2.0,
-            indent_ends_with_horizontal_line: false,
-            ..Default::default()
-        },
-        text_styles: {
-            let mut styles = egui::style::default_text_styles();
-            styles.get_mut(&egui::TextStyle::Heading).unwrap().family =
-                FontFamily::Name("Bold".into());
-            styles
-        },
-        ..Default::default()
-    })
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum Theme {
+    #[default]
+    Sheikah,
+    Egui,
+    EguiLight,
+}
+
+impl Theme {
+    #[inline]
+    pub fn name(&self) -> &str {
+        match self {
+            Theme::Sheikah => "Sheikah UI",
+            Theme::Egui => "egui Dark",
+            Theme::EguiLight => "egui Light",
+        }
+    }
+
+    #[inline]
+    pub fn iter() -> impl Iterator<Item = Self> {
+        [Theme::Sheikah, Theme::Egui, Theme::EguiLight].into_iter()
+    }
+
+    pub fn set_theme(&self, ctx: &egui::Context) {
+        match self {
+            Self::Sheikah => {
+                ctx.set_style(Style {
+                    animation_time: 0.2,
+                    visuals: Visuals {
+                        dark_mode: true,
+                        override_text_color: None,
+                        widgets: Widgets {
+                            noninteractive: WidgetVisuals {
+                                bg_fill:   hex_color!("#1C1E1F"),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
+                                fg_stroke: Stroke::new(1.0, hex_color!("#BCCAD1")),
+                                rounding:  Rounding::same(0.0),
+                                expansion: 0.0,
+                            },
+                            inactive: WidgetVisuals {
+                                bg_fill:   hex_color!("#1d4e77"),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
+                                fg_stroke: Stroke::new(1.0, hex_color!("#f0f0f0")),
+                                rounding:  Rounding::same(2.0),
+                                expansion: 0.0,
+                            },
+                            hovered: WidgetVisuals {
+                                bg_fill:   hex_color!("#237ba3"),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#1d649a")),
+                                fg_stroke: Stroke::new(1.5, hex_color!("#f0f0f0")),
+                                rounding:  Rounding::same(2.0),
+                                expansion: 1.0,
+                            },
+                            active: WidgetVisuals {
+                                bg_fill:   hex_color!("#12384f"),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
+                                fg_stroke: Stroke::new(1.5, hex_color!("#D9EEFF")),
+                                rounding:  Rounding::same(2.0),
+                                expansion: 1.0,
+                            },
+                            open: WidgetVisuals {
+                                bg_fill:   hex_color!("#1C1E1F"),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
+                                fg_stroke: Stroke::new(1.0, hex_color!("#D9EEFF")),
+                                rounding:  Rounding::same(2.0),
+                                expansion: 0.0,
+                            },
+                        },
+                        selection: Selection {
+                            bg_fill: BLUE.linear_multiply(0.667),
+                            stroke:  Stroke::new(1.0, Color32::WHITE),
+                        },
+                        hyperlink_color: BLUE,
+                        faint_bg_color: hex_color!("#252729"),
+                        extreme_bg_color: hex_color!("#030a0e"), // e.g. TextEdit background
+                        code_bg_color: Color32::from_gray(32),
+                        warn_fg_color: ORGANGE, // orange
+                        error_fg_color: RED,    // red
+                        window_rounding: Rounding::same(4.0),
+                        window_shadow: Shadow::big_dark(),
+                        popup_shadow: Shadow::small_dark(),
+                        window_fill: hex_color!("#1C1E1F"),
+                        window_stroke: Stroke::NONE,
+                        panel_fill: hex_color!("#1C1E1F"),
+                        resize_corner_size: 8.0,
+                        text_cursor_width: 2.0,
+                        text_cursor_preview: false,
+                        clip_rect_margin: 3.0, /* should be at least half the size of the widest
+                                                * frame stroke
+                                                * + max WidgetVisuals::expansion */
+                        button_frame: true,
+                        collapsing_header_frame: false,
+                    },
+                    spacing: Spacing {
+                        button_padding: [4.0, 2.0].into(),
+                        icon_spacing: 4.0,
+                        menu_margin: Margin::same(4.0),
+                        scroll_bar_width: 2.0,
+                        indent_ends_with_horizontal_line: false,
+                        ..Default::default()
+                    },
+                    text_styles: {
+                        let mut styles = egui::style::default_text_styles();
+                        styles.get_mut(&egui::TextStyle::Heading).unwrap().family =
+                            FontFamily::Name("Bold".into());
+                        styles
+                    },
+                    ..Default::default()
+                });
+            }
+            Self::Egui => {
+                ctx.set_visuals(egui::style::Visuals::dark());
+            }
+            Self::EguiLight => {
+                ctx.set_visuals(egui::style::Visuals::light());
+            }
+        }
+    }
 }

@@ -1,7 +1,8 @@
 use eframe::epaint::text::TextWrapping;
 use egui_dock::{NodeIndex, TabViewer, Tree};
-use uk_ui::egui::{
-    self, text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText,
+use uk_ui::{
+    egui::{self, text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText},
+    visuals::Theme,
 };
 
 use super::{visuals, Tabs};
@@ -144,7 +145,9 @@ impl TabViewer for super::App {
                     .inner_margin(0.0)
                     .outer_margin(0.0)
                     .show(ui, |ui| {
-                        visuals::slate_grid(ui);
+                        if self.theme == Theme::Sheikah {
+                            visuals::slate_grid(ui);
+                        }
                         self.render_modlist(ui);
                         ui.allocate_space(ui.available_size());
                         self.render_pending(ui);

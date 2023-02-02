@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - More docs
 - Cross-platform mods (experimental)
+- Initial theme support
 
 ## [0.2.2] - 2023-02-01
 
