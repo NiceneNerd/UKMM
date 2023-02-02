@@ -251,22 +251,18 @@ fn default_storage() -> PathBuf {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(default)]
 pub struct Settings {
-    #[serde(default)]
     pub current_mode: Platform,
     #[serde(default = "default_storage")]
     pub storage_dir: PathBuf,
-    #[serde(default)]
     pub unpack_mods: bool,
-    #[serde(default)]
     pub check_updates: bool,
-    #[serde(default)]
     pub show_changelog: bool,
-    #[serde(default)]
+    pub last_version: Option<String>,
     pub wiiu_config: Option<PlatformSettings>,
-    #[serde(default)]
     pub switch_config: Option<PlatformSettings>,
-    #[serde(rename = "ui", default)]
+    #[serde(rename = "ui")]
     pub ui_config: UiSettings,
 }
 
@@ -280,6 +276,7 @@ impl Default for Settings {
             switch_config: None,
             check_updates: true,
             show_changelog: true,
+            last_version: None,
             ui_config: Default::default(),
         }
     }

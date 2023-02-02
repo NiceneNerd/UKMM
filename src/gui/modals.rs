@@ -416,4 +416,16 @@ impl App {
                 });
         }
     }
+
+    pub fn render_changelog(&self, ctx: &egui::Context) {
+        if let Some(ref last_version) = self.last_version {
+            let first = last_version == "0.0.0";
+            egui::Window::new("About")
+                .collapsible(false)
+                .anchor(Align2::CENTER_CENTER, Vec2::default())
+                .fixed_size([360.0, 240.0])
+                .frame(Frame::window(&ctx.style()).inner_margin(8.))
+                .show(ctx, |ui| {});
+        }
+    }
 }

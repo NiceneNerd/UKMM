@@ -230,6 +230,7 @@ struct App {
     toasts: egui_notify::Toasts,
     theme: uk_ui::visuals::Theme,
     dock_style: egui_dock::Style,
+    last_version: Option<String>,
 }
 
 impl App {
@@ -258,6 +259,19 @@ impl App {
             displayed_mods: mods.clone(),
             mods,
             temp_settings,
+            last_version: {
+                let last_version = core
+                    .settings()
+                    .last_version
+                    .as_ref()
+                    .map(|v| v.to_string())
+                    .unwrap_or_else(|| "0.0.0".into());
+                let last_semver =
+                    lenient_semver::Version::parse(&last_version).expect("Bad last version");
+                let current_semver = lenient_semver::Version::parse(env!("CARGO_PKG_VERSION"))
+                    .expect("Bad current version");
+                (last_semver < current_semver).then_some(last_version)
+            },
             core,
             logs: Vector::new(),
             log: LayoutJob::default(),
