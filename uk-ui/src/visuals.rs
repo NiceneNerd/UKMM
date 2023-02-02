@@ -96,7 +96,7 @@ impl Theme {
     #[inline]
     pub fn name(&self) -> &str {
         match self {
-            Theme::Sheikah => "Sheikah UI",
+            Theme::Sheikah => "Sheikah Slate",
             Theme::Egui => "egui Dark",
             Theme::EguiLight => "egui Light",
             Theme::Frappe => "Frappe",
