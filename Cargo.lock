@@ -495,6 +495,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "catppuccin-egui"
+version = "1.0.2"
+source = "git+https://github.com/NiceneNerd/egui-catppuccin#23adfdba9f43e35ed1f0656df654cb04cc0c0e52"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.78"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4424,6 +4432,7 @@ dependencies = [
 name = "uk-ui"
 version = "0.1.0"
 dependencies = [
+ "catppuccin-egui",
  "color-hex",
  "eframe",
  "egui",

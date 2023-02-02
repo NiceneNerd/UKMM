@@ -86,6 +86,10 @@ pub enum Theme {
     Sheikah,
     Egui,
     EguiLight,
+    Frappe,
+    Latte,
+    Macchiato,
+    Mocha,
 }
 
 impl Theme {
@@ -95,12 +99,25 @@ impl Theme {
             Theme::Sheikah => "Sheikah UI",
             Theme::Egui => "egui Dark",
             Theme::EguiLight => "egui Light",
+            Theme::Frappe => "Frappe",
+            Theme::Latte => "Latte",
+            Theme::Macchiato => "Macchiato",
+            Theme::Mocha => "Mocha",
         }
     }
 
     #[inline]
     pub fn iter() -> impl Iterator<Item = Self> {
-        [Theme::Sheikah, Theme::Egui, Theme::EguiLight].into_iter()
+        [
+            Theme::Sheikah,
+            Theme::Egui,
+            Theme::EguiLight,
+            Theme::Frappe,
+            Theme::Latte,
+            Theme::Macchiato,
+            Theme::Mocha,
+        ]
+        .into_iter()
     }
 
     pub fn set_theme(&self, ctx: &egui::Context) {
@@ -195,6 +212,18 @@ impl Theme {
             }
             Self::EguiLight => {
                 ctx.set_visuals(egui::style::Visuals::light());
+            }
+            Self::Frappe => {
+                catppuccin_egui::set_theme(ctx, catppuccin_egui::FRAPPE);
+            }
+            Self::Latte => {
+                catppuccin_egui::set_theme(ctx, catppuccin_egui::LATTE);
+            }
+            Self::Macchiato => {
+                catppuccin_egui::set_theme(ctx, catppuccin_egui::MACCHIATO);
+            }
+            Self::Mocha => {
+                catppuccin_egui::set_theme(ctx, catppuccin_egui::MOCHA);
             }
         }
     }
