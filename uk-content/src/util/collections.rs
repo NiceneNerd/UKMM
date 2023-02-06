@@ -536,8 +536,8 @@ macro_rules! impl_delete_map {
             }
 
             #[inline]
-            pub fn insert(&mut self, key: impl Borrow<T>, value: U) {
-                self.0.insert(key.borrow().clone(), (value, false));
+            pub fn insert(&mut self, key: impl Into<T>, value: U) {
+                self.0.insert(key.into(), (value, false));
             }
 
             #[inline]

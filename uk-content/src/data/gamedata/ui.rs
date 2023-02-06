@@ -40,11 +40,12 @@ fn edit_flag_ui(
         if *del {
             ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
         }
-        if let Some(ref name) = flag.data_name {
-            ui.clipped_label(name.as_str());
-        } else {
-            ui.clipped_label(flag.hash_value.to_string());
-        }
+        ui.clipped_label(flag.data_name.as_str());
+        // if let Some(ref name) = flag.data_name {
+        //     ui.clipped_label(name.as_str());
+        // } else {
+        //     ui.clipped_label(flag.hash_value.to_string());
+        // }
     });
     row.col(|ui| {
         if *del {
@@ -218,10 +219,8 @@ impl EditableValue for super::GameData {
                                 .text_edit_singleline(new_flag.write().deref_mut())
                                 .changed();
                         if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
-                            self.flags.insert(
-                                roead::aamp::hash_name(new_flag.read().as_str()),
-                                super::FlagData::default(),
-                            );
+                            self.flags
+                                .insert(new_flag.read().as_str(), super::FlagData::default());
                             clear_flag = true;
                         }
                     });

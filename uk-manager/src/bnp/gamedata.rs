@@ -26,12 +26,12 @@ impl BnpConverter {
                 fn simple_add(base: &mut GameData, diff: &Hash) -> Result<()> {
                     if let Some(Byml::Hash(add)) = diff.get("add") {
                         base.flags.extend(add.iter().filter_map(|(name, flag)| {
-                            flag.try_into().ok().map(|f| (hash_name(name.as_str()), f))
+                            flag.try_into().ok().map(|f| (name.clone(), f))
                         }));
                     }
                     if let Some(Byml::Array(del)) = diff.get("del") {
                         for name in del {
-                            base.flags.set_delete(hash_name(name.as_string()?.as_str()));
+                            base.flags.set_delete(name.as_string()?);
                         }
                     }
                     Ok(())
@@ -74,17 +74,17 @@ impl BnpConverter {
                                 if GameDataPack::STAGES.contains(&parts.next().unwrap_or(""))
                                     && !name.contains("HiddenKorok")
                                 {
-                                    revival_base.flags.insert(flag.hash_value as u32, flag);
+                                    revival_base.flags.insert(flag.data_name.clone(), flag);
                                 } else {
-                                    base.flags.insert(flag.hash_value as u32, flag);
+                                    base.flags.insert(flag.data_name.clone(), flag);
                                 }
                             }
                         }
                         if let Some(Byml::Array(del)) = diff.get("del") {
                             for name in del {
-                                let hash = hash_name(name.as_string()?.as_str());
-                                base.flags.set_delete(hash);
-                                revival_base.flags.set_delete(hash);
+                                let name = name.as_string()?;
+                                base.flags.set_delete(name);
+                                revival_base.flags.set_delete(name);
                             }
                         }
                     }

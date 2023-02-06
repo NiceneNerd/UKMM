@@ -11,6 +11,7 @@ use once_cell::sync::Lazy;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use uk_content::platform_prefixes;
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
 
 use crate::{
@@ -416,6 +417,17 @@ pub fn convert_gfx(
                 })
         };
 
+        let find_root = |path: &Path| -> Option<PathBuf> {
+            let (content, dlc) = platform_prefixes(core.settings().current_mode.into());
+            jwalk::WalkDir::new(path)
+                .into_iter()
+                .filter_map(std::result::Result::ok)
+                .find_map(|f| {
+                    ([Some(content), Some(dlc)].contains(&f.file_name().to_str()))
+                        .then(|| f.parent_path().into())
+                })
+        };
+
         if ext == "ZIP" {
             log::info!("Extracting ZIP file...");
             let tmpdir = util::get_temp_folder();
@@ -426,7 +438,8 @@ pub fn convert_gfx(
             if meta.is_none() {
                 find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
             } else {
-                tmpdir.to_path_buf()
+                find_root(&tmpdir)
+                    .context("Could not find base or DLC content folder in extracted mod")?
             }
         } else if ext == "7Z" {
             log::info!("Extracting 7Z file...");
@@ -435,7 +448,8 @@ pub fn convert_gfx(
             if meta.is_none() {
                 find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
             } else {
-                tmpdir.to_path_buf()
+                find_root(&tmpdir)
+                    .context("Could not find base or DLC content folder in extracted mod")?
             }
         } else if path.file_name().context("No file name")?.to_str() == Some("rules.txt") {
             path.parent().unwrap().to_owned()

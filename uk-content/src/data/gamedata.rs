@@ -19,11 +19,11 @@ pub struct FlagData {
     #[name = "Category"]
     category: Option<i32>,
     #[name = "DataName"]
-    data_name: Option<String>,
+    pub data_name: String,
     #[name = "DeleteRev"]
     delete_rev: i32,
     #[name = "HashValue"]
-    pub hash_value: i32,
+    hash_value: i32,
     #[name = "InitValue"]
     init_value: Byml,
     #[name = "IsEventAssociated"]
@@ -47,7 +47,7 @@ pub struct FlagData {
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct GameData {
     pub data_type: String,
-    pub flags:     DeleteMap<u32, FlagData>,
+    pub flags:     DeleteMap<String, FlagData>,
 }
 
 impl TryFrom<&Byml> for GameData {
@@ -67,14 +67,15 @@ impl TryFrom<&Byml> for GameData {
                 .ok_or(UKError::MissingBymlKey("bgdata file missing data"))?
                 .as_array()?
                 .iter()
-                .map(|item| -> Result<(u32, FlagData)> {
+                .map(|item| -> Result<(String, FlagData)> {
                     Ok((
                         item.as_hash()?
-                            .get("HashValue")
+                            .get("DataName")
                             .ok_or(UKError::MissingBymlKey(
-                                "bgdata file entry missing HashValue",
+                                "bgdata file entry missing DataName",
                             ))?
-                            .as_int()?,
+                            .as_string()?
+                            .clone(),
                         item.try_into()?,
                     ))
                 })
@@ -207,6 +208,13 @@ impl SarcSource<'_> {
             }
         }
     }
+
+    fn get(&self, file: &str) -> Option<&[u8]> {
+        match self {
+            Self::Reader(sarc) => sarc.get_data(file),
+            Self::Writer(sarcwriter) => sarcwriter.files.get(file).map(|d| d.as_ref()),
+        }
+    }
 }
 
 #[inline]
@@ -217,24 +225,27 @@ fn extract_gamedata_by_type(sarc: &SarcSource, key: &str) -> Result<GameData> {
         key.trim_start_matches("revival_")
     };
     let mut flags = DeleteMap::with_capacity(flag_alloc_count(key));
-    for (file, data) in sarc.iter() {
-        if file.trim_start_matches('/').starts_with(key) {
-            let mut byml = Byml::from_binary(data)?;
-            let hash = byml.as_mut_hash()?;
-            if let Some(Byml::Array(arr)) = hash.remove(data_type) {
-                for item in arr {
-                    flags.insert(
-                        item.as_hash()?
-                            .get("HashValue")
-                            .ok_or(UKError::MissingBymlKey(
-                                "bgdata file entry missing HashValue",
-                            ))?
-                            .as_int::<u32>()?,
-                        (&item).try_into()?,
-                    );
-                }
+    let mut i = 0;
+    while let Some(data) = sarc
+        .get(&format!("/{key}_{i}.bgdata"))
+        .or_else(|| sarc.get(&format!("{key}_{i}.bgdata")))
+    {
+        let mut hash = Byml::from_binary(data)?.into_hash()?;
+        if let Some(Byml::Array(arr)) = hash.remove(data_type) {
+            for item in arr {
+                flags.insert(
+                    item.as_hash()?
+                        .get("DataName")
+                        .ok_or(UKError::MissingBymlKey(
+                            "bgdata file entry missing DataName",
+                        ))?
+                        .as_string()?
+                        .clone(),
+                    (&item).try_into()?,
+                );
             }
         }
+        i += 1;
     }
     Ok(GameData {
         data_type: data_type.into(),
@@ -311,21 +322,15 @@ impl GameDataPack {
                             .as_hash()?
                             .get("DataName")
                             .ok_or(UKError::MissingBymlKey("Game data entry missing DataName"))?
-                            .as_string()?;
+                            .as_string()?
+                            .clone();
                         let mut parts = name.split('_');
-                        let hash_value = item
-                            .as_hash()?
-                            .get("HashValue")
-                            .ok_or(UKError::MissingBymlKey(
-                                "bgdata file entry missing HashValue",
-                            ))?
-                            .as_int::<u32>()?;
                         if Self::STAGES.contains(&parts.next().unwrap_or(""))
                             && !name.contains("HiddenKorok")
                         {
-                            revival_bool_data.insert(hash_value, (&item).try_into()?);
+                            revival_bool_data.insert(name, (&item).try_into()?);
                         } else {
-                            bool_data.insert(hash_value, (&item).try_into()?);
+                            bool_data.insert(name, (&item).try_into()?);
                         }
                     }
                 }
@@ -336,19 +341,13 @@ impl GameDataPack {
                             .as_hash()?
                             .get("DataName")
                             .ok_or(UKError::MissingBymlKey("Game data entry missing DataName"))?
-                            .as_string()?;
+                            .as_string()?
+                            .clone();
                         let mut parts = name.split('_');
-                        let hash_value = item
-                            .as_hash()?
-                            .get("HashValue")
-                            .ok_or(UKError::MissingBymlKey(
-                                "bgdata file entry missing HashValue",
-                            ))?
-                            .as_int::<u32>()?;
                         if Self::STAGES.contains(&parts.next().unwrap_or("")) {
-                            revival_s32_data.insert(hash_value, (&item).try_into()?);
+                            revival_s32_data.insert(name, (&item).try_into()?);
                         } else {
-                            s32_data.insert(hash_value, (&item).try_into()?);
+                            s32_data.insert(name, (&item).try_into()?);
                         }
                     }
                 }
@@ -357,11 +356,12 @@ impl GameDataPack {
                     for item in arr {
                         let hash_value = item
                             .as_hash()?
-                            .get("HashValue")
+                            .get("DataName")
                             .ok_or(UKError::MissingBymlKey(
-                                "bgdata file entry missing HashValue",
+                                "bgdata file entry missing DataName",
                             ))?
-                            .as_int::<u32>()?;
+                            .as_string()?
+                            .clone();
                         string32_data.insert(hash_value, (&item).try_into()?);
                     }
                 }
@@ -439,6 +439,7 @@ impl GameDataPack {
 
     pub fn into_sarc_writer(self, endian: Endian) -> SarcWriter {
         let mut sarc = SarcWriter::new(endian.into());
+        sarc.set_legacy_mode(true);
         sarc.set_min_alignment(4);
         build_gamedata_pack!(
             self,
