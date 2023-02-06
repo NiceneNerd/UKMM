@@ -84,7 +84,7 @@ An example contents in this format is below:
 │   └── MainField
 │       └── Static.mubin
 ├── manifest.yml
-└── meta.toml
+└── meta.yml
 ```
 
 ### Compression
@@ -96,10 +96,10 @@ with an optimal balance of size and decompresison performance.
 
 ### Meta File
 
-Mod metadata is stored in the TOML format under `meta.toml` in the ZIP root. It
+Mod metadata is stored in the TOML format under `meta.yml` in the ZIP root. It
 contains the mod name, description, option information, etc. Example contents:
 
-```toml
+```yaml
 name = 'Test Mod'
 version = 1.0
 author = 'Nicene Nerd'

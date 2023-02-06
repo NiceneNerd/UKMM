@@ -86,7 +86,7 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
             log::warn!("Could not open mod, let's find out why");
             let err_msg = err.to_string();
             if (err_msg.contains("meta file")
-                || err_msg.contains("meta.toml")
+                || err_msg.contains("meta.yml")
                 || err_msg.contains("d Zip"))
                 && let (is_mod, has_meta) = is_probably_a_mod_and_has_meta(path)
                 && is_mod

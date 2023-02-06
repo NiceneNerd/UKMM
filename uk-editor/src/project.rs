@@ -34,13 +34,13 @@ impl Project {
     #[allow(irrefutable_let_patterns)]
     pub fn from_mod(core: &Manager, mod_: &Path) -> Result<Self> {
         let zip = ParallelZipReader::open(mod_, false).context("Failed to open ZIP file")?;
-        let meta: Meta = toml::from_str(std::str::from_utf8(
-            &zip.get_file("meta.toml").context("Mod missing meta file")?,
+        let meta: Meta = serde_yaml::from_str(std::str::from_utf8(
+            &zip.get_file("meta.yml").context("Mod missing meta file")?,
         )?)
         .context("Failed to parse mod meta")?;
         let path = core.settings().projects_dir().join(sanitise(&meta.name));
         zip.iter().par_bridge().try_for_each(|file| -> Result<()> {
-            if matches!(file.file_name().unwrap_or_default().to_str().unwrap_or_default(), "meta.toml" | "manifest.yml") {
+            if matches!(file.file_name().unwrap_or_default().to_str().unwrap_or_default(), "meta.yml" | "manifest.yml") {
                 return Ok(());
             }
             let dest = path.join(file);

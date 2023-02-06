@@ -239,7 +239,7 @@ impl ModReader {
     }
 
     fn open_unzipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
-        let meta: Meta = toml::from_str(&fs::read_to_string(path.join("meta.toml"))?)?;
+        let meta: Meta = serde_yaml::from_str(&fs::read_to_string(path.join("meta.yml"))?)?;
         let mut manifest: Manifest =
             serde_yaml::from_str(&fs::read_to_string(path.join("manifest.yml"))?)?;
         for option in &options {
@@ -268,7 +268,7 @@ impl ModReader {
         let meta: Meta = {
             let meta = zip
                 .borrow_files()
-                .get(Path::new("meta.toml"))
+                .get(Path::new("meta.yml"))
                 .context("Mod missing meta file")?;
             size = meta.compressed_size;
             let mut reader = zip.borrow_zip().read(meta)?;
@@ -276,7 +276,7 @@ impl ModReader {
             if read != size {
                 anyhow::bail!("Failed to read meta file from mod {}", path.display());
             }
-            toml::from_slice(&buffer[..read]).context("Failed to parse meta file from mod")?
+            serde_yaml::from_slice(&buffer[..read]).context("Failed to parse meta file from mod")?
         };
         let mut manifest = {
             let manifest = zip
@@ -571,7 +571,7 @@ pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow::Result<()> {
         .filter(|f| {
             f.file_type.is_file() && {
                 let file_name = f.file_name().to_str().unwrap();
-                !file_name.ends_with(".yml") && !file_name.ends_with(".toml")
+                !file_name.ends_with(".yml")
             }
         })
         .par_bridge()

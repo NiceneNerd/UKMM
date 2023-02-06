@@ -243,13 +243,13 @@ impl Meta {
         use std::io::Read;
         let mod_path = mod_path.as_ref();
         let mut zip = zip::ZipArchive::new(std::io::BufReader::new(fs_err::File::open(mod_path)?))?;
-        let mut meta = zip.by_name("meta.toml").context("Mod missing meta file")?;
+        let mut meta = zip.by_name("meta.yml").context("Mod missing meta file")?;
         let mut buffer = vec![0; meta.size() as usize];
         let read = meta.read(&mut buffer)?;
         if read != meta.size() as usize {
             anyhow::bail!("Failed to read meta file")
         } else {
-            Ok(toml::from_slice(&buffer).context("Failed to parse meta file")?)
+            Ok(serde_yaml::from_slice(&buffer).context("Failed to parse meta file")?)
         }
     }
 }
@@ -267,12 +267,12 @@ mod tests {
     fn create_meta() {
         println!(
             "{}",
-            toml::to_string_pretty(&Meta {
+            serde_yaml::to_string(&Meta {
                 name: "Test Mod".into(),
                 description: "A sample UKMM mod".into(),
                 category: "Other".into(),
                 author: "Nicene Nerd".into(),
-                platform: ModPlatform::Specific(Endian::Big),
+                platform: ModPlatform::Universal,
                 url: None,
                 version: "1.0.0".into(),
                 masters: Default::default(),

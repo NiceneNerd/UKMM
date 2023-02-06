@@ -532,8 +532,8 @@ impl ModPacker {
         match Arc::try_unwrap(self.zip).map(|z| z.into_inner()) {
             Ok(mut zip) => {
                 log::info!("Writing meta");
-                zip.start_file("meta.toml", self._zip_opts)?;
-                zip.write_all(toml::to_string_pretty(&self.meta)?.as_bytes())?;
+                zip.start_file("meta.yml", self._zip_opts)?;
+                zip.write_all(serde_yaml::to_string(&self.meta)?.as_bytes())?;
                 zip.finish()?
             }
             Err(_) => anyhow::bail!("Failed to finish writing zip, this is probably a big deal"),
