@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Fixed mod meta issues by switching to YAML
+
 ## [0.2.3] - 2023-02-02
 
 ### Added
