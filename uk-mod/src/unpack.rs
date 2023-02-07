@@ -555,27 +555,11 @@ impl ModUnpacker {
                     });
                 let data = merged.into_binary(self.endian);
                 if can_rstb {
-                    if filename
-                        .extension()
-                        .and_then(|e| e.to_str())
-                        .unwrap_or_default()
-                        == "bas"
-                    {
-                        rstb_val = Some(
-                            rstb::calc::estimate_from_slice_and_name(
-                                &data,
-                                &canon,
-                                self.endian.into(),
-                            )
-                            .map(|v| (v as f32 * 2.0) as u32),
-                        );
-                    } else {
-                        rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
-                            &data,
-                            &canon,
-                            self.endian.into(),
-                        ));
-                    }
+                    rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
+                        &data,
+                        &canon,
+                        self.endian.into(),
+                    ));
                 }
                 data
             }
