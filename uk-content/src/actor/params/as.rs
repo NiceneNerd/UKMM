@@ -183,6 +183,7 @@ impl From<AS> for ParameterIO {
                 let mut list = ParameterList::new();
                 list.set_object("Parameters", element.params.into());
                 if let Some(children) = element.children.as_ref() {
+                    let mut done_children = Vec::with_capacity(children.len());
                     let mut buf = Vec::from(b"Child".as_slice());
                     buf.reserve(u16::MAX as usize);
                     list.set_object(
@@ -199,11 +200,17 @@ impl From<AS> for ParameterIO {
                                         buf.set_len(len + 5);
                                         std::string::String::from_utf8_unchecked(buf.clone())
                                     },
-                                    Parameter::I32(add_element(child.clone(), done) as i32),
+                                    {
+                                        let index = add_element(child.clone(), &mut done_children)
+                                            + index
+                                            + 1;
+                                        Parameter::I32(index as i32)
+                                    },
                                 )
                             })
                             .collect(),
                     );
+                    done.extend(done_children);
                 }
                 if let Some(extend) = element.extend.as_ref() {
                     list.set_list("Extend", extend.clone());
