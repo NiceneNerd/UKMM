@@ -281,3 +281,14 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     settings.save()?;
     Ok(Message::ResetSettings)
 }
+
+#[cfg(test)]
+mod tests {
+    use im::vector;
+
+    #[test]
+    fn remerge() {
+        let core = uk_manager::core::Manager::init().unwrap();
+        super::apply_changes(&core, vector![], None).unwrap();
+    }
+}
