@@ -370,7 +370,7 @@ impl ModReader {
 static RSTB_EXCLUDE_EXTS: &[&str] = &[
     "pack", "bgdata", "txt", "bgsvdata", "yml", "msbt", "bat", "ini", "png", "bfstm", "py", "sh",
 ];
-static RSTB_EXCLUDE_NAMES: &[&str] = &["ActorInfo.product.sbyml"];
+static RSTB_EXCLUDE_NAMES: &[&str] = &["ActorInfo.product.byml"];
 
 #[derive(Debug)]
 pub struct ModUnpacker {
@@ -435,10 +435,17 @@ impl ModUnpacker {
         let current = AtomicUsize::new(0);
         std::thread::scope(|s| -> Result<()> {
             let s1 = s.spawn(|| {
-                self.unpack_files(content_files, self.out_dir.join(content), total, &current)
+                self.unpack_files(
+                    content_files,
+                    self.out_dir.join(content),
+                    total,
+                    &current,
+                    false,
+                )
             });
-            let s2 =
-                s.spawn(|| self.unpack_files(aoc_files, self.out_dir.join(aoc), total, &current));
+            let s2 = s.spawn(|| {
+                self.unpack_files(aoc_files, self.out_dir.join(aoc), total, &current, true)
+            });
             s1.join().expect("Failed to join thread")?;
             s2.join().expect("Failed to join thread")?;
             Ok(())
@@ -453,32 +460,16 @@ impl ModUnpacker {
         dir: PathBuf,
         total_files: usize,
         current_file: &AtomicUsize,
+        aoc: bool,
     ) -> Result<()> {
         files.into_par_iter().try_for_each(|file| -> Result<()> {
-            let data = self.build_file(file.as_str())?;
+            let data = self.build_file(file.as_str(), aoc)?;
             let out_file = dir.join(file.as_str());
             if let parent = out_file.parent().unwrap() && !parent.exists() {
-                    fs::create_dir_all(parent)?;
-                }
+                fs::create_dir_all(parent)?;
+            }
             let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
             writer.write_all(&compress_if(data.as_ref(), &out_file))?;
-            let canon = canonicalize(out_file.strip_prefix(&self.out_dir).unwrap());
-            if !RSTB_EXCLUDE_EXTS.contains(
-                &out_file
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .unwrap_or_default(),
-            ) && !RSTB_EXCLUDE_NAMES.contains(
-                &out_file
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or_default(),
-            ) && self.hashes.is_file_modded(&canon, &data, true)
-            {
-                let size =
-                    rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
-                self.rstb.write().insert(canon, size);
-            }
             let progress = 1 + current_file.load(Ordering::Relaxed);
             current_file.store(progress, Ordering::Relaxed);
             let remainder = progress % 5;
@@ -489,9 +480,27 @@ impl ModUnpacker {
         })
     }
 
-    fn build_file(&self, file: &str) -> Result<Vec<u8>> {
+    fn build_file(&self, file: &str, aoc: bool) -> Result<Vec<u8>> {
         let mut versions = std::collections::VecDeque::with_capacity(
             (self.mods.len() as f32 / 2.).ceil() as usize,
+        );
+        let canon = if aoc {
+            canonicalize(jstr!("Aoc/0010/{file}"))
+        } else {
+            canonicalize(file)
+        };
+        let filename = Path::new(canon.as_str());
+        let mut rstb_val = None;
+        let can_rstb = !RSTB_EXCLUDE_EXTS.contains(
+            &filename
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or_default(),
+        ) && !RSTB_EXCLUDE_NAMES.contains(
+            &filename
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or_default(),
         );
         match self.dump.get_data(file).or_else(|e| {
             log::trace!("{e}");
@@ -519,9 +528,17 @@ impl ModUnpacker {
         let base_version = versions
             .pop_front()
             .with_context(|| format!("No base version for file {}", &file))?;
+        let is_modded = !versions.is_empty() || self.hashes.is_file_new(&canon);
         let data = match base_version.as_ref() {
             ResourceData::Binary(_) => {
                 let res = versions.pop_back().unwrap_or(base_version);
+                if can_rstb && is_modded {
+                    rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
+                        res.as_binary().expect("Binary"),
+                        file,
+                        self.endian.into(),
+                    ));
+                }
                 match Arc::try_unwrap(res) {
                     Ok(res) => res.take_binary().unwrap(),
                     Err(res) => res.as_binary().map(|b| b.to_vec()).unwrap(),
@@ -536,7 +553,31 @@ impl ModUnpacker {
                         }
                         res
                     });
-                merged.into_binary(self.endian)
+                let data = merged.into_binary(self.endian);
+                if can_rstb {
+                    if filename
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .unwrap_or_default()
+                        == "bas"
+                    {
+                        rstb_val = Some(
+                            rstb::calc::estimate_from_slice_and_name(
+                                &data,
+                                &canon,
+                                self.endian.into(),
+                            )
+                            .map(|v| (v as f32 * 2.0) as u32),
+                        );
+                    } else {
+                        rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
+                            &data,
+                            &canon,
+                            self.endian.into(),
+                        ));
+                    }
+                }
+                data
             }
             ResourceData::Sarc(base_sarc) => {
                 let merged = versions
@@ -547,41 +588,35 @@ impl ModUnpacker {
                         }
                         res
                     });
-                self.build_sarc(merged)
-                    .with_context(|| jstr!("Failed to build SARC file {&file}"))?
+                let data = self
+                    .build_sarc(merged, aoc)
+                    .with_context(|| jstr!("Failed to build SARC file {&file}"))?;
+                if can_rstb {
+                    rstb_val = Some(rstb::calc::calc_from_size_and_name(
+                        data.len(),
+                        &canon,
+                        self.endian.into(),
+                    ));
+                }
+                data
             }
         };
+        if let Some(val) = rstb_val {
+            self.rstb.write().insert(canon, val);
+        }
         Ok(data)
     }
 
-    fn build_sarc(&self, sarc: SarcMap) -> Result<Vec<u8>> {
+    fn build_sarc(&self, sarc: SarcMap, aoc: bool) -> Result<Vec<u8>> {
         let mut writer = SarcWriter::new(self.endian.into()).with_min_alignment(sarc.alignment);
         for file in sarc.files.into_iter() {
             let data = self
-                .build_file(&file)
+                .build_file(&file, aoc)
                 .with_context(|| jstr!("Failed to build file {&file} for SARC"))?;
             writer.add_file(
                 file.as_str(),
                 compress_if(data.as_ref(), file.as_str()).as_ref(),
             );
-            let canon = canonicalize(file.as_str());
-            let filename = Path::new(file.as_str());
-            if !RSTB_EXCLUDE_EXTS.contains(
-                &filename
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .unwrap_or_default(),
-            ) && !RSTB_EXCLUDE_NAMES.contains(
-                &filename
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or_default(),
-            ) && self.hashes.is_file_modded(&canon, &data, true)
-            {
-                let size =
-                    rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
-                self.rstb.write().insert(canon, size);
-            }
         }
         Ok(writer.to_binary())
     }
