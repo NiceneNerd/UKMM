@@ -367,6 +367,11 @@ impl ModReader {
     }
 }
 
+static RSTB_EXCLUDE_EXTS: &[&str] = &[
+    "pack", "bgdata", "txt", "bgsvdata", "yml", "msbt", "bat", "ini", "png", "bfstm", "py", "sh",
+];
+static RSTB_EXCLUDE_NAMES: &[&str] = &["ActorInfo.product.sbyml"];
+
 #[derive(Debug)]
 pub struct ModUnpacker {
     dump:     Arc<ResourceReader>,
@@ -458,7 +463,18 @@ impl ModUnpacker {
             let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
             writer.write_all(&compress_if(data.as_ref(), &out_file))?;
             let canon = canonicalize(out_file.strip_prefix(&self.out_dir).unwrap());
-            if self.hashes.is_file_modded(&canon, &data, true) {
+            if !RSTB_EXCLUDE_EXTS.contains(
+                &out_file
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or_default(),
+            ) && !RSTB_EXCLUDE_NAMES.contains(
+                &out_file
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or_default(),
+            ) && self.hashes.is_file_modded(&canon, &data, true)
+            {
                 let size =
                     rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
                 self.rstb.write().insert(canon, size);
@@ -549,7 +565,19 @@ impl ModUnpacker {
                 compress_if(data.as_ref(), file.as_str()).as_ref(),
             );
             let canon = canonicalize(file.as_str());
-            if self.hashes.is_file_modded(&canon, &data, true) {
+            let filename = Path::new(file.as_str());
+            if !RSTB_EXCLUDE_EXTS.contains(
+                &filename
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or_default(),
+            ) && !RSTB_EXCLUDE_NAMES.contains(
+                &filename
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or_default(),
+            ) && self.hashes.is_file_modded(&canon, &data, true)
+            {
                 let size =
                     rstb::calc::estimate_from_slice_and_name(&data, &canon, self.endian.into());
                 self.rstb.write().insert(canon, size);
