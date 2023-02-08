@@ -6,7 +6,12 @@ use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
 
-use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
+use crate::{
+    actor::ParameterResource,
+    prelude::*,
+    util::{self, IteratorExt},
+    Result, UKError,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable, ParamData)]
 pub struct ElementParams {
@@ -174,7 +179,12 @@ impl From<AS> for ParameterIO {
                 .unwrap_or(0)
         }
 
-        fn add_element(element: Element, done: &mut Vec<(Element, ParameterList)>) -> usize {
+        fn add_element(
+            element: Element,
+            done: &mut Vec<(Element, ParameterList)>,
+            child_idx: usize,
+            parent_count: usize,
+        ) -> usize {
             if let Some(idx) = done.iter().position(|(e, _)| e == &element) {
                 idx
             } else {
@@ -183,30 +193,20 @@ impl From<AS> for ParameterIO {
                 let mut list = ParameterList::new();
                 list.set_object("Parameters", element.params.into());
                 if let Some(children) = element.children.as_ref() {
-                    let mut done_children = Vec::with_capacity(children.len());
-                    let mut buf = Vec::from(b"Child".as_slice());
-                    buf.reserve(u16::MAX as usize);
+                    let child_count = children.len();
+                    let mut done_children = Vec::with_capacity(child_count);
                     list.set_object(
                         "Children",
                         children
                             .iter()
-                            .map(|(i, child)| {
-                                (
-                                    unsafe {
-                                        buf.set_len(u16::MAX as usize);
-                                        let len =
-                                            lexical_core::write_unchecked(*i as u16, &mut buf[5..])
-                                                .len();
-                                        buf.set_len(len + 5);
-                                        std::string::String::from_utf8_unchecked(buf.clone())
-                                    },
-                                    {
-                                        let index = add_element(child.clone(), &mut done_children)
-                                            + index
-                                            + 1;
-                                        Parameter::I32(index as i32)
-                                    },
-                                )
+                            .named_enumerate("Child")
+                            .map(|(name, (i, child))| {
+                                let index =
+                                    add_element(child.clone(), &mut done_children, *i, child_count)
+                                        + index
+                                        + parent_count
+                                        - child_idx;
+                                (name, Parameter::I32(index as i32))
                             })
                             .collect(),
                     );
@@ -222,7 +222,7 @@ impl From<AS> for ParameterIO {
 
         let mut elements = Vec::with_capacity(val.root.as_ref().map(count_elements).unwrap_or(0));
         if let Some(root) = val.root {
-            add_element(root, &mut elements);
+            add_element(root, &mut elements, 0, 1);
         }
         ParameterIO::new()
             .with_objects(val.common_params.into_iter().map(|p| ("CommonParams", p)))
@@ -376,5 +376,29 @@ mod tests {
              bas",
         );
         assert!(super::AS::path_matches(path));
+    }
+
+    #[test]
+    fn node_order() {
+        for file in ["Player_Warp", "Player_Wait", "Player_WeaponEquipOff"] {
+            let pio = ParameterIO::from_binary(
+                std::fs::read(
+                    std::path::Path::new("test/Actor/AS")
+                        .join(file)
+                        .with_extension("bas"),
+                )
+                .unwrap(),
+            )
+            .unwrap();
+            let as_data = super::AS::try_from(&pio).unwrap();
+            let pio2 = ParameterIO::from(as_data.clone());
+            let as_data2 = super::AS::try_from(&pio2).unwrap();
+            assert_eq!(as_data, as_data2);
+            // if pio != pio2 {
+            //     println!("{}", pio.to_text());
+            //     println!("{}", pio2.to_text());
+            //     panic!("Node data changed in {file}");
+            // }
+        }
     }
 }

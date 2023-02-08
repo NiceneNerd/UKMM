@@ -72,7 +72,7 @@ impl Project {
 mod tests {
     #[test]
     fn project_from_mod() {
-        let mod_ = "../uk-mod/test/wiiu.zip";
+        let mod_ = "/home/nn/.local/share/ukmm/wiiu/mods/tmp3eSZKv";
         let core = uk_manager::core::Manager::init().unwrap();
         let project = super::Project::from_mod(&core, mod_.as_ref()).unwrap();
         dbg!(project);

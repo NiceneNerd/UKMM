@@ -381,3 +381,61 @@ fn test_any_safe_string() {
     );
     assert_eq!(ss4.as_safe_string::<32>().unwrap(), "A string".into());
 }
+
+pub trait IteratorExt
+where
+    Self: Sized,
+{
+    fn named_enumerate(self, name: &str) -> NamedEnumerate<'_, Self> {
+        NamedEnumerate::new(self, name)
+    }
+}
+
+impl<T> IteratorExt for T where T: Iterator {}
+
+pub struct NamedEnumerate<'a, I> {
+    iter:   I,
+    count:  usize,
+    name:   &'a str,
+    buffer: Vec<u8>,
+}
+
+impl<'a, I> NamedEnumerate<'a, I> {
+    pub(crate) fn new(iter: I, name: &'a str) -> NamedEnumerate<'a, I> {
+        NamedEnumerate {
+            iter,
+            count: 0,
+            name,
+            buffer: {
+                let mut vec = Vec::with_capacity(u16::MAX as usize);
+                vec.extend(name.as_bytes());
+                vec
+            },
+        }
+    }
+}
+
+impl<'a, I> Iterator for NamedEnumerate<'a, I>
+where
+    I: Iterator,
+{
+    type Item = (String, <I as Iterator>::Item);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let item = self.iter.next()?;
+        let i = self.count;
+        self.count += 1;
+        let name_len = self.name.len();
+        let name = unsafe {
+            self.buffer.set_len(u16::MAX as usize);
+            let len = lexical_core::write_unchecked(i as u16, &mut self.buffer[name_len..]).len();
+            self.buffer.set_len(len + name_len);
+            String::from_utf8_unchecked(self.buffer.clone())
+        };
+        Some((name, item))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
