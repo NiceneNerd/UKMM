@@ -554,7 +554,7 @@ impl ModUnpacker {
                         res
                     });
                 let data = merged.into_binary(self.endian);
-                if can_rstb && self.hashes.is_file_modded(&canon, &data, true) {
+                if can_rstb && (is_modded || self.hashes.is_file_modded(&canon, &data, true)) {
                     rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
                         &data,
                         &canon,

@@ -10,12 +10,29 @@ pub use crate::{
     actor::{
         info::ActorInfo,
         params::{
-            aiprog::AIProgram, aischedule::AISchedule, animinfo::AnimationInfo, r#as::AS,
-            aslist::ASList, atcl::AttClient, atcllist::AttClientList, aware::Awareness,
-            bonectrl::BoneControl, chemical::Chemical, damage::DamageParam, drop::DropTable,
-            general::GeneralParamList, life::LifeCondition, link::ActorLink, lod::Lod,
-            modellist::ModelList, physics::Physics, recipe::Recipe, rgbw::RagdollBlendWeight,
-            rgconfig::RagdollConfig, rgconfiglist::RagdollConfigList, shop::ShopData, umii::UMii,
+            aiprog::AIProgram,
+            aischedule::AISchedule,
+            animinfo::AnimationInfo, // r#as::AS,
+            aslist::ASList,
+            atcl::AttClient,
+            atcllist::AttClientList,
+            aware::Awareness,
+            bonectrl::BoneControl,
+            chemical::Chemical,
+            damage::DamageParam,
+            drop::DropTable,
+            general::GeneralParamList,
+            life::LifeCondition,
+            link::ActorLink,
+            lod::Lod,
+            modellist::ModelList,
+            physics::Physics,
+            recipe::Recipe,
+            rgbw::RagdollBlendWeight,
+            rgconfig::RagdollConfig,
+            rgconfiglist::RagdollConfigList,
+            shop::ShopData,
+            umii::UMii,
         },
         residents::ResidentActors,
         // Actor,
@@ -45,7 +62,7 @@ pub enum MergeableResource {
     AISchedule(Box<AISchedule>),
     AnimationInfo(Box<AnimationInfo>),
     AreaData(Box<AreaData>),
-    AS(Box<AS>),
+    // AS(Box<AS>),
     ASList(Box<ASList>),
     AttClient(Box<AttClient>),
     AttClientList(Box<AttClientList>),
@@ -99,7 +116,7 @@ impl std::fmt::Display for MergeableResource {
             Self::AISchedule(_) => "AISchedule",
             Self::AnimationInfo(_) => "AnimationInfo",
             Self::AreaData(_) => "AreaData",
-            Self::AS(_) => "AS",
+            // Self::AS(_) => "AS",
             Self::ASList(_) => "ASList",
             Self::AttClient(_) => "AttClient",
             Self::AttClientList(_) => "AttClientList",
@@ -191,7 +208,7 @@ impl_from_res!(AIProgram);
 impl_from_res!(AISchedule);
 impl_from_res!(AnimationInfo);
 impl_from_res!(AreaData);
-impl_from_res!(AS);
+// impl_from_res!(AS);
 impl_from_res!(ASList);
 impl_from_res!(AttClient);
 impl_from_res!(AttClientList);
@@ -244,7 +261,7 @@ impl Mergeable for MergeableResource {
                 Self::AnimationInfo(Box::new(a.diff(b)))
             }
             (Self::AreaData(a), Self::AreaData(b)) => Self::AreaData(Box::new(a.diff(b))),
-            (Self::AS(a), Self::AS(b)) => Self::AS(Box::new(a.diff(b))),
+            // (Self::AS(a), Self::AS(b)) => Self::AS(Box::new(a.diff(b))),
             (Self::ASList(a), Self::ASList(b)) => Self::ASList(Box::new(a.diff(b))),
             (Self::AttClient(a), Self::AttClient(b)) => Self::AttClient(Box::new(a.diff(b))),
             (Self::AttClientList(a), Self::AttClientList(b)) => {
@@ -336,7 +353,7 @@ impl Mergeable for MergeableResource {
                 Self::AnimationInfo(Box::new(a.merge(b)))
             }
             (Self::AreaData(a), Self::AreaData(b)) => Self::AreaData(Box::new(a.merge(b))),
-            (Self::AS(a), Self::AS(b)) => Self::AS(Box::new(a.merge(b))),
+            // (Self::AS(a), Self::AS(b)) => Self::AS(Box::new(a.merge(b))),
             (Self::ASList(a), Self::ASList(b)) => Self::ASList(Box::new(a.merge(b))),
             (Self::AttClient(a), Self::AttClient(b)) => Self::AttClient(Box::new(a.merge(b))),
             (Self::AttClientList(a), Self::AttClientList(b)) => {
@@ -421,6 +438,16 @@ impl Mergeable for MergeableResource {
 impl MergeableResource {
     #[allow(irrefutable_let_patterns)]
     pub fn from_binary(name: &Path, data: &[u8]) -> Result<Option<MergeableResource>> {
+        static EXCLUDE_EXTS: &[&str] = &["bas"];
+
+        if name
+            .extension()
+            .and_then(|e| e.to_str().map(|e| EXCLUDE_EXTS.contains(&e)))
+            .unwrap_or(false)
+        {
+            return Ok(None);
+        }
+
         if ActorInfo::path_matches(name) {
             Ok(Some(Self::ActorInfo(Box::new(ActorInfo::from_binary(
                 data,
@@ -445,8 +472,8 @@ impl MergeableResource {
             Ok(Some(Self::AreaData(Box::new(AreaData::from_binary(
                 data,
             )?))))
-        } else if AS::path_matches(name) {
-            Ok(Some(Self::AS(Box::new(AS::from_binary(data)?))))
+        // } else if AS::path_matches(name) {
+        //     Ok(Some(Self::AS(Box::new(AS::from_binary(data)?))))
         } else if ASList::path_matches(name) {
             Ok(Some(Self::ASList(Box::new(ASList::from_binary(data)?))))
         } else if AttClient::path_matches(name) {
@@ -607,7 +634,7 @@ impl MergeableResource {
             Self::AISchedule(v) => v.into_binary(endian),
             Self::AnimationInfo(v) => v.into_binary(endian),
             Self::AreaData(v) => v.into_binary(endian),
-            Self::AS(v) => v.into_binary(endian),
+            // Self::AS(v) => v.into_binary(endian),
             Self::ASList(v) => v.into_binary(endian),
             Self::AttClient(v) => v.into_binary(endian),
             Self::AttClientList(v) => v.into_binary(endian),
