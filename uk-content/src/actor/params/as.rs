@@ -179,50 +179,44 @@ impl From<AS> for ParameterIO {
                 .unwrap_or(0)
         }
 
-        fn add_element(
-            element: Element,
-            done: &mut Vec<(Element, ParameterList)>,
-            child_idx: usize,
-            parent_count: usize,
-        ) -> usize {
-            if let Some(idx) = done.iter().position(|(e, _)| e == &element) {
-                idx
-            } else {
+        fn add_element(element: Element, done: &mut Vec<(Element, ParameterList)>) {
+            if !done.iter().any(|(el, _)| el == &element) {
                 let index = done.len();
                 done.push((element.clone(), Default::default()));
+                let Element {
+                    params,
+                    children,
+                    extend,
+                } = element;
                 let mut list = ParameterList::new();
-                list.set_object("Parameters", element.params.into());
-                if let Some(children) = element.children.as_ref() {
-                    let child_count = children.len();
-                    let mut done_children = Vec::with_capacity(child_count);
-                    list.set_object(
-                        "Children",
-                        children
-                            .iter()
-                            .named_enumerate("Child")
-                            .map(|(name, (i, child))| {
-                                let index =
-                                    add_element(child.clone(), &mut done_children, *i, child_count)
-                                        + index
-                                        + parent_count
-                                        - child_idx;
-                                (name, Parameter::I32(index as i32))
-                            })
-                            .collect(),
-                    );
-                    done.extend(done_children);
+                list.set_object("Parameters", params.into());
+                if children.is_some() {
+                    list.set_object("Children", Default::default());
                 }
-                if let Some(extend) = element.extend.as_ref() {
-                    list.set_list("Extend", extend.clone());
+                if let Some(extend) = extend {
+                    list.set_list("Extend", extend);
+                }
+                if let Some(children) = children {
+                    for child in children.values() {
+                        add_element(child.clone(), done);
+                    }
+                    list.object_mut("Children").unwrap().extend(
+                        children
+                            .values()
+                            .named_enumerate("Child")
+                            .map(|(name, child)| {
+                                let index = done.iter().position(|(el, _)| el == child).unwrap();
+                                (name.into(), Parameter::I32(index as i32))
+                            }),
+                    );
                 }
                 done[index].1 = list;
-                index
             }
         }
 
         let mut elements = Vec::with_capacity(val.root.as_ref().map(count_elements).unwrap_or(0));
         if let Some(root) = val.root {
-            add_element(root, &mut elements, 0, 1);
+            add_element(root, &mut elements);
         }
         ParameterIO::new()
             .with_objects(val.common_params.into_iter().map(|p| ("CommonParams", p)))
@@ -392,6 +386,7 @@ mod tests {
             .unwrap();
             let as_data = super::AS::try_from(&pio).unwrap();
             let pio2 = ParameterIO::from(as_data.clone());
+            println!("{}", pio2.to_text());
             let as_data2 = super::AS::try_from(&pio2).unwrap();
             assert_eq!(as_data, as_data2);
             // if pio != pio2 {
