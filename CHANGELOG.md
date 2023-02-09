@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed AI program serialization
+- Fixed illegitimate RSTB entries causing crashes in-game (probably fixing #23)
+
 ### Changed
 
+- Significant pointless changes to AS merger
 - Fixed mod meta issues by switching to YAML
+- Modified progress message to improve performance
 
 ## [0.2.3] - 2023-02-02
 
