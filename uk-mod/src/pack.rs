@@ -318,9 +318,14 @@ impl ModPacker {
 
                 let progress = current_file.load(std::sync::atomic::Ordering::Relaxed) + 1;
                 current_file.store(progress, std::sync::atomic::Ordering::Relaxed);
-                let remainder = progress % 5;
-                if matches!(remainder, 0 | 2 | 3) {
-                    log::info!("PROGRESSCollected resource {} of {}", progress, total_files);
+                let percent = (progress as f64 / total_files as f64) * 100.0;
+                let fract = percent.fract();
+                if fract <= 0.1 || fract >= 0.95 {
+                    log::info!(
+                        "PROGRESSBuilding {} files: {}%",
+                        total_files,
+                        percent as usize
+                    );
                 }
 
                 Ok(Some(
