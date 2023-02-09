@@ -291,7 +291,6 @@ struct ChangelogResponse {
 
 pub fn get_changelog(version: &str, sender: flume::Sender<Message>) {
     let url = format!("https://api.github.com/repos/NiceneNerd/ukmm/releases/tags/v{version}");
-    let url = "https://api.github.com/repos/NiceneNerd/ukmm/releases/tags/v0.2.3";
     match reqwest::blocking::Client::builder()
         .user_agent("UKMM")
         .build()
@@ -306,7 +305,7 @@ pub fn get_changelog(version: &str, sender: flume::Sender<Message>) {
         Ok(log) => {
             sender
                 .send(Message::SetChangelog(format!(
-                    "# Release {} Notes\n\n{}\n\n{}",
+                    "# Release {} Notes\n\n**{}**\n\n{}",
                     version, log.name, log.body
                 )))
                 .unwrap()
