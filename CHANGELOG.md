@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2023-02-09
+
 ### Fixed
 
 - Fixed BNP SARC inflation for edge cases
