@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed BNP SARC inflation for edge cases
 - Fixed AI program serialization
 - Fixed illegitimate RSTB entries causing crashes in-game (probably fixing #23)
 

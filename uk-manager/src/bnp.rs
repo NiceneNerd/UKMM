@@ -9,7 +9,7 @@ use parking_lot::Mutex;
 use rayon::prelude::*;
 use roead::{
     aamp::{ParameterIO, ParameterList, ParameterListing},
-    sarc::{Sarc, SarcWriter},
+    sarc::{File, Sarc, SarcWriter},
     yaz0::compress_if,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -115,6 +115,43 @@ impl BnpConverter {
     }
 
     fn open_or_create_sarc(&self, dest_path: &Path, root_path: &str) -> Result<SarcWriter> {
+        #[inline(always)]
+        fn is_stripped_sarc(file: &File) -> bool {
+            static BCML_SARC_EXTS: &[&str] = &[
+                "sarc",
+                "pack",
+                "bactorpack",
+                "bmodelsh",
+                "stats",
+                "ssarc",
+                "sbactorpack",
+                "sbmodelsh",
+                "sstats",
+                "sblarc",
+                "blarc",
+            ];
+            static BCML_SPECIAL: &[&str] = &[
+                "gamedata",
+                "savedataformat",
+                "tera_resource.Nin_NX_NVN",
+                "Dungeon",
+                "Bootup_",
+                "AocMainField",
+            ];
+            file.is_sarc()
+                && file
+                    .name
+                    .map(|n| {
+                        let name = Path::new(n);
+                        name.extension()
+                            .and_then(|e| e.to_str())
+                            .map(|e| BCML_SARC_EXTS.contains(&e))
+                            .unwrap_or(false)
+                            && !BCML_SPECIAL.iter().any(|xn| n.starts_with(xn))
+                    })
+                    .unwrap_or(false)
+        }
+
         let base_sarc = self.dump.get_bytes_uncached(root_path);
         if !dest_path.exists() {
             let base_sarc = base_sarc?;
@@ -129,7 +166,7 @@ impl BnpConverter {
             {
                 sarc.files.extend(base_sarc.files().filter_map(|file| {
                     file.name().and_then(|name| {
-                        match (stripped.get(name), file.is_sarc()) {
+                        match (stripped.get(name), is_stripped_sarc(&file)) {
                             // If it's not in the stripped SARC, add it from the base game
                             (None, _) => Some((name.into(), file.data.to_vec())),
                             // If it is in the stripped SARC, but it's not a nested SARC, skip it
