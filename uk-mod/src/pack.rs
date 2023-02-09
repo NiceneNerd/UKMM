@@ -78,7 +78,9 @@ struct InfoJson {
 
 #[derive(Debug, Deserialize)]
 struct BnpOptions {
+    #[serde(default)]
     multi:  Vec<BnpOption>,
+    #[serde(default)]
     single: Vec<BnpGroup>,
 }
 
