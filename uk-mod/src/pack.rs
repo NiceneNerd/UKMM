@@ -138,6 +138,7 @@ impl ModPacker {
     fn parse_rules(path: PathBuf) -> Result<Meta> {
         use configparser::ini::Ini;
         let mut rules = Ini::new();
+        let parent = path.parent().context("No parent path???")?;
         rules.load(&path).map_err(|e| anyhow::anyhow!(e))?;
         Ok(Meta {
             name: rules
@@ -154,7 +155,7 @@ impl ModPacker {
             author: Default::default(),
             masters: Default::default(),
             options: vec![],
-            platform: if path.join("content").exists() || path.join("aoc").exists() {
+            platform: if parent.join("content").exists() || parent.join("aoc").exists() {
                 ModPlatform::Specific(Endian::Big)
             } else {
                 ModPlatform::Specific(Endian::Little)
