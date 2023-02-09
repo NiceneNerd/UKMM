@@ -472,9 +472,14 @@ impl ModUnpacker {
             writer.write_all(&compress_if(data.as_ref(), &out_file))?;
             let progress = 1 + current_file.load(Ordering::Relaxed);
             current_file.store(progress, Ordering::Relaxed);
-            let remainder = progress % 5;
-            if matches!(remainder, 0 | 2 | 3) {
-                log::info!("PROGRESSBuilt file {} of {}", progress, total_files);
+            let percent = (progress as f64 / total_files as f64) * 100.0;
+            let fract = percent.fract();
+            if fract <= 0.1 || fract >= 0.95 {
+                log::info!(
+                    "PROGRESSBuilding {} files: {}%",
+                    total_files,
+                    percent as usize
+                );
             }
             Ok(())
         })
