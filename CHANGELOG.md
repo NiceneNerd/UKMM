@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - More mod categories
 
+### Changed
+
+- Show BNPs in file browser
+
 ## [0.2.4] - 2023-02-09
 
 ### Added

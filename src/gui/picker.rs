@@ -53,7 +53,7 @@ impl FilePickerState {
                         .and_then(|e| e.to_str())
                         .unwrap_or("")
                         .to_lowercase();
-                    ((ext == "zip" || ext == "7z" || path.is_dir())
+                    ((ext == "zip" || ext == "7z" || ext == "bnp" || path.is_dir())
                         && !e.file_name().to_str().unwrap_or("").starts_with('.'))
                     .then_some(path)
                 })
