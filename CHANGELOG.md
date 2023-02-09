@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed BNP SARC inflation for edge cases
+- Fixed issue with optional BNP option fields
+- Fixed platform detection for "graphic pack" mods
 - Fixed AI program serialization
 - Fixed illegitimate RSTB entries causing crashes in-game (probably fixing #23)
 
