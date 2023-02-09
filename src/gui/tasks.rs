@@ -8,6 +8,7 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use im::Vector;
 use join_str::jstr;
+use serde::Deserialize;
 use uk_manager::{
     bnp::convert_bnp,
     core::Manager,
@@ -280,6 +281,38 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     };
     settings.save()?;
     Ok(Message::ResetSettings)
+}
+
+#[derive(Debug, Deserialize)]
+struct ChangelogResponse {
+    body: String,
+    name: String,
+}
+
+pub fn get_changelog(version: &str, sender: flume::Sender<Message>) {
+    let url = format!("https://api.github.com/repos/NiceneNerd/ukmm/releases/tags/v{version}");
+    let url = "https://api.github.com/repos/NiceneNerd/ukmm/releases/tags/v0.2.3";
+    match reqwest::blocking::Client::builder()
+        .user_agent("UKMM")
+        .build()
+        .unwrap()
+        .get(url)
+        .send()
+        .context("Failed to check release notes")
+        .and_then(|r| {
+            r.json::<ChangelogResponse>()
+                .context("Failed to parse release notes")
+        }) {
+        Ok(log) => {
+            sender
+                .send(Message::SetChangelog(format!(
+                    "# Release {} Notes\n\n{}\n\n{}",
+                    version, log.name, log.body
+                )))
+                .unwrap()
+        }
+        Err(e) => log::warn!("{:?}", e),
+    }
 }
 
 #[cfg(test)]

@@ -418,14 +418,57 @@ impl App {
     }
 
     pub fn render_changelog(&self, ctx: &egui::Context) {
-        if let Some(ref last_version) = self.last_version {
-            let first = last_version == "0.0.0";
-            egui::Window::new("About")
+        if let Some(ref last_version) = self.changelog {
+            egui::Window::new("What's New")
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
-                .fixed_size([360.0, 240.0])
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
-                .show(ctx, |ui| {});
+                .show(ctx, |ui| {
+                    let md_cache = ui
+                        .data()
+                        .get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
+                            egui::Id::new("md_cache_changelog"),
+                        )
+                        .clone();
+                    egui_commonmark::CommonMarkViewer::new("changelog").show(
+                        ui,
+                        &mut md_cache.lock(),
+                        last_version,
+                    );
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        if ui
+                            .icon_text_button("Subscribe to Patreon", Icon::Patreon)
+                            .on_hover_text("https://www.patreon.com/nicenenerd")
+                            .clicked()
+                        {
+                            open::that("https://www.patreon.com/nicenenerd").unwrap_or(());
+                        }
+                        if ui
+                            .icon_text_button("Bitcoin", Icon::Bitcoin)
+                            .on_hover_text("Click to copy wallet address")
+                            .clicked()
+                        {
+                            ui.output().copied_text = "392YEGQ8WybkRSg4oyeLf7Pj2gQNhPcWoa".into();
+                            self.do_update(Message::Toast(
+                                "BTC address copied to clipboard".into(),
+                            ));
+                        }
+                    });
+                    let width = ui.min_size().x;
+                    ui.horizontal(|ui| {
+                        ui.allocate_ui_with_layout(
+                            Vec2::new(width, ui.min_size().y),
+                            Layout::right_to_left(Align::Center),
+                            |ui| {
+                                if ui.button("OK").clicked() {
+                                    self.do_update(Message::CloseChangelog);
+                                }
+                                ui.shrink_width_to_current();
+                            },
+                        );
+                    });
+                });
         }
     }
 }

@@ -13,7 +13,7 @@ clap = { version = "3.2.17", features = ["derive"] }
 dircpy = "0.3.12"
 dirs2 = "3.0.1"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
-egui_commonmark = { git = "https://github.com/NiceneNerd/egui_commonmark" }
+egui_commonmark = { git = "https://github.com/NiceneNerd/egui_commonmark", features = ["svg", "fetch"] }
 egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
 egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
 enum-iterator = "1.2.0"
@@ -30,6 +30,7 @@ once_cell = "1.13.1"
 open = "3.0.3"
 parking_lot = { version = "0.12.1", features = ["serde"] }
 rayon = "1.5.3"
+reqwest = { version = "0.11.14", features = ["blocking", "json"] }
 rfd = "0.10.0"
 roxmltree = "0.16.0"
 rustc-hash = "1.1.0"

@@ -149,6 +149,7 @@ pub enum Message {
     CloseAbout,
     CloseConfirm,
     CloseError,
+    CloseChangelog,
     ClosePackagingOptions,
     ClosePackagingDependencies,
     CloseProfiles,
@@ -183,12 +184,14 @@ pub enum Message {
     SelectFile,
     SelectOnly(usize),
     SelectProfileManage(smartstring::alias::String),
+    SetChangelog(String),
     SetFocus(FocusedPane),
     SetTheme(uk_ui::visuals::Theme),
     ShowAbout,
     ShowPackagingOptions(FxHashSet<PathBuf>),
     ShowPackagingDependencies,
     StartDrag(usize),
+    Toast(String),
     ToggleMods(Option<Vector<Mod>>, bool),
     UninstallMods(Option<Vector<Mod>>),
     UpdateOptions(Mod),
@@ -230,7 +233,7 @@ struct App {
     toasts: egui_notify::Toasts,
     theme: uk_ui::visuals::Theme,
     dock_style: egui_dock::Style,
-    last_version: Option<String>,
+    changelog: Option<String>,
 }
 
 impl App {
@@ -255,23 +258,33 @@ impl App {
             picker_state: ui_state.picker_state,
             profiles_state: Default::default(),
             meta_input: MetaInputModal::new(send.clone()),
-            channel: (send, recv),
             displayed_mods: mods.clone(),
             mods,
             temp_settings,
-            last_version: {
+            changelog: {
                 let last_version = core
                     .settings()
                     .last_version
                     .as_ref()
                     .map(|v| v.to_string())
                     .unwrap_or_else(|| "0.0.0".into());
+                let current_version = env!("CARGO_PKG_VERSION");
                 let last_semver =
                     lenient_semver::Version::parse(&last_version).expect("Bad last version");
-                let current_semver = lenient_semver::Version::parse(env!("CARGO_PKG_VERSION"))
-                    .expect("Bad current version");
-                (last_semver < current_semver).then_some(last_version)
+                let current_semver =
+                    lenient_semver::Version::parse(current_version).expect("Bad current version");
+                if last_semver < current_semver {
+                    if last_version == "0.0.0" {
+                        Some(include_str!("../assets/intro.md").into())
+                    } else {
+                        tasks::get_changelog(current_version, send.clone());
+                        None
+                    }
+                } else {
+                    None
+                }
             },
+            channel: (send, recv),
             core,
             logs: Vector::new(),
             log: LayoutJob::default(),
@@ -324,6 +337,7 @@ impl App {
             || self.show_package_deps
             || self.opt_folders.is_some()
             || self.meta_input.is_open()
+            || self.changelog.is_some()
     }
 
     fn do_update(&self, message: Message) {
@@ -771,6 +785,15 @@ impl App {
                     self.meta_input
                         .open(path, self.core.settings().current_mode);
                 }
+                Message::SetChangelog(msg) => self.changelog = Some(msg),
+                Message::CloseChangelog => self.changelog = None,
+                Message::Toast(msg) => {
+                    self.toasts.add({
+                        let mut toast = Toast::info(msg);
+                        toast.set_duration(Some(Duration::new(2, 0)));
+                        toast
+                    });
+                }
             }
         }
     }
@@ -788,6 +811,7 @@ impl eframe::App for App {
         self.render_menu(ctx, frame);
         self.render_option_picker(ctx);
         self.render_profiles_modal(ctx);
+        self.render_changelog(ctx);
         self.meta_input.ui(ctx);
         let layer_id = LayerId::background();
         let max_rect = ctx.available_rect();
@@ -806,6 +830,8 @@ impl eframe::App for App {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        self.core.settings_mut().last_version = Some(env!("CARGO_PKG_VERSION").into());
+        self.core.settings().save().unwrap_or(());
         let ui_state = UiState {
             theme: self.theme,
             picker_state: std::mem::take(&mut self.picker_state),
