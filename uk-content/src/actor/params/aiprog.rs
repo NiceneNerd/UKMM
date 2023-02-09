@@ -5,8 +5,9 @@ use std::{
 };
 
 use anyhow::Context;
+use itertools::Itertools;
 use join_str::jstr;
-use roead::aamp::*;
+use roead::{aamp::*, h};
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
@@ -145,9 +146,9 @@ impl Mergeable for AIEntry {
                     self.children
                         .as_ref()
                         .map(|self_children| {
-                            let all_keys = diff_children
+                            let all_keys = self_children
                                 .keys()
-                                .chain(self_children.keys())
+                                .chain(diff_children.keys())
                                 .collect::<IndexSet<_>>();
                             all_keys
                                 .into_iter()
@@ -502,32 +503,53 @@ impl Writer {
         {
             *index
         } else {
+            let AIEntry { category, def, params, behaviors, children } = entry;
             let mut list = ParameterList::new();
-            list.set_object("Def", entry.def.clone().into());
-            if let Some(children) = entry.children {
-                list.set_object("ChildIdx", children.into_iter().map(|(k, entry)| {
-                    (k, Parameter::I32(self.entry_to_list(entry) as i32))
-                }).collect());
+            if let Some(n) = def.name.as_ref() {
+                roead::aamp::get_default_name_table().add_name(n.to_string())
             }
-            if let Some(behaviors) = entry.behaviors {
+            list.set_object("Def", def.clone().into());
+            if children.is_some() {
+                list.set_object("ChildIdx", Default::default());
+            }   
+            if let Some(behaviors) = behaviors {
                 list.set_object("BehaviorIdx", behaviors.into_iter().map(|(k, idx)| {
                     (k, Parameter::I32(idx as i32))
                 }).collect())
             }
-            if let Some(params) = entry.params {
+            if let Some(params) = params {
                 list.set_object("SInst", params);
             }
-            match entry.category {
+            match category {
                 Category::AI => {
                     let index = self.ais.len();
-                    self.ais.insert(format!("AI_{}", index), list);
-                    self.finished.insert(entry.def, index);
+                    let name = format!("AI_{}", index);
+                    self.ais.insert(name.clone(), list);
+                    if let Some(children) = children {
+                        let children: ParameterObject = children
+                            .into_iter()
+                            .sorted_by_cached_key(|c| {
+                                !c.1.def.name.as_ref().map(|n| n.starts_with("Demo_")).unwrap_or(false)
+                            })
+                            .map(|(k, entry)| {
+                                (k, Parameter::I32(self.entry_to_list(entry) as i32))
+                            }).collect();
+                        *self.ais.get_mut(&name).unwrap().object_mut("ChildIdx").unwrap() = children;
+                    }
+                    self.finished.insert(def, index);
                     index
                 },
                 Category::Action => {
                     let index = self.action_offset + self.actions.len();
+                    let name = format!("Action_{}", index);
                     self.actions.insert(format!("Action_{}", self.actions.len()), list);
-                    self.finished.insert(entry.def, index);
+                    if let Some(children) = children {
+                        let children: ParameterObject = children.into_iter().map(|(k, entry)| {
+                            (k, Parameter::I32(self.entry_to_list(entry) as i32))
+                        }).collect();
+                        *self.ais.get_mut(&name).unwrap().object_mut("ChildIdx").unwrap() = children;
+                    }
+                    self.finished.insert(def, index);
                     index
                 },
                 Category::Behavior => {
@@ -558,9 +580,11 @@ impl Writer {
         for root in roots.into_values() {
             self.entry_to_list(root);
         }
+        let name_table = roead::aamp::get_default_name_table();
         let demos = demos
             .into_iter()
             .map(|(k, entry)| (k, Parameter::I32(self.entry_to_list(entry) as i32)))
+            .sorted_by_cached_key(|(k, _)| name_table.get_name(k.hash(), 0, h!("DemoAIActionIdx")))
             .collect();
         let Self {
             ais,
