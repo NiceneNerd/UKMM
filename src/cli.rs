@@ -24,12 +24,15 @@ pub enum Commands {
 #[clap(author, version, about, long_about = None)]
 pub struct Cli {
     #[clap(long)]
-    pub debug:   bool,
+    pub debug:    bool,
+    #[clap(short, long)]
+    /// Run using settings in same folder as executable
+    pub portable: bool,
     #[clap(subcommand)]
-    pub command: Option<Commands>,
+    pub command:  Option<Commands>,
     /// Automatically deploy after running command (redunant with `deploy` command)
     #[clap(short, long)]
-    pub deploy:  bool,
+    pub deploy:   bool,
 }
 
 macro_rules! input {

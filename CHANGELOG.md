@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed parent folder creation for BNP SARCs
+- Fixed portable mode flag
 
 ### Changed
 
