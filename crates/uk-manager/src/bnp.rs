@@ -222,7 +222,7 @@ impl BnpConverter {
             let nested_path = parts[1];
             sarc.add_file(nested_path, compress_if(&nested.to_binary(), nested_path));
         }
-        base_path.parent().map(fs::create_dir_all)?;
+        base_path.parent().map(fs::create_dir_all).transpose()?;
         fs::write(&base_path, compress_if(&sarc.to_binary(), &base_path))?;
         Ok(())
     }
