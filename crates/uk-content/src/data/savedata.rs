@@ -1,4 +1,5 @@
 mod ui;
+use anyhow::Context;
 use join_str::jstr;
 use roead::{
     aamp::hash_name,
@@ -102,7 +103,11 @@ impl TryFrom<&Byml> for SaveData {
                 .ok_or(UKError::MissingBymlKey("bgsvdata missing flag array"))?
                 .as_array()?
                 .iter()
-                .map(Flag::try_from)
+                .map(|flag| -> Result<Flag> {
+                    Ok(flag
+                        .try_into()
+                        .with_context(|| format!("Failed to parse flag: {:?}", flag))?)
+                })
                 .collect::<Result<SortedDeleteSet<_>>>()?,
         })
     }

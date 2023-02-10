@@ -1,5 +1,7 @@
 use std::hint::unreachable_unchecked;
 
+use anyhow::Context;
+use join_str::jstr;
 use roead::{
     byml::Byml,
     sarc::{Sarc, SarcWriter},
@@ -68,15 +70,17 @@ impl TryFrom<&Byml> for GameData {
                 .as_array()?
                 .iter()
                 .map(|item| -> Result<(String, FlagData)> {
+                    let name = item
+                        .as_hash()?
+                        .get("DataName")
+                        .ok_or(UKError::MissingBymlKey(
+                            "bgdata file entry missing DataName",
+                        ))?
+                        .as_string()?;
                     Ok((
-                        item.as_hash()?
-                            .get("DataName")
-                            .ok_or(UKError::MissingBymlKey(
-                                "bgdata file entry missing DataName",
-                            ))?
-                            .as_string()?
-                            .clone(),
-                        item.try_into()?,
+                        name.clone(),
+                        item.try_into()
+                            .with_context(|| jstr!("Failed to parse flag {&name}"))?,
                     ))
                 })
                 .collect::<Result<_>>()?,
