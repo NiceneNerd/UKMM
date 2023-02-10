@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - More mod categories
 - Install multiple mods at once
 
+### Fixed
+
+- Fixed parent folder creation for BNP SARCs
+
 ### Changed
 
 - Show BNPs in file browser
