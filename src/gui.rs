@@ -209,6 +209,7 @@ struct App {
     mods: Vector<Mod>,
     displayed_mods: Vector<Mod>,
     selected: Vector<Mod>,
+    install_queue: Vector<PathBuf>,
     drag_index: Option<usize>,
     hover_index: Option<usize>,
     picker_state: FilePickerState,
@@ -304,6 +305,7 @@ impl App {
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
             dock_style: Self::style_dock(&cc.egui_ctx.style()),
+            install_queue: vector![],
         }
     }
 
@@ -571,19 +573,18 @@ impl App {
                     self.dock_style = Self::style_dock(&ctx.style());
                 }
                 Message::SelectFile => {
-                    let core = self.core.clone();
-                    self.do_task(move |_| {
-                        if let Some(path) = rfd::FileDialog::new()
+                    if let Some(mut paths) = rfd::FileDialog::new()
+                            .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
                             .add_filter("UKMM Mod (*.zip)", &["zip"])
                             .add_filter("BCML Mod (*.bnp)", &["bnp"])
                             .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
-                            .pick_file()
-                        {
-                            tasks::open_mod(&core, &path, None)
-                        } else {
-                            Ok(Message::Noop)
-                        }
-                    });
+                            .add_filter("All files (*.*)", &["*"])
+                            .pick_files() && !paths.is_empty()
+                    {
+                        let first = paths.remove(0);
+                        self.install_queue.extend(paths);
+                        self.do_task(move |core| tasks::open_mod(&core, &first, None));
+                    }
                 }
                 Message::OpenMod(path) => {
                     let core = self.core.clone();
@@ -664,6 +665,9 @@ impl App {
                     self.mods.push_back(mod_);
                     self.do_update(Message::RefreshModsDisplay);
                     self.busy = false;
+                    if let Some(path) = self.install_queue.pop_front() {
+                        self.do_task(move |core| tasks::open_mod(&core, &path, None));
+                    }
                 }
                 Message::RemoveMods(mods) => {
                     self.mods.retain(|m| !mods.contains(m));
