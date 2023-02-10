@@ -127,7 +127,7 @@ impl ParallelZipReader {
                     .borrow_zip()
                     .read(file)
                     .with_context(|| format!("Failed to lookup file {} in ZIP", &file.path))?;
-                let mut buffer = vec![0u8; file.compressed_size];
+                let mut buffer = vec![0u8; file.size];
                 reader
                     .read_exact(&mut buffer)
                     .with_context(|| format!("Failed to read file {} from ZIP", &file.path))?;

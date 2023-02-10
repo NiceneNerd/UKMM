@@ -20,7 +20,6 @@ use std::{
 
 use anyhow::{Context, Result};
 use eframe::{epaint::text::TextWrapping, IconData, NativeOptions};
-use egui_dock::{NodeIndex, Tree};
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
@@ -42,6 +41,7 @@ use uk_ui::{
         self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
         Label, LayerId, Layout, RichText, Rounding, Spinner, TextFormat, TextStyle, Ui, Vec2,
     },
+    egui_dock::{DockArea, NodeIndex, Tree},
     ext::UiExt,
     icons::{Icon, IconButtonExt},
 };
@@ -233,7 +233,7 @@ struct App {
     temp_settings: Settings,
     toasts: egui_notify::Toasts,
     theme: uk_ui::visuals::Theme,
-    dock_style: egui_dock::Style,
+    dock_style: uk_ui::egui_dock::Style,
     changelog: Option<String>,
 }
 
@@ -304,28 +304,9 @@ impl App {
             tree: Arc::new(RwLock::new(tabs::default_ui())),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
-            dock_style: Self::style_dock(&cc.egui_ctx.style()),
+            dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
             install_queue: vector![],
         }
-    }
-
-    fn style_dock(style: &egui::Style) -> egui_dock::Style {
-        egui_dock::StyleBuilder::from_egui(style)
-            .show_close_buttons(false)
-            .with_tab_rounding(Rounding {
-                ne: 2.0,
-                nw: 2.0,
-                ..Default::default()
-            })
-            .with_tab_text_color_focused(style.visuals.strong_text_color())
-            .with_tab_text_color_unfocused(style.visuals.weak_text_color())
-            .with_tab_outline_color(style.visuals.widgets.noninteractive.bg_stroke.color)
-            .with_border_width(1.0)
-            .with_border_color(style.visuals.widgets.noninteractive.bg_stroke.color)
-            .with_separator_width(1.0)
-            .with_separator_color(style.visuals.widgets.noninteractive.bg_stroke.color)
-            .with_padding(Margin::default())
-            .build()
     }
 
     #[inline(always)]
@@ -570,7 +551,7 @@ impl App {
                 Message::SetTheme(theme) => {
                     theme.set_theme(ctx);
                     self.theme = theme;
-                    self.dock_style = Self::style_dock(&ctx.style());
+                    self.dock_style = uk_ui::visuals::style_dock(&ctx.style());
                 }
                 Message::SelectFile => {
                     if let Some(mut paths) = rfd::FileDialog::new()
@@ -808,11 +789,11 @@ static LAYOUT_FIX: Once = Once::new();
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         self.handle_update(ctx);
+        self.render_menu(ctx, frame);
         self.render_error(ctx);
         self.render_confirm(ctx);
         self.render_new_profile(ctx);
         self.render_about(ctx);
-        self.render_menu(ctx, frame);
         self.render_option_picker(ctx);
         self.render_profiles_modal(ctx);
         self.render_changelog(ctx);
@@ -823,7 +804,7 @@ impl eframe::App for App {
         let id = Id::new("egui_dock::DockArea");
         let mut ui = Ui::new(ctx.clone(), layer_id, id, max_rect, clip_rect);
         ui.spacing_mut().item_spacing = [8.0, 8.0].into();
-        egui_dock::DockArea::new(self.tree.clone().write().deref_mut())
+        DockArea::new(self.tree.clone().write().deref_mut())
             .style(self.dock_style.clone())
             .show_inside(&mut ui, self);
         self.render_busy(ctx);

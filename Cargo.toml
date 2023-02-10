@@ -14,7 +14,6 @@ dircpy = "0.3.12"
 dirs2 = "3.0.1"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
 egui_commonmark = { git = "https://github.com/NiceneNerd/egui_commonmark", features = ["svg", "fetch"] }
-egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
 egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
 enum-iterator = "1.2.0"
 env_logger = "0.9.0"

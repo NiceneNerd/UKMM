@@ -2,11 +2,14 @@
 pub mod editor;
 pub mod ext;
 pub mod icons;
+mod paths;
 pub mod syntect;
 pub mod visuals;
 pub use egui;
+pub use egui_dock;
 pub use egui_extras;
 use font_loader::system_fonts::FontPropertyBuilder;
+pub use paths::PathNode;
 
 pub fn load_fonts(context: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();

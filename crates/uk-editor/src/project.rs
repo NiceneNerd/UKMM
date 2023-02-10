@@ -5,19 +5,20 @@ use fs_err as fs;
 use rayon::prelude::*;
 use uk_content::{resource::ResourceData, util::IndexMap};
 use uk_manager::{core::Manager, settings::Platform};
-use uk_mod::{pack::sanitise, unpack::ParallelZipReader, Meta};
+use uk_mod::{pack::sanitise, unpack::ParallelZipReader, Manifest, Meta};
 
 #[derive(Debug, Clone)]
 pub struct Project {
-    pub path: PathBuf,
-    pub meta: Meta,
+    pub path:     PathBuf,
+    pub meta:     Meta,
+    pub manifest: Manifest,
 }
 
 impl Project {
     pub fn new(name: &str, path: &Path, platform: Platform) -> Self {
         Project {
-            path: path.join(name),
-            meta: Meta {
+            path:     path.join(name),
+            meta:     Meta {
                 name: name.into(),
                 author: Default::default(),
                 category: Default::default(),
@@ -28,16 +29,27 @@ impl Project {
                 url: Default::default(),
                 version: "0.1.0".into(),
             },
+            manifest: Manifest::default(),
         }
     }
 
     #[allow(irrefutable_let_patterns)]
     pub fn from_mod(core: &Manager, mod_: &Path) -> Result<Self> {
         let zip = ParallelZipReader::open(mod_, false).context("Failed to open ZIP file")?;
-        let meta: Meta = serde_yaml::from_str(std::str::from_utf8(
-            &zip.get_file("meta.yml").context("Mod missing meta file")?,
-        )?)
+        let meta: Meta = serde_yaml::from_str(
+            std::str::from_utf8(&zip.get_file("meta.yml").context("Mod missing meta file")?).map(
+                |s| {
+                    dbg!(s);
+                    s
+                },
+            )?,
+        )
         .context("Failed to parse mod meta")?;
+        let manifest: Manifest = serde_yaml::from_str(std::str::from_utf8(
+            &zip.get_file("manifest.yml")
+                .context("Mod missing manifest")?,
+        )?)
+        .context("Failed to parse mod manifest")?;
         let path = core.settings().projects_dir().join(sanitise(&meta.name));
         zip.iter().par_bridge().try_for_each(|file| -> Result<()> {
             if matches!(file.file_name().unwrap_or_default().to_str().unwrap_or_default(), "meta.yml" | "manifest.yml") {
@@ -64,7 +76,11 @@ impl Project {
                 .with_context(|| format!("Failed to extract file {}", file.display()))?;
             Ok(())
         })?;
-        Ok(Self { path, meta })
+        Ok(Self {
+            path,
+            meta,
+            manifest,
+        })
     }
 }
 

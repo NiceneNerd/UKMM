@@ -27,6 +27,25 @@ pub fn error_bg(visuals: &Visuals) -> Color32 {
     color.into()
 }
 
+pub fn style_dock(style: &egui::Style) -> egui_dock::Style {
+    egui_dock::StyleBuilder::from_egui(style)
+        .show_close_buttons(false)
+        .with_tab_rounding(Rounding {
+            ne: 2.0,
+            nw: 2.0,
+            ..Default::default()
+        })
+        .with_tab_text_color_focused(style.visuals.strong_text_color())
+        .with_tab_text_color_unfocused(style.visuals.weak_text_color())
+        .with_tab_outline_color(style.visuals.widgets.noninteractive.bg_stroke.color)
+        .with_border_width(1.0)
+        .with_border_color(style.visuals.widgets.noninteractive.bg_stroke.color)
+        .with_separator_width(1.0)
+        .with_separator_color(style.visuals.widgets.noninteractive.bg_stroke.color)
+        .with_padding(Margin::default())
+        .build()
+}
+
 pub fn slate_grid(ui: &mut Ui) {
     ui.with_layer_id(LayerId::background(), |ui| {
         let cursor = ui.cursor();

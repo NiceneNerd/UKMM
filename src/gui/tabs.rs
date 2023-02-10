@@ -1,7 +1,7 @@
 use eframe::epaint::text::TextWrapping;
-use egui_dock::{NodeIndex, TabViewer, Tree};
 use uk_ui::{
     egui::{self, text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText},
+    egui_dock::{NodeIndex, TabViewer, Tree},
     visuals::Theme,
 };
 
