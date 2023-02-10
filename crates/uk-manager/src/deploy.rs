@@ -233,7 +233,7 @@ impl Manager {
             && let rules_path = config.output.join("rules.txt")
             && !rules_path.exists()
         {
-            fs::write(rules_path, include_str!("../../assets/rules.txt"))?;
+            fs::write(rules_path, include_str!("../../../assets/rules.txt"))?;
         }
         self.pending_delete.write().clear();
         self.pending_files.write().clear();

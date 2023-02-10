@@ -18,7 +18,6 @@ use mmap_rs::{Mmap, MmapOptions};
 use ouroboros::self_referencing;
 use parking_lot::RwLock;
 use path_slash::PathExt;
-use piz::CompressionMethod;
 use rayon::prelude::*;
 use roead::{sarc::SarcWriter, yaz0::compress_if};
 use serde::Serialize;

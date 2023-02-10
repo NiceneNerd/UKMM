@@ -25,8 +25,8 @@ static RESET: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" height="24" widt
 static SAVE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 0 48 48"><path d="M42 13.85V39q0 1.2-.9 2.1-.9.9-2.1.9H9q-1.2 0-2.1-.9Q6 40.2 6 39V9q0-1.2.9-2.1Q7.8 6 9 6h25.15Zm-18 21.9q2.15 0 3.675-1.525T29.2 30.55q0-2.15-1.525-3.675T24 25.35q-2.15 0-3.675 1.525T18.8 30.55q0 2.15 1.525 3.675T24 35.75ZM11.65 18.8h17.9v-7.15h-17.9Z" stroke="white" fill="white" /></svg>"#;
 static SETTINGS: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 0 48 48"><path stroke="white" fill="white" d="M11.1 37.3 4 30.2l2.1-2.1 5 4.95 8.95-8.95 2.1 2.15Zm0-16L4 14.2l2.1-2.1 5 4.95 8.95-8.95 2.1 2.15ZM26 33.5v-3h18v3Zm0-16v-3h18v3Z" /></svg>"#;
 static TUNE: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 0 48 48"><path stroke="white" fill="white" d="M21.35 42V30.75h3v4.15H42v3H24.35V42ZM6 37.9v-3h12.35v3Zm9.35-8.3v-4.1H6v-3h9.35v-4.2h3v11.3Zm6-4.1v-3H42v3Zm8.3-8.25V6h3v4.1H42v3h-9.35v4.15ZM6 13.1v-3h20.65v3Z" /></svg>"#;
-static PATREON: &str = include_str!("../../assets/patreon.svg");
-static BITCOIN: &str = include_str!("../../assets/btc.svg");
+static PATREON: &str = include_str!("../../../assets/patreon.svg");
+static BITCOIN: &str = include_str!("../../../assets/btc.svg");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Icon {

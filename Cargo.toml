@@ -38,11 +38,11 @@ serde = { version = "1.0.144", features = ["derive", "rc"] }
 serde_json = "1.0.85"
 serde_yaml = "0.9.13"
 smartstring = { version = "1.0.1", features = ["serde"] }
-uk-content = { path = "./uk-content" }
-uk-manager = { path = "./uk-manager" }
-uk-mod = { path = "./uk-mod" }
-uk-reader = { path = "./uk-reader" }
-uk-ui = { path = "./uk-ui" }
+uk-content = { path = "crates/uk-content" }
+uk-manager = { path = "crates/uk-manager" }
+uk-mod = { path = "crates/uk-mod" }
+uk-reader = { path = "crates/uk-reader" }
+uk-ui = { path = "crates/uk-ui" }
 zip = { version = "0.6.2", default-features = false, features = ["deflate"]}
 
 [target.'cfg(windows)'.dependencies]
@@ -53,12 +53,12 @@ winres = "0.1.12"
 
 [workspace]
 members = [
-    "uk-content",
-    "uk-content-derive",
-    "uk-editor",
-    "uk-manager",
-    "uk-mod",
-    "uk-reader",
-    "uk-ui",
-    "uk-ui-derive"
+    "crates/uk-content",
+    "crates/uk-content-derive",
+    "crates/uk-editor",
+    "crates/uk-manager",
+    "crates/uk-mod",
+    "crates/uk-reader",
+    "crates/uk-ui",
+    "crates/uk-ui-derive"
 ]

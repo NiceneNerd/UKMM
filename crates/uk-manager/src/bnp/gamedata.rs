@@ -1,9 +1,6 @@
 use anyhow::Result;
 use fs_err as fs;
-use roead::{
-    aamp::hash_name,
-    byml::{Byml, Hash},
-};
+use roead::byml::{Byml, Hash};
 use uk_content::{
     data::gamedata::{FlagData, GameData},
     prelude::Resource,
