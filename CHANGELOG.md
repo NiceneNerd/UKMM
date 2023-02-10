@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Show BNPs in file browser
+- Support reading UKMM ZIPs with compressed metadata
 
 ## [0.2.4] - 2023-02-09
 

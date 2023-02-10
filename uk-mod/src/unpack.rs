@@ -18,6 +18,7 @@ use mmap_rs::{Mmap, MmapOptions};
 use ouroboros::self_referencing;
 use parking_lot::RwLock;
 use path_slash::PathExt;
+use piz::CompressionMethod;
 use rayon::prelude::*;
 use roead::{sarc::SarcWriter, yaz0::compress_if};
 use serde::Serialize;
@@ -270,7 +271,7 @@ impl ModReader {
                 .borrow_files()
                 .get(Path::new("meta.yml"))
                 .context("Mod missing meta file")?;
-            size = meta.compressed_size;
+            size = meta.size;
             let mut reader = zip.borrow_zip().read(meta)?;
             read = reader.read(&mut buffer)?;
             if read != size {
@@ -283,7 +284,7 @@ impl ModReader {
                 .borrow_files()
                 .get(Path::new("manifest.yml"))
                 .context("Mod missing manifest file")?;
-            size = manifest.compressed_size;
+            size = manifest.size;
             let mut reader = zip.borrow_zip().read(manifest)?;
             read = reader.read(&mut buffer)?;
             if read != size {
@@ -297,7 +298,7 @@ impl ModReader {
                 .borrow_files()
                 .get(opt.manifest_path().as_path())
                 .context("Mod missing option manifest file")?;
-            size = opt_manifest.compressed_size;
+            size = opt_manifest.size;
             let mut reader = zip.borrow_zip().read(opt_manifest)?;
             read = reader.read(&mut buffer)?;
             if read != size {
