@@ -344,6 +344,9 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
 pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = unpack_bnp(core, path).context("Failed to unpack BNP")?;
     let tempfile = get_temp_file();
+    if tempdir.join("rules.txt").exists() {
+        anyhow::bail!("This BNP was created by BCML 2.x. Only BCML 3 BNPs are supported.");
+    }
     let meta =
         ModPacker::parse_info(tempdir.join("info.json")).context("Failed to parse BNP metadata")?;
     let new_mod = ModPacker::new(tempdir, tempfile.as_path(), Some(meta), vec![

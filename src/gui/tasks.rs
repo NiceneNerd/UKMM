@@ -70,11 +70,9 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
     log::info!("Opening mod at {}", path.display());
     if path
         .extension()
-        .unwrap_or_default()
-        .to_str()
-        .unwrap_or_default()
-        .to_lowercase()
-        == "bnp"
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_lowercase() == "bnp")
+        .unwrap_or(false)
     {
         let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKKM mod")?;
         return Ok(Message::HandleMod(Mod::from_reader(
