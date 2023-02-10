@@ -330,8 +330,13 @@ impl<'a> Parser<'a> {
                             .entry_from_list(
                                 parent.lists.0.values().nth(index).ok_or_else(|| {
                                     UKError::MissingAampKeyD(format!(
-                                        "AI program missing {}_{}",
-                                        category, index
+                                        "AI program missing {}_{} {}",
+                                        category,
+                                        index,
+                                        def.name
+                                            .as_ref()
+                                            .map(|n| jstr!("as child of {&n}"))
+                                            .unwrap_or_default()
                                     ))
                                 })?,
                                 category,
