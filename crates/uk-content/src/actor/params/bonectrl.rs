@@ -8,7 +8,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{params, plists, pobjs, DeleteSet, IndexMap, ParameterExt},
+    util::{params, plists, pobjs, DeleteSet, IndexMap},
     Result, UKError,
 };
 

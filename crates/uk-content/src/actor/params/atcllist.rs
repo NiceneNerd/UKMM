@@ -6,7 +6,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{self, DeleteMap, ParameterExt},
+    util::{self, DeleteMap},
     Result, UKError,
 };
 

@@ -1,12 +1,4 @@
-use uk_manager::settings::Platform;
-use uk_mod::{Meta, CATEGORIES};
-use uk_ui::{
-    editor::EditableValue,
-    egui::{
-        epaint::text::{LayoutJob, TextWrapping},
-        Align2, Label, Spinner, TextFormat, TextStyle, Vec2,
-    },
-};
+use uk_ui::egui::{Align2, Spinner, TextStyle, Vec2};
 
 use super::*;
 

@@ -39,7 +39,7 @@ pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
         self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
-        Label, LayerId, Layout, RichText, Rounding, Spinner, TextFormat, TextStyle, Ui, Vec2,
+        Label, LayerId, Layout, RichText, Spinner, TextFormat, TextStyle, Ui, Vec2,
     },
     egui_dock::{DockArea, NodeIndex, Tree},
     ext::UiExt,

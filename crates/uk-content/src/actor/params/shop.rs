@@ -3,12 +3,7 @@ use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
-use crate::{
-    actor::ParameterResource,
-    prelude::*,
-    util::{IndexMap, ParameterExt},
-    Result, UKError,
-};
+use crate::{actor::ParameterResource, prelude::*, util::IndexMap, Result, UKError};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize, Editable)]
 pub struct ShopItem {

@@ -7,7 +7,7 @@ mod tasks;
 use std::{path::PathBuf, sync::Arc, thread};
 
 use anyhow::{Context, Error, Result};
-use eframe::egui::{Frame, Id};
+use eframe::egui::Frame;
 use flume::{Receiver, Sender};
 use fs_err as fs;
 use parking_lot::RwLock;
@@ -179,6 +179,7 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.handle_update();
+        self.render_busy(ctx);
         egui::TopBottomPanel::top("menu")
             .exact_height(ctx.style().spacing.interact_size.y)
             .show(ctx, |ui| {

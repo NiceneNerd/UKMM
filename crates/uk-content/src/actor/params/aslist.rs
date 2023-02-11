@@ -4,12 +4,7 @@ use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
 use uk_ui_derive::Editable;
 
-use crate::{
-    actor::ParameterResource,
-    prelude::*,
-    util::{DeleteMap, ParameterExt},
-    Result, UKError,
-};
+use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable, ParamData)]
 pub struct AddRes {

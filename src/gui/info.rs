@@ -1,19 +1,18 @@
 use std::{
     hash::{Hash, Hasher},
     io::{BufReader, Read},
-    path::PathBuf,
     sync::Arc,
 };
 
 use anyhow::Result;
-use eframe::epaint::text::TextWrapping;
+
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use rustc_hash::{FxHashMap, FxHasher};
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
 use uk_ui::{
-    egui::{self, text::LayoutJob, Align, FontId, Label, Layout, RichText, Sense, TextFormat, Ui},
+    egui::{self, Align, Label, Layout, RichText, Ui},
     egui_extras::RetainedImage,
     icons::IconButtonExt,
     PathNode,

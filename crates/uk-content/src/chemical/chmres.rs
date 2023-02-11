@@ -5,7 +5,7 @@ use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
-    util::{DeleteMap, ParameterExt},
+    util::DeleteMap,
     Result, UKError,
 };
 

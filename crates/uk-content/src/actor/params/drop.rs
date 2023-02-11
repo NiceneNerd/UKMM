@@ -6,7 +6,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util::{IndexMap, ParameterExt},
+    util::IndexMap,
     Result, UKError,
 };
 

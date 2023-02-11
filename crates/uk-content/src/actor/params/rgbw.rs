@@ -9,7 +9,7 @@ use uk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{params, plists, pobjs, DeleteMap, IndexMap, ParameterExt},
+    util::{params, plists, pobjs, DeleteMap, IndexMap},
     Result, UKError,
 };
 
