@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use dashmap::DashMap;
 use fs_err as fs;
 use join_str::jstr;
 use parking_lot::RwLock;
@@ -20,7 +21,7 @@ use uk_mod::{
 use crate::{
     mods,
     settings::{DeployMethod, Platform, Settings},
-    util::{self, HashMap},
+    util,
 };
 
 #[inline(always)]
@@ -305,7 +306,7 @@ impl Manager {
         &self,
         merged: &Path,
         platform: Platform,
-        updates: HashMap<String, Option<u32>>,
+        updates: DashMap<String, Option<u32>>,
     ) -> Result<()> {
         static RSTB_PATH: &str = "System/Resource/ResourceSizeTable.product.srsizetable";
         log::debug!("RSTB updates:\n{:#?}", &updates);

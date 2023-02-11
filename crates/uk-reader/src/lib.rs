@@ -10,9 +10,9 @@ use std::{
 };
 
 use anyhow::Context;
+use dashmap::DashMap;
 use join_str::jstr;
 use moka::sync::Cache;
-use parking_lot::RwLock;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
@@ -91,7 +91,7 @@ pub struct ResourceReader {
     #[serde(skip, default = "construct_sarc_cache")]
     sarc_cache: SarcCache,
     #[serde(skip)]
-    nest_map: Arc<RwLock<HashMap<String, Arc<str>>>>,
+    nest_map: Arc<DashMap<String, Arc<str>>>,
 }
 
 impl PartialEq for ResourceReader {
@@ -294,16 +294,18 @@ impl ResourceReader {
                     if self.source.typetag_name() == "Unpacked" {
                         let stock: HashMap<String, Arc<str>> =
                             serde_json::from_str(NEST_MAP).unwrap();
-                        self.nest_map.write().extend(stock)
+                        for (k, v) in stock {
+                            self.nest_map.insert(k, v);
+                        }
                     }
                 });
-                let nest_path = self.nest_map.read().get(&canon).cloned();
+                let nest_path = self.nest_map.get(&canon);
                 log::trace!("{canon} has parent? {}", nest_path.is_some());
                 match nest_path {
                     Some(parent) => {
-                        log::trace!("Full path found at {parent}");
+                        log::trace!("Full path found at {}", parent.as_ref());
                         Ok(self.get_from_sarc(&canon, &parent).with_context(|| {
-                            log::warn!("Failed to get {canon} from {parent}");
+                            log::warn!("Failed to get {canon} from {}", parent.as_ref());
                             ROMError::FileNotFound(
                                 path.as_ref().to_string_lossy().into(),
                                 self.source.host_path().to_path_buf(),
@@ -336,8 +338,8 @@ impl ResourceReader {
                 }
                 self.cache.insert(canon.clone(), Arc::new(resource));
             }
-            // if !self.nest_map.read().contains_key(&canon) {
-            //     self.nest_map.write().insert(canon, sarc_path.into());
+            // if !self.nest_map.contains_key(&canon) {
+            //     self.nest_map.insert(canon, sarc_path.into());
             // }
         }
         Ok(())

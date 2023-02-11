@@ -4,15 +4,15 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use dashmap::DashSet;
 use fs_err as fs;
-use parking_lot::Mutex;
 use rayon::prelude::*;
 use roead::{
     aamp::{ParameterIO, ParameterList, ParameterListing},
     sarc::{File, Sarc, SarcWriter},
     yaz0::compress_if,
 };
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashMap;
 use uk_mod::pack::ModPacker;
 use uk_reader::ResourceReader;
 
@@ -102,7 +102,7 @@ struct BnpConverter {
     path: PathBuf,
     content: &'static str,
     aoc: &'static str,
-    packs: Arc<Mutex<FxHashSet<PathBuf>>>,
+    packs: Arc<DashSet<PathBuf>>,
 }
 
 impl BnpConverter {
@@ -158,7 +158,7 @@ impl BnpConverter {
             fs::write(dest_path, &base_sarc)?;
             Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc)?))
         } else {
-            self.packs.lock().remove(dest_path);
+            self.packs.remove(dest_path);
             let stripped = Sarc::new(fs::read(dest_path)?)?;
             let mut sarc = SarcWriter::from_sarc(&stripped);
             if let Ok(base_sarc) =
@@ -234,10 +234,12 @@ impl BnpConverter {
                 &fs::read_to_string(packs_path).context("Failed to read packs.json")?,
             )
             .context("Failed to parse packs.json")?;
-            self.packs.lock().extend(
-                log.into_values()
-                    .map(|p| self.path.join(p.replace('\\', "/"))),
-            );
+            for pack in log
+                .into_values()
+                .map(|p| self.path.join(p.replace('\\', "/")))
+            {
+                self.packs.insert(pack);
+            }
         };
 
         self.handle_actorinfo()
@@ -269,8 +271,8 @@ impl BnpConverter {
             .context("Failed to process status effect log")?;
         self.handle_texts().context("Failed to process texts log")?;
 
-        let packs = self.packs.lock().clone();
-        self.packs.lock().clear();
+        let packs = DashSet::clone(&self.packs);
+        self.packs.clear();
 
         packs.into_par_iter().try_for_each(|file| -> Result<()> {
             let mut sarc = self.open_or_create_sarc(

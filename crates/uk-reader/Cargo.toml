@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.58"
-# cntx = { path = "../../cntx" } #git = "https://github.com/XorTroll/cntx" }
 common-path = "1.0.0"
+dashmap = { version = "5.4.0", features = ["serde"] }
 fs-err = "2.7.0"
 join_str = "0.1.0"
 log = "0.4.17"

@@ -11,12 +11,12 @@ use std::{
 
 use anyhow::{Context, Result};
 use botw_utils::hashes::StockHashTable;
+use dashmap::DashMap;
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
 use mmap_rs::{Mmap, MmapOptions};
 use ouroboros::self_referencing;
-use parking_lot::RwLock;
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{sarc::SarcWriter, yaz0::compress_if};
@@ -378,7 +378,7 @@ pub struct ModUnpacker {
     manifest: Option<Manifest>,
     mods:     Vec<ModReader>,
     endian:   Endian,
-    rstb:     RwLock<HashMap<String, Option<u32>>>,
+    rstb:     DashMap<String, Option<u32>>,
     hashes:   StockHashTable,
     out_dir:  PathBuf,
 }
@@ -395,7 +395,7 @@ impl ModUnpacker {
             manifest: None,
             mods,
             endian,
-            rstb: RwLock::new(HashMap::default()),
+            rstb: DashMap::new(),
             hashes: StockHashTable::new(&match endian {
                 Endian::Little => botw_utils::hashes::Platform::Switch,
                 Endian::Big => botw_utils::hashes::Platform::WiiU,
@@ -409,7 +409,7 @@ impl ModUnpacker {
         self
     }
 
-    pub fn unpack(self) -> Result<HashMap<String, Option<u32>>> {
+    pub fn unpack(self) -> Result<DashMap<String, Option<u32>>> {
         if !self.out_dir.exists() {
             fs::create_dir_all(&self.out_dir)?;
         }
@@ -450,7 +450,7 @@ impl ModUnpacker {
             s2.join().expect("Failed to join thread")?;
             Ok(())
         })?;
-        Ok(self.rstb.into_inner())
+        Ok(self.rstb)
     }
 
     #[allow(irrefutable_let_patterns)]
@@ -591,7 +591,7 @@ impl ModUnpacker {
             }
         };
         if let Some(val) = rstb_val {
-            self.rstb.write().insert(canon, val);
+            self.rstb.insert(canon, val);
         }
         Ok(data)
     }

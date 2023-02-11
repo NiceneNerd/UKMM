@@ -1083,6 +1083,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "5.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "907076dfda823b0b36d2a1bb5f90c96660a5bbcd7729e10727f07858f22c4edc"
+dependencies = [
+ "cfg-if 1.0.0",
+ "hashbrown",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core",
+ "rayon",
+ "serde",
+]
+
+[[package]]
 name = "data-url"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4784,6 +4799,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "base64 0.13.1",
+ "dashmap",
  "dircpy",
  "dirs2",
  "enum-iterator",
@@ -4821,6 +4837,7 @@ dependencies = [
  "anyhow",
  "botw-utils",
  "configparser",
+ "dashmap",
  "enum_dispatch",
  "env_logger 0.10.0",
  "fs-err",
@@ -4857,6 +4874,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "common-path",
+ "dashmap",
  "fs-err",
  "join_str",
  "log",
