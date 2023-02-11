@@ -7,7 +7,7 @@ use super::BnpConverter;
 
 impl BnpConverter {
     pub fn handle_savedata(&self) -> Result<()> {
-        let save_path = self.path.join("logs/savedata.yml");
+        let save_path = self.current_root.join("logs/savedata.yml");
         if save_path.exists() {
             log::debug!("Processing savedata log");
             let mut diff = Byml::from_text(fs::read_to_string(save_path)?)?.into_hash()?;

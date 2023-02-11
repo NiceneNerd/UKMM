@@ -10,7 +10,7 @@ use super::BnpConverter;
 
 impl BnpConverter {
     pub fn handle_actorinfo(&self) -> Result<()> {
-        let path = self.path.join("logs/actorinfo.yml");
+        let path = self.current_root.join("logs/actorinfo.yml");
         if path.exists() {
             log::debug!("Processing actor info log");
             let diff =
@@ -27,9 +27,9 @@ impl BnpConverter {
                     .map(ActorInfo)?;
             let actorinfo = self.dump.get_data("Actor/ActorInfo.product.sbyml")?;
             if let Some(MergeableResource::ActorInfo(info)) = actorinfo.as_mergeable() {
-                fs::create_dir_all(self.path.join(self.content).join("Actor"))?;
+                fs::create_dir_all(self.current_root.join(self.content).join("Actor"))?;
                 fs::write(
-                    self.path
+                    self.current_root
                         .join(self.content)
                         .join("Actor/ActorInfo.product.sbyml"),
                     compress(info.merge(&diff).into_binary(self.platform.into())),

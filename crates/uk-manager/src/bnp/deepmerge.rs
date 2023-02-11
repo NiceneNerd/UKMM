@@ -42,14 +42,14 @@ fn handle_diff_entry(
 impl BnpConverter {
     #[allow(irrefutable_let_patterns)]
     pub fn handle_deepmerge(&self) -> Result<()> {
-        let deepmerge_path = self.path.join("logs/deepmerge.aamp");
+        let deepmerge_path = self.current_root.join("logs/deepmerge.aamp");
         if deepmerge_path.exists() {
             log::debug!("Processing deepmerge log");
             let pio = ParameterIO::from_binary(fs::read(deepmerge_path)?)?;
             let diff = parse_aamp_diff("FileTable", &pio)?;
             diff.into_par_iter()
                 .try_for_each(|(root, contents)| -> Result<()> {
-                    let base_path = self.path.join(&root);
+                    let base_path = self.current_root.join(&root);
                     base_path.parent().iter().try_for_each(fs::create_dir_all)?;
                     match contents {
                         AampDiffEntry::Sarc(map) => {

@@ -12,7 +12,7 @@ type TextsLog = FxHashMap<Language, FxHashMap<String, FxHashMap<String, Entry>>>
 
 impl BnpConverter {
     pub fn handle_texts(&self) -> Result<()> {
-        let texts_path = self.path.join("logs/texts.json");
+        let texts_path = self.current_root.join("logs/texts.json");
         if texts_path.exists() {
             log::debug!("Processing texts log");
             let mut diff: TextsLog = serde_json::from_str(&fs::read_to_string(texts_path)?)?;
@@ -52,7 +52,7 @@ impl BnpConverter {
                         .extend(diff.into_iter().map(|(k, v)| (k.into(), v)));
                 }
                 let out = self
-                    .path
+                    .current_root
                     .join(self.content)
                     .join(format!("Pack/Bootup_{}.pack", self.game_lang));
                 out.parent().iter().try_for_each(fs::create_dir_all)?;

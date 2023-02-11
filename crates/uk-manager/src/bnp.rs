@@ -6,13 +6,15 @@ use std::{
 use anyhow::{Context, Result};
 use dashmap::DashSet;
 use fs_err as fs;
+use parking_lot::RwLock;
 use rayon::prelude::*;
 use roead::{
     aamp::{ParameterIO, ParameterList, ParameterListing},
     sarc::{File, Sarc, SarcWriter},
-    yaz0::compress_if,
+    yaz0::{compress_if, decompress_if},
 };
 use rustc_hash::FxHashMap;
+use uk_content::util::HashSet;
 use uk_mod::pack::ModPacker;
 use uk_reader::ResourceReader;
 
@@ -100,9 +102,11 @@ struct BnpConverter {
     game_lang: Language,
     platform: Platform,
     path: PathBuf,
+    current_root: PathBuf,
     content: &'static str,
     aoc: &'static str,
     packs: Arc<DashSet<PathBuf>>,
+    parent_packs: RwLock<HashSet<PathBuf>>,
 }
 
 impl BnpConverter {
@@ -152,6 +156,37 @@ impl BnpConverter {
                     .unwrap_or(false)
         }
 
+        fn inflate_sarc(writer: &mut SarcWriter, stripped: &Sarc, base: Sarc) {
+            writer.files.extend(base.files().filter_map(|file| {
+                file.name().and_then(|name| {
+                    match (stripped.get(name), is_stripped_sarc(&file)) {
+                        // If it's not in the stripped SARC, add it from the base game
+                        (None, _) => Some((name.into(), file.data.to_vec())),
+                        // If it is in the stripped SARC, but it's not a nested SARC, skip it
+                        (Some(_), false) => None,
+                        // If it is in the stripped SARC, and it's a nested SARC, fill it up
+                        (Some(stripped_file), true) => {
+                            let stripped_nested = Sarc::new(stripped_file.data).ok()?;
+                            let base_nested = Sarc::new(file.data).ok()?;
+                            let mut nested_merged = SarcWriter::from_sarc(&base_nested);
+                            if name.ends_with("arc") {
+                                nested_merged.set_legacy_mode(true);
+                            }
+                            nested_merged
+                                .files
+                                .extend(stripped_nested.files().filter_map(|file| {
+                                    file.name().map(|name| (name.into(), file.data.to_vec()))
+                                }));
+                            Some((
+                                name.into(),
+                                compress_if(&nested_merged.to_binary(), name).to_vec(),
+                            ))
+                        }
+                    }
+                })
+            }))
+        }
+
         let base_sarc = self.dump.get_bytes_uncached(root_path);
         if !dest_path.exists() {
             let base_sarc = base_sarc?;
@@ -161,37 +196,19 @@ impl BnpConverter {
             self.packs.remove(dest_path);
             let stripped = Sarc::new(fs::read(dest_path)?)?;
             let mut sarc = SarcWriter::from_sarc(&stripped);
+            let parent_packs = self.parent_packs.read();
+            if let Some(parent_sarc) = parent_packs
+                .get(&self.path.join(self.content).join(root_path))
+                .or_else(|| parent_packs.get(&self.path.join(self.aoc).join(root_path)))
+                .and_then(|path| fs::read(path).ok())
+                .and_then(|bytes| Sarc::new(decompress_if(&bytes).to_vec()).ok())
+            {
+                inflate_sarc(&mut sarc, &stripped, parent_sarc);
+            }
             if let Ok(base_sarc) =
                 base_sarc.and_then(|data| Ok(Sarc::new(data).map_err(anyhow::Error::from)?))
             {
-                sarc.files.extend(base_sarc.files().filter_map(|file| {
-                    file.name().and_then(|name| {
-                        match (stripped.get(name), is_stripped_sarc(&file)) {
-                            // If it's not in the stripped SARC, add it from the base game
-                            (None, _) => Some((name.into(), file.data.to_vec())),
-                            // If it is in the stripped SARC, but it's not a nested SARC, skip it
-                            (Some(_), false) => None,
-                            // If it is in the stripped SARC, and it's a nested SARC, fill it up
-                            (Some(stripped_file), true) => {
-                                let stripped_nested = Sarc::new(stripped_file.data).ok()?;
-                                let base_nested = Sarc::new(file.data).ok()?;
-                                let mut nested_merged = SarcWriter::from_sarc(&base_nested);
-                                if name.ends_with("arc") {
-                                    nested_merged.set_legacy_mode(true);
-                                }
-                                nested_merged
-                                    .files
-                                    .extend(stripped_nested.files().filter_map(|file| {
-                                        file.name().map(|name| (name.into(), file.data.to_vec()))
-                                    }));
-                                Some((
-                                    name.into(),
-                                    compress_if(&nested_merged.to_binary(), name).to_vec(),
-                                ))
-                            }
-                        }
-                    })
-                }))
+                inflate_sarc(&mut sarc, &stripped, base_sarc);
             }
             Ok(sarc)
         }
@@ -203,7 +220,7 @@ impl BnpConverter {
             anyhow::bail!("Bad nested path: {}", nest_path);
         }
         let base_path = self
-            .path
+            .current_root
             .join(if dlc { self.aoc } else { self.content })
             .join(parts[0]);
         let mut sarc = self.open_or_create_sarc(&base_path, parts[0])?;
@@ -228,19 +245,30 @@ impl BnpConverter {
     }
 
     fn convert_root(&self) -> Result<()> {
-        let packs_path = self.path.join("logs/packs.json");
+        let packs_path = self.current_root.join("logs/packs.json");
         if packs_path.exists() {
+            let is_root = self
+                .current_root
+                .parent()
+                .and_then(|p| p.file_stem())
+                .and_then(|n| n.to_str())
+                .map(|n| n != "options")
+                .unwrap_or(false);
             let log: FxHashMap<String, String> = serde_json::from_str(
                 &fs::read_to_string(packs_path).context("Failed to read packs.json")?,
             )
             .context("Failed to parse packs.json")?;
             for pack in log
                 .into_values()
-                .map(|p| self.path.join(p.replace('\\', "/")))
+                .map(|p| self.current_root.join(p.replace('\\', "/")))
             {
+                if is_root {
+                    self.parent_packs.write().insert(pack.clone());
+                }
                 self.packs.insert(pack);
             }
         };
+        dbg!(self.parent_packs.read());
 
         self.handle_actorinfo()
             .context("Failed to process actor info log")?;
@@ -278,7 +306,7 @@ impl BnpConverter {
             let mut sarc = self.open_or_create_sarc(
                 &file,
                 self.trim_prefixes(
-                    file.strip_prefix(&self.path)
+                    file.strip_prefix(&self.current_root)
                         .expect("Impossible")
                         .to_str()
                         .unwrap_or_default(),
@@ -293,7 +321,7 @@ impl BnpConverter {
     }
 
     fn convert(mut self) -> Result<PathBuf> {
-        let root = self.path.clone();
+        let root = self.current_root.clone();
         self.convert_root()?;
 
         let opt_dir = root.join("options");
@@ -311,7 +339,7 @@ impl BnpConverter {
                         .and_then(|n| n.to_str())
                         .unwrap_or_default()
                 );
-                self.path = option;
+                self.current_root = option;
                 self.convert_root()?;
             }
         }
@@ -336,6 +364,8 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
         content,
         aoc,
         packs: Default::default(),
+        parent_packs: Default::default(),
+        current_root: tempdir.clone(),
         path: tempdir.clone(),
     };
     let path = converter.convert()?;
@@ -345,7 +375,7 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
 
 pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = unpack_bnp(core, path).context("Failed to unpack BNP")?;
-    let tempfile = get_temp_file();
+    let tempfile = std::env::temp_dir();
     if tempdir.join("rules.txt").exists() {
         anyhow::bail!("This BNP was created by BCML 2.x. Only BCML 3 BNPs are supported.");
     }

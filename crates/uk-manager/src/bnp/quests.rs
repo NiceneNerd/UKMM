@@ -8,7 +8,7 @@ use super::BnpConverter;
 
 impl BnpConverter {
     pub fn handle_quests(&self) -> Result<()> {
-        let quests_path = self.path.join("logs/quests.yml");
+        let quests_path = self.current_root.join("logs/quests.yml");
         if quests_path.exists() {
             log::debug!("Processing quests log");
             let mut diff = Byml::from_text(fs::read_to_string(quests_path)?)?.into_hash()?;

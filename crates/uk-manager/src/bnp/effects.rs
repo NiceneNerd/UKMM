@@ -6,7 +6,7 @@ use super::BnpConverter;
 
 impl BnpConverter {
     pub fn handle_effects(&self) -> Result<()> {
-        let effects_path = self.path.join("logs/effects.yml");
+        let effects_path = self.current_root.join("logs/effects.yml");
         if effects_path.exists() {
             log::debug!("Processing status effect log");
             let mut base = Byml::from_binary(

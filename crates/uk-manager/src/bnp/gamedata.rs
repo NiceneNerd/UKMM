@@ -11,7 +11,7 @@ use super::BnpConverter;
 
 impl BnpConverter {
     pub fn handle_gamedata(&self) -> Result<()> {
-        let gamedata_path = self.path.join("logs/gamedata.yml");
+        let gamedata_path = self.current_root.join("logs/gamedata.yml");
         if gamedata_path.exists() {
             log::debug!("Processing gamedata log");
             let diff = Byml::from_text(fs::read_to_string(gamedata_path)?)?.into_hash()?;

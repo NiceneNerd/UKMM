@@ -142,14 +142,14 @@ fn handle_diff_entry(
 
 impl BnpConverter {
     pub fn handle_shops(&self) -> Result<()> {
-        let shops_path = self.path.join("logs/shop.aamp");
+        let shops_path = self.current_root.join("logs/shop.aamp");
         if shops_path.exists() {
             log::debug!("Processing shops log");
             let pio = ParameterIO::from_binary(fs::read(shops_path)?)?;
             let diff = parse_aamp_diff("Filenames", &pio)?;
             diff.into_par_iter()
                 .try_for_each(|(root, contents)| -> Result<()> {
-                    let base_path = self.path.join(&root);
+                    let base_path = self.current_root.join(&root);
                     base_path.parent().iter().try_for_each(fs::create_dir_all)?;
                     match contents {
                         AampDiffEntry::Sarc(map) => {

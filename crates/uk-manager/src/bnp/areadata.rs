@@ -10,7 +10,7 @@ use super::BnpConverter;
 
 impl BnpConverter {
     pub fn handle_areadata(&self) -> Result<()> {
-        let path = self.path.join("logs/areadata.yml");
+        let path = self.current_root.join("logs/areadata.yml");
         if path.exists() {
             log::debug!("Processing areadata log");
             let diff =

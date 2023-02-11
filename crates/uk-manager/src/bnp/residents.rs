@@ -9,7 +9,7 @@ use super::BnpConverter;
 
 impl BnpConverter {
     pub fn handle_residents(&self) -> Result<()> {
-        let residents_path = self.path.join("logs/residents.yml");
+        let residents_path = self.current_root.join("logs/residents.yml");
         if residents_path.exists() {
             log::debug!("Processing resident actors log");
             let diff = Byml::from_text(fs::read_to_string(residents_path)?)?.into_hash()?;

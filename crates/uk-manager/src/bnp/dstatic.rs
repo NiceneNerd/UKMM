@@ -12,7 +12,7 @@ use super::BnpConverter;
 
 impl BnpConverter {
     pub fn handle_dungeon_static(&self) -> Result<()> {
-        let dstatic_path = self.path.join("logs/dstatic.yml");
+        let dstatic_path = self.current_root.join("logs/dstatic.yml");
         if dstatic_path.exists() {
             log::debug!("Processing dungeon static log");
             let dstatic_diff = Byml::from_text(fs::read_to_string(&dstatic_path)?)?;
@@ -50,7 +50,10 @@ impl BnpConverter {
             let dstatic = bhash!(
                 "StartPos" => dstatic.into_values().collect()
             );
-            let dest_path = self.path.join(self.aoc).join("Map/CDungeon/Static.smubin");
+            let dest_path = self
+                .current_root
+                .join(self.aoc)
+                .join("Map/CDungeon/Static.smubin");
             dest_path.parent().iter().try_for_each(fs::create_dir_all)?;
             fs::write(dest_path, compress(dstatic.to_binary(self.platform.into())))?;
         }

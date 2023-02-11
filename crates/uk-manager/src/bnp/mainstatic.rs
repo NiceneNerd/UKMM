@@ -50,7 +50,7 @@ fn get_id(item: &Hash) -> Result<String> {
 
 impl BnpConverter {
     pub fn handle_mainfield_static(&self) -> Result<()> {
-        let mstatic_path = self.path.join("logs/mainstatic.yml");
+        let mstatic_path = self.current_root.join("logs/mainstatic.yml");
         if mstatic_path.exists() {
             log::debug!("Processing mainfield static log");
             let diff: FxHashMap<String, Hash> = Byml::from_text(fs::read_to_string(mstatic_path)?)?
@@ -84,7 +84,10 @@ impl BnpConverter {
                 .into_iter()
                 .map(|(cat, entries)| (cat, entries.into_values().collect()))
                 .collect();
-            let dest_path = self.path.join(self.aoc).join("Map/MainField/Static.smubin");
+            let dest_path = self
+                .current_root
+                .join(self.aoc)
+                .join("Map/MainField/Static.smubin");
             dest_path.parent().iter().try_for_each(fs::create_dir_all)?;
             fs::write(dest_path, compress(output.to_binary(self.platform.into())))?;
         }

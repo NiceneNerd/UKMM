@@ -75,7 +75,7 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
 
 impl BnpConverter {
     pub fn handle_maps(&self) -> Result<()> {
-        let maps_path = self.path.join("logs/map.yml");
+        let maps_path = self.current_root.join("logs/map.yml");
         if maps_path.exists() {
             log::debug!("Processing maps log");
             let diff = Byml::from_text(fs::read_to_string(maps_path)?)?.into_hash()?;
@@ -112,12 +112,15 @@ impl BnpConverter {
                 .collect::<BTreeMap<String, Vec<u8>>>()
                 .into_par_iter()
                 .try_for_each(|(path, data)| -> Result<()> {
-                    let dest_path = self.path.join(self.aoc).join(path.as_str());
+                    let dest_path = self.current_root.join(self.aoc).join(path.as_str());
                     dest_path.parent().iter().try_for_each(fs::create_dir_all)?;
                     fs::write(dest_path, data)?;
                     Ok(())
                 })?;
-            let dest_path = self.path.join(self.aoc).join("Pack/AocMainField.pack");
+            let dest_path = self
+                .current_root
+                .join(self.aoc)
+                .join("Pack/AocMainField.pack");
             dest_path.parent().iter().try_for_each(fs::create_dir_all)?;
             fs::write(dest_path, merged_pack.to_binary())?;
         }
