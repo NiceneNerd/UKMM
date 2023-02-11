@@ -30,20 +30,20 @@ impl App {
                                 }
                                 match group {
                                     uk_mod::OptionGroup::Exclusive(group) => {
+                                        if !group.required
+                                            && ui
+                                                .radio(
+                                                    !group.options.iter().any(|opt| {
+                                                        mod_.enabled_options.contains(opt)
+                                                    }),
+                                                    "None",
+                                                )
+                                                .clicked()
+                                        {
+                                            mod_.enabled_options
+                                                .retain(|opt| !group.options.contains(opt));
+                                        }
                                         group.options.iter().for_each(|opt| {
-                                            if !group.required
-                                                && ui
-                                                    .radio(
-                                                        !group.options.iter().any(|opt| {
-                                                            mod_.enabled_options.contains(opt)
-                                                        }),
-                                                        "None",
-                                                    )
-                                                    .clicked()
-                                            {
-                                                mod_.enabled_options
-                                                    .retain(|opt| !group.options.contains(opt));
-                                            }
                                             if ui
                                                 .radio(
                                                     mod_.enabled_options.contains(opt),

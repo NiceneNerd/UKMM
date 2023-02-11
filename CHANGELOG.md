@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed portable mode flag
 - Statically link OpenSSL for Steam Deck support
 - Fixed SARC inflation for BNP options
+- Fixed repeated None radio for mod options
 
 ### Changed
 

@@ -20,7 +20,7 @@ use uk_reader::ResourceReader;
 
 use crate::{
     settings::{Language, Platform},
-    util::{extract_7z, get_temp_file},
+    util::extract_7z,
 };
 mod actorinfo;
 mod areadata;
@@ -268,7 +268,6 @@ impl BnpConverter {
                 self.packs.insert(pack);
             }
         };
-        dbg!(self.parent_packs.read());
 
         self.handle_actorinfo()
             .context("Failed to process actor info log")?;
