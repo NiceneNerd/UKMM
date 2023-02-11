@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed parent folder creation for BNP SARCs
 - Fixed portable mode flag
+- Statically link OpenSSL for Steam Deck support
 
 ### Changed
 
