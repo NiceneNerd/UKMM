@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added GitHub workflow for potential Steam Deck support
+
+### Changed
+
+- Improve editor UI file tree
+
+### Fixed
+
+- Fix for AS nodes with all-identical children
+- Fixed edit UI for `ElementParams`
+
 ## [0.2.5] - 2023-02-11
 
 ### Added

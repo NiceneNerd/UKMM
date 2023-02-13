@@ -197,17 +197,29 @@ impl From<AS> for ParameterIO {
                     list.set_list("Extend", extend);
                 }
                 if let Some(children) = children {
+                    let first = children.values().next();
+                    let all_same =
+                        children.len() > 1 && children.values().all(|v| Some(v) == first);
+                    let last_idx = children.len() - 1;
                     for child in children.values() {
                         add_element(child.clone(), done);
                     }
                     list.object_mut("Children").unwrap().extend(
-                        children
-                            .values()
-                            .named_enumerate("Child")
-                            .map(|(name, child)| {
+                        children.values().named_enumerate("Child").enumerate().map(
+                            |(i, (name, child))| {
                                 let index = done.iter().position(|(el, _)| el == child).unwrap();
-                                (name.into(), Parameter::I32(index as i32))
-                            }),
+                                (
+                                    name.into(),
+                                    if all_same && i == last_idx {
+                                        let clone_index = done.len();
+                                        done.push(done[index].clone());
+                                        Parameter::I32(clone_index as i32)
+                                    } else {
+                                        Parameter::I32(index as i32)
+                                    },
+                                )
+                            },
+                        ),
                     );
                 }
                 done[index].1 = list;
