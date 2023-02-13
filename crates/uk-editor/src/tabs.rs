@@ -1,12 +1,13 @@
 use std::{
-    collections::hash_map::DefaultHasher,
+    collections::{hash_map::DefaultHasher, BTreeSet},
     hash::{Hash, Hasher},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
-use uk_content::util::HashMap;
+use path_slash::PathBufExt;
+use uk_content::util::{HashMap, HashSet};
 use uk_mod::Manifest;
 use uk_ui::{
     editor::EditableValue,
@@ -46,7 +47,7 @@ impl TabViewer for super::App {
         match tab {
             Tabs::Files => {
                 if let Some(project) = self.project.as_ref() {
-                    self.render_manifest(&project.manifest, ui);
+                    self.render_file_tree(&project.files, ui);
                 }
             }
             Tabs::Editor => {
@@ -61,50 +62,35 @@ impl TabViewer for super::App {
 }
 
 impl super::App {
-    pub fn render_manifest(&self, manifest: &Manifest, ui: &mut Ui) {
+    pub fn render_file_tree(&self, files: &BTreeSet<PathBuf>, ui: &mut Ui) {
         ui.scope(|ui| {
             static ROOTS: Lazy<RwLock<HashMap<u64, PathNode>>> =
                 Lazy::new(|| RwLock::new(HashMap::default()));
             ui.style_mut().override_text_style = Some(egui::TextStyle::Body);
             ui.spacing_mut().item_spacing.y = 4.;
-            if !manifest.content_files.is_empty() {
+            if !files.is_empty() {
                 let mut hasher = DefaultHasher::default();
-                manifest.content_files.hash(&mut hasher);
+                for file in files {
+                    file.hash(&mut hasher);
+                }
                 let mut roots = ROOTS.write();
-                let content_root = roots.entry(hasher.finish()).or_insert_with(|| {
-                    let mut root = PathNode::dir("Base Files");
-                    manifest.content_files.iter().for_each(|file| {
-                        root.build_tree(&file.split('/').map(|s| s.to_owned()).collect(), 0);
+                let root = roots.entry(hasher.finish()).or_insert_with(|| {
+                    let mut root = PathNode::dir("Mod Root");
+                    files.iter().for_each(|file| {
+                        root.build_tree(
+                            &file
+                                .to_slash_lossy()
+                                .split('/')
+                                .map(|s| s.to_owned())
+                                .collect(),
+                            0,
+                        );
                     });
                     root
                 });
-                content_root.render_dir_selectable(
-                    ui,
-                    self.opened.last().map(|o| o.0.as_path()),
-                    |path| {
-                        self.do_update(Message::OpenResource(path));
-                    },
-                );
-            }
-            if !manifest.aoc_files.is_empty() {
-                static PREFIX: &str = "Aoc/0010";
-                let mut hasher = DefaultHasher::default();
-                manifest.aoc_files.hash(&mut hasher);
-                let mut roots = ROOTS.write();
-                let aoc_root = roots.entry(hasher.finish()).or_insert_with(|| {
-                    let mut root = PathNode::dir("DLC Files");
-                    manifest.aoc_files.iter().for_each(|file| {
-                        root.build_tree(&file.split('/').map(|s| s.to_owned()).collect(), 0);
-                    });
-                    root
+                root.render_dir_selectable(ui, self.opened.last().map(|o| o.0.as_path()), |path| {
+                    self.do_update(Message::OpenResource(path));
                 });
-                aoc_root.render_dir_selectable(
-                    ui,
-                    self.opened.last().map(|o| o.0.as_path()),
-                    |path| {
-                        self.do_update(Message::OpenResource(Path::new(PREFIX).join(path)));
-                    },
-                );
             }
         });
     }

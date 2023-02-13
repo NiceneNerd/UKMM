@@ -157,6 +157,7 @@ impl App {
                 }
                 Message::OpenProject(project) => {
                     self.project = Some(project);
+                    self.busy = false;
                 }
                 Message::OpenResource(path) => {
                     if let Some(project) = self.project.as_ref() {
@@ -170,6 +171,7 @@ impl App {
                 }
                 Message::LoadResource(path, res) => {
                     self.opened.push((path, res));
+                    self.busy = false;
                 }
             }
         }
