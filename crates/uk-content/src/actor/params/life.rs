@@ -7,7 +7,7 @@ use crate::{
     actor::{InfoSource, ParameterResource},
     constants::{Time, Weather},
     prelude::*,
-    util::{params, DeleteSet},
+    util::{params, DeleteSet, IteratorExt},
     Result, UKError,
 };
 
@@ -132,13 +132,10 @@ impl From<LifeCondition> for ParameterIO {
                 "InvalidWeathers",
                 weathers
                     .into_iter()
-                    .enumerate()
-                    .map(|(i, weather)| {
-                        (
-                            format!("Item{:03}", i + 1),
-                            Parameter::String64(Box::new(weather.into())),
-                        )
-                    })
+                    .named_enumerate("Item")
+                    .with_padding::<3>()
+                    .with_zero_index(false)
+                    .map(|(index, weather)| (index, Parameter::String64(Box::new(weather.into()))))
                     .collect(),
             );
         }
@@ -147,13 +144,10 @@ impl From<LifeCondition> for ParameterIO {
                 "InvalidTimes",
                 times
                     .into_iter()
-                    .enumerate()
-                    .map(|(i, time)| {
-                        (
-                            format!("Item{:03}", i + 1),
-                            Parameter::String64(Box::new(time.into())),
-                        )
-                    })
+                    .named_enumerate("Item")
+                    .with_padding::<3>()
+                    .with_zero_index(false)
+                    .map(|(index, time)| (index, Parameter::String64(Box::new(time.into()))))
                     .collect(),
             );
         }
@@ -180,13 +174,10 @@ impl From<LifeCondition> for ParameterIO {
                 "DeleteWeathers",
                 weathers
                     .into_iter()
-                    .enumerate()
-                    .map(|(i, weather)| {
-                        (
-                            format!("Item{:03}", i + 1),
-                            Parameter::String64(Box::new(weather.into())),
-                        )
-                    })
+                    .named_enumerate("Item")
+                    .with_padding::<3>()
+                    .with_zero_index(false)
+                    .map(|(index, weather)| (index, Parameter::String64(Box::new(weather.into()))))
                     .collect(),
             );
         }
@@ -195,13 +186,10 @@ impl From<LifeCondition> for ParameterIO {
                 "DeleteTimes",
                 times
                     .into_iter()
-                    .enumerate()
-                    .map(|(i, time)| {
-                        (
-                            format!("Item{:03}", i + 1),
-                            Parameter::String64(Box::new(time.into())),
-                        )
-                    })
+                    .named_enumerate("Item")
+                    .with_padding::<3>()
+                    .with_zero_index(false)
+                    .map(|(index, time)| (index, Parameter::String64(Box::new(time.into()))))
                     .collect(),
             );
         }

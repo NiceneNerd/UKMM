@@ -394,10 +394,11 @@ where
 impl<T> IteratorExt for T where T: Iterator {}
 
 pub struct NamedEnumerate<'a, I> {
-    iter:   I,
-    count:  usize,
-    name:   &'a str,
-    buffer: Vec<u8>,
+    iter:    I,
+    count:   usize,
+    name:    &'a str,
+    buffer:  Vec<u8>,
+    padding: Option<(&'static str, Vec<u8>)>,
 }
 
 impl<'a, I> NamedEnumerate<'a, I> {
@@ -407,11 +408,29 @@ impl<'a, I> NamedEnumerate<'a, I> {
             count: 0,
             name,
             buffer: {
-                let mut vec = Vec::with_capacity(u16::MAX as usize);
+                let mut vec = Vec::with_capacity(name.len() + 4);
                 vec.extend(name.as_bytes());
                 vec
             },
+            padding: None,
         }
+    }
+
+    pub fn with_padding<const N: usize>(mut self) -> Self {
+        self.padding = Some((
+            unsafe { std::str::from_utf8_unchecked(&[b'0'; N]) },
+            Vec::with_capacity(N),
+        ));
+        self
+    }
+
+    pub fn with_zero_index(mut self, zero: bool) -> Self {
+        if zero {
+            self.count = 0;
+        } else {
+            self.count = 1;
+        }
+        self
     }
 }
 
@@ -428,8 +447,25 @@ where
         let name_len = self.name.len();
         let name = unsafe {
             self.buffer.set_len(u16::MAX as usize);
-            let len = lexical_core::write_unchecked(i as u16, &mut self.buffer[name_len..]).len();
-            self.buffer.set_len(len + name_len);
+            let written_len = {
+                let write_buffer = if let Some((_, ref mut buffer)) = self.padding {
+                    buffer.set_len(u16::MAX as usize);
+                    buffer.as_mut_slice()
+                } else {
+                    &mut self.buffer[name_len..]
+                };
+                lexical_core::write_unchecked(i as u16, write_buffer).len()
+            };
+            let len = if let Some((padding, ref buffer)) = self.padding {
+                let padding_len = padding.len();
+                self.buffer[name_len..name_len + padding_len].copy_from_slice(padding.as_bytes());
+                self.buffer[name_len + padding_len - written_len..name_len + padding_len]
+                    .copy_from_slice(&buffer[..written_len]);
+                name_len + padding_len
+            } else {
+                written_len + name_len
+            };
+            self.buffer.set_len(len);
             String::from_utf8_unchecked(self.buffer.clone())
         };
         Some((name, item))

@@ -6,7 +6,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util::IndexMap,
+    util::{IndexMap, IteratorExt},
     Result, UKError,
 };
 
@@ -23,12 +23,16 @@ impl From<DropTable> for ParameterIO {
                         hash_name("Header"),
                         [("TableNum".into(), Parameter::I32(drop.0.len() as i32))]
                             .into_iter()
-                            .chain(drop.0.keys().enumerate().map(|(i, name)| {
-                                (
-                                    format!("Table{:02}", i + 1),
-                                    Parameter::String64(Box::new(*name)),
-                                )
-                            }))
+                            .chain(
+                                drop.0
+                                    .keys()
+                                    .named_enumerate("Table")
+                                    .with_padding::<2>()
+                                    .with_zero_index(false)
+                                    .map(|(index, name)| {
+                                        (index, Parameter::String64(Box::new(*name)))
+                                    }),
+                            )
                             .collect(),
                     );
                     objs.extend(
@@ -115,10 +119,14 @@ impl InfoSource for DropTable {
                             ))?
                             .as_int()?;
                         (1..=count)
-                            .map(|i| -> Result<Byml> {
+                            .named_enumerate("ItemName")
+                            .with_padding::<2>()
+                            .with_zero_index(false)
+                            .map(|(name, _)| -> Result<Byml> {
+                                dbg!(&name);
                                 Ok(Byml::String(
                                     table
-                                        .get(&format!("ItemName{:02}", i))
+                                        .get(&name)
                                         .ok_or(UKError::MissingAampKey(
                                             "Drop table missing item name",
                                             None,

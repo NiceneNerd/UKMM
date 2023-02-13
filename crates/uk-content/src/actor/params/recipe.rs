@@ -6,7 +6,7 @@ use uk_ui_derive::Editable;
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util::DeleteMap,
+    util::{DeleteMap, IteratorExt},
     Result, UKError,
 };
 
@@ -30,13 +30,14 @@ impl TryFrom<&ParameterIO> for Recipe {
             ))?
             .as_int()?;
         let table_names = (0..table_count)
-            .map(|i| -> Result<String64> {
+            .named_enumerate("Table")
+            .with_padding::<2>()
+            .with_zero_index(false)
+            .map(|(index, _)| -> Result<String64> {
                 Ok(header
-                    .get(format!("Table{:02}", i + 1).as_str())
+                    .get(&index)
                     .ok_or_else(|| {
-                        UKError::MissingAampKeyD(jstr!(
-                            "Recipe header missing table name {&lexical::to_string(i + 1)}"
-                        ))
+                        UKError::MissingAampKeyD(jstr!("Recipe header missing table name {&index}"))
                     })?
                     .as_safe_string()?)
             })
@@ -57,17 +58,23 @@ impl TryFrom<&ParameterIO> for Recipe {
                                 None,
                             ))?
                             .as_int()?)
-                            .map(|i| -> Result<(String64, u8)> {
+                            .named_enumerate("ItemNum")
+                            .with_padding::<2>()
+                            .with_zero_index(false)
+                            .named_enumerate("ItemName")
+                            .with_padding::<2>()
+                            .with_zero_index(false)
+                            .map(|(name, (num, _))| -> Result<(String64, u8)> {
                                 Ok((
                                     table
-                                        .get(&format!("ItemName{:02}", i))
+                                        .get(&name)
                                         .ok_or(UKError::MissingAampKey(
                                             "Recipe missing item name",
                                             None,
                                         ))?
                                         .as_safe_string()?,
                                     table
-                                        .get(&format!("ItemNum{:02}", i))
+                                        .get(&num)
                                         .ok_or(UKError::MissingAampKey(
                                             "Recipe missing item count",
                                             None,
@@ -90,12 +97,14 @@ impl From<Recipe> for ParameterIO {
                 "Header",
                 [("TableNum".into(), Parameter::I32(val.0.len() as i32))]
                     .into_iter()
-                    .chain(val.0.keys().enumerate().map(|(i, n)| {
-                        (
-                            format!("Table{:02}", i + 1),
-                            Parameter::String64(Box::new(*n)),
-                        )
-                    }))
+                    .chain(
+                        val.0
+                            .keys()
+                            .named_enumerate("Table")
+                            .with_padding::<2>()
+                            .with_zero_index(false)
+                            .map(|(index, n)| (index, Parameter::String64(Box::new(*n)))),
+                    )
                     .collect(),
             )
             .with_objects(val.0.into_iter().map(|(name, table)| {
@@ -107,17 +116,16 @@ impl From<Recipe> for ParameterIO {
                             table
                                 .into_iter()
                                 .filter(|(_, count)| *count > 0)
-                                .enumerate()
-                                .flat_map(|(i, (name, count))| {
+                                .named_enumerate("ItemNum")
+                                .with_padding::<2>()
+                                .with_zero_index(false)
+                                .named_enumerate("ItemName")
+                                .with_padding::<2>()
+                                .with_zero_index(false)
+                                .flat_map(|(name_idx, (num_idx, (name, count)))| {
                                     [
-                                        (
-                                            format!("ItemName{:02}", i + 1),
-                                            Parameter::String64(Box::new(name)),
-                                        ),
-                                        (
-                                            format!("ItemNum{:02}", i + 1),
-                                            Parameter::I32(count as i32),
-                                        ),
+                                        (name_idx, Parameter::String64(Box::new(name))),
+                                        (num_idx, Parameter::I32(count as i32)),
                                     ]
                                 }),
                         )
@@ -141,15 +149,17 @@ impl InfoSource for Recipe {
     fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
         if let Some(table) = self.0.get(String64::from("Normal0")) {
             info.insert("normal0StuffNum".into(), Byml::I32(table.len() as i32));
-            for (i, (name, num)) in table.iter().enumerate() {
-                info.insert(
-                    format!("normal0ItemName{:02}", i + 1).into(),
-                    Byml::String(name.as_str().into()),
-                );
-                info.insert(
-                    format!("normal0ItemNum{:02}", i + 1).into(),
-                    Byml::I32(*num as i32),
-                );
+            for (name_idx, (num_idx, (name, num))) in table
+                .iter()
+                .named_enumerate("normal0ItemNum")
+                .with_padding::<2>()
+                .with_zero_index(false)
+                .named_enumerate("normal0ItemName")
+                .with_padding::<2>()
+                .with_zero_index(false)
+            {
+                info.insert(name_idx.into(), Byml::String(name.as_str().into()));
+                info.insert(num_idx.into(), Byml::I32(*num as i32));
             }
         }
         Ok(())
