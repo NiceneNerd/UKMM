@@ -16,21 +16,21 @@ use crate::{
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable, ParamData)]
 pub struct ElementParams {
     #[name = "TypeIndex"]
-    type_index: i32,
+    pub type_index: i32,
     #[name = "NoSync"]
-    no_sync: Option<bool>,
+    pub no_sync: Option<bool>,
     #[name = "JudgeOnce"]
-    judge_once: Option<bool>,
+    pub judge_once: Option<bool>,
     #[name = "InputLimit"]
-    input_limit: Option<f32>,
+    pub input_limit: Option<f32>,
     #[name = "FileName"]
-    file_name: Option<String64>,
+    pub file_name: Option<String64>,
     #[name = "Morph"]
-    morph: Option<f32>,
+    pub morph: Option<f32>,
     #[name = "ResetMorph"]
-    reset_morph: Option<f32>,
+    pub reset_morph: Option<f32>,
     #[name = "SequenceLoop"]
-    sequence_loop: Option<bool>,
+    pub sequence_loop: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
