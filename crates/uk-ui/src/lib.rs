@@ -21,10 +21,15 @@ pub fn load_fonts(context: &egui::Context) {
             .output()
             .and_then(|o| {
                 String::from_utf8(o.stdout)
+                    .map(|s| {
+                        let last_space = s.rfind(' ').unwrap();
+                        s[..last_space].trim_matches('\'').to_string()
+                    })
                     .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Bah"))
             })
             .unwrap_or_else(|_| "Ubuntu".to_owned())
     };
+    dbg!(&font_to_try);
     if let Some(system_font) =
         font_loader::system_fonts::get(&FontPropertyBuilder::new().family(&font_to_try).build())
     {

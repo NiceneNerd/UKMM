@@ -62,6 +62,8 @@ impl App {
             .and_then(|s| serde_json::from_str(&s).context(""))
             .unwrap_or_default();
         ui_state.theme.set_theme(&cc.egui_ctx);
+        let mut dock_style = uk_ui::visuals::style_dock(&cc.egui_ctx.style());
+        dock_style.show_close_buttons = true;
         Self {
             core,
             project: None,
@@ -69,7 +71,7 @@ impl App {
             channel: flume::unbounded(),
             tree: Arc::new(RwLock::new(tabs::default_ui())),
             focused: None,
-            dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
+            dock_style,
             busy: Cell::new(false),
         }
     }

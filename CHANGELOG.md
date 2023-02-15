@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Matching fix for certain AS nodes
 - Fixed max width for busy dialog
 - Fixed edit UI for `ElementParams`
+- Fixed font loading on Linux
 
 ## [0.2.5] - 2023-02-11
 
