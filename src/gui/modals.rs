@@ -231,7 +231,7 @@ impl App {
         }
     }
 
-    pub fn render_busy(&self, ctx: &egui::Context) {
+    pub fn render_busy(&self, ctx: &egui::Context, frame: &eframe::Frame) {
         if self.busy {
             egui::Window::new("Working")
                 .default_size([240., 80.])
@@ -239,7 +239,8 @@ impl App {
                 .collapsible(false)
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
-                    let max_width = ui.available_width() / 2.;
+                    let max_width =
+                        (ui.available_width() / 2.).min(frame.info().window_info.size.x - 64.0);
                     ui.vertical_centered(|ui| {
                         let text_height = ui.text_style_height(&TextStyle::Body) * 2.;
                         let padding = 80. - text_height - 8.;

@@ -807,7 +807,7 @@ impl eframe::App for App {
         DockArea::new(self.tree.clone().write().deref_mut())
             .style(self.dock_style.clone())
             .show_inside(&mut ui, self);
-        self.render_busy(ctx);
+        self.render_busy(ctx, frame);
         self.toasts.show(ctx);
         LAYOUT_FIX.call_once(|| {
             *self.tree.write() = tabs::default_ui();

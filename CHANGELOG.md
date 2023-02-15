@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed missing parent folder with BNP logs
 - Fixed `required` field parsing for BNP mod options
 - Matching fix for certain AS nodes
+- Fixed max width for busy dialog
 - Fixed edit UI for `ElementParams`
 
 ## [0.2.5] - 2023-02-11
