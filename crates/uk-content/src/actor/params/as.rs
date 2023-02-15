@@ -180,29 +180,43 @@ impl From<AS> for ParameterIO {
         }
 
         fn add_element(element: Element, done: &mut Vec<(Element, ParameterList)>) {
-            if !done.iter().any(|(el, _)| el == &element) {
-                let index = done.len();
-                done.push((element.clone(), Default::default()));
-                let Element {
-                    params,
-                    children,
-                    extend,
-                } = element;
-                let mut list = ParameterList::new();
-                list.set_object("Parameters", params.into());
-                if children.is_some() {
-                    list.set_object("Children", Default::default());
-                }
-                if let Some(extend) = extend {
-                    list.set_list("Extend", extend);
-                }
-                if let Some(children) = children {
+            let index = done.len();
+            done.push((element.clone(), Default::default()));
+            let Element {
+                params,
+                children,
+                extend,
+            } = element;
+            let should_hack = params.type_index == 94 && index == 0;
+            let mut list = ParameterList::new();
+            list.set_object("Parameters", params.into());
+            if children.is_some() {
+                list.set_object("Children", Default::default());
+            }
+            if let Some(extend) = extend {
+                list.set_list("Extend", extend);
+            }
+            if let Some(children) = children {
+                if should_hack {
+                    list.object_mut("Children").unwrap().extend(
+                        children
+                            .values()
+                            .named_enumerate("Child")
+                            .map(|(name, child)| {
+                                let index = done.len();
+                                add_element(child.clone(), done);
+                                (name.into(), Parameter::I32(index as i32))
+                            }),
+                    );
+                } else {
                     let first = children.values().next();
                     let all_same =
                         children.len() > 1 && children.values().all(|v| Some(v) == first);
                     let last_idx = children.len() - 1;
                     for child in children.values() {
-                        add_element(child.clone(), done);
+                        if !done.iter().any(|(el, _)| child == el) {
+                            add_element(child.clone(), done);
+                        }
                     }
                     list.object_mut("Children").unwrap().extend(
                         children.values().named_enumerate("Child").enumerate().map(
@@ -222,8 +236,8 @@ impl From<AS> for ParameterIO {
                         ),
                     );
                 }
-                done[index].1 = list;
             }
+            done[index].1 = list;
         }
 
         let mut elements = Vec::with_capacity(val.root.as_ref().map(count_elements).unwrap_or(0));
