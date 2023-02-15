@@ -74,7 +74,7 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
         .map(|e| e.to_lowercase() == "bnp")
         .unwrap_or(false)
     {
-        let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKKM mod")?;
+        let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKMM mod")?;
         return Ok(Message::HandleMod(Mod::from_reader(
             ModReader::open_peek(mod_, vec![]).context("Failed to open converted mod")?,
         )));
