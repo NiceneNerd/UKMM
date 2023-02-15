@@ -4786,6 +4786,7 @@ dependencies = [
  "eframe",
  "flume",
  "fs-err",
+ "jwalk 0.6.2",
  "minicbor-ser 0.2.0",
  "once_cell",
  "parking_lot",

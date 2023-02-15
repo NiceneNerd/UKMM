@@ -4,7 +4,12 @@ mod project;
 mod tabs;
 mod tasks;
 
-use std::{path::PathBuf, sync::Arc, thread};
+use std::{
+    cell::{Cell, RefCell},
+    path::PathBuf,
+    sync::Arc,
+    thread,
+};
 
 use anyhow::{Context, Error, Result};
 use eframe::egui::Frame;
@@ -41,10 +46,10 @@ struct App {
     project: Option<Project>,
     projects: Vec<Project>,
     channel: (Sender<Message>, Receiver<Message>),
-    opened: Vec<(PathBuf, ResourceData)>,
     tree: Arc<RwLock<Tree<Tabs>>>,
+    focused: Option<PathBuf>,
     dock_style: egui_dock::Style,
-    busy: bool,
+    busy: Cell<bool>,
 }
 
 impl App {
@@ -62,10 +67,10 @@ impl App {
             project: None,
             projects: vec![],
             channel: flume::unbounded(),
-            opened: vec![],
             tree: Arc::new(RwLock::new(tabs::default_ui())),
+            focused: None,
             dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
-            busy: false,
+            busy: Cell::new(false),
         }
     }
 
@@ -74,7 +79,7 @@ impl App {
     }
 
     fn do_task(
-        &mut self,
+        &self,
         task: impl 'static
         + Send
         + Sync
@@ -84,7 +89,7 @@ impl App {
         let sender = self.channel.0.clone();
         let core = self.core.clone();
         let task = Box::new(task);
-        self.busy = true;
+        self.busy.set(true);
         thread::spawn(move || {
             sender
                 .send(match std::panic::catch_unwind(|| task(core)) {
@@ -111,13 +116,22 @@ impl App {
             ui.close_menu();
             todo!("New Project");
         }
+        if ui.button("Open Project…").clicked() {
+            ui.close_menu();
+            if let Some(folder) = rfd::FileDialog::new()
+                .set_title("Select Project Folder")
+                .set_directory(self.core.settings().projects_dir())
+                .pick_folder()
+            {
+                self.do_task(move |core| {
+                    let project = project::Project::open(&folder)?;
+                    Ok(Message::OpenProject(project))
+                });
+            }
+        }
         if ui.button("Import Mod…").clicked() {
             ui.close_menu();
             self.do_update(Message::ImportMod);
-        }
-        if ui.button("Open Project…").clicked() {
-            ui.close_menu();
-            todo!("Open Project");
         }
         ui.separator();
         ui.add_enabled_ui(self.project.is_some(), |ui| {
@@ -141,6 +155,20 @@ impl App {
     }
 
     fn handle_update(&mut self) {
+        if let Some(path) = self
+            .tree
+            .write()
+            .find_active_focused()
+            .and_then(|(_, tab)| {
+                match tab {
+                    Tabs::Files => None,
+                    Tabs::Editor(path, ..) => Some(path),
+                }
+            })
+            && self.focused.as_ref().map(|p| p.as_path() != path).unwrap_or(true)
+        {
+            self.focused = Some(path.to_path_buf());
+        }
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
                 Message::Error(e) => {
@@ -157,7 +185,7 @@ impl App {
                 }
                 Message::OpenProject(project) => {
                     self.project = Some(project);
-                    self.busy = false;
+                    self.busy.set(false);
                 }
                 Message::OpenResource(path) => {
                     if let Some(project) = self.project.as_ref() {
@@ -170,8 +198,13 @@ impl App {
                     }
                 }
                 Message::LoadResource(path, res) => {
-                    self.opened.push((path, res));
-                    self.busy = false;
+                    let new_tab = Tabs::Editor(path, res.clone(), RefCell::new(res));
+                    if let Some(node) = self.tree.write().iter_mut().nth(1) {
+                        node.append_tab(new_tab)
+                    } else {
+                        self.tree.write().push_to_focused_leaf(new_tab);
+                    };
+                    self.busy.set(false);
                 }
             }
         }

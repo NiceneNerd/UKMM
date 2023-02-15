@@ -134,7 +134,10 @@ impl PathNode {
                 job,
             );
             if let Some(path) = self.path.as_ref() {
-                if label.on_hover_text(path.display().to_string()).clicked() {
+                if label
+                    .on_hover_text(path.display().to_string())
+                    .double_clicked()
+                {
                     on_select(path.clone());
                 }
             }

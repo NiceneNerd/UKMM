@@ -39,6 +39,28 @@ impl Project {
         }
     }
 
+    pub fn open(path: &Path) -> Result<Self> {
+        let meta: Meta = serde_yaml::from_str(
+            &fs::read_to_string(path.join("meta.yml")).context("Failed to open meta file")?,
+        )
+        .context("Failed to parse meta file")?;
+        let files = jwalk::WalkDir::new(path)
+            .into_iter()
+            .filter_map(|e| {
+                e.ok().and_then(|e| {
+                    e.file_type()
+                        .is_file()
+                        .then(|| e.path().strip_prefix(path).unwrap().to_path_buf())
+                })
+            })
+            .collect();
+        Ok(Self {
+            path: path.to_path_buf(),
+            meta,
+            files,
+        })
+    }
+
     #[allow(irrefutable_let_patterns)]
     pub fn from_mod(core: &Manager, mod_: &Path) -> Result<Self> {
         let zip = ParallelZipReader::open(mod_, false).context("Failed to open ZIP file")?;
@@ -52,34 +74,49 @@ impl Project {
         )
         .context("Failed to parse mod meta")?;
         let path = core.settings().projects_dir().join(sanitise(&meta.name));
-        let files = zip.iter().par_bridge().filter_map(|file| -> Option<Result<PathBuf>> {
-            if matches!(file.file_name().unwrap_or_default().to_str().unwrap_or_default(), "meta.yml" | "manifest.yml") {
-                return None;
-            }
-            let do_it = || -> Result<PathBuf> {
-                let dest = path.join(file);
-                let data = zip
-                    .get_file(file)
-                    .with_context(|| format!("Failed to read file {} from ZIP", file.display()))
-                    .and_then(|bytes| {
-                        uk_mod::zstd::decode_all(bytes.as_slice()).with_context(|| {
-                            format!("Failed to decompress contents of {} in ZIP", file.display())
-                        })
+        let files = zip
+            .iter()
+            .par_bridge()
+            .filter_map(|file| -> Option<Result<PathBuf>> {
+                let do_it = || -> Result<Option<PathBuf>> {
+                    let dest = path.join(file);
+                    dest.parent().map(fs::create_dir_all).transpose()?;
+                    let data = zip.get_file(file).with_context(|| {
+                        format!("Failed to read file {} from ZIP", file.display())
                     })?;
-                let resource: ResourceData = minicbor_ser::from_slice(&data).with_context(|| format!("Failed to parse resource {}", file.display()))?;
-                let data = match resource {
-                    ResourceData::Binary(bin) => bin,
-                    res => ron::ser::to_string_pretty(&res, Default::default()).expect("Failed to serialize resource to RON").into(),
+                    if matches!(
+                        file.file_name()
+                            .unwrap_or_default()
+                            .to_str()
+                            .unwrap_or_default(),
+                        "meta.yml" | "manifest.yml"
+                    ) {
+                        fs::write(dest, data).with_context(|| {
+                            format!("Failed to extract file {}", file.display())
+                        })?;
+                        return Ok(None);
+                    }
+                    let resource: ResourceData = minicbor_ser::from_slice(
+                        &uk_mod::zstd::decode_all(data.as_slice()).with_context(|| {
+                            format!("Failed to decompress contents of {} in ZIP", file.display())
+                        })?,
+                    )
+                    .with_context(|| format!("Failed to parse resource {}", file.display()))?;
+                    let data = match resource {
+                        ResourceData::Binary(bin) => bin,
+                        res => {
+                            ron::ser::to_string_pretty(&res, Default::default())
+                                .expect("Failed to serialize resource to RON")
+                                .into()
+                        }
+                    };
+                    fs::write(dest, data)
+                        .with_context(|| format!("Failed to extract file {}", file.display()))?;
+                    Ok(Some(file.to_path_buf()))
                 };
-                if let parent = dest.parent().map(|p| p.to_path_buf()).unwrap_or_default() && !parent.exists() {
-                    fs::create_dir_all(&parent).with_context(|| format!("Failed to create output directory at {}", parent.display()))?;
-                }
-                fs::write(dest, data)
-                    .with_context(|| format!("Failed to extract file {}", file.display()))?;
-                Ok(file.to_path_buf())
-            };
-            Some(do_it())
-        }).collect::<Result<_>>()?;
+                do_it().transpose()
+            })
+            .collect::<Result<_>>()?;
         Ok(Self { path, meta, files })
     }
 }

@@ -1,13 +1,19 @@
 use std::{
+    cell::RefCell,
     collections::{hash_map::DefaultHasher, BTreeSet},
+    fmt::Write,
     hash::{Hash, Hasher},
+    ops::Deref,
     path::{Path, PathBuf},
 };
 
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use path_slash::PathBufExt;
-use uk_content::util::{HashMap, HashSet};
+use uk_content::{
+    resource::ResourceData,
+    util::{HashMap, HashSet},
+};
 use uk_mod::Manifest;
 use uk_ui::{
     editor::EditableValue,
@@ -18,21 +24,15 @@ use uk_ui::{
 
 use crate::Message;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Tabs {
     Files,
-    Editor,
-}
-
-impl std::fmt::Display for Tabs {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
+    Editor(PathBuf, ResourceData, RefCell<ResourceData>),
 }
 
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Files]);
-    tree.split_right(0.into(), 0.25, vec![Tabs::Editor]);
+    tree.split_right(0.into(), 0.25, vec![]);
     tree
 }
 
@@ -40,7 +40,20 @@ impl TabViewer for super::App {
     type Tab = Tabs;
 
     fn title(&mut self, tab: &mut Self::Tab) -> eframe::egui::WidgetText {
-        tab.to_string().into()
+        match tab {
+            Tabs::Files => "Files".into(),
+            Tabs::Editor(path, ref_data, edit_data) => {
+                let name = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or_default();
+                if ref_data != edit_data.borrow().deref() {
+                    format!("*{}", name).into()
+                } else {
+                    name.into()
+                }
+            }
+        }
     }
 
     fn ui(&mut self, ui: &mut eframe::egui::Ui, tab: &mut Self::Tab) {
@@ -50,10 +63,8 @@ impl TabViewer for super::App {
                     self.render_file_tree(&project.files, ui);
                 }
             }
-            Tabs::Editor => {
-                if let Some((_, uk_content::resource::ResourceData::Mergeable(resource))) =
-                    self.opened.last_mut()
-                {
+            Tabs::Editor(path, saved_data, edit_data) => {
+                if let ResourceData::Mergeable(ref mut resource) = *edit_data.borrow_mut() {
                     resource.edit_ui(ui);
                 }
             }
@@ -88,7 +99,7 @@ impl super::App {
                     });
                     root
                 });
-                root.render_dir_selectable(ui, self.opened.last().map(|o| o.0.as_path()), |path| {
+                root.render_dir_selectable(ui, self.focused.as_deref(), |path| {
                     self.do_update(Message::OpenResource(path));
                 });
             }
