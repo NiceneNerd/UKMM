@@ -117,10 +117,26 @@ fn multi_from_bnp_multi(opts: Vec<BnpOption>) -> OptionGroup {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum RequireValue {
+    Bool(bool),
+    String(String),
+}
+
+impl RequireValue {
+    fn is_true(&self) -> bool {
+        match self {
+            Self::Bool(b) => *b,
+            Self::String(s) => s.is_empty() || s == "false",
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
 struct BnpGroup {
     name:     String,
     desc:     String,
-    required: String,
+    required: RequireValue,
     options:  Vec<BnpOption>,
 }
 
@@ -131,7 +147,7 @@ impl From<BnpGroup> for ExclusiveOptionGroup {
             description: group.desc,
             default: None,
             options: group.options.into_iter().map(|opt| opt.into()).collect(),
-            required: !group.required.is_empty(),
+            required: !group.required.is_true(),
         }
     }
 }
