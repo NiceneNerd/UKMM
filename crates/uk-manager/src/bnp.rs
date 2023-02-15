@@ -190,6 +190,7 @@ impl BnpConverter {
         let base_sarc = self.dump.get_bytes_uncached(root_path);
         if !dest_path.exists() {
             let base_sarc = base_sarc?;
+            dest_path.parent().map(fs::create_dir_all).transpose()?;
             fs::write(dest_path, &base_sarc)?;
             Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc)?))
         } else {
