@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed crash from bad damage param RSTB
 - Fixed missing parent folder with BNP logs
 - Fixed `required` field parsing for BNP mod options
 - Matching fix for certain AS nodes

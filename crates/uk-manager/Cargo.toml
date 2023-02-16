@@ -20,7 +20,7 @@ parking_lot = { version = "0.12.1", features = ["serde"] }
 rayon = "1.5.3"
 roead = "0.20.0"
 rustc-hash = "1.1.0"
-rstb = { version= "0.4.2", features = ["botw-data"] }
+rstb = { version= "0.5.0", features = ["botw-data"] }
 sanitise-file-name = "1.0.0"
 serde = { version = "1.0.144", features = ["derive", "rc"] }
 serde_json = "1.0.85"
