@@ -8,7 +8,7 @@ use uk_content::{message::*, prelude::Resource, resource::MergeableResource};
 use super::BnpConverter;
 use crate::settings::Language;
 
-type TextsLog = FxHashMap<Language, FxHashMap<String, FxHashMap<String, Entry>>>;
+pub(crate) type TextsLog = FxHashMap<Language, FxHashMap<String, FxHashMap<String, Entry>>>;
 
 impl BnpConverter {
     pub fn handle_texts(&self) -> Result<()> {
