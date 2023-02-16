@@ -46,7 +46,7 @@ use uk_ui::{
     icons::{Icon, IconButtonExt},
 };
 
-use self::package::ModPackerBuilder;
+use self::{package::ModPackerBuilder, tasks::VersionResponse};
 use crate::{gui::modals::MetaInputModal, logger::Entry};
 
 impl Entry {
@@ -169,6 +169,7 @@ pub enum Message {
     MoveSelected(usize),
     NewProfile,
     Noop,
+    OfferUpdate(VersionResponse),
     OpenMod(PathBuf),
     PackageMod(Arc<RwLock<ModPackerBuilder>>),
     RefreshModsDisplay,
@@ -235,6 +236,7 @@ struct App {
     theme: uk_ui::visuals::Theme,
     dock_style: uk_ui::egui_dock::Style,
     changelog: Option<String>,
+    new_version: Option<VersionResponse>,
 }
 
 impl App {
@@ -278,7 +280,7 @@ impl App {
                     if last_version == "0.0.0" {
                         Some(include_str!("../assets/intro.md").into())
                     } else {
-                        tasks::get_changelog(current_version, send.clone());
+                        tasks::get_releases(core.clone(), send.clone());
                         None
                     }
                 } else {
@@ -306,6 +308,7 @@ impl App {
             theme: ui_state.theme,
             dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
             install_queue: vector![],
+            new_version: None,
         }
     }
 
@@ -772,6 +775,10 @@ impl App {
                 }
                 Message::SetChangelog(msg) => self.changelog = Some(msg),
                 Message::CloseChangelog => self.changelog = None,
+                Message::OfferUpdate(version) => {
+                    self.changelog = Some(format!("A new update is available!\n\n{}", version.description()));
+                    self.new_version = Some(version)                    ;
+                }
                 Message::Toast(msg) => {
                     self.toasts.add({
                         let mut toast = Toast::info(msg);

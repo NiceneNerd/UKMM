@@ -13,7 +13,7 @@ use uk_manager::{
     bnp::convert_bnp,
     core::Manager,
     mods::Mod,
-    settings::{DeployConfig, Platform, PlatformSettings},
+    settings::{DeployConfig, Platform, PlatformSettings, UpdatePreference},
 };
 use uk_mod::{unpack::ModReader, Manifest, Meta};
 use uk_reader::ResourceReader;
@@ -281,14 +281,32 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     Ok(Message::ResetSettings)
 }
 
-#[derive(Debug, Deserialize)]
-struct ChangelogResponse {
-    body: String,
+#[derive(Debug, Deserialize, Clone)]
+pub struct VersionAsset {
     name: String,
+    browser_download_url: String
 }
 
-pub fn get_changelog(version: &str, sender: flume::Sender<Message>) {
-    let url = format!("https://api.github.com/repos/NiceneNerd/ukmm/releases/tags/v{version}");
+#[derive(Debug, Deserialize, Clone)]
+pub struct VersionResponse {
+    body:     String,
+    name:     String,
+    tag_name: String,
+    prerelease: bool,
+    assets: Vec<VersionAsset>
+}
+
+impl VersionResponse {
+    pub fn description(&self) -> String {
+        format!(
+            "# Release {} Notes\n\n**{}**\n\n{}",
+            self.tag_name, self.name, self.body
+        )
+    }
+}
+
+pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
+    let url = "https://api.github.com/repos/NiceneNerd/ukmm/releases?per_page=10";
     match reqwest::blocking::Client::builder()
         .user_agent("UKMM")
         .build()
@@ -297,17 +315,23 @@ pub fn get_changelog(version: &str, sender: flume::Sender<Message>) {
         .send()
         .context("Failed to check release notes")
         .and_then(|r| {
-            r.json::<ChangelogResponse>()
+            r.json::<Vec<VersionResponse>>()
                 .context("Failed to parse release notes")
         }) {
-        Ok(log) => {
-            sender
-                .send(Message::SetChangelog(format!(
-                    "# Release {} Notes\n\n**{}**\n\n{}",
-                    version, log.name, log.body
-                )))
-                .unwrap()
-        }
+        Ok(mut releases) => {
+            let current_semver = lenient_semver::parse(env!("CARGO_PKG_VERSION")).unwrap();
+            let betas = core.settings().check_updates == UpdatePreference::Beta || current_semver < lenient_semver::parse("1.0.0").unwrap();
+            releases.retain(|r| !r.prerelease || betas);
+            if let Some(release) = releases.first()
+                && let Ok(release_ver) = lenient_semver::parse(release.tag_name.trim_start_matches('v')) 
+            {
+                if release_ver > current_semver {
+                    sender.send(Message::OfferUpdate(release.clone())).unwrap();
+                } else if current_semver > release_ver {
+                    sender.send(Message::SetChangelog(release.description()));
+                }
+            }
+        },
         Err(e) => log::warn!("{:?}", e),
     }
 }

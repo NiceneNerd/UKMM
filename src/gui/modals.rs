@@ -422,6 +422,7 @@ impl App {
         if let Some(ref last_version) = self.changelog {
             egui::Window::new("What's New")
                 .collapsible(false)
+                .scroll2([false, true])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {

@@ -12,6 +12,7 @@ use join_str::jstr;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DefaultOnError};
 use smartstring::alias::String;
 use uk_reader::ResourceReader;
 
@@ -234,50 +235,46 @@ pub struct PlatformSettings {
     pub cemu_rules: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct UiSettings {
-    pub dark: bool,
-}
-
-impl Default for UiSettings {
-    fn default() -> Self {
-        Self { dark: true }
-    }
-}
-
 #[inline]
 fn default_storage() -> PathBuf {
     dirs2::data_local_dir().unwrap().join("ukmm")
 }
 
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum UpdatePreference {
+    None,
+    #[default]
+    Stable,
+    Beta,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
+#[serde_as]
 pub struct Settings {
-    pub current_mode: Platform,
+    pub current_mode:   Platform,
     #[serde(default = "default_storage")]
-    pub storage_dir: PathBuf,
-    pub unpack_mods: bool,
-    pub check_updates: bool,
+    pub storage_dir:    PathBuf,
+    pub unpack_mods:    bool,
+    #[serde(deserialize_with = "serde_with::As::<DefaultOnError>::deserialize")]
+    pub check_updates:  UpdatePreference,
     pub show_changelog: bool,
-    pub last_version: Option<String>,
-    pub wiiu_config: Option<PlatformSettings>,
-    pub switch_config: Option<PlatformSettings>,
-    #[serde(rename = "ui")]
-    pub ui_config: UiSettings,
+    pub last_version:   Option<String>,
+    pub wiiu_config:    Option<PlatformSettings>,
+    pub switch_config:  Option<PlatformSettings>,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            current_mode: Platform::WiiU,
-            storage_dir: default_storage(),
-            unpack_mods: false,
-            wiiu_config: None,
-            switch_config: None,
-            check_updates: true,
+            current_mode:   Platform::WiiU,
+            storage_dir:    default_storage(),
+            unpack_mods:    false,
+            wiiu_config:    None,
+            switch_config:  None,
+            check_updates:  UpdatePreference::Stable,
             show_changelog: true,
-            last_version: None,
-            ui_config: Default::default(),
+            last_version:   None,
         }
     }
 }
