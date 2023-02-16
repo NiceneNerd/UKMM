@@ -12,7 +12,6 @@ mod tasks;
 mod util;
 use std::{
     ops::DerefMut,
-    os::unix::process::CommandExt,
     path::PathBuf,
     sync::{Arc, Once},
     thread,
@@ -794,7 +793,7 @@ impl App {
                     let mut command = std::process::Command::new(exe);
                     #[cfg(unix)]
                     {
-                        command.process_group(0);
+                        std::os::unix::process::CommandExt::process_group(&mut command, 0);
                     }
                     command.spawn().unwrap();
                     frame.close();

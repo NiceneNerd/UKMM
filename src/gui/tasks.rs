@@ -324,14 +324,12 @@ pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
             let betas = core.settings().check_updates == UpdatePreference::Beta
                 || current_semver < lenient_semver::parse("1.0.0").unwrap();
             releases.retain(|r| !r.prerelease || betas);
-            dbg!(&releases);
             if let Some(release) = releases.first()
                 && let Ok(release_ver) = lenient_semver::parse(release.tag_name.trim_start_matches('v'))
             {
                 match release_ver.cmp(&current_semver) {
-                    std::cmp::Ordering::Less => sender.send(Message::SetChangelog(release.description())).unwrap(),
                     std::cmp::Ordering::Greater => sender.send(Message::OfferUpdate(release.clone())).unwrap(),
-                    _ => (),
+                    _ => sender.send(Message::SetChangelog(release.description())).unwrap(),
                 }
             }
         }
@@ -358,7 +356,6 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
     let tmpfile = get_temp_file();
     fs::write(tmpfile.as_path(), data)?;
     let exe = std::env::current_exe().unwrap();
-    dbg!(&exe);
     if cfg!(windows) {
         let mut arc = zip::ZipArchive::new(fs::File::open(tmpfile.as_path())?)?;
         arc.extract(tmpfile.parent().context("Weird, no temp file parent")?)?;
