@@ -14,6 +14,7 @@ use uk_manager::{
     core::Manager,
     mods::Mod,
     settings::{DeployConfig, Platform, PlatformSettings, UpdatePreference},
+    util::get_temp_file,
 };
 use uk_mod::{unpack::ModReader, Manifest, Meta};
 use uk_reader::ResourceReader;
@@ -284,16 +285,16 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
 #[derive(Debug, Deserialize, Clone)]
 pub struct VersionAsset {
     name: String,
-    browser_download_url: String
+    browser_download_url: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct VersionResponse {
-    body:     String,
-    name:     String,
+    body: String,
+    name: String,
     tag_name: String,
     prerelease: bool,
-    assets: Vec<VersionAsset>
+    assets: Vec<VersionAsset>,
 }
 
 impl VersionResponse {
@@ -320,20 +321,61 @@ pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
         }) {
         Ok(mut releases) => {
             let current_semver = lenient_semver::parse(env!("CARGO_PKG_VERSION")).unwrap();
-            let betas = core.settings().check_updates == UpdatePreference::Beta || current_semver < lenient_semver::parse("1.0.0").unwrap();
+            let betas = core.settings().check_updates == UpdatePreference::Beta
+                || current_semver < lenient_semver::parse("1.0.0").unwrap();
             releases.retain(|r| !r.prerelease || betas);
+            dbg!(&releases);
             if let Some(release) = releases.first()
-                && let Ok(release_ver) = lenient_semver::parse(release.tag_name.trim_start_matches('v')) 
+                && let Ok(release_ver) = lenient_semver::parse(release.tag_name.trim_start_matches('v'))
             {
-                if release_ver > current_semver {
-                    sender.send(Message::OfferUpdate(release.clone())).unwrap();
-                } else if current_semver > release_ver {
-                    sender.send(Message::SetChangelog(release.description()));
+                match release_ver.cmp(&current_semver) {
+                    std::cmp::Ordering::Less => sender.send(Message::SetChangelog(release.description())).unwrap(),
+                    std::cmp::Ordering::Greater => sender.send(Message::OfferUpdate(release.clone())).unwrap(),
+                    _ => (),
                 }
             }
-        },
+        }
         Err(e) => log::warn!("{:?}", e),
     }
+}
+
+pub fn do_update(version: VersionResponse) -> Result<Message> {
+    let platform =
+        option_env!("UPDATE_PLATFORM").unwrap_or(if cfg!(windows) { "windows" } else { "linux" });
+    let asset = version
+        .assets
+        .iter()
+        .find(|asset| asset.name[..asset.name.len() - 4].ends_with(platform))
+        .context("No matching platform for update")?;
+    let data = reqwest::blocking::Client::builder()
+        .user_agent("UKMM")
+        .build()
+        .unwrap()
+        .get(&asset.browser_download_url)
+        .send()
+        .context("Failed to download release archive")?
+        .bytes()?;
+    let tmpfile = get_temp_file();
+    fs::write(tmpfile.as_path(), data)?;
+    let exe = std::env::current_exe().unwrap();
+    dbg!(&exe);
+    if cfg!(windows) {
+        let mut arc = zip::ZipArchive::new(fs::File::open(tmpfile.as_path())?)?;
+        arc.extract(tmpfile.parent().context("Weird, no temp file parent")?)?;
+        fs::copy(tmpfile.with_file_name("ukmm.exe"), exe)?;
+    } else {
+        let out = std::process::Command::new("tar")
+            .arg("xf")
+            .arg(tmpfile.as_path())
+            .arg("-C")
+            .arg(exe.parent().context("Weird, no exe parent")?)
+            .arg("--overwrite")
+            .output()?;
+        if !out.stderr.is_empty() {
+            anyhow::bail!(String::from_utf8_lossy(&out.stderr).to_string());
+        }
+    };
+    Ok(Message::Restart)
 }
 
 #[cfg(test)]

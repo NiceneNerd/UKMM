@@ -516,7 +516,7 @@ impl Writer {
             list.set_object("Def", def.clone().into());
             if children.is_some() {
                 list.set_object("ChildIdx", Default::default());
-            }   
+            }
             if let Some(behaviors) = behaviors {
                 list.set_object("BehaviorIdx", behaviors.into_iter().map(|(k, idx)| {
                     (k, Parameter::I32(idx as i32))

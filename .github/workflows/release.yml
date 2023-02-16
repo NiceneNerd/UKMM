@@ -32,6 +32,8 @@ jobs:
           toolchain: nightly
       - name: Build
         run: cargo +nightly build --release
+        env:
+          UPDATE_PLATFORM: ${{ matrix.platform.name }}
       - name: Archive Release
         uses: thedoctor0/zip-release@main
         with:

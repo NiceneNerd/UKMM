@@ -12,6 +12,7 @@ mod tasks;
 mod util;
 use std::{
     ops::DerefMut,
+    os::unix::process::CommandExt,
     path::PathBuf,
     sync::{Arc, Once},
     thread,
@@ -138,6 +139,7 @@ impl Sort {
     }
 }
 
+#[derive(Debug)]
 pub enum Message {
     AddMod(Mod),
     AddProfile,
@@ -157,6 +159,7 @@ pub enum Message {
     DeleteProfile(String),
     Deploy,
     Deselect(usize),
+    DoUpdate,
     DuplicateProfile(String),
     Error(anyhow::Error),
     FilePickerBack,
@@ -180,6 +183,7 @@ pub enum Message {
     RequestOptions(Mod, bool),
     ResetMods,
     ResetSettings,
+    Restart,
     SaveSettings,
     SelectAlso(usize),
     SelectFile,
@@ -363,7 +367,7 @@ impl App {
         });
     }
 
-    fn handle_update(&mut self, ctx: &eframe::egui::Context) {
+    fn handle_update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
                 Message::Noop => self.busy = false,
@@ -779,6 +783,22 @@ impl App {
                     self.changelog = Some(format!("A new update is available!\n\n{}", version.description()));
                     self.new_version = Some(version)                    ;
                 }
+                Message::DoUpdate => {
+                    let version = self.new_version.take().unwrap();
+                    self.do_task(move |_| {
+                        tasks::do_update(version)
+                    });
+                }
+                Message::Restart => {
+                    let exe = std::env::current_exe().unwrap();
+                    let mut command = std::process::Command::new(exe);
+                    #[cfg(unix)]
+                    {
+                        command.process_group(0);
+                    }
+                    command.spawn().unwrap();
+                    frame.close();
+                }
                 Message::Toast(msg) => {
                     self.toasts.add({
                         let mut toast = Toast::info(msg);
@@ -795,7 +815,7 @@ static LAYOUT_FIX: Once = Once::new();
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
-        self.handle_update(ctx);
+        self.handle_update(ctx, frame);
         self.render_menu(ctx, frame);
         self.render_error(ctx);
         self.render_confirm(ctx);

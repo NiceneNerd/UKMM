@@ -463,7 +463,14 @@ impl App {
                             Vec2::new(width, ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button("OK").clicked() {
+                                if self.new_version.is_some() {
+                                    if ui.button("Update").clicked() {
+                                        self.do_update(Message::DoUpdate);
+                                    }
+                                    if ui.button("Cancel").clicked() {
+                                        self.do_update(Message::CloseChangelog);
+                                    }
+                                } else if ui.button("OK").clicked() {
                                     self.do_update(Message::CloseChangelog);
                                 }
                                 ui.shrink_width_to_current();

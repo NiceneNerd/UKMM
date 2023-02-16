@@ -3,11 +3,7 @@ use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
-use crate::{
-    prelude::*,
-    util::DeleteMap,
-    Result, UKError,
-};
+use crate::{prelude::*, util::DeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
 pub struct ChemicalRes {
