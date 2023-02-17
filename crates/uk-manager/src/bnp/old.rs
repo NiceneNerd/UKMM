@@ -5,12 +5,51 @@ use fs_err as fs;
 use roead::{aamp::*, byml::Byml, sarc::Sarc, types::*};
 use serde_yaml::{value::TaggedValue, Value};
 use uk_content::{
+    bhash,
     message::{Entry, Msyt},
-    util::HashMap,
+    util::{HashMap, IteratorExt},
 };
 
 use super::texts::TextsLog;
 use crate::settings::Language;
+
+fn value_to_byml(value: Value) -> Result<Byml> {
+    let by = match value {
+        Value::Null => Byml::Null,
+        Value::Bool(v) => Byml::Bool(v),
+        Value::Number(v) => {
+            match v.as_i64() {
+                Some(v) => Byml::I32(v as i32),
+                None => {
+                    v.as_f64()
+                        .map(|v| Byml::Float(v as f32))
+                        .context("Invalid numeric value")?
+                }
+            }
+        }
+        Value::String(v) => Byml::String(v.into()),
+        Value::Sequence(seq) => {
+            Byml::Array(seq.into_iter().map(value_to_byml).collect::<Result<_>>()?)
+        }
+        Value::Mapping(map) => {
+            map.into_iter()
+                .map(|(k, v)| -> Result<(smartstring::alias::String, Byml)> {
+                    let k = k.as_str().context("Bad BYML key")?.into();
+                    let v = value_to_byml(v)?;
+                    Ok((k, v))
+                })
+                .collect::<Result<Byml>>()?
+        }
+        Value::Tagged(v) => {
+            if v.tag == "u" {
+                Byml::U32(v.value.as_u64().context("Invalid u32")? as u32)
+            } else {
+                bail!("Unsupported BYML type")
+            }
+        }
+    };
+    Ok(by)
+}
 
 fn param_from_value(value: Value) -> Result<Parameter> {
     let param = match value {
@@ -200,6 +239,17 @@ impl Bnp2xConverter {
         let aamp_path = self.path.join("logs/deepmerge.yml");
         if aamp_path.exists() {
             let merge_log: Value = serde_yaml::from_str(&fs::read_to_string(aamp_path)?)?;
+            let Value::Mapping(merge_log) = merge_log else {
+                bail!("Invalid deepmerge log")
+            };
+            let mut new_log = ParameterIO::new();
+            let file_table = new_log.param_root.objects.entry("FileTable").or_default();
+            for (index, (k, v)) in merge_log.into_iter().named_enumerate("File") {
+                let key = k.as_str().context("Invalid deepmerge log entry")?;
+                file_table.insert(index, Parameter::StringRef(key.into()));
+                new_log.param_root.lists.insert(key, plist_from_value(v)?);
+            }
+            fs::write(self.path.join("logs/deepmerge.aamp"), new_log.to_binary())?;
         }
         Ok(())
     }
@@ -265,6 +315,57 @@ impl Bnp2xConverter {
                 self.path.join("logs/texts.json"),
                 serde_json::to_string(&diff)?,
             )?;
+        }
+        Ok(())
+    }
+
+    fn convert_gamedata_log(&self) -> Result<()> {
+        let gdata_log = self.path.join("logs/gamedata.yml");
+        if gdata_log.exists() {
+            let log = Byml::from_text(fs::read_to_string(&gdata_log)?)?.into_hash()?;
+            let new_log = log
+                .into_iter()
+                .map(|(data_type, diff)| {
+                    (
+                        data_type,
+                        bhash!("add" => diff, "del" => Byml::Array(vec![])),
+                    )
+                })
+                .collect::<Byml>();
+            fs::write(gdata_log, new_log.to_text().unwrap())?;
+        }
+        Ok(())
+    }
+
+    fn convert_savedata_log(&self) -> Result<()> {
+        let sdata_log = self.path.join("logs/savedata.yml");
+        if sdata_log.exists() {
+            let log = Byml::from_text(fs::read_to_string(&sdata_log)?)?;
+            fs::write(
+                sdata_log,
+                bhash!("add" => log, "del" => Byml::Array(vec![]))
+                    .to_text()
+                    .unwrap(),
+            )?;
+        }
+        Ok(())
+    }
+
+    fn convert_map_log(&self) -> Result<()> {
+        let map_log = self.path.join("map.yml");
+        if map_log.exists() {
+            let Value::Mapping(log) = serde_yaml::from_str(&fs::read_to_string(&map_log)?)? else {
+                bail!("Invalid map log")
+            };
+            let new_log = log
+                .into_iter()
+                .map(|(unit, diff)| -> Result<(String, Byml)> {
+                    let unit: String = unit.as_str().context("Invalid map unit")?.into();
+                    let new_diff = bhash!(
+                        "add" => todo!()
+                    );
+                })
+                .collect::<Result<Byml>>()?;
         }
         Ok(())
     }
