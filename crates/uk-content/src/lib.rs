@@ -1,5 +1,4 @@
 #![feature(
-    bench_black_box,
     type_alias_impl_trait,
     drain_filter,
     arbitrary_self_types,

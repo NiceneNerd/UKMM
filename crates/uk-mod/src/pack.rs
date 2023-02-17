@@ -153,7 +153,7 @@ impl From<BnpGroup> for ExclusiveOptionGroup {
 }
 
 impl ModPacker {
-    fn parse_rules(path: PathBuf) -> Result<Meta> {
+    pub fn parse_rules(path: PathBuf) -> Result<Meta> {
         use configparser::ini::Ini;
         let mut rules = Ini::new();
         let parent = path.parent().context("No parent path???")?;

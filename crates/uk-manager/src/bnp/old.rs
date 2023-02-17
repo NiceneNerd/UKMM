@@ -1,4 +1,7 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use anyhow::{bail, Context, Result};
 use fs_err as fs;
@@ -208,14 +211,39 @@ fn plist_from_value(value: Value) -> Result<ParameterList> {
         ))
 }
 
-struct Bnp2xConverter {
-    path: PathBuf,
+pub struct Bnp2xConverter<'a> {
+    path: &'a Path,
 }
 
-impl Bnp2xConverter {
+impl<'a> Bnp2xConverter<'a> {
+    pub fn new(path: &'a Path) -> Self {
+        Self { path }
+    }
+
+    pub fn convert(&self) -> Result<()> {
+        log::info!("Converting old BNP logs…");
+        std::thread::scope(|s| -> Result<()> {
+            let jobs = vec![
+                s.spawn(|| self.convert_pack_log()),
+                s.spawn(|| self.convert_aamp_log()),
+                s.spawn(|| self.convert_text_logs()),
+                s.spawn(|| self.convert_gamedata_log()),
+                s.spawn(|| self.convert_savedata_log()),
+                s.spawn(|| self.convert_map_log()),
+            ];
+            for job in jobs {
+                job.join().expect("Failed to join thread")?;
+            }
+            Ok(())
+        })?;
+        log::info!("Finished converting old BNP logs");
+        Ok(())
+    }
+
     fn convert_pack_log(&self) -> Result<()> {
         let packs_path = self.path.join("logs/packs.log");
         if packs_path.exists() {
+            log::debug!("Converting old pack log");
             let text = fs::read_to_string(packs_path)?;
             let json: HashMap<String, String> = text
                 .lines()
@@ -238,6 +266,7 @@ impl Bnp2xConverter {
     fn convert_aamp_log(&self) -> Result<()> {
         let aamp_path = self.path.join("logs/deepmerge.yml");
         if aamp_path.exists() {
+            log::debug!("Converting old deepmerge log");
             let merge_log: Value = serde_yaml::from_str(&fs::read_to_string(aamp_path)?)?;
             let Value::Mapping(merge_log) = merge_log else {
                 bail!("Invalid deepmerge log")
@@ -277,6 +306,7 @@ impl Bnp2xConverter {
             })
             .collect::<Vec<_>>();
         if !(yaml_logs.is_empty() && sarc_logs.is_empty()) {
+            log::debug!("Converting old text log");
             let mut diff: TextsLog = TextsLog::default();
             for yaml_log in yaml_logs {
                 let lang: Language = Language::from_str(
@@ -322,6 +352,7 @@ impl Bnp2xConverter {
     fn convert_gamedata_log(&self) -> Result<()> {
         let gdata_log = self.path.join("logs/gamedata.yml");
         if gdata_log.exists() {
+            log::debug!("Converting old gamedata log");
             let log = Byml::from_text(fs::read_to_string(&gdata_log)?)?.into_hash()?;
             let new_log = log
                 .into_iter()
@@ -340,6 +371,7 @@ impl Bnp2xConverter {
     fn convert_savedata_log(&self) -> Result<()> {
         let sdata_log = self.path.join("logs/savedata.yml");
         if sdata_log.exists() {
+            log::debug!("Converting old savedata log");
             let log = Byml::from_text(fs::read_to_string(&sdata_log)?)?;
             fs::write(
                 sdata_log,
@@ -354,6 +386,7 @@ impl Bnp2xConverter {
     fn convert_map_log(&self) -> Result<()> {
         let map_log = self.path.join("map.yml");
         if map_log.exists() {
+            log::debug!("Converting old map log");
             let Value::Mapping(log) = serde_yaml::from_str(&fs::read_to_string(&map_log)?)? else {
                 bail!("Invalid map log")
             };
@@ -361,11 +394,43 @@ impl Bnp2xConverter {
                 .into_iter()
                 .map(|(unit, diff)| -> Result<(String, Byml)> {
                     let unit: String = unit.as_str().context("Invalid map unit")?.into();
+                    let Value::Mapping(mut diff) = diff else {
+                        bail!("Bad map log")
+                    };
                     let new_diff = bhash!(
-                        "add" => todo!()
+                        "Objs" => bhash!(
+                            "add" => diff.remove("add")
+                                .map(value_to_byml)
+                                .transpose()?
+                                .unwrap_or_default(),
+                            "del" => diff.remove("del")
+                                .map(value_to_byml)
+                                .transpose()?
+                                .unwrap_or_default(),
+                            "mod" => diff.remove("mod")
+                                .map(|mod_diff| -> Result<Byml> {
+                                    let Value::Mapping(mod_diff) = mod_diff else {
+                                        bail!("Invalid map diff entry")
+                                    };
+                                    mod_diff.into_iter().map(|(k, v)| -> Result<(String, Byml)> {
+                                        let k = k.as_u64().context("Invalid hash ID for map diff entry")?;
+                                        let v = value_to_byml(v)?;
+                                        Ok((k.to_string(), v))
+                                    }).collect::<Result<_>>()
+                                })
+                                .transpose()?
+                                .unwrap_or_default()
+                        ),
+                        "Rails" => bhash!(
+                            "add" => Byml::Array(vec![]),
+                            "del" => Byml::Array(vec![]),
+                            "mod" => Byml::Hash(Default::default())
+                        )
                     );
+                    Ok((unit, new_diff))
                 })
                 .collect::<Result<Byml>>()?;
+            fs::write(map_log, new_log.to_text().unwrap())?;
         }
         Ok(())
     }

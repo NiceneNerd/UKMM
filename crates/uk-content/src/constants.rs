@@ -5,8 +5,9 @@ use uk_ui_derive::Editable;
 
 use crate::UKError;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Editable)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Editable)]
 pub enum Weather {
+    #[default]
     Bluesky,
     Cloudy,
     Rain,
@@ -72,12 +73,6 @@ impl From<&Weather> for smartstring::alias::String {
 impl fmt::Display for Weather {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(&self, f)
-    }
-}
-
-impl Default for Weather {
-    fn default() -> Self {
-        Weather::Bluesky
     }
 }
 

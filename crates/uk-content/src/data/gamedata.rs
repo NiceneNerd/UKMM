@@ -196,11 +196,7 @@ impl SarcSource<'_> {
     fn iter(&self) -> Box<dyn Iterator<Item = (&str, &[u8])> + '_> {
         match self {
             Self::Reader(sarc) => {
-                Box::new(
-                    sarc.files()
-                        .into_iter()
-                        .filter_map(|f| f.name.map(|n| (n, f.data))),
-                )
+                Box::new(sarc.files().filter_map(|f| f.name.map(|n| (n, f.data))))
             }
             Self::Writer(sarcwriter) => {
                 Box::new(

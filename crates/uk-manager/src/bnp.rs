@@ -352,6 +352,11 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = crate::util::get_temp_folder();
     log::info!("Extracting BNP…");
     extract_7z(path, &tempdir).context("Failed to extract BNP")?;
+    if tempdir.join("rules.txt").exists() && !tempdir.join("info.json").exists() {
+        old::Bnp2xConverter::new(&tempdir)
+            .convert()
+            .context("Failed to upgrade 2.x BNP")?;
+    }
     let (content, aoc) = uk_content::platform_prefixes(core.settings().current_mode.into());
     log::info!("Processing BNP logs…");
     let converter = BnpConverter {
@@ -374,14 +379,16 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     Ok(path)
 }
 
+#[allow(irrefutable_let_patterns)]
 pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = unpack_bnp(core, path).context("Failed to unpack BNP")?;
     let tempfile = std::env::temp_dir();
-    if tempdir.join("rules.txt").exists() {
-        anyhow::bail!("This BNP was created by BCML 2.x. Only BCML 3 BNPs are supported.");
-    }
-    let meta =
-        ModPacker::parse_info(tempdir.join("info.json")).context("Failed to parse BNP metadata")?;
+    let meta  =
+    if let rules_path = tempdir.join("rules.txt") && rules_path.exists() {
+        ModPacker::parse_rules(rules_path)?
+    } else {
+        ModPacker::parse_info(tempdir.join("info.json")).context("Failed to parse BNP metadata")?
+    };
     let new_mod = ModPacker::new(tempdir, tempfile.as_path(), Some(meta), vec![
         core.settings()
             .dump()
