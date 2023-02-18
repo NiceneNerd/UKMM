@@ -1,12 +1,10 @@
-use std::{
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{path::Path, str::FromStr};
 
 use anyhow::{bail, Context, Result};
 use fs_err as fs;
 use roead::{aamp::*, byml::Byml, sarc::Sarc, types::*};
-use serde_yaml::{value::TaggedValue, Value};
+use serde::Deserialize;
+use serde_yaml::Value;
 use uk_content::{
     bhash,
     message::{Entry, Msyt},
@@ -305,6 +303,13 @@ impl<'a> Bnp2xConverter<'a> {
                 })
             })
             .collect::<Vec<_>>();
+
+        #[derive(Debug, Deserialize)]
+        struct MsbtEntries {
+            #[serde(with = "serde_yaml::with::singleton_map_recursive")]
+            entries: HashMap<String, Entry>,
+        }
+
         if !(yaml_logs.is_empty() && sarc_logs.is_empty()) {
             log::debug!("Converting old text log");
             let mut diff: TextsLog = TextsLog::default();
@@ -316,9 +321,9 @@ impl<'a> Bnp2xConverter<'a> {
                         .map(|n| &n[6..])
                         .context("Bad file language")?,
                 )?;
-                let log: HashMap<String, HashMap<String, Entry>> =
+                let log: HashMap<String, MsbtEntries> =
                     serde_yaml::from_str(&fs::read_to_string(yaml_log)?)?;
-                diff.insert(lang, log);
+                diff.insert(lang, log.into_iter().map(|(k, v)| (k, v.entries)).collect());
             }
             for sarc_log in sarc_logs {
                 let lang: Language = Language::from_str(
@@ -384,7 +389,7 @@ impl<'a> Bnp2xConverter<'a> {
     }
 
     fn convert_map_log(&self) -> Result<()> {
-        let map_log = self.path.join("map.yml");
+        let map_log = self.path.join("logs/map.yml");
         if map_log.exists() {
             log::debug!("Converting old map log");
             let Value::Mapping(log) = serde_yaml::from_str(&fs::read_to_string(&map_log)?)? else {
