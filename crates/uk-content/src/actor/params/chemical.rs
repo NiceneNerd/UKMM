@@ -6,6 +6,7 @@ use roead::{
     byml::{Byml, Hash},
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
@@ -15,13 +16,15 @@ use crate::{
     Result, UKError,
 };
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct ChemicalBody {
     pub shape:   ParameterObject,
     pub rigid_c: ParameterObject,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct Chemical {
     pub unknown: Option<usize>,
     pub body:    BTreeMap<usize, ChemicalBody>,

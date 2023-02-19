@@ -1,4 +1,5 @@
 mod deser;
+#[cfg(feature = "ui")]
 mod ui;
 use std::collections::{BTreeMap, BTreeSet};
 

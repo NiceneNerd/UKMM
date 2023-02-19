@@ -2,6 +2,7 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
@@ -11,7 +12,8 @@ use crate::{
     Result, UKError,
 };
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Editable, ParamData)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, ParamData)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct BodyParam {
     #[name = "RigidName"]
     pub name: String64,
@@ -21,7 +23,8 @@ pub struct BodyParam {
     pub buoyancy_scale: f32,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Editable)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct RagdollConfigList {
     pub common_data:     ParameterObject,
     pub impulse_params:  ParameterList,

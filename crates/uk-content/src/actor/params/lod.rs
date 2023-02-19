@@ -1,11 +1,13 @@
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{actor::ParameterResource, prelude::*};
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct Lod(pub ParameterIO);
 
 impl From<&ParameterIO> for Lod {

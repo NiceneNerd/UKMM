@@ -1,11 +1,13 @@
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{actor::ParameterResource, prelude::*, util::IndexMap, Result, UKError};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct ShopItem {
     pub sort: i32,
     pub num: i32,
@@ -34,7 +36,8 @@ fn merge_table(base: &ShopTable, diff: &ShopTable) -> ShopTable {
         .collect()
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct ShopData(pub IndexMap<String64, Option<ShopTable>>);
 
 impl TryFrom<ParameterIO> for ShopData {

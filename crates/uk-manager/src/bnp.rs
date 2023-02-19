@@ -14,14 +14,11 @@ use roead::{
     yaz0::{compress_if, decompress_if},
 };
 use rustc_hash::FxHashMap;
-use uk_content::util::HashSet;
+use uk_content::{constants::Language, util::HashSet};
 use uk_mod::pack::ModPacker;
 use uk_reader::ResourceReader;
 
-use crate::{
-    settings::{Language, Platform},
-    util::extract_7z,
-};
+use crate::{settings::Platform, util::extract_7z};
 mod actorinfo;
 mod areadata;
 mod aslist;

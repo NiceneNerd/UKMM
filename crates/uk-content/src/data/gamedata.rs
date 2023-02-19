@@ -14,6 +14,7 @@ use crate::{
     util::{bhash, DeleteMap},
     Result, UKError,
 };
+#[cfg(feature = "ui")]
 mod ui;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]

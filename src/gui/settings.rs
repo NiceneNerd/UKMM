@@ -9,7 +9,8 @@ use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
-use uk_manager::settings::{DeployConfig, Language, Platform, PlatformSettings};
+use uk_content::constants::Language;
+use uk_manager::settings::{DeployConfig, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
 use uk_ui::{
     egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},

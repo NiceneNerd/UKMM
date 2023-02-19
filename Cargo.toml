@@ -37,7 +37,7 @@ serde = { version = "1.0.144", features = ["derive", "rc"] }
 serde_json = "1.0.85"
 serde_yaml = "0.9.13"
 smartstring = { version = "1.0.1", features = ["serde"] }
-uk-content = { path = "crates/uk-content" }
+uk-content = { path = "crates/uk-content", features = ["ui"] }
 uk-manager = { path = "crates/uk-manager" }
 uk-mod = { path = "crates/uk-mod" }
 uk-reader = { path = "crates/uk-reader" }

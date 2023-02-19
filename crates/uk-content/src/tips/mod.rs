@@ -1,11 +1,13 @@
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable, BymlData)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct TipData {
     #[name = "ConditionEntry"]
     condition_entry: String,
@@ -21,7 +23,8 @@ pub struct TipData {
     priority: String,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct Tips(pub SortedDeleteMap<String, TipData>);
 
 impl TryFrom<&Byml> for Tips {

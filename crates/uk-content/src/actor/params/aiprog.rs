@@ -1,3 +1,4 @@
+#[cfg(feature = "ui")]
 mod ui;
 use std::{
     collections::{BTreeMap, HashSet},
@@ -11,6 +12,7 @@ use roead::{aamp::*, h};
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
@@ -23,9 +25,8 @@ use crate::{
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct BehaviorMap(pub IndexMap<u32, String32>);
 
-#[derive(
-    Debug, Default, Clone, PartialEq, Hash, Eq, Deserialize, Serialize, Editable, ParamData,
-)]
+#[derive(Debug, Default, Clone, PartialEq, Hash, Eq, Deserialize, Serialize, ParamData)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct AIDef {
     #[name = "Name"]
     pub name: Option<String>,
@@ -35,7 +36,8 @@ pub struct AIDef {
     pub group_name: Option<String>,
 }
 
-#[derive(Debug, Default, Copy, Clone, PartialEq, Hash, Eq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub enum Category {
     #[default]
     AI,
@@ -55,7 +57,8 @@ impl std::fmt::Display for Category {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Clone, Deserialize, Serialize, Editable)]
+#[derive(Debug, Default, PartialEq, Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct AIEntry {
     pub category: Category,
     pub def: AIDef,
@@ -177,7 +180,8 @@ impl Mergeable for AIEntry {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct AIProgram {
     pub demos:     IndexMap<Name, AIEntry>,
     pub behaviors: BTreeMap<usize, AIEntry>,

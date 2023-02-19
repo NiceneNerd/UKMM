@@ -1,9 +1,12 @@
-use std::{collections::HashSet, sync::Arc};
+use std::collections::HashSet;
+#[cfg(feature = "ui")]
+use std::sync::Arc;
 
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
+#[cfg(feature = "ui")]
 use uk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
 
 use crate::{
@@ -29,6 +32,7 @@ impl ToString for Key {
     }
 }
 
+#[cfg(feature = "ui")]
 impl uk_ui::editor::EditableValue for Key {
     const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Inline;
 
@@ -210,7 +214,7 @@ impl Resource for RagdollBlendWeight {
         path.as_ref().extension().and_then(|ext| ext.to_str()) == Some("brgbw")
     }
 }
-
+#[cfg(feature = "ui")]
 impl EditableValue for RagdollBlendWeight {
     const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Block;
 

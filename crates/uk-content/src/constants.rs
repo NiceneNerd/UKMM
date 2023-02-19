@@ -1,11 +1,114 @@
-use std::fmt;
+use std::{fmt, path::Path, str::FromStr};
 
+use enum_iterator::Sequence;
+use join_str::jstr;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::UKError;
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Editable)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence, Serialize, Deserialize)]
+pub enum Language {
+    USen,
+    EUen,
+    USfr,
+    USes,
+    EUde,
+    EUes,
+    EUfr,
+    EUit,
+    EUnl,
+    EUru,
+    CNzh,
+    JPja,
+    KRko,
+    TWzh,
+}
+
+impl fmt::Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.to_str())
+    }
+}
+
+impl Language {
+    #[inline(always)]
+    pub fn to_str(self) -> &'static str {
+        self.into()
+    }
+
+    #[inline(always)]
+    pub fn short(&self) -> &'static str {
+        &self.to_str()[2..4]
+    }
+
+    pub fn nearest<'l>(&self, langs: &'l [Self]) -> &'l Self {
+        langs
+            .iter()
+            .find(|lang| *lang == self)
+            .or_else(|| langs.iter().find(|lang| lang.short() == self.short()))
+            .or_else(|| langs.iter().find(|lang| lang.short() == "en"))
+            .or_else(|| langs.first())
+            .unwrap_or(&Language::USen)
+    }
+
+    #[inline(always)]
+    pub fn from_path(path: &Path) -> Option<Self> {
+        path.file_name()
+            .and_then(|n| n.to_str())
+            .filter(|n| n.len() >= 4)
+            .and_then(|n| Self::from_str(&n[n.len() - 4..]).ok())
+    }
+}
+
+impl FromStr for Language {
+    type Err = UKError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "USen" => Ok(Language::USen),
+            "EUen" => Ok(Language::EUen),
+            "USfr" => Ok(Language::USfr),
+            "USes" => Ok(Language::USes),
+            "EUde" => Ok(Language::EUde),
+            "EUes" => Ok(Language::EUes),
+            "EUfr" => Ok(Language::EUfr),
+            "EUit" => Ok(Language::EUit),
+            "EUnl" => Ok(Language::EUnl),
+            "EUru" => Ok(Language::EUru),
+            "CNzh" => Ok(Language::CNzh),
+            "JPja" => Ok(Language::JPja),
+            "KRko" => Ok(Language::KRko),
+            "TWzh" => Ok(Language::TWzh),
+            _ => Err(UKError::OtherD(jstr!("Invalid language: {s}"))),
+        }
+    }
+}
+
+impl From<Language> for &str {
+    fn from(lang: Language) -> Self {
+        match lang {
+            Language::USen => "USen",
+            Language::EUen => "EUen",
+            Language::USfr => "USfr",
+            Language::USes => "USes",
+            Language::EUde => "EUde",
+            Language::EUes => "EUes",
+            Language::EUfr => "EUfr",
+            Language::EUit => "EUit",
+            Language::EUnl => "EUnl",
+            Language::EUru => "EUru",
+            Language::CNzh => "CNzh",
+            Language::JPja => "JPja",
+            Language::KRko => "KRko",
+            Language::TWzh => "TWzh",
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub enum Weather {
     #[default]
     Bluesky,
@@ -77,7 +180,8 @@ impl fmt::Display for Weather {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Editable)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub enum Time {
     Morning_A,
     Morning_B,

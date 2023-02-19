@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
@@ -10,14 +11,16 @@ use crate::{
     Result, UKError,
 };
 
-#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct EntryPos {
     pub rotate: roead::byml::Byml,
     pub translate: roead::byml::Byml,
     pub player_state: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct Static {
     pub general:   BTreeMap<String, DeleteVec<Byml>>,
     pub start_pos: DeleteMap<String, DeleteMap<String, EntryPos>>,

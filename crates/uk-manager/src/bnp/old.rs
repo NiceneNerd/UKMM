@@ -7,12 +7,12 @@ use serde::Deserialize;
 use serde_yaml::Value;
 use uk_content::{
     bhash,
+    constants::Language,
     message::{Entry, Msyt},
     util::{HashMap, IteratorExt},
 };
 
 use super::texts::TextsLog;
-use crate::settings::Language;
 
 fn value_to_byml(value: Value) -> Result<Byml> {
     let by = match value {

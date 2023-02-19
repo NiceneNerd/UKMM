@@ -1,6 +1,7 @@
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
@@ -9,7 +10,8 @@ use crate::{
     Result,
 };
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Editable)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct GeneralParamList(pub ParameterIO);
 
 impl From<&ParameterIO> for GeneralParamList {

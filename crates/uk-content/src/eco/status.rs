@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
@@ -10,7 +11,8 @@ use crate::{
     Result, UKError,
 };
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub enum StatusEffectValues {
     Special,
     Normal(DeleteVec<f32>),
@@ -110,7 +112,8 @@ impl Mergeable for StatusEffectValues {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct StatusEffectList(pub BTreeMap<String, StatusEffectValues>);
 
 impl TryFrom<&Byml> for StatusEffectList {

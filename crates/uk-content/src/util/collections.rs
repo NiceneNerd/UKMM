@@ -3,6 +3,7 @@ use std::{borrow::Borrow, collections::BTreeMap, hash::Hash};
 use itertools::Itertools;
 
 use crate::prelude::Mergeable;
+#[cfg(feature = "ui")]
 mod ui;
 
 pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;

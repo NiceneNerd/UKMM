@@ -2,11 +2,13 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable, ParamData)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, ParamData)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct AddRes {
     #[name = "Anim"]
     pub anim: String64,
@@ -16,7 +18,8 @@ pub struct AddRes {
     pub retarget_nocorrect: Option<bool>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct ASList {
     pub common:     Option<ParameterObject>,
     pub add_reses:  DeleteMap<String, AddRes>,

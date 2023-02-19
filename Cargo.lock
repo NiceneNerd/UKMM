@@ -4725,6 +4725,7 @@ name = "uk-content"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "enum-iterator",
  "indexmap",
  "itertools",
  "join_str",
@@ -4792,7 +4793,6 @@ dependencies = [
  "dashmap",
  "dircpy",
  "dirs2",
- "enum-iterator",
  "fs-err",
  "join_str",
  "junction",

@@ -1,5 +1,6 @@
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
@@ -8,14 +9,16 @@ use crate::{
     Result, UKError,
 };
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct LocationEntry {
     pub show_level: usize,
     pub translate: Byml,
     pub ltype: usize,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct Location(pub SortedDeleteMap<String, DeleteVec<LocationEntry>>);
 
 impl TryFrom<&Byml> for Location {

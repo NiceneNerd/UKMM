@@ -1,10 +1,12 @@
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct MapUnit {
     pub pos_x:   Option<f32>,
     pub pos_z:   Option<f32>,

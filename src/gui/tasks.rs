@@ -265,7 +265,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         }
     } else {
         settings.wiiu_config = Some(PlatformSettings {
-            language: uk_manager::settings::Language::USen,
+            language: uk_content::constants::Language::USen,
             profile: "Default".into(),
             dump,
             deploy_config: gfx_folder.map(|gfx_folder| {

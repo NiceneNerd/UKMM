@@ -1,6 +1,7 @@
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
@@ -10,7 +11,8 @@ use crate::{
     Result, UKError,
 };
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct AttClient {
     pub client_params: ParameterObject,
     pub checks: DeleteVec<ParameterList>,

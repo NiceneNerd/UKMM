@@ -1,5 +1,6 @@
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
@@ -8,7 +9,8 @@ use crate::{
     Result, UKError,
 };
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct CookData {
     pub recipes: DeleteVec<Byml>,
     pub single_recipes: DeleteVec<Byml>,

@@ -1,11 +1,13 @@
 use join_str::jstr;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{actor::ParameterResource, prelude::*};
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, Editable)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct AnimationInfo(pub Byml);
 
 impl From<Byml> for AnimationInfo {

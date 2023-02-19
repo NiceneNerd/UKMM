@@ -16,7 +16,7 @@ parking_lot = "0.12.1"
 rayon = "1.6.1"
 rfd = "0.10.0"
 roead = { version = "0.20.0", features = ["with-serde", "yaml"] }
-uk-content = { path = "../uk-content" }
+uk-content = { path = "../uk-content", features = ["ui"] }
 uk-manager = { path ="../uk-manager" }
 uk-mod = { path = "../uk-mod" }
 uk-ui = { path = "../uk-ui" }

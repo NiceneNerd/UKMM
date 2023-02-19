@@ -3,10 +3,9 @@ use fs_err as fs;
 use roead::sarc::SarcWriter;
 use rustc_hash::FxHashMap;
 use smartstring::alias::String;
-use uk_content::{message::*, prelude::Resource, resource::MergeableResource};
+use uk_content::{constants::Language, message::*, prelude::Resource, resource::MergeableResource};
 
 use super::BnpConverter;
-use crate::settings::Language;
 
 pub(crate) type TextsLog = FxHashMap<Language, FxHashMap<String, FxHashMap<String, Entry>>>;
 

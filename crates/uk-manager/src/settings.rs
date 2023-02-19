@@ -1,19 +1,16 @@
 use std::{
-    fmt::Display,
     path::{Path, PathBuf},
-    str::FromStr,
     sync::Arc,
 };
 
 use anyhow::{Context, Result};
-use enum_iterator::Sequence;
 use fs_err as fs;
-use join_str::jstr;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DefaultOnError};
 use smartstring::alias::String;
+use uk_content::constants::Language;
 use uk_reader::ResourceReader;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -98,98 +95,6 @@ impl From<Platform> for rstb::Endian {
         }
     }
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence, Serialize, Deserialize)]
-pub enum Language {
-    USen,
-    EUen,
-    USfr,
-    USes,
-    EUde,
-    EUes,
-    EUfr,
-    EUit,
-    EUnl,
-    EUru,
-    CNzh,
-    JPja,
-    KRko,
-    TWzh,
-}
-
-impl Display for Language {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.to_str())
-    }
-}
-
-impl Language {
-    #[inline(always)]
-    pub fn to_str(self) -> &'static str {
-        self.into()
-    }
-
-    #[inline(always)]
-    pub fn short(&self) -> &'static str {
-        &self.to_str()[2..4]
-    }
-
-    pub fn nearest<'l>(&self, langs: &'l [Self]) -> &'l Self {
-        langs
-            .iter()
-            .find(|lang| *lang == self)
-            .or_else(|| langs.iter().find(|lang| lang.short() == self.short()))
-            .or_else(|| langs.iter().find(|lang| lang.short() == "en"))
-            .or_else(|| langs.first())
-            .unwrap_or(&Language::USen)
-    }
-}
-
-impl FromStr for Language {
-    type Err = uk_content::UKError;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s {
-            "USen" => Ok(Language::USen),
-            "EUen" => Ok(Language::EUen),
-            "USfr" => Ok(Language::USfr),
-            "USes" => Ok(Language::USes),
-            "EUde" => Ok(Language::EUde),
-            "EUes" => Ok(Language::EUes),
-            "EUfr" => Ok(Language::EUfr),
-            "EUit" => Ok(Language::EUit),
-            "EUnl" => Ok(Language::EUnl),
-            "EUru" => Ok(Language::EUru),
-            "CNzh" => Ok(Language::CNzh),
-            "JPja" => Ok(Language::JPja),
-            "KRko" => Ok(Language::KRko),
-            "TWzh" => Ok(Language::TWzh),
-            _ => Err(uk_content::UKError::OtherD(jstr!("Invalid language: {s}"))),
-        }
-    }
-}
-
-impl From<Language> for &str {
-    fn from(lang: Language) -> Self {
-        match lang {
-            Language::USen => "USen",
-            Language::EUen => "EUen",
-            Language::USfr => "USfr",
-            Language::USes => "USes",
-            Language::EUde => "EUde",
-            Language::EUes => "EUes",
-            Language::EUfr => "EUfr",
-            Language::EUit => "EUit",
-            Language::EUnl => "EUnl",
-            Language::EUru => "EUru",
-            Language::CNzh => "CNzh",
-            Language::JPja => "JPja",
-            Language::KRko => "KRko",
-            Language::TWzh => "TWzh",
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeployConfig {
     pub output: PathBuf,
