@@ -6,12 +6,9 @@ use std::{
 use anyhow::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
-use uk_content::{
-    resource::ResourceData,
-    util::{HashSet, IndexMap},
-};
+use uk_content::{resource::ResourceData, util::IndexMap};
 use uk_manager::{core::Manager, settings::Platform};
-use uk_mod::{pack::sanitise, unpack::ParallelZipReader, Manifest, Meta};
+use uk_mod::{pack::sanitise, unpack::ParallelZipReader, Meta};
 
 #[derive(Debug, Clone)]
 pub struct Project {

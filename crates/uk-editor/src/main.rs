@@ -125,7 +125,7 @@ impl App {
                 .set_directory(self.core.settings().projects_dir())
                 .pick_folder()
             {
-                self.do_task(move |core| {
+                self.do_task(move |_core| {
                     let project = project::Project::open(&folder)?;
                     Ok(Message::OpenProject(project))
                 });

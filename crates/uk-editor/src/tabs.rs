@@ -4,17 +4,13 @@ use std::{
     fmt::Write,
     hash::{Hash, Hasher},
     ops::Deref,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use path_slash::PathBufExt;
-use uk_content::{
-    resource::ResourceData,
-    util::{HashMap, HashSet},
-};
-use uk_mod::Manifest;
+use uk_content::{resource::ResourceData, util::HashMap};
 use uk_ui::{
     editor::EditableValue,
     egui::{self, Ui},
@@ -63,7 +59,7 @@ impl TabViewer for super::App {
                     self.render_file_tree(&project.files, ui);
                 }
             }
-            Tabs::Editor(path, saved_data, edit_data) => {
+            Tabs::Editor(_path, _saved_data, edit_data) => {
                 if let ResourceData::Mergeable(ref mut resource) = *edit_data.borrow_mut() {
                     resource.edit_ui(ui);
                 }

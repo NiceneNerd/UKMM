@@ -12,7 +12,7 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 use botw_utils::hashes::StockHashTable;
-use dashmap::{DashMap, DashSet};
+use dashmap::DashMap;
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
@@ -32,7 +32,7 @@ use uk_content::{
     platform_content, platform_prefixes,
     prelude::{Endian, Mergeable, Resource},
     resource::{MergeableResource, ResourceData, SarcMap},
-    util::{HashMap, HashSet, IndexSet},
+    util::{HashMap, IndexSet},
 };
 use uk_reader::{ResourceLoader, ResourceReader};
 
