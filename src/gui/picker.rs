@@ -22,7 +22,7 @@ pub struct FilePickerState {
 
 impl Default for FilePickerState {
     fn default() -> Self {
-        let path = dirs2::download_dir().unwrap();
+        let path = dirs2::download_dir().or_else(dirs2::home_dir).unwrap();
         Self {
             path_input: path.display().to_string(),
             entries: Self::load_entries(&path),
