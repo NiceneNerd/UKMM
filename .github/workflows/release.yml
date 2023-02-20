@@ -36,6 +36,7 @@ jobs:
           UPDATE_PLATFORM: ${{ matrix.platform.name }}
       - name: UPX Compress Binary
         uses: crazy-max/ghaction-upx@v2.2.0
+        if: matrix.platform.name != 'windows'
         with:
           version: v4.0.2
           args: --best --lzma
