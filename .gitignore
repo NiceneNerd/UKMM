@@ -1,6 +1,7 @@
 /target
 /.vscode
 tmp.txt
-/uk-mod/test
+/crates/uk-mod/test
 jsconfig.json
 sciter.d.ts
+dump.bin
