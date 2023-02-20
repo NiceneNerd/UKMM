@@ -220,73 +220,77 @@ impl ModPacker {
         meta: Option<Meta>,
         masters: Vec<Arc<uk_reader::ResourceReader>>,
     ) -> Result<Self> {
-        log::info!("Attempting to package mod at {}", source.as_ref().display());
-        let source_dir = source.as_ref().to_path_buf();
-        if !(source_dir.exists() && source_dir.is_dir()) {
-            anyhow::bail!("Source directory does not exist: {}", source_dir.display());
-        }
-        let meta = if let Some(meta) = meta {
+        fn inner(
+            source: &Path,
+            dest: &Path,
+            meta: Option<Meta>,
+            masters: Vec<Arc<uk_reader::ResourceReader>>,
+        ) -> Result<ModPacker> {
+            log::info!("Attempting to package mod at {}", source.display());
+            let source_dir = source.to_path_buf();
+            if !(source_dir.exists() && source_dir.is_dir()) {
+                anyhow::bail!("Source directory does not exist: {}", source_dir.display());
+            }
+            let meta = if let Some(meta) = meta {
             log::debug!("Using providing meta info:\n{:#?}", &meta);
             meta
-        } else if let rules = source.as_ref().join("rules.txt") && rules.exists() {
+        } else if let rules = source.join("rules.txt") && rules.exists() {
             log::debug!("Attempting to parse existing rules.txt");
-            Self::parse_rules(rules)?
-        } else if let info = source.as_ref().join("info.json") && info.exists() {
+            ModPacker::parse_rules(rules)?
+        } else if let info = source.join("info.json") && info.exists() {
             log::debug!("Attempting to parse existing info.json");
             log::warn!("`info.json` found. If this is a BNP, conversion will not work properly!");
-            Self::parse_info(info)?
+            ModPacker::parse_info(info)?
         } else {
             anyhow::bail!("No meta info provided or meta file available");
         };
-        let ((content_u, dlc_u), (content_nx, dlc_nx)) = (
-            platform_prefixes(Endian::Big),
-            platform_prefixes(Endian::Little),
-        );
-        let endian = if source.as_ref().join(content_u).exists()
-            || source.as_ref().join(dlc_u).exists()
-        {
-            Endian::Big
-        } else if source.as_ref().join(content_nx).exists() || source.as_ref().join(dlc_nx).exists()
-        {
-            Endian::Little
-        } else {
-            anyhow::bail!(
-                "No content or DLC folder found in source at {}",
-                source.as_ref().display()
+            let ((content_u, dlc_u), (content_nx, dlc_nx)) = (
+                platform_prefixes(Endian::Big),
+                platform_prefixes(Endian::Little),
             );
-        };
-        let dest = dest.as_ref();
-        let dest_file = if dest.is_dir() {
-            dest.join(sanitise(&meta.name)).with_extension("zip")
-        } else {
-            dest.to_path_buf()
-        };
-        log::debug!("Using temp file at {}", dest_file.display());
-        if dest_file.exists() {
-            fs::remove_file(&dest_file)?;
+            let endian = if source.join(content_u).exists() || source.join(dlc_u).exists() {
+                Endian::Big
+            } else if source.join(content_nx).exists() || source.join(dlc_nx).exists() {
+                Endian::Little
+            } else {
+                anyhow::bail!(
+                    "No content or DLC folder found in source at {}",
+                    source.display()
+                );
+            };
+            let dest_file = if dest.is_dir() {
+                dest.join(sanitise(&meta.name)).with_extension("zip")
+            } else {
+                dest.to_path_buf()
+            };
+            log::debug!("Using temp file at {}", dest_file.display());
+            if dest_file.exists() {
+                fs::remove_file(&dest_file)?;
+            }
+            log::debug!("Creating ZIP file");
+            let zip = Arc::new(Mutex::new(ZipW::new(fs::File::create(&dest_file)?)));
+            Ok(ModPacker {
+                current_root: source_dir.clone(),
+                source_dir,
+                endian,
+                zip,
+                masters,
+                hash_table: match endian {
+                    Endian::Little => &NX_HASH_TABLE,
+                    Endian::Big => &WIIU_HASH_TABLE,
+                },
+                meta,
+                built_resources: Arc::new(RwLock::new(BTreeSet::new())),
+                _zip_opts: FileOptions::default()
+                    .compression_method(zip::CompressionMethod::Stored),
+                _out_file: dest_file,
+            })
         }
-        log::debug!("Creating ZIP file");
-        let zip = Arc::new(Mutex::new(ZipW::new(fs::File::create(&dest_file)?)));
-        Ok(Self {
-            current_root: source_dir.clone(),
-            source_dir,
-            endian,
-            zip,
-            masters,
-            hash_table: match endian {
-                Endian::Little => &NX_HASH_TABLE,
-                Endian::Big => &WIIU_HASH_TABLE,
-            },
-            meta,
-            built_resources: Arc::new(RwLock::new(BTreeSet::new())),
-            _zip_opts: FileOptions::default().compression_method(zip::CompressionMethod::Stored),
-            _out_file: dest_file,
-        })
+        inner(source.as_ref(), dest.as_ref(), meta, masters)
     }
 
-    fn collect_resources(&self, root: impl AsRef<Path>) -> Result<BTreeSet<String>> {
-        let root = root.as_ref();
-        let files = WalkDir::new(root)
+    fn collect_resources(&self, root: PathBuf) -> Result<BTreeSet<String>> {
+        let files = WalkDir::new(&root)
             .into_iter()
             .filter_map(|f| {
                 f.ok()
@@ -350,7 +354,7 @@ impl ModPacker {
                 }
 
                 Ok(Some(
-                    path.strip_prefix(root).unwrap().to_slash_lossy().into(),
+                    path.strip_prefix(&root).unwrap().to_slash_lossy().into(),
                 ))
             })
             .collect::<Result<Vec<Option<_>>>>()?
@@ -495,53 +499,55 @@ impl ModPacker {
 
     #[allow(irrefutable_let_patterns)]
     fn pack_root(&self, root: impl AsRef<Path>) -> Result<()> {
-        log::debug!("Packing from root of {}", root.as_ref().display());
-        self.built_resources.write().clear();
-        let (content, aoc) = platform_prefixes(self.endian);
-        let content_dir = root.as_ref().join(content);
-        log::debug!("Checking for content folder at {}", content_dir.display());
-        let content_dir = if content_dir.exists() {
-            log::debug!("Found content folder at {}", content_dir.display());
-            Some(content_dir)
-        } else {
-            None
-        };
-        let aoc_dir = root.as_ref().join(aoc);
-        log::debug!("Checking for DLC folder at {}", aoc_dir.display());
-        let aoc_dir = if aoc_dir.exists() {
-            log::debug!("Found DLC folder at {}", aoc_dir.display());
-            Some(aoc_dir)
-        } else {
-            None
-        };
-        let manifest = serde_yaml::to_string(&Manifest {
-            content_files: content_dir
-                .map(|content| {
-                    log::info!("Collecting resources");
-                    self.collect_resources(content)
-                })
-                .transpose()?
-                .unwrap_or_default(),
-            aoc_files:     aoc_dir
-                .map(|aoc| {
-                    log::info!("Collecting DLC resources");
-                    self.collect_resources(aoc)
-                })
-                .transpose()?
-                .unwrap_or_default(),
-        })?;
-        log::info!("Writing manifest");
-        let mut zip = self.zip.lock();
-        zip.start_file(
-            root.as_ref()
-                .strip_prefix(&self.source_dir)
-                .unwrap()
-                .join("manifest.yml")
-                .to_slash_lossy(),
-            self._zip_opts,
-        )?;
-        zip.write_all(manifest.as_bytes())?;
-        Ok(())
+        fn inner(self_: &ModPacker, root: &Path) -> Result<()> {
+            log::debug!("Packing from root of {}", root.display());
+            self_.built_resources.write().clear();
+            let (content, aoc) = platform_prefixes(self_.endian);
+            let content_dir = root.join(content);
+            log::debug!("Checking for content folder at {}", content_dir.display());
+            let content_dir = if content_dir.exists() {
+                log::debug!("Found content folder at {}", content_dir.display());
+                Some(content_dir)
+            } else {
+                None
+            };
+            let aoc_dir = root.join(aoc);
+            log::debug!("Checking for DLC folder at {}", aoc_dir.display());
+            let aoc_dir = if aoc_dir.exists() {
+                log::debug!("Found DLC folder at {}", aoc_dir.display());
+                Some(aoc_dir)
+            } else {
+                None
+            };
+            let manifest = serde_yaml::to_string(&Manifest {
+                content_files: content_dir
+                    .map(|content| {
+                        log::info!("Collecting resources");
+                        self_.collect_resources(content)
+                    })
+                    .transpose()?
+                    .unwrap_or_default(),
+                aoc_files:     aoc_dir
+                    .map(|aoc| {
+                        log::info!("Collecting DLC resources");
+                        self_.collect_resources(aoc)
+                    })
+                    .transpose()?
+                    .unwrap_or_default(),
+            })?;
+            log::info!("Writing manifest");
+            let mut zip = self_.zip.lock();
+            zip.start_file(
+                root.strip_prefix(&self_.source_dir)
+                    .unwrap()
+                    .join("manifest.yml")
+                    .to_slash_lossy(),
+                self_._zip_opts,
+            )?;
+            zip.write_all(manifest.as_bytes())?;
+            Ok(())
+        }
+        inner(self, root.as_ref())
     }
 
     fn collect_roots(&self) -> Vec<PathBuf> {

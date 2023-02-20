@@ -161,34 +161,37 @@ pub const fn platform_prefixes(endian: prelude::Endian) -> (&'static str, &'stat
 }
 
 pub fn canonicalize(path: impl AsRef<Path>) -> String {
-    let path = path.as_ref().to_str().unwrap();
-    let mut canon = path.replace('\\', "/");
-    for (k, v) in [
-        ("Content/", ""),
-        ("content/", ""),
-        ("atmosphere/titles/", ""),
-        ("atmosphere/contents/", ""),
-        ("01007EF00011E000/romfs/", ""),
-        ("01007ef00011e000/romfs/", ""),
-        ("01007EF00011E001/romfs", "Aoc/0010"),
-        ("01007EF00011E002/romfs", "Aoc/0010"),
-        ("01007EF00011F001/romfs", "Aoc/0010"),
-        ("01007EF00011F002/romfs", "Aoc/0010"),
-        ("01007ef00011e001/romfs", "Aoc/0010"),
-        ("01007ef00011e002/romfs", "Aoc/0010"),
-        ("01007ef00011f001/romfs", "Aoc/0010"),
-        ("01007ef00011f002/romfs", "Aoc/0010"),
-        ("romfs/", ""),
-        ("aoc/content", "Aoc"),
-        ("aoc", "Aoc"),
-    ]
-    .into_iter()
-    {
-        if canon.starts_with(k) {
-            canon = [v, canon.trim_start_matches(k)].concat();
+    fn canonicalize(path: &Path) -> String {
+        let path = path.to_str().unwrap();
+        let mut canon = path.replace('\\', "/");
+        for (k, v) in [
+            ("Content/", ""),
+            ("content/", ""),
+            ("atmosphere/titles/", ""),
+            ("atmosphere/contents/", ""),
+            ("01007EF00011E000/romfs/", ""),
+            ("01007ef00011e000/romfs/", ""),
+            ("01007EF00011E001/romfs", "Aoc/0010"),
+            ("01007EF00011E002/romfs", "Aoc/0010"),
+            ("01007EF00011F001/romfs", "Aoc/0010"),
+            ("01007EF00011F002/romfs", "Aoc/0010"),
+            ("01007ef00011e001/romfs", "Aoc/0010"),
+            ("01007ef00011e002/romfs", "Aoc/0010"),
+            ("01007ef00011f001/romfs", "Aoc/0010"),
+            ("01007ef00011f002/romfs", "Aoc/0010"),
+            ("romfs/", ""),
+            ("aoc/content", "Aoc"),
+            ("aoc", "Aoc"),
+        ]
+        .into_iter()
+        {
+            if canon.starts_with(k) {
+                canon = [v, canon.trim_start_matches(k)].concat();
+            }
         }
+        canon.replace(".s", ".").into()
     }
-    canon.replace(".s", ".").into()
+    canonicalize(path.as_ref())
 }
 
 pub mod prelude {

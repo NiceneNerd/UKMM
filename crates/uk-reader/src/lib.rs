@@ -11,6 +11,7 @@ use std::{
 
 use anyhow::Context;
 use dashmap::DashMap;
+use include_flate::flate;
 use join_str::jstr;
 use moka::sync::Cache;
 use once_cell::sync::Lazy;
@@ -50,7 +51,7 @@ impl From<ROMError> for uk_content::UKError {
     }
 }
 
-static NEST_MAP: &str = include_str!("../data/nest_map.json");
+flate!(static NEST_MAP: str from "data/nest_map.json");
 type ResourceCache = Cache<String, Arc<ResourceData>>;
 type SarcCache = Cache<String, Arc<Sarc<'static>>>;
 const CACHE_SIZE: usize = 10000;
@@ -175,30 +176,32 @@ impl ResourceReader {
 
     #[allow(irrefutable_let_patterns)]
     pub fn from_unpacked_mod(mod_dir: impl AsRef<Path>) -> Result<Self> {
-        let mod_dir = mod_dir.as_ref();
-        let (content_u, aoc_u) = platform_prefixes(Endian::Big);
-        let (content_nx, aoc_nx) = platform_prefixes(Endian::Little);
-        let content_dir = if let content_u = mod_dir.join(content_u) && content_u.exists() {
+        fn inner(mod_dir: &Path) -> Result<ResourceReader> {
+            let (content_u, aoc_u) = platform_prefixes(Endian::Big);
+            let (content_nx, aoc_nx) = platform_prefixes(Endian::Little);
+            let content_dir = if let content_u = mod_dir.join(content_u) && content_u.exists() {
             Some(content_u)
         } else if let content_nx = mod_dir.join(content_nx) && content_nx.exists() {
             Some(content_nx)
         } else {
             None
         };
-        let aoc_dir = if let aoc_u = mod_dir.join(aoc_u) && aoc_u.exists() {
+            let aoc_dir = if let aoc_u = mod_dir.join(aoc_u) && aoc_u.exists() {
             Some(aoc_u)
         } else if let aoc_nx = mod_dir.join(aoc_nx) && aoc_nx.exists() {
             Some(aoc_nx)
         } else {
             None
         };
-        Ok(Self {
-            source: Box::new(Unpacked::new(content_dir, None::<PathBuf>, aoc_dir, false)?),
-            cache: construct_res_cache(),
-            sarc_cache: construct_sarc_cache(),
-            bin_type: BinType::Nintendo,
-            nest_map: Default::default(),
-        })
+            Ok(ResourceReader {
+                source: Box::new(Unpacked::new(content_dir, None::<PathBuf>, aoc_dir, false)?),
+                cache: construct_res_cache(),
+                sarc_cache: construct_sarc_cache(),
+                bin_type: BinType::Nintendo,
+                nest_map: Default::default(),
+            })
+        }
+        inner(mod_dir.as_ref())
     }
 
     pub fn get_resource(&self, name: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
@@ -214,7 +217,7 @@ impl ResourceReader {
 
     pub fn get_data(&self, path: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
         let canon = canonicalize(path.as_ref());
-        Ok(self.get_or_add_resource(path, canon)?)
+        Ok(self.get_or_add_resource(path.as_ref(), canon)?)
     }
 
     pub fn get_bytes_uncached(&self, path: impl AsRef<Path>) -> Result<Vec<u8>> {
@@ -285,7 +288,7 @@ impl ResourceReader {
 
     fn get_or_add_resource(
         &self,
-        path: impl AsRef<Path>,
+        path: &Path,
         canon: String,
     ) -> uk_content::Result<Arc<ResourceData>> {
         log::trace!("Loading resource {}", &canon);
@@ -295,7 +298,7 @@ impl ResourceReader {
                 log::trace!("Resource {} not in cache, pulling", &canon);
                 let data = self
                     .source
-                    .get_data(path.as_ref())
+                    .get_data(path)
                     .with_context(|| jstr!("File {&canon} not found in dump"))?;
                 let resource = match self.bin_type {
                     BinType::Nintendo => {
@@ -304,7 +307,7 @@ impl ResourceReader {
                         if is_mergeable_sarc(canon.as_str(), data.as_ref()) {
                             self.process_sarc(
                                 Sarc::new(data.as_ref())?,
-                                path.as_ref().display().to_string().as_str(),
+                                path.display().to_string().as_str(),
                             )?;
                         }
                         res
@@ -323,7 +326,7 @@ impl ResourceReader {
                     log::trace!("Initializing nest map...");
                     if self.source.typetag_name() == "Unpacked" {
                         let stock: HashMap<String, Arc<str>> =
-                            serde_json::from_str(NEST_MAP).unwrap();
+                            serde_json::from_str(NEST_MAP.as_ref()).unwrap();
                         for (k, v) in stock {
                             self.nest_map.insert(k, v);
                         }
@@ -337,14 +340,14 @@ impl ResourceReader {
                         Ok(self.get_from_sarc(&canon, &parent).with_context(|| {
                             log::warn!("Failed to get {canon} from {}", parent.as_ref());
                             ROMError::FileNotFound(
-                                path.as_ref().to_string_lossy().into(),
+                                path.to_string_lossy().into(),
                                 self.source.host_path().to_path_buf(),
                             )
                         })?)
                     }
                     None => {
                         Err(ROMError::FileNotFound(
-                            path.as_ref().to_string_lossy().into(),
+                            path.to_string_lossy().into(),
                             self.source.host_path().to_path_buf(),
                         )
                         .into())

@@ -724,45 +724,49 @@ impl From<Vec<u8>> for ResourceData {
 pub const EXCLUDE_EXTS: &[&str] = &["blarc", "bfarc", "genvb", "sarc", "arc"];
 pub const EXCLUDE_NAMES: &[&str] = &["tera_resource.Nin_NX_NVN", "tera_resource.Cafe_Cafe_GX2"];
 
-#[inline]
 pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool {
-    let name = name.as_ref();
-    let data = data.as_ref();
-    static MAGIC: &[u8; 4] = b"SARC";
-    data.len() >= 0x40
-        && (&data[..4] == MAGIC || &data[0x11..0x15] == MAGIC)
-        && name
-            .extension()
-            .and_then(|e| e.to_str())
-            .map(|e| !EXCLUDE_EXTS.contains(&e.strip_prefix('s').unwrap_or(e)))
-            .unwrap_or(false)
-        && name
-            .file_stem()
-            .and_then(|n| n.to_str())
-            .map(|n| !EXCLUDE_NAMES.iter().any(|xn| n.starts_with(xn)))
-            .unwrap_or(false)
+    fn inner(name: &Path, data: &[u8]) -> bool {
+        let name = name;
+        let data = data;
+        static MAGIC: &[u8; 4] = b"SARC";
+        data.len() >= 0x40
+            && (&data[..4] == MAGIC || &data[0x11..0x15] == MAGIC)
+            && name
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| !EXCLUDE_EXTS.contains(&e.strip_prefix('s').unwrap_or(e)))
+                .unwrap_or(false)
+            && name
+                .file_stem()
+                .and_then(|n| n.to_str())
+                .map(|n| !EXCLUDE_NAMES.iter().any(|xn| n.starts_with(xn)))
+                .unwrap_or(false)
+    }
+    inner(name.as_ref(), data.as_ref())
 }
 
 impl ResourceData {
     #[allow(irrefutable_let_patterns)]
     pub fn from_binary<'a>(name: impl AsRef<Path>, data: impl Into<Cow<'a, [u8]>>) -> Result<Self> {
-        let name = name.as_ref();
-        let stem = name
-            .file_stem()
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default();
-        let data = data.into();
-        if stem == "Dummy" || data.len() < 0x10 {
-            return Ok(Self::Binary(data.into()));
+        fn inner(name: &Path, data: Cow<'_, [u8]>) -> Result<ResourceData> {
+            let name = name;
+            let stem = name
+                .file_stem()
+                .unwrap_or_default()
+                .to_str()
+                .unwrap_or_default();
+            if stem == "Dummy" || data.len() < 0x10 {
+                return Ok(ResourceData::Binary(data.into()));
+            }
+            if let Some(mergeable) = MergeableResource::from_binary(name, &data)? {
+                Ok(ResourceData::Mergeable(mergeable))
+            } else if is_mergeable_sarc(name, &data) {
+                Ok(ResourceData::Sarc(SarcMap::from_binary(data)?))
+            } else {
+                Ok(ResourceData::Binary(data.to_vec()))
+            }
         }
-        if let Some(mergeable) = MergeableResource::from_binary(name, &data)? {
-            Ok(Self::Mergeable(mergeable))
-        } else if is_mergeable_sarc(name, &data) {
-            Ok(Self::Sarc(SarcMap::from_binary(data)?))
-        } else {
-            Ok(Self::Binary(data.to_vec()))
-        }
+        inner(name.as_ref(), data.into())
     }
 
     #[inline]

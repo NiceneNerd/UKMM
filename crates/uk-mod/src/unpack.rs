@@ -94,9 +94,10 @@ impl std::fmt::Debug for ParallelZipReader {
 
 impl ParallelZipReader {
     pub fn open(path: impl AsRef<Path>, peek: bool) -> Result<Self> {
-        let mut file = std::fs::File::open(path)?;
-        let len = file.metadata()?.len() as usize;
-        let self_ = ParallelZipReaderTryBuilder {
+        fn inner(path: &Path, peek: bool) -> Result<ParallelZipReader> {
+            let mut file = std::fs::File::open(path)?;
+            let len = file.metadata()?.len() as usize;
+            let self_ = ParallelZipReaderTryBuilder {
             data: if len > (1024 * 1024 * 256) || peek {
                 unsafe { ZipData::Memory(MmapOptions::new(len).with_file(file, 0).map()?) }
             } else {
@@ -117,7 +118,9 @@ impl ParallelZipReader {
                 },
         }
         .try_build()?;
-        Ok(self_)
+            Ok(self_)
+        }
+        inner(path.as_ref(), peek)
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &&std::path::Path> {
@@ -125,20 +128,24 @@ impl ParallelZipReader {
     }
 
     pub fn get_file(&self, file: impl AsRef<Path>) -> Result<Vec<u8>> {
-        self.borrow_files()
-            .get(file.as_ref())
-            .with_context(|| format!("File {} not found in ZIP", file.as_ref().display()))
-            .and_then(|file| {
-                let mut reader = self
-                    .borrow_zip()
-                    .read(file)
-                    .with_context(|| format!("Failed to lookup file {} in ZIP", &file.path))?;
-                let mut buffer = vec![0u8; file.size];
-                reader
-                    .read_exact(&mut buffer)
-                    .with_context(|| format!("Failed to read file {} from ZIP", &file.path))?;
-                Ok(buffer)
-            })
+        fn inner(self_: &ParallelZipReader, file: &Path) -> Result<Vec<u8>> {
+            self_
+                .borrow_files()
+                .get(file)
+                .with_context(|| format!("File {} not found in ZIP", file.display()))
+                .and_then(|file| {
+                    let mut reader = self_
+                        .borrow_zip()
+                        .read(file)
+                        .with_context(|| format!("Failed to lookup file {} in ZIP", &file.path))?;
+                    let mut buffer = vec![0u8; file.size];
+                    reader
+                        .read_exact(&mut buffer)
+                        .with_context(|| format!("Failed to read file {} from ZIP", &file.path))?;
+                    Ok(buffer)
+                })
+        }
+        inner(self, file.as_ref())
     }
 }
 
@@ -225,23 +232,27 @@ impl ResourceLoader for ModReader {
 
 impl ModReader {
     pub fn open(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
-        let path = path.as_ref().to_path_buf();
-        let options = options.into();
-        if path.is_file() {
-            Self::open_zipped(path, options)
-        } else {
-            Self::open_unzipped(path, options)
+        fn inner(path: &Path, options: Vec<ModOption>) -> Result<ModReader> {
+            let path = path.to_path_buf();
+            if path.is_file() {
+                ModReader::open_zipped(path, options)
+            } else {
+                ModReader::open_unzipped(path, options)
+            }
         }
+        inner(path.as_ref(), options.into())
     }
 
     pub fn open_peek(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
-        let path = path.as_ref().to_path_buf();
-        let options = options.into();
-        if path.is_file() {
-            Self::open_zipped_peek(path, options)
-        } else {
-            Self::open_unzipped(path, options)
+        fn inner(path: &Path, options: Vec<ModOption>) -> Result<ModReader> {
+            let path = path.to_path_buf();
+            if path.is_file() {
+                ModReader::open_zipped_peek(path, options)
+            } else {
+                ModReader::open_unzipped(path, options)
+            }
         }
+        inner(path.as_ref(), options.into())
     }
 
     fn open_unzipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
