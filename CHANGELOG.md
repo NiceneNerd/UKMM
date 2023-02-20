@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Default to portable storage folder in portable mode
+
 ## [0.3.0] - 2023-02-19
 
 ### Added

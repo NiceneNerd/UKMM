@@ -142,7 +142,11 @@ pub struct PlatformSettings {
 
 #[inline]
 fn default_storage() -> PathBuf {
-    dirs2::data_local_dir().unwrap().join("ukmm")
+    if std::env::args().any(|a| a == "--portable") {
+        std::env::current_exe().unwrap().with_file_name("data")
+    } else {
+        dirs2::data_local_dir().unwrap().join("ukmm")
+    }
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
