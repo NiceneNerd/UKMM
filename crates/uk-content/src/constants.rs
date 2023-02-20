@@ -8,6 +8,8 @@ use uk_ui_derive::Editable;
 
 use crate::UKError;
 
+pub type LanguageIterator = enum_iterator::All<Language>;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence, Serialize, Deserialize)]
 pub enum Language {
     USen,
@@ -33,6 +35,10 @@ impl fmt::Display for Language {
 }
 
 impl Language {
+    pub fn iter() -> enum_iterator::All<Self> {
+        enum_iterator::all::<Self>()
+    }
+
     #[inline(always)]
     pub fn to_str(self) -> &'static str {
         self.into()
@@ -55,10 +61,26 @@ impl Language {
 
     #[inline(always)]
     pub fn from_path(path: &Path) -> Option<Self> {
-        path.file_name()
+        path.file_stem()
             .and_then(|n| n.to_str())
             .filter(|n| n.len() >= 4)
             .and_then(|n| Self::from_str(&n[n.len() - 4..]).ok())
+    }
+
+    #[inline]
+    pub fn bootup_path(&self) -> smartstring::alias::String {
+        let mut string = smartstring::alias::String::from("Pack/Bootup_");
+        string.push_str(self.to_str());
+        string.push_str(".pack");
+        string
+    }
+
+    #[inline]
+    pub fn message_path(&self) -> smartstring::alias::String {
+        let mut string = smartstring::alias::String::from("Message/Msg_");
+        string.push_str(self.to_str());
+        string.push_str(".product.ssarc");
+        string
     }
 }
 

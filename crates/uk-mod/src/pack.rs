@@ -19,7 +19,9 @@ pub use sanitise_file_name::sanitise;
 use serde::Deserialize;
 use smartstring::alias::String;
 use uk_content::{
-    canonicalize, platform_prefixes,
+    canonicalize,
+    constants::Language,
+    platform_prefixes,
     prelude::{Endian, Mergeable},
     resource::{is_mergeable_sarc, ResourceData},
 };
@@ -393,6 +395,19 @@ impl ModPacker {
                         master.get_data(ref_name)
                     })
                     .inspect_err(|err| log::trace!("{err}"))
+                    .or_else(|err| {
+                        if canon.starts_with("Pack/Bootup_") && let Some(lang) = Language::from_path(ref_name.as_ref()) {
+                            let langs = master.languages();
+                            match langs.iter().find(|l| l.short() == lang.short()) {
+                                Some(ref_lang) => {
+                                    master.get_data(ref_lang.bootup_path().as_str())
+                                }
+                                None => Err(err),
+                            }
+                        } else {
+                            Err(err)
+                        }
+                    })
                     .ok()
             })
             .last();

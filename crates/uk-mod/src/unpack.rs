@@ -2,6 +2,7 @@ mod de;
 use std::{
     collections::BTreeSet,
     io::{BufReader, Read, Write},
+    ops::Deref,
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -9,9 +10,9 @@ use std::{
     },
 };
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use botw_utils::hashes::StockHashTable;
-use dashmap::DashMap;
+use dashmap::{DashMap, DashSet};
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
@@ -19,14 +20,19 @@ use mmap_rs::{Mmap, MmapOptions};
 use ouroboros::self_referencing;
 use path_slash::PathExt;
 use rayon::prelude::*;
-use roead::{sarc::SarcWriter, yaz0::compress_if};
+use roead::{
+    sarc::SarcWriter,
+    yaz0::{compress, compress_if},
+};
 use serde::Serialize;
 use smartstring::alias::String;
 use uk_content::{
-    canonicalize, platform_prefixes,
-    prelude::{Endian, Mergeable},
-    resource::{ResourceData, SarcMap},
-    util::HashMap,
+    canonicalize,
+    constants::Language,
+    platform_content, platform_prefixes,
+    prelude::{Endian, Mergeable, Resource},
+    resource::{MergeableResource, ResourceData, SarcMap},
+    util::{HashMap, HashSet, IndexSet},
 };
 use uk_reader::{ResourceLoader, ResourceReader};
 
@@ -378,6 +384,7 @@ pub struct ModUnpacker {
     manifest: Option<Manifest>,
     mods:     Vec<ModReader>,
     endian:   Endian,
+    lang:     Language,
     rstb:     DashMap<String, Option<u32>>,
     hashes:   StockHashTable,
     out_dir:  PathBuf,
@@ -387,6 +394,7 @@ impl ModUnpacker {
     pub fn new(
         dump: Arc<ResourceReader>,
         endian: Endian,
+        lang: Language,
         mods: Vec<ModReader>,
         out_dir: PathBuf,
     ) -> Self {
@@ -394,6 +402,7 @@ impl ModUnpacker {
             dump,
             manifest: None,
             mods,
+            lang,
             endian,
             rstb: DashMap::new(),
             hashes: StockHashTable::new(&match endian {
@@ -413,7 +422,7 @@ impl ModUnpacker {
         if !self.out_dir.exists() {
             fs::create_dir_all(&self.out_dir)?;
         }
-        let content_files: BTreeSet<&String>;
+        let mut content_files: BTreeSet<&String>;
         let aoc_files: BTreeSet<&String>;
         if let Some(manifest) = self.manifest.as_ref() {
             content_files = manifest.content_files.iter().collect();
@@ -429,6 +438,12 @@ impl ModUnpacker {
                 .iter()
                 .flat_map(|mod_| mod_.manifest.aoc_files.iter())
                 .collect();
+        }
+        let mut modded_langs: IndexSet<Language> = Default::default();
+        for lang in Language::iter().filter(|l| l.short() == self.lang.short()) {
+            if content_files.remove(&lang.bootup_path()) {
+                modded_langs.insert(lang);
+            }
         }
         let (content, aoc) = platform_prefixes(self.endian);
         let total = content_files.len() + aoc_files.len();
@@ -446,11 +461,60 @@ impl ModUnpacker {
             let s2 = s.spawn(|| {
                 self.unpack_files(aoc_files, self.out_dir.join(aoc), total, &current, true)
             });
+            let s3 = s.spawn(|| self.unpack_texts(modded_langs));
             s1.join().expect("Failed to join thread")?;
             s2.join().expect("Failed to join thread")?;
+            s3.join().expect("Failed to join thread")?;
             Ok(())
         })?;
         Ok(self.rstb)
+    }
+
+    fn unpack_texts(&self, mut langs: IndexSet<Language>) -> Result<()> {
+        if !langs.is_empty() {
+            log::info!("Unpacking game texts");
+            let Some(MergeableResource::MessagePack(mut base)) =
+                ResourceData::clone(
+                    self.dump.get_data(self.lang.message_path().as_str())?.deref()
+                ).take_mergeable() else
+            {
+                bail!("Broken stock language pack for {}", self.lang);
+            };
+            langs.sort_unstable_by(|l1, l2| {
+                (*l1 == self.lang).cmp(&(*l2 == self.lang)).then_with(|| {
+                    (l1.short() == self.lang.short()).cmp(&(l2.short() == self.lang.short()))
+                })
+            });
+            for mod_ in self.mods.iter() {
+                for lang in langs.iter() {
+                    if let Ok(packs) = mod_.get_versions(lang.message_path().as_str().as_ref()) {
+                        for pack in packs {
+                            let Some(MergeableResource::MessagePack(version)) =
+                                minicbor_ser::from_slice::<ResourceData>(&pack)?.take_mergeable() else
+                            {
+                                bail!("Broken mod language pack at {}", lang);
+                            };
+                            *base = base.merge(&version);
+                        }
+                        break;
+                    }
+                }
+            }
+            let out = self
+                .out_dir
+                .join(platform_content(self.endian))
+                .join(self.lang.bootup_path().as_str());
+            out.parent().map(fs::create_dir_all).transpose()?;
+            let data = base.into_binary(self.endian);
+            self.rstb.insert(
+                format!("Message/Msg_{}.product.sarc", self.lang).into(),
+                rstb::calc::calc_from_size_and_name(data.len(), "Msg.sarc", self.endian.into()),
+            );
+            let mut sarc = SarcWriter::new(self.endian.into())
+                .with_file(self.lang.message_path(), compress(data));
+            fs::write(out, sarc.to_binary())?;
+        }
+        Ok(())
     }
 
     #[allow(irrefutable_let_patterns)]
@@ -509,7 +573,9 @@ impl ModUnpacker {
         );
         match self.dump.get_data(file).or_else(|e| {
             log::trace!("{e}");
-            self.dump.get_resource(file)
+            self.dump
+                .get_data(canon.as_str())
+                .or_else(|_| self.dump.get_resource(canon.as_str()))
         }) {
             Ok(ref_res) => versions.push_back(ref_res),
             Err(e) => {
@@ -656,6 +722,7 @@ mod tests {
         ModUnpacker::new(
             Arc::new(dump),
             Endian::Big,
+            Language::USen,
             vec![mod_reader],
             "test/wiiu_unpack".into(),
         )

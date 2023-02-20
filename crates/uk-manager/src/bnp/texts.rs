@@ -53,7 +53,7 @@ impl BnpConverter {
                 let out = self
                     .current_root
                     .join(self.content)
-                    .join(format!("Pack/Bootup_{}.pack", self.game_lang));
+                    .join(self.game_lang.bootup_path().as_str());
                 out.parent().iter().try_for_each(fs::create_dir_all)?;
                 let mut sarc = SarcWriter::new(self.platform.into()).with_file(
                     format!("Message/Msg_{}.product.ssarc", self.game_lang),

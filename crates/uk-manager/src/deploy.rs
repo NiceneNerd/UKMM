@@ -381,7 +381,14 @@ impl Manager {
             )?;
             log::debug!("Change manifest: {:#?}", &manifest);
             self.pending_files.write().extend(&manifest);
-            ModUnpacker::new(dump, endian, mods, out_dir.clone()).with_manifest(manifest)
+            ModUnpacker::new(
+                dump,
+                endian,
+                settings.platform_config().unwrap().language,
+                mods,
+                out_dir.clone(),
+            )
+            .with_manifest(manifest)
         } else {
             log::info!("Manifest not provided, remerging all mods");
             let mut total_manifest = Manifest::default();
@@ -396,7 +403,13 @@ impl Manager {
                 .collect::<Result<Vec<_>>>()?;
             util::remove_dir_all(&out_dir).context("Failed to clear merged folder")?;
             self.pending_files.write().extend(&total_manifest);
-            ModUnpacker::new(dump, endian, mods, out_dir.clone())
+            ModUnpacker::new(
+                dump,
+                endian,
+                settings.platform_config().unwrap().language,
+                mods,
+                out_dir.clone(),
+            )
         };
         log::info!("Applying changes");
         let rstb_updates = unpacker.unpack()?;

@@ -13,10 +13,14 @@ use anyhow::Context;
 use dashmap::DashMap;
 use join_str::jstr;
 use moka::sync::Cache;
+use once_cell::sync::Lazy;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use uk_content::{canonicalize, platform_prefixes, prelude::Endian, resource::*, util::HashMap};
+use uk_content::{
+    canonicalize, constants::Language, platform_prefixes, prelude::Endian, resource::*,
+    util::HashMap,
+};
 
 use self::{unpacked::Unpacked, zarchive::ZArchive};
 
@@ -56,6 +60,32 @@ pub type Result<T> = std::result::Result<T, ROMError>;
 pub enum BinType {
     Nintendo,
     MiniCbor,
+}
+
+pub struct LanguageIterator<'a, T, U>
+where
+    T: Iterator<Item = Language>,
+    U: ResourceLoader,
+{
+    iter: T,
+    res:  &'a U,
+}
+
+impl<'a, T, U> Iterator for LanguageIterator<'a, T, U>
+where
+    T: Iterator<Item = Language>,
+    U: ResourceLoader,
+{
+    type Item = Language;
+
+    fn next(&mut self) -> Option<Self::Item>
+    where
+        T: Iterator,
+        U: ResourceLoader,
+    {
+        self.iter
+            .find(|l| self.res.file_exists(l.bootup_path().as_str().as_ref()))
+    }
 }
 
 #[typetag::serde(tag = "type")]
@@ -343,5 +373,22 @@ impl ResourceReader {
             // }
         }
         Ok(())
+    }
+
+    pub fn languages(
+        &self,
+    ) -> dashmap::mapref::one::RefMut<
+        '_,
+        std::path::PathBuf,
+        std::vec::Vec<uk_content::constants::Language>,
+    > {
+        static LANGS: Lazy<DashMap<PathBuf, Vec<Language>>> = Lazy::new(Default::default);
+        LANGS
+            .entry(self.source().host_path().to_path_buf())
+            .or_insert_with(|| {
+                Language::iter()
+                    .filter(|l| self.source().file_exists(l.bootup_path().as_str().as_ref()))
+                    .collect()
+            })
     }
 }
