@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Default to portable storage folder in portable mode
+- Clear resource cache on settings change
 
 ### Fixed 
 

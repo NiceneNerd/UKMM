@@ -142,6 +142,10 @@ impl std::fmt::Debug for ResourceReader {
 }
 
 impl ResourceReader {
+    pub fn clear_cache(&self) {
+        self.cache.invalidate_all();
+    }
+
     pub fn source(&self) -> &dyn ResourceLoader {
         self.source.as_ref()
     }

@@ -698,6 +698,7 @@ impl App {
                                 toast.set_duration(Some(Duration::new(2, 0)));
                                 toast
                             });
+                            if let Some(dump) = self.core.settings().dump() { dump.clear_cache() }
                             ctx.data().remove_by_type::<Arc<RwLock<ModPackerBuilder>>>();
                             self.do_update(Message::ClearSelect);
                             self.do_update(Message::ResetMods);
