@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Default to portable storage folder in portable mode
 
+### Fixed 
+
+- Fixed missing non-US languages in nested SARC map
+
 ## [0.3.0] - 2023-02-19
 
 ### Added
