@@ -2,12 +2,11 @@ use std::{
     hash::{Hash, Hasher},
     io::BufReader,
     path::{Path, PathBuf},
-    sync::{Arc, Weak},
+    sync::{Arc, LazyLock, Weak},
 };
 
 use anyhow::{Context, Result};
 use fs_err as fs;
-use once_cell::sync::Lazy;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -19,7 +18,7 @@ use crate::{
     util::{self, extract_7z, HashMap},
 };
 
-type ManifestCache = Lazy<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Arc<Manifest>>>>>;
+type ManifestCache = LazyLock<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Arc<Manifest>>>>>;
 
 #[serde_as]
 #[derive(Clone, Serialize, Deserialize)]
@@ -74,7 +73,7 @@ impl Mod {
     }
 
     pub fn manifest_with_options(&self, options: impl AsRef<[ModOption]>) -> Result<Arc<Manifest>> {
-        static MANIFEST_CACHE: ManifestCache = Lazy::new(|| RwLock::new(HashMap::default()));
+        static MANIFEST_CACHE: ManifestCache = LazyLock::new(|| RwLock::new(HashMap::default()));
         match MANIFEST_CACHE
             .write()
             .entry((

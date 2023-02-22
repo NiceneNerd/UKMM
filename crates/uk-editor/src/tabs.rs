@@ -1,13 +1,12 @@
 use std::{
     cell::RefCell,
     collections::{hash_map::DefaultHasher, BTreeSet},
-    fmt::Write,
     hash::{Hash, Hasher},
     ops::Deref,
     path::PathBuf,
+    sync::LazyLock,
 };
 
-use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use path_slash::PathBufExt;
 use uk_content::{resource::ResourceData, util::HashMap};
@@ -71,8 +70,8 @@ impl TabViewer for super::App {
 impl super::App {
     pub fn render_file_tree(&self, files: &BTreeSet<PathBuf>, ui: &mut Ui) {
         ui.scope(|ui| {
-            static ROOTS: Lazy<RwLock<HashMap<u64, PathNode>>> =
-                Lazy::new(|| RwLock::new(HashMap::default()));
+            static ROOTS: LazyLock<RwLock<HashMap<u64, PathNode>>> =
+                LazyLock::new(|| RwLock::new(HashMap::default()));
             ui.style_mut().override_text_style = Some(egui::TextStyle::Body);
             ui.spacing_mut().item_spacing.y = 4.;
             if !files.is_empty() {

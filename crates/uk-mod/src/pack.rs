@@ -2,7 +2,7 @@ use std::{
     collections::BTreeSet,
     io::Write,
     path::{Path, PathBuf},
-    sync::{atomic::AtomicUsize, Arc},
+    sync::{atomic::AtomicUsize, Arc, LazyLock},
 };
 
 use anyhow::{Context, Result};
@@ -10,7 +10,6 @@ use botw_utils::hashes::StockHashTable;
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
-use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use path_slash::PathExt;
 use rayon::prelude::*;
@@ -34,10 +33,10 @@ use crate::{
 
 pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
 
-static NX_HASH_TABLE: Lazy<StockHashTable> =
-    Lazy::new(|| StockHashTable::new(&botw_utils::hashes::Platform::Switch));
-static WIIU_HASH_TABLE: Lazy<StockHashTable> =
-    Lazy::new(|| StockHashTable::new(&botw_utils::hashes::Platform::WiiU));
+static NX_HASH_TABLE: LazyLock<StockHashTable> =
+    LazyLock::new(|| StockHashTable::new(&botw_utils::hashes::Platform::Switch));
+static WIIU_HASH_TABLE: LazyLock<StockHashTable> =
+    LazyLock::new(|| StockHashTable::new(&botw_utils::hashes::Platform::WiiU));
 
 pub struct ModPacker {
     source_dir: PathBuf,

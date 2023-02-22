@@ -1,8 +1,7 @@
-use std::process::Command;
+use std::{process::Command, sync::OnceLock};
 
 use im::vector;
 use join_str::jstr;
-use once_cell::sync::OnceCell;
 use uk_manager::mods::Mod;
 use uk_ui::{
     egui::{
@@ -17,12 +16,12 @@ use super::{App, FocusedPane, Message, Sort};
 
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {
-        static TEXT_HEIGHT: OnceCell<f32> = OnceCell::new();
+        static TEXT_HEIGHT: OnceLock<f32> = OnceLock::new();
         let text_height = TEXT_HEIGHT.get_or_init(|| ui.text_style_height(&TextStyle::Body) + 4.);
-        static ICON_WIDTH: OnceCell<f32> = OnceCell::new();
+        static ICON_WIDTH: OnceLock<f32> = OnceLock::new();
         let icon_width =
             ICON_WIDTH.get_or_init(|| ui.spacing().icon_width + ui.spacing().button_padding.x);
-        static NUMERIC_COL_WIDTH: OnceCell<f32> = OnceCell::new();
+        static NUMERIC_COL_WIDTH: OnceLock<f32> = OnceLock::new();
         let numeric_col_width = NUMERIC_COL_WIDTH.get_or_init(|| {
             ui.fonts()
                 .layout_job(LayoutJob::simple_singleline(
@@ -37,7 +36,7 @@ impl App {
                 .size()
                 .x
         });
-        static CATEGORY_WIDTH: OnceCell<f32> = OnceCell::new();
+        static CATEGORY_WIDTH: OnceLock<f32> = OnceLock::new();
         egui::Frame::none()
             .inner_margin(Margin {
                 bottom: 4.0,

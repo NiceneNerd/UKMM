@@ -4,31 +4,30 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.66"
+anyhow = "1"
 botw-utils = "0.3.1"
 configparser = "3.0.1"
-dashmap = "5.4.0"
+dashmap = "5.4"
 enum_dispatch = "0.3.8"
-fs-err = "2.7.0"
-indexmap = "1.8.0"
+fs-err = "2.9"
+indexmap = "1.9"
 join_str = "0.1.0"
-jwalk = "0.6.0"
+jwalk = "0.8.1"
 log = "0.4.17"
 minicbor-ser = "0.2.0"
 mmap-rs = "0.4.0"
-once_cell = "1.16.0"
 ouroboros = "0.15.5"
 parking_lot = "0.12.1"
 path-slash = "0.2.0"
 piz = "0.5.1"
-rayon = "1.5.3"
+rayon = "1.6"
 roead = { version = "0.20.0", features = ["with-serde"] }
 rstb = { version = "0.5.0", features = ["complex"] }
 sanitise-file-name = "1.0.0"
-serde = { version = "1.0.137", features = ["derive"] }
-serde_json = "1.0.85"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 serde_yaml = "0.9.10"
-smartstring = "1.0.1"
+smartstring = "1"
 typetag = "0.2.1"
 uk-content = { path = "../uk-content" }
 uk-reader = { path = "../uk-reader" }

@@ -1,8 +1,10 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::LazyLock,
+};
 
 #[cfg(windows)]
 use anyhow::Context;
-use once_cell::sync::Lazy;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 pub use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
@@ -17,7 +19,8 @@ pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
     inner(dir.as_ref())
 }
 
-static TEMP_FS: Lazy<RwLock<HashSet<PathBuf>>> = Lazy::new(|| RwLock::new(HashSet::default()));
+static TEMP_FS: LazyLock<RwLock<HashSet<PathBuf>>> =
+    LazyLock::new(|| RwLock::new(HashSet::default()));
 
 pub fn get_temp_folder() -> MappedRwLockReadGuard<'static, PathBuf> {
     let temp = tempfile::tempdir().unwrap().into_path();
@@ -46,7 +49,7 @@ pub fn clear_temp() {
 }
 
 pub fn extract_7z(file: &Path, folder: &Path) -> anyhow::Result<()> {
-    static SX_EXISTS: Lazy<bool> = Lazy::new(|| {
+    static SX_EXISTS: LazyLock<bool> = LazyLock::new(|| {
         match std::process::Command::new("7z")
             .stdout(std::process::Stdio::null())
             .spawn()

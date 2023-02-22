@@ -64,9 +64,29 @@ impl Unpacked {
                 return Err(ROMError::OtherMessage("No base game, update, or DLC files found"));
             }
         }
+
+        fn common_path<'a>(paths: impl Iterator<Item = &'a Path>) -> Option<PathBuf> {
+            let mut path = None;
+            let paths = paths.collect::<Vec<_>>();
+            match paths.len() {
+                0 => None,
+                1 => Some(paths[0].to_path_buf()),
+                _ => {
+                    let first = paths[0];
+                    for anc in first.ancestors() {
+                        if paths.iter().all(|p| p.starts_with(anc)) {
+                            path = Some(anc.to_path_buf());
+                            break;
+                        }
+                    }
+                    path
+                }
+            }
+        }
+
         Ok(Self {
             host_path:   unsafe {
-                common_path::common_path_all(
+                common_path(
                     content_dir
                         .as_ref()
                         .iter()

@@ -1,11 +1,10 @@
 use std::{
     hash::{Hash, Hasher},
     io::{BufReader, Read},
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 
 use anyhow::Result;
-use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use rustc_hash::{FxHashMap, FxHasher};
 use uk_manager::mods::Mod;
@@ -40,8 +39,8 @@ pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
         }
         Ok(None)
     }
-    static PREVIEW: Lazy<RwLock<FxHashMap<usize, Option<Arc<RetainedImage>>>>> =
-        Lazy::new(|| RwLock::new(FxHashMap::default()));
+    static PREVIEW: LazyLock<RwLock<FxHashMap<usize, Option<Arc<RetainedImage>>>>> =
+        LazyLock::new(|| RwLock::new(FxHashMap::default()));
     let mut preview = PREVIEW.write();
     preview
         .entry(mod_.hash())
@@ -137,8 +136,8 @@ impl super::App {
 
 pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
     ui.scope(|ui| {
-        static ROOTS: Lazy<RwLock<FxHashMap<u64, PathNode>>> =
-            Lazy::new(|| RwLock::new(FxHashMap::default()));
+        static ROOTS: LazyLock<RwLock<FxHashMap<u64, PathNode>>> =
+            LazyLock::new(|| RwLock::new(FxHashMap::default()));
         ui.style_mut().override_text_style = Some(egui::TextStyle::Body);
         ui.spacing_mut().item_spacing.y = 4.;
         if !manifest.content_files.is_empty() {

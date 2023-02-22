@@ -1,6 +1,5 @@
 use std::{fmt, path::Path, str::FromStr};
 
-use enum_iterator::Sequence;
 use join_str::jstr;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
@@ -8,9 +7,7 @@ use uk_ui_derive::Editable;
 
 use crate::UKError;
 
-pub type LanguageIterator = enum_iterator::All<Language>;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Sequence, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Language {
     USen,
     EUen,
@@ -35,8 +32,24 @@ impl fmt::Display for Language {
 }
 
 impl Language {
-    pub fn iter() -> enum_iterator::All<Self> {
-        enum_iterator::all::<Self>()
+    pub fn iter() -> std::slice::Iter<'static, Self> {
+        [
+            Self::USen,
+            Self::EUen,
+            Self::USfr,
+            Self::USes,
+            Self::EUde,
+            Self::EUes,
+            Self::EUfr,
+            Self::EUit,
+            Self::EUnl,
+            Self::EUru,
+            Self::CNzh,
+            Self::JPja,
+            Self::KRko,
+            Self::TWzh,
+        ]
+        .iter()
     }
 
     #[inline(always)]

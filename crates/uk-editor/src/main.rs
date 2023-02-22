@@ -1,4 +1,4 @@
-#![feature(let_chains)]
+#![feature(let_chains, once_cell)]
 mod modals;
 mod project;
 mod tabs;

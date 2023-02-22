@@ -1,11 +1,10 @@
 use std::{
     ops::Deref,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 
 use anyhow::Result;
-use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
@@ -182,8 +181,8 @@ impl PartialEq<PlatformSettings> for PlatformSettingsUI {
     }
 }
 
-pub static CONFIG: Lazy<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
-    Lazy::new(|| RwLock::new(Default::default()));
+pub static CONFIG: LazyLock<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
+    LazyLock::new(|| RwLock::new(Default::default()));
 
 fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
     ui.label("Deployment");
@@ -259,9 +258,9 @@ fn render_platform_config(
             egui::ComboBox::new(format!("lang-{platform}"), "")
                 .selected_text(config.language.to_str())
                 .show_ui(ui, |ui| {
-                    enum_iterator::all::<Language>().for_each(|lang| {
+                    Language::iter().for_each(|lang| {
                         changed |= ui
-                            .selectable_value(&mut config.language, lang, lang.to_str())
+                            .selectable_value(&mut config.language, *lang, lang.to_str())
                             .changed();
                     });
                 });

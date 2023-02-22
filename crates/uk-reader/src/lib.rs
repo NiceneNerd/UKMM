@@ -1,11 +1,11 @@
-#![feature(let_chains)]
+#![feature(let_chains, once_cell)]
 // mod nsp;
 mod unpacked;
 mod zarchive;
 
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, Once},
+    sync::{Arc, LazyLock, Once},
     time::Duration,
 };
 
@@ -14,7 +14,7 @@ use dashmap::DashMap;
 use include_flate::flate;
 use join_str::jstr;
 use moka::sync::Cache;
-use once_cell::sync::Lazy;
+// use once_cell::sync::Lazy;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
@@ -385,12 +385,13 @@ impl ResourceReader {
         std::path::PathBuf,
         std::vec::Vec<uk_content::constants::Language>,
     > {
-        static LANGS: Lazy<DashMap<PathBuf, Vec<Language>>> = Lazy::new(Default::default);
+        static LANGS: LazyLock<DashMap<PathBuf, Vec<Language>>> = LazyLock::new(Default::default);
         LANGS
             .entry(self.source().host_path().to_path_buf())
             .or_insert_with(|| {
                 Language::iter()
                     .filter(|l| self.source().file_exists(l.bootup_path().as_str().as_ref()))
+                    .copied()
                     .collect()
             })
     }

@@ -1,7 +1,7 @@
-// #![cfg_attr(
-//     all(not(debug_assertions), target_os = "windows"),
-//     windows_subsystem = "windows"
-// )]
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
 #![allow(stable_features)]
 #![feature(
     const_result_drop,
@@ -9,7 +9,8 @@
     let_chains,
     option_get_or_insert_default,
     option_result_contains,
-    result_option_inspect
+    result_option_inspect,
+    once_cell
 )]
 mod cli;
 mod gui;

@@ -1,18 +1,20 @@
-use std::{ops::Deref, sync::atomic::AtomicBool};
+use std::{
+    ops::Deref,
+    sync::{atomic::AtomicBool, LazyLock, OnceLock},
+};
 
 use log::{LevelFilter, Record};
-use once_cell::sync::{Lazy, OnceCell};
 use parking_lot::Mutex;
 use serde::Serialize;
 
 use crate::gui::Message;
 
-pub static LOGGER: Lazy<Logger> = Lazy::new(|| {
+pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
     Logger {
         inner:  env_logger::builder().build(),
         debug:  std::env::args().any(|arg| &arg == "--debug").into(),
         queue:  Mutex::new(vec![]),
-        sender: OnceCell::new(),
+        sender: OnceLock::new(),
     }
 });
 
@@ -45,7 +47,7 @@ pub struct Logger {
     inner:  env_logger::Logger,
     debug:  AtomicBool,
     queue:  Mutex<Vec<Entry>>,
-    sender: OnceCell<flume::Sender<Message>>,
+    sender: OnceLock<flume::Sender<Message>>,
 }
 
 impl Logger {
