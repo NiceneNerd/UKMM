@@ -1,7 +1,7 @@
 [package]
 name = "ukmm"
 authors = ["Caleb Smith <c.smith@tuta.io>"]
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 license = "GPL-3.0-or-later"
 
