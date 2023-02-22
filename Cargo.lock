@@ -187,15 +187,6 @@ checksum = "a4c527152e37cf757a3f78aae5a06fbeefdb07ccc535c980a3208ee3060dd544"
 
 [[package]]
 name = "arrayvec"
-version = "0.4.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd9fd44efafa8690358b7408d253adf110036b88f55672a933f01d616ad9b1b9"
-dependencies = [
- "nodrop",
-]
-
-[[package]]
-name = "arrayvec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
@@ -376,15 +367,16 @@ dependencies = [
 
 [[package]]
 name = "botw-utils"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b3e5e9bc32b4e96d286264e88eb3862a2429b6231eba263bc93a0bca98b659c"
+checksum = "0fb37451d18891f0d1fc4aee4e2f2357346810445a3489c09fd0b84d2dfd2b37"
 dependencies = [
- "lazy_static",
+ "include-flate",
+ "once_cell",
  "regex",
+ "roead",
  "serde_json",
  "twox-hash",
- "yaz0",
 ]
 
 [[package]]
@@ -2933,12 +2925,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nodrop"
-version = "0.1.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
-
-[[package]]
 name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3832,13 +3818,12 @@ dependencies = [
 
 [[package]]
 name = "rstb"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cdbc767be479b84f0aec44b391423917dd2b342d5604441fb413174dd2ac988"
+checksum = "3ac74c5091a7fa31438118781bec869b1b2d2d7aaf222ba993e8ac08821ea0a9"
 dependencies = [
  "crc 2.1.0",
- "lazy_static",
- "nom",
+ "include-flate",
  "phf",
  "roead",
  "serde",
@@ -5846,16 +5831,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
 dependencies = [
  "linked-hash-map",
-]
-
-[[package]]
-name = "yaz0"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7d5cc1747919118723211eccad2285a2ac6bbbcada9e7cd91e7f6ce5227f83f"
-dependencies = [
- "arrayvec 0.4.12",
- "byteorder",
 ]
 
 [[package]]

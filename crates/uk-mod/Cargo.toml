@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-botw-utils = "0.3.1"
+botw-utils = "0.4.0"
 configparser = "3.0.1"
 dashmap = "5.4"
 enum_dispatch = "0.3.8"
@@ -22,7 +22,7 @@ path-slash = "0.2.0"
 piz = "0.5.1"
 rayon = "1.6"
 roead = { version = "0.20.0", features = ["with-serde"] }
-rstb = { version = "0.5.0", features = ["complex"] }
+rstb = { version = "0.6.0", features = ["complex"] }
 sanitise-file-name = "1.0.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

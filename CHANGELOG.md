@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Default to portable storage folder in portable mode
 - Clear resource cache on settings change
+- Update deps to improve binary size
 
 ### Fixed 
 
