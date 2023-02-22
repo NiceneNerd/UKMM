@@ -257,10 +257,11 @@ impl BnpConverter {
                 &fs::read_to_string(packs_path).context("Failed to read packs.json")?,
             )
             .context("Failed to parse packs.json")?;
-            for pack in log
-                .into_values()
-                .map(|p| self.current_root.join(p.replace('\\', "/")))
-            {
+            for pack in log.into_values().filter_map(|p| {
+                let p = p.replace('\\', "/");
+                (!(p.starts_with("Pack/Bootup_") && p.len() == 21))
+                    .then(|| self.current_root.join(p))
+            }) {
                 if is_root {
                     self.parent_packs.write().insert(pack.clone());
                 }

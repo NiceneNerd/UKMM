@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Exclude bootup language packs from BNP pack converter to solve cross-region
+  issues
+
 ## [0.3.1] - 2023-02-22
+
 ### Changed
 
 - Default to portable storage folder in portable mode
