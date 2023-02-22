@@ -416,7 +416,6 @@ mod tests {
             .unwrap();
             let as_data = super::AS::try_from(&pio).unwrap();
             let pio2 = ParameterIO::from(as_data.clone());
-            println!("{}", pio2.to_text());
             let as_data2 = super::AS::try_from(&pio2).unwrap();
             assert_eq!(as_data, as_data2);
             // if pio != pio2 {

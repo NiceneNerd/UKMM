@@ -818,6 +818,7 @@ mod tests {
         assert_eq!(aiprog, aiprog2);
     }
 
+    #[cfg(feature = "ui")]
     #[test]
     fn serde_woodball() {
         let pio = ParameterIO::from_text(
