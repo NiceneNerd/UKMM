@@ -313,7 +313,7 @@ impl ModPacker {
                 let file_data = fs::read(&path)?;
                 let file_data = decompress_if(&file_data);
 
-                if name.ends_with("sizetable") {
+                if name.ends_with("sizetable") || file_data.len() < 4 {
                     return Ok(None);
                 }
 
