@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exclude bootup language packs from BNP pack converter to solve cross-region
   issues
 - Fixed panic on zero-length mod files
+- Fixed deploy paths on Windows
 
 ## [0.3.1] - 2023-02-22
 

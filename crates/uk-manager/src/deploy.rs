@@ -173,6 +173,21 @@ impl Manager {
                 DeployMethod::HardLink => "hard links",
                 DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
             });
+
+            #[inline(always)]
+            fn cross_join(path: &Path, file: &String) -> PathBuf {
+                #[cfg(windows)]
+                {
+                    let mut path = path.to_path_buf();
+                    for part in file.split('\\') {
+                        path.push(part);
+                    }
+                    path
+                }
+                #[cfg(not(windows))]
+                path.join(file.as_str())
+            }
+
             for (dir, dels, syncs) in [
                 (content, &deletes.content_files, &syncs.content_files),
                 (aoc, &deletes.aoc_files, &syncs.aoc_files),
@@ -180,16 +195,16 @@ impl Manager {
                 let dest = config.output.join(dir);
                 let source = settings.merged_dir().join(dir);
                 dels.par_iter().try_for_each(|f| -> Result<()> {
-                    let file = dest.join(f.as_str());
+                    let file = cross_join(&dest, f);
                     if file.exists() {
-                        fs::remove_file(dest.join(f.as_str()))?;
+                        fs::remove_file(file)?;
                     }
                     Ok(())
                 })?;
                 match config.method {
                     DeployMethod::Copy => {
                         syncs.par_iter().try_for_each(|f: &String| -> Result<()> {
-                            let out = dest.join(f.as_str());
+                            let out = cross_join(&dest, f);
                             fs::create_dir_all(out.parent().unwrap())?;
                             fs::copy(source.join(f.as_str()), &out).with_context(|| {
                                 format!("Failed to deploy {} to {}", f, out.display())
@@ -199,7 +214,7 @@ impl Manager {
                     }
                     DeployMethod::HardLink => {
                         syncs.par_iter().try_for_each(|f: &String| -> Result<()> {
-                            let out = dest.join(f.as_str());
+                            let out = cross_join(&dest, f);
                             fs::create_dir_all(out.parent().unwrap())?;
                             if out.exists() {
                                 fs::remove_file(&out)?;
