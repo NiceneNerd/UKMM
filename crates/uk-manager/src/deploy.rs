@@ -198,50 +198,43 @@ impl Manager {
                         }
                         Ok(())
                     })?;
-                match config.method {
-                    DeployMethod::Copy => {
-                        syncs.par_iter().filter(filter_xbootup).try_for_each(
-                            |f: &String| -> Result<()> {
-                                let out = dest.join(f.as_str());
-                                fs::create_dir_all(out.parent().unwrap())?;
-                                fs::copy(source.join(f.as_str()), &out).with_context(|| {
-                                    format!("Failed to deploy {} to {}", f, out.display())
-                                })?;
-                                Ok(())
-                            },
-                        )?;
-                    }
-                    DeployMethod::HardLink => {
-                        syncs.par_iter().filter(filter_xbootup).try_for_each(
-                            |f: &String| -> Result<()> {
-                                let out = dest.join(f.as_str());
-                                fs::create_dir_all(out.parent().unwrap())?;
-                                if out.exists() {
-                                    fs::remove_file(&out)?;
+
+                syncs.par_iter().filter(filter_xbootup).try_for_each(
+                    |f: &String| -> Result<()> {
+                        let from = source.join(f.as_str());
+                        let out = dest.join(f.as_str());
+                        if out.exists() {
+                            fs::remove_file(&out)?;
+                        }
+                        if from.exists() {
+                            out.parent().map(fs::create_dir_all).transpose()?;
+                            match config.method {
+                                DeployMethod::Copy => fs::copy(from, &out).map(|_| ()),
+                                DeployMethod::HardLink => fs::hard_link(from, &out),
+                                DeployMethod::Symlink => unreachable!(),
+                            }
+                            .with_context(|| format!("Failed to deploy {} to {}", f, out.display()))
+                            .map_err(|e| {
+                                if e.root_cause().to_string().contains("os error 17") {
+                                    e.context(
+                                        "Hard linking failed because the output folder is on a \
+                                         different disk or partition than the storage folder.",
+                                    )
+                                } else {
+                                    e
                                 }
-                                if let Err(e) = fs::hard_link(source.join(f.as_str()), &out)
-                                    .with_context(|| {
-                                        format!("Failed to deploy {} to {}", f, out.display())
-                                    })
-                                {
-                                    return Err(
-                                        if e.root_cause().to_string().contains("os error 17") {
-                                            e.context(
-                                                "Hard linking failed because the output folder is \
-                                                 on a different disk or partition than the \
-                                                 storage folder.",
-                                            )
-                                        } else {
-                                            e
-                                        },
-                                    );
-                                }
-                                Ok(())
-                            },
-                        )?;
-                    }
-                    DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
-                }
+                            })?;
+                            Ok(())
+                        } else {
+                            log::warn!(
+                                "Source file {} missing, we're assuming it was a deletion lost \
+                                 track of",
+                                from.display()
+                            );
+                            Ok(())
+                        }
+                    },
+                )?;
             }
             log::info!("Deployment complete");
         }
