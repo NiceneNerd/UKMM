@@ -13,6 +13,7 @@ use roead::yaz0::{compress, decompress};
 use rstb::ResourceSizeTable;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
+use uk_content::constants::Language;
 use uk_mod::{
     unpack::{ModReader, ModUnpacker},
     Manifest,
@@ -135,9 +136,13 @@ impl Manager {
             .upgrade()
             .expect("YIKES, the settings manager is gone");
         let settings = settings.read();
+        let mut lang = Language::USen;
         let config = settings
             .platform_config()
-            .and_then(|c| c.deploy_config.as_ref())
+            .and_then(|c| {
+                lang = c.language;
+                c.deploy_config.as_ref()
+            })
             .context("No deployment config for current platform")?;
         log::debug!("Deployment config:\n{:#?}", &config);
         if config.method == DeployMethod::Symlink {
@@ -174,19 +179,9 @@ impl Manager {
                 DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
             });
 
-            #[inline(always)]
-            fn cross_join(path: &Path, file: &String) -> PathBuf {
-                #[cfg(windows)]
-                {
-                    let mut path = path.to_path_buf();
-                    for part in file.split('\\') {
-                        path.push(part);
-                    }
-                    path
-                }
-                #[cfg(not(windows))]
-                path.join(file.as_str())
-            }
+            let filter_xbootup = |file: &&String| -> bool {
+                !file.starts_with("Pack/Bootup_") || **file == lang.bootup_path()
+            };
 
             for (dir, dels, syncs) in [
                 (content, &deletes.content_files, &syncs.content_files),
@@ -194,50 +189,56 @@ impl Manager {
             ] {
                 let dest = config.output.join(dir);
                 let source = settings.merged_dir().join(dir);
-                dels.par_iter().try_for_each(|f| -> Result<()> {
-                    let file = cross_join(&dest, f);
-                    if file.exists() {
-                        fs::remove_file(file)?;
-                    }
-                    Ok(())
-                })?;
+                dels.par_iter()
+                    .filter(filter_xbootup)
+                    .try_for_each(|f| -> Result<()> {
+                        let file = dest.join(f.as_str());
+                        if file.exists() {
+                            fs::remove_file(file)?;
+                        }
+                        Ok(())
+                    })?;
                 match config.method {
                     DeployMethod::Copy => {
-                        syncs.par_iter().try_for_each(|f: &String| -> Result<()> {
-                            let out = cross_join(&dest, f);
-                            fs::create_dir_all(out.parent().unwrap())?;
-                            fs::copy(source.join(f.as_str()), &out).with_context(|| {
-                                format!("Failed to deploy {} to {}", f, out.display())
-                            })?;
-                            Ok(())
-                        })?;
+                        syncs.par_iter().filter(filter_xbootup).try_for_each(
+                            |f: &String| -> Result<()> {
+                                let out = dest.join(f.as_str());
+                                fs::create_dir_all(out.parent().unwrap())?;
+                                fs::copy(source.join(f.as_str()), &out).with_context(|| {
+                                    format!("Failed to deploy {} to {}", f, out.display())
+                                })?;
+                                Ok(())
+                            },
+                        )?;
                     }
                     DeployMethod::HardLink => {
-                        syncs.par_iter().try_for_each(|f: &String| -> Result<()> {
-                            let out = cross_join(&dest, f);
-                            fs::create_dir_all(out.parent().unwrap())?;
-                            if out.exists() {
-                                fs::remove_file(&out)?;
-                            }
-                            if let Err(e) = fs::hard_link(source.join(f.as_str()), &out)
-                                .with_context(|| {
-                                    format!("Failed to deploy {} to {}", f, out.display())
-                                })
-                            {
-                                return Err(
-                                    if e.root_cause().to_string().contains("os error 17") {
-                                        e.context(
-                                            "Hard linking failed because the output folder is on \
-                                             a different disk or partition than the storage \
-                                             folder.",
-                                        )
-                                    } else {
-                                        e
-                                    },
-                                );
-                            }
-                            Ok(())
-                        })?;
+                        syncs.par_iter().filter(filter_xbootup).try_for_each(
+                            |f: &String| -> Result<()> {
+                                let out = dest.join(f.as_str());
+                                fs::create_dir_all(out.parent().unwrap())?;
+                                if out.exists() {
+                                    fs::remove_file(&out)?;
+                                }
+                                if let Err(e) = fs::hard_link(source.join(f.as_str()), &out)
+                                    .with_context(|| {
+                                        format!("Failed to deploy {} to {}", f, out.display())
+                                    })
+                                {
+                                    return Err(
+                                        if e.root_cause().to_string().contains("os error 17") {
+                                            e.context(
+                                                "Hard linking failed because the output folder is \
+                                                 on a different disk or partition than the \
+                                                 storage folder.",
+                                            )
+                                        } else {
+                                            e
+                                        },
+                                    );
+                                }
+                                Ok(())
+                            },
+                        )?;
                     }
                     DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
                 }

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exclude bootup language packs from BNP pack converter to solve cross-region
   issues
 - Fixed panic on zero-length mod files
-- Fixed deploy paths on Windows
+- Fixed cross-region bootup language pack deployment
 
 ## [0.3.1] - 2023-02-22
 
@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clear resource cache on settings change
 - Update deps to improve binary size
 
-### Fixed 
+### Fixed
 
 - Fixed missing non-US languages in nested SARC map
 
@@ -139,7 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2023-01-28
 
-### Added 
+### Added
 
 - Readme
 - Support for converting and installing BNPs (no option support yet)
