@@ -5,7 +5,6 @@ use std::{
 
 use log::{LevelFilter, Record};
 use parking_lot::Mutex;
-use serde::Serialize;
 
 use crate::gui::Message;
 
@@ -24,7 +23,7 @@ pub fn init() {
     log::set_max_level(level.max(log::LevelFilter::Debug));
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct Entry {
     pub timestamp: String,
     pub level: String,
