@@ -17,15 +17,20 @@ mod gui;
 mod logger;
 
 use anyhow::Result;
-use clap::Parser;
-use cli::Cli;
+use cli::Ukmm;
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
-    if cli.command.is_some() {
-        cli::Runner::new(cli).run()?;
-    } else {
-        gui::main();
+    match Ukmm::from_env() {
+        Ok(cmd) => {
+            cli::Runner::new(cmd).run()?;
+        }
+        Err(e) => {
+            if e.is_help() {
+                e.exit();
+            } else {
+                gui::main();
+            }
+        }
     }
     Ok(())
 }
