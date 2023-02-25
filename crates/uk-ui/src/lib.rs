@@ -29,7 +29,6 @@ pub fn load_fonts(context: &egui::Context) {
             })
             .unwrap_or_else(|_| "Ubuntu".to_owned())
     };
-    dbg!(&font_to_try);
     if let Some(system_font) =
         font_loader::system_fonts::get(&FontPropertyBuilder::new().family(&font_to_try).build())
     {

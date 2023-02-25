@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added "Reset Pending" option to menu
+
 ### Fixed
 
 - Exclude bootup language packs from BNP pack converter to solve cross-region

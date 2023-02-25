@@ -181,6 +181,7 @@ pub enum Message {
     RequestMeta(PathBuf),
     RequestOptions(Mod, bool),
     ResetMods,
+    ResetPending,
     ResetSettings,
     Restart,
     SaveSettings,
@@ -677,6 +678,13 @@ impl App {
                         log::info!("Deploying current mod configuration");
                         core.deploy_manager().deploy()?;
                         Ok(Message::ResetMods)
+                    })
+                }
+                Message::ResetPending => {
+                    self.do_task(|core| {
+                        log::info!("Resetting pending deployment data");
+                        core.deploy_manager().reset_pending()?;
+                        Ok(Message::Noop)
                     })
                 }
                 Message::Remerge => {

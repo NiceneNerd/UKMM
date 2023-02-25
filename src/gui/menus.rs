@@ -29,6 +29,10 @@ impl App {
             ui.close_menu();
             self.do_update(Message::Remerge);
         }
+        if ui.button("Reset Pending").clicked() {
+            ui.close_menu();
+            self.do_update(Message::ResetPending);
+        }
     }
 
     pub fn window_menu(&mut self, ui: &mut Ui) {

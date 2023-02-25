@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeSet,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
 };
@@ -8,12 +9,13 @@ use dashmap::DashMap;
 use fs_err as fs;
 use join_str::jstr;
 use parking_lot::RwLock;
+use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::yaz0::{compress, decompress};
 use rstb::ResourceSizeTable;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use uk_content::constants::Language;
+use uk_content::{constants::Language, platform_prefixes};
 use uk_mod::{
     unpack::{ModReader, ModUnpacker},
     Manifest,
@@ -117,6 +119,75 @@ impl Manager {
             + dels.aoc_files.len()
             + files.content_files.len()
             + files.aoc_files.len()
+    }
+
+    pub fn reset_pending(&self) -> Result<()> {
+        self.pending_delete.write().clear();
+        self.pending_files.write().clear();
+        let settings = self
+            .settings
+            .upgrade()
+            .expect("YIKES the settings manager is gone");
+        let settings = settings.read();
+        let source = settings.merged_dir();
+        let config = settings
+            .platform_config()
+            .and_then(|c| c.deploy_config.as_ref())
+            .context("No deployment config for current platform")?;
+        let dest = &config.output;
+        let (content, aoc) = platform_prefixes(settings.current_mode.into());
+
+        let collect_files = |root: &str| -> BTreeSet<String> {
+            let source = source.join(root);
+            let dest = dest.join(root);
+            jwalk::WalkDir::new(&source)
+                .into_iter()
+                .filter_map(|file| {
+                    file.ok().and_then(|file| {
+                        file.metadata().ok().and_then(|meta| {
+                            let path = file.path();
+                            let rel = path.strip_prefix(&source).unwrap();
+                            let dest = dest.join(rel);
+                            if !dest.exists()
+                                || dest.metadata().ok()?.modified().ok()? < meta.modified().ok()?
+                            {
+                                Some(rel.to_slash_lossy().into())
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                })
+                .collect()
+        };
+
+        *self.pending_files.write() = Manifest {
+            content_files: collect_files(content),
+            aoc_files:     collect_files(aoc),
+        };
+
+        let collect_deletes = |root: &str| -> BTreeSet<String> {
+            let source = source.join(root);
+            let dest = dest.join(root);
+            jwalk::WalkDir::new(&source)
+                .into_iter()
+                .filter_map(|file| {
+                    file.ok().and_then(|file| {
+                        let path = file.path();
+                        let rel = path.strip_prefix(&source).unwrap();
+                        let dest = dest.join(rel);
+                        (dest.exists() && !path.exists()).then_some(rel.to_slash_lossy().into())
+                    })
+                })
+                .collect()
+        };
+
+        *self.pending_delete.write() = Manifest {
+            content_files: collect_deletes(content),
+            aoc_files:     collect_deletes(aoc),
+        };
+
+        Ok(())
     }
 
     fn save(&self) -> Result<()> {

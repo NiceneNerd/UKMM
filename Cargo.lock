@@ -4927,6 +4927,7 @@ dependencies = [
  "jwalk 0.8.1",
  "log",
  "parking_lot",
+ "path-slash",
  "rayon",
  "remove_dir_all 0.8.1",
  "roead",

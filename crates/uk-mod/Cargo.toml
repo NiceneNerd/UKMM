@@ -18,7 +18,7 @@ minicbor-ser = "0.2.0"
 mmap-rs = "0.4.0"
 ouroboros = "0.15.5"
 parking_lot = "0.12.1"
-path-slash = "0.2.0"
+path-slash = "0.2.1"
 piz = "0.5.1"
 rayon = "1.6"
 roead = { version = "0.20.0", features = ["with-serde"] }
