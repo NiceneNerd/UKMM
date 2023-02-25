@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added "Reset Pending" option to menu
+- Added experimental BCML migration tool
 
 ### Fixed
 

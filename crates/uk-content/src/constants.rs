@@ -7,8 +7,9 @@ use uk_ui_derive::Editable;
 
 use crate::UKError;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Language {
+    #[default]
     USen,
     EUen,
     USfr,

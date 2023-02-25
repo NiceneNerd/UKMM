@@ -9,6 +9,8 @@ use fs_err as fs;
 use im::Vector;
 use join_str::jstr;
 use serde::Deserialize;
+use serde_json::Value;
+use uk_content::constants::Language;
 use uk_manager::{
     bnp::convert_bnp,
     core::Manager,
@@ -280,6 +282,129 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     };
     settings.save()?;
     Ok(Message::ResetSettings)
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct BcmlSettings {
+    lang: Language,
+    cemu_dir: Option<PathBuf>,
+    export_dir: Option<PathBuf>,
+    export_dir_nx: Option<PathBuf>,
+    game_dir: Option<PathBuf>,
+    game_dir_nx: Option<PathBuf>,
+    update_dir: Option<PathBuf>,
+    dlc_dir: Option<PathBuf>,
+    dlc_dir_nx: Option<PathBuf>,
+    store_dir: PathBuf,
+}
+
+pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
+    let current_mode = core.settings().current_mode;
+    let settings_path = dirs2::config_dir().unwrap().join("bcml/settings.json");
+    let bcml_settings: BcmlSettings = serde_json::from_str(
+        &fs::read_to_string(settings_path).context("Failed to read BCML settings file")?,
+    )
+    .context("Failed to parse BCML settings file")?;
+    if let Some(game_dir) = bcml_settings.game_dir && let Some(update_dir) = bcml_settings.update_dir {
+        {
+            let mut settings = core.settings_mut();
+            settings.wiiu_config = Some(PlatformSettings {
+                cemu_rules: bcml_settings.cemu_dir.is_some(),
+                language: bcml_settings.lang,
+                profile: "Default".into(),
+                deploy_config: bcml_settings
+                    .export_dir
+                    .map(|export_dir| {
+                        DeployConfig {
+                            output: export_dir,
+                            ..Default::default()
+                        }
+                    })
+                    .or_else(|| {
+                        bcml_settings.cemu_dir.map(|cemu_dir| {
+                            DeployConfig {
+                                output: cemu_dir.join("graphicPacks/BreathOfTheWild_UKMM"),
+                                ..Default::default()
+                            }
+                        })
+                    }),
+                dump: Arc::new(ResourceReader::from_unpacked_dirs(
+                    Some(game_dir),
+                    Some(update_dir),
+                    bcml_settings.dlc_dir,
+                )?),
+            });
+            settings.current_mode = Platform::WiiU;
+            settings.save()?;
+        }
+        core.reload()?;
+        import_mods(&core, bcml_settings.store_dir.join("mods"))?;
+    }
+    if let Some(game_dir) = bcml_settings.game_dir_nx {
+        {
+            let mut settings = core.settings_mut();
+            settings.switch_config = Some(PlatformSettings {
+                language: bcml_settings.lang,
+                profile: "Default".into(),
+                deploy_config: bcml_settings.export_dir_nx.map(|export_dir| {
+                    DeployConfig {
+                        output: export_dir,
+                        ..Default::default()
+                    }
+                }),
+                cemu_rules: false,
+                dump: Arc::new(ResourceReader::from_unpacked_dirs(
+                    Some(game_dir),
+                    None::<PathBuf>,
+                    bcml_settings.dlc_dir_nx,
+                )?),
+            });
+            settings.current_mode = Platform::Switch;
+            settings.save()?;
+        }
+        core.reload()?;
+        import_mods(&core, bcml_settings.store_dir.join("mods_nx"))?;
+    }
+    let mode_changed = core.settings().current_mode != current_mode;
+    if mode_changed {
+        {
+            let mut settings = core.settings_mut();
+            settings.current_mode = current_mode;
+            settings.save()?;
+        }
+        core.reload()?;
+    }
+    Ok(Message::HandleSettings)
+}
+
+fn import_mods(core: &Manager, mod_dir: PathBuf) -> Result<()> {
+    if !mod_dir.exists() {
+        Ok(())
+    } else {
+        for dir in fs::read_dir(mod_dir)?.filter_map(|e| {
+            e.ok().and_then(|e| {
+                e.file_type().ok().and_then(|t| {
+                    (t.is_dir()
+                        && !e
+                            .file_name()
+                            .to_str()
+                            .map(|n| n.starts_with("9999"))
+                            .unwrap_or(false))
+                    .then(|| e.path())
+                })
+            })
+        }) {
+            match convert_bnp(core, &dir) {
+                Ok(path) => {
+                    core.mod_manager().add(&path)?;
+                }
+                Err(e) => log::warn!("Failed to import BCML mod: {}", e),
+            }
+        }
+        core.mod_manager().save()?;
+        Ok(())
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]

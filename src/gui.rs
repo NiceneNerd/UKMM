@@ -165,9 +165,11 @@ pub enum Message {
     FilePickerSet(Option<PathBuf>),
     FilePickerUp,
     HandleMod(Mod),
+    HandleSettings,
     ImportCemu,
     InstallMod(Mod),
     Log(Entry),
+    MigrateBcml,
     MoveSelected(usize),
     NewProfile,
     Noop,
@@ -714,6 +716,17 @@ impl App {
                         Err(e) => self.do_update(Message::Error(e)),
                     };
                 }
+                Message::HandleSettings => {
+                    self.toasts.add({
+                        let mut toast = Toast::success("Settings saved");
+                        toast.set_duration(Some(Duration::new(2, 0)));
+                        toast
+                    });
+                    if let Some(dump) = self.core.settings().dump() { dump.clear_cache() }
+                    ctx.data().remove_by_type::<Arc<RwLock<ModPackerBuilder>>>();
+                    self.do_update(Message::ClearSelect);
+                    self.do_update(Message::ResetMods);
+                }
                 Message::RequestOptions(mut mod_, update) => {
                     if !update {
                         mod_.enable_default_options();
@@ -772,7 +785,7 @@ impl App {
                 }
                 Message::ImportCemu => {
                     let mut dialog = rfd::FileDialog::new()
-                        .add_filter("Cemu executable", &["exe", "AppImage", "*"])
+                        .add_filter("Cemu executable", &["exe", "AppImage", "*.*", "*"])
                         .set_title("Select Cemu Executable");
                     if cfg!(windows) {
                         dialog = dialog.set_file_name("Cemu.exe");
@@ -780,6 +793,9 @@ impl App {
                     if let Some(path) = dialog.pick_file() {
                         self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
                     }
+                }
+                Message::MigrateBcml => {
+                    self.do_task(tasks::migrate_bcml);
                 }
                 Message::RequestMeta(path) => {
                     self.meta_input

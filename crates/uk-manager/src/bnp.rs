@@ -348,8 +348,12 @@ impl BnpConverter {
 
 pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = crate::util::get_temp_folder();
-    log::info!("Extracting BNP…");
-    extract_7z(path, &tempdir).context("Failed to extract BNP")?;
+    if path.is_dir() {
+        dircpy::copy_dir(path, tempdir.as_path()).context("Failed to copy files to temp folder")?;
+    } else {
+        log::info!("Extracting BNP…");
+        extract_7z(path, &tempdir).context("Failed to extract BNP")?;
+    }
     if tempdir.join("rules.txt").exists() && !tempdir.join("info.json").exists() {
         old::Bnp2xConverter::new(&tempdir)
             .convert()

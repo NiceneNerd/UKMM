@@ -498,6 +498,16 @@ impl App {
                 egui::CollapsingHeader::new("General")
                     .default_open(true)
                     .show(ui, |ui| {
+                        if ui
+                            .icon_text_button("Migrate from BCML", icons::Icon::Import)
+                            .clicked()
+                        {
+                            self.channel
+                                .0
+                                .clone()
+                                .send(Message::MigrateBcml)
+                                .expect("Broken channel");
+                        }
                         render_setting("Theme", "User interface theme", ui, |ui| {
                             egui::ComboBox::new("ui-theme", "")
                                 .selected_text(self.theme.name())
