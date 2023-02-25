@@ -96,18 +96,19 @@ with an optimal balance of size and decompresison performance.
 
 ### Meta File
 
-Mod metadata is stored in the TOML format under `meta.yml` in the ZIP root. It
+Mod metadata is stored in the YAML format under `meta.yml` in the ZIP root. It
 contains the mod name, description, option information, etc. Example contents:
 
 ```yaml
-name = 'Test Mod'
-version = 1.0
-author = 'Nicene Nerd'
-category = 'Other'
-description = 'A sample UKMM mod'
-platform = 'Wii U'
-option_groups = []
-masters = {}
+name: Test Mod
+version: 1.0.0
+author: Nicene Nerd
+category: Other
+description: A sample UKMM mod
+platform: !Specific Wii U
+url: null
+option_groups: []
+masters: {}
 ```
 
 ### Manifest File
