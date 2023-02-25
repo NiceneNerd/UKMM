@@ -9,7 +9,6 @@ use fs_err as fs;
 use im::Vector;
 use join_str::jstr;
 use serde::Deserialize;
-use serde_json::Value;
 use uk_content::constants::Language;
 use uk_manager::{
     bnp::convert_bnp,
@@ -256,7 +255,6 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             .context("Failed to validate game dump")?,
     );
     if let Some(wiiu_config) = settings.wiiu_config.as_mut() {
-        wiiu_config.cemu_rules = true;
         if mlc_path.is_some() {
             wiiu_config.dump = dump;
         }
@@ -272,12 +270,12 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             dump,
             deploy_config: gfx_folder.map(|gfx_folder| {
                 DeployConfig {
-                    auto:   true,
+                    auto: true,
                     method: uk_manager::settings::DeployMethod::Copy,
                     output: gfx_folder.join("BreathOfTheWild_UKMM"),
+                    cemu_rules: true,
                 }
             }),
-            cemu_rules: true,
         })
     };
     settings.save()?;
@@ -310,7 +308,6 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
         {
             let mut settings = core.settings_mut();
             settings.wiiu_config = Some(PlatformSettings {
-                cemu_rules: bcml_settings.cemu_dir.is_some(),
                 language: bcml_settings.lang,
                 profile: "Default".into(),
                 deploy_config: bcml_settings
@@ -325,6 +322,7 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
                         bcml_settings.cemu_dir.map(|cemu_dir| {
                             DeployConfig {
                                 output: cemu_dir.join("graphicPacks/BreathOfTheWild_UKMM"),
+                                cemu_rules: true,
                                 ..Default::default()
                             }
                         })
@@ -353,7 +351,6 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
                         ..Default::default()
                     }
                 }),
-                cemu_rules: false,
                 dump: Arc::new(ResourceReader::from_unpacked_dirs(
                     Some(game_dir),
                     None::<PathBuf>,

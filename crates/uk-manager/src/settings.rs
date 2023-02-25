@@ -98,7 +98,9 @@ impl From<Platform> for rstb::Endian {
 pub struct DeployConfig {
     pub output: PathBuf,
     pub method: DeployMethod,
-    pub auto:   bool,
+    pub auto: bool,
+    #[serde(default)]
+    pub cemu_rules: bool,
 }
 
 impl Default for DeployConfig {
@@ -106,7 +108,8 @@ impl Default for DeployConfig {
         DeployConfig {
             output: "".into(),
             method: DeployMethod::Copy,
-            auto:   false,
+            auto: false,
+            cemu_rules: false,
         }
     }
 }
@@ -135,8 +138,6 @@ pub struct PlatformSettings {
     pub profile: String,
     pub dump: Arc<ResourceReader>,
     pub deploy_config: Option<DeployConfig>,
-    #[serde(default)]
-    pub cemu_rules: bool,
 }
 
 #[inline]

@@ -105,7 +105,6 @@ pub struct PlatformSettingsUI {
     pub profile: String,
     pub dump: DumpType,
     pub deploy_config: DeployConfig,
-    pub cemu_rules: bool,
 }
 
 impl Default for PlatformSettingsUI {
@@ -120,7 +119,6 @@ impl Default for PlatformSettingsUI {
                 aoc_dir:     Default::default(),
             },
             deploy_config: Default::default(),
-            cemu_rules: false,
         }
     }
 }
@@ -149,7 +147,6 @@ impl TryFrom<PlatformSettingsUI> for PlatformSettings {
         Ok(Self {
             language: settings.language,
             profile: settings.profile.into(),
-            cemu_rules: settings.cemu_rules,
             dump,
             deploy_config: if settings.deploy_config.output.as_os_str().is_empty() {
                 None
@@ -167,7 +164,6 @@ impl From<&PlatformSettings> for PlatformSettingsUI {
             profile: settings.profile.to_string(),
             dump: settings.dump.as_ref().into(),
             deploy_config: settings.deploy_config.as_ref().cloned().unwrap_or_default(),
-            cemu_rules: settings.cemu_rules,
         }
     }
 }
@@ -177,14 +173,13 @@ impl PartialEq<PlatformSettings> for PlatformSettingsUI {
         self.language == other.language
             && other.deploy_config.contains(&self.deploy_config)
             && self.dump.host_path() == other.dump.source().host_path()
-            && self.cemu_rules == other.cemu_rules
     }
 }
 
 pub static CONFIG: LazyLock<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
     LazyLock::new(|| RwLock::new(Default::default()));
 
-fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
+fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut Ui) -> bool {
     ui.label("Deployment");
     let mut changed = false;
     ui.group(|ui| {
@@ -228,6 +223,17 @@ fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
                 changed |= ui.checkbox(&mut config.auto, "").changed();
             },
         );
+        if platform == Platform::WiiU {
+            render_setting(
+                "Deploy rules.txt",
+                "Automatically adds a rules.txt file when deploying for Cemu integration.",
+                ui,
+                |ui| {
+                    changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
+                },
+            );
+            ui.add_space(8.0);
+        }
         render_setting(
             "Output Folder",
             "Where to deploy the final merged mod pack.",
@@ -267,17 +273,6 @@ fn render_platform_config(
         },
     );
     ui.add_space(8.0);
-    if platform == Platform::WiiU {
-        render_setting(
-            "Deploy rules.txt",
-            "Automatically adds a rules.txt file when deploying for Cemu integration.",
-            ui,
-            |ui| {
-                changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
-            },
-        );
-        ui.add_space(8.0);
-    }
     ui.label("Game Dump");
     ui.group(|ui| {
         ui.allocate_space([ui.available_width(), -8.0].into());
@@ -430,7 +425,7 @@ fn render_platform_config(
             }
         }
     });
-    changed |= render_deploy_config(&mut config.deploy_config, ui);
+    changed |= render_deploy_config(&mut config.deploy_config, platform, ui);
     changed
 }
 

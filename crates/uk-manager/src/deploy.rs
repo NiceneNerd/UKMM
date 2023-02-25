@@ -310,9 +310,11 @@ impl Manager {
             log::info!("Deployment complete");
         }
         if settings.current_mode == Platform::WiiU
-            && settings.platform_config().map(|c| c.cemu_rules).unwrap_or(false)
-            && let rules_path = config.output.join("rules.txt")
-            && !rules_path.exists()
+            && settings
+                .platform_config()
+                .and_then(|c| c.deploy_config.as_ref().map(|c| c.cemu_rules))
+                .unwrap_or(false)
+            && let rules_path = config.output.join("rules.txt") && !rules_path.exists()
         {
             fs::write(rules_path, include_str!("../../../assets/rules.txt"))?;
         }

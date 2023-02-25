@@ -24,6 +24,9 @@ case you will need to set your deployment location somewhere inside Cemu's
 `BreathOfTheWild_UKMM`. So, for example, the full path might be something like:
 `C:\Cemu\graphicPacks\BreathOfTheWild_UKMM`.
 
+**Additional note for Cemu users**: You almost certainly want the "Deploy
+rules.txt" option selected for Cemu integration.
+
 ### Wii U
 
 Wii U users have a few options, but the most widely used and supported method to

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added "Reset Pending" option to menu
 - Added experimental BCML migration tool
 
+### Changed 
+
+- Moved `rules.txt` setting to deployment config
+
 ### Fixed
 
 - Exclude bootup language packs from BNP pack converter to solve cross-region
