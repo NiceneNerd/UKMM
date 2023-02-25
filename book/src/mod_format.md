@@ -107,8 +107,8 @@ category: Other
 description: A sample UKMM mod
 platform: !Specific Wii U
 url: null
-option_groups = []
-masters = {}
+option_groups: []
+masters: {}
 ```
 
 ### Manifest File
