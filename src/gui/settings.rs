@@ -236,6 +236,16 @@ fn render_deploy_config(config: &mut DeployConfig, ui: &mut Ui) -> bool {
                 changed |= ui.folder_picker(&mut config.output).changed();
             },
         );
+    ui.add_space(8.0);
+    if platform == Platform::WiiU {
+        render_setting(
+            "Deploy rules.txt",
+            "Automatically adds a rules.txt file when deploying for Cemu integration.",
+            ui,
+            |ui| {
+                changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
+            },
+        );
     });
     changed
 }
@@ -266,16 +276,6 @@ fn render_platform_config(
                 });
         },
     );
-    ui.add_space(8.0);
-    if platform == Platform::WiiU {
-        render_setting(
-            "Deploy rules.txt",
-            "Automatically adds a rules.txt file when deploying for Cemu integration.",
-            ui,
-            |ui| {
-                changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
-            },
-        );
         ui.add_space(8.0);
     }
     ui.label("Game Dump");
