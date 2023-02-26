@@ -3,6 +3,7 @@ mod deser;
 mod ui;
 use std::collections::{BTreeMap, BTreeSet};
 
+use anyhow::Context;
 use join_str::jstr;
 pub use msyt::{
     model::{Entry, MsbtInfo},
@@ -107,9 +108,14 @@ impl TryFrom<&'_ Sarc<'_>> for MessagePack {
     fn try_from(sarc: &Sarc<'_>) -> Result<Self> {
         Ok(Self(
             sarc.files()
+                .filter(|f| f.name.map(|n| n.ends_with("msbt")).unwrap_or(false))
                 .map(|file| -> Result<(String, Msyt)> {
                     let name = file.unwrap_name().trim_end_matches(".msbt");
-                    Ok((name.into(), Msyt::from_msbt_bytes(file.data())?))
+                    Ok((
+                        name.into(),
+                        Msyt::from_msbt_bytes(file.data())
+                            .with_context(|| jstr!("Failed to parse MSBT file {&name}"))?,
+                    ))
                 })
                 .collect::<Result<_>>()?,
         ))

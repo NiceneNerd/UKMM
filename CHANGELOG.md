@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed 
 
 - Moved `rules.txt` setting to deployment config
+- Improved message pack processing to report the paths of problem files and
+  filter for only MSBTs (should fix Zelda's Ballad compatibility)
 
 ### Fixed
 
