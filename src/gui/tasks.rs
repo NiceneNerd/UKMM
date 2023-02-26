@@ -428,19 +428,23 @@ impl VersionResponse {
     }
 }
 
+fn response(url: &str) -> Result<Vec<u8>> {
+    let url = url.try_into()?;
+    let mut buf = Vec::new();
+    http_req::request::Request::new(&url)
+        .header("User-Agent", "UKMM")
+        .method(http_req::request::Method::GET)
+        .send(&mut buf)
+        .context("HTTP request file")
+        .map(|_| buf)
+}
+
 pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
     let url = "https://api.github.com/repos/NiceneNerd/ukmm/releases?per_page=10";
-    match reqwest::blocking::Client::builder()
-        .user_agent("UKMM")
-        .build()
-        .unwrap()
-        .get(url)
-        .send()
-        .context("Failed to check release notes")
-        .and_then(|r| {
-            r.json::<Vec<VersionResponse>>()
-                .context("Failed to parse release notes")
-        }) {
+    match response(url).and_then(|bytes| {
+        serde_json::from_slice::<Vec<VersionResponse>>(&bytes)
+            .context("Failed to parse GitHub response")
+    }) {
         Ok(mut releases) => {
             let current_semver = lenient_semver::parse(env!("CARGO_PKG_VERSION")).unwrap();
             let betas = core.settings().check_updates == UpdatePreference::Beta
@@ -467,14 +471,7 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
         .iter()
         .find(|asset| asset.name[..asset.name.len() - 4].ends_with(platform))
         .context("No matching platform for update")?;
-    let data = reqwest::blocking::Client::builder()
-        .user_agent("UKMM")
-        .build()
-        .unwrap()
-        .get(&asset.browser_download_url)
-        .send()
-        .context("Failed to download release archive")?
-        .bytes()?;
+    let data = response(asset.browser_download_url.as_str())?;
     let tmpfile = get_temp_file();
     fs::write(tmpfile.as_path(), data)?;
     let exe = std::env::current_exe().unwrap();
