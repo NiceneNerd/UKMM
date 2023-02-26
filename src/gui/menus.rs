@@ -59,7 +59,7 @@ impl App {
             {
                 ui.close_menu();
                 let mut tree = self.tree.write();
-                if let Some((tab, parent)) = self.closed_tabs.remove_with_key(&tab) {
+                if let Some(parent) = self.closed_tabs.remove(&tab) {
                     if let Some(parent) = tree.iter_mut().nth(parent.0) && parent.tabs_count() > 0 {
                         parent.append_tab(tab);
                     } else {

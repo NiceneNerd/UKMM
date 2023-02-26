@@ -1,6 +1,5 @@
 use std::{process::Command, sync::OnceLock};
 
-use im::vector;
 use join_str::jstr;
 use uk_manager::mods::Mod;
 use uk_ui::{
@@ -272,7 +271,7 @@ impl App {
 
     fn render_mod_row(&mut self, index: usize, mut row: TableRow) {
         let mod_ = unsafe { self.displayed_mods.get_mut(index).unwrap_unchecked() };
-        if let Some(index) = self.mods.index_of(mod_) {
+        if let Some(index) = self.mods.iter().position(|m| m == mod_) {
             let selected = self.selected.contains(mod_);
             let mut clicked = false;
             let mut drag_started = false;
@@ -322,10 +321,7 @@ impl App {
                 );
             }
             if toggled {
-                self.do_update(Message::ToggleMods(
-                    Some(vector![menu_mod.clone()]),
-                    enabled,
-                ));
+                self.do_update(Message::ToggleMods(Some(vec![menu_mod.clone()]), enabled));
             } else if clicked {
                 self.do_update(Message::SetFocus(FocusedPane::ModList));
                 if selected && ctrl {

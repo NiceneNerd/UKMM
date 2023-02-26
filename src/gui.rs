@@ -11,6 +11,7 @@ mod tabs;
 mod tasks;
 mod util;
 use std::{
+    collections::VecDeque,
     ops::DerefMut,
     path::PathBuf,
     sync::{Arc, Once},
@@ -23,12 +24,12 @@ use eframe::{epaint::text::TextWrapping, IconData, NativeOptions};
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
-use im::{vector, Vector};
 use join_str::jstr;
 use parking_lot::{Mutex, RwLock};
 use picker::FilePickerState;
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
+use uk_content::util::HashMap;
 use uk_manager::{
     core::Manager,
     mods::{LookupMod, Mod},
@@ -178,7 +179,7 @@ pub enum Message {
     PackageMod(Arc<RwLock<ModPackerBuilder>>),
     RefreshModsDisplay,
     Remerge,
-    RemoveMods(Vector<Mod>),
+    RemoveMods(Vec<Mod>),
     RenameProfile(String, String),
     RequestMeta(PathBuf),
     RequestOptions(Mod, bool),
@@ -199,8 +200,8 @@ pub enum Message {
     ShowPackagingDependencies,
     StartDrag(usize),
     Toast(String),
-    ToggleMods(Option<Vector<Mod>>, bool),
-    UninstallMods(Option<Vector<Mod>>),
+    ToggleMods(Option<Vec<Mod>>, bool),
+    UninstallMods(Option<Vec<Mod>>),
     UpdateOptions(Mod),
 }
 
@@ -213,19 +214,19 @@ struct UiState {
 struct App {
     core: Arc<Manager>,
     channel: (Sender<Message>, Receiver<Message>),
-    mods: Vector<Mod>,
-    displayed_mods: Vector<Mod>,
-    selected: Vector<Mod>,
-    install_queue: Vector<PathBuf>,
+    mods: Vec<Mod>,
+    displayed_mods: Vec<Mod>,
+    selected: Vec<Mod>,
+    install_queue: VecDeque<PathBuf>,
     drag_index: Option<usize>,
     hover_index: Option<usize>,
     picker_state: FilePickerState,
     profiles_state: profiles::ProfileManagerState,
     meta_input: modals::MetaInputModal,
-    closed_tabs: im::HashMap<Tabs, NodeIndex>,
+    closed_tabs: HashMap<Tabs, NodeIndex>,
     tree: Arc<RwLock<Tree<Tabs>>>,
     focused: FocusedPane,
-    logs: Vector<Entry>,
+    logs: Vec<Entry>,
     log: LayoutJob,
     error: Option<anyhow::Error>,
     new_profile: Option<String>,
@@ -255,13 +256,13 @@ impl App {
             .and_then(|s| serde_json::from_str(&s).context(""))
             .unwrap_or_default();
         ui_state.theme.set_theme(&cc.egui_ctx);
-        let mods: Vector<_> = core.mod_manager().all_mods().collect();
+        let mods: Vec<_> = core.mod_manager().all_mods().collect();
         let (send, recv) = flume::unbounded();
         crate::logger::LOGGER.set_sender(send.clone());
         log::info!("Logger initialized");
         let temp_settings = core.settings().clone();
         Self {
-            selected: mods.front().cloned().into_iter().collect(),
+            selected: mods.first().cloned().into_iter().collect(),
             drag_index: None,
             hover_index: None,
             picker_state: ui_state.picker_state,
@@ -295,9 +296,9 @@ impl App {
             },
             channel: (send, recv),
             core,
-            logs: Vector::new(),
+            logs: Vec::new(),
             log: LayoutJob::default(),
-            closed_tabs: im::HashMap::new(),
+            closed_tabs: Default::default(),
             focused: FocusedPane::None,
             error: None,
             new_profile: None,
@@ -313,7 +314,7 @@ impl App {
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
             dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
-            install_queue: vector![],
+            install_queue: Default::default(),
             new_version: None,
         }
     }
@@ -377,7 +378,7 @@ impl App {
                     if !entry.args.starts_with("PROGRESS") {
                         entry.format(&mut self.log);
                         if self.logs.len() > 100 {
-                            self.logs.pop_front();
+                            self.logs.remove(0);
                             for _ in 0..4 {
                                 if !self.log.sections.is_empty() {
                                     self.log.sections.remove(0);
@@ -385,7 +386,7 @@ impl App {
                             }
                         }
                     }
-                    self.logs.push_back(entry);
+                    self.logs.push(entry);
                 }
                 Message::ResetMods => {
                     self.busy = false;
@@ -398,7 +399,7 @@ impl App {
                 }
                 Message::ChangeSort(sort, rev) => {
                     let orderer = sort.orderer();
-                    let mut temp = self.mods.iter().cloned().enumerate().collect::<Vector<_>>();
+                    let mut temp = self.mods.iter().cloned().enumerate().collect::<Vec<_>>();
                     temp.sort_by(orderer);
                     self.displayed_mods = if rev {
                         temp.into_iter().rev().map(|(_, m)| m).collect()
@@ -422,7 +423,7 @@ impl App {
                         self.selected.retain(|m| m == mod_);
                     } else {
                         self.selected.clear();
-                        self.selected.push_back(self.mods[index].clone());
+                        self.selected.push(self.mods[index].clone());
                     }
                     self.drag_index = None;
                 }
@@ -430,7 +431,7 @@ impl App {
                     let index = i.clamp(0, self.mods.len() - 1);
                     let mod_ = &self.mods[index];
                     if !self.selected.contains(mod_) {
-                        self.selected.push_back(mod_.clone());
+                        self.selected.push(mod_.clone());
                     }
                     self.drag_index = None;
                 }
@@ -454,7 +455,7 @@ impl App {
                         if !ctx.input().modifiers.ctrl {
                             self.selected.clear();
                         }
-                        self.selected.push_back(mod_.clone());
+                        self.selected.push(mod_.clone());
                     }
                 }
                 Message::ClearDrag => {
@@ -652,7 +653,7 @@ impl App {
                     if let Ok(manifest) = mod_.manifest() {
                         self.dirty.extend(&manifest);
                     }
-                    self.mods.push_back(mod_);
+                    self.mods.push(mod_);
                     self.do_update(Message::RefreshModsDisplay);
                     self.busy = false;
                     if let Some(path) = self.install_queue.pop_front() {
@@ -690,7 +691,7 @@ impl App {
                     })
                 }
                 Message::Remerge => {
-                    self.do_task(|core| tasks::apply_changes(&core, vector![], None));
+                    self.do_task(|core| tasks::apply_changes(&core, vec![], None));
                 }
                 Message::ResetSettings => {
                     self.busy = false;

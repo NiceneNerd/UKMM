@@ -32,7 +32,7 @@ impl TabViewer for super::App {
         ui.set_enabled(!self.modal_open());
         match tab {
             Tabs::Info => {
-                if let Some(mod_) = self.selected.front() {
+                if let Some(mod_) = self.selected.first() {
                     self.render_mod_info(mod_, ui);
                 } else {
                     ui.centered_and_justified(|ui| {

@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use fs_err as fs;
-use im::Vector;
 use serde::{Deserialize, Serialize};
 use uk_ui::{
     egui::{self, Button, Key, Ui, Vec2},
@@ -17,7 +16,7 @@ pub struct FilePickerState {
     pub path_input: String,
     #[serde(skip)]
     pub selected: Option<PathBuf>,
-    pub entries: Vector<PathBuf>,
+    pub entries: Vec<PathBuf>,
 }
 
 impl Default for FilePickerState {
@@ -41,7 +40,7 @@ impl FilePickerState {
         self.path = path;
     }
 
-    fn load_entries(path: &Path) -> Vector<PathBuf> {
+    fn load_entries(path: &Path) -> Vec<PathBuf> {
         if let Ok(dir_entries) =
             fs::read_dir(path).map(|entries| entries.filter_map(std::result::Result::ok))
         {
@@ -57,7 +56,7 @@ impl FilePickerState {
                         && !e.file_name().to_str().unwrap_or("").starts_with('.'))
                     .then_some(path)
                 })
-                .collect::<Vector<_>>();
+                .collect::<Vec<_>>();
             entries.sort_by(|a, b| {
                 if a.is_file() != b.is_file() {
                     b.is_dir().cmp(&a.is_dir())

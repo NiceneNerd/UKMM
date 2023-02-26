@@ -6,7 +6,6 @@ use std::{
 
 use anyhow::{Context, Result};
 use fs_err as fs;
-use im::Vector;
 use join_str::jstr;
 use serde::Deserialize;
 use uk_content::constants::Language;
@@ -110,11 +109,7 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
     Ok(Message::HandleMod(mod_))
 }
 
-pub fn apply_changes(
-    core: &Manager,
-    mods: Vector<Mod>,
-    dirty: Option<Manifest>,
-) -> Result<Message> {
+pub fn apply_changes(core: &Manager, mods: Vec<Mod>, dirty: Option<Manifest>) -> Result<Message> {
     let mod_manager = core.mod_manager();
     log::info!("Applying pending changes to mod configuration");
     if !mods.is_empty() {
@@ -496,11 +491,9 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
 
 #[cfg(test)]
 mod tests {
-    use im::vector;
-
     #[test]
     fn remerge() {
         let core = uk_manager::core::Manager::init().unwrap();
-        super::apply_changes(&core, vector![], None).unwrap();
+        super::apply_changes(&core, vec![], None).unwrap();
     }
 }
