@@ -3560,15 +3560,6 @@ dependencies = [
 
 [[package]]
 name = "roxmltree"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb6d47b59770b0ae88c7f270c68502832ec14d8c7ab5f7a584f204bb76dbfd8e"
-dependencies = [
- "xmlparser",
-]
-
-[[package]]
-name = "roxmltree"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8f595a457b6b8c6cda66a48503e92ee8d19342f905948f29c383200ec9eb1d8"
@@ -4674,7 +4665,7 @@ dependencies = [
  "rayon",
  "remove_dir_all 0.8.1",
  "rfd",
- "roxmltree 0.16.0",
+ "roxmltree 0.18.0",
  "rustc-hash",
  "serde",
  "serde_json",
