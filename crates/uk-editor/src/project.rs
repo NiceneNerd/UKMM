@@ -45,9 +45,13 @@ impl Project {
             .into_iter()
             .filter_map(|e| {
                 e.ok().and_then(|e| {
-                    e.file_type()
-                        .is_file()
-                        .then(|| e.path().strip_prefix(path).unwrap().to_path_buf())
+                    (e.file_type().is_file()
+                        && !e
+                            .file_name
+                            .to_str()
+                            .map(|n| n.ends_with(".yml"))
+                            .unwrap_or(true))
+                    .then(|| e.path().strip_prefix(path).unwrap().to_path_buf())
                 })
             })
             .collect();

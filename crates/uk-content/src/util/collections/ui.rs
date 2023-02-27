@@ -2,7 +2,7 @@ use std::{ops::DerefMut, str::FromStr, sync::Arc};
 
 use uk_ui::{
     editor::{EditableDisplay, EditableValue},
-    egui::{self, mutex::RwLock, Layout},
+    egui::{self, mutex::RwLock, Layout, RichText},
     ext::UiExt,
     icons::IconButtonExt,
 };
@@ -106,7 +106,7 @@ where
 
 impl<T> EditableValue for SortedDeleteSet<T>
 where
-    T: std::fmt::Debug + for<'a> TryFrom<&'a str> + Default + DeleteKey + Ord,
+    T: std::fmt::Display + for<'a> TryFrom<&'a str> + Default + DeleteKey + Ord,
 {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
 
@@ -120,7 +120,18 @@ where
         let mut res = ui
             .group(|ui| {
                 for (val, del) in self.0.iter_mut() {
-                    changed |= ui.checkbox(del, format!("{:#?}", val)).changed();
+                    let mut label = RichText::new(format!("{}", val));
+                    if *del {
+                        label = label.color(uk_ui::visuals::RED);
+                    }
+                    changed |= ui
+                        .checkbox(del, label)
+                        .on_hover_text(if *del {
+                            "Uncheck to restore"
+                        } else {
+                            "Check to delete"
+                        })
+                        .changed();
                 }
                 let new_value = ui
                     .data()

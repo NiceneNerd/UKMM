@@ -1,7 +1,8 @@
 #![feature(let_chains, once_cell)]
+mod editor;
+mod files;
 mod modals;
 mod project;
-mod tabs;
 mod tasks;
 
 use std::{
@@ -12,23 +13,24 @@ use std::{
 };
 
 use anyhow::{Context, Error, Result};
-use eframe::egui::Frame;
+use editor::EditorTab;
+use eframe::egui::{panel::Side, Frame};
 use flume::{Receiver, Sender};
 use fs_err as fs;
 use parking_lot::RwLock;
 use serde::Deserialize;
-use tabs::Tabs;
-use uk_content::{canonicalize, resource::ResourceData};
+use uk_content::{canonicalize, prelude::Mergeable, resource::ResourceData};
 use uk_manager::core::Manager;
 use uk_ui::{
     egui,
-    egui_dock::{self, DockArea, Tree},
+    egui_dock::{self, Tree},
 };
 
 use crate::project::Project;
 
 #[derive(Debug)]
 pub enum Message {
+    CloseError,
     Error(Error),
     ImportMod,
     OpenProject(Project),
@@ -44,12 +46,12 @@ struct UiState {
 struct App {
     core: Arc<Manager>,
     project: Option<Project>,
-    projects: Vec<Project>,
     channel: (Sender<Message>, Receiver<Message>),
-    tree: Arc<RwLock<Tree<Tabs>>>,
+    tree: Arc<RwLock<Tree<EditorTab>>>,
     focused: Option<PathBuf>,
     dock_style: egui_dock::Style,
     busy: Cell<bool>,
+    error: Option<Error>,
 }
 
 impl App {
@@ -67,12 +69,12 @@ impl App {
         Self {
             core,
             project: None,
-            projects: vec![],
             channel: flume::unbounded(),
-            tree: Arc::new(RwLock::new(tabs::default_ui())),
+            tree: Arc::new(RwLock::new(editor::default_ui())),
             focused: None,
             dock_style,
             busy: Cell::new(false),
+            error: None,
         }
     }
 
@@ -161,20 +163,19 @@ impl App {
             .tree
             .write()
             .find_active_focused()
-            .and_then(|(_, tab)| {
-                match tab {
-                    Tabs::Files => None,
-                    Tabs::Editor(path, ..) => Some(path),
-                }
-            })
-            && self.focused.as_ref().map(|p| p.as_path() != path).unwrap_or(true)
+            .map(|(_, tab)| tab.path.as_path())
+            && self.focused.as_ref().map(|p| p != path).unwrap_or(true)
         {
             self.focused = Some(path.to_path_buf());
         }
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
+                Message::CloseError => {
+                    self.error = None;
+                }
                 Message::Error(e) => {
-                    dbg!(e);
+                    self.error = Some(e);
+                    self.busy.set(false);
                 }
                 Message::ImportMod => {
                     if let Some(path) = rfd::FileDialog::new()
@@ -185,6 +186,15 @@ impl App {
                         self.do_task(move |core| tasks::import_mod(&core, path));
                     }
                 }
+                Message::LoadResource(path, res) => {
+                    let new_tab = EditorTab {
+                        path,
+                        ref_data: res.clone(),
+                        edit_data: RefCell::new(res),
+                    };
+                    self.tree.write().push_to_first_leaf(new_tab);
+                    self.busy.set(false);
+                }
                 Message::OpenProject(project) => {
                     self.project = Some(project);
                     self.busy.set(false);
@@ -192,21 +202,8 @@ impl App {
                 Message::OpenResource(path) => {
                     if let Some(project) = self.project.as_ref() {
                         let root = project.path.clone();
-                        self.do_task(move |_| {
-                            let file = root.join(canonicalize(&path).as_str());
-                            let resource: ResourceData = ron::from_str(&fs::read_to_string(file)?)?;
-                            Ok(Message::LoadResource(path, resource))
-                        });
+                        self.do_task(move |core| tasks::open_resource(&core, root, path));
                     }
-                }
-                Message::LoadResource(path, res) => {
-                    let new_tab = Tabs::Editor(path, res.clone(), RefCell::new(res));
-                    if let Some(node) = self.tree.write().iter_mut().nth(1) {
-                        node.append_tab(new_tab)
-                    } else {
-                        self.tree.write().push_to_focused_leaf(new_tab);
-                    };
-                    self.busy.set(false);
                 }
             }
         }
@@ -216,20 +213,28 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.handle_update();
-        self.render_busy(ctx);
+        self.render_modals(ctx);
         egui::TopBottomPanel::top("menu")
             .exact_height(ctx.style().spacing.interact_size.y)
             .show(ctx, |ui| {
                 ui.style_mut().visuals.button_frame = false;
                 ui.menu_button("File", |ui| self.file_menu(ui, frame));
             });
-        egui::CentralPanel::default()
-            .frame(Frame::none())
+        egui::SidePanel::new(Side::Left, "files-panel")
+            .default_width(200.0)
             .show(ctx, |ui| {
-                DockArea::new(&mut self.tree.clone().write())
-                    .style(self.dock_style.clone())
-                    .show_inside(ui, self);
+                egui::ScrollArea::new([false, true]).show(ui, |ui| {
+                    if let Some(project) = self.project.as_ref() {
+                        self.render_file_tree(&project.files, ui);
+                    }
+                });
             });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            egui_dock::DockArea::new(&mut self.tree.clone().write())
+                .id("editor-dock".into())
+                .style(self.dock_style.clone())
+                .show_inside(ui, self);
+        });
     }
 }
 
