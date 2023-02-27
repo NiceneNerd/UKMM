@@ -17,7 +17,7 @@ log = "0.4.17"
 parking_lot = { version = "0.12.1", features = ["serde"] }
 path-slash = "0.2.1"
 rayon = "1.6"
-roead = "0.20.0"
+roead = { version = "0.20.0", features = ["yaml"] }
 rustc-hash = "1.1.0"
 rstb = { version= "0.6.0", features = ["botw-data"] }
 sanitise-file-name = "1.0.0"
