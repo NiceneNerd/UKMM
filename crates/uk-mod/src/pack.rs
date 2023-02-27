@@ -458,6 +458,9 @@ impl ModPacker {
 
     fn process_sarc(&self, sarc: Sarc, path: &Path, is_new_sarc: bool, is_aoc: bool) -> Result<()> {
         for file in sarc.files() {
+            if file.data.is_empty() {
+                continue;
+            }
             let name = file
                 .name()
                 .with_context(|| jstr!("File in SARC missing name"))?;
