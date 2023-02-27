@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2023-02-27
+
 ### Added
 
 - Added "Reset Pending" option to menu
 - Added experimental BCML migration tool
+- Added log file and panic details
 
 ### Changed 
 
