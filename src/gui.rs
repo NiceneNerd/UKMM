@@ -259,6 +259,7 @@ impl App {
         let mods: Vec<_> = core.mod_manager().all_mods().collect();
         let (send, recv) = flume::unbounded();
         crate::logger::LOGGER.set_sender(send.clone());
+        crate::logger::LOGGER.set_file(Settings::config_dir().join("log.txt"));
         log::info!("Logger initialized");
         let temp_settings = core.settings().clone();
         Self {

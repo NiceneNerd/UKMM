@@ -1,5 +1,7 @@
 use std::{
+    io::Write,
     ops::Deref,
+    path::{Path, PathBuf},
     sync::{atomic::AtomicBool, LazyLock, OnceLock},
 };
 
@@ -14,6 +16,8 @@ pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
         debug:  std::env::args().any(|arg| &arg == "--debug").into(),
         queue:  Mutex::new(vec![]),
         sender: OnceLock::new(),
+        record: Mutex::new(vec![]),
+        file:   OnceLock::new(),
     }
 });
 
@@ -47,9 +51,33 @@ pub struct Logger {
     debug:  AtomicBool,
     queue:  Mutex<Vec<Entry>>,
     sender: OnceLock<flume::Sender<Message>>,
+    record: Mutex<Vec<Entry>>,
+    file:   OnceLock<PathBuf>,
+}
+
+impl Drop for Logger {
+    fn drop(&mut self) {
+        self.save_log()
+    }
 }
 
 impl Logger {
+    pub fn save_log(&self) {
+        if let Some(path) = self.file.get() {
+            let file = if path.exists() {
+                fs_err::OpenOptions::new().append(true).open(path)
+            } else {
+                fs_err::File::create(path)
+            };
+            if let Ok(mut file) = file {
+                for entry in self.record.lock().drain(..) {
+                    writeln!(file, "[{}] {} {}", entry.timestamp, entry.level, entry.args)
+                        .unwrap_or(());
+                }
+            }
+        }
+    }
+
     pub fn debug(&self) -> bool {
         self.debug.load(std::sync::atomic::Ordering::Relaxed)
     }
@@ -62,6 +90,14 @@ impl Logger {
     pub fn set_sender(&self, sender: flume::Sender<Message>) {
         self.sender.set(sender).unwrap_or(());
         self.flush_queue();
+    }
+
+    pub fn set_file(&self, file: PathBuf) {
+        self.file.set(file).unwrap_or(());
+    }
+
+    pub fn log_path(&self) -> Option<&Path> {
+        self.file.get().map(|f| f.as_path())
     }
 
     pub fn flush_queue(&self) {
@@ -87,6 +123,9 @@ impl log::Log for Logger {
         if record.target().starts_with("uk")
             && (self.debug() || record.level() < LevelFilter::Debug)
         {
+            if !entry.args.starts_with("PROGRESS") {
+                self.record.lock().push(entry.clone());
+            }
             if let Some(sender) = self.sender.get() {
                 sender.send(Message::Log(entry)).unwrap();
             } else {
@@ -101,6 +140,9 @@ impl log::Log for Logger {
             {
                 self.inner.log(record);
             }
+        }
+        if self.record.lock().len() > 100 {
+            self.save_log();
         }
     }
 

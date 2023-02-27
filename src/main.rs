@@ -27,8 +27,25 @@ fn main() -> Result<()> {
         Err(e) => {
             if e.is_help() {
                 e.exit();
-            } else {
-                gui::main();
+            } else if let Err(e) = std::panic::catch_unwind(gui::main) {
+                println!(
+                    "An unrecoverable error occured. Error details: {}",
+                    e.downcast::<String>()
+                        .or_else(|e| e.downcast::<&'static str>().map(|s| Box::new((*s).into())))
+                        .unwrap_or_else(|_| {
+                            Box::new(
+                                "An unknown error occured, check the log for possible details."
+                                    .to_string(),
+                            )
+                        })
+                );
+                if let Some(file) = logger::LOGGER.log_path() {
+                    logger::LOGGER.save_log();
+                    println!(
+                        "More information may be available in the log file at {}",
+                        file.display()
+                    );
+                }
             }
         }
     }
