@@ -699,15 +699,23 @@ pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow::Result<()> {
         .filter_map(std::result::Result::ok)
         .filter(|f| {
             f.file_type.is_file() && {
-                let file_name = f.file_name().to_str().unwrap();
-                !file_name.ends_with(".yml")
+                f.file_name()
+                    .to_str()
+                    .map(|n| !n.ends_with("yml"))
+                    .unwrap_or(true)
             }
         })
         .par_bridge()
         .try_for_each(|f| -> anyhow::Result<()> {
             let f = f.path();
-            let data = zstd::decode_all(fs::read(&f)?.as_slice())?;
-            fs::write(f, data)?;
+            let data = zstd::decode_all(
+                fs::read(&f)
+                    .with_context(|| format!("Failed to read file at {}", f.display()))?
+                    .as_slice(),
+            )
+            .with_context(|| format!("Failed to decompress file at {}", f.display()))?;
+            fs::write(&f, data)
+                .with_context(|| format!("Failed to write unpacked file at {}", f.display()))?;
             Ok(())
         })?;
     Ok(())
