@@ -289,6 +289,12 @@ impl Manager {
     /// mod at the provided path has already been validated.
     #[allow(irrefutable_let_patterns)]
     pub fn add(&self, mod_path: &Path) -> Result<Mod> {
+        {
+            let peeker = ModReader::open_peek(mod_path, vec![])?;
+            if self.mods().any(|m| m.meta.name == peeker.meta.name) {
+                anyhow::bail!("Mod \"{}\" already installed", peeker.meta.name);
+            }
+        }
         let mut san_opts = sanitise_file_name::Options::DEFAULT;
         san_opts.url_safe = true;
         let sanitized = sanitise_file_name::sanitise_with_options(
@@ -300,18 +306,20 @@ impl Manager {
                 .trim_start_matches('.'),
             &san_opts,
         );
-        let stored_path = self
+        let mut stored_path = self
             .settings
             .upgrade()
             .unwrap()
             .read()
             .mods_dir()
-            .join(sanitized);
+            .join(sanitized)
+            .with_extension("zip");
         if let parent = stored_path.parent().unwrap() && !parent.exists() {
             fs::create_dir_all(parent)?;
         }
         if mod_path.is_file() {
             if self.settings.upgrade().unwrap().read().unpack_mods {
+                stored_path.set_extension("");
                 uk_mod::unpack::unzip_mod(mod_path, &stored_path)
                     .context("Failed to unpack mod to storage folder")?;
             } else {
@@ -471,4 +479,21 @@ pub fn convert_gfx(
     let result_path = packer.pack()?;
     log::info!("Conversion complete");
     Ok(result_path)
+}
+
+#[cfg(test)]
+#[test]
+fn san_test() {
+    let mut san_opts = sanitise_file_name::Options::DEFAULT;
+    san_opts.url_safe = true;
+    let sanitized = sanitise_file_name::sanitise_with_options(
+        Path::new("mod8378&$*#*FIDIFKHLGF*&#KFDJK2020..+=.zip")
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .trim_start_matches('.'),
+        &san_opts,
+    );
+    dbg!(sanitized);
 }
