@@ -137,7 +137,7 @@ impl RequireValue {
 struct BnpGroup {
     name:     String,
     desc:     String,
-    required: RequireValue,
+    required: Option<RequireValue>,
     options:  Vec<BnpOption>,
 }
 
@@ -148,7 +148,7 @@ impl From<BnpGroup> for ExclusiveOptionGroup {
             description: group.desc,
             default: None,
             options: group.options.into_iter().map(|opt| opt.into()).collect(),
-            required: !group.required.is_true(),
+            required: !group.required.map(|r| r.is_true()).unwrap_or(false),
         }
     }
 }
