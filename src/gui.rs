@@ -868,6 +868,7 @@ impl eframe::App for App {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        crate::logger::LOGGER.save_log();
         self.core.settings_mut().last_version = Some(env!("CARGO_PKG_VERSION").into());
         self.core.settings().save().unwrap_or(());
         let ui_state = UiState {

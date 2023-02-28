@@ -64,17 +64,19 @@ impl Drop for Logger {
 impl Logger {
     pub fn save_log(&self) {
         if let Some(path) = self.file.get() {
-            let file = if path.exists() {
+            let mut file = if path.exists() {
                 fs_err::OpenOptions::new().append(true).open(path)
             } else {
                 fs_err::File::create(path)
-            };
-            if let Ok(mut file) = file {
-                for entry in self.record.lock().drain(..) {
-                    writeln!(file, "[{}] {} {}", entry.timestamp, entry.level, entry.args)
-                        .unwrap_or(());
-                }
             }
+            .unwrap();
+
+            for entry in self.record.lock().drain(..) {
+                writeln!(file, "[{}] {} {}", entry.timestamp, entry.level, entry.args)
+                    .unwrap_or(());
+            }
+            // if let Ok(mut file) = file {
+            // }
         }
     }
 
@@ -141,7 +143,7 @@ impl log::Log for Logger {
                 self.inner.log(record);
             }
         }
-        if self.record.lock().len() > 100 {
+        if self.record.lock().len() > 25 {
             self.save_log();
         }
     }
