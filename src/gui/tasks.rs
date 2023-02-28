@@ -294,7 +294,13 @@ struct BcmlSettings {
 
 pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
     let current_mode = core.settings().current_mode;
-    let settings_path = dirs2::config_dir().unwrap().join("bcml/settings.json");
+    let settings_path = if cfg!(windows) {
+        dirs2::data_local_dir()
+    } else {
+        dirs2::config_dir()
+    }
+    .unwrap()
+    .join("bcml/settings.json");
     let bcml_settings: BcmlSettings = serde_json::from_str(
         &fs::read_to_string(settings_path).context("Failed to read BCML settings file")?,
     )
