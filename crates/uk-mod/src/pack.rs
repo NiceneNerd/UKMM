@@ -148,7 +148,7 @@ impl From<BnpGroup> for ExclusiveOptionGroup {
             description: group.desc,
             default: None,
             options: group.options.into_iter().map(|opt| opt.into()).collect(),
-            required: !group.required.map(|r| r.is_true()).unwrap_or(false),
+            required: group.required.map(|r| r.is_true()).unwrap_or(false),
         }
     }
 }
