@@ -293,6 +293,7 @@ struct BcmlSettings {
 }
 
 pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
+    log::info!("Attempting to import BCML settings");
     let current_mode = core.settings().current_mode;
     let settings_path = if cfg!(windows) {
         dirs2::data_local_dir()
@@ -305,8 +306,13 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
         &fs::read_to_string(settings_path).context("Failed to read BCML settings file")?,
     )
     .context("Failed to parse BCML settings file")?;
-    if let Some(game_dir) = bcml_settings.game_dir && let Some(update_dir) = bcml_settings.update_dir {
+    if let Some(game_dir) = bcml_settings.game_dir
+        && let Some(update_dir) = bcml_settings.update_dir
+        && !game_dir.as_os_str().is_empty()
+        && !update_dir.as_os_str().is_empty()
+    {
         {
+            log::info!("Import BCML Wii U game dump settings");
             let mut settings = core.settings_mut();
             settings.wiiu_config = Some(PlatformSettings {
                 language: bcml_settings.lang,
@@ -316,6 +322,7 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
                     .map(|export_dir| {
                         DeployConfig {
                             output: export_dir,
+                            cemu_rules: bcml_settings.cemu_dir.is_some(),
                             ..Default::default()
                         }
                     })
@@ -338,10 +345,14 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
             settings.save()?;
         }
         core.reload()?;
+        log::info!("Attempting to import BCML Wii U mods");
         import_mods(&core, bcml_settings.store_dir.join("mods"))?;
     }
-    if let Some(game_dir) = bcml_settings.game_dir_nx {
+    if let Some(game_dir) = bcml_settings.game_dir_nx
+        && !game_dir.as_os_str().is_empty()
+    {
         {
+            log::info!("Import BCML Switch game dump settings");
             let mut settings = core.settings_mut();
             settings.switch_config = Some(PlatformSettings {
                 language: bcml_settings.lang,
@@ -362,6 +373,7 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
             settings.save()?;
         }
         core.reload()?;
+        log::info!("Attempting to import BCML Switch mods");
         import_mods(&core, bcml_settings.store_dir.join("mods_nx"))?;
     }
     let mode_changed = core.settings().current_mode != current_mode;
