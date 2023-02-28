@@ -449,7 +449,15 @@ fn response(url: &str) -> Result<Vec<u8>> {
         .method(http_req::request::Method::GET)
         .send(&mut buf)
         .context("HTTP request file")
-        .map(|_| buf)
+        .and_then(|res| {
+            if res.status_code().is_redirect() 
+                && let Some(url) = res.headers().get("Location")
+            {
+                response(url)
+            } else {
+                Ok(buf)
+            }
+        })
 }
 
 pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
@@ -468,7 +476,8 @@ pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
             {
                 match release_ver.cmp(&current_semver) {
                     std::cmp::Ordering::Greater => sender.send(Message::OfferUpdate(release.clone())).unwrap(),
-                    _ => sender.send(Message::SetChangelog(release.description())).unwrap(),
+                    std::cmp::Ordering::Less => sender.send(Message::SetChangelog(release.description())).unwrap(),
+                    _ => ()
                 }
             }
         }
@@ -477,6 +486,7 @@ pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
 }
 
 pub fn do_update(version: VersionResponse) -> Result<Message> {
+    log::info!("Updating... UKMM will restart when complete");
     let platform =
         option_env!("UPDATE_PLATFORM").unwrap_or(if cfg!(windows) { "windows" } else { "linux" });
     let asset = version
@@ -486,6 +496,7 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
         .context("No matching platform for update")?;
     let data = response(asset.browser_download_url.as_str())?;
     let tmpfile = get_temp_file();
+    dbg!(tmpfile.as_path());
     fs::write(tmpfile.as_path(), data)?;
     let exe = std::env::current_exe().unwrap();
     if cfg!(windows) {

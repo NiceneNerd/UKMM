@@ -279,19 +279,10 @@ impl App {
                     .as_ref()
                     .map(|v| v.to_string())
                     .unwrap_or_else(|| "0.0.0".into());
-                let current_version = env!("CARGO_PKG_VERSION");
-                let last_semver =
-                    lenient_semver::Version::parse(&last_version).expect("Bad last version");
-                let current_semver =
-                    lenient_semver::Version::parse(current_version).expect("Bad current version");
-                if last_semver < current_semver {
-                    if last_version == "0.0.0" {
-                        Some(include_str!("../assets/intro.md").into())
-                    } else {
-                        tasks::get_releases(core.clone(), send.clone());
-                        None
-                    }
+                if last_version == "0.0.0" {
+                    Some(include_str!("../assets/intro.md").into())
                 } else {
+                    tasks::get_releases(core.clone(), send.clone());
                     None
                 }
             },
