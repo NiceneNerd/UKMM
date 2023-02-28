@@ -1,3 +1,5 @@
+use std::process::Command;
+
 use eframe::epaint::text::TextWrapping;
 use uk_ui::{
     egui::{self, text::LayoutJob, Align, Button, Label, Layout, RichText, Sense, Ui, WidgetText},
@@ -98,7 +100,24 @@ impl TabViewer for super::App {
                                         max_width: ui.available_size_before_wrap().x,
                                         ..Default::default()
                                     };
-                                    ui.label(job).on_hover_text(config.output.to_string_lossy())
+                                    if ui
+                                        .link(job)
+                                        .on_hover_text(config.output.to_string_lossy())
+                                        .clicked()
+                                    {
+                                        ui.close_menu();
+                                        let _ = Command::new(if cfg!(windows) {
+                                            "explorer"
+                                        } else {
+                                            "xdg-open"
+                                        })
+                                        .arg(if config.output.is_dir() {
+                                            &config.output
+                                        } else {
+                                            config.output.parent().unwrap()
+                                        })
+                                        .output();
+                                    }
                                 });
                                 if !config.auto || self.core.deploy_manager().pending() {
                                     ui.add_space(4.);
