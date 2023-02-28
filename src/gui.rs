@@ -898,6 +898,8 @@ pub fn main() {
                     .to_rgba8()
                     .into_vec(),
             }),
+            min_window_size: Some(egui::Vec2::new(850.0, 500.0)),
+            initial_window_size: Some(egui::Vec2::new(1200.0, 800.0)),
             ..Default::default()
         },
         Box::new(|cc| Box::new(App::new(cc))),
