@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added more error details
+
+### Changed
+
+- Ignore zero byte when processing mods
+- Switched to safe panic for potential issues with BNP text logs
+
 ### Fixed
 
+- Fixed handling `required` field for BNP options
 - Fixed BCML settings path on Windows
+- Fixed parsing empty dump folder settings in BCML migration
+- Minor fixes to logging
 
 ## [0.4.0] - 2023-02-27
 
