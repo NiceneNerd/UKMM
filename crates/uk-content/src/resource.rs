@@ -26,6 +26,7 @@ pub use crate::{
     demo::Demo,
     eco::{areadata::AreaData, level::LevelSensor, status::StatusEffectList},
     event::{info::EventInfo, residents::ResidentEvents},
+    layout::LayoutArchive,
     map::{lazy::LazyTraverseList, mainfield::location::Location, static_::Static, unit::MapUnit},
     message::MessagePack,
     quest::product::QuestProduct,
@@ -62,6 +63,7 @@ pub enum MergeableResource {
     EventInfo(Box<EventInfo>),
     GameDataPack(Box<GameDataPack>),
     GeneralParamList(Box<GeneralParamList>),
+    LayoutArchive(Box<LayoutArchive>),
     LazyTraverseList(Box<LazyTraverseList>),
     LevelSensor(Box<LevelSensor>),
     LifeCondition(Box<LifeCondition>),
@@ -117,6 +119,7 @@ impl std::fmt::Display for MergeableResource {
             Self::GameDataPack(_) => "GameDataPack",
             Self::GeneralParamList(_) => "GeneralParamList",
             Self::LazyTraverseList(_) => "LazyTraverseList",
+            Self::LayoutArchive(_) => "LayoutArchive",
             Self::LevelSensor(_) => "LevelSensor",
             Self::LifeCondition(_) => "LifeCondition",
             Self::Location(_) => "Location",
@@ -209,6 +212,7 @@ impl_from_res!(EventInfo);
 impl_from_res!(GameDataPack);
 impl_from_res!(GeneralParamList);
 impl_from_res!(LazyTraverseList);
+impl_from_res!(LayoutArchive);
 impl_from_res!(LevelSensor);
 impl_from_res!(LifeCondition);
 impl_from_res!(Location);
@@ -271,6 +275,9 @@ impl Mergeable for MergeableResource {
             }
             (Self::LazyTraverseList(a), Self::LazyTraverseList(b)) => {
                 Self::LazyTraverseList(Box::new(a.diff(b)))
+            }
+            (Self::LayoutArchive(a), Self::LayoutArchive(b)) => {
+                Self::LayoutArchive(Box::new(a.diff(b)))
             }
             (Self::LevelSensor(a), Self::LevelSensor(b)) => Self::LevelSensor(Box::new(a.diff(b))),
             (Self::LifeCondition(a), Self::LifeCondition(b)) => {
@@ -363,6 +370,9 @@ impl Mergeable for MergeableResource {
             }
             (Self::LazyTraverseList(a), Self::LazyTraverseList(b)) => {
                 Self::LazyTraverseList(Box::new(a.merge(b)))
+            }
+            (Self::LayoutArchive(a), Self::LayoutArchive(b)) => {
+                Self::LayoutArchive(Box::new(a.merge(b)))
             }
             (Self::LevelSensor(a), Self::LevelSensor(b)) => Self::LevelSensor(Box::new(a.merge(b))),
             (Self::LifeCondition(a), Self::LifeCondition(b)) => {
@@ -504,6 +514,10 @@ impl MergeableResource {
             Ok(Some(Self::GeneralParamList(Box::new(
                 GeneralParamList::from_binary(data)?,
             ))))
+        } else if LayoutArchive::path_matches(name) {
+            Ok(Some(Self::LayoutArchive(Box::new(
+                LayoutArchive::from_binary(data)?,
+            ))))
         } else if LazyTraverseList::path_matches(name) {
             Ok(Some(Self::LazyTraverseList(Box::new(
                 LazyTraverseList::from_binary(data)?,
@@ -624,6 +638,7 @@ impl MergeableResource {
             Self::EventInfo(v) => v.into_binary(endian),
             Self::GameDataPack(v) => v.into_binary(endian),
             Self::GeneralParamList(v) => v.into_binary(endian),
+            Self::LayoutArchive(v) => v.into_binary(endian),
             Self::LazyTraverseList(v) => v.into_binary(endian),
             Self::LevelSensor(v) => v.into_binary(endian),
             Self::LifeCondition(v) => v.into_binary(endian),
@@ -721,7 +736,7 @@ impl From<Vec<u8>> for ResourceData {
     }
 }
 
-pub const EXCLUDE_EXTS: &[&str] = &["blarc", "bfarc", "genvb", "sarc", "arc"];
+pub const EXCLUDE_EXTS: &[&str] = &["bfarc", "genvb", "sarc", "arc"];
 pub const EXCLUDE_NAMES: &[&str] = &["tera_resource.Nin_NX_NVN", "tera_resource.Cafe_Cafe_GX2"];
 
 pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool {

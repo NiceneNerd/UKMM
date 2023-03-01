@@ -342,23 +342,25 @@ impl App {
         let task = Box::new(task);
         self.busy = true;
         thread::spawn(move || {
-            sender
-                .send(match std::panic::catch_unwind(|| task(core)) {
-                    Ok(Ok(msg)) => msg,
-                    Ok(Err(e)) => Message::Error(e),
-                    Err(e) => {
-                        Message::Error(anyhow::format_err!(
-                            "{}",
-                            e.downcast::<String>().unwrap_or_else(|_| {
-                                Box::new(
-                                    "An unknown error occured, check the log for possible details."
-                                        .to_string(),
-                                )
-                            })
-                        ))
-                    }
-                })
-                .unwrap();
+            let response = match std::panic::catch_unwind(|| task(core.clone())) {
+                Ok(Ok(msg)) => msg,
+                Ok(Err(e)) => Message::Error(e),
+                Err(e) => {
+                    Message::Error(anyhow::format_err!(
+                        "{}",
+                        e.downcast::<String>().unwrap_or_else(|_| {
+                            Box::new(
+                                "An unknown error occured, check the log for possible details."
+                                    .to_string(),
+                            )
+                        })
+                    ))
+                }
+            };
+            if let Some(d) = core.settings().dump() {
+                d.clear_cache()
+            }
+            sender.send(response).unwrap();
         });
     }
 

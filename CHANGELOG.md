@@ -76,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Made BLARC mergeable
 - Improve editor UI file tree
 - Implement `NamedEnumerate` for slight perf boost
 - Added scrolling to options selection dialog

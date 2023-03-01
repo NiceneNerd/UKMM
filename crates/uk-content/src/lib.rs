@@ -24,6 +24,7 @@ pub mod data;
 pub mod demo;
 pub mod eco;
 pub mod event;
+pub mod layout;
 pub mod map;
 pub mod message;
 pub mod quest;

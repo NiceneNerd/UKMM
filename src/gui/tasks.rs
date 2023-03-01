@@ -450,7 +450,7 @@ fn response(url: &str) -> Result<Vec<u8>> {
         .send(&mut buf)
         .context("HTTP request file")
         .and_then(|res| {
-            if res.status_code().is_redirect() 
+            if res.status_code().is_redirect()
                 && let Some(url) = res.headers().get("Location")
             {
                 response(url)
