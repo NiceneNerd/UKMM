@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use fs_err as fs;
 use roead::sarc::SarcWriter;
 use rustc_hash::FxHashMap;
@@ -15,9 +15,18 @@ impl BnpConverter {
         if texts_path.exists() {
             log::debug!("Processing texts log");
             let mut diff: TextsLog = serde_json::from_str(&fs::read_to_string(texts_path)?)?;
+            if diff.is_empty() {
+                log::debug!("Empty text diff, moving on");
+                return Ok(());
+            }
             let langs = diff.keys().copied().collect::<Vec<_>>();
             let lang = self.game_lang.nearest(&langs);
-            let diff = diff.remove(lang);
+            let diff = diff.remove(lang).with_context(|| {
+                format!(
+                    "No match for {lang} in diff, which is weird. Options: {:?}",
+                    langs
+                )
+            })?;
             let base = self.dump.get_from_sarc(
                 &format!("Message/Msg_{}.product.sarc", self.game_lang),
                 &format!(
