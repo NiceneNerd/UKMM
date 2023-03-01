@@ -17,7 +17,7 @@ impl BnpConverter {
             let mut diff: TextsLog = serde_json::from_str(&fs::read_to_string(texts_path)?)?;
             let langs = diff.keys().copied().collect::<Vec<_>>();
             let lang = self.game_lang.nearest(&langs);
-            let diff = unsafe { diff.remove(lang).unwrap_unchecked() };
+            let diff = diff.remove(lang);
             let base = self.dump.get_from_sarc(
                 &format!("Message/Msg_{}.product.sarc", self.game_lang),
                 &format!(
