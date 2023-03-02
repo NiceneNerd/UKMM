@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ignore zero byte when processing mods
 - Further improved mod filename sanitation
 - Switched to safe panic for potential issues with BNP text logs
+- Updated roead for MacOS support progress
 
 ### Fixed
 

@@ -376,9 +376,9 @@ dependencies = [
 
 [[package]]
 name = "botw-utils"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fb37451d18891f0d1fc4aee4e2f2357346810445a3489c09fd0b84d2dfd2b37"
+checksum = "d528a00da0ca3e77131c90f89b00c4599b4ddfdd99ed3b30b00b4eea6f5d264f"
 dependencies = [
  "include-flate",
  "once_cell",
@@ -3514,9 +3514,9 @@ checksum = "3582f63211428f83597b51b2ddb88e2a91a9d52d12831f9d08f5e624e8977422"
 
 [[package]]
 name = "roead"
-version = "0.20.0"
+version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b819248a9335f434039123cb02b4d3854391ae6e9e43cb73ea181690dc3eca1"
+checksum = "6ab0cb3cd6c094eb936f4acf624924d773ccf24003ee3283d778ab4a31deac34"
 dependencies = [
  "almost",
  "base64 0.13.1",
@@ -3670,9 +3670,9 @@ dependencies = [
 
 [[package]]
 name = "ryml"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77c1d2d427e128d7198903b2bed7c31a49fddb38efd3cb3c511ba8df172d4f50"
+checksum = "905fe991a678d13cadcc529060852cb5a724c38573fffe383fbe50c67587dc42"
 dependencies = [
  "auto-enum",
  "cxx",
@@ -4641,7 +4641,7 @@ dependencies = [
 
 [[package]]
 name = "ukmm"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "astrolabe",
