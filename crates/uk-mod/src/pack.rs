@@ -231,18 +231,18 @@ impl ModPacker {
                 anyhow::bail!("Source directory does not exist: {}", source_dir.display());
             }
             let meta = if let Some(meta) = meta {
-            log::debug!("Using providing meta info:\n{:#?}", &meta);
-            meta
-        } else if let rules = source.join("rules.txt") && rules.exists() {
-            log::debug!("Attempting to parse existing rules.txt");
-            ModPacker::parse_rules(rules)?
-        } else if let info = source.join("info.json") && info.exists() {
-            log::debug!("Attempting to parse existing info.json");
-            log::warn!("`info.json` found. If this is a BNP, conversion will not work properly!");
-            ModPacker::parse_info(info)?
-        } else {
-            anyhow::bail!("No meta info provided or meta file available");
-        };
+                log::debug!("Using providing meta info:\n{:#?}", &meta);
+                meta
+            } else if let rules = source.join("rules.txt") && rules.exists() {
+                log::debug!("Attempting to parse existing rules.txt");
+                ModPacker::parse_rules(rules)?
+            } else if let info = source.join("info.json") && info.exists() {
+                log::debug!("Attempting to parse existing info.json");
+                log::warn!("`info.json` found. If this is a BNP, conversion will not work properly!");
+                ModPacker::parse_info(info)?
+            } else {
+                anyhow::bail!("No meta info provided or meta file available");
+            };
             let ((content_u, dlc_u), (content_nx, dlc_nx)) = (
                 platform_prefixes(Endian::Big),
                 platform_prefixes(Endian::Little),
@@ -562,6 +562,21 @@ impl ModPacker {
         roots
     }
 
+    fn pack_thumbnail(&self) -> Result<()> {
+        for name in ["thumb", "thumbnail", "preview"] {
+            for ext in ["jpg", "jpeg", "png", "svg"] {
+                let path = self.source_dir.join(name).with_extension(ext);
+                if path.exists() {
+                    let mut zip = self.zip.lock();
+                    zip.start_file(format!("thumb.{}", ext), self._zip_opts)?;
+                    zip.write_all(&fs::read(path)?)?;
+                    return Ok(());
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub fn pack(mut self) -> Result<PathBuf> {
         self.pack_root(&self.source_dir)?;
         if self.source_dir.join("options").exists() {
@@ -576,6 +591,7 @@ impl ModPacker {
                 self.pack_root(root)?;
             }
         }
+        self.pack_thumbnail()?;
         match Arc::try_unwrap(self.zip).map(|z| z.into_inner()) {
             Ok(mut zip) => {
                 log::info!("Writing meta");

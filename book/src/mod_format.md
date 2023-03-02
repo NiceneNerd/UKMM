@@ -45,6 +45,10 @@ differences between this format between BCML and UKMM.
     └── ...
 ```
 
+**Just so you know**: You can include a preview image in your mod by placing it
+in the root folder with a name like `thumb.jpg`. (Valid names include `thumb`, 
+`thumbnail`, and `preview`. Valid formats include PNG, JPG, and SVG.)
+
 ## Dependencies and Options
 
 You can specify any number of other mods as dependencies for your mod. If the

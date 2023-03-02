@@ -21,21 +21,15 @@ use super::Message;
 pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
     fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
         let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
-        if let Ok(mut file) = zip.by_name("thumb.jpg") {
-            let mut vec = vec![0; file.size() as usize];
-            file.read_exact(&mut vec)?;
-            return Ok(Some(Arc::new(
-                RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
-                    .map_err(|e| anyhow::anyhow!("{}", e))?,
-            )));
-        }
-        if let Ok(mut file) = zip.by_name("thumb.png") {
-            let mut vec = vec![0; file.size() as usize];
-            file.read_exact(&mut vec)?;
-            return Ok(Some(Arc::new(
-                RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
-                    .map_err(|e| anyhow::anyhow!("{}", e))?,
-            )));
+        for ext in ["jpg", "jpeg", "png", "svg"] {
+            if let Ok(mut file) = zip.by_name(&format!("thumb.{}", ext)) {
+                let mut vec = vec![0; file.size() as usize];
+                file.read_exact(&mut vec)?;
+                return Ok(Some(Arc::new(
+                    RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
+                        .map_err(|e| anyhow::anyhow!("{}", e))?,
+                )));
+            }
         }
         Ok(None)
     }

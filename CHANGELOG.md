@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added mod preview image packaging. You can include a preview image in a mod by
+  placing it in the root folder and naming it `thumb.jpg` or similar (all
+  options listed in docs).
 - Added more error details
 
 ### Changed
