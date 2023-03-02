@@ -130,6 +130,7 @@ impl super::App {
                     ui.label(RichText::new("FAILED TO LOAD MANIFEST").strong());
                 }
             }
+            ui.add_space(8.0);
         });
     }
 }

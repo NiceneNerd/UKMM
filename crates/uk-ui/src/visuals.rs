@@ -195,8 +195,14 @@ impl Theme {
                         warn_fg_color: ORGANGE, // orange
                         error_fg_color: RED,    // red
                         window_rounding: Rounding::same(4.0),
-                        window_shadow: Shadow::big_dark(),
-                        popup_shadow: Shadow::small_dark(),
+                        window_shadow: Shadow {
+                            extrusion: 5.0,
+                            color:     Color32::from_black_alpha(45),
+                        },
+                        popup_shadow: Shadow {
+                            extrusion: 5.0,
+                            color:     Color32::from_black_alpha(45),
+                        },
                         window_fill: hex_color!("#1C1E1F"),
                         window_stroke: Stroke::NONE,
                         panel_fill: hex_color!("#1C1E1F"),
