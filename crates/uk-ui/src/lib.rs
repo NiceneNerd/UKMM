@@ -15,6 +15,8 @@ pub fn load_fonts(context: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
     let font_to_try = if cfg!(windows) {
         "Segoe UI".to_owned()
+    } else if cfg!(target_os = "macos") {
+        "SF Pro".to_owned()
     } else {
         std::process::Command::new("gsettings")
             .args(["get", "org.gnome.desktop.interface", "font-name"])
