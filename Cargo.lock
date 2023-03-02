@@ -5504,14 +5504,14 @@ dependencies = [
 
 [[package]]
 name = "zarchive"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13ff1ea46fe07231b62cb568948ced6953f7be558e081649f21d1d22d7c39955"
+checksum = "85f12ed23294b7f5c9ddc2c880d4b79f110bfca5114af45fd3b454e068235d08"
 dependencies = [
  "cxx",
  "cxx-build",
- "smallvec",
  "thiserror",
+ "tinyvec",
  "zstd-sys",
 ]
 
