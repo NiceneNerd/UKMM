@@ -701,7 +701,7 @@ pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow::Result<()> {
             f.file_type.is_file() && {
                 f.file_name()
                     .to_str()
-                    .map(|n| !n.ends_with("yml"))
+                    .map(|n| !n.ends_with(".yml") && !n.starts_with("thumb"))
                     .unwrap_or(true)
             }
         })
