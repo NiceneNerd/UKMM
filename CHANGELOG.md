@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2023-03-02
+
 ### Added
 
 - Added mod preview image packaging. You can include a preview image in a mod by
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Further improved mod filename sanitation
 - Switched to safe panic for potential issues with BNP text logs
 - Updated roead for MacOS support progress
+- Various UI tweaks (courtesy of ArchLeaders)
 
 ### Fixed
 
