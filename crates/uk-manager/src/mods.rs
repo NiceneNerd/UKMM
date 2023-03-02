@@ -8,6 +8,7 @@ use std::{
 use anyhow::{Context, Result};
 use fs_err as fs;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use sanitise_file_name as sfn;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use uk_content::platform_prefixes;
@@ -289,31 +290,26 @@ impl Manager {
     /// mod at the provided path has already been validated.
     #[allow(irrefutable_let_patterns)]
     pub fn add(&self, mod_path: &Path) -> Result<Mod> {
-        {
+        let mod_name = {
             let peeker = ModReader::open_peek(mod_path, vec![])?;
             if self.mods().any(|m| m.meta.name == peeker.meta.name) {
                 anyhow::bail!("Mod \"{}\" already installed", peeker.meta.name);
             }
-        }
-        let mut san_opts = sanitise_file_name::Options::DEFAULT;
-        san_opts.url_safe = true;
-        let sanitized = sanitise_file_name::sanitise_with_options(
-            mod_path
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .trim_start_matches('.'),
-            &san_opts,
-        );
+            peeker.meta.name
+        };
+        let san_opts: sfn::Options<Option<char>> = sfn::Options {
+            url_safe: true,
+            collapse_replacements: true,
+            ..Default::default()
+        };
+        let sanitized = sfn::sanitise_with_options(&mod_name, &san_opts);
         let mut stored_path = self
             .settings
             .upgrade()
             .unwrap()
             .read()
             .mods_dir()
-            .join(sanitized)
-            .with_extension("zip");
+            .join(sanitized + ".zip");
         if let parent = stored_path.parent().unwrap() && !parent.exists() {
             fs::create_dir_all(parent)?;
         }
