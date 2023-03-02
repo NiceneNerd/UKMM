@@ -116,7 +116,7 @@ impl TabViewer for super::App {
                                         } else {
                                             config.output.parent().unwrap()
                                         })
-                                        .output();
+                                        .spawn();
                                     }
                                 });
                                 if !config.auto || self.core.deploy_manager().pending() {
