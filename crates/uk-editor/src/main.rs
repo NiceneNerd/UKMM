@@ -7,6 +7,7 @@ mod tasks;
 
 use std::{
     cell::{Cell, RefCell},
+    ops::Deref,
     path::PathBuf,
     sync::Arc,
     thread,
@@ -17,7 +18,7 @@ use editor::EditorTab;
 use eframe::egui::{panel::Side, Frame};
 use flume::{Receiver, Sender};
 use fs_err as fs;
-use parking_lot::RwLock;
+use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 use serde::Deserialize;
 use uk_content::{canonicalize, prelude::Mergeable, resource::ResourceData};
 use uk_manager::core::Manager;
@@ -36,6 +37,7 @@ pub enum Message {
     OpenProject(Project),
     OpenResource(PathBuf),
     LoadResource(PathBuf, ResourceData),
+    Save,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -78,6 +80,23 @@ impl App {
         }
     }
 
+    fn active_tab(&self) -> Option<MappedRwLockReadGuard<'_, editor::EditorTab>> {
+        let tree = self.tree.read();
+        if tree.focused_leaf().is_none() {
+            None
+        } else {
+            Some(RwLockReadGuard::map(tree, |tree| {
+                let leaf = tree.focused_leaf().unwrap();
+                let node = tree.iter().nth(leaf.0).unwrap();
+                match node {
+                    egui_dock::Node::Leaf { tabs, active, .. } => &tabs[active.0],
+                    _ => unreachable!(),
+                }
+            }))
+        }
+    }
+
+    #[inline]
     fn do_update(&self, message: Message) {
         self.channel.0.send(message).unwrap();
     }
@@ -141,7 +160,7 @@ impl App {
         ui.add_enabled_ui(self.project.is_some(), |ui| {
             if ui.button("Save").clicked() {
                 ui.close_menu();
-                todo!("Save project");
+                self.do_update(Message::Save);
             }
             if ui.button("Save As…").clicked() {
                 ui.close_menu();
@@ -203,6 +222,16 @@ impl App {
                     if let Some(project) = self.project.as_ref() {
                         let root = project.path.clone();
                         self.do_task(move |core| tasks::open_resource(&core, root, path));
+                    }
+                }
+                Message::Save => {
+                    if let Some(EditorTab {
+                        path,
+                        ref_data,
+                        edit_data,
+                    }) = self.active_tab().as_deref()
+                    {
+                        dbg!(&path);
                     }
                 }
             }
