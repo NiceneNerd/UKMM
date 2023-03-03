@@ -16,7 +16,7 @@ pub fn load_fonts(context: &egui::Context) {
     let font_to_try = if cfg!(windows) {
         "Segoe UI".to_owned()
     } else if cfg!(target_os = "macos") {
-        "SF Pro".to_owned()
+        "Lucida Grande".to_owned()
     } else {
         std::process::Command::new("gsettings")
             .args(["get", "org.gnome.desktop.interface", "font-name"])
