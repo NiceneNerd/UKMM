@@ -21,15 +21,17 @@ pub fn load_fonts(context: &egui::Context) {
         std::process::Command::new("gsettings")
             .args(["get", "org.gnome.desktop.interface", "font-name"])
             .output()
+            .ok()
+            .and_then(|o| (!o.stdout.is_empty()).then_some(o))
             .and_then(|o| {
                 String::from_utf8(o.stdout)
                     .map(|s| {
                         let last_space = s.rfind(' ').unwrap();
                         s[..last_space].trim_matches('\'').to_string()
                     })
-                    .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "Bah"))
+                    .ok()
             })
-            .unwrap_or_else(|_| "Ubuntu".to_owned())
+            .unwrap_or_else(|| "Ubuntu".to_owned())
     };
     if let Some(system_font) =
         font_loader::system_fonts::get(&FontPropertyBuilder::new().family(&font_to_try).build())
