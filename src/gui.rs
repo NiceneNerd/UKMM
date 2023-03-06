@@ -320,6 +320,11 @@ impl App {
     }
 
     #[inline(always)]
+    fn platform(&self) -> Platform {
+        self.core.settings().current_mode
+    }
+
+    #[inline(always)]
     fn modal_open(&self) -> bool {
         self.error.is_some()
             || self.busy.get()
@@ -597,12 +602,12 @@ impl App {
                         }
                     }
                     if let ModPlatform::Specific(platform) = mod_.meta.platform
-                        && Platform::from(platform) != self.core.settings().current_mode
+                        && Platform::from(platform) != self.platform()
                     {
                         self.do_update(Message::Error(anyhow::anyhow!(
                             "Mod is for {}, current mode is {}",
                             platform,
-                            self.core.settings().current_mode
+                            self.platform()
                         )));
                     }
                     if !mod_.meta.options.is_empty() {
@@ -812,7 +817,7 @@ impl App {
                     }
                 }
                 Message::ResetPacker => {
-                    self.package_builder.borrow_mut().reset(self.core.settings().current_mode);
+                    self.package_builder.borrow_mut().reset(self.platform());
                     self.busy.set(false);
                 }
                 Message::ImportCemu => {
@@ -831,7 +836,7 @@ impl App {
                 }
                 Message::RequestMeta(path) => {
                     self.meta_input
-                        .open(path, self.core.settings().current_mode);
+                        .open(path, self.platform());
                 }
                 Message::SetChangelog(msg) => self.changelog = Some(msg),
                 Message::CloseChangelog => self.changelog = None,

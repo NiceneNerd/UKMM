@@ -369,8 +369,7 @@ impl ModPackerBuilder {
                 if cross {
                     self.meta.platform = ModPlatform::Universal;
                 } else {
-                    self.meta.platform =
-                        ModPlatform::Specific(app.core.settings().current_mode.into());
+                    self.meta.platform = ModPlatform::Specific(app.platform().into());
                 }
             }
             render_field("Name", ui, |ui| {
