@@ -11,6 +11,7 @@ mod tabs;
 mod tasks;
 mod util;
 use std::{
+    cell::RefCell,
     collections::VecDeque,
     ops::DerefMut,
     path::PathBuf,
@@ -176,7 +177,7 @@ pub enum Message {
     Noop,
     OfferUpdate(VersionResponse),
     OpenMod(PathBuf),
-    PackageMod(Arc<RwLock<ModPackerBuilder>>),
+    PackageMod,
     RefreshModsDisplay,
     Remerge,
     RemoveMods(Vec<Mod>),
@@ -211,7 +212,7 @@ struct UiState {
     picker_state: FilePickerState,
 }
 
-struct App {
+pub struct App {
     core: Arc<Manager>,
     channel: (Sender<Message>, Receiver<Message>),
     mods: Vec<Mod>,
@@ -233,6 +234,7 @@ struct App {
     confirm: Option<(Message, String)>,
     busy: bool,
     show_about: bool,
+    package_builder: RefCell<ModPackerBuilder>,
     show_package_deps: bool,
     opt_folders: Option<Mutex<FxHashSet<PathBuf>>>,
     dirty: Manifest,
@@ -262,10 +264,12 @@ impl App {
         crate::logger::LOGGER.set_file(Settings::config_dir().join("log.txt"));
         log::info!("Logger initialized");
         let temp_settings = core.settings().clone();
+        let platform = core.settings().current_mode;
         Self {
             selected: mods.first().cloned().into_iter().collect(),
             drag_index: None,
             hover_index: None,
+            package_builder: RefCell::new(ModPackerBuilder::new(platform)),
             picker_state: ui_state.picker_state,
             profiles_state: Default::default(),
             meta_input: MetaInputModal::new(send.clone()),
@@ -765,8 +769,8 @@ impl App {
                 }
                 Message::ClosePackagingOptions => self.opt_folders = None,
                 Message::ClosePackagingDependencies => self.show_package_deps = false,
-                Message::PackageMod(builder) => {
-                    let mut builder = ModPackerBuilder::clone(&builder.read());
+                Message::PackageMod => {
+                    let mut builder = self.package_builder.borrow().clone();
                     let default_name = sanitise(&builder.meta.name) + ".zip";
                     if let Some(dest) = rfd::FileDialog::new()
                         .add_filter("UKMM Mod", &["zip"])

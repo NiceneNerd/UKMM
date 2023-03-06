@@ -7,7 +7,6 @@ mod tasks;
 
 use std::{
     cell::{Cell, RefCell},
-    ops::Deref,
     path::PathBuf,
     sync::Arc,
     thread,

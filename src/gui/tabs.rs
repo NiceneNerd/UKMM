@@ -198,7 +198,7 @@ impl TabViewer for super::App {
                 self.render_settings(ui);
             }
             Tabs::Package => {
-                self.render_packger(ui);
+                self.package_builder.borrow_mut().render(self, ui);
             }
         }
     }

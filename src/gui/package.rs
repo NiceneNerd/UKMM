@@ -1,8 +1,8 @@
-use std::{ops::DerefMut, path::PathBuf, sync::Arc};
+use std::{ops::DerefMut, path::PathBuf};
 
 use eframe::emath::Align;
 use fs_err as fs;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::Mutex;
 use rustc_hash::FxHashSet;
 use uk_manager::settings::Platform;
 use uk_mod::{
@@ -18,6 +18,11 @@ use uk_ui::{
 
 use super::{App, Message};
 
+fn render_field(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> Response) {
+    ui.label(name);
+    ui.horizontal(add_contents);
+    ui.add_space(4.0);
+}
 #[derive(Debug, Clone)]
 pub struct ModPackerBuilder {
     pub source: PathBuf,
@@ -43,17 +48,9 @@ impl ModPackerBuilder {
             },
         }
     }
-}
 
-fn render_field(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> Response) {
-    ui.label(name);
-    ui.horizontal(add_contents);
-    ui.add_space(4.0);
-}
-
-impl App {
-    fn render_package_deps(&self, ctx: &Context, builder: &mut ModPackerBuilder) {
-        if !self.show_package_deps {
+    fn render_package_deps(&mut self, app: &App, ctx: &Context) {
+        if !app.show_package_deps {
             return;
         }
         egui::Window::new("Select Dependencies")
@@ -64,15 +61,15 @@ impl App {
                     .show_rows(
                         ui,
                         ui.text_style_height(&TextStyle::Body),
-                        self.mods.len(),
+                        app.mods.len(),
                         |ui, range| {
-                            for mod_ in self
+                            for mod_ in app
                                 .mods
                                 .iter()
                                 .skip(range.start)
                                 .take(range.end - range.start)
                             {
-                                let mut in_deps = builder.meta.masters.contains_key(&mod_.hash());
+                                let mut in_deps = self.meta.masters.contains_key(&mod_.hash());
                                 let friendly = format!(
                                     " {} (v{})",
                                     mod_.meta.name.as_str(),
@@ -80,12 +77,12 @@ impl App {
                                 );
                                 if ui.checkbox(&mut in_deps, friendly).changed() {
                                     if in_deps {
-                                        builder.meta.masters.insert(
+                                        self.meta.masters.insert(
                                             mod_.hash(),
                                             (mod_.meta.name.clone(), mod_.meta.version.clone()),
                                         );
                                     } else {
-                                        builder.meta.masters.shift_remove(&mod_.hash());
+                                        self.meta.masters.shift_remove(&mod_.hash());
                                     }
                                 }
                             }
@@ -96,7 +93,7 @@ impl App {
                     Layout::right_to_left(Align::Center),
                     |ui| {
                         if ui.button("OK").clicked() {
-                            self.do_update(Message::ClosePackagingDependencies);
+                            app.do_update(Message::ClosePackagingDependencies);
                         }
                         ui.shrink_width_to_current();
                     },
@@ -104,8 +101,8 @@ impl App {
             });
     }
 
-    fn render_package_opts(&self, ctx: &Context, builder: &mut ModPackerBuilder) {
-        if let Some(ref folders) = self.opt_folders {
+    fn render_package_opts(&mut self, app: &App, ctx: &Context) {
+        if let Some(ref folders) = app.opt_folders {
             egui::Window::new("Configure Mod Options")
                 .anchor(Align2::CENTER_CENTER, [0., 0.])
                 .scroll2([false, true])
@@ -114,14 +111,13 @@ impl App {
                         ui.spacing_mut().item_spacing.y = 8.0;
                         ui.horizontal(|ui| {
                             if ui.icon_text_button("Add Option Group", Icon::Add).clicked() {
-                                builder
-                                    .meta
+                                self.meta
                                     .options
                                     .push(OptionGroup::Multiple(Default::default()));
                             }
                         });
                         render_opt_groups(
-                            &mut builder.meta.options,
+                            &mut self.meta.options,
                             folders,
                             Id::new("opt-groups-"),
                             ui,
@@ -131,7 +127,7 @@ impl App {
                             Layout::right_to_left(Align::Center),
                             |ui| {
                                 if ui.button("OK").clicked() {
-                                    self.do_update(Message::ClosePackagingOptions);
+                                    app.do_update(Message::ClosePackagingOptions);
                                 }
                                 ui.shrink_width_to_current();
                             },
@@ -330,26 +326,17 @@ impl App {
         }
     }
 
-    pub fn render_packger(&self, ui: &mut Ui) {
+    pub fn render(&mut self, app: &App, ui: &mut Ui) {
         egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
             let id = Id::new("packer_data");
-            let builder_ref = ui
-                .data()
-                .get_temp_mut_or_insert_with::<Arc<RwLock<ModPackerBuilder>>>(id, || {
-                    Arc::new(RwLock::new(ModPackerBuilder::new(
-                        self.core.settings().current_mode,
-                    )))
-                })
-                .clone();
-            let mut builder = builder_ref.write();
-            self.render_package_deps(ui.ctx(), &mut builder);
-            self.render_package_opts(ui.ctx(), &mut builder);
+            self.render_package_deps(app, ui.ctx());
+            self.render_package_opts(app, ui.ctx());
             ui.horizontal(|ui| {
-                let source_set = builder.source.exists();
+                let source_set = self.source.exists();
                 ui.add_enabled_ui(source_set, |ui| {
                     if ui.icon_text_button("Manage Options", Icon::Tune).clicked() {
-                        if let Ok(reader) = fs::read_dir(builder.source.join("options")) {
-                            self.do_update(Message::ShowPackagingOptions(
+                        if let Ok(reader) = fs::read_dir(self.source.join("options")) {
+                            app.do_update(Message::ShowPackagingOptions(
                                 reader
                                     .filter_map(|res| {
                                         res.ok().and_then(|e| {
@@ -367,34 +354,34 @@ impl App {
                     .icon_text_button("Set Dependencies", Icon::List)
                     .clicked()
                 {
-                    self.do_update(Message::ShowPackagingDependencies);
+                    app.do_update(Message::ShowPackagingDependencies);
                 }
                 if ui.icon_text_button("Help", Icon::Help).clicked() {
                     open::that("https://nicenenerd.github.io/ukmm/mod_format.html").unwrap_or(());
                 }
             });
             ui.add_space(8.0);
-            render_field("Source", ui, |ui| ui.folder_picker(&mut builder.source));
-            let mut cross = matches!(builder.meta.platform, ModPlatform::Universal);
+            render_field("Source", ui, |ui| ui.folder_picker(&mut self.source));
+            let mut cross = matches!(self.meta.platform, ModPlatform::Universal);
             if ui
                 .checkbox(&mut cross, " Mark as cross-platform")
                 .on_hover_text("Allow mod to be used for Switch or Wii U")
                 .changed()
             {
                 if cross {
-                    builder.meta.platform = ModPlatform::Universal;
+                    self.meta.platform = ModPlatform::Universal;
                 } else {
-                    builder.meta.platform =
-                        ModPlatform::Specific(self.core.settings().current_mode.into());
+                    self.meta.platform =
+                        ModPlatform::Specific(app.core.settings().current_mode.into());
                 }
             }
             render_field("Name", ui, |ui| {
-                builder.meta.name.edit_ui_with_id(ui, id.with("Name"))
+                self.meta.name.edit_ui_with_id(ui, id.with("Name"))
             });
             render_field("Version", ui, |ui| {
                 let tmp_version = ui.create_temp_string(
-                    "mod-builder-version",
-                    Some(builder.meta.version.as_str().into()),
+                    "mod-self-version",
+                    Some(self.meta.version.as_str().into()),
                 );
                 let res = tmp_version
                     .write()
@@ -403,20 +390,20 @@ impl App {
                 if res.changed() {
                     let ver = tmp_version.read();
                     if lenient_semver::Version::parse(ver.as_str()).is_ok() {
-                        builder.meta.version = ver.as_str().into()
+                        self.meta.version = ver.as_str().into()
                     }
                 }
                 res
             });
             render_field("Author", ui, |ui| {
-                builder.meta.author.edit_ui_with_id(ui, id.with("Author"))
+                self.meta.author.edit_ui_with_id(ui, id.with("Author"))
             });
             render_field("Category", ui, |ui| {
                 egui::ComboBox::new(id.with("category"), "")
-                    .selected_text(builder.meta.category.as_str())
+                    .selected_text(self.meta.category.as_str())
                     .show_ui(ui, |ui| {
                         CATEGORIES.iter().for_each(|cat| {
-                            ui.selectable_value(&mut builder.meta.category, (*cat).into(), *cat);
+                            ui.selectable_value(&mut self.meta.category, (*cat).into(), *cat);
                         });
                     })
                     .response
@@ -428,7 +415,7 @@ impl App {
                     .get_or_insert_with(|| {
                         ui.create_temp_string(
                             id.with("tmp"),
-                            builder.meta.url.as_ref().map(|u| u.as_str().into()),
+                            self.meta.url.as_ref().map(|u| u.as_str().into()),
                         )
                     })
                     .clone();
@@ -438,7 +425,7 @@ impl App {
                 };
                 if res.changed() {
                     let url = url.read();
-                    builder.meta.url = if url.is_empty() {
+                    self.meta.url = if url.is_empty() {
                         None
                     } else {
                         Some(url.as_str().into())
@@ -452,7 +439,7 @@ impl App {
             ui.add_space(4.0);
             let string = ui.create_temp_string(
                 id.with("Description"),
-                Some(builder.meta.description.as_str().into()),
+                Some(self.meta.description.as_str().into()),
             );
             if egui::TextEdit::multiline(string.write().deref_mut())
                 .desired_width(f32::INFINITY)
@@ -460,12 +447,12 @@ impl App {
                 .response
                 .changed()
             {
-                builder.meta.description = string.read().as_str().into();
+                self.meta.description = string.read().as_str().into();
             }
             let is_valid = || {
-                builder.source != PathBuf::default()
-                    && builder.source.exists()
-                    && !builder.meta.name.is_empty()
+                self.source != PathBuf::default()
+                    && self.source.exists()
+                    && !self.meta.name.is_empty()
             };
             ui.add_enabled_ui(is_valid(), |ui| {
                 ui.allocate_ui_with_layout(
@@ -473,7 +460,7 @@ impl App {
                     Layout::right_to_left(Align::Center),
                     |ui| {
                         if ui.button("Package Mod").clicked() {
-                            self.do_update(Message::PackageMod(builder_ref.clone()));
+                            app.do_update(Message::PackageMod);
                         }
                     },
                 );
