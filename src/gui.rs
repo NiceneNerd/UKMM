@@ -226,7 +226,7 @@ pub struct App {
     drag_index: Option<usize>,
     hover_index: Option<usize>,
     picker_state: FilePickerState,
-    profiles_state: profiles::ProfileManagerState,
+    profiles_state: RefCell<profiles::ProfileManagerState>,
     meta_input: modals::MetaInputModal,
     closed_tabs: HashMap<Tabs, NodeIndex>,
     tree: Arc<RwLock<Tree<Tabs>>>,
@@ -275,7 +275,7 @@ impl App {
             hover_index: None,
             package_builder: RefCell::new(ModPackerBuilder::new(platform)),
             picker_state: ui_state.picker_state,
-            profiles_state: Default::default(),
+            profiles_state: RefCell::new(profiles::ProfileManagerState::new(&core)),
             meta_input: MetaInputModal::new(send.clone()),
             displayed_mods: mods.clone(),
             mods,
@@ -419,7 +419,7 @@ impl App {
                 Message::CloseConfirm => self.confirm = None,
                 Message::ShowAbout => self.show_about = true,
                 Message::CloseAbout => self.show_about = false,
-                Message::CloseProfiles => self.profiles_state.show = false,
+                Message::CloseProfiles => self.profiles_state.borrow_mut().show = false,
                 Message::Confirm(msg, prompt) => {
                     self.confirm = Some((*msg, prompt));
                 }
@@ -557,10 +557,7 @@ impl App {
                     })
                 }
                 Message::SelectProfileManage(name) => {
-                    self.profiles_state.selected = Some(profiles::SelectedProfile::load(
-                        &self.core.settings().profiles_dir(),
-                        name.as_str(),
-                    ));
+                    self.profiles_state.borrow_mut().selected = Some(name);
                 }
                 Message::SetFocus(pane) => {
                     self.focused = pane;
@@ -887,7 +884,7 @@ impl eframe::App for App {
         self.render_new_profile(ctx);
         self.render_about(ctx);
         self.render_option_picker(ctx);
-        self.render_profiles_modal(ctx);
+        self.profiles_state.borrow_mut().render(self, ctx);
         self.render_changelog(ctx);
         self.meta_input.ui(ctx);
         let layer_id = LayerId::background();

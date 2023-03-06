@@ -366,7 +366,7 @@ impl App {
                         .on_hover_text("Manage Profiles…")
                         .clicked()
                     {
-                        self.profiles_state.show = true;
+                        self.profiles_state.borrow_mut().show = true;
                     }
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         ui.add_space(20.);
