@@ -185,6 +185,7 @@ pub enum Message {
     RequestMeta(PathBuf),
     RequestOptions(Mod, bool),
     ResetMods,
+    ResetPacker,
     ResetPending,
     ResetSettings,
     Restart,
@@ -781,6 +782,10 @@ impl App {
                         builder.dest = dest;
                         self.do_task(move |core| tasks::package_mod(&core, builder));
                     }
+                }
+                Message::ResetPacker => {
+                    self.package_builder.borrow_mut().reset(self.core.settings().current_mode);
+                    self.busy = false;
                 }
                 Message::ImportCemu => {
                     let mut dialog = rfd::FileDialog::new()

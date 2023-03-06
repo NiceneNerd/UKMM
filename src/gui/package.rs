@@ -49,6 +49,10 @@ impl ModPackerBuilder {
         }
     }
 
+    pub fn reset(&mut self, platform: Platform) {
+        *self = Self::new(platform);
+    }
+
     fn render_package_deps(&mut self, app: &App, ctx: &Context) {
         if !app.show_package_deps {
             return;
