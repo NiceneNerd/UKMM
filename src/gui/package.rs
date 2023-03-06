@@ -339,19 +339,7 @@ impl ModPackerBuilder {
                 let source_set = self.source.exists();
                 ui.add_enabled_ui(source_set, |ui| {
                     if ui.icon_text_button("Manage Options", Icon::Tune).clicked() {
-                        if let Ok(reader) = fs::read_dir(self.source.join("options")) {
-                            app.do_update(Message::ShowPackagingOptions(
-                                reader
-                                    .filter_map(|res| {
-                                        res.ok().and_then(|e| {
-                                            e.file_type()
-                                                .ok()
-                                                .and_then(|t| t.is_dir().then(|| e.path()))
-                                        })
-                                    })
-                                    .collect(),
-                            ));
-                        }
+                        app.do_update(Message::GetPackagingOptions);
                     }
                 });
                 if ui
@@ -365,7 +353,13 @@ impl ModPackerBuilder {
                 }
             });
             ui.add_space(8.0);
-            render_field("Source", ui, |ui| ui.folder_picker(&mut self.source));
+            render_field("Source", ui, |ui| {
+                let res = ui.folder_picker(&mut self.source);
+                if res.changed() {
+                    app.do_update(Message::CheckMeta);
+                }
+                res
+            });
             let mut cross = matches!(self.meta.platform, ModPlatform::Universal);
             if ui
                 .checkbox(&mut cross, " Mark as cross-platform")

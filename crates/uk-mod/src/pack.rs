@@ -68,7 +68,8 @@ impl std::fmt::Debug for ModPacker {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
+#[serde(default)]
 struct InfoJson {
     name:     String,
     desc:     String,
@@ -77,7 +78,7 @@ struct InfoJson {
     options:  BnpOptions,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 struct BnpOptions {
     #[serde(default)]
     multi:  Vec<BnpOption>,

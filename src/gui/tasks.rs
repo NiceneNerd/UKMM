@@ -16,7 +16,7 @@ use uk_manager::{
     settings::{DeployConfig, Platform, PlatformSettings, UpdatePreference},
     util::get_temp_file,
 };
-use uk_mod::{unpack::ModReader, Manifest, Meta};
+use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta};
 use uk_reader::ResourceReader;
 
 use super::{package::ModPackerBuilder, Message};
@@ -179,7 +179,17 @@ pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message>
     .context("Failed to initialize mod packager")?
     .pack()
     .context("Failed to package mod")?;
-    Ok(Message::Noop)
+    Ok(Message::ResetPacker)
+}
+
+pub fn parse_meta(file: PathBuf) -> Result<Message> {
+    match file.extension().and_then(|x| x.to_str()).unwrap() {
+        "txt" => ModPacker::parse_rules(file),
+        "yml" => Meta::read(file),
+        "json" => ModPacker::parse_info(file),
+        _ => unreachable!(),
+    }
+    .map(Message::UpdatePackageMeta)
 }
 
 #[allow(irrefutable_let_patterns)]

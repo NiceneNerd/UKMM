@@ -232,7 +232,7 @@ impl App {
     }
 
     pub fn render_busy(&self, ctx: &egui::Context, frame: &eframe::Frame) {
-        if self.busy {
+        if self.busy.get() {
             egui::Window::new("Working")
                 .default_size([240., 80.])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())

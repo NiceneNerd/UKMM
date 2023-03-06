@@ -11,7 +11,7 @@ mod tabs;
 mod tasks;
 mod util;
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::VecDeque,
     ops::DerefMut,
     path::PathBuf,
@@ -36,7 +36,7 @@ use uk_manager::{
     mods::{LookupMod, Mod},
     settings::{Platform, Settings},
 };
-use uk_mod::{pack::sanitise, Manifest, ModPlatform};
+use uk_mod::{pack::sanitise, Manifest, Meta, ModPlatform};
 pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
@@ -147,6 +147,7 @@ pub enum Message {
     Apply,
     ChangeProfile(String),
     ChangeSort(Sort, bool),
+    CheckMeta,
     ClearDrag,
     ClearSelect,
     CloseAbout,
@@ -166,6 +167,7 @@ pub enum Message {
     FilePickerBack,
     FilePickerSet(Option<PathBuf>),
     FilePickerUp,
+    GetPackagingOptions,
     HandleMod(Mod),
     HandleSettings,
     ImportCemu,
@@ -203,6 +205,7 @@ pub enum Message {
     StartDrag(usize),
     Toast(String),
     ToggleMods(Option<Vec<Mod>>, bool),
+    UpdatePackageMeta(Meta),
     UninstallMods(Option<Vec<Mod>>),
     UpdateOptions(Mod),
 }
@@ -233,7 +236,7 @@ pub struct App {
     error: Option<anyhow::Error>,
     new_profile: Option<String>,
     confirm: Option<(Message, String)>,
-    busy: bool,
+    busy: Cell<bool>,
     show_about: bool,
     package_builder: RefCell<ModPackerBuilder>,
     show_package_deps: bool,
@@ -303,7 +306,7 @@ impl App {
             show_about: false,
             show_package_deps: false,
             opt_folders: None,
-            busy: false,
+            busy: Cell::new(false),
             dirty: Manifest::default(),
             sort: (Sort::Priority, false),
             options_mod: None,
@@ -319,7 +322,7 @@ impl App {
     #[inline(always)]
     fn modal_open(&self) -> bool {
         self.error.is_some()
-            || self.busy
+            || self.busy.get()
             || self.options_mod.is_some()
             || self.confirm.is_some()
             || self.show_about
@@ -335,7 +338,7 @@ impl App {
     }
 
     fn do_task(
-        &mut self,
+        &self,
         task: impl 'static
         + Send
         + Sync
@@ -345,7 +348,7 @@ impl App {
         let sender = self.channel.0.clone();
         let core = self.core.clone();
         let task = Box::new(task);
-        self.busy = true;
+        self.busy.set(true);
         thread::spawn(move || {
             let response = match std::panic::catch_unwind(|| task(core.clone())) {
                 Ok(Ok(msg)) => msg,
@@ -372,7 +375,7 @@ impl App {
     fn handle_update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
-                Message::Noop => self.busy = false,
+                Message::Noop => self.busy.set(false),
                 Message::Log(entry) => {
                     if !entry.args.starts_with("PROGRESS") {
                         entry.format(&mut self.log);
@@ -388,7 +391,7 @@ impl App {
                     self.logs.push(entry);
                 }
                 Message::ResetMods => {
-                    self.busy = false;
+                    self.busy.set(false);
                     self.dirty.clear();
                     self.mods = self.core.mod_manager().all_mods().collect();
                     self.do_update(Message::RefreshModsDisplay);
@@ -582,7 +585,7 @@ impl App {
                     self.do_task(move |_| tasks::open_mod(&core, &path, meta));
                 }
                 Message::HandleMod(mod_) => {
-                    self.busy = false;
+                    self.busy.set(false);
                     log::debug!("{:#?}", &mod_);
                     for (hash, (name, version)) in mod_.meta.masters.iter() {
                         if !self.mods.iter().any(|m| m.hash() == *hash) {
@@ -654,7 +657,7 @@ impl App {
                     }
                     self.mods.push(mod_);
                     self.do_update(Message::RefreshModsDisplay);
-                    self.busy = false;
+                    self.busy.set(false);
                     if let Some(path) = self.install_queue.pop_front() {
                         self.do_task(move |core| tasks::open_mod(&core, &path, None));
                     }
@@ -668,7 +671,7 @@ impl App {
                         }
                     });
                     self.do_update(Message::RefreshModsDisplay);
-                    self.busy = false;
+                    self.busy.set(false);
                 }
                 Message::Apply => {
                     let mods = self.mods.clone();
@@ -693,7 +696,7 @@ impl App {
                     self.do_task(|core| tasks::apply_changes(&core, vec![], None));
                 }
                 Message::ResetSettings => {
-                    self.busy = false;
+                    self.busy.set(false);
                     self.temp_settings = self.core.settings().clone();
                     settings::CONFIG.write().clear();
                 }
@@ -759,8 +762,33 @@ impl App {
                 }
                 Message::Error(error) => {
                     log::error!("{:?}", &error);
-                    self.busy = false;
+                    self.busy.set(false);
                     self.error = Some(error);
+                }
+                #[allow(irrefutable_let_patterns)]
+                Message::CheckMeta => {
+                    let source = &self.package_builder.borrow().source;
+                    for file in ["info.json", "rules.txt", "meta.yml"] {
+                        if let file = source.join(file) && file.exists() {
+                            self.do_task(move |_| tasks::parse_meta(file));
+                            break;
+                        }
+                    }
+                }
+                Message::GetPackagingOptions => {
+                    let folder = self.package_builder.borrow().source.join("options");
+                    if let Ok(reader) = fs::read_dir(folder) {
+                        let files = reader
+                            .filter_map(|res| {
+                                res.ok().and_then(|e| {
+                                    e.file_type()
+                                        .ok()
+                                        .and_then(|t| t.is_dir().then(|| e.path()))
+                                })
+                            })
+                            .collect();
+                        self.do_update(Message::ShowPackagingOptions(files));
+                    }
                 }
                 Message::ShowPackagingOptions(folders) => {
                     self.opt_folders = Some(Mutex::new(folders));
@@ -785,7 +813,7 @@ impl App {
                 }
                 Message::ResetPacker => {
                     self.package_builder.borrow_mut().reset(self.core.settings().current_mode);
-                    self.busy = false;
+                    self.busy.set(false);
                 }
                 Message::ImportCemu => {
                     let mut dialog = rfd::FileDialog::new()
@@ -834,6 +862,10 @@ impl App {
                         toast
                     });
                 }
+                Message::UpdatePackageMeta(meta) => {
+                    self.package_builder.borrow_mut().meta = meta;
+                    self.busy.set(false);
+                },
             }
         }
     }
