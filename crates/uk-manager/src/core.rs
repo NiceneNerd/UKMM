@@ -18,8 +18,7 @@ impl Manager {
     pub fn init() -> Result<Self> {
         let settings = Settings::load();
         let mod_manager = Arc::new(RwLock::new(
-            mods::Manager::open_current_profile(&settings)
-                .context("Failed to initialize mod manager")?,
+            mods::Manager::init(&settings).context("Failed to initialize mod manager")?,
         ));
         Ok(Self {
             deploy_manager: Arc::new(RwLock::new(
@@ -33,16 +32,15 @@ impl Manager {
 
     pub fn reload(&self) -> Result<()> {
         self.settings.write().reload();
-        *self.mod_manager.write() = mods::Manager::open_current_profile(&self.settings)
-            .context("Failed to initialize mod manager")?;
+        *self.mod_manager.write() =
+            mods::Manager::init(&self.settings).context("Failed to initialize mod manager")?;
         *self.deploy_manager.write() = deploy::Manager::init(&self.settings, &self.mod_manager)
             .context("Failed to initialize deployment manager")?;
         Ok(())
     }
 
     pub fn change_profile(&self, profile: impl AsRef<str>) -> Result<()> {
-        let profile_path = self.settings.read().profiles_dir().join(profile.as_ref());
-        *self.mod_manager.write() = mods::Manager::open_profile(&profile_path, &self.settings)?;
+        self.mod_manager.write().set_profile(profile.as_ref())?;
         if let Some(config) = self.settings.write().platform_config_mut() {
             config.profile = profile.as_ref().into();
         }

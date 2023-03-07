@@ -42,6 +42,19 @@ impl ProfileManagerState {
         }
     }
 
+    pub fn reload(&mut self, core: &uk_manager::core::Manager) {
+        let settings = core.settings();
+        self.profiles = settings
+            .profiles()
+            .filter_map(|name| -> Option<(SmartString, ProfileData)> {
+                let path = self.dir.join(name.as_str()).join("profile.yml");
+                let text = fs::read_to_string(path).ok()?;
+                let data = serde_yaml::from_str(&text).ok()?;
+                Some((name, data))
+            })
+            .collect::<_>();
+    }
+
     fn render_selected_profile(&mut self, app: &App, ui: &mut egui::Ui) {
         let name = self
             .selected

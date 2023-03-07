@@ -1,16 +1,18 @@
 use std::{
     hash::{Hash, Hasher},
     io::BufReader,
+    ops::Deref,
     path::{Path, PathBuf},
     sync::{Arc, LazyLock, Weak},
 };
 
 use anyhow::{Context, Result};
 use fs_err as fs;
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use sanitise_file_name as sfn;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use smartstring::alias::String;
 use uk_content::platform_prefixes;
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
 
@@ -180,7 +182,7 @@ impl Profile {
 }
 
 pub struct ModIterator<'a> {
-    profile: &'a Profile,
+    profile: MappedRwLockReadGuard<'a, Profile>,
     index:   usize,
 }
 
@@ -202,70 +204,89 @@ impl<'a> Iterator for ModIterator<'a> {
 
 #[derive(Debug)]
 pub struct Manager {
-    path:     PathBuf,
-    profile:  Profile,
+    dir: PathBuf,
+    profiles: RwLock<HashMap<String, Profile>>,
+    current_profile: String,
     settings: Weak<RwLock<Settings>>,
 }
 
 impl Manager {
-    pub fn open_profile(path: &Path, settings: &Arc<RwLock<Settings>>) -> Result<Self> {
-        log::info!(
-            "Initializing mod manager for profile {}",
-            path.file_name()
-                .unwrap_or_default()
-                .to_str()
-                .unwrap_or_default()
-        );
-        if !path.exists() {
-            log::info!("Creating profile at {}", path.display());
+    #[inline(always)]
+    pub fn path(&self) -> PathBuf {
+        self.dir.join(self.current_profile.as_str())
+    }
+
+    #[inline(always)]
+    pub fn profile(&self) -> MappedRwLockReadGuard<'_, Profile> {
+        RwLockReadGuard::map(self.profiles.read(), |profiles| {
+            profiles
+                .get(self.current_profile.as_str())
+                .expect("Invalid profile")
+        })
+    }
+
+    #[inline]
+    #[allow(irrefutable_let_patterns)]
+    pub fn set_profile(&mut self, profile: &str) -> Result<()> {
+        self.current_profile = profile.into();
+        if let path = self.dir.join(profile) && !path.exists() {
             fs::create_dir_all(path)?;
-            let self_ = Self {
-                path:     path.to_path_buf(),
-                profile:  Default::default(),
-                settings: Arc::downgrade(settings),
-            };
-            self_.save()?;
-            return Ok(self_);
+            self.profiles.write().insert(profile.into(), Default::default());
+            self.save()?;
         }
-        let profile = serde_yaml::from_str(&fs::read_to_string(path.join("profile.yml"))?)
-            .context("Failed to parse mod database")?;
-        log::debug!("Profile data:\n{:#?}", &profile);
+        Ok(())
+    }
+
+    pub fn init(settings: &Arc<RwLock<Settings>>) -> Result<Self> {
+        log::info!("Initializing mod manager");
+        let current_profile = settings
+            .read()
+            .platform_config()
+            .as_ref()
+            .map(|c| c.profile.clone())
+            .unwrap_or_else(|| "Default".into());
+        log::info!("Current profile: {}", current_profile);
+        let path = settings.read().profiles_dir();
+        let profiles = settings
+            .read()
+            .profiles()
+            .map(|profile| {
+                let profile_path = path.join(profile.as_str()).join("profile.yml");
+                fs::read_to_string(profile_path)
+                    .context("Failed to read profile data")
+                    .and_then(|t| serde_yaml::from_str(&t).context("Failed to parse profile data"))
+                    .map(|v| (profile, v))
+            })
+            .collect::<Result<_>>()?;
         Ok(Self {
-            path: path.to_path_buf(),
-            profile,
+            dir: path,
+            profiles: RwLock::new(profiles),
+            current_profile,
             settings: Arc::downgrade(settings),
         })
     }
 
     pub fn save(&self) -> Result<()> {
         fs::write(
-            self.path.join("profile.yml"),
-            serde_yaml::to_string(&self.profile)?,
+            self.path().join("profile.yml"),
+            serde_yaml::to_string(self.profile().deref())?,
         )?;
         log::info!("Saved profile data");
-        log::debug!("{:#?}", &self.profile);
+        log::debug!("{:#?}", &self.profile());
         Ok(())
-    }
-
-    pub fn open_current_profile(settings: &Arc<RwLock<Settings>>) -> Result<Self> {
-        Self::open_profile(&settings.read().profile_dir(), settings)
     }
 
     /// Iterate all mods, including disabled, in load order.
     pub fn all_mods(&self) -> ModIterator<'_> {
         ModIterator {
             index:   0,
-            profile: &self.profile,
+            profile: self.profile(),
         }
     }
 
     /// Iterate all enabled mods in load order.
     pub fn mods(&self) -> impl Iterator<Item = Mod> + '_ {
-        ModIterator {
-            index:   0,
-            profile: &self.profile,
-        }
-        .filter(|m| m.enabled)
+        self.all_mods().filter(|m| m.enabled)
     }
 
     /// Iterate all mods which modify any files in the given manifest.
@@ -327,8 +348,8 @@ impl Manager {
         }
         let reader = ModReader::open_peek(&stored_path, vec![])?;
         let mod_ = Mod::from_reader(reader);
-        self.profile.load_order_mut().push(mod_.hash);
-        self.profile.mods_mut().insert(mod_.hash, mod_.clone());
+        self.profile().load_order_mut().push(mod_.hash);
+        self.profile().mods_mut().insert(mod_.hash, mod_.clone());
         log::info!("Added mod {}", mod_.meta.name);
         log::debug!("{:#?}", mod_);
         Ok(mod_)
@@ -336,7 +357,7 @@ impl Manager {
 
     pub fn del(&self, mod_: impl LookupMod) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
-        let mod_ = self.profile.mods_mut().remove(&hash);
+        let mod_ = self.profile().mods_mut().remove(&hash);
         if let Some(mod_) = mod_ {
             let manifest = mod_.manifest()?;
             if mod_.path.is_dir() {
@@ -344,7 +365,7 @@ impl Manager {
             } else {
                 fs::remove_file(&mod_.path)?;
             }
-            self.profile.load_order_mut().retain(|m| m != &hash);
+            self.profile().load_order_mut().retain(|m| m != &hash);
             log::info!("Deleted mod {}", mod_.meta.name);
             Ok(manifest)
         } else {
@@ -356,7 +377,7 @@ impl Manager {
     pub fn set_enabled(&self, mod_: impl LookupMod, enabled: bool) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
         let manifest;
-        if let Some(mod_) = self.profile.mods_mut().get_mut(&hash) {
+        if let Some(mod_) = self.profile().mods_mut().get_mut(&hash) {
             mod_.enabled = enabled;
             manifest = mod_.manifest()?;
             log::info!(
@@ -378,7 +399,7 @@ impl Manager {
     ) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
         let manifest;
-        if let Some(mod_) = self.profile.mods_mut().get_mut(&hash) {
+        if let Some(mod_) = self.profile().mods_mut().get_mut(&hash) {
             manifest = mod_.manifest_with_options(&options)?;
             mod_.enabled_options = options;
         } else {
@@ -389,11 +410,11 @@ impl Manager {
     }
 
     pub fn set_order(&self, order: Vec<usize>) {
-        *self.profile.load_order_mut() = order;
+        *self.profile().load_order_mut() = order;
     }
 
     pub fn get_mod(&self, hash: usize) -> Option<Mod> {
-        self.profile.mods().get(&hash).cloned()
+        self.profile().mods().get(&hash).cloned()
     }
 }
 

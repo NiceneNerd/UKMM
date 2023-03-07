@@ -182,6 +182,7 @@ pub enum Message {
     PackageMod,
     RefreshModsDisplay,
     Remerge,
+    ReloadProfiles,
     RemoveMods(Vec<Mod>),
     RenameProfile(String, String),
     RequestMeta(PathBuf),
@@ -400,6 +401,7 @@ impl App {
                     self.dirty.clear();
                     self.mods = self.core.mod_manager().all_mods().collect();
                     self.do_update(Message::RefreshModsDisplay);
+                    self.do_update(Message::ReloadProfiles);
                 }
                 Message::RefreshModsDisplay => {
                     self.do_update(Message::ChangeSort(self.sort.0, self.sort.1));
@@ -536,7 +538,7 @@ impl App {
                     self.do_task(move |core| {
                         let path = core.settings().profiles_dir().join(profile);
                         fs::remove_dir_all(path)?;
-                        Ok(Message::Noop)
+                        Ok(Message::ReloadProfiles)
                     })
                 }
                 Message::DuplicateProfile(profile) => {
@@ -546,15 +548,19 @@ impl App {
                             profiles_dir.join(&profile),
                             profiles_dir.join(profile + "_copy"),
                         )?;
-                        Ok(Message::Noop)
+                        Ok(Message::ReloadProfiles)
                     });
                 }
                 Message::RenameProfile(profile, rename) => {
                     self.do_task(move |core| {
                         let profiles_dir = core.settings().profiles_dir();
                         fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
-                        Ok(Message::Noop)
+                        Ok(Message::ReloadProfiles)
                     })
+                }
+                Message::ReloadProfiles => {
+                    self.profiles_state.borrow_mut().reload(&self.core);
+                    self.busy.set(false);
                 }
                 Message::SelectProfileManage(name) => {
                     self.profiles_state.borrow_mut().selected = Some(name);
