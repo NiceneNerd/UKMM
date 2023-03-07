@@ -226,8 +226,8 @@ impl App {
                 Message::Save => {
                     if let Some(EditorTab {
                         path,
-                        ref_data,
-                        edit_data,
+                        ref_data: _,
+                        edit_data: _,
                     }) = self.active_tab().as_deref()
                     {
                         dbg!(&path);

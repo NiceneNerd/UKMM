@@ -1,7 +1,6 @@
 use std::{ops::DerefMut, path::PathBuf};
 
 use eframe::emath::Align;
-use fs_err as fs;
 use parking_lot::Mutex;
 use rustc_hash::FxHashSet;
 use uk_manager::settings::Platform;

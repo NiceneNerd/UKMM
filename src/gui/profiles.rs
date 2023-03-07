@@ -1,19 +1,15 @@
-use std::{
-    cell::OnceCell,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 
-use anyhow::Result;
 use fs_err as fs;
 use smartstring::alias::String as SmartString;
 use uk_content::util::HashMap;
 use uk_manager::mods::Profile as ProfileData;
 use uk_ui::{
-    egui::{self, text::LayoutJob, Layout, RichText, TextStyle, Ui},
+    egui::{self, text::LayoutJob, Layout, TextStyle},
     icons::IconButtonExt,
 };
 
-use super::{visuals, App, Message};
+use super::{App, Message};
 
 #[derive(Debug, Default)]
 pub struct ProfileManagerState {
