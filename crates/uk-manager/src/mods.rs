@@ -331,20 +331,23 @@ impl Manager {
             .read()
             .mods_dir()
             .join(sanitized + ".zip");
-        if let parent = stored_path.parent().unwrap() && !parent.exists() {
-            fs::create_dir_all(parent)?;
-        }
-        if mod_path.is_file() {
-            if self.settings.upgrade().unwrap().read().unpack_mods {
-                stored_path.set_extension("");
-                uk_mod::unpack::unzip_mod(mod_path, &stored_path)
-                    .context("Failed to unpack mod to storage folder")?;
-            } else {
-                fs::copy(mod_path, &stored_path).context("Failed to copy mod to storage folder")?;
-            }
+        if stored_path.exists() {
+            log::debug!("Mod already stored, no need to store it");
         } else {
-            dircpy::copy_dir(mod_path, &stored_path)
-                .context("Failed to copy mod to storage folder")?;
+            stored_path.parent().map(fs::create_dir_all).transpose()?;
+            if mod_path.is_file() {
+                if self.settings.upgrade().unwrap().read().unpack_mods {
+                    stored_path.set_extension("");
+                    uk_mod::unpack::unzip_mod(mod_path, &stored_path)
+                        .context("Failed to unpack mod to storage folder")?;
+                } else {
+                    fs::copy(mod_path, &stored_path)
+                        .context("Failed to copy mod to storage folder")?;
+                }
+            } else {
+                dircpy::copy_dir(mod_path, &stored_path)
+                    .context("Failed to copy mod to storage folder")?;
+            }
         }
         let reader = ModReader::open_peek(&stored_path, vec![])?;
         let mod_ = Mod::from_reader(reader);
@@ -360,10 +363,18 @@ impl Manager {
         let mod_ = self.profile().mods_mut().remove(&hash);
         if let Some(mod_) = mod_ {
             let manifest = mod_.manifest()?;
-            if mod_.path.is_dir() {
-                util::remove_dir_all(&mod_.path)?;
-            } else {
-                fs::remove_file(&mod_.path)?;
+            // Only delete the mod file if no other profiles are using it
+            if !self
+                .profiles
+                .read()
+                .values()
+                .any(|p| p.mods().contains_key(&hash))
+            {
+                if mod_.path.is_dir() {
+                    util::remove_dir_all(&mod_.path)?;
+                } else {
+                    fs::remove_file(&mod_.path)?;
+                }
             }
             self.profile().load_order_mut().retain(|m| m != &hash);
             log::info!("Deleted mod {}", mod_.meta.name);

@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added meta autofill when packaging source contains meta file
 
+### Changed
+
+- Skip copying mod on install if already stored from another profile
+
+### Fixed
+
+- Fixed profile corruption when uninstalling a mod used by multiple profiles
+
 ## [0.5.0] - 2023-03-02
 
 ### Added

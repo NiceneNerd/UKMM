@@ -720,7 +720,7 @@ impl App {
                                 toast
                             });
                             if let Some(dump) = self.core.settings().dump() { dump.clear_cache() }
-                            ctx.data().remove_by_type::<Arc<RwLock<ModPackerBuilder>>>();
+                            self.package_builder.borrow_mut().reset(self.platform());
                             self.do_update(Message::ClearSelect);
                             self.do_update(Message::ResetMods);
                         }
@@ -734,7 +734,7 @@ impl App {
                         toast
                     });
                     if let Some(dump) = self.core.settings().dump() { dump.clear_cache() }
-                    ctx.data().remove_by_type::<Arc<RwLock<ModPackerBuilder>>>();
+                    self.package_builder.borrow_mut().reset(self.platform());
                     self.do_update(Message::ClearSelect);
                     self.do_update(Message::ResetMods);
                 }
