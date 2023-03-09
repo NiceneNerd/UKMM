@@ -7,8 +7,9 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use dashmap::{mapref::one::MappedRef, DashMap};
 use fs_err as fs;
-use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use sanitise_file_name as sfn;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -182,7 +183,7 @@ impl Profile {
 }
 
 pub struct ModIterator<'a> {
-    profile: MappedRwLockReadGuard<'a, Profile>,
+    profile: MappedRef<'a, String, Profile, Profile>,
     index:   usize,
 }
 
@@ -205,7 +206,7 @@ impl<'a> Iterator for ModIterator<'a> {
 #[derive(Debug)]
 pub struct Manager {
     dir: PathBuf,
-    profiles: RwLock<HashMap<String, Profile>>,
+    profiles: DashMap<String, Profile>,
     current_profile: String,
     settings: Weak<RwLock<Settings>>,
 }
@@ -217,19 +218,18 @@ impl Manager {
     }
 
     #[inline(always)]
-    pub fn profile(&self) -> MappedRwLockReadGuard<'_, Profile> {
-        RwLockReadGuard::map(self.profiles.read(), |profiles| {
-            profiles
-                .get(self.current_profile.as_str())
-                .expect("Invalid profile")
-        })
+    pub fn profile(&self) -> MappedRef<'_, String, Profile, Profile> {
+        self.profiles
+            .get(self.current_profile.as_str())
+            .expect("Invalid profile")
+            .map(|f| f)
     }
-    
+
     pub fn create_profile_if(&self, profile: &str) -> Result<()> {
         #[allow(irrefutable_let_patterns)]
         if let path = self.dir.join(profile) && !path.exists() {
             fs::create_dir_all(path)?;
-            self.profiles.write().insert(profile.into(), Default::default());
+            self.profiles.insert(profile.into(), Default::default());
             self.save()?;
         }
         Ok(())
@@ -264,7 +264,7 @@ impl Manager {
             .collect::<Result<_>>()?;
         let self_ = Self {
             dir: path,
-            profiles: RwLock::new(profiles),
+            profiles,
             current_profile: current_profile.clone(),
             settings: Arc::downgrade(settings),
         };
@@ -372,9 +372,8 @@ impl Manager {
             // Only delete the mod file if no other profiles are using it
             if !self
                 .profiles
-                .read()
-                .values()
-                .any(|p| p.mods().contains_key(&hash))
+                .iter()
+                .any(|p| p.value().mods().contains_key(&hash))
             {
                 if mod_.path.is_dir() {
                     util::remove_dir_all(&mod_.path)?;
