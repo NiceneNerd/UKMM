@@ -161,29 +161,31 @@ pub enum UpdatePreference {
 #[serde(default)]
 #[serde_as]
 pub struct Settings {
-    pub current_mode:   Platform,
+    pub current_mode: Platform,
+    pub system_7z: bool,
     #[serde(default = "default_storage")]
-    pub storage_dir:    PathBuf,
-    pub unpack_mods:    bool,
+    pub storage_dir: PathBuf,
+    pub unpack_mods: bool,
     #[serde(deserialize_with = "serde_with::As::<DefaultOnError>::deserialize")]
-    pub check_updates:  UpdatePreference,
+    pub check_updates: UpdatePreference,
     pub show_changelog: bool,
-    pub last_version:   Option<String>,
-    pub wiiu_config:    Option<PlatformSettings>,
-    pub switch_config:  Option<PlatformSettings>,
+    pub last_version: Option<String>,
+    pub wiiu_config: Option<PlatformSettings>,
+    pub switch_config: Option<PlatformSettings>,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            current_mode:   Platform::WiiU,
-            storage_dir:    default_storage(),
-            unpack_mods:    false,
-            wiiu_config:    None,
-            switch_config:  None,
-            check_updates:  UpdatePreference::Stable,
+            current_mode: Platform::WiiU,
+            system_7z: true,
+            storage_dir: default_storage(),
+            unpack_mods: false,
+            wiiu_config: None,
+            switch_config: None,
+            check_updates: UpdatePreference::Stable,
             show_changelog: true,
-            last_version:   None,
+            last_version: None,
         }
     }
 }
@@ -214,6 +216,7 @@ impl Settings {
         Arc::new(RwLock::new(match Settings::read(Self::path()) {
             Ok(settings) => {
                 log::debug!("{:#?}", settings);
+                crate::util::USE_SZ.store(settings.system_7z, std::sync::atomic::Ordering::Release);
                 settings
             }
             Err(e) => {
@@ -253,6 +256,12 @@ impl Settings {
             fs::create_dir_all(Self::path().parent().unwrap())?;
         }
         log::debug!("Saving settings:\n{:#?}", self);
+        let _ = crate::util::USE_SZ.compare_exchange_weak(
+            !self.system_7z,
+            self.system_7z,
+            std::sync::atomic::Ordering::Relaxed,
+            std::sync::atomic::Ordering::Relaxed,
+        );
         fs::write(Self::path(), serde_yaml::to_string(self)?)?;
         log::info!("Settings saved");
         Ok(())

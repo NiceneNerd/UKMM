@@ -1,6 +1,6 @@
 use std::{
     path::{Path, PathBuf},
-    sync::LazyLock,
+    sync::{atomic::AtomicBool, LazyLock},
 };
 
 #[cfg(windows)]
@@ -48,8 +48,10 @@ pub fn clear_temp() {
     });
 }
 
+pub static USE_SZ: AtomicBool = AtomicBool::new(true);
+
 pub fn extract_7z(file: &Path, folder: &Path) -> anyhow::Result<()> {
-    static SX_EXISTS: LazyLock<bool> = LazyLock::new(|| {
+    static SZ_EXISTS: LazyLock<bool> = LazyLock::new(|| {
         match std::process::Command::new("7z")
             .stdout(std::process::Stdio::null())
             .spawn()
@@ -65,7 +67,7 @@ pub fn extract_7z(file: &Path, folder: &Path) -> anyhow::Result<()> {
         }
     });
 
-    if *SX_EXISTS {
+    if *SZ_EXISTS && USE_SZ.load(std::sync::atomic::Ordering::Relaxed) {
         let output = std::process::Command::new("7z")
             .arg("x")
             .arg(file)

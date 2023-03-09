@@ -552,6 +552,15 @@ impl App {
                             |ui| ui.add(Checkbox::new(&mut settings.unpack_mods, "")),
                         );
                         render_setting(
+                            "Use System 7z",
+                            "By default UKMM will attempt to use 7z from your system PATH to \
+                             extract 7-Zip files (like BNPs). Otherwise it will fall back to a \
+                             slower built-in 7z extraction library. If you have 7z-related \
+                             errors, try disabling this option.",
+                            ui,
+                            |ui| ui.checkbox(&mut settings.system_7z, ""),
+                        );
+                        render_setting(
                             "Show Changelog",
                             "Show a summary of recent changes after UKMM updates.",
                             ui,
