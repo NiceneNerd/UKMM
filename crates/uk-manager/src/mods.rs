@@ -224,16 +224,20 @@ impl Manager {
                 .expect("Invalid profile")
         })
     }
-
-    #[inline]
-    #[allow(irrefutable_let_patterns)]
-    pub fn set_profile(&mut self, profile: &str) -> Result<()> {
-        self.current_profile = profile.into();
+    
+    pub fn create_profile_if(&self, profile: &str) -> Result<()> {
+        #[allow(irrefutable_let_patterns)]
         if let path = self.dir.join(profile) && !path.exists() {
             fs::create_dir_all(path)?;
             self.profiles.write().insert(profile.into(), Default::default());
             self.save()?;
         }
+        Ok(())
+    }
+
+    pub fn set_profile(&mut self, profile: &str) -> Result<()> {
+        self.current_profile = profile.into();
+        self.create_profile_if(&profile)?;
         Ok(())
     }
 
@@ -258,12 +262,14 @@ impl Manager {
                     .map(|v| (profile, v))
             })
             .collect::<Result<_>>()?;
-        Ok(Self {
+        let self_ = Self {
             dir: path,
             profiles: RwLock::new(profiles),
-            current_profile,
+            current_profile: current_profile.clone(),
             settings: Arc::downgrade(settings),
-        })
+        };
+        self_.create_profile_if(&current_profile)?;
+        Ok(self_)
     }
 
     pub fn save(&self) -> Result<()> {
