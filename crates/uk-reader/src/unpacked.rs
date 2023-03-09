@@ -21,9 +21,18 @@ impl Unpacked {
         test_valid: bool,
     ) -> Result<Self> {
         log::info!("Loading unpacked game files");
-        let content_dir = content_dir.as_ref().map(|c| c.as_ref());
-        let update_dir = update_dir.as_ref().map(|d| d.as_ref());
-        let aoc_dir = aoc_dir.as_ref().map(|a| a.as_ref());
+        let content_dir = content_dir
+            .as_ref()
+            .map(|c| c.as_ref())
+            .filter(|p| !p.as_os_str().is_empty());
+        let update_dir = update_dir
+            .as_ref()
+            .map(|d| d.as_ref())
+            .filter(|p| !p.as_os_str().is_empty());
+        let aoc_dir = aoc_dir
+            .as_ref()
+            .map(|a| a.as_ref())
+            .filter(|p| !p.as_os_str().is_empty());
         log::debug!(
             "Folders:\n{:?}\n{:?}\n{:?}",
             content_dir.map(|p| p.display()),
@@ -55,7 +64,7 @@ impl Unpacked {
                     update_dir.to_path_buf(),
                 ));
             } else if let Some(aoc_dir) = aoc_dir.as_ref() && !aoc_dir.join(AOC_TEST).exists() {
-                log::error!("Test file {} not found in DLC folder", UPDATE_TEST);
+                log::error!("Test file {} not found in DLC folder", AOC_TEST);
                 return Err(ROMError::MissingDumpDir(
                     "DLC",
                     aoc_dir.to_path_buf(),
