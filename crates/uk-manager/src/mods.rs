@@ -1,4 +1,5 @@
 use std::{
+    borrow::Borrow,
     hash::{Hash, Hasher},
     io::BufReader,
     ops::Deref,
@@ -7,7 +8,10 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use dashmap::{mapref::one::MappedRef, DashMap};
+use dashmap::{
+    mapref::one::{MappedRef, Ref},
+    DashMap,
+};
 use fs_err as fs;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use sanitise_file_name as sfn;
@@ -180,6 +184,13 @@ impl Profile {
     pub fn load_order_mut(&self) -> RwLockWriteGuard<Vec<usize>> {
         self.load_order.write()
     }
+
+    pub fn iter<'a>(self: MappedRef<'a, String, Profile, Profile>) -> ModIterator<'a> {
+        ModIterator {
+            profile: self,
+            index:   0,
+        }
+    }
 }
 
 pub struct ModIterator<'a> {
@@ -191,8 +202,8 @@ impl<'a> Iterator for ModIterator<'a> {
     type Item = Mod;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mods = self.profile.mods.read();
-        let loads = self.profile.load_order.read();
+        let loads = self.profile.load_order();
+        let mods = self.profile.mods();
         if self.index < loads.len() {
             let hash = loads[self.index];
             self.index += 1;
@@ -225,9 +236,19 @@ impl Manager {
             .map(|f| f)
     }
 
+    #[inline(always)]
+    pub fn get_profile(&self, profile: Option<&String>) -> MappedRef<'_, String, Profile, Profile> {
+        let profile = profile.unwrap_or(&self.current_profile);
+        self.profiles
+            .get(profile.as_str())
+            .expect("Invalid profile")
+            .map(|f| f)
+    }
+
     pub fn create_profile_if(&self, profile: &str) -> Result<()> {
         #[allow(irrefutable_let_patterns)]
         if let path = self.dir.join(profile) && !path.exists() {
+            log::info!("Profile {profile} does not exist, creating it now");
             fs::create_dir_all(path)?;
             self.profiles.insert(profile.into(), Default::default());
             self.save()?;
@@ -284,10 +305,7 @@ impl Manager {
 
     /// Iterate all mods, including disabled, in load order.
     pub fn all_mods(&self) -> ModIterator<'_> {
-        ModIterator {
-            index:   0,
-            profile: self.profile(),
-        }
+        self.profile().iter()
     }
 
     /// Iterate all enabled mods in load order.
@@ -316,10 +334,14 @@ impl Manager {
     /// Add a mod to the list of installed mods. This function assumes that the
     /// mod at the provided path has already been validated.
     #[allow(irrefutable_let_patterns)]
-    pub fn add(&self, mod_path: &Path) -> Result<Mod> {
+    pub fn add(&self, mod_path: &Path, profile: Option<&String>) -> Result<Mod> {
         let mod_name = {
             let peeker = ModReader::open_peek(mod_path, vec![])?;
-            if self.mods().any(|m| m.meta.name == peeker.meta.name) {
+            if self
+                .get_profile(profile)
+                .iter()
+                .any(|m| m.meta.name == peeker.meta.name)
+            {
                 anyhow::bail!("Mod \"{}\" already installed", peeker.meta.name);
             }
             peeker.meta.name
@@ -357,16 +379,22 @@ impl Manager {
         }
         let reader = ModReader::open_peek(&stored_path, vec![])?;
         let mod_ = Mod::from_reader(reader);
-        self.profile().load_order_mut().push(mod_.hash);
-        self.profile().mods_mut().insert(mod_.hash, mod_.clone());
-        log::info!("Added mod {}", mod_.meta.name);
+        let profile_data = self.get_profile(profile);
+        profile_data.load_order_mut().push(mod_.hash);
+        profile_data.mods_mut().insert(mod_.hash, mod_.clone());
+        log::info!(
+            "Added mod {} to profile {}",
+            mod_.meta.name,
+            profile.unwrap_or(&self.current_profile).as_str()
+        );
         log::debug!("{:#?}", mod_);
         Ok(mod_)
     }
 
-    pub fn del(&self, mod_: impl LookupMod) -> Result<Arc<Manifest>> {
+    pub fn del(&self, mod_: impl LookupMod, profile: Option<&String>) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
-        let mod_ = self.profile().mods_mut().remove(&hash);
+        let profile_data = self.get_profile(profile);
+        let mod_ = profile_data.mods_mut().remove(&hash);
         if let Some(mod_) = mod_ {
             let manifest = mod_.manifest()?;
             // Only delete the mod file if no other profiles are using it
@@ -381,8 +409,12 @@ impl Manager {
                     fs::remove_file(&mod_.path)?;
                 }
             }
-            self.profile().load_order_mut().retain(|m| m != &hash);
-            log::info!("Deleted mod {}", mod_.meta.name);
+            profile_data.load_order_mut().retain(|m| m != &hash);
+            log::info!(
+                "Deleted mod {} from profile {}",
+                mod_.meta.name,
+                profile.unwrap_or(&self.current_profile).as_str()
+            );
             Ok(manifest)
         } else {
             log::warn!("Mod with ID {} does not exist, doing nothing", hash);
@@ -390,16 +422,23 @@ impl Manager {
         }
     }
 
-    pub fn set_enabled(&self, mod_: impl LookupMod, enabled: bool) -> Result<Arc<Manifest>> {
+    pub fn set_enabled(
+        &self,
+        mod_: impl LookupMod,
+        enabled: bool,
+        profile: Option<&String>,
+    ) -> Result<Arc<Manifest>> {
         let hash = mod_.as_hash_id();
         let manifest;
-        if let Some(mod_) = self.profile().mods_mut().get_mut(&hash) {
+        let profile_data = self.get_profile(profile);
+        if let Some(mod_) = profile_data.mods_mut().get_mut(&hash) {
             mod_.enabled = enabled;
             manifest = mod_.manifest()?;
             log::info!(
-                "{} mod {}",
+                "{} mod {} in profile {}",
                 if enabled { "Enabled" } else { "Disabled" },
-                mod_.meta.name
+                mod_.meta.name,
+                profile.unwrap_or(&self.current_profile).as_str()
             );
         } else {
             log::warn!("Mod with ID {} does not exist, doing nothing", hash);

@@ -622,7 +622,7 @@ impl App {
                 Message::InstallMod(tmp_mod_) => {
                     self.do_task(move |core| {
                         let mods = core.mod_manager();
-                        let mod_ = mods.add(&tmp_mod_.path)?;
+                        let mod_ = mods.add(&tmp_mod_.path, None)?;
                         let hash = mod_.as_hash_id();
                         if !tmp_mod_.enabled_options.is_empty() {
                             mods.set_enabled_options(hash, tmp_mod_.enabled_options)?;
@@ -638,7 +638,7 @@ impl App {
                     self.do_task(move |core| {
                         let manager = core.mod_manager();
                         mods.iter().try_for_each(|m| -> Result<()> {
-                            manager.del(m.as_hash_id())?;
+                            manager.del(m.as_hash_id(), None)?;
                             log::info!("Removed mod {} from current profile", m.meta.name.as_str());
                             Ok(())
                         })?;

@@ -1,4 +1,5 @@
 #![feature(
+    arbitrary_self_types,
     let_chains,
     result_option_inspect,
     option_get_or_insert_default,

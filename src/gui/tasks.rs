@@ -122,7 +122,7 @@ pub fn apply_changes(core: &Manager, mods: Vec<Mod>, dirty: Option<Manifest>) ->
                     .unwrap();
                 if !mod_.state_eq(m) {
                     mod_manager
-                        .set_enabled(m.hash(), m.enabled)
+                        .set_enabled(m.hash(), m.enabled, None)
                         .with_context(|| {
                             format!(
                                 "Failed to {} {}",
@@ -417,7 +417,7 @@ fn import_mods(core: &Manager, mod_dir: PathBuf) -> Result<()> {
         }) {
             match convert_bnp(core, &dir) {
                 Ok(path) => {
-                    core.mod_manager().add(&path)?;
+                    core.mod_manager().add(&path, None)?;
                 }
                 Err(e) => log::warn!("Failed to import BCML mod: {}", e),
             }
