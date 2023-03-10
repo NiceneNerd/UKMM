@@ -13,6 +13,12 @@ use uk_ui::{
 
 use super::{App, FocusedPane, Message, Sort};
 
+enum ContextMenuMessage {
+    Uninstall,
+    Toggle(bool),
+    Move(usize),
+}
+
 impl App {
     pub fn render_modlist(&mut self, ui: &mut Ui) {
         static TEXT_HEIGHT: OnceLock<f32> = OnceLock::new();
@@ -278,6 +284,7 @@ impl App {
             let mut ctrl = false;
             let mut hover = false;
             let mut toggled = false;
+            let mut ctx_action = None;
             let menu_mod = mod_.clone();
 
             let mut process_col_res = |res: Response| {
@@ -285,7 +292,9 @@ impl App {
                 hover = hover || res.hovered();
                 drag_started = drag_started || res.drag_started();
                 res.context_menu(|ui| {
-                    Self::render_mod_context_menu(self.channel.0.clone(), menu_mod.clone(), ui);
+                    if let Some(action) = Self::render_mod_context_menu(menu_mod.clone(), ui) {
+                        ctx_action.replace(action);
+                    }
                 });
             };
 
@@ -320,6 +329,23 @@ impl App {
                     .1,
                 );
             }
+            if let Some(action) = ctx_action {
+                match action {
+                    ContextMenuMessage::Uninstall => {
+                        let prompt = jstr!("Are you sure you want to uninstall {&mod_.meta.name}?");
+                        self.do_update(Message::Confirm(
+                            Message::UninstallMods(None).into(),
+                            prompt,
+                        ));
+                    }
+                    ContextMenuMessage::Toggle(state) => {
+                        self.do_update(Message::ToggleMods(None, state));
+                    }
+                    ContextMenuMessage::Move(dest) => {
+                        self.do_update(Message::MoveSelected(dest));
+                    }
+                }
+            }
             if toggled {
                 self.do_update(Message::ToggleMods(Some(vec![menu_mod.clone()]), enabled));
             } else if clicked {
@@ -341,25 +367,18 @@ impl App {
         }
     }
 
-    fn render_mod_context_menu(sender: flume::Sender<Message>, mod_: Mod, ui: &mut Ui) {
+    fn render_mod_context_menu(mod_: Mod, ui: &mut Ui) -> Option<ContextMenuMessage> {
+        let mut result = None;
         if ui.button("Uninstall").clicked() {
-            let prompt = jstr!("Are you sure you want to uninstall the selected mod(s)?");
             ui.close_menu();
-            sender
-                .send(Message::Confirm(
-                    Message::UninstallMods(None).into(),
-                    prompt,
-                ))
-                .unwrap();
+            result = Some(ContextMenuMessage::Uninstall);
         }
         if ui
             .button(if mod_.enabled { "Disable" } else { "Enable" })
             .clicked()
         {
             ui.close_menu();
-            sender
-                .send(Message::ToggleMods(None, !mod_.enabled))
-                .unwrap();
+            result = Some(ContextMenuMessage::Toggle(!mod_.enabled));
         }
         if ui.button("View folder").clicked() {
             ui.close_menu();
@@ -377,11 +396,12 @@ impl App {
         }
         if ui.button("Move to start").clicked() {
             ui.close_menu();
-            sender.send(Message::MoveSelected(0)).unwrap();
+            result = Some(ContextMenuMessage::Move(0));
         }
         if ui.button("Move to end").clicked() {
             ui.close_menu();
-            sender.send(Message::MoveSelected(9999)).unwrap();
+            result = Some(ContextMenuMessage::Move(9999));
         }
+        result
     }
 }
