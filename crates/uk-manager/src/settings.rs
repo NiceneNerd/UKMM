@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
@@ -30,13 +30,13 @@ impl std::fmt::Display for Platform {
 }
 
 impl std::str::FromStr for Platform {
-    type Err = anyhow::Error;
+    type Err = anyhow_ext::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         match s.to_lowercase().as_str() {
             "wiiu" | "be" | "wii u" => Ok(Self::WiiU),
             "switch" | "nx" => Ok(Self::Switch),
-            _ => anyhow::bail!("Invalid platform"),
+            _ => anyhow_ext::bail!("Invalid platform"),
         }
     }
 }

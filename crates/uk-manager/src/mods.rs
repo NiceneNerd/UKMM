@@ -6,11 +6,8 @@ use std::{
     sync::{Arc, LazyLock, Weak},
 };
 
-use anyhow::{Context, Result};
-use dashmap::{
-    mapref::one::MappedRef,
-    DashMap,
-};
+use anyhow_ext::{Context, Result};
+use dashmap::{mapref::one::MappedRef, DashMap};
 use fs_err as fs;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use sanitise_file_name as sfn;
@@ -257,7 +254,7 @@ impl Manager {
 
     pub fn set_profile(&mut self, profile: &str) -> Result<()> {
         self.current_profile = profile.into();
-        self.create_profile_if(&profile)?;
+        self.create_profile_if(profile)?;
         Ok(())
     }
 
@@ -341,7 +338,7 @@ impl Manager {
                 .iter()
                 .any(|m| m.meta.name == peeker.meta.name)
             {
-                anyhow::bail!("Mod \"{}\" already installed", peeker.meta.name);
+                anyhow_ext::bail!("Mod \"{}\" already installed", peeker.meta.name);
             }
             peeker.meta.name
         };
@@ -533,7 +530,7 @@ pub fn convert_gfx(
             path.parent().unwrap().to_owned()
         } else {
             log::error!("{} is not a supported mod archive", path.display());
-            anyhow::bail!("{} files are not supported", ext)
+            anyhow_ext::bail!("{} files are not supported", ext)
         }
     } else {
         log::info!("Unpacked mod, that's easy");

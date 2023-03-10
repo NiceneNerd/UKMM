@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
+anyhow_ext = { workspace = true }
 dashmap = { workspace = true }
 fs-err = { workspace = true }
 log = { workspace = true }

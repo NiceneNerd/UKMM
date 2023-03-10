@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
+anyhow_ext = { workspace = true }
 dashmap = { workspace = true, features = ["serde"] }
 fs-err = { workspace = true }
 log = { workspace = true }
@@ -12,7 +13,7 @@ join_str = { workspace = true }
 minicbor-ser = { workspace = true }
 parking_lot = { workspace = true, features = ["serde"] }
 roead = { workspace = true }
-serde = { workspace = true }
+serde = { workspace = true, features = ["rc"] }
 serde_json = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
 thiserror = { workspace = true }

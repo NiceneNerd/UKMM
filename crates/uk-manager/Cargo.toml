@@ -6,6 +6,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
+anyhow_ext = { workspace = true }
 dashmap = { workspace = true, features = ["rayon"] }
 dircpy = { workspace = true }
 dirs2 = { workspace = true }

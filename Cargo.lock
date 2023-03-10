@@ -114,6 +114,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "224afbd727c3d6e4b90103ece64b8d1b67fbb1973b1046c2281eed3f3803f800"
 
 [[package]]
+name = "anyhow_ext"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a135cb522bf5b2254ed712979bc242f60c13f7906c1e4585d5fef36ae9017528"
+dependencies = [
+ "anyhow",
+]
+
+[[package]]
 name = "arboard"
 version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4404,6 +4413,7 @@ name = "uk-manager"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "anyhow_ext",
  "dashmap",
  "dircpy",
  "dirs2",
@@ -4439,6 +4449,7 @@ name = "uk-mod"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "anyhow_ext",
  "botw-utils",
  "configparser",
  "dashmap",
@@ -4476,6 +4487,7 @@ name = "uk-reader"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "anyhow_ext",
  "dashmap",
  "fs-err",
  "include-flate",
@@ -4532,6 +4544,7 @@ name = "ukmm"
 version = "0.5.0"
 dependencies = [
  "anyhow",
+ "anyhow_ext",
  "astrolabe",
  "dircpy",
  "dirs2",

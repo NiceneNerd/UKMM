@@ -10,7 +10,7 @@ use std::{
     },
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow_ext::{bail, Context, Result};
 use botw_utils::hashes::StockHashTable;
 use dashmap::DashMap;
 use fs_err as fs;
@@ -188,7 +188,7 @@ impl ResourceLoader for ModReader {
             }
         }
         self.get_aoc_file_data(name).map_err(|_| {
-            anyhow::anyhow!(
+            anyhow_ext::anyhow!(
                 "Failed to read file {} (canonical path {}) from mod",
                 name.display(),
                 canon
@@ -217,7 +217,7 @@ impl ResourceLoader for ModReader {
                 return Ok(fs::read(path)?);
             }
         }
-        Err(anyhow::anyhow!(
+        Err(anyhow_ext::anyhow!(
             "Failed to read file {} (canonical path {}) from mod",
             name.display(),
             canon
@@ -291,7 +291,7 @@ impl ModReader {
             let mut reader = zip.borrow_zip().read(meta)?;
             read = reader.read(&mut buffer)?;
             if read != size {
-                anyhow::bail!("Failed to read meta file from mod {}", path.display());
+                anyhow_ext::bail!("Failed to read meta file from mod {}", path.display());
             }
             serde_yaml::from_slice(&buffer[..read]).context("Failed to parse meta file from mod")?
         };
@@ -304,7 +304,7 @@ impl ModReader {
             let mut reader = zip.borrow_zip().read(manifest)?;
             read = reader.read(&mut buffer)?;
             if read != size {
-                anyhow::bail!("Failed to read manifest file from mod")
+                anyhow_ext::bail!("Failed to read manifest file from mod")
             }
             serde_yaml::from_str::<Manifest>(std::str::from_utf8(&buffer[..read])?)
                 .context("Failed to parse manifest file")?
@@ -318,7 +318,7 @@ impl ModReader {
             let mut reader = zip.borrow_zip().read(opt_manifest)?;
             read = reader.read(&mut buffer)?;
             if read != size {
-                anyhow::bail!("Failed to read option manifest file from mod")
+                anyhow_ext::bail!("Failed to read option manifest file from mod")
             }
             let opt_manifest =
                 serde_yaml::from_str::<Manifest>(std::str::from_utf8(&buffer[..read])?)
@@ -374,7 +374,7 @@ impl ModReader {
             versions.push(data);
         }
         if versions.is_empty() {
-            anyhow::bail!(
+            anyhow_ext::bail!(
                 "Failed to find file {} (canonical path {}) from mod",
                 name.display(),
                 canon
@@ -690,7 +690,7 @@ impl ModUnpacker {
 
 /// Extract a zipped mod, decompressing the binary files, but otherwise
 /// leaving the format intact.
-pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow::Result<()> {
+pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow_ext::Result<()> {
     let mut zip = zip::ZipArchive::new(BufReader::new(fs::File::open(mod_path)?))
         .context("Failed to open mod ZIP")?;
     zip.extract(out_path)?;
@@ -706,7 +706,7 @@ pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow::Result<()> {
             }
         })
         .par_bridge()
-        .try_for_each(|f| -> anyhow::Result<()> {
+        .try_for_each(|f| -> anyhow_ext::Result<()> {
             let f = f.path();
             let data = zstd::decode_all(
                 fs::read(&f)

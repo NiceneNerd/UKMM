@@ -5,7 +5,7 @@ use std::{
     sync::{atomic::AtomicUsize, Arc, LazyLock},
 };
 
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use botw_utils::hashes::StockHashTable;
 use fs_err as fs;
 use join_str::jstr;
@@ -159,7 +159,7 @@ impl ModPacker {
         use configparser::ini::Ini;
         let mut rules = Ini::new();
         let parent = path.parent().context("No parent path???")?;
-        rules.load(&path).map_err(|e| anyhow::anyhow!(e))?;
+        rules.load(&path).map_err(|e| anyhow_ext::anyhow!(e))?;
         Ok(Meta {
             name: rules
                 .get("Definition", "name")
@@ -206,7 +206,7 @@ impl ModPacker {
             platform: match info.platform.as_str() {
                 "wiiu" => ModPlatform::Specific(Endian::Big),
                 "switch" => ModPlatform::Specific(Endian::Little),
-                _ => anyhow::bail!("Invalid platform value in info.json"),
+                _ => anyhow_ext::bail!("Invalid platform value in info.json"),
             },
             url: Default::default(),
             version: info.version,
@@ -229,7 +229,7 @@ impl ModPacker {
             log::info!("Attempting to package mod at {}", source.display());
             let source_dir = source.to_path_buf();
             if !(source_dir.exists() && source_dir.is_dir()) {
-                anyhow::bail!("Source directory does not exist: {}", source_dir.display());
+                anyhow_ext::bail!("Source directory does not exist: {}", source_dir.display());
             }
             let meta = if let Some(meta) = meta {
                 log::debug!("Using providing meta info:\n{:#?}", &meta);
@@ -242,7 +242,7 @@ impl ModPacker {
                 log::warn!("`info.json` found. If this is a BNP, conversion will not work properly!");
                 ModPacker::parse_info(info)?
             } else {
-                anyhow::bail!("No meta info provided or meta file available");
+                anyhow_ext::bail!("No meta info provided or meta file available");
             };
             let ((content_u, dlc_u), (content_nx, dlc_nx)) = (
                 platform_prefixes(Endian::Big),
@@ -253,7 +253,7 @@ impl ModPacker {
             } else if source.join(content_nx).exists() || source.join(dlc_nx).exists() {
                 Endian::Little
             } else {
-                anyhow::bail!(
+                anyhow_ext::bail!(
                     "No content or DLC folder found in source at {}",
                     source.display()
                 );
@@ -375,7 +375,7 @@ impl ModPacker {
             return Ok(());
         }
         if resource.as_binary().is_some() && self.meta.platform == ModPlatform::Universal {
-            anyhow::bail!(
+            anyhow_ext::bail!(
                 "The resource {} is not a mergeable asset. Cross-platform mods must consist only \
                  of mergeable assets. While there is no ready-made comprehensive list of \
                  mergeable assets, common unmergeable assets include models, textures, music, and \
@@ -600,7 +600,9 @@ impl ModPacker {
                 zip.write_all(serde_yaml::to_string(&self.meta)?.as_bytes())?;
                 zip.finish()?
             }
-            Err(_) => anyhow::bail!("Failed to finish writing zip, this is probably a big deal"),
+            Err(_) => {
+                anyhow_ext::bail!("Failed to finish writing zip, this is probably a big deal")
+            }
         };
         log::info!("Completed packaging mod");
         Ok(self._out_file)

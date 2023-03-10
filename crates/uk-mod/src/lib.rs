@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::Context;
+use anyhow_ext::Context;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use uk_content::{
@@ -241,7 +241,7 @@ impl std::hash::Hash for Meta {
 }
 
 impl Meta {
-    pub fn read(mod_path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn read(mod_path: impl AsRef<Path>) -> anyhow_ext::Result<Self> {
         use std::io::Read;
         let mod_path = mod_path.as_ref();
         let mut zip = zip::ZipArchive::new(std::io::BufReader::new(fs_err::File::open(mod_path)?))?;
@@ -249,7 +249,7 @@ impl Meta {
         let mut buffer = vec![0; meta.size() as usize];
         let read = meta.read(&mut buffer)?;
         if read != meta.size() as usize {
-            anyhow::bail!("Failed to read meta file")
+            anyhow_ext::bail!("Failed to read meta file")
         } else {
             Ok(serde_yaml::from_slice(&buffer).context("Failed to parse meta file")?)
         }

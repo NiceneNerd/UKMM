@@ -773,7 +773,9 @@ impl ResourceData {
             if stem == "Dummy" || data.len() < 0x10 {
                 return Ok(ResourceData::Binary(data.into()));
             }
-            if let Some(mergeable) = MergeableResource::from_binary(name, &data)? {
+            if let Some(mergeable) = MergeableResource::from_binary(name, &data)
+                .with_context(|| format!("Failed to parse resource {}", name.display()))?
+            {
                 Ok(ResourceData::Mergeable(mergeable))
             } else if is_mergeable_sarc(name, &data) {
                 Ok(ResourceData::Sarc(SarcMap::from_binary(data)?))

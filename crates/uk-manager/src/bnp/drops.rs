@@ -104,7 +104,7 @@ impl BnpConverter {
                                                             let p = table.0.iter().position(
                                                                 |(_, v)| {
                                                                     v.as_str()
-                                                                        .map(|v| v == &item_name)
+                                                                        .map(|v| v == item_name)
                                                                         .unwrap_or(false)
                                                                 },
                                                             );
@@ -139,7 +139,8 @@ impl BnpConverter {
                         self.trim_prefixes(&path),
                         pio.to_binary(),
                         path.starts_with(self.aoc),
-                    )?;
+                    )
+                    .with_context(|| format!("Failed to save drop table from diff to {path}"))?;
                     Ok(())
                 })?;
         }

@@ -20,7 +20,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use eframe::{epaint::text::TextWrapping, IconData, NativeOptions};
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
@@ -163,7 +163,7 @@ pub enum Message {
     Deselect(usize),
     DoUpdate,
     DuplicateProfile(String),
-    Error(anyhow::Error),
+    Error(anyhow_ext::Error),
     FilePickerBack,
     FilePickerSet(Option<PathBuf>),
     FilePickerUp,
@@ -234,7 +234,7 @@ pub struct App {
     focused: FocusedPane,
     logs: Vec<Entry>,
     log: LayoutJob,
-    error: Option<anyhow::Error>,
+    error: Option<anyhow_ext::Error>,
     new_profile: Option<String>,
     confirm: Option<(Message, String)>,
     busy: Cell<bool>,
@@ -597,7 +597,7 @@ impl App {
                     log::debug!("{:#?}", &mod_);
                     for (hash, (name, version)) in mod_.meta.masters.iter() {
                         if !self.mods.iter().any(|m| m.hash() == *hash) {
-                            self.do_update(Message::Error(anyhow::anyhow!(
+                            self.do_update(Message::Error(anyhow_ext::anyhow!(
                                 "Could not find required mod dependency {} (version {})",
                                 name,
                                 version
@@ -607,7 +607,7 @@ impl App {
                     if let ModPlatform::Specific(platform) = mod_.meta.platform
                         && Platform::from(platform) != self.platform()
                     {
-                        self.do_update(Message::Error(anyhow::anyhow!(
+                        self.do_update(Message::Error(anyhow_ext::anyhow!(
                             "Mod is for {}, current mode is {}",
                             platform,
                             self.platform()

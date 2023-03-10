@@ -1,22 +1,23 @@
-use anyhow::{bail, Context, Result};
-use join_str::jstr;
-use jwalk::WalkDir;
-use parking_lot::RwLock;
-use rayon::prelude::*;
-use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::BufWriter,
     path::{Path, PathBuf},
     sync::Arc,
 };
+
+use anyhow_ext::{bail, Context, Result};
+use join_str::jstr;
+use jwalk::WalkDir;
+use parking_lot::RwLock;
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 use uk_content::{canonicalize, platform_prefixes, prelude::*, resource::ResourceData};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DataTree {
     pub content_files: BTreeSet<String>,
-    pub aoc_files: BTreeSet<String>,
-    pub resources: BTreeMap<String, ResourceData>,
+    pub aoc_files:     BTreeSet<String>,
+    pub resources:     BTreeMap<String, ResourceData>,
 }
 
 impl Mergeable for DataTree {
@@ -28,13 +29,13 @@ impl Mergeable for DataTree {
                 .filter(|f| !self.content_files.contains(*f))
                 .cloned()
                 .collect(),
-            aoc_files: other
+            aoc_files:     other
                 .aoc_files
                 .iter()
                 .filter(|f| !self.aoc_files.contains(*f))
                 .cloned()
                 .collect(),
-            resources: other
+            resources:     other
                 .resources
                 .iter()
                 .filter_map(|(name, other_res)| {
@@ -88,13 +89,13 @@ impl Mergeable for DataTree {
                 .chain(diff.content_files.iter())
                 .cloned()
                 .collect(),
-            aoc_files: self
+            aoc_files:     self
                 .aoc_files
                 .iter()
                 .chain(diff.aoc_files.iter())
                 .cloned()
                 .collect(),
-            resources: self
+            resources:     self
                 .resources
                 .keys()
                 .chain(diff.resources.keys())
@@ -249,11 +250,11 @@ impl DataTreeBuilder {
                 .map(|content| self.collect_resources(self.root.join(content)))
                 .transpose()?
                 .unwrap_or_default(),
-            aoc_files: aoc
+            aoc_files:     aoc
                 .map(|aoc| self.collect_resources(self.root.join(aoc)))
                 .transpose()?
                 .unwrap_or_default(),
-            resources: self.resources,
+            resources:     self.resources,
         })
     }
 }

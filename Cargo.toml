@@ -8,6 +8,7 @@ license = "GPL-3.0-or-later"
 
 [dependencies]
 anyhow = { workspace = true }
+anyhow_ext = { workspace = true }
 dircpy = { workspace = true }
 dirs2 = { workspace = true }
 eframe = { workspace = true, features = ["glow"] }
@@ -62,6 +63,7 @@ members = [
 
 [workspace.dependencies]
 anyhow = "1"
+anyhow_ext = "0.2.1"
 dashmap = "5.4"
 dircpy = "0.3.12"
 dirs2 = "3"

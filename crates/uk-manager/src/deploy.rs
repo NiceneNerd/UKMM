@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Weak},
 };
 
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use dashmap::DashMap;
 use fs_err as fs;
 use join_str::jstr;
@@ -80,7 +80,7 @@ impl Manager {
     ) -> Result<Self> {
         log::info!("Initializing deployment manager");
         let pending = match fs::read_to_string(Self::log_path(&settings.read()))
-            .map_err(anyhow::Error::from)
+            .map_err(anyhow_ext::Error::from)
             .and_then(|text| Ok(serde_yaml::from_str::<PendingLog>(&text)?))
         {
             Ok(log) => {
@@ -232,7 +232,7 @@ impl Manager {
             }
         } else {
             if is_symlink(&config.output) {
-                anyhow::bail!(
+                anyhow_ext::bail!(
                     "Deployment folder is currently a symlink or junction, but the current \
                      deployment method is not symlinking. Please manually remove the existing \
                      link at {} to prevent unexpected results.",

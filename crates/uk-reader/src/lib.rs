@@ -9,7 +9,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::Context;
+use anyhow_ext::Context;
 use dashmap::DashMap;
 use include_flate::flate;
 use join_str::jstr;
@@ -42,7 +42,7 @@ pub enum ROMError {
     #[error("{0}")]
     OtherMessage(&'static str),
     #[error(transparent)]
-    Any(#[from] anyhow::Error),
+    Any(#[from] anyhow_ext::Error),
 }
 
 impl From<ROMError> for uk_content::UKError {
@@ -238,7 +238,7 @@ impl ResourceReader {
             .sarc_cache
             .try_get_with(
                 canonicalize(parts[0]),
-                || -> anyhow::Result<Arc<Sarc<'static>>> {
+                || -> anyhow_ext::Result<Arc<Sarc<'static>>> {
                     let sarc = self.source().get_data(parts[0].as_ref())?;
                     Ok(Arc::new(Sarc::new(sarc)?))
                 },
@@ -317,7 +317,8 @@ impl ResourceReader {
                         res
                     }
                     BinType::MiniCbor => {
-                        minicbor_ser::from_slice(data.as_slice()).map_err(anyhow::Error::from)?
+                        minicbor_ser::from_slice(data.as_slice())
+                            .map_err(anyhow_ext::Error::from)?
                     }
                 };
                 Ok(Arc::new(resource))

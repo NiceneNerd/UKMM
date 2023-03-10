@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use uk_manager::{core, mods::LookupMod, settings::Platform};
 use uk_mod::{unpack::ModReader, Manifest};
 
@@ -125,7 +125,7 @@ impl Runner {
                         )
                     }
                     Err(e2) => {
-                        anyhow::bail!(
+                        anyhow_ext::bail!(
                             "Could not open mod. Error when attempting to open as UKMM mod: {}. \
                              Error when attempting to open as legacy mod: {}.",
                             e,
@@ -136,7 +136,7 @@ impl Runner {
             }
         };
         if !mod_.meta.options.is_empty() {
-            // anyhow::bail!(
+            // anyhow_ext::bail!(
             //     "This mod contains configuration options and should be installed via the GUI."
             // );
         }

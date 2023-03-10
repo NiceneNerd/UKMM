@@ -16,7 +16,7 @@ mod cli;
 mod gui;
 mod logger;
 
-use anyhow::Result;
+use anyhow_ext::Result;
 use cli::Ukmm;
 
 fn main() -> Result<()> {
@@ -42,7 +42,8 @@ fn main() -> Result<()> {
                 if let Some(file) = logger::LOGGER.log_path() {
                     logger::LOGGER.save_log();
                     println!(
-                        "More information may be available in the log file at {}. You can run with the --debug flag for additional detail.",
+                        "More information may be available in the log file at {}. You can run \
+                         with the --debug flag for additional detail.",
                         file.display()
                     );
                 }

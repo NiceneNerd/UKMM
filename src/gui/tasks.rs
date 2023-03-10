@@ -59,7 +59,7 @@ fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
                     .into_iter()
                     .any(|root| n.starts_with(root))
                 });
-                let has_meta = zip.file_names().any(|n| n == "rules.txt");
+                let has_meta = zip.file_names().any(|n| n.ends_with("rules.txt"));
                 (is_a_mod, has_meta)
             }
             Err(_) => (false, false),

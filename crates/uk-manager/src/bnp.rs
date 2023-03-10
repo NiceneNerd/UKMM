@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use dashmap::DashSet;
 use fs_err as fs;
 use parking_lot::RwLock;
@@ -65,7 +65,7 @@ pub fn parse_aamp_diff(header_name: &str, pio: &ParameterIO) -> Result<AampDiffM
             |mut acc, file| -> Result<FxHashMap<String, AampDiffEntry>> {
                 let parts = file.split("//").collect::<Vec<_>>();
                 if parts.is_empty() {
-                    anyhow::bail!("Why are there no diff path parts?");
+                    anyhow_ext::bail!("Why are there no diff path parts?");
                 }
                 let root_path = parts[0];
                 let root = acc
@@ -187,13 +187,17 @@ impl BnpConverter {
 
         let base_sarc = self.dump.get_bytes_uncached(root_path);
         if !dest_path.exists() {
-            let base_sarc = base_sarc?;
+            let base_sarc = base_sarc
+                .with_context(|| format!("Failed to get base game SARC at {root_path}"))?;
             dest_path.parent().map(fs::create_dir_all).transpose()?;
             fs::write(dest_path, &base_sarc)?;
-            Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc)?))
+            Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc).with_context(
+                || format!("Failed to parse SARC {root_path} from dump"),
+            )?))
         } else {
             self.packs.remove(dest_path);
-            let stripped = Sarc::new(fs::read(dest_path)?)?;
+            let stripped = Sarc::new(fs::read(dest_path)?)
+                .with_context(|| format!("Failed to parse SARC in mod at {root_path}"))?;
             let mut sarc = SarcWriter::from_sarc(&stripped);
             let parent_packs = self.parent_packs.read();
             if let Some(parent_sarc) = parent_packs
@@ -205,7 +209,7 @@ impl BnpConverter {
                 inflate_sarc(&mut sarc, &stripped, parent_sarc);
             }
             if let Ok(base_sarc) =
-                base_sarc.and_then(|data| Ok(Sarc::new(data).map_err(anyhow::Error::from)?))
+                base_sarc.and_then(|data| Ok(Sarc::new(data).map_err(anyhow_ext::Error::from)?))
             {
                 inflate_sarc(&mut sarc, &stripped, base_sarc);
             }
@@ -216,7 +220,7 @@ impl BnpConverter {
     fn inject_into_sarc(&self, nest_path: &str, data: Vec<u8>, dlc: bool) -> Result<()> {
         let parts = nest_path.split("//").collect::<Vec<_>>();
         if parts.len() < 2 {
-            anyhow::bail!("Bad nested path: {}", nest_path);
+            anyhow_ext::bail!("Bad nested path: {}", nest_path);
         }
         let base_path = self
             .current_root

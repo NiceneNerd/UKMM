@@ -4,12 +4,12 @@ use std::{
 };
 
 #[cfg(windows)]
-use anyhow::Context;
+use anyhow_ext::Context;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 pub use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
-pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
-    fn inner(dir: &Path) -> anyhow::Result<()> {
+pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
+    fn inner(dir: &Path) -> anyhow_ext::Result<()> {
         #[cfg(windows)]
         remove_dir_all::remove_dir_all(dir).with_context(|| dir.to_string_lossy().to_string())?;
         #[cfg(not(windows))]
@@ -50,7 +50,7 @@ pub fn clear_temp() {
 
 pub static USE_SZ: AtomicBool = AtomicBool::new(true);
 
-pub fn extract_7z(file: &Path, folder: &Path) -> anyhow::Result<()> {
+pub fn extract_7z(file: &Path, folder: &Path) -> anyhow_ext::Result<()> {
     static SZ_EXISTS: LazyLock<bool> = LazyLock::new(|| {
         match std::process::Command::new("7z")
             .stdout(std::process::Stdio::null())
@@ -74,7 +74,7 @@ pub fn extract_7z(file: &Path, folder: &Path) -> anyhow::Result<()> {
             .arg(format!("-o{}", folder.display()))
             .output()?;
         if !output.stderr.is_empty() {
-            anyhow::bail!("{}", std::string::String::from_utf8_lossy(&output.stderr))
+            anyhow_ext::bail!("{}", std::string::String::from_utf8_lossy(&output.stderr))
         } else {
             Ok(())
         }
