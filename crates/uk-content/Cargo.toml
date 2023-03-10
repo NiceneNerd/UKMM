@@ -4,26 +4,27 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1"
-indexmap = "1.9"
+anyhow = { workspace = true }
+indexmap = { workspace = true }
+join_str = { workspace = true }
+minicbor-ser = { workspace = true }
+roead = { workspace = true, features = ["with-serde"] }
+rustc-hash = { workspace = true }
+rstb = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+smartstring = { workspace = true, features = ["serde"] }
+thiserror = { workspace = true }
+zstd = { workspace = true }
+
 itertools = "0.10.3"
-join_str = "0.1.0"
 lexical = "6.1.1"
 lexical-core = "0.8.5"
 mimalloc = { version = "0.1.30", default-features = false }
-minicbor-ser = "0.2.0"
 msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }
-thiserror = "1.0.30"
-rstb = "0.6.0"
-roead = { version = "0.20.2", features = ["with-serde"] }
-rustc-hash = "1.1.0"
-serde = { version = "1.0.136", features = ["derive"] }
-serde_json = "1.0.82"
-smartstring = { version = "1", features = ["serde"] }
 uk-content-derive = { path = "../uk-content-derive" }
 uk-ui = { path = "../uk-ui", optional = true }
 uk-ui-derive = { path = "../uk-ui-derive", optional = true }
-zstd = "0.11.2"
 
 [features]
 ui = ["uk-ui", "uk-ui-derive", "roead/yaml"]

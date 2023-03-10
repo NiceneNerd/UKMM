@@ -4,6 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+indexmap = { workspace = true }
+rfd = { workspace = true }
+roead = { workspace = true, features = ["with-serde", "yaml"] }
+rustc-hash = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+smartstring = { workspace = true }
+
 color-hex = "0.2.0"
 catppuccin-egui = { git = "https://github.com/NiceneNerd/egui-catppuccin" }
 egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-features = false, features = ["color-hex", "persistence"] }
@@ -11,16 +19,9 @@ egui_dock = { git = "https://github.com/NiceneNerd/egui_dock" }
 egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
 font-loader = "0.11.0"
 hex = "0.4.3"
-indexmap = "1.9"
 msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }
 once_cell = "1.13.1"
-rfd = "0.11.1"
-roead = { version = "0.20.2", features = ["with-serde", "yaml"] }
-rustc-hash = "1.1.0"
-serde = { version = "1", features = ["derive", "rc"] }
-serde_yaml = "0.9.13"
-smartstring = "1"
 syntect = { version = "5", default-features = false, features = ["yaml-load", "regex-fancy", "default-themes", "dump-load", "default-syntaxes"] }
 
 [dev-dependencies]
-eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe" }
+eframe = { workspace = true }

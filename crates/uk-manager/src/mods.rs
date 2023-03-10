@@ -1,5 +1,4 @@
 use std::{
-    borrow::Borrow,
     hash::{Hash, Hasher},
     io::BufReader,
     ops::Deref,
@@ -9,7 +8,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use dashmap::{
-    mapref::one::{MappedRef, Ref},
+    mapref::one::MappedRef,
     DashMap,
 };
 use fs_err as fs;

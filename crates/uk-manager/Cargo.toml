@@ -5,34 +5,34 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1"
-base64 = "0.13.0"
-dashmap = { version = "5.4", features = ["rayon"] }
-dircpy = "0.3.12"
-dirs2 = "3"
-fs-err = "2.9"
-jwalk = "0.8.1"
-join_str = "0.1.0"
-log = "0.4.17"
-parking_lot = { version = "0.12.1", features = ["serde"] }
-path-slash = "0.2.1"
-rayon = "1.6"
-roead = { version = "0.20.2", features = ["yaml"] }
-rustc-hash = "1.1.0"
-rstb = { version= "0.6.0", features = ["botw-data"] }
-sanitise-file-name = "1.0.0"
-serde = { version = "1", features = ["derive", "rc"] }
-serde_json = "1"
+anyhow = { workspace = true }
+dashmap = { workspace = true, features = ["rayon"] }
+dircpy = { workspace = true }
+dirs2 = { workspace = true }
+fs-err = { workspace = true }
+join_str = { workspace = true }
+jwalk = { workspace = true }
+log = { workspace = true }
+parking_lot = { workspace = true, features = ["serde"] }
+path-slash = { workspace = true }
+rayon = { workspace = true }
+roead = { workspace = true, features = ["yaml"] }
+rstb = { workspace = true, features = ["botw-data"] }
+rustc-hash = { workspace = true }
+sanitise-file-name = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+smartstring = { workspace = true, features = ["serde"] }
+zip = { workspace = true, default-features = false, features = ["deflate"] }
+
 serde_with = "2.2"
-serde_yaml = "0.9.10"
 sevenz-rust = "0.2.4"
-smartstring = { version = "1", features = ["serde"] }
 split-iter = "0.1.0"
 tempfile = "3.3"
 uk-content = { path = "../uk-content" }
 uk-mod = { path = "../uk-mod" }
 uk-reader = { path = "../uk-reader" }
-zip = { version = "0.6.2", default-features = false, features = ["deflate"]}
 
 [target.'cfg(windows)'.dependencies]
 junction = { git = "https://github.com/NiceneNerd/junction" }
