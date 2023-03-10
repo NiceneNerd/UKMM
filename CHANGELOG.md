@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2023-03-10
+
 ### Added
 
 - Added meta autofill when packaging source contains meta file
 - Added setting to control system 7z
+- Added macOS release
 
 ### Changed
 
