@@ -215,7 +215,10 @@ impl Resource for ModelList {
     }
 
     fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
-        path.as_ref().extension().and_then(|ext| ext.to_str()) == Some("bmodellist")
+        path.as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .contains(&"bmodellist")
     }
 }
 

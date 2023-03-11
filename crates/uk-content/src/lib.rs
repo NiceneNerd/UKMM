@@ -1,10 +1,11 @@
 #![feature(
     type_alias_impl_trait,
-    drain_filter,
-    arbitrary_self_types,
+    // drain_filter,
+    // arbitrary_self_types,
     let_chains,
-    negative_impls,
-    min_specialization
+    // negative_impls,
+    // min_specialization,
+    option_result_contains
 )]
 #![allow(clippy::derive_partial_eq_without_eq)]
 use mimalloc::MiMalloc;

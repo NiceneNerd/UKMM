@@ -211,7 +211,10 @@ impl Resource for RagdollBlendWeight {
     }
 
     fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
-        path.as_ref().extension().and_then(|ext| ext.to_str()) == Some("brgbw")
+        path.as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .contains(&"brgbw")
     }
 }
 #[cfg(feature = "ui")]

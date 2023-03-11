@@ -266,7 +266,10 @@ impl Resource for ShopData {
     }
 
     fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
-        path.as_ref().extension().and_then(|ext| ext.to_str()) == Some("bshop")
+        path.as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .contains(&"bshop")
     }
 }
 

@@ -46,7 +46,10 @@ impl Resource for Lod {
     }
 
     fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
-        path.as_ref().extension().and_then(|ext| ext.to_str()) == Some("blod")
+        path.as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .contains(&"blod")
     }
 }
 

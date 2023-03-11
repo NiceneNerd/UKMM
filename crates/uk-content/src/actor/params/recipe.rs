@@ -184,7 +184,10 @@ impl Resource for Recipe {
     }
 
     fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
-        path.as_ref().extension().and_then(|ext| ext.to_str()) == Some("brecipe")
+        path.as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .contains(&"brecipe")
     }
 }
 

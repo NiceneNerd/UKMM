@@ -4,7 +4,6 @@
 )]
 #![allow(stable_features)]
 #![feature(
-    const_result_drop,
     let_else,
     let_chains,
     option_get_or_insert_default,
