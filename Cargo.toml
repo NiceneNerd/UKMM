@@ -2,7 +2,7 @@
 name = "ukmm"
 description = "A new mod manager for The Legend of Zelda: Breath of the Wild. Successor to BCML."
 authors = ["Caleb Smith <c.smith@tuta.io>"]
-version = "0.6.0"
+version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-or-later"
 

@@ -849,12 +849,16 @@ impl App {
                 }
                 Message::DoUpdate => {
                     let version = self.new_version.take().unwrap();
+                    self.changelog = None;
                     self.do_task(move |_| {
                         tasks::do_update(version)
                     });
                 }
                 Message::Restart => {
-                    let exe = std::env::current_exe().unwrap();
+                    let mut exe = std::env::current_exe().unwrap();
+                    if exe.extension().and_then(|x| x.to_str()).contains(&"bak") {
+                        exe.set_extension("");
+                    }
                     let mut command = std::process::Command::new(exe);
                     #[cfg(unix)]
                     {

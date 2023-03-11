@@ -512,8 +512,10 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
     if cfg!(windows) {
         let mut arc = zip::ZipArchive::new(fs::File::open(tmpfile.as_path())?)?;
         arc.extract(tmpfile.parent().context("Weird, no temp file parent")?)?;
+        fs::rename(&exe, exe.with_extension("bak"))?;
         fs::copy(tmpfile.with_file_name("ukmm.exe"), exe)?;
     } else {
+        fs::rename(&exe, exe.with_extension("bak"))?;
         let out = std::process::Command::new("tar")
             .arg("xf")
             .arg(tmpfile.as_path())
