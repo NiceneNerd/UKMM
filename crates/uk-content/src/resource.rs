@@ -26,6 +26,7 @@ pub use crate::{
     demo::Demo,
     eco::{areadata::AreaData, level::LevelSensor, status::StatusEffectList},
     event::{info::EventInfo, residents::ResidentEvents},
+    font::FontArchive,
     layout::LayoutArchive,
     map::{lazy::LazyTraverseList, mainfield::location::Location, static_::Static, unit::MapUnit},
     message::MessagePack,
@@ -61,6 +62,7 @@ pub enum MergeableResource {
     Demo(Box<Demo>),
     DropTable(Box<DropTable>),
     EventInfo(Box<EventInfo>),
+    FontArchive(Box<FontArchive>),
     GameDataPack(Box<GameDataPack>),
     GeneralParamList(Box<GeneralParamList>),
     LayoutArchive(Box<LayoutArchive>),
@@ -116,6 +118,7 @@ impl std::fmt::Display for MergeableResource {
             Self::Demo(_) => "Demo",
             Self::DropTable(_) => "DropTable",
             Self::EventInfo(_) => "EventInfo",
+            Self::FontArchive(_) => "FontArchive",
             Self::GameDataPack(_) => "GameDataPack",
             Self::GeneralParamList(_) => "GeneralParamList",
             Self::LazyTraverseList(_) => "LazyTraverseList",
@@ -209,6 +212,7 @@ impl_from_res!(DamageParam);
 impl_from_res!(Demo);
 impl_from_res!(DropTable);
 impl_from_res!(EventInfo);
+impl_from_res!(FontArchive);
 impl_from_res!(GameDataPack);
 impl_from_res!(GeneralParamList);
 impl_from_res!(LazyTraverseList);
@@ -267,6 +271,7 @@ impl Mergeable for MergeableResource {
             (Self::Demo(a), Self::Demo(b)) => Self::Demo(Box::new(a.diff(b))),
             (Self::DropTable(a), Self::DropTable(b)) => Self::DropTable(Box::new(a.diff(b))),
             (Self::EventInfo(a), Self::EventInfo(b)) => Self::EventInfo(Box::new(a.diff(b))),
+            (Self::FontArchive(a), Self::FontArchive(b)) => Self::FontArchive(Box::new(a.diff(b))),
             (Self::GameDataPack(a), Self::GameDataPack(b)) => {
                 Self::GameDataPack(Box::new(a.diff(b)))
             }
@@ -362,6 +367,7 @@ impl Mergeable for MergeableResource {
             (Self::Demo(a), Self::Demo(b)) => Self::Demo(Box::new(a.merge(b))),
             (Self::DropTable(a), Self::DropTable(b)) => Self::DropTable(Box::new(a.merge(b))),
             (Self::EventInfo(a), Self::EventInfo(b)) => Self::EventInfo(Box::new(a.merge(b))),
+            (Self::FontArchive(a), Self::FontArchive(b)) => Self::FontArchive(Box::new(a.merge(b))),
             (Self::GameDataPack(a), Self::GameDataPack(b)) => {
                 Self::GameDataPack(Box::new(a.merge(b)))
             }
@@ -506,6 +512,10 @@ impl MergeableResource {
             Ok(Some(Self::EventInfo(Box::new(EventInfo::from_binary(
                 data,
             )?))))
+        } else if FontArchive::path_matches(name) {
+            Ok(Some(Self::FontArchive(Box::new(FontArchive::from_binary(
+                data,
+            )?))))
         } else if GameDataPack::path_matches(name) {
             Ok(Some(Self::GameDataPack(Box::new(
                 GameDataPack::from_binary(data)?,
@@ -636,6 +646,7 @@ impl MergeableResource {
             Self::Demo(v) => v.into_binary(endian),
             Self::DropTable(v) => v.into_binary(endian),
             Self::EventInfo(v) => v.into_binary(endian),
+            Self::FontArchive(v) => v.into_binary(endian),
             Self::GameDataPack(v) => v.into_binary(endian),
             Self::GeneralParamList(v) => v.into_binary(endian),
             Self::LayoutArchive(v) => v.into_binary(endian),
@@ -736,7 +747,7 @@ impl From<Vec<u8>> for ResourceData {
     }
 }
 
-pub const EXCLUDE_EXTS: &[&str] = &["bfarc", "genvb", "sarc", "arc"];
+pub const EXCLUDE_EXTS: &[&str] = &["genvb", "sarc", "arc"];
 pub const EXCLUDE_NAMES: &[&str] = &["tera_resource.Nin_NX_NVN", "tera_resource.Cafe_Cafe_GX2"];
 
 pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool {

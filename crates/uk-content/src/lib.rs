@@ -1,12 +1,4 @@
-#![feature(
-    type_alias_impl_trait,
-    // drain_filter,
-    // arbitrary_self_types,
-    let_chains,
-    // negative_impls,
-    // min_specialization,
-    option_result_contains
-)]
+#![feature(type_alias_impl_trait, let_chains, option_result_contains)]
 #![allow(clippy::derive_partial_eq_without_eq)]
 use mimalloc::MiMalloc;
 
@@ -25,6 +17,7 @@ pub mod data;
 pub mod demo;
 pub mod eco;
 pub mod event;
+pub mod font;
 pub mod layout;
 pub mod map;
 pub mod message;

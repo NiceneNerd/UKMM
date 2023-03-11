@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Breaking Change**: Make BFARC files mergeable. All mods which edit UI game
+  fonts will need to be reinstalled.
+
+### Fixed
+
+- Fixed updater
+
 ## [0.6.0] - 2023-03-10
 
 ### Added
