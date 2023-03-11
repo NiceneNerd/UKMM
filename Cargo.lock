@@ -2361,6 +2361,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "lighter"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a59ce94dd95c6363bfe7fde22951e2a97c53d0164373ae4c8996028c91f3ac5"
+dependencies = [
+ "lighter-derive",
+]
+
+[[package]]
+name = "lighter-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38ce0407b25ce2ba0e9ff4ec2cf60c2b499da0658fe6b6745fb85dfbb56fae12"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2 1.0.51",
+ "quote 1.0.23",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "link-cplusplus"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4357,6 +4378,7 @@ dependencies = [
  "join_str",
  "lexical",
  "lexical-core",
+ "lighter",
  "mimalloc",
  "minicbor-ser",
  "msyt",

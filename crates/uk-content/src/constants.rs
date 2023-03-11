@@ -1,6 +1,7 @@
 use std::{fmt, path::Path, str::FromStr};
 
 use join_str::jstr;
+use lighter::lighter;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
@@ -101,23 +102,26 @@ impl Language {
 impl FromStr for Language {
     type Err = UKError;
 
+    #[allow(clippy::needless_borrow)]
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s {
-            "USen" => Ok(Language::USen),
-            "EUen" => Ok(Language::EUen),
-            "USfr" => Ok(Language::USfr),
-            "USes" => Ok(Language::USes),
-            "EUde" => Ok(Language::EUde),
-            "EUes" => Ok(Language::EUes),
-            "EUfr" => Ok(Language::EUfr),
-            "EUit" => Ok(Language::EUit),
-            "EUnl" => Ok(Language::EUnl),
-            "EUru" => Ok(Language::EUru),
-            "CNzh" => Ok(Language::CNzh),
-            "JPja" => Ok(Language::JPja),
-            "KRko" => Ok(Language::KRko),
-            "TWzh" => Ok(Language::TWzh),
-            _ => Err(UKError::OtherD(jstr!("Invalid language: {s}"))),
+        lighter! {
+            match s {
+                "USen" => Ok(Language::USen),
+                "EUen" => Ok(Language::EUen),
+                "USfr" => Ok(Language::USfr),
+                "USes" => Ok(Language::USes),
+                "EUde" => Ok(Language::EUde),
+                "EUes" => Ok(Language::EUes),
+                "EUfr" => Ok(Language::EUfr),
+                "EUit" => Ok(Language::EUit),
+                "EUnl" => Ok(Language::EUnl),
+                "EUru" => Ok(Language::EUru),
+                "CNzh" => Ok(Language::CNzh),
+                "JPja" => Ok(Language::JPja),
+                "KRko" => Ok(Language::KRko),
+                "TWzh" => Ok(Language::TWzh),
+                _ => Err(UKError::OtherD(jstr!("Invalid language: {s}"))),
+            }
         }
     }
 }
@@ -161,18 +165,21 @@ pub enum Weather {
 impl TryFrom<&str> for Weather {
     type Error = UKError;
 
+    #[allow(clippy::needless_borrow)]
     fn try_from(val: &str) -> Result<Weather, UKError> {
-        match val {
-            "Bluesky" => Ok(Weather::Bluesky),
-            "Cloudy" => Ok(Weather::Cloudy),
-            "Rain" => Ok(Weather::Rain),
-            "HeavyRain" => Ok(Weather::HeavyRain),
-            "Snow" => Ok(Weather::Snow),
-            "HeavySnow" => Ok(Weather::HeavySnow),
-            "ThunderStorm" => Ok(Weather::ThunderStorm),
-            "ThunderRain" => Ok(Weather::ThunderRain),
-            "BlueskyRain" => Ok(Weather::BlueskyRain),
-            _ => Err(UKError::InvalidWeatherOrTime(val.into())),
+        lighter! {
+            match val {
+                "Bluesky" => Ok(Weather::Bluesky),
+                "Cloudy" => Ok(Weather::Cloudy),
+                "Rain" => Ok(Weather::Rain),
+                "HeavyRain" => Ok(Weather::HeavyRain),
+                "Snow" => Ok(Weather::Snow),
+                "HeavySnow" => Ok(Weather::HeavySnow),
+                "ThunderStorm" => Ok(Weather::ThunderStorm),
+                "ThunderRain" => Ok(Weather::ThunderRain),
+                "BlueskyRain" => Ok(Weather::BlueskyRain),
+                _ => Err(UKError::InvalidWeatherOrTime(val.into())),
+            }
         }
     }
 }
@@ -246,19 +253,22 @@ impl Default for Time {
 impl TryFrom<&str> for Time {
     type Error = UKError;
 
+    #[allow(clippy::needless_borrow)]
     fn try_from(val: &str) -> Result<Time, UKError> {
-        match val {
-            "Morning_A" => Ok(Time::Morning_A),
-            "Morning_B" => Ok(Time::Morning_B),
-            "Noon_A" => Ok(Time::Noon_A),
-            "Noon_B" => Ok(Time::Noon_B),
-            "Evening_A" => Ok(Time::Evening_A),
-            "Evening_B" => Ok(Time::Evening_B),
-            "Night_A" => Ok(Time::Night_A),
-            "Night_B" => Ok(Time::Night_B),
-            "Morning_A1" => Ok(Time::Morning_A1),
-            "Morning_A2" => Ok(Time::Morning_A2),
-            _ => Err(UKError::InvalidWeatherOrTime(val.into())),
+        lighter! {
+            match val {
+                "Morning_A" => Ok(Time::Morning_A),
+                "Morning_B" => Ok(Time::Morning_B),
+                "Noon_A" => Ok(Time::Noon_A),
+                "Noon_B" => Ok(Time::Noon_B),
+                "Evening_A" => Ok(Time::Evening_A),
+                "Evening_B" => Ok(Time::Evening_B),
+                "Night_A" => Ok(Time::Night_A),
+                "Night_B" => Ok(Time::Night_B),
+                "Morning_A1" => Ok(Time::Morning_A1),
+                "Morning_A2" => Ok(Time::Morning_A2),
+                _ => Err(UKError::InvalidWeatherOrTime(val.into())),
+            }
         }
     }
 }

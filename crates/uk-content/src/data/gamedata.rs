@@ -2,6 +2,7 @@ use std::hint::unreachable_unchecked;
 
 use anyhow::Context;
 use join_str::jstr;
+use lighter::lighter;
 use roead::{
     byml::Byml,
     sarc::{Sarc, SarcWriter},
@@ -164,27 +165,30 @@ pub struct GameDataPack {
 }
 
 #[inline(always)]
+#[allow(clippy::needless_borrow)]
 fn flag_alloc_count(data_type: &str) -> usize {
-    match data_type {
-        "bool_data" => 9564,
-        "f32_data" => 46,
-        "s32_data" => 2709,
-        "string32_data" => 6,
-        "string64_data" => 16,
-        "string256_data" => 3,
-        "vector2f_data" => 1,
-        "vector3f_data" => 44,
-        "vector4f_data" => 1,
-        "bool_array_data" => 5,
-        "f32_array_data" => 3,
-        "s32_array_data" => 35,
-        "string64_array_data" => 28,
-        "string256_array_data" => 4,
-        "vector2f_array_data" => 3,
-        "vector3f_array_data" => 3,
-        "revival_bool_data" => 32461,
-        "revival_s32_data" => 83,
-        _ => unsafe { unreachable_unchecked() },
+    lighter! {
+        match data_type {
+            "bool_data" => 9564,
+            "f32_data" => 46,
+            "s32_data" => 2709,
+            "string32_data" => 6,
+            "string64_data" => 16,
+            "string256_data" => 3,
+            "vector2f_data" => 1,
+            "vector3f_data" => 44,
+            "vector4f_data" => 1,
+            "bool_array_data" => 5,
+            "f32_array_data" => 3,
+            "s32_array_data" => 35,
+            "string64_array_data" => 28,
+            "string256_array_data" => 4,
+            "vector2f_array_data" => 3,
+            "vector3f_array_data" => 3,
+            "revival_bool_data" => 32461,
+            "revival_s32_data" => 83,
+            _ => unsafe { unreachable_unchecked() },
+        }
     }
 }
 

@@ -3,6 +3,7 @@ use std::{
     sync::{atomic::AtomicUsize, Arc},
 };
 
+use lighter::lighter;
 use roead::byml::Byml;
 use uk_ui::{
     editor::{EditableDisplay, EditableValue},
@@ -272,6 +273,7 @@ impl EditableValue for super::GameDataPack {
         self.edit_ui_with_id(ui, "game_data_pack")
     }
 
+    #[allow(clippy::needless_borrow)]
     fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl std::hash::Hash) -> egui::Response {
         let id = egui::Id::new(id);
         let mut changed = false;
@@ -291,42 +293,44 @@ impl EditableValue for super::GameDataPack {
                 {
                     selected.store(select, std::sync::atomic::Ordering::Relaxed);
                 }
-                changed |= match DATA_TYPES[selected.load(std::sync::atomic::Ordering::Relaxed)] {
-                    "bool_array_data" => self.bool_array_data.edit_ui_with_id(ui, id.with("inner")),
-                    "bool_data" => self.bool_data.edit_ui_with_id(ui, id.with("inner")),
-                    "f32_array_data" => self.f32_array_data.edit_ui_with_id(ui, id.with("inner")),
-                    "f32_data" => self.f32_data.edit_ui_with_id(ui, id.with("inner")),
-                    "revival_bool_data" => {
-                        self.revival_bool_data.edit_ui_with_id(ui, id.with("inner"))
+                changed |= lighter! {
+                    match DATA_TYPES[selected.load(std::sync::atomic::Ordering::Relaxed)] {
+                        "bool_array_data" => self.bool_array_data.edit_ui_with_id(ui, id.with("inner")),
+                        "bool_data" => self.bool_data.edit_ui_with_id(ui, id.with("inner")),
+                        "f32_array_data" => self.f32_array_data.edit_ui_with_id(ui, id.with("inner")),
+                        "f32_data" => self.f32_data.edit_ui_with_id(ui, id.with("inner")),
+                        "revival_bool_data" => {
+                            self.revival_bool_data.edit_ui_with_id(ui, id.with("inner"))
+                        }
+                        "revival_s32_data" => {
+                            self.revival_s32_data.edit_ui_with_id(ui, id.with("inner"))
+                        }
+                        "s32_array_data" => self.s32_array_data.edit_ui_with_id(ui, id.with("inner")),
+                        "s32_data" => self.s32_data.edit_ui_with_id(ui, id.with("inner")),
+                        "string32_data" => self.string32_data.edit_ui_with_id(ui, id.with("inner")),
+                        "string64_array_data" => {
+                            self.string64_array_data
+                                .edit_ui_with_id(ui, id.with("inner"))
+                        }
+                        "string64_data" => self.string64_data.edit_ui_with_id(ui, id.with("inner")),
+                        "string256_array_data" => {
+                            self.string256_array_data
+                                .edit_ui_with_id(ui, id.with("inner"))
+                        }
+                        "string256_data" => self.string256_data.edit_ui_with_id(ui, id.with("inner")),
+                        "vector2f_array_data" => {
+                            self.vector2f_array_data
+                                .edit_ui_with_id(ui, id.with("inner"))
+                        }
+                        "vector2f_data" => self.vector2f_data.edit_ui_with_id(ui, id.with("inner")),
+                        "vector3f_array_data" => {
+                            self.vector3f_array_data
+                                .edit_ui_with_id(ui, id.with("inner"))
+                        }
+                        "vector3f_data" => self.vector3f_data.edit_ui_with_id(ui, id.with("inner")),
+                        "vector4f_data" => self.vector4f_data.edit_ui_with_id(ui, id.with("inner")),
+                        _ => unsafe { std::hint::unreachable_unchecked() },
                     }
-                    "revival_s32_data" => {
-                        self.revival_s32_data.edit_ui_with_id(ui, id.with("inner"))
-                    }
-                    "s32_array_data" => self.s32_array_data.edit_ui_with_id(ui, id.with("inner")),
-                    "s32_data" => self.s32_data.edit_ui_with_id(ui, id.with("inner")),
-                    "string32_data" => self.string32_data.edit_ui_with_id(ui, id.with("inner")),
-                    "string64_array_data" => {
-                        self.string64_array_data
-                            .edit_ui_with_id(ui, id.with("inner"))
-                    }
-                    "string64_data" => self.string64_data.edit_ui_with_id(ui, id.with("inner")),
-                    "string256_array_data" => {
-                        self.string256_array_data
-                            .edit_ui_with_id(ui, id.with("inner"))
-                    }
-                    "string256_data" => self.string256_data.edit_ui_with_id(ui, id.with("inner")),
-                    "vector2f_array_data" => {
-                        self.vector2f_array_data
-                            .edit_ui_with_id(ui, id.with("inner"))
-                    }
-                    "vector2f_data" => self.vector2f_data.edit_ui_with_id(ui, id.with("inner")),
-                    "vector3f_array_data" => {
-                        self.vector3f_array_data
-                            .edit_ui_with_id(ui, id.with("inner"))
-                    }
-                    "vector3f_data" => self.vector3f_data.edit_ui_with_id(ui, id.with("inner")),
-                    "vector4f_data" => self.vector4f_data.edit_ui_with_id(ui, id.with("inner")),
-                    _ => unsafe { std::hint::unreachable_unchecked() },
                 }
                 .changed();
             });
