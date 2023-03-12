@@ -824,13 +824,9 @@ impl App {
                     self.busy.set(false);
                 }
                 Message::ImportCemu => {
-                    let mut dialog = rfd::FileDialog::new()
-                        .add_filter("Cemu executable", &["exe", "AppImage", "*.*", "*"])
-                        .set_title("Select Cemu Executable");
-                    if cfg!(windows) {
-                        dialog = dialog.set_file_name("Cemu.exe");
-                    }
-                    if let Some(path) = dialog.pick_file() {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_title("Select Cemu Directory").pick_folder()
+                    {
                         self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
                     }
                 }

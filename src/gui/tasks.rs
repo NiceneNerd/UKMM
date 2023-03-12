@@ -194,9 +194,13 @@ pub fn parse_meta(file: PathBuf) -> Result<Message> {
 
 #[allow(irrefutable_let_patterns)]
 pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
-    let settings_path = if let path = path.with_file_name("settings.xml") && path.exists() {
+    let settings_path = if let path = path.join("settings.xml")
+        && path.exists()
+    {
         path
-    } else if let path = dirs2::config_dir().expect("YIKES").join("Cemu/settings.xml") && path.exists() {
+    } else if let path = dirs2::config_dir().expect("YIKES").join("Cemu/settings.xml")
+        && path.exists()
+    {
         path
     } else {
         anyhow::bail!("Could not find Cemu settings file")
