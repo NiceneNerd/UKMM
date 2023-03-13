@@ -212,11 +212,11 @@ pub enum Message {
 }
 
 #[derive(Default, Serialize, Deserialize)]
-// #[serde(default)]
+#[serde(default)]
 struct UiState {
     theme: uk_ui::visuals::Theme,
     picker_state: FilePickerState,
-    // #[serde(default = "tabs::default_ui")]
+    #[serde(default = "tabs::default_ui")]
     tree: Tree<Tabs>,
 }
 

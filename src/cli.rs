@@ -136,9 +136,9 @@ impl Runner {
             }
         };
         if !mod_.meta.options.is_empty() {
-            // anyhow_ext::bail!(
-            //     "This mod contains configuration options and should be installed via the GUI."
-            // );
+            anyhow_ext::bail!(
+                "This mod contains configuration options and should be installed via the GUI."
+            );
         }
         println!(
             "Identified mod: {} (v{}) by {}",
