@@ -7,6 +7,8 @@ use anyhow_ext::{Context, Result};
 use uk_manager::{core, mods::LookupMod, settings::Platform};
 use uk_mod::{unpack::ModReader, Manifest};
 
+use crate::gui::tasks;
+
 xflags::xflags! {
     src "./src/cli.rs"
 
@@ -25,6 +27,8 @@ xflags::xflags! {
         }
         /// Uninstall a mod
         cmd uninstall {}
+        /// Refresh merge
+        cmd remerge {}
         /// Deploy mods
         cmd deploy {}
         /// Change current mode (Switch or Wii U)
@@ -49,6 +53,7 @@ pub struct Ukmm {
 pub enum UkmmCmd {
     Install(Install),
     Uninstall(Uninstall),
+    Remerge(Remerge),
     Deploy(Deploy),
     Mode(Mode),
 }
@@ -60,6 +65,9 @@ pub struct Install {
 
 #[derive(Debug)]
 pub struct Uninstall;
+
+#[derive(Debug)]
+pub struct Remerge;
 
 #[derive(Debug)]
 pub struct Deploy;
@@ -192,6 +200,13 @@ impl Runner {
                         self.deploy()?;
                     }
                     println!("Done!");
+                }
+            }
+            UkmmCmd::Remerge(_) => {
+                println!("Remerging...");
+                match tasks::apply_changes(&self.core, vec![], None) {
+                    Ok(_) => {}
+                    Err(error) => println!("Remerge Failed: {}", error),
                 }
             }
             UkmmCmd::Uninstall(_) => {
