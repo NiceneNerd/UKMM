@@ -1195,6 +1195,7 @@ version = "0.2.1"
 source = "git+https://github.com/NiceneNerd/egui_dock#0dffb443c6dcc19bc5713b5f8ad2d4b4abd44c9c"
 dependencies = [
  "egui",
+ "serde",
 ]
 
 [[package]]

@@ -15,7 +15,7 @@ use std::{
     collections::VecDeque,
     ops::DerefMut,
     path::PathBuf,
-    sync::{Arc, Once},
+    sync::Arc,
     thread,
     time::Duration,
 };
@@ -78,7 +78,7 @@ impl Entry {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Tabs {
     Info,
     Install,
@@ -211,10 +211,13 @@ pub enum Message {
     UpdateOptions(Mod),
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
+// #[serde(default)]
 struct UiState {
     theme: uk_ui::visuals::Theme,
     picker_state: FilePickerState,
+    // #[serde(default = "tabs::default_ui")]
+    tree: Tree<Tabs>,
 }
 
 pub struct App {
@@ -311,7 +314,7 @@ impl App {
             dirty: Manifest::default(),
             sort: (Sort::Priority, false),
             options_mod: None,
-            tree: Arc::new(RwLock::new(tabs::default_ui())),
+            tree: Arc::new(RwLock::new(ui_state.tree)),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
             dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
@@ -891,8 +894,6 @@ impl App {
     }
 }
 
-static LAYOUT_FIX: Once = Once::new();
-
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         self.handle_update(ctx, frame);
@@ -916,9 +917,6 @@ impl eframe::App for App {
             .show_inside(&mut ui, self);
         self.render_busy(ctx, frame);
         self.toasts.show(ctx);
-        LAYOUT_FIX.call_once(|| {
-            *self.tree.write() = tabs::default_ui();
-        });
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
@@ -928,6 +926,7 @@ impl eframe::App for App {
         let ui_state = UiState {
             theme: self.theme,
             picker_state: std::mem::take(&mut self.picker_state),
+            tree: std::mem::take(&mut self.tree.write()),
         };
         fs::write(
             self.core.settings().state_file(),
