@@ -16,46 +16,59 @@ use uk_ui::{
     PathNode,
 };
 
-use super::Message;
+use super::Component;
 
-pub fn preview(mod_: &Mod) -> Option<Arc<RetainedImage>> {
-    fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
-        let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
-        for ext in ["jpg", "jpeg", "png", "svg"] {
-            if let Ok(mut file) = zip.by_name(&format!("thumb.{}", ext)) {
-                let mut vec = vec![0; file.size() as usize];
-                file.read_exact(&mut vec)?;
-                return Ok(Some(Arc::new(
-                    RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
-                        .map_err(|e| anyhow::anyhow!("{}", e))?,
-                )));
-            }
-        }
-        Ok(None)
-    }
-    static PREVIEW: LazyLock<RwLock<FxHashMap<usize, Option<Arc<RetainedImage>>>>> =
-        LazyLock::new(|| RwLock::new(FxHashMap::default()));
-    let mut preview = PREVIEW.write();
-    preview
-        .entry(mod_.hash())
-        .or_insert_with(|| {
-            match load_preview(mod_) {
-                Ok(pre) => pre,
-                Err(e) => {
-                    log::error!("Error loading mod preview: {}", e);
-                    None
-                }
-            }
-        })
-        .clone()
+pub enum Message {
+    RequestOptions,
 }
 
-impl super::App {
-    pub fn render_mod_info(&self, mod_: &Mod, ui: &mut Ui) {
+#[repr(transparent)]
+pub struct ModInfo<'a>(pub &'a Mod);
+
+impl ModInfo<'_> {
+    pub fn preview(&self) -> Option<Arc<RetainedImage>> {
+        fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
+            let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
+            for ext in ["jpg", "jpeg", "png", "svg"] {
+                if let Ok(mut file) = zip.by_name(&format!("thumb.{}", ext)) {
+                    let mut vec = vec![0; file.size() as usize];
+                    file.read_exact(&mut vec)?;
+                    return Ok(Some(Arc::new(
+                        RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
+                            .map_err(|e| anyhow::anyhow!("{}", e))?,
+                    )));
+                }
+            }
+            Ok(None)
+        }
+        static PREVIEW: LazyLock<RwLock<FxHashMap<usize, Option<Arc<RetainedImage>>>>> =
+            LazyLock::new(|| RwLock::new(FxHashMap::default()));
+        let mut preview = PREVIEW.write();
+        preview
+            .entry(self.0.hash())
+            .or_insert_with(|| {
+                match load_preview(self.0) {
+                    Ok(pre) => pre,
+                    Err(e) => {
+                        log::error!("Error loading mod preview: {}", e);
+                        None
+                    }
+                }
+            })
+            .clone()
+    }
+}
+
+impl Component for ModInfo<'_> {
+    type Message = Message;
+
+    fn show(&self, ui: &mut Ui) -> egui::InnerResponse<Option<Self::Message>> {
+        let mut msg = None;
+        let mod_ = self.0;
         egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
             ui.spacing_mut().item_spacing.y = 8.;
             ui.add_space(8.);
-            if let Some(preview) = preview(mod_) {
+            if let Some(preview) = self.preview() {
                 preview.show_max_size(ui, ui.available_size());
                 ui.add_space(8.);
             }
@@ -100,7 +113,7 @@ impl super::App {
                     ui.add_space(8.);
                     ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                         if ui.icon_button(uk_ui::icons::Icon::Settings).clicked() {
-                            self.do_update(Message::RequestOptions(mod_.clone(), true));
+                            msg = Some(Message::RequestOptions);
                         }
                     })
                 });
@@ -125,7 +138,8 @@ impl super::App {
                 }
             }
             ui.add_space(8.0);
-        });
+            msg
+        })
     }
 }
 

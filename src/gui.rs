@@ -21,7 +21,7 @@ use std::{
 };
 
 use anyhow_ext::{Context, Result};
-use eframe::{epaint::text::TextWrapping, IconData, NativeOptions};
+use eframe::{egui::InnerResponse, epaint::text::TextWrapping, IconData, NativeOptions};
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
@@ -76,6 +76,11 @@ impl Entry {
         });
         job.append("\n", 0.0, Default::default());
     }
+}
+
+pub trait Component {
+    type Message;
+    fn show(&self, ui: &mut Ui) -> InnerResponse<Option<Self::Message>>;
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]

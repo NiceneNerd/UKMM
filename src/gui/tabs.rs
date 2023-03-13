@@ -7,7 +7,7 @@ use uk_ui::{
     visuals::Theme,
 };
 
-use super::{visuals, Tabs};
+use super::{info, visuals, Component, Tabs};
 
 pub fn default_ui() -> Tree<Tabs> {
     let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Package, Tabs::Settings]);
@@ -35,7 +35,10 @@ impl TabViewer for super::App {
         match tab {
             Tabs::Info => {
                 if let Some(mod_) = self.selected.first() {
-                    self.render_mod_info(mod_, ui);
+                    if let Some(info::Message::RequestOptions) = info::ModInfo(mod_).show(ui).inner
+                    {
+                        self.do_update(super::Message::RequestOptions(mod_.clone(), true));
+                    }
                 } else {
                     ui.centered_and_justified(|ui| {
                         ui.label("No mod selected");
