@@ -9,11 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Breaking Change**: Make BFARC files mergeable. All mods which edit UI game
-  fonts will need to be reinstalled.
+- Added drag-and-drop installation
 
 ### Changed
 
+- **Breaking Change**: Make BFARC files mergeable. All mods which edit UI game
+  fonts will need to be reinstalled.
 - Ignore invalid gamedata flags
 - Switch to folder selector for Cemu
 

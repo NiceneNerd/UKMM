@@ -378,6 +378,16 @@ impl App {
         });
     }
 
+    fn handle_drops(&mut self, ctx: &eframe::egui::Context) {
+        let files = &ctx.input().raw.dropped_files;
+        if !(self.busy.get() || self.modal_open() || files.is_empty()) {
+            let first = files.first().and_then(|f| f.path.clone()).unwrap();
+            self.install_queue
+                .extend(files.iter().skip(1).filter_map(|f| f.path.clone()));
+            self.do_task(move |core| tasks::open_mod(&core, &first, None));
+        }
+    }
+
     fn handle_update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
@@ -875,6 +885,8 @@ impl App {
                     self.busy.set(false);
                 },
             }
+        } else {
+            self.handle_drops(ctx);
         }
     }
 }
