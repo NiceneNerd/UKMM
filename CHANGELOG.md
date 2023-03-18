@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed updater
 - Fixed parsing `meta.yml` for autofill
+- Fixed CLI on Windows (closes #62)
 
 ## [0.6.0] - 2023-03-10
 
@@ -56,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- *[Breaking change]* Made BLARCs mergeable. All mods which contain
+- _[Breaking change]_ Made BLARCs mergeable. All mods which contain
   `Bootup.pack` will need to be repackaged/reinstalled.
 - Ignore zero byte when processing mods
 - Further improved mod filename sanitation
@@ -79,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added experimental BCML migration tool
 - Added log file and panic details
 
-### Changed 
+### Changed
 
 - Moved `rules.txt` setting to deployment config
 - Improved message pack processing to report the paths of problem files and
