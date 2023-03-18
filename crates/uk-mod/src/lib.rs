@@ -241,7 +241,7 @@ impl std::hash::Hash for Meta {
 }
 
 impl Meta {
-    pub fn read(mod_path: impl AsRef<Path>) -> anyhow_ext::Result<Self> {
+    pub fn from_mod(mod_path: impl AsRef<Path>) -> anyhow_ext::Result<Self> {
         use std::io::Read;
         let mod_path = mod_path.as_ref();
         let mut zip = zip::ZipArchive::new(std::io::BufReader::new(fs_err::File::open(mod_path)?))?;
@@ -254,6 +254,13 @@ impl Meta {
             Ok(serde_yaml::from_slice(&buffer).context("Failed to parse meta file")?)
         }
     }
+
+    #[inline(always)]
+    pub fn parse(file: impl AsRef<Path>) -> anyhow_ext::Result<Self> {
+        fs_err::read_to_string(file.as_ref())
+            .context("Failed to read meta file")
+            .and_then(|s| serde_yaml::from_str(&s).context("Failed to parse meta file"))
+    }
 }
 
 #[cfg(test)]
@@ -262,7 +269,7 @@ mod tests {
 
     #[test]
     fn read_meta() {
-        dbg!(Meta::read("test/wiiu.zip").unwrap());
+        dbg!(Meta::from_mod("test/wiiu.zip").unwrap());
     }
 
     #[test]

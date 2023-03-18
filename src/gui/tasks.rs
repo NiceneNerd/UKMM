@@ -185,7 +185,7 @@ pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message>
 pub fn parse_meta(file: PathBuf) -> Result<Message> {
     match file.extension().and_then(|x| x.to_str()).unwrap() {
         "txt" => ModPacker::parse_rules(file),
-        "yml" => Meta::read(file),
+        "yml" => Meta::parse(file),
         "json" => ModPacker::parse_info(file),
         _ => unreachable!(),
     }

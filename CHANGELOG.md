@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed updater
+- Fixed parsing `meta.yml` for autofill
 
 ## [0.6.0] - 2023-03-10
 
