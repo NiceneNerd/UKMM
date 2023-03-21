@@ -143,7 +143,7 @@ impl log::Log for Logger {
                 self.inner.log(record);
             }
         }
-        if self.record.lock().len() > 25 {
+        if self.record.lock().len() > 30 {
             self.save_log();
         }
     }
