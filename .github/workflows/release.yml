@@ -36,9 +36,9 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: nightly-2023-02-28
       - name: Build
-        run: cargo +nightly build --release
+        run: cargo +nightly-2023-02-28 build --release
         env:
           UPDATE_PLATFORM: ${{ matrix.platform.name }}
       - name: UPX compress binary
