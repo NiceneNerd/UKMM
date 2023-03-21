@@ -8,7 +8,7 @@ mod picker;
 mod profiles;
 mod settings;
 mod tabs;
-mod tasks;
+pub(crate) mod tasks;
 mod util;
 use std::{
     cell::{Cell, RefCell},
