@@ -43,7 +43,7 @@ jobs:
     - name: Install latest nightly
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly
+        toolchain: nightly-2023-02-28
     - name: Build
       run: cargo +nightly build --verbose --release
     - name: Run `uk-content` tests
