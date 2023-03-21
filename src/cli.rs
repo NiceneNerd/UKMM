@@ -204,10 +204,8 @@ impl Runner {
             }
             UkmmCmd::Remerge(_) => {
                 println!("Remerging...");
-                match tasks::apply_changes(&self.core, vec![], None) {
-                    Ok(_) => {}
-                    Err(error) => println!("Remerge Failed: {}", error),
-                }
+                tasks::apply_changes(&self.core, vec![], None)?;
+                println!("Done!");
             }
             UkmmCmd::Uninstall(_) => {
                 println!("Installed mods:");
