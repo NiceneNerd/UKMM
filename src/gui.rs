@@ -216,13 +216,23 @@ pub enum Message {
     UpdateOptions(Mod),
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
 struct UiState {
     theme: uk_ui::visuals::Theme,
     picker_state: FilePickerState,
     #[serde(default = "tabs::default_ui")]
     tree: Tree<Tabs>,
+}
+
+impl Default for UiState {
+    fn default() -> Self {
+        Self {
+            theme: uk_ui::visuals::Theme::Sheikah,
+            picker_state: FilePickerState::default(),
+            tree: tabs::default_ui(),
+        }
+    }
 }
 
 pub struct App {
