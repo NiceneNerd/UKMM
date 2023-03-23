@@ -374,7 +374,8 @@ impl Manager {
             }
         }
         let reader = ModReader::open_peek(&stored_path, vec![])?;
-        let mod_ = Mod::from_reader(reader);
+        let mut mod_ = Mod::from_reader(reader);
+        mod_.enabled = true;
         let profile_data = self.get_profile(profile);
         profile_data.load_order_mut().push(mod_.hash);
         profile_data.mods_mut().insert(mod_.hash, mod_.clone());
