@@ -348,7 +348,7 @@ impl Manager {
             ..Default::default()
         };
         let sanitized = sfn::sanitise_with_options(&mod_name, &san_opts);
-        let mut stored_path = self
+        let stored_path = self
             .settings
             .upgrade()
             .unwrap()
@@ -360,14 +360,7 @@ impl Manager {
         } else {
             stored_path.parent().map(fs::create_dir_all).transpose()?;
             if mod_path.is_file() {
-                if self.settings.upgrade().unwrap().read().unpack_mods {
-                    stored_path.set_extension("");
-                    uk_mod::unpack::unzip_mod(mod_path, &stored_path)
-                        .context("Failed to unpack mod to storage folder")?;
-                } else {
-                    fs::copy(mod_path, &stored_path)
-                        .context("Failed to copy mod to storage folder")?;
-                }
+                fs::copy(mod_path, &stored_path).context("Failed to copy mod to storage folder")?;
             } else {
                 dircpy::copy_dir(mod_path, &stored_path)
                     .context("Failed to copy mod to storage folder")?;

@@ -165,7 +165,6 @@ pub struct Settings {
     pub system_7z: bool,
     #[serde(default = "default_storage")]
     pub storage_dir: PathBuf,
-    pub unpack_mods: bool,
     #[serde(deserialize_with = "serde_with::As::<DefaultOnError>::deserialize")]
     pub check_updates: UpdatePreference,
     pub show_changelog: bool,
@@ -180,7 +179,6 @@ impl Default for Settings {
             current_mode: Platform::WiiU,
             system_7z: true,
             storage_dir: default_storage(),
-            unpack_mods: false,
             wiiu_config: None,
             switch_config: None,
             check_updates: UpdatePreference::Stable,

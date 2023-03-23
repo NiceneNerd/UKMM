@@ -544,14 +544,6 @@ impl App {
                             },
                         );
                         render_setting(
-                            "Unpack Mods",
-                            "By default UKMM stores mods as ZIP files with ZSTD compression. Turn \
-                             on this option to unpack them instead, which will improve \
-                             performance at the cost of disk space.",
-                            ui,
-                            |ui| ui.add(Checkbox::new(&mut settings.unpack_mods, "")),
-                        );
-                        render_setting(
                             "Use System 7z",
                             "By default UKMM will attempt to use 7z from your system PATH to \
                              extract 7-Zip files (like BNPs). Otherwise it will fall back to a \
