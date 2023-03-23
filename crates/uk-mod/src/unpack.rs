@@ -460,22 +460,42 @@ impl ModUnpacker {
         let total = content_files.len() + aoc_files.len();
         let current = AtomicUsize::new(0);
         std::thread::scope(|s| -> Result<()> {
-            let s1 = s.spawn(|| {
-                self.unpack_files(
-                    content_files,
-                    self.out_dir.join(content),
-                    total,
-                    &current,
-                    false,
-                )
-            });
-            let s2 = s.spawn(|| {
-                self.unpack_files(aoc_files, self.out_dir.join(aoc), total, &current, true)
-            });
-            let s3 = s.spawn(|| self.unpack_texts(modded_langs));
-            s1.join().expect("Failed to join thread")?;
-            s2.join().expect("Failed to join thread")?;
-            s3.join().expect("Failed to join thread")?;
+            let jobs = [
+                s.spawn(|| {
+                    self.unpack_files(
+                        content_files,
+                        self.out_dir.join(content),
+                        total,
+                        &current,
+                        false,
+                    )
+                }),
+                s.spawn(|| {
+                    self.unpack_files(aoc_files, self.out_dir.join(aoc), total, &current, true)
+                }),
+                s.spawn(|| self.unpack_texts(modded_langs)),
+            ];
+            for job in jobs {
+                match job.join() {
+                    Ok(Err(e)) => anyhow_ext::bail!(e),
+                    Ok(Ok(_)) => (),
+                    Err(e) => {
+                        anyhow::bail!(
+                            e.downcast::<std::string::String>()
+                                .or_else(|e| {
+                                    e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
+                                })
+                                .unwrap_or_else(|_| {
+                                    Box::new(
+                                        "An unknown error occured, check the log for possible \
+                                         details."
+                                            .to_string(),
+                                    )
+                                })
+                        )
+                    }
+                }
+            }
             Ok(())
         })?;
         Ok(self.rstb)

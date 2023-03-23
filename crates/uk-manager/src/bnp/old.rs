@@ -221,7 +221,7 @@ impl<'a> Bnp2xConverter<'a> {
     pub fn convert(&self) -> Result<()> {
         log::info!("Converting old BNP logs…");
         std::thread::scope(|s| -> Result<()> {
-            let jobs = vec![
+            let jobs = [
                 s.spawn(|| self.convert_pack_log()),
                 s.spawn(|| self.convert_aamp_log()),
                 s.spawn(|| self.convert_text_logs()),
@@ -230,7 +230,25 @@ impl<'a> Bnp2xConverter<'a> {
                 s.spawn(|| self.convert_map_log()),
             ];
             for job in jobs {
-                job.join().expect("Failed to join thread")?;
+                match job.join() {
+                    Ok(Err(e)) => anyhow_ext::bail!(e),
+                    Ok(Ok(_)) => (),
+                    Err(e) => {
+                        anyhow::bail!(
+                            e.downcast::<String>()
+                                .or_else(|e| {
+                                    e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
+                                })
+                                .unwrap_or_else(|_| {
+                                    Box::new(
+                                        "An unknown error occured, check the log for possible \
+                                         details."
+                                            .to_string(),
+                                    )
+                                })
+                        )
+                    }
+                }
             }
             Ok(())
         })?;
