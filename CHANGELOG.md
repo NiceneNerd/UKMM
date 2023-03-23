@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed running GUI with args
 - Fixed default dock/tab settings
 
 ## [0.7.0]
