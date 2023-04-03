@@ -30,7 +30,7 @@ fn main() -> Result<()> {
         AttachConsole(-1);
     }
 
-    let gui_flags = ["--portable", "--debug"];
+    let gui_flags = ["-p", "--portable", "-d", "--debug"];
     if std::env::args().count() == 1
         || std::env::args()
             .skip(1)
