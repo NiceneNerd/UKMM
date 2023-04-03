@@ -5,9 +5,9 @@ use std::{
 
 use anyhow_ext::{Context, Result};
 use uk_manager::{core, mods::LookupMod, settings::Platform};
-use uk_mod::{unpack::ModReader, Manifest};
+use uk_mod::{unpack::ModReader, Manifest, Meta};
 
-use crate::gui::tasks;
+use crate::gui::{package, tasks};
 
 xflags::xflags! {
     src "./src/cli.rs"
@@ -24,6 +24,15 @@ xflags::xflags! {
         cmd install {
             /// Path to the mod to install
             required path: PathBuf
+        }
+        /// Package a mod
+        cmd package {
+            /// Path to the mod root directory
+            required path: PathBuf
+            /// Path to the output mod archive
+            required output: PathBuf
+            /// Path to the meta file for the mod
+            required meta: PathBuf
         }
         /// Uninstall a mod
         cmd uninstall {}
@@ -53,6 +62,7 @@ pub struct Ukmm {
 pub enum UkmmCmd {
     Install(Install),
     Uninstall(Uninstall),
+    Package(Package),
     Remerge(Remerge),
     Deploy(Deploy),
     Mode(Mode),
@@ -61,6 +71,13 @@ pub enum UkmmCmd {
 #[derive(Debug)]
 pub struct Install {
     pub path: PathBuf,
+}
+
+#[derive(Debug)]
+pub struct Package {
+    pub path:   PathBuf,
+    pub output: PathBuf,
+    pub meta:   PathBuf,
 }
 
 #[derive(Debug)]
@@ -201,6 +218,16 @@ impl Runner {
                     }
                     println!("Done!");
                 }
+            }
+            UkmmCmd::Package(pkg) => {
+                println!("Packaging mod...");
+                let builder = package::ModPackerBuilder {
+                    source: pkg.path.clone(),
+                    dest:   pkg.output.clone(),
+                    meta:   Meta::parse(&pkg.meta)?,
+                };
+                tasks::package_mod(&self.core, builder)?;
+                println!("Done!");
             }
             UkmmCmd::Remerge(_) => {
                 println!("Remerging...");
