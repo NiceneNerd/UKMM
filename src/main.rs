@@ -29,7 +29,9 @@ fn main() -> Result<()> {
     unsafe {
         AttachConsole(-1);
     }
-    if std::env::args().count() == 1 || std::env::args().skip(1).all(|a| a.starts_with('-')) {
+
+    let gui_flags: [String; 2] = ["--portable".to_string(), "--debug".to_string()];
+    if std::env::args().count() == 1 || std::env::args().skip(1).all(|a| gui_flags.contains(&a)) {
         if let Err(e) = std::panic::catch_unwind(gui::main) {
             println!(
                 "An unrecoverable error occured. Error details: {}",
