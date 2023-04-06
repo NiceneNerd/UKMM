@@ -398,7 +398,7 @@ impl App {
 
     fn handle_drops(&mut self, ctx: &eframe::egui::Context) {
         let files = &ctx.input().raw.dropped_files;
-        if !(self.busy.get() || self.modal_open() || files.is_empty()) {
+        if !(self.modal_open() || files.is_empty()) {
             let first = files.first().and_then(|f| f.path.clone()).unwrap();
             self.install_queue
                 .extend(files.iter().skip(1).filter_map(|f| f.path.clone()));
