@@ -161,7 +161,7 @@ impl App {
                         });
                     });
             });
-        if ui.memory().focus().is_none() && self.focused == FocusedPane::ModList {
+        if ui.memory().focus().is_none() && self.focused == FocusedPane::ModList && !self.modal_open() {
             if ui.input().key_pressed(Key::ArrowDown) && let Some((last_index, _)) = self
                 .mods
                 .iter()

@@ -117,7 +117,7 @@ impl App {
                     ui.style_mut().spacing.item_spacing.y = 4.;
                     ui.style_mut().visuals.widgets.inactive.bg_stroke.width = 0.0;
                     let entries = &self.picker_state.entries;
-                    if self.focused == FocusedPane::FilePicker {
+                    if self.focused == FocusedPane::FilePicker && !self.modal_open() {
                         if ui.input().key_pressed(Key::ArrowDown) {
                             let pos = match entries
                                 .iter()
@@ -179,7 +179,7 @@ impl App {
                 ui.style().visuals.noninteractive().bg_fill
             }),
         );
-        if res.double_clicked() || (ui.input().key_pressed(Key::Enter) && selected) {
+        if res.double_clicked() || (ui.input().key_pressed(Key::Enter) && selected && !self.modal_open()) {
             self.do_update(Message::SetFocus(FocusedPane::FilePicker));
             if path.is_dir() {
                 self.do_update(Message::FilePickerSet(Some(path.to_path_buf())));
