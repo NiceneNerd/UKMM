@@ -3,7 +3,7 @@ mod menus;
 mod modals;
 mod mods;
 mod options;
-mod package;
+pub(crate) mod package;
 mod picker;
 mod profiles;
 mod settings;

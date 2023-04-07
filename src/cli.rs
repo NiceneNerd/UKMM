@@ -1,13 +1,15 @@
 use std::{
     io::{stdin, stdout, Write},
+    option::Option,
     path::{Path, PathBuf},
 };
 
 use anyhow_ext::{Context, Result};
+use smartstring::alias::String;
 use uk_manager::{core, mods::LookupMod, settings::Platform};
-use uk_mod::{unpack::ModReader, Manifest};
+use uk_mod::{unpack::ModReader, Manifest, Meta};
 
-use crate::gui::tasks;
+use crate::gui::{package, tasks};
 
 xflags::xflags! {
     src "./src/cli.rs"
@@ -24,9 +26,25 @@ xflags::xflags! {
         cmd install {
             /// Path to the mod to install
             required path: PathBuf
+            /// The profile to install the mod in
+            optional profile: String
+        }
+        /// Package a mod
+        cmd package {
+            /// Path to the mod root directory
+            required path: PathBuf
+            /// Path to the output mod archive
+            required output: PathBuf
+            /// Path to the meta file for the mod
+            required meta: PathBuf
         }
         /// Uninstall a mod
-        cmd uninstall {}
+        cmd uninstall {
+            /// The index of the mod to uninstall
+            optional index: usize
+            /// The profile to uninstall the mod from
+            optional profile: String
+        }
         /// Refresh merge
         cmd remerge {}
         /// Deploy mods
@@ -53,6 +71,7 @@ pub struct Ukmm {
 pub enum UkmmCmd {
     Install(Install),
     Uninstall(Uninstall),
+    Package(Package),
     Remerge(Remerge),
     Deploy(Deploy),
     Mode(Mode),
@@ -60,11 +79,22 @@ pub enum UkmmCmd {
 
 #[derive(Debug)]
 pub struct Install {
-    pub path: PathBuf,
+    pub path:    PathBuf,
+    pub profile: Option<String>,
 }
 
 #[derive(Debug)]
-pub struct Uninstall;
+pub struct Package {
+    pub path:   PathBuf,
+    pub output: PathBuf,
+    pub meta:   PathBuf,
+}
+
+#[derive(Debug)]
+pub struct Uninstall {
+    pub index:   Option<usize>,
+    pub profile: Option<String>,
+}
 
 #[derive(Debug)]
 pub struct Remerge;
@@ -98,7 +128,7 @@ impl Ukmm {
 macro_rules! input {
     () => {{
         stdout().flush()?;
-        let mut _input = String::new();
+        let mut _input = std::string::String::new();
         stdin().read_line(&mut _input).unwrap();
         _input
     }};
@@ -148,18 +178,8 @@ impl Runner {
                 "This mod contains configuration options and should be installed via the GUI."
             );
         }
-        println!(
-            "Identified mod: {} (v{}) by {}",
-            &mod_.meta.name, &mod_.meta.version, &mod_.meta.author
-        );
-        print!("Do you want to continue installing? [Y/n] ");
-        let cont = !input!().to_lowercase().starts_with('n');
-        if cont {
-            println!("Installing {}...", mod_.meta.name);
-            Ok(Some(path))
-        } else {
-            Ok(None)
-        }
+        println!("Installing {}...", mod_.meta.name);
+        Ok(Some(path))
     }
 
     fn deploy(&self) -> Result<()> {
@@ -187,11 +207,11 @@ impl Runner {
                 }
                 println!("Done!");
             }
-            UkmmCmd::Install(Install { path }) => {
+            UkmmCmd::Install(Install { path, profile }) => {
                 if let Some(path) = self.check_mod(path)? {
                     let mods = self.core.mod_manager();
-                    let mod_ = mods.add(&path, None)?;
-                    mods.set_enabled(mod_.as_hash_id(), true, None)?;
+                    let mod_ = mods.add(&path, profile.as_ref())?;
+                    mods.set_enabled(mod_.as_hash_id(), true, profile.as_ref())?;
                     mods.save()?;
                     println!("Applying mod to load order...");
                     let deployer = self.core.deploy_manager();
@@ -202,35 +222,58 @@ impl Runner {
                     println!("Done!");
                 }
             }
+            UkmmCmd::Package(pkg) => {
+                println!("Packaging mod...");
+                let builder = package::ModPackerBuilder {
+                    source: pkg.path.clone(),
+                    dest:   pkg.output.clone(),
+                    meta:   Meta::parse(&pkg.meta)?,
+                };
+                tasks::package_mod(&self.core, builder)?;
+                println!("Done!");
+            }
             UkmmCmd::Remerge(_) => {
                 println!("Remerging...");
                 tasks::apply_changes(&self.core, vec![], None)?;
                 println!("Done!");
             }
-            UkmmCmd::Uninstall(_) => {
-                println!("Installed mods:");
+            UkmmCmd::Uninstall(Uninstall { index, profile }) => {
+                let mut manifests = Manifest::default();
                 let mod_manager = self.core.mod_manager();
                 let mods = mod_manager.mods().collect::<Vec<_>>();
-                for (i, mod_) in mods.iter().enumerate() {
-                    println!(
-                        "{}. {} (v{}) by {}",
-                        i + 1,
-                        &mod_.meta.name,
-                        &mod_.meta.version,
-                        &mod_.meta.author
-                    );
-                }
-                print!("Enter mod(s) to uninstall, separated by commas: ");
-                let mut manifests = Manifest::default();
-                for id in input!().replace(' ', "").split(',') {
+
+                if let Some(index_value) = index {
                     let mod_ = mods
-                        .get(id.trim().parse::<usize>().context("Invalid mod number")? - 1)
-                        .with_context(|| format!("Mod {} does not exist", id))?;
+                        .get(*index_value)
+                        .with_context(|| format!("Mod {} does not exist", index_value))?;
                     println!("Removing mod {}...", &mod_.meta.name);
-                    mod_manager.del(mod_, None)?;
+                    mod_manager.del(mod_, profile.as_ref())?;
                     mod_manager.save()?;
                     manifests.extend(mod_.manifest()?.as_ref());
+                } else {
+                    println!("Installed mods:");
+                    for (i, mod_) in mods.iter().enumerate() {
+                        println!(
+                            "{}. {} (v{}) by {}",
+                            i + 1,
+                            &mod_.meta.name,
+                            &mod_.meta.version,
+                            &mod_.meta.author
+                        );
+                    }
+                    print!("Enter mod(s) to uninstall, separated by commas: ");
+                    let mut manifests = Manifest::default();
+                    for id in input!().replace(' ', "").split(',') {
+                        let mod_ = mods
+                            .get(id.trim().parse::<usize>().context("Invalid mod number")? - 1)
+                            .with_context(|| format!("Mod {} does not exist", id))?;
+                        println!("Removing mod {}...", &mod_.meta.name);
+                        mod_manager.del(mod_, profile.as_ref())?;
+                        mod_manager.save()?;
+                        manifests.extend(mod_.manifest()?.as_ref());
+                    }
                 }
+
                 println!("Applying changes to merge...");
                 self.core.deploy_manager().apply(Some(manifests))?;
                 if self.cli.deploy {
