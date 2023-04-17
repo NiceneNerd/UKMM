@@ -41,6 +41,7 @@ jobs:
         run: cargo +nightly-2023-02-28 build --release
         env:
           UPDATE_PLATFORM: ${{ matrix.platform.name }}
+          MACOSX_DEPLOYMENT_TARGET: 11.0
       - name: UPX compress binary
         uses: crazy-max/ghaction-upx@v2.2.0
         if: contains(matrix.platform.os, 'ubuntu')
