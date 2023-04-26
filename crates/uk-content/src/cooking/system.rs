@@ -248,7 +248,7 @@ impl TryFrom<&Byml> for CEI {
             t: hash
                 .get("BT")
                 .ok_or(UKError::MissingBymlKey("CEI missing T"))?
-                .as_i32()
+                .as_int::<i32>()
                 .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
                 .unwrap(),
         })

@@ -39,7 +39,7 @@ impl TryFrom<&Byml> for SingleRecipe {
                             .unwrap()
                             .iter()
                             .map(|i| {
-                                i.as_i32()
+                                i.as_int::<i32>()
                                     .map_err(|_e| UKError::WrongBymlType(
                                         "not an integer".into(),
                                         "an integer"
@@ -58,7 +58,7 @@ impl TryFrom<&Byml> for SingleRecipe {
                 ),
             num: hash
                 .get("Num")
-                .ok_or(UKError::MissingBymlKey("Recipe missing num"))?
+                .ok_or(UKError::MissingBymlKey("SingleRecipe missing num"))?
                 .as_i32()
                 .map_err(|_e| {
                     UKError::WrongBymlType("not an integer".into(), "an integer")
@@ -66,8 +66,8 @@ impl TryFrom<&Byml> for SingleRecipe {
                 .unwrap(),
             recipe: hash
                 .get("Recipe")
-                .ok_or(UKError::MissingBymlKey("Recipe missing recipe actor"))?
-                .as_i32()
+                .ok_or(UKError::MissingBymlKey("SingleRecipe missing recipe actor"))?
+                .as_int::<i32>()
                 .map_err(|_e| {
                     UKError::WrongBymlType("not an integer".into(), "an integer")
                 })
@@ -85,7 +85,7 @@ impl TryFrom<&Byml> for SingleRecipe {
                             .unwrap()
                             .iter()
                             .map(|i| {
-                                i.as_i32()
+                                i.as_int::<i32>()
                                     .map_err(|_e| UKError::WrongBymlType(
                                         "not an integer".into(),
                                         "an integer"
