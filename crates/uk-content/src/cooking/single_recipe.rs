@@ -122,6 +122,7 @@ impl From<&SingleRecipe> for Byml {
         if let Some(hb) = val.hb {
             hash.insert("HB".into(), hb.into());
         };
+        hash.insert("Num".into(), val.num.into());
         hash.insert("Recipe".into(), val.recipe.into());
         if let Some(tags) = &val.tags {
             hash.insert(
