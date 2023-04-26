@@ -28,7 +28,7 @@ jobs:
               - 'src/**'
               - 'Cargo.*'
               - 'build.rs'
-              - 'uk-*/**'
+              - 'crates/**'
 
   build_and_test:
     needs: check_changes
