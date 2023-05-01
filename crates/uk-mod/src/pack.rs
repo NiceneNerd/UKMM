@@ -325,9 +325,10 @@ impl ModPacker {
 
                 let resource = ResourceData::from_binary(name.as_str(), &*file_data)
                     .with_context(|| jstr!("Failed to parse resource {&name}"))?;
+                let is_mergeable = matches!(resource, ResourceData::Mergeable(_));
                 self.process_resource(name.clone(), canon.clone(), resource, false)
                     .with_context(|| jstr!("Failed to process resource {&canon}"))?;
-                if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
+                if !is_mergeable && is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                     log::trace!(
                         "Resource {} is a mergeable SARC, processing contents",
                         &canon

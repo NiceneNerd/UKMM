@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed default scale on Steam Deck
 - Fixed GUI flag handling
 - Fixed older macOS (<12) support
+- Fixed packaging the contents of handled SARCs separately
 
 ## [0.7.1]
 
