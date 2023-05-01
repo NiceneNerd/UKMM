@@ -3440,9 +3440,9 @@ checksum = "3582f63211428f83597b51b2ddb88e2a91a9d52d12831f9d08f5e624e8977422"
 
 [[package]]
 name = "roead"
-version = "0.20.2"
+version = "0.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ab0cb3cd6c094eb936f4acf624924d773ccf24003ee3283d778ab4a31deac34"
+checksum = "445b9df719825043aaaf86b477169bf653e717f526947e856a327c763a5072fa"
 dependencies = [
  "almost",
  "base64 0.13.1",
