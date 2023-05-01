@@ -4450,6 +4450,7 @@ dependencies = [
  "join_str",
  "junction",
  "jwalk 0.8.1",
+ "lenient_semver",
  "log",
  "parking_lot",
  "path-slash",

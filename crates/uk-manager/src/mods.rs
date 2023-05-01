@@ -333,12 +333,20 @@ impl Manager {
     pub fn add(&self, mod_path: &Path, profile: Option<&String>) -> Result<Mod> {
         let mod_name = {
             let peeker = ModReader::open_peek(mod_path, vec![])?;
-            if self
+            if let Some(mod_) = self
                 .get_profile(profile)
                 .iter()
-                .any(|m| m.meta.name == peeker.meta.name)
+                .find(|m| m.meta.name == peeker.meta.name)
             {
-                anyhow_ext::bail!("Mod \"{}\" already installed", peeker.meta.name);
+                if lenient_semver::Version::parse(peeker.meta.version.as_str())
+                    .and_then(|pv| {
+                        lenient_semver::Version::parse(mod_.meta.version.as_str())
+                            .map(|mv| pv <= mv)
+                    })
+                    .unwrap()
+                {
+                    anyhow_ext::bail!("Mod \"{}\" already installed", peeker.meta.name);
+                }
             }
             peeker.meta.name
         };

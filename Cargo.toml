@@ -16,6 +16,7 @@ flume = { workspace = true }
 fs-err = { workspace = true }
 join_str = { workspace = true }
 jwalk = { workspace = true }
+lenient_semver = { workspace = true }
 log = { workspace = true }
 parking_lot = { workspace = true, features = ["serde"] }
 rayon = { workspace = true }
@@ -33,7 +34,6 @@ egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
 env_logger = "0.10.0"
 http_req  = {version="^0.9", default-features = false, features = ["rust-tls"] }
 image = { version = "0.24.4", features = ["jpeg", "png"] }
-lenient_semver = { version = "0.4.2", features = ["version_serde"] }
 open = "3.0.3"
 roxmltree = "0.18.0"
 uk-content = { path = "crates/uk-content" }
@@ -73,6 +73,7 @@ fs-err = "2.9"
 indexmap = "1.9"
 join_str = "0.1.0"
 jwalk = "0.8.1"
+lenient_semver = { version = "0.4.2", features = ["version_serde"] }
 log = "0.4.17"
 minicbor-ser = "0.2.0"
 parking_lot = "0.12.1"

@@ -13,6 +13,7 @@ dirs2 = { workspace = true }
 fs-err = { workspace = true }
 join_str = { workspace = true }
 jwalk = { workspace = true }
+lenient_semver = { workspace = true }
 log = { workspace = true }
 parking_lot = { workspace = true, features = ["serde"] }
 path-slash = { workspace = true }
