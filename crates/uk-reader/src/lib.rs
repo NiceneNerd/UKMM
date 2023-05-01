@@ -342,13 +342,18 @@ impl ResourceReader {
                 match nest_path {
                     Some(parent) => {
                         log::trace!("Full path found at {}", parent.as_ref());
-                        Ok(self.get_from_sarc(&canon, &parent).with_context(|| {
-                            log::warn!("Failed to get {canon} from {}", parent.as_ref());
+                        match self.get_from_sarc(&canon, &parent).with_context(|| {
                             ROMError::FileNotFound(
                                 path.to_string_lossy().into(),
                                 self.source.host_path().to_path_buf(),
                             )
-                        })?)
+                        }) {
+                            Err(e) => {
+                                log::warn!("Failed to get {canon} from {}: {e}", parent.as_ref());
+                                Err(e.into())
+                            }
+                            Ok(v) => Ok(v),
+                        }
                     }
                     None => {
                         Err(ROMError::FileNotFound(
