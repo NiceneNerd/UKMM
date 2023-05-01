@@ -698,7 +698,7 @@ impl App {
                     if let Ok(manifest) = mod_.manifest() {
                         self.dirty.extend(&manifest);
                     }
-                    self.mods.push(mod_);
+                    self.mods = self.core.mod_manager().all_mods().collect();
                     self.do_update(Message::RefreshModsDisplay);
                     self.busy.set(false);
                     if let Some(path) = self.install_queue.pop_front() {

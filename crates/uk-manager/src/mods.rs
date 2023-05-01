@@ -331,6 +331,7 @@ impl Manager {
     /// mod at the provided path has already been validated.
     #[allow(irrefutable_let_patterns)]
     pub fn add(&self, mod_path: &Path, profile: Option<&String>) -> Result<Mod> {
+        let mut old_version = None;
         let mod_name = {
             let peeker = ModReader::open_peek(mod_path, vec![])?;
             if let Some(mod_) = self
@@ -340,11 +341,17 @@ impl Manager {
             {
                 if lenient_semver::Version::parse(peeker.meta.version.as_str())
                     .and_then(|pv| {
-                        lenient_semver::Version::parse(mod_.meta.version.as_str())
-                            .map(|mv| pv <= mv)
+                        lenient_semver::Version::parse(mod_.meta.version.as_str()).map(|mv| pv > mv)
                     })
                     .unwrap()
                 {
+                    log::info!(
+                        "Updating {} to version {}",
+                        peeker.meta.name,
+                        peeker.meta.version
+                    );
+                    old_version = Some(mod_);
+                } else {
                     anyhow_ext::bail!("Mod \"{}\" already installed", peeker.meta.name);
                 }
             }
@@ -363,7 +370,7 @@ impl Manager {
             .read()
             .mods_dir()
             .join(sanitized + ".zip");
-        if stored_path.exists() {
+        if stored_path.exists() && old_version.is_none() {
             log::debug!("Mod already stored, no need to store it");
         } else {
             stored_path.parent().map(fs::create_dir_all).transpose()?;
@@ -380,11 +387,22 @@ impl Manager {
         let profile_data = self.get_profile(profile);
         profile_data.load_order_mut().push(mod_.hash);
         profile_data.mods_mut().insert(mod_.hash, mod_.clone());
-        log::info!(
-            "Added mod {} to profile {}",
-            mod_.meta.name,
-            profile.unwrap_or(&self.current_profile).as_str()
-        );
+        if let Some(old_mod) = old_version {
+            profile_data.load_order_mut().retain(|h| *h != old_mod.hash);
+            profile_data.mods_mut().remove(&old_mod.hash);
+            log::info!(
+                "Updated mod {} in profile {} to version {}",
+                mod_.meta.name,
+                profile.unwrap_or(&self.current_profile).as_str(),
+                mod_.meta.version
+            );
+        } else {
+            log::info!(
+                "Added mod {} to profile {}",
+                mod_.meta.name,
+                profile.unwrap_or(&self.current_profile).as_str()
+            );
+        }
         log::debug!("{:#?}", mod_);
         Ok(mod_)
     }
