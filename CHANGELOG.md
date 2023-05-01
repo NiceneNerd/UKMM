@@ -7,9 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added CLI package command (@ArchLeaders)
+
+### Changed
+
+- Reject keyboard input under modals
+- **Breaking change**: Reworked CookData merger (@GingerAvalanche).
+  This will require reinstalling any mods that modify `CookData.sbyml`.
+
 ### Fixed
 
 - Fixed panics when iterating corrupted SARCs
+- Fixed default scale on Steam Deck
+- Fixed GUI flag handling
+- Fixed older macOS (<12) support
 
 ## [0.7.1]
 
