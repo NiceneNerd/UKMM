@@ -4502,6 +4502,7 @@ dependencies = [
  "sanitise-file-name",
  "serde",
  "serde_json",
+ "serde_with",
  "serde_yaml 0.9.19",
  "smartstring",
  "tempfile",

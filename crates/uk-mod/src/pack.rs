@@ -16,6 +16,7 @@ use rayon::prelude::*;
 use roead::{sarc::Sarc, yaz0::decompress_if};
 pub use sanitise_file_name::sanitise;
 use serde::Deserialize;
+use serde_with::{serde_as, DefaultOnError};
 use smartstring::alias::String;
 use uk_content::{
     canonicalize,
@@ -70,9 +71,11 @@ impl std::fmt::Debug for ModPacker {
 
 #[derive(Debug, Deserialize, Default)]
 #[serde(default)]
+#[serde_as]
 struct InfoJson {
     name:     String,
     desc:     String,
+    #[serde(deserialize_with = "serde_with::As::<DefaultOnError>::deserialize")]
     version:  String,
     platform: String,
     options:  BnpOptions,

@@ -20,6 +20,7 @@ roead = { workspace = true, features = ["with-serde"] }
 rstb = { workspace = true, features = ["complex"] }
 sanitise-file-name = { workspace = true }
 serde = { workspace = true }
+serde_with = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 smartstring = { workspace = true }

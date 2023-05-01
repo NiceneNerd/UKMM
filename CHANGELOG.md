@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   This will require reinstalling any mods that modify `CookData.sbyml`.
 - Improved some warnings
 - Ignore `AocMainField.pack` when converting BNPs
+- Tolerate bad BNP version fields
 
 ### Fixed
 
