@@ -305,21 +305,30 @@ impl BnpConverter {
         let packs = DashSet::clone(&self.packs);
         self.packs.clear();
 
-        packs.into_par_iter().try_for_each(|file| -> Result<()> {
-            let mut sarc = self.open_or_create_sarc(
-                &file,
-                self.trim_prefixes(
-                    file.strip_prefix(&self.current_root)
-                        .expect("Impossible")
-                        .to_str()
-                        .unwrap_or_default(),
-                ),
-            )?;
-            let data = sarc.to_binary();
-            let data = compress_if(&data, &file);
-            fs::write(file, data)?;
-            Ok(())
-        })?;
+        packs
+            .into_par_iter()
+            .filter(|file| {
+                !(file
+                    .file_name()
+                    .and_then(|n| n.to_str().map(|n| n == "AocMainField.pack"))
+                    .unwrap_or(false)
+                    && file.metadata().map(|m| m.len()).unwrap_or_default() == 0)
+            })
+            .try_for_each(|file| -> Result<()> {
+                let mut sarc = self.open_or_create_sarc(
+                    &file,
+                    self.trim_prefixes(
+                        file.strip_prefix(&self.current_root)
+                            .expect("Impossible")
+                            .to_str()
+                            .unwrap_or_default(),
+                    ),
+                )?;
+                let data = sarc.to_binary();
+                let data = compress_if(&data, &file);
+                fs::write(file, data)?;
+                Ok(())
+            })?;
         Ok(())
     }
 
