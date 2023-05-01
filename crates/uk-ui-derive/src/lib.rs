@@ -175,6 +175,7 @@ fn impl_editable_enum(name: &Ident, enu: DataEnum) -> TokenStream {
         } else {
             syn::parse_str(&format!("{}::{}(_)", &str_name, var.ident)).unwrap()
         };
+        #[allow(clippy::redundant_clone)]
         let def_path: Expr = if var.fields.is_empty() {
             path.clone()
         } else {

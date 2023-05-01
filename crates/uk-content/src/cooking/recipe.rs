@@ -1,22 +1,22 @@
 use anyhow::Context;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-use smartstring::{SmartString, LazyCompact};
+use smartstring::{LazyCompact, SmartString};
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
     util::{DeleteVec, HashMap},
-    Result, UKError
+    Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(feature = "ui", derive(Editable))]
 pub struct Recipe {
     pub actors: Option<DeleteVec<DeleteVec<i32>>>,
-    pub hb: Option<i32>,
+    pub hb:     Option<i32>,
     pub recipe: i32,
-    pub tags: Option<DeleteVec<DeleteVec<i32>>>,
+    pub tags:   Option<DeleteVec<DeleteVec<i32>>>,
 }
 
 impl TryFrom<&Byml> for Recipe {
@@ -25,88 +25,73 @@ impl TryFrom<&Byml> for Recipe {
     fn try_from(byml: &Byml) -> Result<Self> {
         let hash = byml.as_hash()?;
         Ok(Self {
-            actors: hash
-                .get("Actors")
-                .map_or(
-                    None,
-                    |arr| {
-                        Some(arr.as_array()
-                            .map_err(|_e| UKError::WrongBymlType(
-                                "not an array of arrays".into(),
-                                "an array of arrays"
-                            ))
+            actors: hash.get("Actors").map(|arr| {
+                arr.as_array()
+                    .map_err(|_e| {
+                        UKError::WrongBymlType(
+                            "not an array of arrays".into(),
+                            "an array of arrays",
+                        )
+                    })
+                    .unwrap()
+                    .iter()
+                    .map(|arr2| {
+                        arr2.as_array()
+                            .map_err(|_e| UKError::WrongBymlType("not an array".into(), "an array"))
                             .unwrap()
                             .iter()
-                            .map(|arr2| {
-                                arr2.as_array()
-                                    .map_err(|_e| UKError::WrongBymlType(
-                                        "not an array".into(),
-                                        "an array"
-                                    ))
-                                    .unwrap()
-                                    .iter()
-                                    .map(|i| {
-                                        i.as_int::<i32>()
-                                            .map_err(|_e| UKError::WrongBymlType(
-                                                "not an integer".into(),
-                                                "an integer"
-                                            ))
-                                            .unwrap()
+                            .map(|i| {
+                                i.as_int::<i32>()
+                                    .map_err(|_e| {
+                                        UKError::WrongBymlType(
+                                            "not an integer".into(),
+                                            "an integer",
+                                        )
                                     })
-                                    .collect::<DeleteVec<i32>>()
+                                    .unwrap()
                             })
-                            .collect::<DeleteVec<DeleteVec<i32>>>()
-                        )
-                    }
-                ),
-            hb: hash
+                            .collect::<DeleteVec<i32>>()
+                    })
+                    .collect::<DeleteVec<DeleteVec<i32>>>()
+            }),
+            hb:     hash
                 .get("HB")
-                .map_or(
-                    None,
-                    |i| Some(i.as_i32().context("HB not int").unwrap())
-                ),
+                .map(|i| i.as_i32().context("HB not int").unwrap()),
             recipe: hash
                 .get("Recipe")
                 .ok_or(UKError::MissingBymlKey("Recipe missing recipe actor"))?
                 .as_int::<i32>()
-                .map_err(|_e| {
-                    UKError::WrongBymlType("not an integer".into(), "an integer")
-                })
+                .map_err(|_e| UKError::WrongBymlType("not an integer".into(), "an integer"))
                 .unwrap(),
-            tags: hash
-                .get("Tags")
-                .map_or(
-                    None,
-                    |arr| {
-                        Some(arr.as_array()
-                            .map_err(|_e| UKError::WrongBymlType(
-                                "not an array of arrays".into(),
-                                "an array of arrays"
-                            ))
+            tags:   hash.get("Tags").map(|arr| {
+                arr.as_array()
+                    .map_err(|_e| {
+                        UKError::WrongBymlType(
+                            "not an array of arrays".into(),
+                            "an array of arrays",
+                        )
+                    })
+                    .unwrap()
+                    .iter()
+                    .map(|arr2| {
+                        arr2.as_array()
+                            .map_err(|_e| UKError::WrongBymlType("not an array".into(), "an array"))
                             .unwrap()
                             .iter()
-                            .map(|arr2| {
-                                arr2.as_array()
-                                    .map_err(|_e| UKError::WrongBymlType(
-                                        "not an array".into(),
-                                        "an array"
-                                    ))
-                                    .unwrap()
-                                    .iter()
-                                    .map(|i| {
-                                        i.as_int::<i32>()
-                                            .map_err(|_e| UKError::WrongBymlType(
-                                                "not an integer".into(),
-                                                "an integer"
-                                            ))
-                                            .unwrap()
+                            .map(|i| {
+                                i.as_int::<i32>()
+                                    .map_err(|_e| {
+                                        UKError::WrongBymlType(
+                                            "not an integer".into(),
+                                            "an integer",
+                                        )
                                     })
-                                    .collect::<DeleteVec<i32>>()
+                                    .unwrap()
                             })
-                            .collect::<DeleteVec<DeleteVec<i32>>>()
-                        )
-                    }
-                ),
+                            .collect::<DeleteVec<i32>>()
+                    })
+                    .collect::<DeleteVec<DeleteVec<i32>>>()
+            }),
         })
     }
 }
@@ -117,14 +102,14 @@ impl From<&Recipe> for Byml {
         if let Some(actors) = &val.actors {
             hash.insert(
                 "Actors".into(),
-                actors.iter()
+                actors
+                    .iter()
                     .map(|v| {
                         v.iter()
                             .map(|v2| {
                                 if *v2 < 0 {
                                     Byml::U32(*v2 as u32)
-                                }
-                                else {
+                                } else {
                                     Byml::I32(*v2)
                                 }
                             })
@@ -132,7 +117,7 @@ impl From<&Recipe> for Byml {
                             .into()
                     })
                     .collect::<Vec<Byml>>()
-                    .into()
+                    .into(),
             );
         }
         if let Some(hb) = val.hb {
@@ -148,8 +133,7 @@ impl From<&Recipe> for Byml {
                             .map(|v2| {
                                 if *v2 < 0 {
                                     Byml::U32(*v2 as u32)
-                                }
-                                else {
+                                } else {
                                     Byml::I32(*v2)
                                 }
                             })
@@ -157,7 +141,7 @@ impl From<&Recipe> for Byml {
                             .into()
                     })
                     .collect::<Vec<Byml>>()
-                    .into()
+                    .into(),
             );
         }
         hash.into()

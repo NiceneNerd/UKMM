@@ -5,11 +5,7 @@ use serde::{Deserialize, Serialize};
 use uk_ui_derive::Editable;
 
 use crate::{
-    cooking::{
-        recipe::Recipe,
-        single_recipe::SingleRecipe,
-        system::System,
-    },
+    cooking::{recipe::Recipe, single_recipe::SingleRecipe, system::System},
     prelude::*,
     util::{bhash, DeleteVec},
     Result, UKError,
@@ -49,8 +45,8 @@ impl TryFrom<&Byml> for CookData {
                 .iter()
                 .map(|sr| {
                     SingleRecipe::try_from(sr)
-                    .context("Failed to parse SingleRecipe")
-                    .unwrap()
+                        .context("Failed to parse SingleRecipe")
+                        .unwrap()
                 })
                 .collect(),
             system: hash
@@ -66,8 +62,8 @@ impl TryFrom<&Byml> for CookData {
 impl From<CookData> for Byml {
     fn from(val: CookData) -> Self {
         bhash!(
-            "Recipes" => val.recipes.iter().map(|r| Byml::from(r)).collect(),
-            "SingleRecipes" => val.single_recipes.iter().map(|sr| Byml::from(sr)).collect(),
+            "Recipes" => val.recipes.iter().map(Byml::from).collect(),
+            "SingleRecipes" => val.single_recipes.iter().map(Byml::from).collect(),
             "System" => val.system.into(),
         )
     }
