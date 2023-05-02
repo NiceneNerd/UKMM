@@ -9,7 +9,13 @@ impl App {
                 ui.menu_button("File", |ui| self.file_menu(ui, frame));
                 ui.menu_button("Tools", |ui| self.tool_menu(ui));
                 ui.menu_button("Window", |ui| self.window_menu(ui));
-                ui.menu_button("Help", |ui| self.help_menu(ui))
+                ui.menu_button("Help", |ui| self.help_menu(ui));
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    ui.label(
+                        RichText::new(self.platform().to_string().to_uppercase())
+                            .family(egui::FontFamily::Name("Bold".into())),
+                    );
+                });
             });
         });
     }
