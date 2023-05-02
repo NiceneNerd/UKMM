@@ -201,26 +201,26 @@ impl TryFrom<&Byml> for Cei {
                 .as_float()
                 .map_err(|_| UKError::WrongBymlType("not a float".into(), "a float"))
                 .unwrap(),
-            ma:  hash
-                .get("BT")
-                .ok_or(UKError::MissingBymlKey("CEI missing MA"))?
+            ma: hash
+                .get("Ma")
+                .ok_or(UKError::MissingBymlKey("CEI missing Ma"))?
                 .as_i32()
                 .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
                 .unwrap(),
-            mi:  hash
-                .get("BT")
-                .ok_or(UKError::MissingBymlKey("CEI missing MI"))?
+            mi: hash
+                .get("Mi")
+                .ok_or(UKError::MissingBymlKey("CEI missing Mi"))?
                 .as_i32()
                 .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
                 .unwrap(),
             ssa: hash
-                .get("BT")
+                .get("SSA")
                 .ok_or(UKError::MissingBymlKey("CEI missing SSA"))?
                 .as_i32()
                 .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
                 .unwrap(),
-            t:   hash
-                .get("BT")
+            t: hash
+                .get("T")
                 .ok_or(UKError::MissingBymlKey("CEI missing T"))?
                 .as_int::<i32>()
                 .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
