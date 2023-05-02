@@ -234,8 +234,8 @@ impl From<&Cei> for Byml {
         bhash! {
             "BT" => val.bt.into(),
             "MR" => val.mr.into(),
-            "MA" => val.ma.into(),
-            "MI" => val.mi.into(),
+            "Ma" => val.ma.into(),
+            "Mi" => val.mi.into(),
             "SSA" => val.ssa.into(),
             "T" => {
                 if val.t < 0 {
