@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added CLI package command (@ArchLeaders)
 - Added support for updating mods with newer versions
 - Added indicator for current platform on top menu
+- Added Shift-Click mod range selection
 
 ### Changed
 

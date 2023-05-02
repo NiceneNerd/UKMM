@@ -161,7 +161,10 @@ impl App {
                         });
                     });
             });
-        if ui.memory().focus().is_none() && self.focused == FocusedPane::ModList && !self.modal_open() {
+        if ui.memory().focus().is_none()
+            && self.focused == FocusedPane::ModList
+            && !self.modal_open()
+        {
             if ui.input().key_pressed(Key::ArrowDown) && let Some((last_index, _)) = self
                 .mods
                 .iter()
@@ -282,6 +285,7 @@ impl App {
             let mut clicked = false;
             let mut drag_started = false;
             let mut ctrl = false;
+            let mut shift = false;
             let mut hover = false;
             let mut toggled = false;
             let mut ctx_action = None;
@@ -305,6 +309,7 @@ impl App {
             process_col_res(
                 row.col(|ui| {
                     toggled = ui.checkbox(&mut enabled, "").clicked();
+                    shift = ui.input().modifiers.shift;
                     ctrl = ui.input().modifiers.ctrl;
                 })
                 .1,
@@ -352,13 +357,15 @@ impl App {
                 self.do_update(Message::SetFocus(FocusedPane::ModList));
                 if selected && ctrl {
                     self.do_update(Message::Deselect(index));
+                } else if shift {
+                    self.do_update(Message::SelectThrough(index));
                 } else if ctrl {
                     self.do_update(Message::SelectAlso(index));
                 } else {
                     self.do_update(Message::SelectOnly(index));
                 }
             } else if drag_started {
-                if !ctrl {
+                if !ctrl && !shift {
                     self.do_update(Message::StartDrag(index));
                 }
             } else if self.drag_index != Some(index) && hover {

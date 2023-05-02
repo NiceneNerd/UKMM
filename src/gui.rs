@@ -201,6 +201,7 @@ pub enum Message {
     SelectAlso(usize),
     SelectFile,
     SelectOnly(usize),
+    SelectThrough(usize),
     SelectProfileManage(smartstring::alias::String),
     SetChangelog(String),
     SetFocus(FocusedPane),
@@ -476,6 +477,27 @@ impl App {
                     let mod_ = &self.mods[index];
                     if !self.selected.contains(mod_) {
                         self.selected.push(mod_.clone());
+                    }
+                    self.drag_index = None;
+                }
+                Message::SelectThrough(i) => {
+                    let index = i.clamp(0, self.mods.len() - 1);
+                    if let Some(start_index) = self
+                        .selected
+                        .first()
+                        .and_then(|sm| self.mods.iter().position(|m| m == sm))
+                    {
+                        let range = if start_index < index {
+                            start_index..=index
+                        } else {
+                            index..=start_index
+                        };
+                        self.selected = self
+                            .mods
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(i, m)| range.contains(&i).then(|| m.clone()))
+                            .collect();
                     }
                     self.drag_index = None;
                 }
