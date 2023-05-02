@@ -75,8 +75,6 @@ impl Logger {
                 writeln!(file, "[{}] {} {}", entry.timestamp, entry.level, entry.args)
                     .unwrap_or(());
             }
-            // if let Ok(mut file) = file {
-            // }
         }
     }
 
