@@ -8,7 +8,11 @@ UKMM supports only the latest version of BOTW (1.5.0 on Wii U or 1.6.0 on Switch
 
 - Unpacked MLC ![Wii U](../images/u.png) or RomFS ![Switch](../images/nx.png) dump
 - ![Wii U](../images/u.png) WUA (aka [ZArchive](https://github.com/Exzap/ZArchive), Cemu-specific)
-- ~~![Switch](../images/nx.png) NSP~~ (in progress)
+
+NSP and XCI support for Switch are possible eventual goals, but in the meantime if your dump is in one of those formats,
+you should unpack them. Yuzu and Ryujinx both have options to unpack the RomFS. If you don't use either of those, check
+GBAtemp, as the tooling for ROM format manipulation has changed too many times over the years to recommend a specific
+option.
 
 ## Dumping Guides
 

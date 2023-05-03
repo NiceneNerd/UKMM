@@ -45,7 +45,8 @@ There are three folders to specify for an unpacked game dump.
 ## Switch
 
 At present only unpacked RomFS dumps are supported, but in the future NSP or XCI
-support is planned.
+support may be added. In the meantime, if you have an NSP or XCI, dump its RomFS
+using Yuzu, Ryujinx, or another tool.
 
 ### Unpacked Dump
 
