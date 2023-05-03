@@ -46,6 +46,7 @@ jobs:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
+          ./target
     - name: Install GTK
       if: matrix.platform == 'ubuntu-latest'
       run: sudo apt update && sudo apt install libgtk-3-dev	

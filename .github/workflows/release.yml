@@ -24,6 +24,14 @@ jobs:
             ext: ~
     steps:
       - uses: actions/checkout@master
+      - name: Cache crates
+        uses: actions/cache@v3
+        with:
+          key: ${{ matrix.platform.os }}-cargo-cache
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./target
       - uses: SebRollen/toml-action@v1.0.1
         id: read_toml
         name: Get version
