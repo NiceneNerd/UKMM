@@ -292,6 +292,25 @@ impl ModPacker {
         inner(source.as_ref(), dest.as_ref(), meta, masters)
     }
 
+    fn write_resource(&self, canon: &str, resource: &ResourceData) -> Result<()> {
+        let data = minicbor_ser::to_vec(&resource)
+            .map_err(|e| anyhow::format_err!("{:?}", e))
+            .with_context(|| jstr!("Failed to serialize {canon}"))?;
+        let zip_path = self
+            .current_root
+            .strip_prefix(&self.source_dir)
+            .unwrap()
+            .join(canon);
+        {
+            log::trace!("Writing {} to ZIP", canon);
+            let mut zip = self.zip.lock();
+            zip.start_file(zip_path.to_slash_lossy(), self._zip_opts)?;
+            zip.write_all(&zstd::encode_all(&*data, 3)?)?;
+        }
+        self.built_resources.write().insert(canon.into());
+        Ok(())
+    }
+
     fn collect_resources(&self, root: PathBuf) -> Result<BTreeSet<String>> {
         let files = WalkDir::new(&root)
             .into_iter()
@@ -316,6 +335,20 @@ impl ModPacker {
                 let canon = canonicalize(name.as_str());
                 let file_data = fs::read(&path)?;
                 let file_data = decompress_if(&file_data);
+
+                if path
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .map(|s| s == "AocMainField.pack")
+                    .unwrap_or(false)
+                    && file_data.is_empty()
+                {
+                    self.write_resource(
+                        "Aoc/0010/Pack/AocMainField.pack",
+                        &ResourceData::Sarc(Default::default()),
+                    )?;
+                    return Ok(Some("Pack/AocMainField.pack".into()));
+                }
 
                 if name.ends_with("sizetable") || file_data.len() < 4 {
                     return Ok(None);
@@ -442,21 +475,7 @@ impl ModPacker {
             resource = ResourceData::Sarc(ref_sarc.diff(sarc));
         }
 
-        let data = minicbor_ser::to_vec(&resource)
-            .map_err(|e| anyhow::format_err!("{:?}", e))
-            .with_context(|| jstr!("Failed to serialize {&name}"))?;
-        let zip_path = self
-            .current_root
-            .strip_prefix(&self.source_dir)
-            .unwrap()
-            .join(canon.as_str());
-        {
-            log::trace!("Writing {} to ZIP", &canon);
-            let mut zip = self.zip.lock();
-            zip.start_file(zip_path.to_slash_lossy(), self._zip_opts)?;
-            zip.write_all(&zstd::encode_all(&*data, 3)?)?;
-        }
-        self.built_resources.write().insert(canon);
+        self.write_resource(&canon, &resource)?;
 
         Ok(())
     }
