@@ -96,7 +96,12 @@ impl From<&SingleRecipe> for Byml {
             hash.insert("HB".into(), hb.into());
         };
         hash.insert("Num".into(), val.num.into());
-        hash.insert("Recipe".into(), val.recipe.into());
+        let recipe: Byml = if val.recipe < 0 {
+            Byml::U32(val.recipe as u32)
+        } else {
+            Byml::I32(val.recipe)
+        };
+        hash.insert("Recipe".into(), recipe);
         if let Some(tags) = &val.tags {
             hash.insert(
                 "Tags".into(),
