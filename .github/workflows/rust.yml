@@ -55,6 +55,6 @@ jobs:
       with:
         toolchain: nightly-2023-02-28
     - name: Build
-      run: cargo +nightly-2023-02-28 build --verbose --release
+      run: cargo +nightly-2023-02-28 build
     - name: Run `uk-content` tests
       run: cargo +nightly-2023-02-28 test --package uk-content
