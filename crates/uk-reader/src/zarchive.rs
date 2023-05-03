@@ -52,6 +52,11 @@ impl super::ResourceLoader for ZArchive {
         self.archive
             .read_file(self.update_dir.join(name))
             .or_else(|| self.archive.read_file(self.content_dir.join(name)))
+            .or_else(|| {
+                self.aoc_dir
+                    .as_ref()
+                    .and_then(|aoc| self.archive.read_file(aoc.join(name)))
+            })
             .ok_or_else(|| {
                 crate::ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
             })
@@ -77,7 +82,16 @@ impl super::ResourceLoader for ZArchive {
     }
 
     fn file_exists(&self, name: &Path) -> bool {
-        self.archive.file_size(name).is_some()
+        self.archive.file_size(self.update_dir.join(name)).is_some()
+            || self
+                .archive
+                .file_size(self.content_dir.join(name))
+                .is_some()
+            || self
+                .aoc_dir
+                .as_ref()
+                .map(|aoc| self.archive.file_size(aoc.join(name)).is_some())
+                .unwrap_or(false)
     }
 
     fn host_path(&self) -> &Path {

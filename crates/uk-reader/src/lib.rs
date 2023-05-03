@@ -329,12 +329,10 @@ impl ResourceReader {
                 static NEST_INIT: Once = Once::new();
                 NEST_INIT.call_once(|| {
                     log::trace!("Initializing nest map...");
-                    if self.source.typetag_name() == "Unpacked" {
-                        let stock: HashMap<String, Arc<str>> =
-                            serde_json::from_str(NEST_MAP.as_ref()).unwrap();
-                        for (k, v) in stock {
-                            self.nest_map.insert(k, v);
-                        }
+                    let stock: HashMap<String, Arc<str>> =
+                        serde_json::from_str(NEST_MAP.as_ref()).unwrap();
+                    for (k, v) in stock {
+                        self.nest_map.insert(k, v);
                     }
                 });
                 let nest_path = self.nest_map.get(&canon);

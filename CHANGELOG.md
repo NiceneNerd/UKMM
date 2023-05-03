@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed GUI flag handling
 - Fixed older macOS (<12) support
 - Fixed packaging the contents of handled SARCs separately
+- Fixed loading nested files with WUA dump
 
 ## [0.7.1]
 
