@@ -131,6 +131,25 @@ impl InfoSource for DropTable {
                                 ))
                             })
                             .collect::<Result<_>>()
+                            .or_else(|_| {
+                                (1..=count)
+                                    .named_enumerate("ItemName")
+                                    .with_padding::<3>()
+                                    .with_zero_index(false)
+                                    .map(|(name, _)| -> Result<Byml> {
+                                        Ok(Byml::String(
+                                            table
+                                                .get(&name)
+                                                .ok_or(UKError::MissingAampKey(
+                                                    "Drop table missing item name",
+                                                    None,
+                                                ))?
+                                                .as_str()?
+                                                .into(),
+                                        ))
+                                    })
+                                    .collect::<Result<_>>()
+                            })
                     }?))
                 })
                 .collect::<Result<_>>()?,

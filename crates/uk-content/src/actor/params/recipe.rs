@@ -79,7 +79,35 @@ impl TryFrom<&ParameterIO> for Recipe {
                                         .as_int()?,
                                 ))
                             })
-                            .collect::<Result<_>>()?,
+                            .collect::<Result<_>>()
+                            .or_else(|_| {
+                                (1..=items_count)
+                                    .named_enumerate("ItemNum")
+                                    .with_padding::<3>()
+                                    .with_zero_index(false)
+                                    .named_enumerate("ItemName")
+                                    .with_padding::<3>()
+                                    .with_zero_index(false)
+                                    .map(|(name, (num, _))| -> Result<(String64, u8)> {
+                                        Ok((
+                                            table
+                                                .get(&name)
+                                                .ok_or(UKError::MissingAampKey(
+                                                    "Recipe missing item name",
+                                                    None,
+                                                ))?
+                                                .as_safe_string()?,
+                                            table
+                                                .get(&num)
+                                                .ok_or(UKError::MissingAampKey(
+                                                    "Recipe missing item count",
+                                                    None,
+                                                ))?
+                                                .as_int()?,
+                                        ))
+                                    })
+                                    .collect::<Result<_>>()
+                            })?,
                     ))
                 })
                 .collect::<Result<_>>()?,
