@@ -112,7 +112,7 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
                         .context("Failed to open converted mod")?,
                 )
             } else {
-                return Err(err.context("Failed to open mod"));
+                return Err(err.context(format!("Failed to open mod {}", path.display())));
             }
         }
     };

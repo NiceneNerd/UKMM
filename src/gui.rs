@@ -243,6 +243,7 @@ pub struct App {
     displayed_mods: Vec<Mod>,
     selected: Vec<Mod>,
     install_queue: VecDeque<PathBuf>,
+    error_queue: VecDeque<anyhow_ext::Error>,
     drag_index: Option<usize>,
     hover_index: Option<usize>,
     picker_state: FilePickerState,
@@ -342,6 +343,7 @@ impl App {
             theme: ui_state.theme,
             dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
             install_queue: Default::default(),
+            error_queue: Default::default(),
             new_version: None,
         }
     }
@@ -410,6 +412,7 @@ impl App {
             let first = files.first().and_then(|f| f.path.clone()).unwrap();
             self.install_queue
                 .extend(files.iter().skip(1).filter_map(|f| f.path.clone()));
+            self.error_queue.clear();
             self.do_task(move |core| tasks::open_mod(&core, &first, None));
         }
     }
@@ -641,6 +644,7 @@ impl App {
                     {
                         let first = paths.remove(0);
                         self.install_queue.extend(paths);
+                        self.error_queue.clear();
                         self.do_task(move |core| tasks::open_mod(&core, &first, None));
                     }
                 }
@@ -669,8 +673,7 @@ impl App {
                             platform,
                             self.platform()
                         )));
-                    }
-                    if !mod_.meta.options.is_empty() {
+                    } else if !mod_.meta.options.is_empty() {
                         self.do_update(Message::RequestOptions(mod_, false));
                     } else {
                         self.do_update(Message::InstallMod(mod_));
@@ -725,6 +728,16 @@ impl App {
                     self.busy.set(false);
                     if let Some(path) = self.install_queue.pop_front() {
                         self.do_task(move |core| tasks::open_mod(&core, &path, None));
+                    } else if !self.error_queue.is_empty() {
+                        let msg = self
+                            .error_queue
+                            .drain(..)
+                            .map(|e| format!("{e:?}\n"))
+                            .collect::<String>();
+                        self.do_update(Message::Error(
+                            anyhow_ext::anyhow!("{msg}")
+                                .context("One or more errors occured while installing your mods. Please see full details."),
+                        ));
                     }
                 }
                 Message::RemoveMods(mods) => {
@@ -827,8 +840,16 @@ impl App {
                 }
                 Message::Error(error) => {
                     log::error!("{:?}", &error);
-                    self.busy.set(false);
-                    self.error = Some(error);
+                    if self.install_queue.is_empty() {
+                        self.busy.set(false);
+                        self.error = Some(error);
+                    } else {
+                        log::warn!("More operations in queue, stashing error and continuing…");
+                        self.error_queue.push_back(error);
+                        if let Some(path) = self.install_queue.pop_front() {
+                            self.do_task(move |core| tasks::open_mod(&core, &path, None));
+                        }
+                    }
                 }
                 #[allow(irrefutable_let_patterns)]
                 Message::CheckMeta => {
