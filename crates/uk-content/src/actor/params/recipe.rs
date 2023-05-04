@@ -51,15 +51,10 @@ impl TryFrom<&ParameterIO> for Recipe {
                     let table = pio.object(name.as_str()).ok_or_else(|| {
                         UKError::MissingAampKeyD(jstr!("Recipe missing table {&name}"))
                     })?;
+                    let items_count = (table.0.len() - 1) / 2;
                     Ok((
                         name,
-                        (1..=table
-                            .get("ColumnNum")
-                            .ok_or(UKError::MissingAampKey(
-                                "Recipe table missing column num",
-                                None,
-                            ))?
-                            .as_int()?)
+                        (1..=items_count)
                             .named_enumerate("ItemNum")
                             .with_padding::<2>()
                             .with_zero_index(false)

@@ -113,19 +113,12 @@ impl InfoSource for DropTable {
                 .iter()
                 .map(|(name, table)| -> Result<(std::string::String, Byml)> {
                     Ok((name.to_string(), {
-                        let count = table
-                            .get("ColumnNum")
-                            .ok_or(UKError::MissingAampKey(
-                                "Drop table missing column count",
-                                None,
-                            ))?
-                            .as_int()?;
+                        let count = (table.0.len() - 5) / 2;
                         (1..=count)
                             .named_enumerate("ItemName")
                             .with_padding::<2>()
                             .with_zero_index(false)
                             .map(|(name, _)| -> Result<Byml> {
-                                dbg!(&name);
                                 Ok(Byml::String(
                                     table
                                         .get(&name)

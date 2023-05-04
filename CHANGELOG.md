@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Workaround for mods with incorrect drop or recipe `ColumnNum` values
 - Queue errors for end of batch install
 - More error details, especially to identify mods in batch operations
 
