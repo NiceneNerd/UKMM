@@ -396,7 +396,14 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
 
 #[allow(irrefutable_let_patterns)]
 pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
-    let tempdir = unpack_bnp(core, path).context("Failed to unpack BNP")?;
+    let tempdir = unpack_bnp(core, path).with_context(|| {
+        format!(
+            "Failed to unpack {}",
+            path.file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or_default()
+        )
+    })?;
     let tempfile = std::env::temp_dir();
     let meta  =
     if let rules_path = tempdir.join("rules.txt") && rules_path.exists() {
@@ -404,12 +411,13 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
     } else {
         ModPacker::parse_info(tempdir.join("info.json")).context("Failed to parse BNP metadata")?
     };
+    let name = meta.name.clone();
     let new_mod = ModPacker::new(tempdir, tempfile.as_path(), Some(meta), vec![
         core.settings()
             .dump()
             .context("No dump for current platform")?,
     ])
-    .context("Failed to package converted BNP")?;
+    .with_context(|| format!("Failed to package converted BNP for mod {}", name))?;
     new_mod.pack()
 }
 

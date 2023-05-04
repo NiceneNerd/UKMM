@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- More error details, especially to identify mods in batch operations
+
 ## [0.8.1]
 
 ## Fixed

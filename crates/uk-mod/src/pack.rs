@@ -602,7 +602,13 @@ impl ModPacker {
     }
 
     pub fn pack(mut self) -> Result<PathBuf> {
-        self.pack_root(&self.source_dir)?;
+        self.pack_root(&self.source_dir).with_context(|| {
+            format!(
+                "Failed to package mod root at {} for mod {}",
+                self.source_dir.display(),
+                self.meta.name
+            )
+        })?;
         if self.source_dir.join("options").exists() {
             log::debug!("Mod contains options");
             self.masters
@@ -612,7 +618,13 @@ impl ModPacker {
             log::info!("Collecting resources for options");
             for root in self.collect_roots() {
                 self.current_root = root.clone();
-                self.pack_root(root)?;
+                self.pack_root(root).with_context(|| {
+                    format!(
+                        "Failed to package mod root at {} for mod {}",
+                        self.current_root.display(),
+                        self.meta.name
+                    )
+                })?;
             }
         }
         self.pack_thumbnail()?;

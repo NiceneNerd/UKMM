@@ -96,7 +96,17 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
                     log::info!("Mod has no meta info, requesting manual input");
                     return Ok(Message::RequestMeta(path.to_path_buf()));
                 }
-                let converted_path = uk_manager::mods::convert_gfx(core, path, meta)?;
+                if let Some(ref meta) = meta {
+                    log::info!("Converting mod {}…", meta.name);
+                }
+                let converted_path = uk_manager::mods::convert_gfx(core, path, meta).with_context(|| {
+                    format!(
+                        "Failed to convert {}",
+                        path.file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or_default()
+                    )
+                })?;
                 Mod::from_reader(
                     ModReader::open_peek(converted_path, vec![])
                         .context("Failed to open converted mod")?,
