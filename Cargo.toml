@@ -81,7 +81,7 @@ path-slash = "0.2.1"
 rayon = "1.6"
 rfd = "0.11.1"
 roead = "0.20.3"
-rstb = "0.6.0"
+rstb = { version = "0.6.0" }
 rustc-hash = "1.1.0"
 sanitise-file-name = "1"
 serde = "1"
