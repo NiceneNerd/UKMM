@@ -4,7 +4,11 @@ pub mod converts;
 use std::{collections::BTreeMap, str::FromStr};
 
 pub use collections::*;
-use roead::{aamp::*, byml::Byml, types::FixedSafeString};
+use roead::{
+    aamp::*,
+    byml::{Byml, Hash},
+    types::FixedSafeString,
+};
 
 pub fn diff_plist<P: ParameterListing + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
@@ -109,12 +113,13 @@ pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
 pub fn merge_byml_shallow(base: &Byml, diff: &Byml) -> Byml {
     match (base, diff) {
         (Byml::Hash(base), Byml::Hash(diff)) => {
-            Byml::Hash(
-                base.iter()
-                    .chain(diff.iter())
-                    .map(|(k, v)| (k.clone(), v.clone()))
-                    .collect(),
-            )
+            let mut new: Hash = base
+                .iter()
+                .chain(diff.iter())
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect();
+            new.retain(|_, v| v != &Byml::Null);
+            Byml::Hash(new)
         }
         (Byml::Hash(base), Byml::Null) => Byml::Hash(base.clone()),
         _ => panic!("Can only shallow merge BYML hashes"),
