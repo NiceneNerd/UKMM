@@ -629,7 +629,7 @@ impl ModUnpacker {
         }
         let base_version = versions
             .pop_front()
-            .with_context(|| format!("No base version for file {}", &file))?;
+            .with_context(|| format!("No copy of {} found in game dump or any mod", &file))?;
         let is_modded = !versions.is_empty() || self.hashes.is_file_new(&canon);
         let data = match base_version.as_ref() {
             ResourceData::Binary(_) => {
@@ -662,6 +662,9 @@ impl ModUnpacker {
                         &canon,
                         self.endian.into(),
                     ));
+                    if canon.ends_with("bphysics") || self.endian == Endian::Little {
+                        rstb_val = rstb_val.map(|v| v.map(|v| (v as f32 * 1.25) as u32));
+                    }
                 }
                 data
             }
