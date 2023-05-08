@@ -369,11 +369,9 @@ impl Manager {
                         .with_context(|| jstr!("Failed to delete orphan file {f.as_str()}"))?;
                 }
                 let parent = file.parent().unwrap();
-                if parent.exists()
-                    && std::fs::read_dir(parent)
-                        .with_context(|| format!("Failed to read folder {}", parent.display()))?
-                        .next()
-                        .is_none()
+                if std::fs::read_dir(parent)
+                    .map(|mut f| f.next().is_none())
+                    .unwrap_or(false)
                 {
                     util::remove_dir_all(parent).unwrap_or(())
                 }

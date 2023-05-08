@@ -22,7 +22,8 @@ fn handle_diff_entry(
         AampDiffEntry::Sarc(nest_map) => {
             let mut nest_sarc = SarcWriter::from_sarc(&Sarc::new(nested_bytes)?);
             for (nested_file, nested_contents) in nest_map {
-                handle_diff_entry(&mut nest_sarc, nested_file, nested_contents)?;
+                handle_diff_entry(&mut nest_sarc, nested_file, nested_contents)
+                    .with_context(|| format!("Failed to process {}", nested_file))?;
             }
             let data = nest_sarc.to_binary();
             let data = compress_if(&data, nest_root);
@@ -53,10 +54,18 @@ impl BnpConverter {
                     base_path.parent().iter().try_for_each(fs::create_dir_all)?;
                     match contents {
                         AampDiffEntry::Sarc(map) => {
-                            let mut sarc =
-                                self.open_or_create_sarc(&base_path, self.trim_prefixes(&root))?;
+                            let mut sarc = self
+                                .open_or_create_sarc(&base_path, self.trim_prefixes(&root))
+                                .with_context(|| {
+                                    format!(
+                                        "Failed to open or create SARC at {}",
+                                        base_path.display()
+                                    )
+                                })?;
                             map.iter().try_for_each(|(nest_root, contents)| {
-                                handle_diff_entry(&mut sarc, nest_root, contents)
+                                handle_diff_entry(&mut sarc, nest_root, contents).with_context(
+                                    || format!("Failed to process {} in {}", nest_root, root),
+                                )
                             })?;
                             fs::write(&base_path, compress_if(&sarc.to_binary(), &root))?;
                         }

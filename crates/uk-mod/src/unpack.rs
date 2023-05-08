@@ -602,15 +602,20 @@ impl ModUnpacker {
                 .and_then(|n| n.to_str())
                 .unwrap_or_default(),
         );
+        let mut dump_error: Vec<anyhow_ext::Error> = vec![];
         match self.dump.get_data(file).or_else(|e| {
             log::trace!("{e}");
-            self.dump
-                .get_data(canon.as_str())
-                .or_else(|_| self.dump.get_resource(canon.as_str()))
+            dump_error.push(e.into());
+            self.dump.get_data(canon.as_str()).or_else(|e| {
+                log::trace!("{e}");
+                dump_error.push(e.into());
+                self.dump.get_resource(canon.as_str())
+            })
         }) {
             Ok(ref_res) => versions.push_back(ref_res),
             Err(e) => {
                 log::trace!("{e}");
+                dump_error.push(e.into());
             }
         }
         for (data, mod_) in self
@@ -630,12 +635,16 @@ impl ModUnpacker {
         let base_version = versions
             .pop_front()
             .with_context(|| {
-                format!(
+                let mut err = anyhow_ext::anyhow!(
                     "No copy of {} found in game dump or any mod. Sometimes this is a problem with the mod or\
                     your game dump. However, it can also be a temporary cache error. If you know your dump and its\
                     configuration are sound, try restarting UKMM. If it persists, copy the error details and post \
                     as a comment to https://github.com/NiceneNerd/ukmm/issues/120.", &file
-                )
+                );
+                for e in dump_error {
+                    err = e.context(err);
+                }
+                err
             })?;
         let is_modded = !versions.is_empty() || self.hashes.is_file_new(&canon);
         let data = match base_version.as_ref() {
