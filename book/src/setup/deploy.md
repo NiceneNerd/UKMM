@@ -45,6 +45,25 @@ With the Switch, you generally want your mods to end up on your SD card under
 you might want to set a temporary directory for deploying mods, or you can merge
 without the SD card but wait and deploy when the SD card is mountained.
 
+### Yuzu or Ryujinx
+
+Yuzu and Ryujinx both allow you to install mods in two different locations, one
+specific to their own files and the other for emulating Atmosphere's LayeredFS
+setup on SD card. *You must use the LayeredFS arrangement.*
+
+So, for example, the Yuzu user storage folder is
+`C:\Users\[USER]\AppData\Roaming\yuzu` on Windows or `~/.local/share/yuzu` on
+Linux. In this case, you want your deployment folder at
+`[USER-FOLDER]/sdmc/atmosphere/contents`.
+
+> **Note on Switch-based deployment**:
+> When using Switch, Yuzu, or Ryujinx, you will need to generally use the
+> `contents` folder as the actual deployment folder, and the two title ID
+> folders for BOTW and its DLC will be used to store mod files. If you mod other
+> games besides BOTW, note that they will also have their mods in a title ID
+> folder in the same `contents` folder, and some operations could affect them.
+> Be aware of this particularly when using the symlink method discussed below.
+
 ## Deployment Methods
 
 UKMM offers three methods to deploy mods. Which one is best depends heavily on
@@ -100,6 +119,12 @@ networked drives are not supported. If that fails, it will try to use a regular
 directory symbolic link. These have fewer restrictions, but usually (for some
 dumb reason) require administrator permissions to create.[^1]
 
+> **Note for Switch/Yuzu/Ryujinx:** Since the deployment folder will need to be
+> set the `atmosphere/contents` root, and it will deploy the two title ID folders
+> for BOTW and its DLC inside, you may run into issues if you also have mods for
+> other games (other title IDs). They might be erased or end up inside UKMM's
+> storage folder, depening on your precise process and settings.
+
 So, in sum:
 
 **Advantages**
@@ -110,6 +135,7 @@ So, in sum:
 - Windows support is complicated
 - No chance to change your mind before deploying mods after applying load order
   changes
+- Does not mesh well for Switch users modding other games
 
 **Best for**: Linux systems, or advanced users on Windows
 
