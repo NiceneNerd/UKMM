@@ -201,13 +201,13 @@ impl TryFrom<&Byml> for Cei {
                 .as_float()
                 .map_err(|_| UKError::WrongBymlType("not a float".into(), "a float"))
                 .unwrap(),
-            ma: hash
+            ma:  hash
                 .get("Ma")
                 .ok_or(UKError::MissingBymlKey("CEI missing Ma"))?
                 .as_i32()
                 .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
                 .unwrap(),
-            mi: hash
+            mi:  hash
                 .get("Mi")
                 .ok_or(UKError::MissingBymlKey("CEI missing Mi"))?
                 .as_i32()
@@ -219,7 +219,7 @@ impl TryFrom<&Byml> for Cei {
                 .as_i32()
                 .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
                 .unwrap(),
-            t: hash
+            t:   hash
                 .get("T")
                 .ok_or(UKError::MissingBymlKey("CEI missing T"))?
                 .as_int::<i32>()

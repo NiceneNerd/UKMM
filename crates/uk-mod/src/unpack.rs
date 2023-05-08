@@ -629,7 +629,14 @@ impl ModUnpacker {
         }
         let base_version = versions
             .pop_front()
-            .with_context(|| format!("No copy of {} found in game dump or any mod", &file))?;
+            .with_context(|| {
+                format!(
+                    "No copy of {} found in game dump or any mod. Sometimes this is a problem with the mod or\
+                    your game dump. However, it can also be a temporary cache error. If you know your dump and its\
+                    configuration are sound, try restarting UKMM. If it persists, copy the error details and post \
+                    as a comment to https://github.com/NiceneNerd/ukmm/issues/120.", &file
+                )
+            })?;
         let is_modded = !versions.is_empty() || self.hashes.is_file_new(&canon);
         let data = match base_version.as_ref() {
             ResourceData::Binary(_) => {

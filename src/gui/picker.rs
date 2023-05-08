@@ -179,7 +179,9 @@ impl App {
                 ui.style().visuals.noninteractive().bg_fill
             }),
         );
-        if res.double_clicked() || (ui.input().key_pressed(Key::Enter) && selected && !self.modal_open()) {
+        if res.double_clicked()
+            || (ui.input().key_pressed(Key::Enter) && selected && !self.modal_open())
+        {
             self.do_update(Message::SetFocus(FocusedPane::FilePicker));
             if path.is_dir() {
                 self.do_update(Message::FilePickerSet(Some(path.to_path_buf())));
