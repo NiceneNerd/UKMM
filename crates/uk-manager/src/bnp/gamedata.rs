@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use fs_err as fs;
 use roead::byml::{Byml, Hash};
 use uk_content::{
@@ -15,10 +15,13 @@ impl BnpConverter {
         if gamedata_path.exists() {
             log::debug!("Processing gamedata log");
             let diff = Byml::from_text(fs::read_to_string(gamedata_path)?)?.into_hash()?;
-            let base = self.dump.get_from_sarc(
-                "GameData/gamedata.sarc",
-                "Pack/Bootup.pack//GameData/gamedata.ssarc",
-            )?;
+            let base = self
+                .dump
+                .get_from_sarc(
+                    "GameData/gamedata.sarc",
+                    "Pack/Bootup.pack//GameData/gamedata.ssarc",
+                )
+                .context("Failed to parse gamedata pack from game dump")?;
             if let Some(MergeableResource::GameDataPack(mut base)) = base.as_mergeable().cloned() {
                 fn simple_add(base: &mut GameData, diff: &Hash) -> Result<()> {
                     if let Some(Byml::Hash(add)) = diff.get("add") {
@@ -67,7 +70,8 @@ impl BnpConverter {
                         if let Some(Byml::Hash(add)) = diff.get("add") {
                             for (name, flag) in add.iter() {
                                 let mut parts = name.split('_');
-                                let flag = FlagData::try_from(flag)?;
+                                let flag = FlagData::try_from(flag)
+                                    .context("Failed to parse gamedata flah from BNP log")?;
                                 if GameDataPack::STAGES.contains(&parts.next().unwrap_or(""))
                                     && !name.contains("HiddenKorok")
                                 {
