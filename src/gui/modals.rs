@@ -384,7 +384,7 @@ impl App {
     }
 
     pub fn render_pending(&self, ui: &mut Ui) {
-        if !self.dirty.is_empty() {
+        if !self.dirty().is_empty() {
             egui::Window::new("Pending Changes")
                 .anchor(Align2::RIGHT_BOTTOM, [-32.0, -32.0])
                 .collapsible(true)
@@ -398,7 +398,7 @@ impl App {
                                 egui::CollapsingHeader::new("Files Pending Update").show(
                                     ui,
                                     |ui| {
-                                        info::render_manifest(&self.dirty, ui);
+                                        info::render_manifest(&self.dirty(), ui);
                                     },
                                 );
                             });

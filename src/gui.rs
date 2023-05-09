@@ -26,7 +26,9 @@ use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
 use join_str::jstr;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::{
+    MappedRwLockReadGuard, MappedRwLockWriteGuard, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
+};
 use picker::FilePickerState;
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
@@ -262,7 +264,7 @@ pub struct App {
     package_builder: RefCell<ModPackerBuilder>,
     show_package_deps: bool,
     opt_folders: Option<Mutex<FxHashSet<PathBuf>>>,
-    dirty: Manifest,
+    dirty: RwLock<HashMap<String, Manifest>>,
     sort: (Sort, bool),
     options_mod: Option<(Mod, bool)>,
     temp_settings: Settings,
@@ -323,7 +325,6 @@ impl App {
                 }
             },
             channel: (send, recv),
-            core,
             logs: Vec::new(),
             log: LayoutJob::default(),
             closed_tabs: Default::default(),
@@ -335,7 +336,15 @@ impl App {
             show_package_deps: false,
             opt_folders: None,
             busy: Cell::new(false),
-            dirty: Manifest::default(),
+            dirty: {
+                let settings = core.settings();
+                RwLock::new(
+                    settings
+                        .profiles()
+                        .map(|p| (p.into(), Default::default()))
+                        .collect(),
+                )
+            },
             sort: (Sort::Priority, false),
             options_mod: None,
             tree: Arc::new(RwLock::new(ui_state.tree)),
@@ -345,12 +354,35 @@ impl App {
             install_queue: Default::default(),
             error_queue: Default::default(),
             new_version: None,
+            core,
         }
     }
 
     #[inline(always)]
     fn platform(&self) -> Platform {
         self.core.settings().current_mode
+    }
+
+    #[inline(always)]
+    fn dirty(&self) -> MappedRwLockReadGuard<'_, uk_mod::Manifest> {
+        let dirty = self.dirty.read();
+        RwLockReadGuard::map(dirty, |dirty| {
+            dirty
+                .get(self.core.mod_manager().profile().key().as_str())
+                .or_else(|| dirty.values().next())
+                .unwrap()
+        })
+    }
+
+    #[inline(always)]
+    fn dirty_mut(&self) -> MappedRwLockWriteGuard<'_, uk_mod::Manifest> {
+        let dirty = self.dirty.write();
+        RwLockWriteGuard::map(dirty, |dirty| {
+            dirty.get_mut(self.core.mod_manager().profile().key().as_str())
+            .map(|m| unsafe { &mut *(m as *mut _) }) // Classic Polonius situation
+            .or_else(|| dirty.values_mut().next())
+            .unwrap()
+        })
     }
 
     #[inline(always)]
@@ -437,7 +469,7 @@ impl App {
                 }
                 Message::ResetMods => {
                     self.busy.set(false);
-                    self.dirty.clear();
+                    self.dirty_mut().clear();
                     self.mods = self.core.mod_manager().all_mods().collect();
                     self.do_update(Message::RefreshModsDisplay);
                     self.do_update(Message::ReloadProfiles);
@@ -543,7 +575,7 @@ impl App {
                     self.hover_index = None;
                     self.drag_index = None;
                     match self.selected.iter().try_for_each(|m| {
-                        self.dirty
+                        self.dirty_mut()
                             .extend(m.manifest_with_options(&m.enabled_options)?.as_ref());
                         Ok(())
                     }) {
@@ -581,7 +613,11 @@ impl App {
                 }
                 Message::ChangeProfile(profile) => {
                     match self.core.change_profile(profile) {
-                        Ok(()) => self.do_update(Message::ResetMods),
+                        Ok(()) => {
+                            self.mods = self.core.mod_manager().all_mods().collect();
+                            self.do_update(Message::RefreshModsDisplay);
+                            self.do_update(Message::ReloadProfiles);
+                        },
                         Err(e) => self.do_update(Message::Error(e)),
                     };
                 }
@@ -708,20 +744,25 @@ impl App {
                 }
                 Message::ToggleMods(mods, enabled) => {
                     let mods = mods.as_ref().unwrap_or(&self.selected);
-                    match mods.iter().try_for_each(|m| -> Result<()> {
-                        let mod_ =
-                            unsafe { self.mods.iter_mut().find(|m2| m.eq(m2)).unwrap_unchecked() };
-                        mod_.enabled = enabled;
-                        self.dirty.extend(m.manifest()?.as_ref());
-                        Ok(())
-                    }) {
-                        Ok(()) => self.do_update(Message::RefreshModsDisplay),
+                    let dirty = mods
+                        .iter()
+                        .try_fold(Manifest::default(), |mut dirty, m| -> Result<Manifest> {
+                            let mod_ = unsafe { self.mods.iter_mut().find(|m2| m.eq(m2)).unwrap_unchecked() };
+                            mod_.enabled = enabled;
+                            dirty.extend(m.manifest()?.as_ref());
+                            Ok(dirty)
+                        });
+                    match dirty {
+                        Ok(dirty) => {
+                            self.dirty_mut().extend(&dirty);
+                            self.do_update(Message::RefreshModsDisplay)
+                        },
                         Err(e) => self.do_update(Message::Error(e)),
                     };
                 }
                 Message::AddMod(mod_) => {
                     if let Ok(manifest) = mod_.manifest() {
-                        self.dirty.extend(&manifest);
+                        self.dirty_mut().extend(&manifest);
                     }
                     self.mods = self.core.mod_manager().all_mods().collect();
                     self.do_update(Message::RefreshModsDisplay);
@@ -745,7 +786,7 @@ impl App {
                     self.selected.retain(|m| !mods.contains(m));
                     mods.iter().for_each(|m| {
                         if let Ok(manifest) = m.manifest() {
-                            self.dirty.extend(&manifest);
+                            self.dirty_mut().extend(&manifest);
                         }
                     });
                     self.do_update(Message::RefreshModsDisplay);
@@ -753,7 +794,7 @@ impl App {
                 }
                 Message::Apply => {
                     let mods = self.mods.clone();
-                    let dirty = std::mem::take(&mut self.dirty);
+                    let dirty = std::mem::take(self.dirty_mut().deref_mut());
                     self.do_task(move |core| tasks::apply_changes(&core, mods, Some(dirty)));
                 }
                 Message::Deploy => {
@@ -822,7 +863,7 @@ impl App {
                         .set_enabled_options(mod_.hash(), opts)
                     {
                         Ok(manifest) => {
-                            self.dirty.extend(&manifest);
+                            self.dirty_mut().extend(&manifest);
                             if let Some(old_mod) =
                                 self.mods.iter_mut().find(|m| m.hash() == mod_.hash())
                             {
