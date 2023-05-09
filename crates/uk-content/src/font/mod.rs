@@ -2,7 +2,11 @@ use roead::sarc::*;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 
-use crate::{prelude::*, util::IndexMap, Result, UKError};
+use crate::{
+    prelude::*,
+    util::{HashSet, IndexMap},
+    Result, UKError,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct FontArchive(pub IndexMap<String, Vec<u8>>);
@@ -31,10 +35,18 @@ impl Mergeable for FontArchive {
     }
 
     fn merge(&self, diff: &Self) -> Self {
+        let keys: HashSet<String> = self.0.keys().chain(diff.0.keys()).cloned().collect();
         Self(
-            self.0
-                .iter()
-                .map(|(k, v)| (k.clone(), diff.0.get(k).unwrap_or(v).to_vec()))
+            keys.into_iter()
+                .map(|k| {
+                    let v = diff
+                        .0
+                        .get(&k)
+                        .or_else(|| self.0.get(&k))
+                        .map(|v| v.to_vec())
+                        .unwrap();
+                    (k, v)
+                })
                 .collect(),
         )
     }
