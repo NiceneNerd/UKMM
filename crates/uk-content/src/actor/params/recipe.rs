@@ -1,3 +1,4 @@
+use anyhow::Context;
 use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
@@ -51,10 +52,15 @@ impl TryFrom<&ParameterIO> for Recipe {
                     let table = pio.object(name.as_str()).ok_or_else(|| {
                         UKError::MissingAampKeyD(jstr!("Recipe missing table {&name}"))
                     })?;
-                    let items_count = (table.0.len() - 1) / 2;
-                    Ok((
-                        name,
-                        (1..=items_count)
+                    let items_count = table
+                        .get("ColumnNum")
+                        .ok_or(UKError::MissingAampKey(
+                            "Recipe table missing column count",
+                            None,
+                        ))?
+                        .as_int()?;
+                    let process = |count| -> Result<_> {
+                        (1..=count)
                             .named_enumerate("ItemNum")
                             .with_padding::<2>()
                             .with_zero_index(false)
@@ -81,7 +87,7 @@ impl TryFrom<&ParameterIO> for Recipe {
                             })
                             .collect::<Result<_>>()
                             .or_else(|_| {
-                                (1..=items_count)
+                                (1..=count)
                                     .named_enumerate("ItemNum")
                                     .with_padding::<3>()
                                     .with_zero_index(false)
@@ -107,7 +113,14 @@ impl TryFrom<&ParameterIO> for Recipe {
                                         ))
                                     })
                                     .collect::<Result<_>>()
-                            })?,
+                            })
+                    };
+                    Ok((
+                        name,
+                        process(items_count).or_else(|e| {
+                            let items_count = (table.0.len() - 1) / 2;
+                            process(items_count).context(e)
+                        })?,
                     ))
                 })
                 .collect::<Result<_>>()?,

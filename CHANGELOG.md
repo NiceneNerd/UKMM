@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Specially flag nested lookup error
+- Even more workarounds for malformed recipe/drop table files
 
 ### Fixed
 - Fix BFARC and BLARC merging new files

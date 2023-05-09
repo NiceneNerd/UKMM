@@ -1,3 +1,4 @@
+use anyhow::Context;
 use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
@@ -113,43 +114,55 @@ impl InfoSource for DropTable {
                 .iter()
                 .map(|(name, table)| -> Result<(std::string::String, Byml)> {
                     Ok((name.to_string(), {
-                        let count = (table.0.len() - 5) / 2;
-                        (1..=count)
-                            .named_enumerate("ItemName")
-                            .with_padding::<2>()
-                            .with_zero_index(false)
-                            .map(|(name, _)| -> Result<Byml> {
-                                Ok(Byml::String(
-                                    table
-                                        .get(&name)
-                                        .ok_or(UKError::MissingAampKey(
-                                            "Drop table missing item name",
-                                            None,
-                                        ))?
-                                        .as_str()?
-                                        .into(),
-                                ))
-                            })
-                            .collect::<Result<_>>()
-                            .or_else(|_| {
-                                (1..=count)
-                                    .named_enumerate("ItemName")
-                                    .with_padding::<3>()
-                                    .with_zero_index(false)
-                                    .map(|(name, _)| -> Result<Byml> {
-                                        Ok(Byml::String(
-                                            table
-                                                .get(&name)
-                                                .ok_or(UKError::MissingAampKey(
-                                                    "Drop table missing item name",
-                                                    None,
-                                                ))?
-                                                .as_str()?
-                                                .into(),
-                                        ))
-                                    })
-                                    .collect::<Result<_>>()
-                            })
+                        let count = table
+                            .get("ColumnNum")
+                            .ok_or(UKError::MissingAampKey(
+                                "Drop table missing column count",
+                                None,
+                            ))?
+                            .as_int()?;
+                        let process = |count| -> Result<_> {
+                            (1..=count)
+                                .named_enumerate("ItemName")
+                                .with_padding::<2>()
+                                .with_zero_index(false)
+                                .map(|(name, _)| -> Result<Byml> {
+                                    Ok(Byml::String(
+                                        table
+                                            .get(&name)
+                                            .ok_or(UKError::MissingAampKey(
+                                                "Drop table missing item name",
+                                                None,
+                                            ))?
+                                            .as_str()?
+                                            .into(),
+                                    ))
+                                })
+                                .collect::<Result<_>>()
+                                .or_else(|_| {
+                                    (1..=count)
+                                        .named_enumerate("ItemName")
+                                        .with_padding::<3>()
+                                        .with_zero_index(false)
+                                        .map(|(name, _)| -> Result<Byml> {
+                                            Ok(Byml::String(
+                                                table
+                                                    .get(&name)
+                                                    .ok_or(UKError::MissingAampKey(
+                                                        "Drop table missing item name",
+                                                        None,
+                                                    ))?
+                                                    .as_str()?
+                                                    .into(),
+                                            ))
+                                        })
+                                        .collect::<Result<_>>()
+                                })
+                        };
+                        process(count).or_else(|e| {
+                            let count = (table.0.len() - 5) / 2;
+                            process(count).context(e)
+                        })
                     }?))
                 })
                 .collect::<Result<_>>()?,
