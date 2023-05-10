@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking change**: Deeper model data merging. This is a *breaking change*
+  which will require reinstalling all mods that edit model lists (`.bmodellist`).
 - Specially flag nested lookup error
 - Even more workarounds for malformed recipe/drop table files
 

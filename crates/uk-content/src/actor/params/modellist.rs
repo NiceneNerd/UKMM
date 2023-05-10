@@ -16,10 +16,95 @@ use crate::{
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ui", derive(Editable))]
+pub struct ModelData {
+    pub folder: String64,
+    pub units:  DeleteMap<String64, String64>,
+}
+
+impl TryFrom<&ParameterList> for ModelData {
+    type Error = UKError;
+
+    fn try_from(list: &ParameterList) -> std::result::Result<Self, Self::Error> {
+        let folder = list
+            .object("Base")
+            .ok_or_else(|| UKError::MissingAampKey("Model data missing Base object", None))?
+            .get("Folder")
+            .ok_or_else(|| UKError::MissingAampKey("Model data missing Folder", None))?
+            .as_safe_string()?;
+        let units = list
+            .list("Unit")
+            .ok_or_else(|| UKError::MissingAampKey("Model data missing Unit list", None))?
+            .objects
+            .0
+            .values()
+            .map(|obj| -> Result<(String64, String64)> {
+                let name = obj
+                    .get("UnitName")
+                    .ok_or_else(|| {
+                        UKError::MissingAampKey("Model data unit missing name", Some(obj.into()))
+                    })?
+                    .as_safe_string()?;
+                let bone = obj
+                    .get("BindBone")
+                    .ok_or_else(|| {
+                        UKError::MissingAampKey(
+                            "Model data unit missing bind bone",
+                            Some(obj.into()),
+                        )
+                    })?
+                    .as_safe_string()?;
+                Ok((name, bone))
+            })
+            .collect::<Result<_>>()?;
+        Ok(Self { folder, units })
+    }
+}
+
+impl From<ModelData> for ParameterList {
+    fn from(val: ModelData) -> Self {
+        ParameterList::new()
+            .with_object(
+                "Base",
+                ParameterObject::new().with_parameter("Folder", val.folder.into()),
+            )
+            .with_list(
+                "Unit",
+                ParameterList::new().with_objects(val.units.into_iter().enumerate().map(
+                    |(i, (name, bone))| {
+                        (
+                            format!("Unit_{}", i),
+                            ParameterObject::new()
+                                .with_parameter("UnitName", name.into())
+                                .with_parameter("BindBone", bone.into()),
+                        )
+                    },
+                )),
+            )
+    }
+}
+
+impl Mergeable for ModelData {
+    fn diff(&self, other: &Self) -> Self {
+        Self {
+            folder: other.folder,
+            units:  self.units.diff(&other.units),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self {
+            folder: diff.folder,
+            units:  self.units.merge(&diff.units),
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ui", derive(Editable))]
 pub struct ModelList {
     pub controller_info: ParameterObject,
     pub attention: ParameterObject,
-    pub model_data: DeleteVec<ParameterList>,
+    pub model_data: BTreeMap<usize, ModelData>,
     pub anm_target: BTreeMap<usize, ParameterList>,
     pub locators: DeleteVec<ParameterObject>,
 }
@@ -52,8 +137,9 @@ impl TryFrom<&ParameterIO> for ModelList {
                 .lists
                 .0
                 .values()
-                .cloned()
-                .collect(),
+                .enumerate()
+                .map(|(i, list)| Ok((i, ModelData::try_from(list)?)))
+                .collect::<Result<_>>()?,
             anm_target: pio
                 .list("AnmTarget")
                 .ok_or(UKError::MissingAampKey(
@@ -93,8 +179,8 @@ impl From<ModelList> for ParameterIO {
                 lists:   plists!(
                     "ModelData" => ParameterList::new()
                         .with_lists(
-                            val.model_data.into_iter().enumerate().map(|(i, list)| {
-                                (jstr!("ModelData_{&lexical::to_string(i)}"), list)
+                            val.model_data.into_iter().map(|(i, list)| {
+                                (jstr!("ModelData_{&lexical::to_string(i)}"), list.into())
                             }),
                         ),
                     "AnmTarget" => ParameterList::new()
@@ -120,7 +206,17 @@ impl Mergeable for ModelList {
         Self {
             controller_info: diff_pobj(&self.controller_info, &other.controller_info),
             attention: diff_pobj(&self.attention, &other.attention),
-            model_data: self.model_data.diff(&other.model_data),
+            model_data: other
+                .model_data
+                .iter()
+                .filter_map(|(i, data)| {
+                    match self.model_data.get(i) {
+                        Some(v) if v == data => None,
+                        Some(v) if v != data => Some((*i, v.diff(data))),
+                        _ => Some((*i, data.clone())),
+                    }
+                })
+                .collect(),
             anm_target: simple_index_diff(&self.anm_target, &other.anm_target),
             locators: self.locators.diff(&other.locators),
         }
@@ -130,7 +226,24 @@ impl Mergeable for ModelList {
         Self {
             controller_info: merge_pobj(&self.controller_info, &diff.controller_info),
             attention: merge_pobj(&self.attention, &diff.attention),
-            model_data: self.model_data.merge(&diff.model_data),
+            model_data: {
+                let keys: HashSet<usize> = self
+                    .model_data
+                    .keys()
+                    .chain(diff.model_data.keys())
+                    .copied()
+                    .collect();
+                keys.into_iter()
+                    .map(|i| {
+                        match (self.model_data.get(&i), diff.model_data.get(&i)) {
+                            (Some(data), Some(diff_data)) => (i, data.merge(diff_data)),
+                            (Some(data), None) => (i, data.clone()),
+                            (None, Some(diff_data)) => (i, diff_data.clone()),
+                            _ => unreachable!(),
+                        }
+                    })
+                    .collect()
+            },
             anm_target: simple_index_merge(&self.anm_target, &diff.anm_target),
             locators: self.locators.merge(&diff.locators),
         }
@@ -182,17 +295,16 @@ impl InfoSource for ModelList {
                 ),
             );
         }
-        if let Some(Parameter::String64(bfres)) = self
-            .model_data
-            .get(0)
-            .and_then(|list| list.object("Base").and_then(|o| o.get("Folder")))
-        {
+        if let Some(bfres) = self.model_data.values().next().map(|data| data.folder) {
             info.insert("bfres".into(), bfres.as_str().into());
         }
-        if let Some(Parameter::String64(model)) = self.model_data.get(0).and_then(|list| {
-            list.list("Unit")
-                .and_then(|list| list.object("Unit_0").and_then(|obj| obj.get("UnitName")))
-        }) {
+        if let Some(model) = self
+            .model_data
+            .values()
+            .next()
+            .and_then(|data| data.units.iter().next())
+            .map(|d| d.0)
+        {
             info.insert("mainModel".into(), model.as_str().into());
         }
         Ok(())
