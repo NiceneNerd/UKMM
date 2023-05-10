@@ -70,8 +70,12 @@ impl BnpConverter {
                         if let Some(Byml::Hash(add)) = diff.get("add") {
                             for (name, flag) in add.iter() {
                                 let mut parts = name.split('_');
-                                let flag = FlagData::try_from(flag)
-                                    .context("Failed to parse gamedata flah from BNP log")?;
+                                let flag = FlagData::try_from(flag).with_context(|| {
+                                    format!(
+                                        "Failed to parse gamedata flag from BNP log: {:?}",
+                                        flag
+                                    )
+                                })?;
                                 if GameDataPack::STAGES.contains(&parts.next().unwrap_or(""))
                                     && !name.contains("HiddenKorok")
                                 {
