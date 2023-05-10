@@ -33,29 +33,35 @@ impl TryFrom<&ParameterList> for ModelData {
             .as_safe_string()?;
         let units = list
             .list("Unit")
-            .ok_or_else(|| UKError::MissingAampKey("Model data missing Unit list", None))?
-            .objects
-            .0
-            .values()
-            .map(|obj| -> Result<(String64, String64)> {
-                let name = obj
-                    .get("UnitName")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey("Model data unit missing name", Some(obj.into()))
-                    })?
-                    .as_safe_string()?;
-                let bone = obj
-                    .get("BindBone")
-                    .ok_or_else(|| {
-                        UKError::MissingAampKey(
-                            "Model data unit missing bind bone",
-                            Some(obj.into()),
-                        )
-                    })?
-                    .as_safe_string()?;
-                Ok((name, bone))
+            .map(|unit| -> Result<_> {
+                unit.objects
+                    .0
+                    .values()
+                    .map(|obj| -> Result<(String64, String64)> {
+                        let name = obj
+                            .get("UnitName")
+                            .ok_or_else(|| {
+                                UKError::MissingAampKey(
+                                    "Model data unit missing name",
+                                    Some(obj.into()),
+                                )
+                            })?
+                            .as_safe_string()?;
+                        let bone = obj
+                            .get("BindBone")
+                            .ok_or_else(|| {
+                                UKError::MissingAampKey(
+                                    "Model data unit missing bind bone",
+                                    Some(obj.into()),
+                                )
+                            })?
+                            .as_safe_string()?;
+                        Ok((name, bone))
+                    })
+                    .collect::<Result<_>>()
             })
-            .collect::<Result<_>>()?;
+            .transpose()?
+            .unwrap_or_default();
         Ok(Self { folder, units })
     }
 }

@@ -604,10 +604,10 @@ impl ModUnpacker {
         );
         let mut dump_error: Vec<anyhow_ext::Error> = vec![];
         match self.dump.get_data(file).or_else(|e| {
-            log::trace!("{e}");
+            log::trace!("{e:?}");
             dump_error.push(e.into());
             self.dump.get_data(canon.as_str()).or_else(|e| {
-                log::trace!("{e}");
+                log::trace!("{e:?}");
                 dump_error.push(e.into());
                 self.dump.get_resource(canon.as_str())
             })

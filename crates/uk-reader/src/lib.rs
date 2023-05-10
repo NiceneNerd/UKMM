@@ -239,7 +239,9 @@ impl ResourceReader {
             .try_get_with(
                 canonicalize(parts[0]),
                 || -> anyhow_ext::Result<Arc<Sarc<'static>>> {
-                    let sarc = self.source().get_data(parts[0].as_ref())?;
+                    let sarc = self.source().get_data(parts[0].as_ref()).with_context(|| {
+                        format!("Failed to get parent for nested file at {}", nest_path)
+                    })?;
                     Ok(Arc::new(Sarc::new(sarc)?))
                 },
             )
@@ -340,15 +342,10 @@ impl ResourceReader {
                 match nest_path {
                     Some(parent) => {
                         log::trace!("Full path found at {}", parent.as_ref());
-                        match self.get_from_sarc(&canon, &parent).with_context(|| {
-                            ROMError::FileNotFound(
-                                path.to_string_lossy().into(),
-                                self.source.host_path().to_path_buf(),
-                            )
-                        }) {
+                        match self.get_from_sarc(&canon, &parent) {
                             Err(e) => {
-                                log::warn!("Failed to get {canon} from {}: {e}", parent.as_ref());
-                                Err(e.into())
+                                log::warn!("Failed to get {canon} from {}: {e:?}", parent.as_ref());
+                                Err(e)
                             }
                             Ok(v) => Ok(v),
                         }
@@ -373,7 +370,8 @@ impl ResourceReader {
             if !self.cache.contains_key(&canon) {
                 let data = file.data;
                 let data = roead::yaz0::decompress_if(data);
-                let resource = ResourceData::from_binary(&name, data.as_ref())?;
+                let resource = ResourceData::from_binary(&name, data.as_ref())
+                    .with_context(|| format!("Failed to parse resource {} in SARC", canon))?;
                 if is_mergeable_sarc(canon.as_str(), data.as_ref()) {
                     self.process_sarc(Sarc::new(data.as_ref())?, &name)?;
                 }
