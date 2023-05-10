@@ -14,6 +14,7 @@ use uk_ui::{
 use super::{App, FocusedPane, Message, Sort};
 
 enum ContextMenuMessage {
+    CopyToProfile(smartstring::alias::String),
     Uninstall,
     Toggle(bool),
     Move(usize),
@@ -296,7 +297,9 @@ impl App {
                 hover = hover || res.hovered();
                 drag_started = drag_started || res.drag_started();
                 res.context_menu(|ui| {
-                    if let Some(action) = Self::render_mod_context_menu(menu_mod.clone(), ui) {
+                    if let Some(action) =
+                        Self::render_mod_context_menu(&self.core, menu_mod.clone(), ui)
+                    {
                         ctx_action.replace(action);
                     }
                 });
@@ -336,6 +339,9 @@ impl App {
             }
             if let Some(action) = ctx_action {
                 match action {
+                    ContextMenuMessage::CopyToProfile(profile) => {
+                        self.do_update(Message::AddToProfile(profile));
+                    }
                     ContextMenuMessage::Uninstall => {
                         let prompt = jstr!("Are you sure you want to uninstall {&mod_.meta.name}?");
                         self.do_update(Message::Confirm(
@@ -374,8 +380,24 @@ impl App {
         }
     }
 
-    fn render_mod_context_menu(mod_: Mod, ui: &mut Ui) -> Option<ContextMenuMessage> {
+    fn render_mod_context_menu(
+        core: &uk_manager::core::Manager,
+        mod_: Mod,
+        ui: &mut Ui,
+    ) -> Option<ContextMenuMessage> {
         let mut result = None;
+        ui.menu_button("Send to profile", |ui| {
+            for profile in core
+                .settings()
+                .profiles()
+                .filter(|p| core.mod_manager().profile().key() != p)
+            {
+                if ui.button(profile.as_str()).clicked() {
+                    result = Some(ContextMenuMessage::CopyToProfile(profile));
+                    ui.close_menu();
+                }
+            }
+        });
         if ui.button("Uninstall").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Uninstall);

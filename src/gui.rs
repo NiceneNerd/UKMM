@@ -150,6 +150,7 @@ impl Sort {
 #[derive(Debug)]
 pub enum Message {
     AddMod(Mod),
+    AddToProfile(smartstring::alias::String),
     AddProfile,
     Apply,
     ChangeProfile(String),
@@ -779,6 +780,32 @@ impl App {
                             anyhow_ext::anyhow!("{msg}")
                                 .context("One or more errors occured while installing your mods. Please see full details."),
                         ));
+                    }
+                }
+                Message::AddToProfile(profile) => {
+                    let mut dirty = self.dirty.write();
+                    let dirty = dirty.entry(profile.as_str().into()).or_default();
+                    let mut err = false;
+                    for mod_ in &self.selected {
+                        match self.core.mod_manager().add(&mod_.path, Some(&profile)) {
+                            Ok(_) => {
+                                if let Ok(manifest) = mod_.manifest() {
+                                    dirty.extend(&manifest);
+                                }
+                            }
+                            Err(e) => {
+                                self.do_update(Message::Error(e));
+                                err = true;
+                                break;
+                            }
+                        };
+                    }
+                    if !err {
+                        self.toasts.add({
+                            let mut toast = Toast::success(format!("Mod(s) added to profile {}", profile));
+                            toast.set_duration(Some(Duration::new(2, 0)));
+                            toast
+                        });
                     }
                 }
                 Message::RemoveMods(mods) => {
