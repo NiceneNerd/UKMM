@@ -96,6 +96,7 @@ impl Resource for LazyTraverseList {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use roead::byml::Byml;

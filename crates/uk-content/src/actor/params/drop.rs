@@ -194,6 +194,7 @@ impl Resource for DropTable {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use crate::{actor::InfoSource, prelude::*};

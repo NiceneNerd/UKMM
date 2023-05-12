@@ -201,6 +201,7 @@ impl From<AS> for ParameterIO {
                 list.set_list("Extend", extend);
             }
             if let Some(children) = children {
+                #[allow(clippy::unwrap_used)]
                 if should_hack {
                     list.object_mut("Children").unwrap().extend(
                         children
@@ -329,6 +330,7 @@ impl Resource for AS {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use roead::aamp::*;

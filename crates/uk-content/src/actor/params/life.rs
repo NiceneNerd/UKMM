@@ -395,6 +395,7 @@ impl Resource for LifeCondition {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use crate::{actor::InfoSource, prelude::*};

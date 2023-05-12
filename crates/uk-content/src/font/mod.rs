@@ -34,6 +34,7 @@ impl Mergeable for FontArchive {
         )
     }
 
+    #[allow(clippy::unwrap_used)]
     fn merge(&self, diff: &Self) -> Self {
         let keys: HashSet<String> = self.0.keys().chain(diff.0.keys()).cloned().collect();
         Self(

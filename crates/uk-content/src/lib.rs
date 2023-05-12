@@ -1,5 +1,6 @@
 #![feature(type_alias_impl_trait, let_chains, option_result_contains)]
 #![allow(clippy::derive_partial_eq_without_eq)]
+#![deny(clippy::unwrap_used)]
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -157,7 +158,7 @@ pub const fn platform_prefixes(endian: prelude::Endian) -> (&'static str, &'stat
 
 pub fn canonicalize(path: impl AsRef<Path>) -> String {
     fn canonicalize(path: &Path) -> String {
-        let path = path.to_str().unwrap();
+        let path = path.to_str().unwrap_or("INVALID_FILENAME");
         let mut canon = path.replace('\\', "/");
         for (k, v) in [
             ("Content/", ""),
@@ -357,6 +358,7 @@ pub mod prelude {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 pub(crate) mod tests {
     use join_str::jstr;

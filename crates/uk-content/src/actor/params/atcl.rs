@@ -87,6 +87,7 @@ impl Resource for AttClient {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

@@ -529,6 +529,7 @@ impl Resource for GameDataPack {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use roead::{byml::Byml, sarc::Sarc};

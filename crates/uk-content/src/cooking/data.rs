@@ -31,30 +31,21 @@ impl TryFrom<&Byml> for CookData {
                 .as_array()
                 .map_err(|_| UKError::WrongBymlType("not an array".into(), "an array"))?
                 .iter()
-                .map(|r| {
-                    Recipe::try_from(r)
-                        .context("Failed to parse Recipe")
-                        .unwrap()
-                })
-                .collect(),
+                .map(|r| Ok(Recipe::try_from(r).context("Failed to parse Recipe")?))
+                .collect::<Result<_>>()?,
             single_recipes: hash
                 .get("SingleRecipes")
                 .ok_or(UKError::MissingBymlKey("Cook data missing SingleRecipes"))?
                 .as_array()
                 .map_err(|_| UKError::WrongBymlType("not an array".into(), "an array"))?
                 .iter()
-                .map(|sr| {
-                    SingleRecipe::try_from(sr)
-                        .context("Failed to parse SingleRecipe")
-                        .unwrap()
-                })
-                .collect(),
+                .map(|sr| Ok(SingleRecipe::try_from(sr).context("Failed to parse SingleRecipe")?))
+                .collect::<Result<_>>()?,
             system: hash
                 .get("System")
                 .ok_or(UKError::MissingBymlKey("Cook data missing System"))?
                 .try_into()
-                .context("Failed to parse System")
-                .unwrap(),
+                .context("Failed to parse System")?,
         })
     }
 }
@@ -101,6 +92,7 @@ impl Resource for CookData {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use roead::byml::Byml;

@@ -36,86 +36,59 @@ impl TryFrom<&Byml> for System {
             cei:    hash
                 .get("CEI")
                 .ok_or(UKError::MissingBymlKey("System missing CEI"))?
-                .as_array()
-                .map_err(|_| UKError::WrongBymlType("not an array".into(), "an array"))?
+                .as_array()?
                 .iter()
-                .map(|b| Cei::try_from(b).context("Failed to parse CEI").unwrap())
-                .collect(),
+                .map(|b| Ok(Cei::try_from(b).context("Failed to parse CEI")?))
+                .collect::<Result<_>>()?,
             fa:     hash
                 .get("FA")
                 .ok_or(UKError::MissingBymlKey("System missing FA"))?
-                .as_string()
-                .map_err(|_| UKError::WrongBymlType("not a string".into(), "a string"))
-                .unwrap()
+                .as_string()?
                 .clone(),
             falr:   hash
                 .get("FALR")
                 .ok_or(UKError::MissingBymlKey("System missing FALR"))?
-                .as_i32()
-                .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
+                .as_i32()?,
             falrmr: hash
                 .get("FALRMR")
                 .ok_or(UKError::MissingBymlKey("System missing FALRMR"))?
-                .as_float()
-                .map_err(|_| UKError::WrongBymlType("not a float".into(), "a float"))
-                .unwrap(),
+                .as_float()?,
             fca:    hash
                 .get("FCA")
                 .ok_or(UKError::MissingBymlKey("System missing FCA"))?
-                .as_string()
-                .map_err(|_| UKError::WrongBymlType("not a string".into(), "a string"))
-                .unwrap()
+                .as_string()?
                 .clone(),
             lrmr:   hash
                 .get("LRMR")
                 .ok_or(UKError::MissingBymlKey("System missing LRMR"))?
-                .as_float()
-                .map_err(|_| UKError::WrongBymlType("not a float".into(), "a float"))
-                .unwrap(),
+                .as_float()?,
             mea:    hash
                 .get("MEA")
                 .ok_or(UKError::MissingBymlKey("System missing MEA"))?
-                .as_string()
-                .map_err(|_| UKError::WrongBymlType("not a string".into(), "a string"))
-                .unwrap()
+                .as_string()?
                 .clone(),
             nmmr:   hash
                 .get("NMMR")
                 .ok_or(UKError::MissingBymlKey("System missing NMMR"))?
-                .as_array()
-                .map_err(|_| UKError::WrongBymlType("not an array".into(), "an array"))?
+                .as_array()?
                 .iter()
-                .map(|b| {
-                    b.as_float()
-                        .map_err(|_| UKError::WrongBymlType("not a float".into(), "a float"))
-                        .unwrap()
-                })
-                .collect(),
+                .map(|b| Ok(b.as_float()?))
+                .collect::<Result<_>>()?,
             nmssr:  hash
                 .get("NMSSR")
                 .ok_or(UKError::MissingBymlKey("System missing NMSSR"))?
-                .as_array()
-                .map_err(|_| UKError::WrongBymlType("not an array".into(), "an array"))?
+                .as_array()?
                 .iter()
-                .map(|b| {
-                    b.as_i32()
-                        .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                        .unwrap()
-                })
-                .collect(),
+                .map(|b| Ok(b.as_i32()?))
+                .collect::<Result<_>>()?,
             sfalr:  hash
                 .get("SFALR")
                 .ok_or(UKError::MissingBymlKey("System missing SFALR"))?
-                .as_i32()
-                .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
+                .as_i32()?,
             ssaet:  hash
                 .get("SSAET")
                 .ok_or(UKError::MissingBymlKey("System missing SSAET"))?
-                .as_i32()
-                .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
+                .as_i32()?,
         })
     }
 }
@@ -192,39 +165,27 @@ impl TryFrom<&Byml> for Cei {
             bt:  hash
                 .get("BT")
                 .ok_or(UKError::MissingBymlKey("CEI missing BT"))?
-                .as_i32()
-                .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
+                .as_i32()?,
             mr:  hash
                 .get("MR")
                 .ok_or(UKError::MissingBymlKey("CEI missing MR"))?
-                .as_float()
-                .map_err(|_| UKError::WrongBymlType("not a float".into(), "a float"))
-                .unwrap(),
+                .as_float()?,
             ma:  hash
                 .get("Ma")
                 .ok_or(UKError::MissingBymlKey("CEI missing Ma"))?
-                .as_i32()
-                .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
+                .as_i32()?,
             mi:  hash
                 .get("Mi")
                 .ok_or(UKError::MissingBymlKey("CEI missing Mi"))?
-                .as_i32()
-                .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
+                .as_i32()?,
             ssa: hash
                 .get("SSA")
                 .ok_or(UKError::MissingBymlKey("CEI missing SSA"))?
-                .as_i32()
-                .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
+                .as_i32()?,
             t:   hash
                 .get("T")
                 .ok_or(UKError::MissingBymlKey("CEI missing T"))?
-                .as_int::<i32>()
-                .map_err(|_| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
+                .as_int()?,
         })
     }
 }

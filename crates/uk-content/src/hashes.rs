@@ -65,6 +65,7 @@ pub fn get_hash_table(endian: Endian) -> &'static ROMHashTable {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     #[test]

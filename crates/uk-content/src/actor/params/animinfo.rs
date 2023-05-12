@@ -53,6 +53,7 @@ impl Resource for AnimationInfo {
 
 impl_simple_byml!(AnimationInfo, 0);
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

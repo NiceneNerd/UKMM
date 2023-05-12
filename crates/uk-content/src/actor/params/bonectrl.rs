@@ -177,7 +177,9 @@ impl Mergeable for BoneControl {
                                     .map(|self_bones| self_bones.merge(diff_bones).and_delete())
                                     .unwrap_or_else(|| diff_bones.clone())
                             })
-                            .unwrap_or_else(|| self.bone_groups.get(group).cloned().unwrap()),
+                            .unwrap_or_else(|| {
+                                self.bone_groups.get(group).cloned().expect("Impossible")
+                            }),
                     )
                 })
                 .collect(),
@@ -208,6 +210,7 @@ impl Resource for BoneControl {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

@@ -366,6 +366,7 @@ impl ParameterExt for Parameter {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 #[test]
 fn test_any_safe_string() {

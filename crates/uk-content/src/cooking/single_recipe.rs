@@ -26,49 +26,36 @@ impl TryFrom<&Byml> for SingleRecipe {
     fn try_from(byml: &Byml) -> Result<Self> {
         let hash = byml.as_hash()?;
         Ok(Self {
-            actors: hash.get("Actors").map(|arr| {
-                arr.as_array()
-                    .map_err(|_e| UKError::WrongBymlType("not an array".into(), "an array"))
-                    .unwrap()
-                    .iter()
-                    .map(|i| {
-                        i.as_int::<i32>()
-                            .map_err(|_e| {
-                                UKError::WrongBymlType("not an integer".into(), "an integer")
-                            })
-                            .unwrap()
-                    })
-                    .collect::<DeleteVec<i32>>()
-            }),
+            actors: hash
+                .get("Actors")
+                .map(|arr| -> Result<_> {
+                    arr.as_array()?
+                        .iter()
+                        .map(|i| Ok(i.as_int::<i32>()?))
+                        .collect()
+                })
+                .transpose()?,
             hb:     hash
                 .get("HB")
-                .map(|i| i.as_i32().context("HB not int").unwrap()),
+                .map(|i| i.as_i32().context("HB not int"))
+                .transpose()?,
             num:    hash
                 .get("Num")
                 .ok_or(UKError::MissingBymlKey("SingleRecipe missing num"))?
-                .as_i32()
-                .map_err(|_e| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
+                .as_i32()?,
             recipe: hash
                 .get("Recipe")
                 .ok_or(UKError::MissingBymlKey("SingleRecipe missing recipe actor"))?
-                .as_int::<i32>()
-                .map_err(|_e| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
-            tags:   hash.get("Tags").map(|arr| {
-                arr.as_array()
-                    .map_err(|_e| UKError::WrongBymlType("not an array".into(), "an array"))
-                    .unwrap()
-                    .iter()
-                    .map(|i| {
-                        i.as_int::<i32>()
-                            .map_err(|_e| {
-                                UKError::WrongBymlType("not an integer".into(), "an integer")
-                            })
-                            .unwrap()
-                    })
-                    .collect::<DeleteVec<i32>>()
-            }),
+                .as_int::<i32>()?,
+            tags:   hash
+                .get("Tags")
+                .map(|arr| -> Result<_> {
+                    arr.as_array()?
+                        .iter()
+                        .map(|i| Ok(i.as_int::<i32>()?))
+                        .collect()
+                })
+                .transpose()?,
         })
     }
 }

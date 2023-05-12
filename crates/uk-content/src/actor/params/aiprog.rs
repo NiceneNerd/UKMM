@@ -506,6 +506,7 @@ impl Writer {
         }
     }
 
+    #[allow(clippy::unwrap_used)]
     fn entry_to_list(&mut self, entry: AIEntry) -> usize {
         if matches!(entry.category, Category::AI | Category::Action)
             && let Some(index) = self.finished.get(&entry.def)
@@ -799,6 +800,7 @@ impl Resource for AIProgram {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use roead::aamp::*;

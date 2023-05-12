@@ -94,6 +94,7 @@ impl Resource for ChemicalRes {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use roead::aamp::ParameterIO;

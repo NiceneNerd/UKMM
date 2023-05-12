@@ -33,7 +33,7 @@ impl EditableValue for BehaviorMap {
                                 ui.style()
                                     .text_styles
                                     .get(&egui::TextStyle::Body)
-                                    .unwrap()
+                                    .expect("Bad egui config")
                                     .clone(),
                                 ui.visuals().text_color(),
                             );

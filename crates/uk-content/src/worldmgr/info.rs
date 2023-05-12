@@ -46,6 +46,7 @@ impl Resource for WorldInfo {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use roead::aamp::ParameterIO;

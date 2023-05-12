@@ -186,7 +186,7 @@ impl Mergeable for RagdollBlendWeight {
                                 .get(&key)
                                 .or_else(|| self.0.get(&key))
                                 .cloned()
-                                .unwrap()
+                                .expect("Impossible")
                         },
                     )
                 })
@@ -278,6 +278,7 @@ impl EditableValue for RagdollBlendWeight {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

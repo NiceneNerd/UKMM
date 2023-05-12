@@ -131,7 +131,7 @@ impl MessagePack {
                     Endian::Little => Endianness::Little,
                     Endian::Big => Endianness::Big,
                 })
-                .unwrap(),
+                .expect("MSBT file should serialize, this is bad"),
             )
         }))
     }

@@ -102,6 +102,7 @@ impl Resource for RagdollConfig {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;

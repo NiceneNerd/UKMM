@@ -62,6 +62,7 @@ impl Resource for QuestProduct {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use roead::byml::Byml;

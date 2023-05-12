@@ -219,7 +219,7 @@ where
                                         ui.style()
                                             .text_styles
                                             .get(&egui::TextStyle::Body)
-                                            .unwrap()
+                                            .expect("Bad egui config")
                                             .clone(),
                                         if *del {
                                             ui.visuals().error_fg_color
@@ -337,7 +337,7 @@ where
                                         ui.style()
                                             .text_styles
                                             .get(&egui::TextStyle::Body)
-                                            .unwrap()
+                                            .expect("Bad egui config")
                                             .clone(),
                                         if *del {
                                             ui.visuals().error_fg_color

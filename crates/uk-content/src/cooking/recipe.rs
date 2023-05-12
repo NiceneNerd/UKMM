@@ -1,4 +1,3 @@
-use anyhow::Context;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use smartstring::{LazyCompact, SmartString};
@@ -25,73 +24,39 @@ impl TryFrom<&Byml> for Recipe {
     fn try_from(byml: &Byml) -> Result<Self> {
         let hash = byml.as_hash()?;
         Ok(Self {
-            actors: hash.get("Actors").map(|arr| {
-                arr.as_array()
-                    .map_err(|_e| {
-                        UKError::WrongBymlType(
-                            "not an array of arrays".into(),
-                            "an array of arrays",
-                        )
-                    })
-                    .unwrap()
-                    .iter()
-                    .map(|arr2| {
-                        arr2.as_array()
-                            .map_err(|_e| UKError::WrongBymlType("not an array".into(), "an array"))
-                            .unwrap()
-                            .iter()
-                            .map(|i| {
-                                i.as_int::<i32>()
-                                    .map_err(|_e| {
-                                        UKError::WrongBymlType(
-                                            "not an integer".into(),
-                                            "an integer",
-                                        )
-                                    })
-                                    .unwrap()
-                            })
-                            .collect::<DeleteVec<i32>>()
-                    })
-                    .collect::<DeleteVec<DeleteVec<i32>>>()
-            }),
-            hb:     hash
-                .get("HB")
-                .map(|i| i.as_i32().context("HB not int").unwrap()),
+            actors: hash
+                .get("Actors")
+                .map(|arr| -> Result<DeleteVec<DeleteVec<i32>>> {
+                    arr.as_array()?
+                        .iter()
+                        .map(|arr2| -> Result<DeleteVec<i32>> {
+                            arr2.as_array()?
+                                .iter()
+                                .map(|i| Ok(i.as_int::<i32>()?))
+                                .collect()
+                        })
+                        .collect()
+                })
+                .transpose()?,
+            hb:     hash.get("HB").map(|i| i.as_int()).transpose()?,
             recipe: hash
                 .get("Recipe")
                 .ok_or(UKError::MissingBymlKey("Recipe missing recipe actor"))?
-                .as_int::<i32>()
-                .map_err(|_e| UKError::WrongBymlType("not an integer".into(), "an integer"))
-                .unwrap(),
-            tags:   hash.get("Tags").map(|arr| {
-                arr.as_array()
-                    .map_err(|_e| {
-                        UKError::WrongBymlType(
-                            "not an array of arrays".into(),
-                            "an array of arrays",
-                        )
-                    })
-                    .unwrap()
-                    .iter()
-                    .map(|arr2| {
-                        arr2.as_array()
-                            .map_err(|_e| UKError::WrongBymlType("not an array".into(), "an array"))
-                            .unwrap()
-                            .iter()
-                            .map(|i| {
-                                i.as_int::<i32>()
-                                    .map_err(|_e| {
-                                        UKError::WrongBymlType(
-                                            "not an integer".into(),
-                                            "an integer",
-                                        )
-                                    })
-                                    .unwrap()
-                            })
-                            .collect::<DeleteVec<i32>>()
-                    })
-                    .collect::<DeleteVec<DeleteVec<i32>>>()
-            }),
+                .as_int::<i32>()?,
+            tags:   hash
+                .get("Tags")
+                .map(|arr| -> Result<DeleteVec<DeleteVec<i32>>> {
+                    arr.as_array()?
+                        .iter()
+                        .map(|arr2| -> Result<DeleteVec<i32>> {
+                            arr2.as_array()?
+                                .iter()
+                                .map(|i| Ok(i.as_int::<i32>()?))
+                                .collect()
+                        })
+                        .collect()
+                })
+                .transpose()?,
         })
     }
 }
