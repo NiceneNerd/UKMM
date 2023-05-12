@@ -386,7 +386,7 @@ impl<'a> Bnp2xConverter<'a> {
                     )
                 })
                 .collect::<Byml>();
-            fs::write(gdata_log, new_log.to_text().unwrap())?;
+            fs::write(gdata_log, new_log.to_text().expect("It's a map, boss"))?;
         }
         Ok(())
     }
@@ -400,7 +400,7 @@ impl<'a> Bnp2xConverter<'a> {
                 sdata_log,
                 bhash!("add" => log, "del" => Byml::Array(vec![]))
                     .to_text()
-                    .unwrap(),
+                    .expect("It's a map, boss"),
             )?;
         }
         Ok(())
@@ -453,7 +453,7 @@ impl<'a> Bnp2xConverter<'a> {
                     Ok((unit, new_diff))
                 })
                 .collect::<Result<Byml>>()?;
-            fs::write(map_log, new_log.to_text().unwrap())?;
+            fs::write(map_log, new_log.to_text().expect("It's a map, boss"))?;
         }
         Ok(())
     }

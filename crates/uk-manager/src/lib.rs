@@ -5,6 +5,7 @@
     option_get_or_insert_default,
     once_cell
 )]
+#![deny(clippy::unwrap_used)]
 
 pub mod bnp;
 pub mod core;

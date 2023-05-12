@@ -343,7 +343,7 @@ impl Manager {
                     .and_then(|pv| {
                         lenient_semver::Version::parse(mod_.meta.version.as_str()).map(|mv| pv > mv)
                     })
-                    .unwrap()
+                    .expect("Bad version strings")
                 {
                     log::info!(
                         "Updating {} to version {}",
@@ -366,7 +366,7 @@ impl Manager {
         let stored_path = self
             .settings
             .upgrade()
-            .unwrap()
+            .expect("Settings is GONE!")
             .read()
             .mods_dir()
             .join(sanitized + ".zip");
@@ -547,7 +547,9 @@ pub fn convert_gfx(
                     .context("Could not find base or DLC content folder in extracted mod")?
             }
         } else if path.file_name().context("No file name")?.to_str() == Some("rules.txt") {
-            path.parent().unwrap().to_owned()
+            path.parent()
+                .expect("Parent path gotta' exist, right?")
+                .to_owned()
         } else {
             log::error!("{} is not a supported mod archive", path.display());
             anyhow_ext::bail!("{} files are not supported", ext)

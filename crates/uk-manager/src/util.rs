@@ -22,6 +22,7 @@ pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()
 static TEMP_FS: LazyLock<RwLock<HashSet<PathBuf>>> =
     LazyLock::new(|| RwLock::new(HashSet::default()));
 
+#[allow(clippy::unwrap_used)]
 pub fn get_temp_folder() -> MappedRwLockReadGuard<'static, PathBuf> {
     let temp = tempfile::tempdir().unwrap().into_path();
     TEMP_FS.write().insert(temp.clone());
@@ -30,6 +31,7 @@ pub fn get_temp_folder() -> MappedRwLockReadGuard<'static, PathBuf> {
     })
 }
 
+#[allow(clippy::unwrap_used)]
 pub fn get_temp_file() -> MappedRwLockReadGuard<'static, PathBuf> {
     let temp = tempfile::NamedTempFile::new().unwrap().keep().unwrap().1;
     TEMP_FS.write().insert(temp.clone());
