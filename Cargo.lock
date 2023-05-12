@@ -370,7 +370,7 @@ dependencies = [
  "include-flate",
  "once_cell",
  "regex",
- "roead",
+ "roead 0.20.3",
  "serde_json",
  "twox-hash",
 ]
@@ -3607,6 +3607,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "445b9df719825043aaaf86b477169bf653e717f526947e856a327c763a5072fa"
 dependencies = [
  "almost",
+ "binrw",
+ "cxx",
+ "cxx-build",
+ "indexmap",
+ "join_str",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "parking_lot",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "smartstring",
+ "thiserror",
+]
+
+[[package]]
+name = "roead"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "318144014927003c3161e06a82cdc90e4199308c6aa97143dd5d0b7d9fa42524"
+dependencies = [
+ "almost",
  "base64 0.13.1",
  "binrw",
  "cxx",
@@ -3664,7 +3687,7 @@ dependencies = [
  "crc 2.1.0",
  "include-flate",
  "phf",
- "roead",
+ "roead 0.20.3",
  "serde",
  "serde_json",
  "thiserror",
@@ -4597,7 +4620,7 @@ dependencies = [
  "mimalloc",
  "minicbor-ser",
  "msyt",
- "roead",
+ "roead 0.21.1",
  "rstb",
  "rustc-hash",
  "serde",
@@ -4633,7 +4656,7 @@ dependencies = [
  "path-slash",
  "rayon",
  "rfd",
- "roead",
+ "roead 0.21.1",
  "ron",
  "serde",
  "serde_json",
@@ -4664,7 +4687,7 @@ dependencies = [
  "path-slash",
  "rayon",
  "remove_dir_all",
- "roead",
+ "roead 0.21.1",
  "rstb",
  "rustc-hash",
  "sanitise-file-name",
@@ -4705,7 +4728,7 @@ dependencies = [
  "path-slash",
  "piz",
  "rayon",
- "roead",
+ "roead 0.21.1",
  "rstb",
  "sanitise-file-name",
  "serde",
@@ -4735,7 +4758,7 @@ dependencies = [
  "minicbor-ser",
  "moka",
  "parking_lot",
- "roead",
+ "roead 0.21.1",
  "serde",
  "serde_json",
  "smartstring",
@@ -4761,7 +4784,7 @@ dependencies = [
  "msyt",
  "once_cell",
  "rfd",
- "roead",
+ "roead 0.21.1",
  "rustc-hash",
  "serde",
  "serde_yaml 0.9.21",
