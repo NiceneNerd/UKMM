@@ -2,15 +2,7 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-#![allow(stable_features)]
-#![feature(
-    let_else,
-    let_chains,
-    option_get_or_insert_default,
-    option_result_contains,
-    result_option_inspect,
-    once_cell
-)]
+#![feature(lazy_cell)]
 mod cli;
 mod gui;
 mod logger;

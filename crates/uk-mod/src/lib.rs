@@ -1,4 +1,4 @@
-#![feature(result_option_inspect, seek_stream_len, let_chains, once_cell)]
+#![feature(result_option_inspect, seek_stream_len, let_chains, lazy_cell)]
 use std::{
     collections::BTreeSet,
     path::{Path, PathBuf},

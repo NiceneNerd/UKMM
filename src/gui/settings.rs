@@ -1,3 +1,4 @@
+#![allow(unstable_name_collisions)]
 use std::{
     ops::Deref,
     path::{Path, PathBuf},
@@ -17,6 +18,7 @@ use uk_ui::{
     icons::{self, IconButtonExt},
     visuals::Theme,
 };
+use uk_util::{OptionExt, OptionResultExt};
 
 use super::{App, Message};
 

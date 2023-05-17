@@ -3,7 +3,7 @@
     let_chains,
     result_option_inspect,
     option_get_or_insert_default,
-    once_cell
+    lazy_cell
 )]
 #![deny(clippy::unwrap_used)]
 

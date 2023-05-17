@@ -270,6 +270,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
+name = "base64"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -285,7 +291,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4abb4fd60add897b9e8827e0d5fa6c2ca129ece2432d9aa13454b21ac2ecc18f"
 dependencies = [
  "array-init",
- "binrw_derive",
+ "binrw_derive 0.9.0",
+]
+
+[[package]]
+name = "binrw"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab81d22cbd2d745852348b2138f3db2103afa8ce043117a374581926a523e267"
+dependencies = [
+ "array-init",
+ "binrw_derive 0.11.2",
+ "bytemuck",
 ]
 
 [[package]]
@@ -294,6 +311,19 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a36ff195a3a1a82d5eeb98e0069bdf3ea076042d28591396d9020fac763bf66f"
 dependencies = [
+ "owo-colors",
+ "proc-macro2 1.0.56",
+ "quote 1.0.26",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "binrw_derive"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6b019a3efebe7f453612083202887b6f1ace59e20d010672e336eea4ed5be97"
+dependencies = [
+ "either",
  "owo-colors",
  "proc-macro2 1.0.56",
  "quote 1.0.26",
@@ -3606,32 +3636,24 @@ version = "0.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "445b9df719825043aaaf86b477169bf653e717f526947e856a327c763a5072fa"
 dependencies = [
- "almost",
- "binrw",
+ "binrw 0.9.2",
  "cxx",
  "cxx-build",
- "indexmap",
  "join_str",
- "num-integer",
- "num-traits",
- "once_cell",
- "parking_lot",
  "rustc-hash",
- "serde",
- "serde_json",
  "smartstring",
  "thiserror",
 ]
 
 [[package]]
 name = "roead"
-version = "0.21.1"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "318144014927003c3161e06a82cdc90e4199308c6aa97143dd5d0b7d9fa42524"
+checksum = "7784af180bd638eee13abb089815a4e149c0e8bedb0ffe4d7c2f2c26f1b5902f"
 dependencies = [
  "almost",
- "base64 0.13.1",
- "binrw",
+ "base64 0.21.0",
+ "binrw 0.11.2",
  "cxx",
  "cxx-build",
  "indexmap",
@@ -3680,14 +3702,14 @@ dependencies = [
 
 [[package]]
 name = "rstb"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ac74c5091a7fa31438118781bec869b1b2d2d7aaf222ba993e8ac08821ea0a9"
+checksum = "9b3c6d761a848ed259b8774ea745287a473a24fbcb65d01b79d7c717be7656bc"
 dependencies = [
  "crc 2.1.0",
  "include-flate",
  "phf",
- "roead 0.20.3",
+ "roead 0.22.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -3781,9 +3803,9 @@ dependencies = [
 
 [[package]]
 name = "ryml"
-version = "0.1.6"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "905fe991a678d13cadcc529060852cb5a724c38573fffe383fbe50c67587dc42"
+checksum = "d623f90d8843413059c3de3ae7ae1b2e445dba85293247f3494ac97475accfc0"
 dependencies = [
  "auto-enum",
  "cxx",
@@ -3931,11 +3953,11 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "2.3.3"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07ff71d2c147a7b57362cead5e22f772cd52f6ab31cfcd9edcd7f6aeb2a0afbe"
+checksum = "9f02d8aa6e3c385bf084924f660ce2a3a6bd333ba55b35e8590b321f35d88513"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.21.0",
  "chrono",
  "hex",
  "indexmap",
@@ -3947,9 +3969,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with_macros"
-version = "2.3.3"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "881b6f881b17d13214e5d494c939ebab463d01264ce1811e9d4ac3a882e7695f"
+checksum = "edc7d5d3932fb12ce722ee5e64dd38c504efba37567f0c402f6ca728c3b8b070"
 dependencies = [
  "darling 0.20.0",
  "proc-macro2 1.0.56",
@@ -4620,7 +4642,7 @@ dependencies = [
  "mimalloc",
  "minicbor-ser",
  "msyt",
- "roead 0.21.1",
+ "roead 0.22.0",
  "rstb",
  "rustc-hash",
  "serde",
@@ -4630,6 +4652,7 @@ dependencies = [
  "uk-content-derive",
  "uk-ui",
  "uk-ui-derive",
+ "uk-util",
  "zstd",
 ]
 
@@ -4656,7 +4679,7 @@ dependencies = [
  "path-slash",
  "rayon",
  "rfd",
- "roead 0.21.1",
+ "roead 0.22.0",
  "ron",
  "serde",
  "serde_json",
@@ -4687,7 +4710,7 @@ dependencies = [
  "path-slash",
  "rayon",
  "remove_dir_all",
- "roead 0.21.1",
+ "roead 0.22.0",
  "rstb",
  "rustc-hash",
  "sanitise-file-name",
@@ -4728,7 +4751,7 @@ dependencies = [
  "path-slash",
  "piz",
  "rayon",
- "roead 0.21.1",
+ "roead 0.22.0",
  "rstb",
  "sanitise-file-name",
  "serde",
@@ -4758,7 +4781,7 @@ dependencies = [
  "minicbor-ser",
  "moka",
  "parking_lot",
- "roead 0.21.1",
+ "roead 0.22.0",
  "serde",
  "serde_json",
  "smartstring",
@@ -4784,7 +4807,7 @@ dependencies = [
  "msyt",
  "once_cell",
  "rfd",
- "roead 0.21.1",
+ "roead 0.22.0",
  "rustc-hash",
  "serde",
  "serde_yaml 0.9.21",
@@ -4802,8 +4825,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "uk-util"
+version = "0.1.0"
+
+[[package]]
 name = "ukmm"
-version = "0.8.2"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "anyhow_ext",
@@ -4838,6 +4865,7 @@ dependencies = [
  "uk-mod",
  "uk-reader",
  "uk-ui",
+ "uk-util",
  "winres",
  "xflags",
  "zip",

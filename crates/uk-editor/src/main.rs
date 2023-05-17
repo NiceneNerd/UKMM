@@ -1,4 +1,4 @@
-#![feature(let_chains, once_cell)]
+#![feature(let_chains, lazy_cell)]
 mod editor;
 mod files;
 mod modals;

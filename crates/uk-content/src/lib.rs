@@ -1,4 +1,4 @@
-#![feature(type_alias_impl_trait, let_chains, option_result_contains)]
+#![feature(type_alias_impl_trait, let_chains)]
 #![allow(clippy::derive_partial_eq_without_eq)]
 #![deny(clippy::unwrap_used)]
 use mimalloc::MiMalloc;

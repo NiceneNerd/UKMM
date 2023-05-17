@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, collections::BTreeMap, hash::Hash};
+use std::{borrow::Borrow, collections::BTreeMap, hash::Hash, vec};
 
 use itertools::Itertools;
 
@@ -13,6 +13,26 @@ pub type IndexMap<K, V> =
 pub type IndexSet<V> = indexmap::IndexSet<V, std::hash::BuildHasherDefault<rustc_hash::FxHasher>>;
 pub trait DeleteKey: Hash + Eq + Clone {}
 impl<T> DeleteKey for T where T: Hash + Eq + Clone {}
+
+pub struct DeleteIterator<I, T>
+where
+    I: Iterator<Item = (T, bool)>,
+{
+    inner: I,
+}
+
+impl<I, T> Iterator for DeleteIterator<I, T>
+where
+    I: Iterator<Item = (T, bool)>,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner
+            .next()
+            .and_then(|(item, del)| (!del).then_some(item))
+    }
+}
 
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DeleteVec<T: Clone + PartialEq>(Vec<(T, bool)>);
@@ -51,14 +71,13 @@ impl<T: Clone + PartialEq> PartialEq for DeleteVec<T> {
 }
 
 impl<T: Clone + PartialEq> IntoIterator for DeleteVec<T> {
+    type IntoIter = DeleteIterator<vec::IntoIter<(T, bool)>, T>;
     type Item = T;
 
-    type IntoIter = impl Iterator<Item = T>;
-
     fn into_iter(self) -> Self::IntoIter {
-        self.0
-            .into_iter()
-            .filter_map(|(k, del)| (!del).then_some(k))
+        DeleteIterator {
+            inner: self.0.into_iter(),
+        }
     }
 }
 
@@ -162,14 +181,13 @@ impl<T: Clone + PartialEq> Mergeable for DeleteVec<T> {
 pub struct DeleteSet<T: DeleteKey>(IndexMap<T, bool>);
 
 impl<T: DeleteKey> IntoIterator for DeleteSet<T> {
+    type IntoIter = DeleteIterator<indexmap::map::IntoIter<T, bool>, T>;
     type Item = T;
 
-    type IntoIter = impl Iterator<Item = T>;
-
     fn into_iter(self) -> Self::IntoIter {
-        self.0
-            .into_iter()
-            .filter_map(|(k, del)| (!del).then_some(k))
+        DeleteIterator {
+            inner: self.0.into_iter(),
+        }
     }
 }
 
@@ -287,14 +305,13 @@ impl<T: DeleteKey> Mergeable for DeleteSet<T> {
 pub struct SortedDeleteSet<T: DeleteKey + Ord>(BTreeMap<T, bool>);
 
 impl<T: DeleteKey + Ord> IntoIterator for SortedDeleteSet<T> {
+    type IntoIter = DeleteIterator<std::collections::btree_map::IntoIter<T, bool>, T>;
     type Item = T;
 
-    type IntoIter = impl Iterator<Item = T>;
-
     fn into_iter(self) -> Self::IntoIter {
-        self.0
-            .into_iter()
-            .filter_map(|(k, del)| (!del).then_some(k))
+        DeleteIterator {
+            inner: self.0.into_iter(),
+        }
     }
 }
 
@@ -404,14 +421,36 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
     }
 }
 
+pub struct DeleteMapIterator<I, T, U>
+where
+    I: Iterator<Item = (T, (U, bool))>,
+{
+    inner: I,
+}
+
+impl<I, T, U> Iterator for DeleteMapIterator<I, T, U>
+where
+    I: Iterator<Item = (T, (U, bool))>,
+{
+    type Item = (T, U);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner
+            .next()
+            .and_then(|(key, (val, del))| (!del).then_some((key, val)))
+    }
+}
+
 macro_rules! impl_delete_map {
-    ($type:tt, $($key:tt)+) => {
+    ($type:tt, $inner:ty, $($key:tt)+) => {
         impl<T: $($key)*, U: PartialEq + Clone> IntoIterator for $type<T, U> {
+            type IntoIter = DeleteMapIterator<<$inner as std::iter::IntoIterator>::IntoIter, T, U>;
             type Item = (T, U);
-            type IntoIter = impl Iterator<Item = (T, U)>;
 
             fn into_iter(self) -> Self::IntoIter {
-                self.0.into_iter().filter_map(|(k, (v, del))| (!del).then(|| (k, v)))
+                DeleteMapIterator {
+                    inner: self.0.into_iter(),
+                }
             }
         }
 
@@ -630,7 +669,7 @@ macro_rules! impl_delete_map {
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DeleteMap<T: DeleteKey, U: PartialEq + Clone>(IndexMap<T, (U, bool)>);
 
-impl_delete_map!(DeleteMap, DeleteKey);
+impl_delete_map!(DeleteMap, IndexMap<T, (U, bool)>, DeleteKey);
 
 impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
     pub fn with_capacity(capacity: usize) -> Self {
@@ -643,4 +682,4 @@ impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SortedDeleteMap<T: DeleteKey + Ord, U: PartialEq + Clone>(BTreeMap<T, (U, bool)>);
 
-impl_delete_map!(SortedDeleteMap, DeleteKey + Ord);
+impl_delete_map!(SortedDeleteMap, BTreeMap<T, (U, bool)>, DeleteKey + Ord);

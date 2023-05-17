@@ -1,3 +1,4 @@
+#![allow(unstable_name_collisions)]
 use std::{
     io::BufReader,
     path::{Path, PathBuf},
@@ -18,6 +19,7 @@ use uk_manager::{
 };
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta};
 use uk_reader::ResourceReader;
+use uk_util::OptionExt;
 
 use super::{package::ModPackerBuilder, Message};
 
@@ -278,7 +280,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             wiiu_config.dump = dump;
         }
         if let Some(gfx_folder) = gfx_folder {
-            let mut deploy_config = wiiu_config.deploy_config.get_or_insert_default();
+            let deploy_config = wiiu_config.deploy_config.get_or_insert_default();
             deploy_config.auto = true;
             deploy_config.output = gfx_folder.join("BreathOfTheWild_UKMM");
         }

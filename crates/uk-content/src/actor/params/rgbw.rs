@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
 #[cfg(feature = "ui")]
 use uk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
+use uk_util::OptionResultExt;
 
 use crate::{
     actor::ParameterResource,

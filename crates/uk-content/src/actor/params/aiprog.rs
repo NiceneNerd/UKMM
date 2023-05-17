@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
+use uk_util::OptionResultExt;
 
 use crate::{
     actor::ParameterResource,

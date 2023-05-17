@@ -49,6 +49,7 @@ use uk_ui::{
     ext::UiExt,
     icons::{Icon, IconButtonExt},
 };
+use uk_util::OptionResultExt;
 
 use self::{package::ModPackerBuilder, tasks::VersionResponse};
 use crate::{gui::modals::MetaInputModal, logger::Entry};
@@ -618,7 +619,7 @@ impl App {
                             self.mods = self.core.mod_manager().all_mods().collect();
                             self.do_update(Message::RefreshModsDisplay);
                             self.do_update(Message::ReloadProfiles);
-                        },
+                        }
                         Err(e) => self.do_update(Message::Error(e)),
                     };
                 }
@@ -672,12 +673,13 @@ impl App {
                 }
                 Message::SelectFile => {
                     if let Some(mut paths) = rfd::FileDialog::new()
-                            .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
-                            .add_filter("UKMM Mod (*.zip)", &["zip"])
-                            .add_filter("BCML Mod (*.bnp)", &["bnp"])
-                            .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
-                            .add_filter("All files (*.*)", &["*"])
-                            .pick_files() && !paths.is_empty()
+                        .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
+                        .add_filter("UKMM Mod (*.zip)", &["zip"])
+                        .add_filter("BCML Mod (*.bnp)", &["bnp"])
+                        .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
+                        .add_filter("All files (*.*)", &["*"])
+                        .pick_files()
+                        .filter(|p| !p.is_empty())
                     {
                         let first = paths.remove(0);
                         self.install_queue.extend(paths);
@@ -702,12 +704,12 @@ impl App {
                             )));
                         }
                     }
-                    if let ModPlatform::Specific(platform) = mod_.meta.platform
-                        && Platform::from(platform) != self.platform()
+                    if !matches!(mod_.meta.platform, ModPlatform::Universal)
+                        || mod_.meta.platform != ModPlatform::Specific(self.platform().into())
                     {
                         self.do_update(Message::Error(anyhow_ext::anyhow!(
-                            "Mod is for {}, current mode is {}",
-                            platform,
+                            "Mod is for {:?}, current mode is {}",
+                            mod_.meta.platform,
                             self.platform()
                         )));
                     } else if !mod_.meta.options.is_empty() {
@@ -745,19 +747,22 @@ impl App {
                 }
                 Message::ToggleMods(mods, enabled) => {
                     let mods = mods.as_ref().unwrap_or(&self.selected);
-                    let dirty = mods
-                        .iter()
-                        .try_fold(Manifest::default(), |mut dirty, m| -> Result<Manifest> {
-                            let mod_ = unsafe { self.mods.iter_mut().find(|m2| m.eq(m2)).unwrap_unchecked() };
+                    let dirty = mods.iter().try_fold(
+                        Manifest::default(),
+                        |mut dirty, m| -> Result<Manifest> {
+                            let mod_ = unsafe {
+                                self.mods.iter_mut().find(|m2| m.eq(m2)).unwrap_unchecked()
+                            };
                             mod_.enabled = enabled;
                             dirty.extend(m.manifest()?.as_ref());
                             Ok(dirty)
-                        });
+                        },
+                    );
                     match dirty {
                         Ok(dirty) => {
                             self.dirty_mut().extend(&dirty);
                             self.do_update(Message::RefreshModsDisplay)
-                        },
+                        }
                         Err(e) => self.do_update(Message::Error(e)),
                     };
                 }
@@ -776,10 +781,10 @@ impl App {
                             .drain(..)
                             .map(|e| format!("{e:?}\n"))
                             .collect::<String>();
-                        self.do_update(Message::Error(
-                            anyhow_ext::anyhow!("{msg}")
-                                .context("One or more errors occured while installing your mods. Please see full details."),
-                        ));
+                        self.do_update(Message::Error(anyhow_ext::anyhow!("{msg}").context(
+                            "One or more errors occured while installing your mods. Please see \
+                             full details.",
+                        )));
                     }
                 }
                 Message::AddToProfile(profile) => {
@@ -802,7 +807,8 @@ impl App {
                     }
                     if !err {
                         self.toasts.add({
-                            let mut toast = Toast::success(format!("Mod(s) added to profile {}", profile));
+                            let mut toast =
+                                Toast::success(format!("Mod(s) added to profile {}", profile));
                             toast.set_duration(Some(Duration::new(2, 0)));
                             toast
                         });
@@ -857,7 +863,9 @@ impl App {
                                 toast.set_duration(Some(Duration::new(2, 0)));
                                 toast
                             });
-                            if let Some(dump) = self.core.settings().dump() { dump.clear_cache() }
+                            if let Some(dump) = self.core.settings().dump() {
+                                dump.clear_cache()
+                            }
                             self.package_builder.borrow_mut().reset(self.platform());
                             self.do_update(Message::ClearSelect);
                             self.do_update(Message::ResetMods);
@@ -871,7 +879,9 @@ impl App {
                         toast.set_duration(Some(Duration::new(2, 0)));
                         toast
                     });
-                    if let Some(dump) = self.core.settings().dump() { dump.clear_cache() }
+                    if let Some(dump) = self.core.settings().dump() {
+                        dump.clear_cache()
+                    }
                     self.package_builder.borrow_mut().reset(self.platform());
                     self.do_update(Message::ClearSelect);
                     self.do_update(Message::ResetMods);
@@ -923,7 +933,8 @@ impl App {
                 Message::CheckMeta => {
                     let source = &self.package_builder.borrow().source;
                     for file in ["info.json", "rules.txt", "meta.yml"] {
-                        if let file = source.join(file) && file.exists() {
+                        let file = source.join(file);
+                        if file.exists() {
                             self.do_task(move |_| tasks::parse_meta(file));
                             break;
                         }
@@ -971,7 +982,8 @@ impl App {
                 }
                 Message::ImportCemu => {
                     if let Some(path) = rfd::FileDialog::new()
-                        .set_title("Select Cemu Directory").pick_folder()
+                        .set_title("Select Cemu Directory")
+                        .pick_folder()
                     {
                         self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
                     }
@@ -980,21 +992,21 @@ impl App {
                     self.do_task(tasks::migrate_bcml);
                 }
                 Message::RequestMeta(path) => {
-                    self.meta_input
-                        .open(path, self.platform());
+                    self.meta_input.open(path, self.platform());
                 }
                 Message::SetChangelog(msg) => self.changelog = Some(msg),
                 Message::CloseChangelog => self.changelog = None,
                 Message::OfferUpdate(version) => {
-                    self.changelog = Some(format!("A new update is available!\n\n{}", version.description()));
-                    self.new_version = Some(version)                    ;
+                    self.changelog = Some(format!(
+                        "A new update is available!\n\n{}",
+                        version.description()
+                    ));
+                    self.new_version = Some(version);
                 }
                 Message::DoUpdate => {
                     let version = self.new_version.take().unwrap();
                     self.changelog = None;
-                    self.do_task(move |_| {
-                        tasks::do_update(version)
-                    });
+                    self.do_task(move |_| tasks::do_update(version));
                 }
                 Message::Restart => {
                     let mut exe = std::env::current_exe().unwrap();
@@ -1019,7 +1031,7 @@ impl App {
                 Message::UpdatePackageMeta(meta) => {
                     self.package_builder.borrow_mut().meta = meta;
                     self.busy.set(false);
-                },
+                }
             }
         } else {
             self.handle_drops(ctx);
