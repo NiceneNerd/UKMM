@@ -3648,29 +3648,6 @@ dependencies = [
 
 [[package]]
 name = "roead"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "724961669cfe02f6ede468b398c9d8a85450bac005a01fdd9dbf90076f133e39"
-dependencies = [
- "almost",
- "binrw 0.11.2",
- "cxx",
- "cxx-build",
- "indexmap",
- "join_str",
- "num-integer",
- "num-traits",
- "once_cell",
- "parking_lot",
- "rustc-hash",
- "serde",
- "serde_json",
- "smartstring",
- "thiserror",
-]
-
-[[package]]
-name = "roead"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d6ee119334dbf298d9c144867d9a6f5475020e3acb2116175cc16867e436941"
@@ -3726,15 +3703,15 @@ dependencies = [
 
 [[package]]
 name = "rstb"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28448d80084168e9bb477383003677e598962cac8cfd87443fca57ecca60f5dc"
+checksum = "7926d979e44948756fef61f532234b87422a313f85551de4775f1e4c16ef92a9"
 dependencies = [
  "crc 2.1.0",
  "include-flate",
  "once_cell",
  "phf",
- "roead 0.22.1",
+ "roead 0.23.0",
  "serde",
  "serde_json",
  "thiserror",

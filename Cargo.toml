@@ -85,7 +85,7 @@ path-slash = "0.2.1"
 rayon = "1.6"
 rfd = "0.11.1"
 roead = "0.23.0"
-rstb = { version = "0.8.0", features = ["complex", "stable"] }
+rstb = { version = "0.8.1", features = ["complex", "stable"] }
 rustc-hash = "1.1.0"
 sanitise-file-name = "1"
 serde = "1"

@@ -28,7 +28,7 @@ typetag = { workspace = true }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 zstd = { workspace = true }
 
-botw-utils = "0.4.1"
+botw-utils = "0.5.0"
 configparser = "3.0.1"
 enum_dispatch = "0.3.8"
 mmap-rs = "0.4.0"
