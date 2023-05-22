@@ -189,7 +189,7 @@ impl InfoSource for GeneralParamList {
             .chain((0..30).map(|i| format!("RoutePoint{}Name", i)))
             .try_for_each(|param| -> Result<()> {
                 if let Some(val) = extract_info_param::<smartstring::alias::String>(obj, &param)?
-                    && val.as_string().map(|v| !v.is_empty()).unwrap_or_default()
+                    .filter(|v| v.as_string().map(|v| !v.is_empty()).unwrap_or_default())
                 {
                     info.insert(jstr!("traveler{&param}").into(), val);
                 }

@@ -173,7 +173,7 @@ impl InfoSource for ActorLink {
         if self.targets.get("SlinkUser") != Some(&Parameter::StringRef("Dummy".into())) {
             info.insert("bugMask".into(), Byml::I32(2));
         }
-        if let Some(tags) = &self.tags && !tags.is_empty() {
+        if let Some(tags) = self.tags.as_ref().filter(|t| !t.is_empty()) {
             info.insert(
                 "tags".into(),
                 tags.iter()

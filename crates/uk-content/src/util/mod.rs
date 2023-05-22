@@ -95,16 +95,22 @@ pub fn merge_pobj(base: &ParameterObject, diff: &ParameterObject) -> ParameterOb
 }
 
 pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
-    if let Byml::Hash(base) = &base && let &Byml::Hash(other) = &other {
-        Byml::Hash(other.iter().filter_map(|(key, value)| {
-            if base.get(key) != Some(value) {
-                Some((key.clone(), value.clone()))
-            } else {
-                None
-            }
-        }).chain(
-            base.keys().filter_map(|key| (!other.contains_key(key)).then(|| (key.clone(), Byml::Null)))
-        ).collect())
+    if let (Ok(base), Ok(other)) = (base.as_hash(), other.as_hash()) {
+        Byml::Hash(
+            other
+                .iter()
+                .filter_map(|(key, value)| {
+                    if base.get(key) != Some(value) {
+                        Some((key.clone(), value.clone()))
+                    } else {
+                        None
+                    }
+                })
+                .chain(base.keys().filter_map(|key| {
+                    (!other.contains_key(key)).then(|| (key.clone(), Byml::Null))
+                }))
+                .collect(),
+        )
     } else {
         panic!("Can only shallow diff BYML hashes")
     }

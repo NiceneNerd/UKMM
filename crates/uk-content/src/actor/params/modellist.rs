@@ -265,15 +265,22 @@ impl InfoSource for ModelList {
         info_params_filtered!(&self.controller_info, info, {
             ("variationMatAnimFrame", "VariationMatAnimFrame", i32)
         });
-        if let Some(Parameter::String64(mat_anim)) = self.controller_info.get("VariationMatAnim")
-            && !mat_anim.is_empty()
+        if let Some(Parameter::String64(mat_anim)) = self
+            .controller_info
+            .get("VariationMatAnim")
+            .filter(|m| m.as_string64().map(|s| !s.is_empty()).unwrap_or(false))
         {
             info.insert("variationMatAnim".into(), mat_anim.as_str().into());
         }
         if let Some(Parameter::Vec3(lookat)) = self.attention.get("LookAtOffset") {
             info.insert("lookAtOffsetY".into(), lookat.y.into());
         }
-        if let Some(Parameter::Color(add_color)) = self.controller_info.get("AddColor") && add_color.a + add_color.r + add_color.g + add_color.b > 0.0 {
+        if let Some(add_color) = self
+            .controller_info
+            .get("AddColor")
+            .and_then(|c| c.as_color().ok())
+            .filter(|c| c.a + c.r + c.g + c.b > 0.0)
+        {
             info.insert("addColorR".into(), add_color.r.into());
             info.insert("addColorG".into(), add_color.g.into());
             info.insert("addColorB".into(), add_color.b.into());
@@ -284,23 +291,29 @@ impl InfoSource for ModelList {
             info.insert("baseScaleY".into(), base_scale.y.into());
             info.insert("baseScaleZ".into(), base_scale.z.into());
         }
-        if let Some(Parameter::Vec3(fm_center)) = self.controller_info.get("FarModelCullingCenter")
-            && let Some(Parameter::F32(fm_height)) = self.controller_info.get("FarModelCullingHeight")
-            && let Some(Parameter::F32(fm_radius)) = self.controller_info.get("FarModelCullingRadius")
-            && fm_center.x + fm_center.y + fm_center.z + fm_height + fm_radius > 0.0
-        {
-            info.insert(
-                "farModelCulling".into(),
-                bhash!(
-                    "center" => bhash!(
-                        "X" => fm_center.x.into(),
-                        "Y" => fm_center.y.into(),
-                        "Z" => fm_center.z.into()
+        if let (
+            Some(Parameter::Vec3(fm_center)),
+            Some(Parameter::F32(fm_height)),
+            Some(Parameter::F32(fm_radius)),
+        ) = (
+            self.controller_info.get("FarModelCullingCenter"),
+            self.controller_info.get("FarModelCullingHeight"),
+            self.controller_info.get("FarModelCullingRadius"),
+        ) {
+            if fm_center.x + fm_center.y + fm_center.z + fm_height + fm_radius > 0.0 {
+                info.insert(
+                    "farModelCulling".into(),
+                    bhash!(
+                        "center" => bhash!(
+                            "X" => fm_center.x.into(),
+                            "Y" => fm_center.y.into(),
+                            "Z" => fm_center.z.into()
+                        ),
+                        "height" => (*fm_height).into(),
+                        "radius" => (*fm_radius).into(),
                     ),
-                    "height" => (*fm_height).into(),
-                    "radius" => (*fm_radius).into(),
-                ),
-            );
+                );
+            }
         }
         if let Some(bfres) = self.model_data.values().next().map(|data| data.folder) {
             info.insert("bfres".into(), bfres.as_str().into());

@@ -645,7 +645,7 @@ macro_rules! impl_delete_map {
                 keys.into_iter()
                     .map(|key| {
                         let (self_map, diff_map) = (self.get(&key), diff.get(&key));
-                        if let Some(self_map) = self_map && let Some(diff_map) = diff_map {
+                        if let (Some(self_map), Some(diff_map)) = (self_map, diff_map) {
                             (key.clone(), self_map.merge(diff_map), unsafe {
                                 // We know this is sound because we just checked that `key`
                                 // is in `diff`.

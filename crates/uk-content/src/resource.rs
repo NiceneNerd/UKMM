@@ -459,9 +459,7 @@ impl MergeableResource {
                 AnimationInfo::from_binary(data)?,
             ))))
         } else if AreaData::path_matches(name) {
-            Ok(Some(Self::AreaData(Box::new(AreaData::from_binary(
-                data,
-            )?))))
+            Ok(Some(Self::AreaData(Box::new(AreaData::from_binary(data)?))))
         } else if AS::path_matches(name) {
             Ok(Some(Self::AS(Box::new(AS::from_binary(data)?))))
         } else if ASList::path_matches(name) {
@@ -487,17 +485,13 @@ impl MergeableResource {
                 data,
             )?))))
         } else if Chemical::path_matches(name) {
-            Ok(Some(Self::Chemical(Box::new(Chemical::from_binary(
-                data,
-            )?))))
+            Ok(Some(Self::Chemical(Box::new(Chemical::from_binary(data)?))))
         } else if ChemicalRes::path_matches(name) {
             Ok(Some(Self::ChemicalRes(Box::new(ChemicalRes::from_binary(
                 data,
             )?))))
         } else if CookData::path_matches(name) {
-            Ok(Some(Self::CookData(Box::new(CookData::from_binary(
-                data,
-            )?))))
+            Ok(Some(Self::CookData(Box::new(CookData::from_binary(data)?))))
         } else if DamageParam::path_matches(name) {
             Ok(Some(Self::DamageParam(Box::new(DamageParam::from_binary(
                 data,
@@ -541,9 +535,7 @@ impl MergeableResource {
                 LifeCondition::from_binary(data)?,
             ))))
         } else if Location::path_matches(name) {
-            Ok(Some(Self::Location(Box::new(Location::from_binary(
-                data,
-            )?))))
+            Ok(Some(Self::Location(Box::new(Location::from_binary(data)?))))
         } else if Lod::path_matches(name) {
             Ok(Some(Self::Lod(Box::new(Lod::from_binary(data)?))))
         } else if MapUnit::path_matches(name) {
@@ -589,9 +581,7 @@ impl MergeableResource {
                 SaveDataPack::from_binary(data)?,
             ))))
         } else if ShopData::path_matches(name) {
-            Ok(Some(Self::ShopData(Box::new(ShopData::from_binary(
-                data,
-            )?))))
+            Ok(Some(Self::ShopData(Box::new(ShopData::from_binary(data)?))))
         } else if ShopGameDataInfo::path_matches(name) {
             Ok(Some(Self::ShopGameDataInfo(Box::new(
                 ShopGameDataInfo::from_binary(data)?,
@@ -614,10 +604,8 @@ impl MergeableResource {
             Ok(Some(Self::GenericAamp(Box::new(
                 roead::aamp::ParameterIO::from_binary(data)?,
             ))))
-        } else if data.len() > 2 && let magic = &data[0..2] && (magic == b"BY" || magic == b"YB") {
-            Ok(Some(Self::GenericByml(Box::new(
-                Byml::from_binary(data)?,
-            ))))
+        } else if data.len() > 2 && matches!(&data[..2], b"BY" | b"YB") {
+            Ok(Some(Self::GenericByml(Box::new(Byml::from_binary(data)?))))
         } else {
             Ok(None)
         }

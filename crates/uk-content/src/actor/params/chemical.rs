@@ -168,21 +168,23 @@ impl Mergeable for Chemical {
 impl InfoSource for Chemical {
     fn update_info(&self, info: &mut Hash) -> crate::Result<()> {
         let mut chem_info = Hash::default();
-        if let Some(Parameter::U32(attribute)) = self
+        if self
             .body
             .values()
             .next()
-            .and_then(|body| body.rigid_c.get("attribute"))
-            && *attribute == 650
+            .and_then(|body| body.rigid_c.get("attribute").and_then(|a| a.as_u32().ok()))
+            .map(|att| att == 650)
+            .unwrap_or(false)
         {
             chem_info.insert("Capaciter".into(), Byml::I32(1));
         }
-        if let Some(Parameter::String32(name)) = self
+        if self
             .body
             .values()
             .next()
-            .and_then(|body| body.shape.get("name"))
-            && name.as_str() == "WeaponFire"
+            .and_then(|body| body.shape.get("name").and_then(|n| n.as_str().ok()))
+            .map(|n| n == "WeaponFire")
+            .unwrap_or(false)
         {
             chem_info.insert("Burnable".into(), Byml::I32(1));
         }

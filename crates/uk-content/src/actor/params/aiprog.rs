@@ -157,8 +157,8 @@ impl Mergeable for AIEntry {
                             all_keys
                                 .into_iter()
                                 .map(|key| {
-                                    if let Some(self_child) = self_children.get(key)
-                                        && let Some(diff_child) = diff_children.get(key)
+                                    if let (Some(self_child), Some(diff_child)) =
+                                        (self_children.get(key), diff_children.get(key))
                                     {
                                         (*key, self_child.merge(diff_child))
                                     } else {
@@ -168,7 +168,7 @@ impl Mergeable for AIEntry {
                                                 .get(key)
                                                 .or_else(|| diff_children.get(key))
                                                 .cloned()
-                                                .expect("This key has to exist, nutcase")
+                                                .expect("This key has to exist, nutcase"),
                                         )
                                     }
                                 })
@@ -509,12 +509,20 @@ impl Writer {
 
     #[allow(clippy::unwrap_used)]
     fn entry_to_list(&mut self, entry: AIEntry) -> usize {
-        if matches!(entry.category, Category::AI | Category::Action)
-            && let Some(index) = self.finished.get(&entry.def)
+        if let Some(index) = self
+            .finished
+            .get(&entry.def)
+            .filter(|_| matches!(entry.category, Category::AI | Category::Action))
         {
             *index
         } else {
-            let AIEntry { category, def, params, behaviors, children } = entry;
+            let AIEntry {
+                category,
+                def,
+                params,
+                behaviors,
+                children,
+            } = entry;
             let mut list = ParameterList::new();
             if let Some(n) = def.name.as_ref() {
                 roead::aamp::get_default_name_table().add_name(n.to_string())
@@ -524,9 +532,13 @@ impl Writer {
                 list.set_object("ChildIdx", Default::default());
             }
             if let Some(behaviors) = behaviors {
-                list.set_object("BehaviorIdx", behaviors.into_iter().map(|(k, idx)| {
-                    (k, Parameter::I32(idx as i32))
-                }).collect())
+                list.set_object(
+                    "BehaviorIdx",
+                    behaviors
+                        .into_iter()
+                        .map(|(k, idx)| (k, Parameter::I32(idx as i32)))
+                        .collect(),
+                )
             }
             if let Some(params) = params {
                 list.set_object("SInst", params);
@@ -540,37 +552,54 @@ impl Writer {
                         let children: ParameterObject = children
                             .into_iter()
                             .sorted_by_cached_key(|c| {
-                                !c.1.def.name.as_ref().map(|n| n.starts_with("Demo_")).unwrap_or(false)
+                                !c.1.def
+                                    .name
+                                    .as_ref()
+                                    .map(|n| n.starts_with("Demo_"))
+                                    .unwrap_or(false)
                             })
-                            .map(|(k, entry)| {
-                                (k, Parameter::I32(self.entry_to_list(entry) as i32))
-                            }).collect();
-                        *self.ais.get_mut(&name).unwrap().object_mut("ChildIdx").unwrap() = children;
+                            .map(|(k, entry)| (k, Parameter::I32(self.entry_to_list(entry) as i32)))
+                            .collect();
+                        *self
+                            .ais
+                            .get_mut(&name)
+                            .unwrap()
+                            .object_mut("ChildIdx")
+                            .unwrap() = children;
                     }
                     self.finished.insert(def, index);
                     index
-                },
+                }
                 Category::Action => {
                     let index = self.action_offset + self.actions.len();
                     let name = format!("Action_{}", index);
-                    self.actions.insert(format!("Action_{}", self.actions.len()), list);
+                    self.actions
+                        .insert(format!("Action_{}", self.actions.len()), list);
                     if let Some(children) = children {
-                        let children: ParameterObject = children.into_iter().map(|(k, entry)| {
-                            (k, Parameter::I32(self.entry_to_list(entry) as i32))
-                        }).collect();
-                        *self.ais.get_mut(&name).unwrap().object_mut("ChildIdx").unwrap() = children;
+                        let children: ParameterObject = children
+                            .into_iter()
+                            .map(|(k, entry)| (k, Parameter::I32(self.entry_to_list(entry) as i32)))
+                            .collect();
+                        *self
+                            .ais
+                            .get_mut(&name)
+                            .unwrap()
+                            .object_mut("ChildIdx")
+                            .unwrap() = children;
                     }
                     self.finished.insert(def, index);
                     index
-                },
+                }
                 Category::Behavior => {
-                    self.behaviors.insert(format!("Behavior_{}", self.behaviors.len()), list);
+                    self.behaviors
+                        .insert(format!("Behavior_{}", self.behaviors.len()), list);
                     0
-                },
+                }
                 Category::Query => {
-                    self.queries.insert(format!("Query_{}", self.queries.len()), list);
+                    self.queries
+                        .insert(format!("Query_{}", self.queries.len()), list);
                     0
-                },
+                }
             }
         }
     }
@@ -676,8 +705,8 @@ impl Mergeable for AIProgram {
                 all_keys
                     .into_iter()
                     .map(|key| {
-                        if let Some(self_demo) = self.demos.get(key)
-                            && let Some(diff_demo) = diff.demos.get(key)
+                        if let (Some(self_demo), Some(diff_demo)) =
+                            (self.demos.get(key), diff.demos.get(key))
                         {
                             (*key, self_demo.merge(diff_demo))
                         } else {
@@ -687,7 +716,7 @@ impl Mergeable for AIProgram {
                                     .get(key)
                                     .or_else(|| diff.demos.get(key))
                                     .cloned()
-                                    .expect("This key has to exist, nutcase")
+                                    .expect("This key has to exist, nutcase"),
                             )
                         }
                     })
@@ -699,8 +728,8 @@ impl Mergeable for AIProgram {
                 all_keys
                     .into_iter()
                     .map(|key| {
-                        if let Some(self_behavior) = self.behaviors.get(key)
-                            && let Some(diff_behavior) = diff.behaviors.get(key)
+                        if let (Some(self_behavior), Some(diff_behavior)) =
+                            (self.behaviors.get(key), diff.behaviors.get(key))
                         {
                             (*key, self_behavior.merge(diff_behavior))
                         } else {
@@ -710,7 +739,7 @@ impl Mergeable for AIProgram {
                                     .get(key)
                                     .or_else(|| diff.behaviors.get(key))
                                     .cloned()
-                                    .expect("This key has to exist, nutcase")
+                                    .expect("This key has to exist, nutcase"),
                             )
                         }
                     })
@@ -721,8 +750,8 @@ impl Mergeable for AIProgram {
                 all_keys
                     .into_iter()
                     .map(|key| {
-                        if let Some(self_query) = self.queries.get(key)
-                            && let Some(diff_query) = diff.queries.get(key)
+                        if let (Some(self_query), Some(diff_query)) =
+                            (self.queries.get(key), diff.queries.get(key))
                         {
                             (*key, self_query.merge(diff_query))
                         } else {
@@ -732,7 +761,7 @@ impl Mergeable for AIProgram {
                                     .get(key)
                                     .or_else(|| diff.queries.get(key))
                                     .cloned()
-                                    .expect("This key has to exist, nutcase")
+                                    .expect("This key has to exist, nutcase"),
                             )
                         }
                     })
@@ -743,8 +772,8 @@ impl Mergeable for AIProgram {
                 all_keys
                     .into_iter()
                     .map(|key| {
-                        if let Some(self_root) = self.roots.get(key)
-                            && let Some(diff_root) = diff.roots.get(key)
+                        if let (Some(self_root), Some(diff_root)) =
+                            (self.roots.get(key), diff.roots.get(key))
                         {
                             (key.clone(), self_root.merge(diff_root))
                         } else {
@@ -754,7 +783,7 @@ impl Mergeable for AIProgram {
                                     .get(key)
                                     .or_else(|| diff.roots.get(key))
                                     .cloned()
-                                    .expect("This key has to exist, nutcase")
+                                    .expect("This key has to exist, nutcase"),
                             )
                         }
                     })

@@ -110,7 +110,9 @@ impl Resource for Physics {
 
 impl From<ContactInfo> for ParameterList {
     fn from(val: ContactInfo) -> Self {
-        if let Some(contact_point_info) = val.contact_point_info && let Some(collision_info) = val.collision_info {
+        if let (Some(contact_point_info), Some(collision_info)) =
+            (val.contact_point_info, val.collision_info)
+        {
             Self {
                 objects: [(
                     3387849585,
@@ -120,17 +122,18 @@ impl From<ContactInfo> for ParameterList {
                     ),
                 )]
                 .into_iter()
-                .chain(
-                    contact_point_info.into_iter().enumerate().map(|(i, info)| {
-                        (hash_name(&jstr!("ContactPointInfo_{&lexical::to_string(i)}")), info.into())
-                    }),
-                )
-                .chain(
-                    collision_info
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, info)| (hash_name(&jstr!("CollisionInfo_{&lexical::to_string(i)}")), info.into())),
-                )
+                .chain(contact_point_info.into_iter().enumerate().map(|(i, info)| {
+                    (
+                        hash_name(&jstr!("ContactPointInfo_{&lexical::to_string(i)}")),
+                        info.into(),
+                    )
+                }))
+                .chain(collision_info.into_iter().enumerate().map(|(i, info)| {
+                    (
+                        hash_name(&jstr!("CollisionInfo_{&lexical::to_string(i)}")),
+                        info.into(),
+                    )
+                }))
                 .collect(),
                 ..Default::default()
             }
@@ -600,8 +603,11 @@ impl Mergeable for Physics {
             } else {
                 None
             },
-            rigid_contact_info: if let Some(self_info) = &self.rigid_contact_info && let Some(other_info) =
-                &other.rigid_contact_info && self_info != other_info
+            rigid_contact_info: if let Some((self_info, other_info)) = self
+                .rigid_contact_info
+                .as_ref()
+                .and_then(|i| other.rigid_contact_info.as_ref().map(|oi| (i, oi)))
+                .filter(|(si, oi)| si != oi)
             {
                 Some(self_info.diff(other_info))
             } else if self.rigid_contact_info == other.rigid_contact_info {
@@ -609,8 +615,11 @@ impl Mergeable for Physics {
             } else {
                 other.rigid_contact_info.clone()
             },
-            rigid_body_set: if let Some(self_body) = &self.rigid_body_set && let Some(other_body) =
-                &other.rigid_body_set && self_body != other_body
+            rigid_body_set: if let Some((self_body, other_body)) = self
+                .rigid_body_set
+                .as_ref()
+                .and_then(|b| other.rigid_body_set.as_ref().map(|ob| (b, ob)))
+                .filter(|(sb, ob)| sb != ob)
             {
                 Some(util::simple_index_diff(self_body, other_body))
             } else if self.rigid_body_set == other.rigid_body_set {
@@ -618,9 +627,11 @@ impl Mergeable for Physics {
             } else {
                 other.rigid_body_set.clone()
             },
-            character_controller: if let Some(self_controller) = &self.character_controller
-                && let Some(other_controller) =
-                &other.character_controller && self_controller != other_controller
+            character_controller: if let Some((self_controller, other_controller)) = self
+                .character_controller
+                .as_ref()
+                .and_then(|c| other.character_controller.as_ref().map(|oc| (c, oc)))
+                .filter(|(sc, oc)| sc != oc)
             {
                 Some(self_controller.diff(other_controller))
             } else if self.character_controller == other.character_controller {
@@ -628,8 +639,11 @@ impl Mergeable for Physics {
             } else {
                 other.character_controller.clone()
             },
-            cloth: if let Some(self_cloth) =
-                &self.cloth && let Some(other_cloth) = &other.cloth && self_cloth != other_cloth
+            cloth: if let Some((self_cloth, other_cloth)) = self
+                .cloth
+                .as_ref()
+                .and_then(|c| other.cloth.as_ref().map(|oc| (c, oc)))
+                .filter(|(sc, oc)| sc != oc)
             {
                 Some(self_cloth.diff(other_cloth))
             } else if self.cloth == other.cloth {
@@ -637,7 +651,8 @@ impl Mergeable for Physics {
             } else {
                 other.cloth.clone()
             },
-            use_system_group_handler: if other.use_system_group_handler != self.use_system_group_handler
+            use_system_group_handler: if other.use_system_group_handler
+                != self.use_system_group_handler
             {
                 other.use_system_group_handler
             } else {

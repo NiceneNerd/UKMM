@@ -201,8 +201,10 @@ impl Mergeable for ShopData {
                                         other_table
                                             .iter()
                                             .filter_map(|(item, data)| {
-                                                if let Some(self_data) =
-                                                    self_table.get(item) && self_data == data
+                                                if self_table
+                                                    .get(item)
+                                                    .map(|sd| sd == data)
+                                                    .unwrap_or(false)
                                                 {
                                                     None
                                                 } else {

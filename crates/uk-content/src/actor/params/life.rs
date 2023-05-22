@@ -351,7 +351,7 @@ impl InfoSource for LifeCondition {
         if let Some(limit) = &self.y_limit_algo {
             info.insert("yLimitAlgo".into(), limit.into());
         }
-        if let Some(invalid_times) = &self.invalid_times && !invalid_times.is_empty() {
+        if let Some(invalid_times) = self.invalid_times.as_ref().filter(|t| !t.is_empty()) {
             info.insert(
                 "invalidTimes".into(),
                 invalid_times
@@ -360,7 +360,7 @@ impl InfoSource for LifeCondition {
                     .collect(),
             );
         }
-        if let Some(invalid_weathers) = &self.invalid_weathers && !invalid_weathers.is_empty() {
+        if let Some(invalid_weathers) = self.invalid_weathers.as_ref().filter(|t| !t.is_empty()) {
             info.insert(
                 "invalidWeathers".into(),
                 invalid_weathers

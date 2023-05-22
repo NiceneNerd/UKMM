@@ -157,16 +157,13 @@ impl Mergeable for RagdollBlendWeight {
                 .iter()
                 .filter_map(|(key, other_list)| {
                     let self_list = self.0.get(key);
-                    if let Some(self_list) = self_list && other_list != self_list {
-                Some((
-                    key.clone(),
-                    self_list.diff(other_list)
-                ))
-            } else if self_list.is_none() {
-                Some(( key.clone(), other_list.clone() ))
-            } else {
-                None
-            }
+                    if let Some(self_list) = self_list.filter(|sl| other_list != *sl) {
+                        Some((key.clone(), self_list.diff(other_list)))
+                    } else if self_list.is_none() {
+                        Some((key.clone(), other_list.clone()))
+                    } else {
+                        None
+                    }
                 })
                 .collect(),
         )
@@ -180,7 +177,9 @@ impl Mergeable for RagdollBlendWeight {
                 .map(|key| {
                     (
                         key.clone(),
-                        if let Some(self_list) = self.0.get(&key) && let Some(other_list) = diff.0.get(&key) {
+                        if let (Some(self_list), Some(other_list)) =
+                            (self.0.get(&key), diff.0.get(&key))
+                        {
                             self_list.merge(other_list)
                         } else {
                             diff.0
