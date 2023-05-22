@@ -436,7 +436,6 @@ impl Mergeable for MergeableResource {
 }
 
 impl MergeableResource {
-    #[allow(irrefutable_let_patterns)]
     pub fn from_binary(name: &Path, data: &[u8]) -> Result<Option<MergeableResource>> {
         if ActorInfo::path_matches(name) {
             Ok(Some(Self::ActorInfo(Box::new(ActorInfo::from_binary(
@@ -760,7 +759,6 @@ pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool
 }
 
 impl ResourceData {
-    #[allow(irrefutable_let_patterns)]
     pub fn from_binary<'a>(name: impl AsRef<Path>, data: impl Into<Cow<'a, [u8]>>) -> Result<Self> {
         fn inner(name: &Path, data: Cow<'_, [u8]>) -> Result<ResourceData> {
             let name = name;

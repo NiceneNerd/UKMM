@@ -395,7 +395,6 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     Ok(path)
 }
 
-#[allow(irrefutable_let_patterns)]
 pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = unpack_bnp(core, path).with_context(|| {
         format!(

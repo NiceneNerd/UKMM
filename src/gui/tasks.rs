@@ -206,7 +206,6 @@ pub fn parse_meta(file: PathBuf) -> Result<Message> {
     .map(Message::UpdatePackageMeta)
 }
 
-#[allow(irrefutable_let_patterns)]
 pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     let settings_path = if let Some(path) = path.join("settings.xml").exists_then() {
         path

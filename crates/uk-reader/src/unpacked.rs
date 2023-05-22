@@ -121,7 +121,6 @@ impl Unpacked {
 
 #[typetag::serde]
 impl super::ResourceLoader for Unpacked {
-    #[allow(irrefutable_let_patterns)]
     fn get_data(&self, name: &Path) -> Result<Vec<u8>> {
         self.update_dir
             .iter()

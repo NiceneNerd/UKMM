@@ -4765,6 +4765,7 @@ dependencies = [
  "typetag",
  "uk-content",
  "uk-reader",
+ "uk-util",
  "zip",
  "zstd",
 ]

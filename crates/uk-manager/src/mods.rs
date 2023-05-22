@@ -330,7 +330,7 @@ impl Manager {
 
     /// Add a mod to the list of installed mods. This function assumes that the
     /// mod at the provided path has already been validated.
-    #[allow(irrefutable_let_patterns)]
+
     pub fn add(&self, mod_path: &Path, profile: Option<&String>) -> Result<Mod> {
         let mut old_version = None;
         let mod_name = {

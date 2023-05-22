@@ -46,7 +46,6 @@ fn handle_diff_entry(
 }
 
 impl BnpConverter {
-    #[allow(irrefutable_let_patterns)]
     pub fn handle_aslist(&self) -> Result<()> {
         let aslist_path = self.current_root.join("logs/aslist.aamp");
         if aslist_path.exists() {

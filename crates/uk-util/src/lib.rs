@@ -66,6 +66,19 @@ impl<T: Default> OptionExt<T> for Option<T> {
     }
 }
 
+pub trait ResultExt<T, E> {
+    fn inspect_err<F: FnOnce(&E)>(self, f: F) -> Self;
+}
+
+impl<T, E> ResultExt<T, E> for Result<T, E> {
+    fn inspect_err<F: FnOnce(&E)>(self, f: F) -> Self {
+        if let Err(ref e) = self {
+            f(e)
+        }
+        self
+    }
+}
+
 pub trait PathExt
 where
     Self: Sized,

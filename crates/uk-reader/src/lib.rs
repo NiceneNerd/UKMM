@@ -178,7 +178,6 @@ impl ResourceReader {
         })
     }
 
-    #[allow(irrefutable_let_patterns)]
     pub fn from_unpacked_mod(mod_dir: impl AsRef<Path>) -> Result<Self> {
         fn inner(mod_dir: &Path) -> Result<ResourceReader> {
             let (content_u, aoc_u) = platform_prefixes(Endian::Big);

@@ -62,7 +62,6 @@ impl Project {
         })
     }
 
-    #[allow(irrefutable_let_patterns)]
     pub fn from_mod(core: &Manager, mod_: &Path) -> Result<Self> {
         let zip = ParallelZipReader::open(mod_, false).context("Failed to open ZIP file")?;
         let meta: Meta = serde_yaml::from_str(

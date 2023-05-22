@@ -41,7 +41,6 @@ fn handle_diff_entry(
 }
 
 impl BnpConverter {
-    #[allow(irrefutable_let_patterns)]
     pub fn handle_deepmerge(&self) -> Result<()> {
         let deepmerge_path = self.current_root.join("logs/deepmerge.aamp");
         if deepmerge_path.exists() {

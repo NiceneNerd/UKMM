@@ -929,7 +929,7 @@ impl App {
                         }
                     }
                 }
-                #[allow(irrefutable_let_patterns)]
+
                 Message::CheckMeta => {
                     let source = &self.package_builder.borrow().source;
                     for file in ["info.json", "rules.txt", "meta.yml"] {
