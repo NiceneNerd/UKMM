@@ -158,7 +158,7 @@ impl Mergeable for ActorLink {
 }
 
 impl InfoSource for ActorLink {
-    fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
         crate::actor::info_params!(
             &self.targets,
             info,
@@ -294,7 +294,7 @@ mod tests {
         )
         .unwrap();
         let actorlink = super::ActorLink::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::default();
+        let mut info = roead::byml::Map::default();
         actorlink.update_info(&mut info).unwrap();
         assert_eq!(info["actorScale"], Byml::Float(1.0));
         assert_eq!(info["elink"], Byml::String("Guardian_A".into()));

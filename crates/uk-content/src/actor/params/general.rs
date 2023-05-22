@@ -36,7 +36,7 @@ impl From<GeneralParamList> for ParameterIO {
 impl_simple_aamp!(GeneralParamList, 0);
 
 impl InfoSource for GeneralParamList {
-    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         if let Some(obj) = self.0.object("AnimalUnit") {
             crate::actor::info_params!(obj, info, {
                 ("animalUnitBasePlayRate", "BasePlayRate", f32),
@@ -343,7 +343,7 @@ mod tests {
         )
         .unwrap();
         let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::default();
+        let mut info = roead::byml::Map::default();
         gparamlist.update_info(&mut info).unwrap();
         assert_eq!(info["systemIsGetItemSelf"], Byml::Bool(false));
         assert_eq!(

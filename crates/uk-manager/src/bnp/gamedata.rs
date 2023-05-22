@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use fs_err as fs;
-use roead::byml::{Byml, Hash};
+use roead::byml::{Byml, Map};
 use uk_content::{
     data::gamedata::{FlagData, GameData},
     prelude::Resource,
@@ -14,7 +14,7 @@ impl BnpConverter {
         let gamedata_path = self.current_root.join("logs/gamedata.yml");
         if gamedata_path.exists() {
             log::debug!("Processing gamedata log");
-            let diff = Byml::from_text(fs::read_to_string(gamedata_path)?)?.into_hash()?;
+            let diff = Byml::from_text(fs::read_to_string(gamedata_path)?)?.into_map()?;
             let base = self
                 .dump
                 .get_from_sarc(
@@ -23,8 +23,8 @@ impl BnpConverter {
                 )
                 .context("Failed to parse gamedata pack from game dump")?;
             if let Some(MergeableResource::GameDataPack(mut base)) = base.as_mergeable().cloned() {
-                fn simple_add(base: &mut GameData, diff: &Hash) -> Result<()> {
-                    if let Some(Byml::Hash(add)) = diff.get("add") {
+                fn simple_add(base: &mut GameData, diff: &Map) -> Result<()> {
+                    if let Some(Byml::Map(add)) = diff.get("add") {
                         base.flags.extend(add.iter().filter_map(|(name, flag)| {
                             flag.try_into().ok().map(|f| (name.clone(), f))
                         }));
@@ -53,7 +53,7 @@ impl BnpConverter {
                     (&mut base.vector4f_data, "vector4f_data"),
                     (&mut base.string32_data, "string_data"),
                 ] {
-                    if let Some(Byml::Hash(diff)) = diff.get(data_type) {
+                    if let Some(Byml::Map(diff)) = diff.get(data_type) {
                         simple_add(base, diff)?;
                     }
                 }
@@ -66,8 +66,8 @@ impl BnpConverter {
                     ),
                     (&mut base.s32_data, &mut base.revival_s32_data, "s32_data"),
                 ] {
-                    if let Some(Byml::Hash(diff)) = diff.get(data_type) {
-                        if let Some(Byml::Hash(add)) = diff.get("add") {
+                    if let Some(Byml::Map(diff)) = diff.get(data_type) {
+                        if let Some(Byml::Map(add)) = diff.get("add") {
                             for (name, flag) in add.iter() {
                                 let mut parts = name.split('_');
                                 let flag = FlagData::try_from(flag).with_context(|| {

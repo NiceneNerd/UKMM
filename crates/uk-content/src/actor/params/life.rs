@@ -343,7 +343,7 @@ impl Mergeable for LifeCondition {
 }
 
 impl InfoSource for LifeCondition {
-    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         use roead::byml::Byml;
         if let Some(display_dist) = self.display_dist {
             info.insert("traverseDist".into(), display_dist.into());
@@ -472,7 +472,7 @@ mod tests {
         )
         .unwrap();
         let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::default();
+        let mut info = roead::byml::Map::default();
         lifecondition.update_info(&mut info).unwrap();
         assert!(
             info["invalidTimes"]

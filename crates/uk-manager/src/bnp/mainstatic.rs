@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use fs_err as fs;
 use roead::{
-    byml::{Byml, Hash},
+    byml::{Byml, Map},
     yaz0::{compress, decompress},
 };
 use rustc_hash::FxHashMap;
@@ -9,14 +9,14 @@ use smartstring::alias::String;
 
 use super::BnpConverter;
 
-fn get_id(item: &Hash) -> Result<String> {
+fn get_id(item: &Map) -> Result<String> {
     #[inline]
     fn key_from_coords(x: f32, y: f32, z: f32) -> String {
         format!("{}{}{}", x.ceil(), y.ceil(), z.ceil()).into()
     }
 
     #[inline]
-    fn find_name(item: &Hash) -> &str {
+    fn find_name(item: &Map) -> &str {
         item.iter()
             .find_map(|(k, v)| {
                 k.to_lowercase()
@@ -30,7 +30,7 @@ fn get_id(item: &Hash) -> Result<String> {
     let translate = item
         .get("Translate")
         .context("Mainfield static missing entry translation")?
-        .as_hash()?;
+        .as_map()?;
 
     Ok(key_from_coords(
         translate
@@ -53,23 +53,23 @@ impl BnpConverter {
         let mstatic_path = self.current_root.join("logs/mainstatic.yml");
         if mstatic_path.exists() {
             log::debug!("Processing mainfield static log");
-            let diff: FxHashMap<String, Hash> = Byml::from_text(fs::read_to_string(mstatic_path)?)?
-                .into_hash()?
+            let diff: FxHashMap<String, Map> = Byml::from_text(fs::read_to_string(mstatic_path)?)?
+                .into_map()?
                 .into_iter()
-                .map(|(cat, entries)| -> Result<(String, Hash)> { Ok((cat, entries.into_hash()?)) })
+                .map(|(cat, entries)| -> Result<(String, Map)> { Ok((cat, entries.into_map()?)) })
                 .collect::<Result<_>>()?;
-            let mut base: FxHashMap<String, Hash> = Byml::from_binary(decompress(
+            let mut base: FxHashMap<String, Map> = Byml::from_binary(decompress(
                 self.dump
                     .get_aoc_bytes_uncached("Map/MainField/Static.smubin")?,
             )?)?
-            .into_hash()?
+            .into_map()?
             .into_iter()
-            .map(|(cat, entries)| -> Result<(String, Hash)> {
+            .map(|(cat, entries)| -> Result<(String, Map)> {
                 let entries = entries
                     .into_array()?
                     .into_iter()
                     .map(|entry| -> Result<(String, Byml)> {
-                        Ok((get_id(entry.as_hash()?)?, entry))
+                        Ok((get_id(entry.as_map()?)?, entry))
                     })
                     .collect::<Result<_>>()?;
                 Ok((cat, entries))

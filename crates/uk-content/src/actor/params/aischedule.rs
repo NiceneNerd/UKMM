@@ -94,7 +94,7 @@ mod tests {
         .unwrap();
         let aischedule2 = super::AISchedule::from(&byml2);
         let diff = aischedule.diff(&aischedule2);
-        assert_eq!(diff.0.as_hash().unwrap().len(), 2);
+        assert_eq!(diff.0.as_map().unwrap().len(), 2);
     }
 
     #[test]

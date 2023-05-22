@@ -19,7 +19,7 @@ impl TryFrom<&Byml> for QuestProduct {
                 .map(|quest| -> Result<(String, Byml)> {
                     Ok((
                         quest
-                            .as_hash()?
+                            .as_map()?
                             .get("Name")
                             .ok_or(UKError::MissingBymlKey("Quest entry missing name"))?
                             .as_string()?

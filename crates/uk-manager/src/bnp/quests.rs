@@ -11,7 +11,7 @@ impl BnpConverter {
         let quests_path = self.current_root.join("logs/quests.yml");
         if quests_path.exists() {
             log::debug!("Processing quests log");
-            let mut diff = Byml::from_text(fs::read_to_string(quests_path)?)?.into_hash()?;
+            let mut diff = Byml::from_text(fs::read_to_string(quests_path)?)?.into_map()?;
             let mut quests = Byml::from_binary(
                 self.dump
                     .get_bytes_from_sarc("Pack/TitleBG.pack//Quest/QuestProduct.sbquestpack")?,
@@ -21,13 +21,13 @@ impl BnpConverter {
                 .iter()
                 .enumerate()
                 .filter_map(|(i, quest)| {
-                    quest.as_hash().ok().and_then(|h| {
+                    quest.as_map().ok().and_then(|h| {
                         h.get("Name")
                             .and_then(|n| n.as_string().ok().cloned().map(|n| (n, i)))
                     })
                 })
                 .collect();
-            if let Some(Byml::Hash(mods)) = diff.remove("mod") {
+            if let Some(Byml::Map(mods)) = diff.remove("mod") {
                 for (name, quest) in mods {
                     let index = quest_hashes.get(&name).copied().unwrap_or(quests.len());
                     quests[index] = quest;

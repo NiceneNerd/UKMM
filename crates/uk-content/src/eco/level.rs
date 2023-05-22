@@ -47,7 +47,7 @@ impl TryFrom<&Byml> for LevelSensor {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let hash = byml.as_hash()?;
+        let hash = byml.as_map()?;
         Ok(Self {
             enemy:   hash
                 .get("enemy")
@@ -57,7 +57,7 @@ impl TryFrom<&Byml> for LevelSensor {
                 .as_array()?
                 .iter()
                 .map(|enemy| -> Result<(String, Series)> {
-                    let enemy = enemy.as_hash()?;
+                    let enemy = enemy.as_map()?;
                     Ok((
                         enemy
                             .get("species")
@@ -74,7 +74,7 @@ impl TryFrom<&Byml> for LevelSensor {
                             .as_array()?
                             .iter()
                             .map(|actor| -> Result<(String, f32)> {
-                                let actor = actor.as_hash()?;
+                                let actor = actor.as_map()?;
                                 Ok((
                                     actor
                                         .get("name")
@@ -101,7 +101,7 @@ impl TryFrom<&Byml> for LevelSensor {
                 .as_array()?
                 .iter()
                 .map(|flag| -> Result<(String, f32)> {
-                    let flag = flag.as_hash()?;
+                    let flag = flag.as_map()?;
                     Ok((
                         flag.get("name")
                             .ok_or(UKError::MissingBymlKey(
@@ -122,7 +122,7 @@ impl TryFrom<&Byml> for LevelSensor {
                 .ok_or(UKError::MissingBymlKey(
                     "Level sensor missing setting section",
                 ))?
-                .as_hash()?
+                .as_map()?
                 .iter()
                 .map(|(k, v)| -> Result<(String, f32)> { Ok((k.clone(), v.as_float()?)) })
                 .collect::<Result<_>>()?,
@@ -136,7 +136,7 @@ impl TryFrom<&Byml> for LevelSensor {
                 .try_fold(
                     DeleteMap::default(),
                     |mut weapons, weapon| -> Result<DeleteMap<_, _>> {
-                        let weapon = weapon.as_hash()?;
+                        let weapon = weapon.as_map()?;
                         let series = weapon
                             .get("series")
                             .ok_or(UKError::MissingBymlKey(
@@ -162,7 +162,7 @@ impl TryFrom<&Byml> for LevelSensor {
                                 .as_array()?
                                 .iter()
                                 .map(|actor| -> Result<(String, (i32, f32))> {
-                                    let actor = actor.as_hash()?;
+                                    let actor = actor.as_map()?;
                                     Ok((
                                         actor
                                             .get("name")

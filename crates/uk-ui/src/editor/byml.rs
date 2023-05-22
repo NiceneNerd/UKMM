@@ -19,11 +19,7 @@ impl super::EditableValue for roead::byml::Byml {
             let yaml = ui
                 .memory()
                 .data
-                .get_temp_mut_or_insert_with(id, || {
-                    Arc::new(RwLock::new(
-                        self.to_text().expect("BYML should serialize to text"),
-                    ))
-                })
+                .get_temp_mut_or_insert_with(id, || Arc::new(RwLock::new(self.to_text())))
                 .clone();
             ui.allocate_ui_with_layout(
                 [
@@ -53,7 +49,7 @@ impl super::EditableValue for roead::byml::Byml {
                         .on_hover_text("Reset")
                         .clicked()
                     {
-                        *yaml.write() = self.to_text().expect("BYML should serialize to YAML");
+                        *yaml.write() = self.to_text();
                         ui.memory()
                             .data
                             .insert_temp::<bool>(id.with("error"), false);

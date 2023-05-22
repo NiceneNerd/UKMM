@@ -185,7 +185,7 @@ impl Mergeable for Recipe {
 }
 
 impl InfoSource for Recipe {
-    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         if let Some(table) = self.0.get(String64::from("Normal0")) {
             info.insert("normal0StuffNum".into(), Byml::I32(table.len() as i32));
             for (name_idx, (num_idx, (name, num))) in table
@@ -303,7 +303,7 @@ mod tests {
         )
         .unwrap();
         let recipe = super::Recipe::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::default();
+        let mut info = roead::byml::Map::default();
         recipe.update_info(&mut info).unwrap();
         let table = recipe.0.get(String64::from("Normal0")).unwrap();
         assert_eq!(

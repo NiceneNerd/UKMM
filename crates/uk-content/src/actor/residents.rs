@@ -1,4 +1,4 @@
-use roead::byml::{Byml, Hash};
+use roead::byml::{Byml, Map};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
@@ -12,10 +12,10 @@ pub struct ResidentActorData {
     pub scale:    Option<Byml>,
 }
 
-impl TryFrom<&Hash> for ResidentActorData {
+impl TryFrom<&Map> for ResidentActorData {
     type Error = UKError;
 
-    fn try_from(val: &Hash) -> std::result::Result<Self, Self::Error> {
+    fn try_from(val: &Map) -> std::result::Result<Self, Self::Error> {
         Ok(ResidentActorData {
             only_res: val
                 .get("only_res")
@@ -41,7 +41,7 @@ impl TryFrom<&Byml> for ResidentActors {
             actors
                 .iter()
                 .map(|actor| -> Result<(String, ResidentActorData)> {
-                    actor.as_hash().map_err(UKError::from).and_then(
+                    actor.as_map().map_err(UKError::from).and_then(
                         |actor| -> Result<(String, ResidentActorData)> {
                             Ok((
                                 actor
@@ -67,7 +67,7 @@ impl From<ResidentActors> for Byml {
             val.0
                 .into_iter()
                 .map(|(name, data)| {
-                    Byml::Hash(
+                    Byml::Map(
                         [
                             ("name", Some(Byml::String(name))),
                             ("only_res", Some(Byml::Bool(data.only_res))),

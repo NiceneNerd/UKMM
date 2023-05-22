@@ -16,7 +16,7 @@ impl BnpConverter {
             let diff =
                 Byml::from_text(fs::read_to_string(path).context("Failed to read areadata log")?)
                     .context("Failed to parse areadata log")?
-                    .into_hash()
+                    .into_map()
                     .context("Invalid areadata log: not a map")?
                     .into_iter()
                     .map(|(h, a)| -> Result<(usize, Byml)> {

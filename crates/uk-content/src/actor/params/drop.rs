@@ -108,7 +108,7 @@ impl Mergeable for DropTable {
 }
 
 impl InfoSource for DropTable {
-    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         info.insert(
             "drops".into(),
             self.0
@@ -270,10 +270,10 @@ mod tests {
         )
         .unwrap();
         let drop = super::DropTable::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::default();
+        let mut info = roead::byml::Map::default();
         drop.update_info(&mut info).unwrap();
         assert_eq!(
-            info["drops"].as_hash().unwrap()["Normal"]
+            info["drops"].as_map().unwrap()["Normal"]
                 .as_array()
                 .unwrap(),
             vec![

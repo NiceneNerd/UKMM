@@ -28,7 +28,7 @@ impl TryFrom<&Byml> for Location {
         Ok(Self(byml.as_array()?.iter().try_fold(
             SortedDeleteMap::new(),
             |mut locs, loc| -> Result<SortedDeleteMap<String, DeleteVec<LocationEntry>>> {
-                let loc = loc.as_hash()?;
+                let loc = loc.as_map()?;
                 let message = loc
                     .get("MessageID")
                     .ok_or(UKError::MissingBymlKey(

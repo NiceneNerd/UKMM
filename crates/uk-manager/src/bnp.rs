@@ -422,6 +422,7 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
 
 #[cfg(test)]
 #[test]
+#[allow(clippy::unwrap_used)]
 fn test_convert() {
     let path = dirs2::download_dir()
         .unwrap()

@@ -91,7 +91,7 @@ impl TryFrom<&Byml> for SaveData {
 
     fn try_from(val: &Byml) -> Result<Self> {
         let array = val
-            .as_hash()?
+            .as_map()?
             .get("file_list")
             .ok_or(UKError::MissingBymlKey("bgsvdata missing file_list"))?
             .as_array()?;

@@ -258,7 +258,7 @@ impl Mergeable for ModelList {
 }
 
 impl InfoSource for ModelList {
-    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         info_params_filtered!(&self.attention, info, {
             ("cursorOffsetY", "CursorOffsetY", f32)
         });
@@ -430,7 +430,7 @@ mod tests {
         )
         .unwrap();
         let modellist = super::ModelList::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::default();
+        let mut info = roead::byml::Map::default();
         modellist.update_info(&mut info).unwrap();
         assert_eq!(info["cursorOffsetY"], Byml::Float(0.7));
         assert_eq!(info["baseScaleY"], Byml::Float(1.0));

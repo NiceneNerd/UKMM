@@ -31,7 +31,7 @@ impl TryFrom<&Byml> for System {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let hash = byml.as_hash()?;
+        let hash = byml.as_map()?;
         Ok(Self {
             cei:    hash
                 .get("CEI")
@@ -160,7 +160,7 @@ impl TryFrom<&Byml> for Cei {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let hash = byml.as_hash()?;
+        let hash = byml.as_map()?;
         Ok(Self {
             bt:  hash
                 .get("BT")

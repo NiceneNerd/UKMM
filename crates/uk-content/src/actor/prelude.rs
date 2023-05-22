@@ -74,7 +74,7 @@ pub(crate) use info_params_filtered;
 use crate::prelude::Resource;
 
 pub trait InfoSource {
-    fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()>;
+    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()>;
 }
 
 pub trait ParameterResource: Resource {

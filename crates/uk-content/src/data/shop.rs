@@ -20,19 +20,19 @@ impl TryFrom<&Byml> for ShopGameDataInfo {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let hash = byml.as_hash()?;
+        let hash = byml.as_map()?;
         let area_info = hash
             .get("ShopAreaInfo")
             .ok_or(UKError::MissingBymlKey(
                 "Shop game data info missing ShopAreaInfo",
             ))?
-            .as_hash()?;
+            .as_map()?;
         let sold_out_info = hash
             .get("SoldOutInfo")
             .ok_or(UKError::MissingBymlKey(
                 "Shop game data info missing SoldOutInfo",
             ))?
-            .as_hash()?;
+            .as_map()?;
         Ok(Self {
             area_info:     area_info
                 .get("Hashes")

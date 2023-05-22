@@ -18,7 +18,7 @@ impl TryFrom<&Byml> for LazyTraverseList {
 
     fn try_from(byml: &Byml) -> Result<Self> {
         Ok(Self(
-            byml.as_hash()?
+            byml.as_map()?
                 .iter()
                 .map(
                     |(key, list)| -> Result<(String, SortedDeleteMap<u32, String>)> {
@@ -27,7 +27,7 @@ impl TryFrom<&Byml> for LazyTraverseList {
                             list.as_array()?
                                 .iter()
                                 .map(|unit| -> Result<(u32, String)> {
-                                    let unit = unit.as_hash()?;
+                                    let unit = unit.as_map()?;
                                     let id = unit
                                         .get("HashId")
                                         .ok_or(UKError::MissingBymlKey(

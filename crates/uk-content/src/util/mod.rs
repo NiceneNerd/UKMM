@@ -6,7 +6,7 @@ use std::{collections::BTreeMap, str::FromStr};
 pub use collections::*;
 use roead::{
     aamp::*,
-    byml::{Byml, Hash},
+    byml::{Byml, Map},
     types::FixedSafeString,
 };
 
@@ -95,8 +95,8 @@ pub fn merge_pobj(base: &ParameterObject, diff: &ParameterObject) -> ParameterOb
 }
 
 pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
-    if let (Ok(base), Ok(other)) = (base.as_hash(), other.as_hash()) {
-        Byml::Hash(
+    if let (Ok(base), Ok(other)) = (base.as_map(), other.as_map()) {
+        Byml::Map(
             other
                 .iter()
                 .filter_map(|(key, value)| {
@@ -118,16 +118,16 @@ pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
 
 pub fn merge_byml_shallow(base: &Byml, diff: &Byml) -> Byml {
     match (base, diff) {
-        (Byml::Hash(base), Byml::Hash(diff)) => {
-            let mut new: Hash = base
+        (Byml::Map(base), Byml::Map(diff)) => {
+            let mut new: Map = base
                 .iter()
                 .chain(diff.iter())
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect();
             new.retain(|_, v| v != &Byml::Null);
-            Byml::Hash(new)
+            Byml::Map(new)
         }
-        (Byml::Hash(base), Byml::Null) => Byml::Hash(base.clone()),
+        (Byml::Map(base), Byml::Null) => Byml::Map(base.clone()),
         _ => panic!("Can only shallow merge BYML hashes"),
     }
 }
@@ -273,13 +273,13 @@ macro_rules! bhash {
     ($($key:expr => $value:expr),*) => {
         {
             let _cap = bhash!(@count $($key),*);
-            let mut _map = ::roead::byml::Hash::default();
+            let mut _map = ::roead::byml::Map::default();
             _map.reserve(_cap);
 
             $(
                 let _ = _map.insert(::smartstring::alias::String::from($key), $value);
             )*
-            ::roead::byml::Byml::Hash(_map)
+            ::roead::byml::Byml::Map(_map)
         }
     };
 }

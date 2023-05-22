@@ -35,7 +35,7 @@ impl TryFrom<&Byml> for Tips {
             byml.as_array()?
                 .iter()
                 .map(|entry| -> Result<(String, TipData)> {
-                    let hash = entry.as_hash()?;
+                    let hash = entry.as_map()?;
                     Ok((
                         hash.get("MessageId")
                             .ok_or(UKError::MissingBymlKey("Tips file entry missing MessageId"))?

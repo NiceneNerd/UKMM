@@ -12,7 +12,7 @@ impl BnpConverter {
         let residents_path = self.current_root.join("logs/residents.yml");
         if residents_path.exists() {
             log::debug!("Processing resident actors log");
-            let diff = Byml::from_text(fs::read_to_string(residents_path)?)?.into_hash()?;
+            let diff = Byml::from_text(fs::read_to_string(residents_path)?)?.into_map()?;
             let residents = self
                 .dump
                 .get_from_sarc(
@@ -26,7 +26,7 @@ impl BnpConverter {
                 residents
                     .0
                     .extend(diff.into_iter().filter_map(|(name, data)| {
-                        ResidentActorData::try_from(data.as_hash().ok()?)
+                        ResidentActorData::try_from(data.as_map().ok()?)
                             .ok()
                             .map(|d| (name, d))
                     }));

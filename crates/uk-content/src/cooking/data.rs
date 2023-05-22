@@ -23,7 +23,7 @@ impl TryFrom<&Byml> for CookData {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let hash = byml.as_hash()?;
+        let hash = byml.as_map()?;
         Ok(Self {
             recipes: hash
                 .get("Recipes")

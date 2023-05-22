@@ -716,7 +716,7 @@ impl Mergeable for Physics {
 }
 
 impl InfoSource for Physics {
-    fn update_info(&self, info: &mut roead::byml::Hash) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         if let Some(Parameter::Vec3(center)) = self.rigid_body_set.as_ref().and_then(|body_set| {
             body_set.values().next().and_then(|list| {
                 list.lists.0.values().next().and_then(|list| {
@@ -807,7 +807,7 @@ mod tests {
         )
         .unwrap();
         let physics = super::Physics::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::default();
+        let mut info = roead::byml::Map::default();
         physics.update_info(&mut info).unwrap();
         assert_eq!(info["rigidBodyCenterY"], roead::byml::Byml::Float(0.15));
     }

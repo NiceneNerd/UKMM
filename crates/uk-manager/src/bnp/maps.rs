@@ -5,7 +5,7 @@ use fs_err as fs;
 use join_str::jstr;
 use rayon::prelude::*;
 use roead::{
-    byml::{Byml, Hash},
+    byml::{Byml, Map},
     sarc::{Sarc, SarcWriter},
     yaz0::{compress, decompress},
 };
@@ -16,15 +16,15 @@ use split_iter::Splittable;
 use super::BnpConverter;
 
 fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
-    let mut diff = diff.into_hash()?;
-    let base = base.as_mut_hash()?;
+    let mut diff = diff.into_map()?;
+    let base = base.as_mut_map()?;
 
-    fn merge_section(base: &mut Vec<Byml>, diff: &mut Hash) -> Result<()> {
+    fn merge_section(base: &mut Vec<Byml>, diff: &mut Map) -> Result<()> {
         let hashes = base
             .iter()
             .enumerate()
             .filter_map(|(i, obj)| {
-                obj.as_hash()
+                obj.as_map()
                     .ok()
                     .and_then(|h| h.get("HashId").and_then(|h| h.as_int().ok()))
                     .map(|h| (h, i))
@@ -32,7 +32,7 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
             .collect::<FxHashMap<u32, _>>();
         if let Some(Byml::Array(adds)) = diff.remove("add") {
             base.extend(adds.into_iter().filter(|obj| {
-                obj.as_hash()
+                obj.as_map()
                     .ok()
                     .and_then(|h| {
                         h.get("HashId")
@@ -43,13 +43,13 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
         }
         if let Some(Byml::Array(dels)) = diff.remove("del") {
             base.retain(|obj| {
-                obj.as_hash()
+                obj.as_map()
                     .ok()
                     .and_then(|h| h.get("HashId").map(|h| !dels.contains(h)))
                     .unwrap_or(false)
             })
         }
-        if let Some(Byml::Hash(mods)) = diff.remove("mod") {
+        if let Some(Byml::Map(mods)) = diff.remove("mod") {
             for (hash, entry) in mods {
                 let hash: u32 = hash.parse()?;
                 if let Some(index) = hashes.get(&hash) {
@@ -60,12 +60,12 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
         Ok(())
     }
 
-    if let (Some(Byml::Hash(mut diff_objs)), Some(Byml::Array(ref mut base_objs))) =
+    if let (Some(Byml::Map(mut diff_objs)), Some(Byml::Array(ref mut base_objs))) =
         (diff.remove("Objs"), base.get_mut("Objs"))
     {
         merge_section(base_objs, &mut diff_objs)?;
     }
-    if let (Some(Byml::Hash(mut diff_rails)), Some(Byml::Array(ref mut base_rails))) =
+    if let (Some(Byml::Map(mut diff_rails)), Some(Byml::Array(ref mut base_rails))) =
         (diff.remove("Rails"), base.get_mut("Rails"))
     {
         merge_section(base_rails, &mut diff_rails)?;
@@ -78,7 +78,7 @@ impl BnpConverter {
         let maps_path = self.current_root.join("logs/map.yml");
         if maps_path.exists() {
             log::debug!("Processing maps log");
-            let diff = Byml::from_text(fs::read_to_string(maps_path)?)?.into_hash()?;
+            let diff = Byml::from_text(fs::read_to_string(maps_path)?)?.into_map()?;
             let base_pack = Sarc::new(self.dump.get_aoc_bytes_uncached("Pack/AocMainField.pack")?)?;
             let mut merged_pack = SarcWriter::from_sarc(&base_pack);
             let (statics, dynamics) = diff

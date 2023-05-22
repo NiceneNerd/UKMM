@@ -94,7 +94,7 @@ mod tests {
         .unwrap();
         let animinfo2 = super::AnimationInfo::from(&byml2);
         let diff = animinfo.diff(&animinfo2);
-        assert_eq!(diff.0.as_hash().unwrap().len(), 2);
+        assert_eq!(diff.0.as_map().unwrap().len(), 2);
     }
 
     #[test]

@@ -21,13 +21,13 @@ impl BnpConverter {
                     .get_aoc_bytes_uncached("Map/CDungeon/Static.smubin")?,
             )?)?;
             let mut dstatic: FxHashMap<String, Byml> = base
-                .as_hash()?
+                .as_map()?
                 .get("StartPos")
                 .context("No StartPos")?
                 .as_array()?
                 .iter()
                 .map(|entry| -> Result<(String, Byml)> {
-                    let hash = entry.as_hash()?;
+                    let hash = entry.as_map()?;
                     let id = hash
                         .get("Map")
                         .context("Pos missing Map")?
@@ -43,7 +43,7 @@ impl BnpConverter {
                 .collect::<Result<_>>()?;
             dstatic.extend(
                 dstatic_diff
-                    .as_hash()?
+                    .as_map()?
                     .iter()
                     .map(|(k, v)| (k.clone(), v.clone())),
             );

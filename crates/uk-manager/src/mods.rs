@@ -125,26 +125,26 @@ impl Mod {
 }
 
 pub trait LookupMod {
-    fn as_hash_id(&self) -> usize;
+    fn as_map_id(&self) -> usize;
 }
 
 impl LookupMod for Mod {
     #[inline(always)]
-    fn as_hash_id(&self) -> usize {
+    fn as_map_id(&self) -> usize {
         self.hash
     }
 }
 
 impl LookupMod for &Mod {
     #[inline(always)]
-    fn as_hash_id(&self) -> usize {
+    fn as_map_id(&self) -> usize {
         self.hash
     }
 }
 
 impl LookupMod for usize {
     #[inline(always)]
-    fn as_hash_id(&self) -> usize {
+    fn as_map_id(&self) -> usize {
         *self
     }
 }
@@ -407,7 +407,7 @@ impl Manager {
     }
 
     pub fn del(&self, mod_: impl LookupMod, profile: Option<&String>) -> Result<Arc<Manifest>> {
-        let hash = mod_.as_hash_id();
+        let hash = mod_.as_map_id();
         let profile_data = self.get_profile(profile);
         let mod_ = profile_data.mods_mut().remove(&hash);
         if let Some(mod_) = mod_ {
@@ -443,7 +443,7 @@ impl Manager {
         enabled: bool,
         profile: Option<&String>,
     ) -> Result<Arc<Manifest>> {
-        let hash = mod_.as_hash_id();
+        let hash = mod_.as_map_id();
         let manifest;
         let profile_data = self.get_profile(profile);
         if let Some(mod_) = profile_data.mods_mut().get_mut(&hash) {
@@ -467,7 +467,7 @@ impl Manager {
         mod_: impl LookupMod,
         options: Vec<ModOption>,
     ) -> Result<Arc<Manifest>> {
-        let hash = mod_.as_hash_id();
+        let hash = mod_.as_map_id();
         let manifest;
         if let Some(mod_) = self.profile().mods_mut().get_mut(&hash) {
             manifest = mod_.manifest_with_options(&options)?;
@@ -571,6 +571,7 @@ pub fn convert_gfx(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 #[test]
 fn san_test() {
     let mut san_opts = sanitise_file_name::Options::DEFAULT;

@@ -18,7 +18,7 @@ fn edit_flag_val(val: &mut Byml, ui: &mut egui::Ui, id: egui::Id) -> egui::Respo
         Byml::String(v) => v.edit_ui_with_id(ui, id),
         Byml::BinaryData(v) => v.edit_ui_with_id(ui, id),
         Byml::Array(v) => v.edit_ui_with_id(ui, id),
-        Byml::Hash(_) => unimplemented!(),
+        Byml::Map(_) => unimplemented!(),
         Byml::Bool(v) => v.edit_ui_with_id(ui, id),
         Byml::I32(v) => v.edit_ui_with_id(ui, id),
         Byml::Float(v) => v.edit_ui_with_id(ui, id),
@@ -26,7 +26,7 @@ fn edit_flag_val(val: &mut Byml, ui: &mut egui::Ui, id: egui::Id) -> egui::Respo
         Byml::I64(v) => v.edit_ui_with_id(ui, id),
         Byml::U64(v) => v.edit_ui_with_id(ui, id),
         Byml::Double(v) => v.edit_ui_with_id(ui, id),
-        Byml::Null => unimplemented!(),
+        _ => unimplemented!(),
     }
 }
 

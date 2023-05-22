@@ -17,7 +17,7 @@ impl TryFrom<&Byml> for AreaData {
             byml.as_array()?
                 .iter()
                 .map(|area| -> Result<(usize, Byml)> {
-                    let hash = area.as_hash()?;
+                    let hash = area.as_map()?;
                     Ok((
                         hash.get("AreaNumber")
                             .ok_or(UKError::MissingBymlKey(

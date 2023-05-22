@@ -17,7 +17,7 @@ impl TryFrom<&Byml> for BarslistInfo {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let hash = byml.as_hash()?;
+        let hash = byml.as_map()?;
         Ok(Self(
             hash.iter()
                 .map(|(k, v)| -> Result<(String, DeleteSet<String>)> {

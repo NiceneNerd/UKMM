@@ -76,7 +76,7 @@ pub use prelude::*;
 // }
 
 // impl<T: TargetParams + InfoSource> InfoSource for LinkTarget<T> {
-//     fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()> {
+//     fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
 //         match self {
 //             Self::Dummy | Self::External(_) => Ok(()),
 //             Self::Included { path: _, params } => params.update_info(info),
@@ -350,7 +350,7 @@ pub use prelude::*;
 // }
 
 // impl InfoSource for Actor {
-//     fn update_info(&self, info: &mut roead::byml::Hash) -> Result<()> {
+//     fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
 //         self.link.update_info(info)?;
 //         self.chemical.update_info(info)?;
 //         self.drop.update_info(info)?;

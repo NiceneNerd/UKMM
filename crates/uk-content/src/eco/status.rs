@@ -32,7 +32,7 @@ impl TryFrom<&Byml> for StatusEffectValues {
         if array
             .get(0)
             .ok_or(UKError::MissingBymlKey("Status effect list entry empty"))?
-            .as_hash()?
+            .as_map()?
             .get("special")
             .ok_or(UKError::MissingBymlKey(
                 "Status effect list entry missing special flag",
@@ -47,7 +47,7 @@ impl TryFrom<&Byml> for StatusEffectValues {
                     .ok_or(UKError::MissingBymlKey(
                         "Status effect list entry missing values",
                     ))?
-                    .as_hash()?
+                    .as_map()?
                     .get("values")
                     .ok_or(UKError::MissingBymlKey(
                         "Status effect list entry missing values",
@@ -56,7 +56,7 @@ impl TryFrom<&Byml> for StatusEffectValues {
                     .iter()
                     .map(|val| -> Result<f32> {
                         Ok(val
-                            .as_hash()?
+                            .as_map()?
                             .get("val")
                             .ok_or(UKError::MissingBymlKey(
                                 "Status effect list entry value missing val item",
@@ -124,7 +124,7 @@ impl TryFrom<&Byml> for StatusEffectList {
             byml.as_array()?
                 .get(0)
                 .ok_or(UKError::MissingBymlKey("Status effect list missing root"))?
-                .as_hash()?
+                .as_map()?
                 .iter()
                 .map(|(effect, values)| -> Result<(String, StatusEffectValues)> {
                     Ok((effect.clone(), values.try_into()?))

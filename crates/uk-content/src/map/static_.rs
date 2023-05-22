@@ -32,7 +32,7 @@ impl TryFrom<&Byml> for Static {
     fn try_from(byml: &Byml) -> Result<Self> {
         Ok(Self {
             start_pos: byml
-                .as_hash()?
+                .as_map()?
                 .get("StartPos")
                 .ok_or(UKError::MissingBymlKey("CDungeon static missing StartPos"))?
                 .as_array()?
@@ -42,7 +42,7 @@ impl TryFrom<&Byml> for Static {
                     |mut entry_map,
                      entry|
                      -> Result<DeleteMap<String, DeleteMap<String, EntryPos>>> {
-                        let entry = entry.as_hash()?;
+                        let entry = entry.as_map()?;
                         let map = entry
                             .get("Map")
                             .ok_or(UKError::MissingBymlKey(
@@ -92,7 +92,7 @@ impl TryFrom<&Byml> for Static {
                     },
                 )?,
             general:   byml
-                .as_hash()?
+                .as_map()?
                 .iter()
                 .filter(|(k, _)| k.as_str() != "StartPos")
                 .map(|(key, array)| -> Result<(String, DeleteVec<Byml>)> {

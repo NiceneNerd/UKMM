@@ -15,12 +15,12 @@ impl BnpConverter {
             )?
             .into_array()?
             .remove(0)
-            .into_hash()?;
+            .into_map()?;
             let diff = Byml::from_text(fs::read_to_string(effects_path)?)?;
-            base.extend(diff.into_hash()?);
+            base.extend(diff.into_map()?);
             self.inject_into_sarc(
                 "Pack/Bootup.pack//Ecosystem/StatusEffectList.sbyml",
-                compress(Byml::Array(vec![Byml::Hash(base)]).to_binary(self.platform.into())),
+                compress(Byml::Array(vec![Byml::Map(base)]).to_binary(self.platform.into())),
                 false,
             )?;
         }

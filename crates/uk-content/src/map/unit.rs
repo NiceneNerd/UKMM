@@ -19,7 +19,7 @@ impl TryFrom<&Byml> for MapUnit {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let hash = byml.as_hash()?;
+        let hash = byml.as_map()?;
         Ok(Self {
             pos_x:   hash
                 .get("LocationPosX")
@@ -39,7 +39,7 @@ impl TryFrom<&Byml> for MapUnit {
                 .as_array()?
                 .iter()
                 .map(|obj| -> Result<(u32, Byml)> {
-                    let hash = obj.as_hash()?;
+                    let hash = obj.as_map()?;
                     let id = hash
                         .get("HashId")
                         .ok_or(UKError::MissingBymlKey("Map unit object missing hash ID"))?
@@ -53,7 +53,7 @@ impl TryFrom<&Byml> for MapUnit {
                 .as_array()?
                 .iter()
                 .map(|obj| -> Result<(u32, Byml)> {
-                    let hash = obj.as_hash()?;
+                    let hash = obj.as_map()?;
                     let id = hash
                         .get("HashId")
                         .ok_or(UKError::MissingBymlKey("Map unit rail missing hash ID"))?

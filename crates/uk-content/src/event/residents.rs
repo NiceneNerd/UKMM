@@ -21,7 +21,7 @@ impl TryFrom<&Byml> for ResidentEvents {
         Ok(Self(arr.iter().try_fold(
             DeleteMap::<String, DeleteSet<String>>::with_capacity(arr.len()),
             |mut events, event| -> Result<_> {
-                let event = event.as_hash()?;
+                let event = event.as_map()?;
                 let entry_name = event
                     .get("entry")
                     .ok_or(UKError::MissingBymlKey(

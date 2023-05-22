@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use join_str::jstr;
 use roead::{
     aamp::*,
-    byml::{Byml, Hash},
+    byml::{Byml, Map},
 };
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
@@ -166,8 +166,8 @@ impl Mergeable for Chemical {
 }
 
 impl InfoSource for Chemical {
-    fn update_info(&self, info: &mut Hash) -> crate::Result<()> {
-        let mut chem_info = Hash::default();
+    fn update_info(&self, info: &mut Map) -> crate::Result<()> {
+        let mut chem_info = Map::default();
         if self
             .body
             .values()
@@ -189,7 +189,7 @@ impl InfoSource for Chemical {
             chem_info.insert("Burnable".into(), Byml::I32(1));
         }
         if !chem_info.is_empty() {
-            info.insert("Chemical".into(), Byml::Hash(chem_info));
+            info.insert("Chemical".into(), Byml::Map(chem_info));
         }
         Ok(())
     }
@@ -281,7 +281,7 @@ mod tests {
         )
         .unwrap();
         let chemical = super::Chemical::try_from(&pio).unwrap();
-        let mut info = roead::byml::Hash::default();
+        let mut info = roead::byml::Map::default();
         chemical.update_info(&mut info).unwrap();
         assert_eq!(info["Chemical"]["Capaciter"], roead::byml::Byml::I32(1));
         assert_eq!(info["Chemical"]["Burnable"], roead::byml::Byml::I32(1));

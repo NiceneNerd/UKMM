@@ -18,7 +18,7 @@ impl TryFrom<&Byml> for ActorInfo {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let actorinfo = byml.as_hash()?;
+        let actorinfo = byml.as_map()?;
         let actors = actorinfo
             .get("Actors")
             .ok_or(UKError::MissingBymlKey("Actor info missing Actors"))?
@@ -29,7 +29,7 @@ impl TryFrom<&Byml> for ActorInfo {
                 .iter()
                 .map(|actor| -> Result<(u32, Byml)> {
                     let name = actor
-                        .as_hash()
+                        .as_map()
                         .context("Actor info entry isn't a hash?")?
                         .get("name")
                         .ok_or(UKError::MissingBymlKey("Actor info entry missing name"))?

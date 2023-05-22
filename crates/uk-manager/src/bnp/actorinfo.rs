@@ -16,7 +16,7 @@ impl BnpConverter {
             let diff =
                 Byml::from_text(fs::read_to_string(path).context("Failed to read actorinfo log")?)
                     .context("Failed to parse actorinfo log")?
-                    .into_hash()
+                    .into_map()
                     .context("Invalid actorinfo log: not a map")?
                     .into_iter()
                     .map(|(h, a)| -> Result<(u32, Byml)> {

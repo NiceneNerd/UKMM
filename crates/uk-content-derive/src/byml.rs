@@ -66,7 +66,7 @@ pub fn impl_from_byml(name: &Ident, fields: &FieldsNamed) -> TokenStream {
         impl TryFrom<&::roead::byml::Byml> for #name {
             type Error = crate::UKError;
             fn try_from(byml: &Byml) -> ::std::result::Result<#name, Self::Error> {
-                let hash = byml.as_hash()?;
+                let hash = byml.as_map()?;
                 #(#field_tries)*
                 Ok(Self {
                     #(#field_assigns)*
@@ -108,9 +108,9 @@ pub fn impl_into_byml(name: &Ident, fields: &FieldsNamed) -> TokenStream {
         #[automatically_derived]
         impl From<#name> for ::roead::byml::Byml {
             fn from(val: #name) -> Self {
-                let mut hash = ::roead::byml::Hash::default();
+                let mut hash = ::roead::byml::Map::default();
                 #(#fields)*
-                Byml::Hash(hash)
+                Byml::Map(hash)
             }
         }
     }

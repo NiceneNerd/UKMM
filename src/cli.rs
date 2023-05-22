@@ -211,7 +211,7 @@ impl Runner {
                 if let Some(path) = self.check_mod(path)? {
                     let mods = self.core.mod_manager();
                     let mod_ = mods.add(&path, profile.as_ref())?;
-                    mods.set_enabled(mod_.as_hash_id(), true, profile.as_ref())?;
+                    mods.set_enabled(mod_.as_map_id(), true, profile.as_ref())?;
                     mods.save()?;
                     println!("Applying mod to load order...");
                     let deployer = self.core.deploy_manager();

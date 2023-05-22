@@ -376,7 +376,7 @@ impl<'a> Bnp2xConverter<'a> {
         let gdata_log = self.path.join("logs/gamedata.yml");
         if gdata_log.exists() {
             log::debug!("Converting old gamedata log");
-            let log = Byml::from_text(fs::read_to_string(&gdata_log)?)?.into_hash()?;
+            let log = Byml::from_text(fs::read_to_string(&gdata_log)?)?.into_map()?;
             let new_log = log
                 .into_iter()
                 .map(|(data_type, diff)| {
@@ -386,7 +386,7 @@ impl<'a> Bnp2xConverter<'a> {
                     )
                 })
                 .collect::<Byml>();
-            fs::write(gdata_log, new_log.to_text().expect("It's a map, boss"))?;
+            fs::write(gdata_log, new_log.to_text())?;
         }
         Ok(())
     }
@@ -398,9 +398,7 @@ impl<'a> Bnp2xConverter<'a> {
             let log = Byml::from_text(fs::read_to_string(&sdata_log)?)?;
             fs::write(
                 sdata_log,
-                bhash!("add" => log, "del" => Byml::Array(vec![]))
-                    .to_text()
-                    .expect("It's a map, boss"),
+                bhash!("add" => log, "del" => Byml::Array(vec![])).to_text(),
             )?;
         }
         Ok(())
@@ -447,13 +445,13 @@ impl<'a> Bnp2xConverter<'a> {
                         "Rails" => bhash!(
                             "add" => Byml::Array(vec![]),
                             "del" => Byml::Array(vec![]),
-                            "mod" => Byml::Hash(Default::default())
+                            "mod" => Byml::Map(Default::default())
                         )
                     );
                     Ok((unit, new_diff))
                 })
                 .collect::<Result<Byml>>()?;
-            fs::write(map_log, new_log.to_text().expect("It's a map, boss"))?;
+            fs::write(map_log, new_log.to_text())?;
         }
         Ok(())
     }

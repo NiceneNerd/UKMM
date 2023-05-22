@@ -58,7 +58,7 @@ impl TryFrom<&Byml> for GameData {
     type Error = UKError;
 
     fn try_from(byml: &Byml) -> Result<Self> {
-        let hash = byml.as_hash()?;
+        let hash = byml.as_map()?;
         Ok(Self {
             data_type: hash
                 .keys()
@@ -72,7 +72,7 @@ impl TryFrom<&Byml> for GameData {
                 .as_array()?
                 .iter()
                 .filter_map(|item| -> Option<(String, FlagData)> {
-                    let name = item.as_hash().ok()?.get("DataName")?.as_string().ok()?;
+                    let name = item.as_map().ok()?.get("DataName")?.as_string().ok()?;
                     Some((
                         name.clone(),
                         item.try_into()
@@ -230,11 +230,11 @@ fn extract_gamedata_by_type(sarc: &SarcSource, key: &str) -> Result<GameData> {
         .get(&format!("/{key}_{i}.bgdata"))
         .or_else(|| sarc.get(&format!("{key}_{i}.bgdata")))
     {
-        let mut hash = Byml::from_binary(data)?.into_hash()?;
+        let mut hash = Byml::from_binary(data)?.into_map()?;
         if let Some(Byml::Array(arr)) = hash.remove(data_type) {
             for item in arr {
                 flags.insert(
-                    item.as_hash()?
+                    item.as_map()?
                         .get("DataName")
                         .ok_or(UKError::MissingBymlKey(
                             "bgdata file entry missing DataName",
@@ -314,12 +314,12 @@ impl GameDataPack {
         for (file, data) in sarc.iter() {
             let file_name = file.trim_start_matches('/');
             let mut byml = Byml::from_binary(data)?;
-            let hash = byml.as_mut_hash()?;
+            let hash = byml.as_mut_map()?;
             if file_name.starts_with("bool_data") {
                 if let Some(Byml::Array(arr)) = hash.remove("bool_data") {
                     for item in arr {
                         let name = item
-                            .as_hash()?
+                            .as_map()?
                             .get("DataName")
                             .ok_or(UKError::MissingBymlKey("Game data entry missing DataName"))?
                             .as_string()?
@@ -338,7 +338,7 @@ impl GameDataPack {
                 if let Some(Byml::Array(arr)) = hash.remove("s32_data") {
                     for item in arr {
                         let name = item
-                            .as_hash()?
+                            .as_map()?
                             .get("DataName")
                             .ok_or(UKError::MissingBymlKey("Game data entry missing DataName"))?
                             .as_string()?
@@ -355,7 +355,7 @@ impl GameDataPack {
                 if let Some(Byml::Array(arr)) = hash.remove("string_data") {
                     for item in arr {
                         let hash_value = item
-                            .as_hash()?
+                            .as_map()?
                             .get("DataName")
                             .ok_or(UKError::MissingBymlKey(
                                 "bgdata file entry missing DataName",
