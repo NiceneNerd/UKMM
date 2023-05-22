@@ -2,7 +2,6 @@ use std::{
     collections::{hash_map::DefaultHasher, BTreeSet},
     hash::{Hash, Hasher},
     path::PathBuf,
-    sync::LazyLock,
 };
 
 use parking_lot::RwLock;
@@ -12,14 +11,15 @@ use uk_ui::{
     egui::{self, Ui},
     PathNode,
 };
+use uk_util::Lazy;
 
 use crate::Message;
 
 impl super::App {
     pub fn render_file_tree(&self, files: &BTreeSet<PathBuf>, ui: &mut Ui) {
         ui.scope(|ui| {
-            static ROOTS: LazyLock<RwLock<HashMap<u64, PathNode>>> =
-                LazyLock::new(|| RwLock::new(HashMap::default()));
+            static ROOTS: Lazy<RwLock<HashMap<u64, PathNode>>> =
+                Lazy::new(|| RwLock::new(HashMap::default()));
             ui.style_mut().override_text_style = Some(egui::TextStyle::Body);
             ui.spacing_mut().item_spacing.y = 4.;
             if !files.is_empty() {

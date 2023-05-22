@@ -116,7 +116,7 @@ impl EditableValue for Parameter {
             Parameter::BufferBinary(v) => {
                 let mut text = hex::encode(v.as_slice());
                 let res = ui.text_edit_singleline(&mut text);
-                if res.changed() && let Ok(data) = hex::decode(text) {
+                if let Some(data) = res.changed().then(|| hex::decode(text).ok()).flatten() {
                     *v = data
                 }
                 res

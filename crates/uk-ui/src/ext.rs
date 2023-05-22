@@ -27,14 +27,17 @@ fn render_picker(folder: bool, ui: &mut Ui, value: &mut PathBuf) -> Response {
         if ui.layout().main_dir() == Direction::LeftToRight {
             let mut changed = false;
             let mut res = ui.text_edit_singleline(&mut path);
-            if ui.add(Button::new("Browse…").small().min_size(button_size)).clicked()
-                && let Some(folder) = {
+            if let Some(folder) = ui
+                .add(Button::new("Browse…").small().min_size(button_size))
+                .clicked()
+                .then(|| {
                     if folder {
                         rfd::FileDialog::new().pick_folder()
                     } else {
                         rfd::FileDialog::new().pick_file()
                     }
-                }
+                })
+                .flatten()
             {
                 *value = folder;
                 changed = true;
@@ -48,14 +51,17 @@ fn render_picker(folder: bool, ui: &mut Ui, value: &mut PathBuf) -> Response {
             res
         } else {
             let mut changed = false;
-            if ui.add(Button::new("Browse…").small().min_size(button_size)).clicked()
-                && let Some(folder) = {
+            if let Some(folder) = ui
+                .add(Button::new("Browse…").small().min_size(button_size))
+                .clicked()
+                .then(|| {
                     if folder {
                         rfd::FileDialog::new().pick_folder()
                     } else {
                         rfd::FileDialog::new().pick_file()
                     }
-                }
+                })
+                .flatten()
             {
                 *value = folder;
                 changed = true;

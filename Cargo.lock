@@ -4689,6 +4689,7 @@ dependencies = [
  "uk-mod",
  "uk-ui",
  "uk-ui-derive",
+ "uk-util",
 ]
 
 [[package]]

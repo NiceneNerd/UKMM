@@ -1,4 +1,3 @@
-#![feature(let_chains, lazy_cell)]
 mod editor;
 mod files;
 mod modals;
@@ -182,7 +181,7 @@ impl App {
             .write()
             .find_active_focused()
             .map(|(_, tab)| tab.path.as_path())
-            && self.focused.as_ref().map(|p| p != path).unwrap_or(true)
+            .filter(|path| self.focused.as_ref().map(|p| p != path).unwrap_or(true))
         {
             self.focused = Some(path.to_path_buf());
         }

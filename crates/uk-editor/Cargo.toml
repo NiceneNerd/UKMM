@@ -24,4 +24,5 @@ uk-manager = { path ="../uk-manager" }
 uk-mod = { path = "../uk-mod" }
 uk-ui = { path = "../uk-ui" }
 uk-ui-derive = { path = "../uk-ui-derive" }
+uk-util = { path = "../uk-util" }
 ron = "0.8.0"
