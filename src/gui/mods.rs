@@ -166,23 +166,33 @@ impl App {
             && self.focused == FocusedPane::ModList
             && !self.modal_open()
         {
-            if ui.input().key_pressed(Key::ArrowDown) && let Some((last_index, _)) = self
-                .mods
-                .iter()
-                .enumerate()
-                .filter(|(_, m)| self.selected.contains(m))
-                .last()
+            if let Some((last_index, _)) = ui
+                .input()
+                .key_pressed(Key::ArrowDown)
+                .then(|| {
+                    self.mods
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, m)| self.selected.contains(m))
+                        .last()
+                })
+                .flatten()
             {
                 if !ui.input().modifiers.shift {
                     self.do_update(Message::SelectOnly(last_index + 1));
                 } else {
                     self.do_update(Message::SelectAlso(last_index + 1));
                 }
-            } else if ui.input().key_pressed(Key::ArrowUp) && let Some((first_index, _)) = self
-                .mods
-                .iter()
-                .enumerate()
-                .find(|(_, m)| self.selected.contains(m))
+            } else if let Some((first_index, _)) = ui
+                .input()
+                .key_pressed(Key::ArrowUp)
+                .then(|| {
+                    self.mods
+                        .iter()
+                        .enumerate()
+                        .find(|(_, m)| self.selected.contains(m))
+                })
+                .flatten()
             {
                 let index = first_index.max(1);
                 if !ui.input().modifiers.shift {
@@ -197,9 +207,10 @@ impl App {
             ui.memory()
                 .data
                 .insert_temp(Id::new("drag_delay_frames"), 0usize);
-            if let Some(start_index) = self.drag_index
-                && let Some(dest_index) = self.hover_index
-                && start_index != dest_index
+            if let Some((_start_index, dest_index)) = self
+                .drag_index
+                .and_then(|d| self.hover_index.map(|h| (d, h)))
+                .filter(|(s, d)| s != d)
             {
                 self.do_update(Message::MoveSelected(dest_index))
             } else {

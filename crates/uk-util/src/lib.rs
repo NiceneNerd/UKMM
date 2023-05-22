@@ -8,6 +8,7 @@ pub trait OptionResultExt {
 impl<T> OptionResultExt for Option<T> {
     type T = T;
 
+    #[inline(always)]
     fn contains<U>(&self, other: &U) -> bool
     where
         Self::T: PartialEq<U>,
@@ -22,6 +23,7 @@ impl<T> OptionResultExt for Option<T> {
 impl<T, E> OptionResultExt for Result<T, E> {
     type T = T;
 
+    #[inline(always)]
     fn contains<U>(&self, other: &U) -> bool
     where
         Self::T: PartialEq<U>,
@@ -38,7 +40,29 @@ pub trait OptionExt<T: Default> {
 }
 
 impl<T: Default> OptionExt<T> for Option<T> {
+    #[inline(always)]
     fn get_or_insert_default(&mut self) -> &mut T {
         self.get_or_insert_with(T::default)
+    }
+}
+
+pub trait PathExt
+where
+    Self: Sized,
+{
+    fn exists_then(self) -> Option<Self>;
+}
+
+impl PathExt for &std::path::Path {
+    #[inline(always)]
+    fn exists_then(self) -> Option<Self> {
+        self.exists().then_some(self)
+    }
+}
+
+impl PathExt for std::path::PathBuf {
+    #[inline(always)]
+    fn exists_then(self) -> Option<Self> {
+        self.exists().then_some(self)
     }
 }

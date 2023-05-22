@@ -19,7 +19,7 @@ use uk_manager::{
 };
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta};
 use uk_reader::ResourceReader;
-use uk_util::OptionExt;
+use uk_util::{OptionExt, PathExt};
 
 use super::{package::ModPackerBuilder, Message};
 
@@ -87,11 +87,12 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
         Err(err) => {
             log::warn!("Could not open mod, let's find out why");
             let err_msg = err.to_string();
-            if (err_msg.contains("meta file")
+            if let Some(has_meta) = (err_msg.contains("meta file")
                 || err_msg.contains("meta.yml")
                 || err_msg.contains("d Zip"))
-                && let (is_mod, has_meta) = is_probably_a_mod_and_has_meta(path)
-                && is_mod
+            .then(|| is_probably_a_mod_and_has_meta(path))
+            .filter(|(is_mod, _has_meta)| *is_mod)
+            .map(|(_, has_meta)| has_meta)
             {
                 log::info!("Maybe it's not a UKMM mod, let's to convert it");
                 if !has_meta && meta.is_none() {
@@ -101,14 +102,15 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
                 if let Some(ref meta) = meta {
                     log::info!("Converting mod {}…", meta.name);
                 }
-                let converted_path = uk_manager::mods::convert_gfx(core, path, meta).with_context(|| {
-                    format!(
-                        "Failed to convert {}",
-                        path.file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or_default()
-                    )
-                })?;
+                let converted_path =
+                    uk_manager::mods::convert_gfx(core, path, meta).with_context(|| {
+                        format!(
+                            "Failed to convert {}",
+                            path.file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or_default()
+                        )
+                    })?;
                 Mod::from_reader(
                     ModReader::open_peek(converted_path, vec![])
                         .context("Failed to open converted mod")?,
@@ -206,12 +208,12 @@ pub fn parse_meta(file: PathBuf) -> Result<Message> {
 
 #[allow(irrefutable_let_patterns)]
 pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
-    let settings_path = if let path = path.join("settings.xml")
-        && path.exists()
-    {
+    let settings_path = if let Some(path) = path.join("settings.xml").exists_then() {
         path
-    } else if let path = dirs2::config_dir().expect("YIKES").join("Cemu/settings.xml")
-        && path.exists()
+    } else if let Some(path) = dirs2::config_dir()
+        .expect("YIKES")
+        .join("Cemu/settings.xml")
+        .exists_then()
     {
         path
     } else {
@@ -261,9 +263,13 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             (base_folder, update_folder, dlc_folder)
         })
         .ok_or_else(|| anyhow::anyhow!("Could not find game dump from Cemu settings"))?;
-    let gfx_folder = if let path = path.with_file_name("graphicPacks") && path.exists() {
+    let gfx_folder = if let Some(path) = path.with_file_name("graphicPacks").exists_then() {
         Some(path)
-    } else if let path = dirs2::data_local_dir().expect("YIKES").join("Cemu/graphicPacks") && path.exists() {
+    } else if let Some(path) = dirs2::data_local_dir()
+        .expect("YIKES")
+        .join("Cemu/graphicPacks")
+        .exists_then()
+    {
         Some(path)
     } else {
         log::warn!("Cemu graphic pack folder not found");
@@ -332,11 +338,12 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
         &fs::read_to_string(settings_path).context("Failed to read BCML settings file")?,
     )
     .context("Failed to parse BCML settings file")?;
-    if let Some(game_dir) = bcml_settings.game_dir
-        && let Some(update_dir) = bcml_settings.update_dir
-        && !game_dir.as_os_str().is_empty()
-        && !update_dir.as_os_str().is_empty()
-    {
+    if let (Some(game_dir), Some(update_dir)) = (
+        bcml_settings.game_dir.filter(|d| !d.as_os_str().is_empty()),
+        bcml_settings
+            .update_dir
+            .filter(|d| !d.as_os_str().is_empty()),
+    ) {
         {
             log::info!("Import BCML Wii U game dump settings");
             let mut settings = core.settings_mut();
@@ -374,8 +381,9 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
         log::info!("Attempting to import BCML Wii U mods");
         import_mods(&core, bcml_settings.store_dir.join("mods"))?;
     }
-    if let Some(game_dir) = bcml_settings.game_dir_nx
-        && !game_dir.as_os_str().is_empty()
+    if let Some(game_dir) = bcml_settings
+        .game_dir_nx
+        .filter(|d| !d.as_os_str().is_empty())
     {
         {
             log::info!("Import BCML Switch game dump settings");
@@ -476,8 +484,11 @@ fn response(url: &str) -> Result<Vec<u8>> {
         .send(&mut buf)
         .context("HTTP request file")
         .and_then(|res| {
-            if res.status_code().is_redirect()
-                && let Some(url) = res.headers().get("Location")
+            if let Some(url) = res
+                .status_code()
+                .is_redirect()
+                .then(|| res.headers().get("Location"))
+                .flatten()
             {
                 response(url)
             } else {
@@ -497,13 +508,21 @@ pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
             let betas = core.settings().check_updates == UpdatePreference::Beta
                 || current_semver < lenient_semver::parse("1.0.0").unwrap();
             releases.retain(|r| !r.prerelease || betas);
-            if let Some(release) = releases.first()
-                && let Ok(release_ver) = lenient_semver::parse(release.tag_name.trim_start_matches('v'))
-            {
+            if let Some((release, release_ver)) = releases.first().and_then(|r| {
+                lenient_semver::parse(r.tag_name.trim_start_matches('v'))
+                    .ok()
+                    .map(|v| (r, v))
+            }) {
                 match release_ver.cmp(&current_semver) {
-                    std::cmp::Ordering::Greater => sender.send(Message::OfferUpdate(release.clone())).unwrap(),
-                    std::cmp::Ordering::Less => sender.send(Message::SetChangelog(release.description())).unwrap(),
-                    _ => ()
+                    std::cmp::Ordering::Greater => {
+                        sender.send(Message::OfferUpdate(release.clone())).unwrap()
+                    }
+                    std::cmp::Ordering::Less => {
+                        sender
+                            .send(Message::SetChangelog(release.description()))
+                            .unwrap()
+                    }
+                    _ => (),
                 }
             }
         }

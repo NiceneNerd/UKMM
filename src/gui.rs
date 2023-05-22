@@ -705,7 +705,7 @@ impl App {
                         }
                     }
                     if !matches!(mod_.meta.platform, ModPlatform::Universal)
-                        || mod_.meta.platform != ModPlatform::Specific(self.platform().into())
+                        && mod_.meta.platform != ModPlatform::Specific(self.platform().into())
                     {
                         self.do_update(Message::Error(anyhow_ext::anyhow!(
                             "Mod is for {:?}, current mode is {}",

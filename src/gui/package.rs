@@ -239,11 +239,10 @@ impl ModPackerBuilder {
                         for (i, opt) in opt_group.options_mut().iter_mut().enumerate() {
                             render_option(opt, defaults.as_mut(), folders, &mut delete, i, id, ui);
                         }
-                        if let OptionGroup::Multiple(group) = opt_group
-                            && let Some(defaults) = defaults
-                            && defaults != group.defaults
-                        {
-                            group.defaults = defaults;
+                        if let OptionGroup::Multiple(group) = opt_group {
+                            if let Some(defaults) = defaults.filter(|d| &group.defaults != d) {
+                                group.defaults = defaults;
+                            }
                         }
                         if let Some(i) = delete {
                             opt_group.options_mut().remove(i);
@@ -319,7 +318,8 @@ impl ModPackerBuilder {
                                     folders.insert(new_folder.with_file_name(&option.path));
                                 }
                                 option.path = new_folder.file_name().unwrap().into();
-                                if let Some(defaults) = defaults && defaults.contains(&old_folder) {
+                                if let Some(defaults) = defaults.filter(|d| d.contains(&old_folder))
+                                {
                                     defaults.remove(&old_folder);
                                     defaults.insert(option.path.clone());
                                 }
