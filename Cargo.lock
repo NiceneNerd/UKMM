@@ -2130,6 +2130,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a7d6e1419fa3129eb0802b4c99603c0d425c79fb5d76191d5a20d0ab0d664e8"
 dependencies = [
  "libflate",
+ "proc-macro-hack",
  "proc-macro2 1.0.56",
  "quote 1.0.26",
  "syn 1.0.109",
@@ -3702,12 +3703,13 @@ dependencies = [
 
 [[package]]
 name = "rstb"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b3c6d761a848ed259b8774ea745287a473a24fbcb65d01b79d7c717be7656bc"
+checksum = "28448d80084168e9bb477383003677e598962cac8cfd87443fca57ecca60f5dc"
 dependencies = [
  "crc 2.1.0",
  "include-flate",
+ "once_cell",
  "phf",
  "roead 0.22.0",
  "serde",
