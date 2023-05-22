@@ -1,3 +1,6 @@
+/// Temporary type until feature lazy_cell is stabilized
+pub type Lazy<T> = once_cell::sync::Lazy<T>;
+
 pub trait OptionResultExt {
     type T;
     fn contains<U>(&self, other: &U) -> bool

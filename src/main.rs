@@ -2,7 +2,6 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-#![feature(lazy_cell)]
 mod cli;
 mod gui;
 mod logger;

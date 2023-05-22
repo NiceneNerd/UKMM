@@ -4827,6 +4827,9 @@ dependencies = [
 [[package]]
 name = "uk-util"
 version = "0.1.0"
+dependencies = [
+ "once_cell",
+]
 
 [[package]]
 name = "ukmm"
@@ -4849,6 +4852,7 @@ dependencies = [
  "jwalk 0.8.1",
  "lenient_semver",
  "log",
+ "once_cell",
  "open",
  "parking_lot",
  "rayon",

@@ -2,15 +2,16 @@ use std::{
     io::Write,
     ops::Deref,
     path::{Path, PathBuf},
-    sync::{atomic::AtomicBool, LazyLock, OnceLock},
+    sync::{atomic::AtomicBool, OnceLock},
 };
 
 use log::{LevelFilter, Record};
 use parking_lot::Mutex;
+use uk_util::Lazy;
 
 use crate::gui::Message;
 
-pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
+pub static LOGGER: Lazy<Logger> = Lazy::new(|| {
     Logger {
         inner:  env_logger::builder().build(),
         debug:  std::env::args().any(|arg| &arg == "--debug").into(),

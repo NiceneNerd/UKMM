@@ -2,7 +2,7 @@
 use std::{
     ops::Deref,
     path::{Path, PathBuf},
-    sync::{Arc, LazyLock},
+    sync::Arc,
 };
 
 use anyhow::Result;
@@ -18,7 +18,7 @@ use uk_ui::{
     icons::{self, IconButtonExt},
     visuals::Theme,
 };
-use uk_util::{OptionExt, OptionResultExt};
+use uk_util::{Lazy, OptionExt, OptionResultExt};
 
 use super::{App, Message};
 
@@ -178,8 +178,8 @@ impl PartialEq<PlatformSettings> for PlatformSettingsUI {
     }
 }
 
-pub static CONFIG: LazyLock<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
-    LazyLock::new(|| RwLock::new(Default::default()));
+pub static CONFIG: Lazy<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
+    Lazy::new(|| RwLock::new(Default::default()));
 
 fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut Ui) -> bool {
     ui.label("Deployment");
