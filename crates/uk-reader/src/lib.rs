@@ -1,11 +1,10 @@
-#![feature(let_chains, lazy_cell)]
 // mod nsp;
 mod unpacked;
 mod zarchive;
 
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, LazyLock, Once},
+    sync::{Arc, Once},
     time::Duration,
 };
 
@@ -22,6 +21,7 @@ use uk_content::{
     canonicalize, constants::Language, platform_prefixes, prelude::Endian, resource::*,
     util::HashMap,
 };
+use uk_util::{Lazy, PathExt};
 
 use self::{unpacked::Unpacked, zarchive::ZArchive};
 
@@ -182,20 +182,14 @@ impl ResourceReader {
         fn inner(mod_dir: &Path) -> Result<ResourceReader> {
             let (content_u, aoc_u) = platform_prefixes(Endian::Big);
             let (content_nx, aoc_nx) = platform_prefixes(Endian::Little);
-            let content_dir = if let content_u = mod_dir.join(content_u) && content_u.exists() {
-            Some(content_u)
-        } else if let content_nx = mod_dir.join(content_nx) && content_nx.exists() {
-            Some(content_nx)
-        } else {
-            None
-        };
-            let aoc_dir = if let aoc_u = mod_dir.join(aoc_u) && aoc_u.exists() {
-            Some(aoc_u)
-        } else if let aoc_nx = mod_dir.join(aoc_nx) && aoc_nx.exists() {
-            Some(aoc_nx)
-        } else {
-            None
-        };
+            let content_dir = mod_dir
+                .join(content_u)
+                .exists_then()
+                .or_else(|| mod_dir.join(content_nx).exists_then());
+            let aoc_dir = mod_dir
+                .join(aoc_u)
+                .exists_then()
+                .or_else(|| mod_dir.join(aoc_nx).exists_then());
             Ok(ResourceReader {
                 source: Box::new(Unpacked::new(content_dir, None::<PathBuf>, aoc_dir, false)?),
                 cache: construct_res_cache(),
@@ -390,7 +384,7 @@ impl ResourceReader {
         std::path::PathBuf,
         std::vec::Vec<uk_content::constants::Language>,
     > {
-        static LANGS: LazyLock<DashMap<PathBuf, Vec<Language>>> = LazyLock::new(Default::default);
+        static LANGS: Lazy<DashMap<PathBuf, Vec<Language>>> = Lazy::new(Default::default);
         LANGS
             .entry(self.source().host_path().to_path_buf())
             .or_insert_with(|| {

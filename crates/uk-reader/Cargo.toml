@@ -22,4 +22,5 @@ typetag = { workspace = true }
 include-flate = "0.2.0"
 moka = "0.10.0"
 uk-content = { path = "../uk-content" }
+uk-util = { path = "../uk-util" }
 zarchive = "0.2.0"
