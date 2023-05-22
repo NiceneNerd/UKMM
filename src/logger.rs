@@ -2,12 +2,12 @@ use std::{
     io::Write,
     ops::Deref,
     path::{Path, PathBuf},
-    sync::{atomic::AtomicBool, OnceLock},
+    sync::atomic::AtomicBool,
 };
 
 use log::{LevelFilter, Record};
 use parking_lot::Mutex;
-use uk_util::Lazy;
+use uk_util::{Lazy, OnceLock};
 
 use crate::gui::Message;
 

@@ -1,4 +1,4 @@
-use std::{process::Command, sync::OnceLock};
+use std::process::Command;
 
 use join_str::jstr;
 use uk_manager::mods::Mod;
@@ -10,6 +10,7 @@ use uk_ui::{
     egui_extras::{Column, TableBuilder, TableRow},
     ext::UiExt,
 };
+use uk_util::OnceLock;
 
 use super::{App, FocusedPane, Message, Sort};
 

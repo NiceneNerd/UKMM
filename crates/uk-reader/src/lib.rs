@@ -4,7 +4,7 @@ mod zarchive;
 
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, Once},
+    sync::Arc,
     time::Duration,
 };
 
@@ -19,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use uk_content::{
     canonicalize, constants::Language, platform_prefixes, prelude::Endian, resource::*,
-    util::HashMap,
 };
 use uk_util::{Lazy, PathExt};
 
@@ -113,6 +112,13 @@ fn construct_sarc_cache() -> SarcCache {
     Cache::new(100)
 }
 
+fn init_nest_map() -> Arc<DashMap<String, Arc<str>>> {
+    log::trace!("Initializing nest map...");
+    static STOCK: Lazy<Arc<DashMap<String, Arc<str>>>> =
+        Lazy::new(|| Arc::new(serde_json::from_str(NEST_MAP.as_ref()).unwrap()));
+    STOCK.clone()
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ResourceReader {
     bin_type: BinType,
@@ -121,7 +127,7 @@ pub struct ResourceReader {
     cache: ResourceCache,
     #[serde(skip, default = "construct_sarc_cache")]
     sarc_cache: SarcCache,
-    #[serde(skip)]
+    #[serde(skip, default = "init_nest_map")]
     nest_map: Arc<DashMap<String, Arc<str>>>,
 }
 
@@ -160,7 +166,7 @@ impl ResourceReader {
             cache: construct_res_cache(),
             sarc_cache: construct_sarc_cache(),
             bin_type: BinType::Nintendo,
-            nest_map: Default::default(),
+            nest_map: init_nest_map(),
         })
     }
 
@@ -174,7 +180,7 @@ impl ResourceReader {
             cache: construct_res_cache(),
             sarc_cache: construct_sarc_cache(),
             bin_type: BinType::Nintendo,
-            nest_map: Default::default(),
+            nest_map: init_nest_map(),
         })
     }
 
@@ -195,7 +201,7 @@ impl ResourceReader {
                 cache: construct_res_cache(),
                 sarc_cache: construct_sarc_cache(),
                 bin_type: BinType::Nintendo,
-                nest_map: Default::default(),
+                nest_map: init_nest_map(),
             })
         }
         inner(mod_dir.as_ref())
@@ -321,15 +327,6 @@ impl ResourceReader {
             Ok(res) => Ok(res),
             Err(e) => {
                 log::trace!("Failed to get file from dump: {e}. Performing parent lookup...");
-                static NEST_INIT: Once = Once::new();
-                NEST_INIT.call_once(|| {
-                    log::trace!("Initializing nest map...");
-                    let stock: HashMap<String, Arc<str>> =
-                        serde_json::from_str(NEST_MAP.as_ref()).unwrap();
-                    for (k, v) in stock {
-                        self.nest_map.insert(k, v);
-                    }
-                });
                 let nest_path = self.nest_map.get(&canon);
                 log::trace!("{canon} has parent? {}", nest_path.is_some());
                 match nest_path {

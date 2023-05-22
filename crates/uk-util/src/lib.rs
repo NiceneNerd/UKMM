@@ -1,5 +1,7 @@
 /// Temporary type until feature lazy_cell is stabilized
 pub type Lazy<T> = once_cell::sync::Lazy<T>;
+/// Temporary type until feature once_cell is stabilized
+pub type OnceLock<T> = once_cell::sync::OnceCell<T>;
 
 pub trait OptionResultExt {
     type T;
