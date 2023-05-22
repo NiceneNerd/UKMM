@@ -16,7 +16,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use smartstring::alias::String;
 use uk_content::platform_prefixes;
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
-use uk_util::Lazy;
+use uk_util::{Lazy, PathExt};
 
 use crate::{
     settings::Settings,
@@ -517,8 +517,12 @@ pub fn convert_gfx(
                 .into_iter()
                 .filter_map(std::result::Result::ok)
                 .find_map(|f| {
-                    ([Some(content), Some(dlc)].contains(&f.file_name().to_str()))
-                        .then(|| f.parent_path().into())
+                    (f.path().join(content).exists() || f.path().join(dlc).exists())
+                        .then(|| f.path())
+                        .or_else(|| {
+                            ([Some(content), Some(dlc)].contains(&f.file_name().to_str()))
+                                .then(|| f.parent_path().into())
+                        })
                 })
         };
 

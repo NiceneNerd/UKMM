@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed "no base or DLC content folder" on some Switch mods
 - Fixed panic parsing mod logs with deletions in BNPs
 
 ## [0.9.0]
