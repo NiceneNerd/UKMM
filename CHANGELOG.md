@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking change**: Updated to the newest version of roead, which supports
+  BYML versions 5-7. This means *all mods that edit BYML files* may need to be
+  reinstalled, which is perhaps a majority of mods. (The good news is this will
+  make TOTK support easier to add in the future.)
+- Updated to work on the stable Rust compiler, nightly no longer required.
+
+### Fixed
+
+- Fixed panic parsing mod logs with deletions in BNPs
+
 ## [0.9.0]
 
 ### Added

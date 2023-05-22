@@ -20,7 +20,7 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
     let base = base.as_mut_map()?;
 
     fn merge_section(base: &mut Vec<Byml>, diff: &mut Map) -> Result<()> {
-        let hashes = base
+        let mut hashes = base
             .iter()
             .enumerate()
             .filter_map(|(i, obj)| {
@@ -30,6 +30,15 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
                     .map(|h| (h, i))
             })
             .collect::<FxHashMap<u32, _>>();
+        if let Some(Byml::Array(dels)) = diff.remove("del") {
+            base.retain(|obj| {
+                obj.as_map()
+                    .ok()
+                    .and_then(|h| h.get("HashId").map(|h| !dels.contains(h)))
+                    .unwrap_or(false)
+            });
+            hashes.retain(|hash, _index| !dels.contains(&Byml::U32(*hash)));
+        }
         if let Some(Byml::Array(adds)) = diff.remove("add") {
             base.extend(adds.into_iter().filter(|obj| {
                 obj.as_map()
@@ -40,14 +49,6 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
                     })
                     .unwrap_or(false)
             }));
-        }
-        if let Some(Byml::Array(dels)) = diff.remove("del") {
-            base.retain(|obj| {
-                obj.as_map()
-                    .ok()
-                    .and_then(|h| h.get("HashId").map(|h| !dels.contains(h)))
-                    .unwrap_or(false)
-            })
         }
         if let Some(Byml::Map(mods)) = diff.remove("mod") {
             for (hash, entry) in mods {
