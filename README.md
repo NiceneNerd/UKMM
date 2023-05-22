@@ -43,8 +43,8 @@ Unlike BCML, building from source is easy.
 
 Requirements:
 
-- Recent *nightly* Rust toolchain (MSRV 1.60)
-- A compiler that supports C++17 ()
+- Recent Rust toolchain (MSRV 1.69)
+- A compiler that supports C++17
 - Modern CMake (3.12+)
 
 Nothing else special is required. Generate a release build by running `cargo
