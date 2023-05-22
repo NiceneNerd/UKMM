@@ -11,6 +11,7 @@ use uk_content::{
     prelude::{Resource, String64},
     util::merge_plist,
 };
+use uk_util::OptionExt;
 
 use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
 
@@ -44,6 +45,7 @@ fn merge(data: &mut ShopData, diff: &ParameterList) -> Result<()> {
         .iter_by_name()
     {
         let name: String64 = name.expect("Bad shop diff").as_ref().into();
+        #[allow(unstable_name_collisions)]
         let base = data.0.entry(name).or_default().get_or_insert_default();
         for (i, (name, params)) in table.objects.iter_by_name().enumerate() {
             let name: String64 = name

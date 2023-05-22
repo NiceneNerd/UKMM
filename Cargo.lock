@@ -4726,6 +4726,7 @@ dependencies = [
  "uk-content",
  "uk-mod",
  "uk-reader",
+ "uk-util",
  "zip",
 ]
 

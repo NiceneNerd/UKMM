@@ -1,12 +1,13 @@
 use std::{
     path::{Path, PathBuf},
-    sync::{atomic::AtomicBool, LazyLock},
+    sync::atomic::AtomicBool,
 };
 
 #[cfg(windows)]
 use anyhow_ext::Context;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 pub use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
+use uk_util::Lazy;
 
 pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
     fn inner(dir: &Path) -> anyhow_ext::Result<()> {
@@ -19,8 +20,7 @@ pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()
     inner(dir.as_ref())
 }
 
-static TEMP_FS: LazyLock<RwLock<HashSet<PathBuf>>> =
-    LazyLock::new(|| RwLock::new(HashSet::default()));
+static TEMP_FS: Lazy<RwLock<HashSet<PathBuf>>> = Lazy::new(|| RwLock::new(HashSet::default()));
 
 #[allow(clippy::unwrap_used)]
 pub fn get_temp_folder() -> MappedRwLockReadGuard<'static, PathBuf> {
@@ -53,7 +53,7 @@ pub fn clear_temp() {
 pub static USE_SZ: AtomicBool = AtomicBool::new(true);
 
 pub fn extract_7z(file: &Path, folder: &Path) -> anyhow_ext::Result<()> {
-    static SZ_EXISTS: LazyLock<bool> = LazyLock::new(|| {
+    static SZ_EXISTS: Lazy<bool> = Lazy::new(|| {
         match std::process::Command::new("7z")
             .stdout(std::process::Stdio::null())
             .spawn()

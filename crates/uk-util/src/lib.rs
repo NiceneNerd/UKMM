@@ -6,6 +6,7 @@ pub trait OptionResultExt {
     fn contains<U>(&self, other: &U) -> bool
     where
         Self::T: PartialEq<U>;
+    fn inspect<F: FnOnce(&Self::T)>(self, f: F) -> Self;
 }
 
 impl<T> OptionResultExt for Option<T> {
@@ -21,6 +22,14 @@ impl<T> OptionResultExt for Option<T> {
             None => false,
         }
     }
+
+    fn inspect<F: FnOnce(&T)>(self, f: F) -> Self {
+        if let Some(ref t) = self {
+            f(t);
+        }
+
+        self
+    }
 }
 
 impl<T, E> OptionResultExt for Result<T, E> {
@@ -35,6 +44,14 @@ impl<T, E> OptionResultExt for Result<T, E> {
             Ok(inner) => inner == other,
             Err(_) => false,
         }
+    }
+
+    fn inspect<F: FnOnce(&T)>(self, f: F) -> Self {
+        if let Ok(ref t) = self {
+            f(t);
+        }
+
+        self
     }
 }
 

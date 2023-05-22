@@ -3,7 +3,7 @@ use std::{
     io::BufReader,
     ops::Deref,
     path::{Path, PathBuf},
-    sync::{Arc, LazyLock, Weak},
+    sync::{Arc, Weak},
 };
 
 use anyhow_ext::{Context, Result};
@@ -16,13 +16,14 @@ use serde_with::{serde_as, DisplayFromStr};
 use smartstring::alias::String;
 use uk_content::platform_prefixes;
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
+use uk_util::Lazy;
 
 use crate::{
     settings::Settings,
     util::{self, extract_7z, HashMap},
 };
 
-type ManifestCache = LazyLock<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Arc<Manifest>>>>>;
+type ManifestCache = Lazy<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Arc<Manifest>>>>>;
 
 #[serde_as]
 #[derive(Clone, Serialize, Deserialize)]
@@ -77,7 +78,7 @@ impl Mod {
     }
 
     pub fn manifest_with_options(&self, options: impl AsRef<[ModOption]>) -> Result<Arc<Manifest>> {
-        static MANIFEST_CACHE: ManifestCache = LazyLock::new(|| RwLock::new(HashMap::default()));
+        static MANIFEST_CACHE: ManifestCache = Lazy::new(|| RwLock::new(HashMap::default()));
         match MANIFEST_CACHE
             .write()
             .entry((
@@ -181,9 +182,9 @@ impl Profile {
         self.load_order.write()
     }
 
-    pub fn iter<'a>(self: MappedRef<'a, String, Profile, Profile>) -> ModIterator<'a> {
+    pub fn iter(self_: MappedRef<'_, String, Profile, Profile>) -> ModIterator<'_> {
         ModIterator {
-            profile: self,
+            profile: self_,
             index:   0,
         }
     }
@@ -242,8 +243,8 @@ impl Manager {
     }
 
     pub fn create_profile_if(&self, profile: &str) -> Result<()> {
-        #[allow(irrefutable_let_patterns)]
-        if let path = self.dir.join(profile) && !path.exists() {
+        let path = self.dir.join(profile);
+        if !path.exists() {
             log::info!("Profile {profile} does not exist, creating it now");
             fs::create_dir_all(path)?;
             self.profiles.insert(profile.into(), Default::default());
@@ -301,7 +302,7 @@ impl Manager {
 
     /// Iterate all mods, including disabled, in load order.
     pub fn all_mods(&self) -> ModIterator<'_> {
-        self.profile().iter()
+        Profile::iter(self.profile())
     }
 
     /// Iterate all enabled mods in load order.
@@ -334,10 +335,8 @@ impl Manager {
         let mut old_version = None;
         let mod_name = {
             let peeker = ModReader::open_peek(mod_path, vec![])?;
-            if let Some(mod_) = self
-                .get_profile(profile)
-                .iter()
-                .find(|m| m.meta.name == peeker.meta.name)
+            if let Some(mod_) =
+                Profile::iter(self.get_profile(profile)).find(|m| m.meta.name == peeker.meta.name)
             {
                 if lenient_semver::Version::parse(peeker.meta.version.as_str())
                     .and_then(|pv| {

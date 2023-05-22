@@ -60,13 +60,13 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
         Ok(())
     }
 
-    if let Some(Byml::Hash(mut diff_objs)) = diff.remove("Objs")
-        && let Some(Byml::Array(ref mut base_objs)) = base.get_mut("Objs")
+    if let (Some(Byml::Hash(mut diff_objs)), Some(Byml::Array(ref mut base_objs))) =
+        (diff.remove("Objs"), base.get_mut("Objs"))
     {
         merge_section(base_objs, &mut diff_objs)?;
     }
-    if let Some(Byml::Hash(mut diff_rails)) = diff.remove("Rails")
-        && let Some(Byml::Array(ref mut base_rails)) = base.get_mut("Rails")
+    if let (Some(Byml::Hash(mut diff_rails)), Some(Byml::Array(ref mut base_rails))) =
+        (diff.remove("Rails"), base.get_mut("Rails"))
     {
         merge_section(base_rails, &mut diff_rails)?;
     }

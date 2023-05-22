@@ -35,6 +35,7 @@ tempfile = "3.3"
 uk-content = { path = "../uk-content" }
 uk-mod = { path = "../uk-mod" }
 uk-reader = { path = "../uk-reader" }
+uk-util = { path = "../uk-util" }
 
 [target.'cfg(windows)'.dependencies]
 junction = { git = "https://github.com/NiceneNerd/junction" }

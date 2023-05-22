@@ -17,6 +17,7 @@ use rustc_hash::FxHashMap;
 use uk_content::{constants::Language, util::HashSet};
 use uk_mod::pack::ModPacker;
 use uk_reader::ResourceReader;
+use uk_util::PathExt;
 
 use crate::{settings::Platform, util::extract_7z};
 mod actorinfo;
@@ -405,8 +406,7 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
         )
     })?;
     let tempfile = std::env::temp_dir();
-    let meta  =
-    if let rules_path = tempdir.join("rules.txt") && rules_path.exists() {
+    let meta = if let Some(rules_path) = tempdir.join("rules.txt").exists_then() {
         ModPacker::parse_rules(rules_path)?
     } else {
         ModPacker::parse_info(tempdir.join("info.json")).context("Failed to parse BNP metadata")?

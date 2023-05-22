@@ -1,4 +1,4 @@
-#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, unstable_name_collisions)]
 
 use std::{
     collections::BTreeSet,
@@ -22,6 +22,7 @@ use uk_mod::{
     unpack::{ModReader, ModUnpacker},
     Manifest,
 };
+use uk_util::OptionResultExt;
 
 use crate::{
     mods,
@@ -311,12 +312,13 @@ impl Manager {
             }
             log::info!("Deployment complete");
         }
+        let rules_path = config.output.join("rules.txt");
         if settings.current_mode == Platform::WiiU
             && settings
                 .platform_config()
                 .and_then(|c| c.deploy_config.as_ref().map(|c| c.cemu_rules))
                 .unwrap_or(false)
-            && let rules_path = config.output.join("rules.txt") && !rules_path.exists()
+            && !rules_path.exists()
         {
             fs::write(rules_path, include_str!("../../../assets/rules.txt"))?;
         }
