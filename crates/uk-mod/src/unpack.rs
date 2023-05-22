@@ -35,6 +35,7 @@ use uk_content::{
     util::{HashMap, IndexSet},
 };
 use uk_reader::{ResourceLoader, ResourceReader};
+use uk_util::PathExt as UkPathExt;
 
 use crate::{Manifest, Meta, ModOption};
 
@@ -167,23 +168,24 @@ impl ResourceLoader for ModReader {
             || self.manifest.aoc_files.contains(name.as_ref())
     }
 
-    #[allow(irrefutable_let_patterns)]
     fn get_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
         let canon = canonicalize(name);
         if let Some(zip) = self.zip.as_ref() {
-            if let Ok(data) =  zip.get_file(canon.as_str()) {
-                return Ok(zstd::decode_all(data.as_slice()).with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+            if let Ok(data) = zip.get_file(canon.as_str()) {
+                return Ok(zstd::decode_all(data.as_slice())
+                    .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
             }
-        } else if let path = self.path.join(canon.as_str()) && path.exists() {
+        } else if let Some(path) = self.path.join(canon.as_str()).exists_then() {
             return Ok(fs::read(path)?);
         }
         for opt in &self.options {
             let path = Path::new("options").join(&opt.path).join(canon.as_str());
             if let Some(zip) = self.zip.as_ref() {
-                if let Ok(data) =  zip.get_file(path) {
-                    return Ok(zstd::decode_all(data.as_slice()).with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+                if let Ok(data) = zip.get_file(path) {
+                    return Ok(zstd::decode_all(data.as_slice())
+                        .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
                 }
-            } else if let path = self.path.join(path) && path.exists() {
+            } else if let Some(path) = self.path.join(path).exists_then() {
                 return Ok(fs::read(path)?);
             }
         }
@@ -197,23 +199,24 @@ impl ResourceLoader for ModReader {
         })
     }
 
-    #[allow(irrefutable_let_patterns)]
     fn get_aoc_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
         let canon = canonicalize(jstr!("Aoc/0010/{name.to_str().unwrap_or_default()}"));
         if let Some(zip) = self.zip.as_ref() {
-            if let Ok(data) =  zip.get_file(canon.as_str()) {
-                return Ok(zstd::decode_all(data.as_slice()).with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+            if let Ok(data) = zip.get_file(canon.as_str()) {
+                return Ok(zstd::decode_all(data.as_slice())
+                    .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
             }
-        } else if let path = self.path.join(canon.as_str()) && path.exists() {
+        } else if let Some(path) = self.path.join(canon.as_str()).exists_then() {
             return Ok(fs::read(path)?);
         }
         for opt in &self.options {
             let path = Path::new("options").join(&opt.path).join(canon.as_str());
             if let Some(zip) = self.zip.as_ref() {
-                if let Ok(data) =  zip.get_file(path) {
-                    return Ok(zstd::decode_all(data.as_slice()).with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+                if let Ok(data) = zip.get_file(path) {
+                    return Ok(zstd::decode_all(data.as_slice())
+                        .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
                 }
-            }  else if let path = self.path.join(path) && path.exists() {
+            } else if let Some(path) = self.path.join(path).exists_then() {
                 return Ok(fs::read(path)?);
             }
         }
@@ -349,24 +352,30 @@ impl ModReader {
         &self.manifest
     }
 
-    #[allow(irrefutable_let_patterns)]
     pub fn get_versions(&self, name: &Path) -> Result<Vec<Vec<u8>>> {
         let canon = canonicalize(name);
         let mut versions = Vec::with_capacity(1);
         if let Some(zip) = self.zip.as_ref() {
-            if let Ok(data) =  zip.get_file(canon.as_str()) {
-                versions.push(zstd::decode_all(data.as_slice()).with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+            if let Ok(data) = zip.get_file(canon.as_str()) {
+                versions.push(
+                    zstd::decode_all(data.as_slice())
+                        .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?,
+                );
             }
-        } else if let path = self.path.join(canon.as_str()) && path.exists() {
+        } else if let Some(path) = self.path.join(canon.as_str()).exists_then() {
             versions.push(fs::read(path)?);
         }
         for opt in &self.options {
             let path = Path::new("options").join(&opt.path).join(canon.as_str());
             if let Some(zip) = self.zip.as_ref() {
-                if let Ok(data) =  zip.get_file(path) {
-                    versions.push(zstd::decode_all(data.as_slice()).with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+                if let Ok(data) = zip.get_file(path) {
+                    versions.push(
+                        zstd::decode_all(data.as_slice()).with_context(|| {
+                            jstr!("Failed to decompress file {&canon} from mod")
+                        })?,
+                    );
                 }
-            } else if let path = self.path.join(path) && path.exists() {
+            } else if let Some(path) = self.path.join(path).exists_then() {
                 versions.push(fs::read(path)?);
             }
         }
@@ -548,7 +557,6 @@ impl ModUnpacker {
         Ok(())
     }
 
-    #[allow(irrefutable_let_patterns)]
     fn unpack_files(
         &self,
         files: BTreeSet<&String>,
@@ -560,9 +568,7 @@ impl ModUnpacker {
         files.into_par_iter().try_for_each(|file| -> Result<()> {
             let data = self.build_file(file.as_str(), aoc)?;
             let out_file = dir.join(file.as_str());
-            if let parent = out_file.parent().unwrap() && !parent.exists() {
-                fs::create_dir_all(parent)?;
-            }
+            out_file.parent().map(fs::create_dir_all).transpose()?;
             let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
             writer.write_all(&compress_if(data.as_ref(), &out_file))?;
             let progress = 1 + current_file.load(Ordering::Relaxed);

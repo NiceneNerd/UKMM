@@ -2,7 +2,7 @@ use std::{
     collections::BTreeSet,
     io::Write,
     path::{Path, PathBuf},
-    sync::{atomic::AtomicUsize, Arc, LazyLock},
+    sync::{atomic::AtomicUsize, Arc},
 };
 
 use anyhow_ext::{Context, Result};
@@ -25,6 +25,7 @@ use uk_content::{
     prelude::{Endian, Mergeable},
     resource::{is_mergeable_sarc, ResourceData},
 };
+use uk_util::{Lazy, PathExt as UkPathExt, ResultExt};
 use zip::{write::FileOptions, ZipWriter as ZipW};
 
 use crate::{
@@ -34,10 +35,10 @@ use crate::{
 
 pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
 
-static NX_HASH_TABLE: LazyLock<StockHashTable> =
-    LazyLock::new(|| StockHashTable::new(&botw_utils::hashes::Platform::Switch));
-static WIIU_HASH_TABLE: LazyLock<StockHashTable> =
-    LazyLock::new(|| StockHashTable::new(&botw_utils::hashes::Platform::WiiU));
+static NX_HASH_TABLE: Lazy<StockHashTable> =
+    Lazy::new(|| StockHashTable::new(&botw_utils::hashes::Platform::Switch));
+static WIIU_HASH_TABLE: Lazy<StockHashTable> =
+    Lazy::new(|| StockHashTable::new(&botw_utils::hashes::Platform::WiiU));
 
 pub struct ModPacker {
     source_dir: PathBuf,
@@ -216,7 +217,6 @@ impl ModPacker {
         })
     }
 
-    #[allow(irrefutable_let_patterns)]
     pub fn new(
         source: impl AsRef<Path>,
         dest: impl AsRef<Path>,
@@ -237,12 +237,14 @@ impl ModPacker {
             let meta = if let Some(meta) = meta {
                 log::debug!("Using providing meta info:\n{:#?}", &meta);
                 meta
-            } else if let rules = source.join("rules.txt") && rules.exists() {
+            } else if let Some(rules) = source.join("rules.txt").exists_then() {
                 log::debug!("Attempting to parse existing rules.txt");
                 ModPacker::parse_rules(rules)?
-            } else if let info = source.join("info.json") && info.exists() {
+            } else if let Some(info) = source.join("info.json").exists_then() {
                 log::debug!("Attempting to parse existing info.json");
-                log::warn!("`info.json` found. If this is a BNP, conversion will not work properly!");
+                log::warn!(
+                    "`info.json` found. If this is a BNP, conversion will not work properly!"
+                );
                 ModPacker::parse_info(info)?
             } else {
                 anyhow_ext::bail!("No meta info provided or meta file available");
@@ -437,12 +439,14 @@ impl ModPacker {
                     })
                     .inspect_err(|err| log::trace!("{err}"))
                     .or_else(|err| {
-                        if canon.starts_with("Pack/Bootup_") && let Some(lang) = Language::from_path(ref_name.as_ref()) {
+                        if let Some(lang) = canon
+                            .starts_with("Pack/Bootup_")
+                            .then(|| Language::from_path(ref_name.as_ref()))
+                            .flatten()
+                        {
                             let langs = master.languages();
                             match langs.iter().find(|l| l.short() == lang.short()) {
-                                Some(ref_lang) => {
-                                    master.get_data(ref_lang.bootup_path().as_str())
-                                }
+                                Some(ref_lang) => master.get_data(ref_lang.bootup_path().as_str()),
                                 None => Err(err),
                             }
                         } else {
@@ -453,20 +457,20 @@ impl ModPacker {
             })
             .last();
         log::trace!("Resource {} has a master: {}", &canon, reference.is_some());
-        if let Some(ref_res_data) = reference.as_ref()
-            && let Some(ref_res) = ref_res_data.as_mergeable()
-            && let ResourceData::Mergeable(res) = &resource
-        {
+        if let (Some(res), Some(ref_res)) = (
+            resource.as_mergeable(),
+            reference.as_ref().and_then(|rrd| rrd.as_mergeable()),
+        ) {
             if ref_res == res {
                 log::trace!("{} not modded, skipping", &canon);
                 return Ok(());
             }
             log::trace!("Diffing {}", &canon);
             resource = ResourceData::Mergeable(ref_res.diff(res));
-        } else if let Some(ref_res_data) = reference.as_ref()
-            && let Some(ref_sarc) = ref_res_data.as_sarc()
-            && let ResourceData::Sarc(sarc) = &resource
-        {
+        } else if let (Some(sarc), Some(ref_sarc)) = (
+            resource.as_sarc(),
+            reference.as_ref().and_then(|rrd| rrd.as_sarc()),
+        ) {
             if ref_sarc == sarc && !in_new_sarc {
                 log::trace!("{} not modded, skipping", &canon);
                 return Ok(());
@@ -523,7 +527,6 @@ impl ModPacker {
         Ok(())
     }
 
-    #[allow(irrefutable_let_patterns)]
     fn pack_root(&self, root: impl AsRef<Path>) -> Result<()> {
         fn inner(self_: &ModPacker, root: &Path) -> Result<()> {
             log::debug!("Packing from root of {}", root.display());

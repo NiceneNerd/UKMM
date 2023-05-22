@@ -36,6 +36,7 @@ ouroboros = "0.15.5"
 piz = "0.5.1"
 uk-content = { path = "../uk-content" }
 uk-reader = { path = "../uk-reader" }
+uk-util = { path = "../uk-util" }
 
 [dev-dependencies]
 env_logger = "0.10.0"

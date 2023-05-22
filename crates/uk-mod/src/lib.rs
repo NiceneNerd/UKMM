@@ -1,4 +1,4 @@
-#![feature(result_option_inspect, seek_stream_len, let_chains, lazy_cell)]
+#![allow(unstable_name_collisions)]
 use std::{
     collections::BTreeSet,
     path::{Path, PathBuf},
