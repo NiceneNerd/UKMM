@@ -4,7 +4,7 @@ description = "A new mod manager for The Legend of Zelda: Breath of the Wild. Su
 authors = ["Caleb Smith <c.smith@tuta.io>"]
 edition = "2021"
 license = "GPL-3.0-or-later"
-version.workspace = true
+version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
