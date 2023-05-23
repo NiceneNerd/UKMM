@@ -52,7 +52,6 @@ remove_dir_all = "0.8"
 winres = "0.1.12"
 
 [workspace]
-package.version = "0.10.0"
 members = [
     "crates/uk-content",
     "crates/uk-content-derive",
@@ -65,6 +64,9 @@ members = [
     "crates/uk-util",
 
 ]
+
+[workspace.package]
+version = "0.10.0"
 
 [workspace.dependencies]
 anyhow = "1"
