@@ -26,7 +26,16 @@ impl BnpConverter {
                 fn simple_add(base: &mut GameData, diff: &Map) -> Result<()> {
                     if let Some(Byml::Map(add)) = diff.get("add") {
                         base.flags.extend(add.iter().filter_map(|(name, flag)| {
-                            flag.try_into().ok().map(|f| (name.clone(), f))
+                            flag.try_into()
+                                .ok()
+                                .or_else(|| {
+                                    let mut flag = flag.clone();
+                                    flag.as_mut_map()
+                                        .ok()?
+                                        .insert("DataName".into(), name.into());
+                                    (&flag).try_into().ok()
+                                })
+                                .map(|f| (name.clone(), f))
                         }));
                     }
                     if let Some(Byml::Array(del)) = diff.get("del") {
@@ -70,12 +79,18 @@ impl BnpConverter {
                         if let Some(Byml::Map(add)) = diff.get("add") {
                             for (name, flag) in add.iter() {
                                 let mut parts = name.split('_');
-                                let flag = FlagData::try_from(flag).with_context(|| {
-                                    format!(
-                                        "Failed to parse gamedata flag from BNP log: {:?}",
-                                        flag
-                                    )
-                                })?;
+                                let flag = FlagData::try_from(flag)
+                                    .or_else(|e| {
+                                        let mut flag = flag.clone();
+                                        flag.as_mut_map()?.insert("DataName".into(), name.into());
+                                        (&flag).try_into().context(e)
+                                    })
+                                    .with_context(|| {
+                                        format!(
+                                            "Failed to parse gamedata flag from BNP log: {:?}",
+                                            flag
+                                        )
+                                    })?;
                                 if GameDataPack::STAGES.contains(&parts.next().unwrap_or(""))
                                     && !name.contains("HiddenKorok")
                                 {

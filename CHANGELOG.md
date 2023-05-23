@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed "no base or DLC content folder" on some Switch mods
 - Fixed panic parsing map logs with deletions in BNPs
+- Fixed weird gamedata flag issue on some BNPs
 - Updated RSTB library to fix mystery panics
 
 ## [0.9.0]
