@@ -37,7 +37,7 @@ jobs:
         name: Get version
         with:
           file: 'Cargo.toml'
-          field: 'package.version'
+          field: 'workspace.package.version'
       - name: Install GTK
         run: sudo apt update && sudo apt install libgtk-3-dev
         if: contains(matrix.platform.os, 'ubuntu')
