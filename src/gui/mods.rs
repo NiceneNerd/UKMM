@@ -16,6 +16,7 @@ use super::{App, FocusedPane, Message, Sort};
 
 enum ContextMenuMessage {
     CopyToProfile(smartstring::alias::String),
+    Extract,
     Uninstall,
     Toggle(bool),
     Move(usize),
@@ -354,6 +355,9 @@ impl App {
                     ContextMenuMessage::CopyToProfile(profile) => {
                         self.do_update(Message::AddToProfile(profile));
                     }
+                    ContextMenuMessage::Extract => {
+                        self.do_update(Message::Extract);
+                    }
                     ContextMenuMessage::Uninstall => {
                         let prompt = jstr!("Are you sure you want to uninstall {&mod_.meta.name}?");
                         self.do_update(Message::Confirm(
@@ -434,6 +438,10 @@ impl App {
                 mod_.path.parent().unwrap()
             })
             .output();
+        }
+        if ui.button("Extract").clicked() {
+            ui.close_menu();
+            result = Some(ContextMenuMessage::Extract);
         }
         if ui.button("Move to start").clicked() {
             ui.close_menu();

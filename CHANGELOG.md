@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### Added
+
+- Added button to extract mods back into full files (graphic pack/RomFS)
+
 ### Changed
 
 - **Breaking change**: Updated to the newest version of roead, which supports

@@ -16,7 +16,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use smartstring::alias::String;
 use uk_content::platform_prefixes;
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
-use uk_util::{Lazy, PathExt};
+use uk_util::Lazy;
 
 use crate::{
     settings::Settings,

@@ -173,6 +173,7 @@ pub enum Message {
     DoUpdate,
     DuplicateProfile(String),
     Error(anyhow_ext::Error),
+    Extract,
     FilePickerBack,
     FilePickerSet(Option<PathBuf>),
     FilePickerUp,
@@ -786,6 +787,10 @@ impl App {
                              full details.",
                         )));
                     }
+                }
+                Message::Extract => {
+                    let mods = self.selected.clone();
+                    self.do_task(move |core| tasks::extract_mods(&core, mods));
                 }
                 Message::AddToProfile(profile) => {
                     let mut dirty = self.dirty.write();

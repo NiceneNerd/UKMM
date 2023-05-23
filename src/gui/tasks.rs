@@ -17,7 +17,11 @@ use uk_manager::{
     settings::{DeployConfig, Platform, PlatformSettings, UpdatePreference},
     util::get_temp_file,
 };
-use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta};
+use uk_mod::{
+    pack::ModPacker,
+    unpack::{ModReader, ModUnpacker},
+    Manifest, Meta,
+};
 use uk_reader::ResourceReader;
 use uk_util::{OptionExt, PathExt};
 
@@ -194,6 +198,47 @@ pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message>
     .pack()
     .context("Failed to package mod")?;
     Ok(Message::ResetPacker)
+}
+
+pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
+    let mut errors = vec![];
+    if let Some(folder) = rfd::FileDialog::new()
+        .set_title("Select Directory to Unpack Mod(s)")
+        .pick_folder()
+    {
+        let settings = core.settings();
+        let config = settings
+            .platform_config()
+            .context("No config for current platform")?;
+        for mod_ in mods {
+            let name = mod_.meta.name.as_str();
+            log::info!("Extracting {}…", name);
+            let unpacker = ModUnpacker::new(
+                config.dump.clone(),
+                core.settings().current_mode.into(),
+                config.language,
+                vec![ModReader::open(&mod_.path, mod_.enabled_options.clone())?],
+                folder.join(name),
+            );
+            if let Err(e) = unpacker.unpack() {
+                log::error!("{e:?}");
+                errors.push(e);
+            }
+        }
+        if errors.is_empty() {
+            Ok(Message::Noop)
+        } else {
+            anyhow_ext::bail!(
+                "One or more mods encountered errors when extracting. Details below:\n{}",
+                errors
+                    .into_iter()
+                    .map(|e| format!("{e:?}\n"))
+                    .collect::<String>()
+            )
+        }
+    } else {
+        Ok(Message::Noop)
+    }
 }
 
 pub fn parse_meta(file: PathBuf) -> Result<Message> {
