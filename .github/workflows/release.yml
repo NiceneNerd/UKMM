@@ -43,6 +43,8 @@ jobs:
         if: contains(matrix.platform.os, 'ubuntu')
       - name: Install Rust
         uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
       - name: Build
         run: cargo build --release
         env:
