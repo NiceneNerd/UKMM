@@ -22,6 +22,7 @@ impl Project {
         Project {
             path:  path.join(name),
             meta:  Meta {
+                api: env!("CARGO_PKG_VERSION").into(),
                 name: name.into(),
                 author: Default::default(),
                 category: Default::default(),

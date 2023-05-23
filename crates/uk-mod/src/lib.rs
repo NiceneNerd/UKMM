@@ -214,9 +214,16 @@ pub enum ModPlatform {
     Universal,
 }
 
+#[inline(always)]
+fn default_api() -> String {
+    env!("CARGO_PKG_VERSION").into()
+}
+
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Meta {
+    #[serde(default = "default_api")]
+    pub api: String,
     pub name: String,
     pub version: String,
     pub author: String,
@@ -277,6 +284,7 @@ mod tests {
         println!(
             "{}",
             serde_yaml::to_string(&Meta {
+                api: env!("CARGO_PKG_VERSION").into(),
                 name: "Test Mod".into(),
                 description: "A sample UKMM mod".into(),
                 category: "Other".into(),

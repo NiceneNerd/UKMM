@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added button to extract mods back into full files (graphic pack/RomFS)
+- Added mod API versioning to better handle format changes across versions
 
 ### Changed
 

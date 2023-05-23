@@ -1,7 +1,7 @@
 [package]
 name = "uk-mod"
-version = "0.1.0"
 edition = "2021"
+version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
@@ -12,6 +12,7 @@ log = { workspace = true }
 indexmap = { workspace = true }
 join_str = { workspace = true }
 jwalk = { workspace = true }
+lenient_semver = { workspace = true }
 minicbor-ser = { workspace = true }
 parking_lot = { workspace = true }
 path-slash = { workspace = true }

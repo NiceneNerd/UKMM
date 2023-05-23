@@ -9,6 +9,7 @@ use std::{
 use anyhow_ext::{Context, Result};
 use dashmap::{mapref::one::MappedRef, DashMap};
 use fs_err as fs;
+use lenient_semver::Version;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use sanitise_file_name as sfn;
 use serde::{Deserialize, Serialize};
@@ -335,20 +336,16 @@ impl Manager {
         let mut old_version = None;
         let mod_name = {
             let peeker = ModReader::open_peek(mod_path, vec![])?;
+            let name = peeker.meta.name.as_str();
             if let Some(mod_) =
-                Profile::iter(self.get_profile(profile)).find(|m| m.meta.name == peeker.meta.name)
+                Profile::iter(self.get_profile(profile)).find(|m| m.meta.name == name)
             {
-                if lenient_semver::Version::parse(peeker.meta.version.as_str())
-                    .and_then(|pv| {
-                        lenient_semver::Version::parse(mod_.meta.version.as_str()).map(|mv| pv > mv)
-                    })
-                    .expect("Bad version strings")
+                if Version::parse(peeker.meta.version.as_str())
+                    .and_then(|pv| Version::parse(mod_.meta.version.as_str()).map(|mv| pv > mv))
+                    .map_err(|e| anyhow_ext::anyhow!("{e}"))
+                    .context("Bad version strings")?
                 {
-                    log::info!(
-                        "Updating {} to version {}",
-                        peeker.meta.name,
-                        peeker.meta.version
-                    );
+                    log::info!("Updating {name} to version {}", peeker.meta.version);
                     old_version = Some(mod_);
                 } else {
                     anyhow_ext::bail!("Mod \"{}\" already installed", peeker.meta.name);

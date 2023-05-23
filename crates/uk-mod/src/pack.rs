@@ -165,6 +165,7 @@ impl ModPacker {
         let parent = path.parent().context("No parent path???")?;
         rules.load(&path).map_err(|e| anyhow_ext::anyhow!(e))?;
         Ok(Meta {
+            api: env!("CARGO_PKG_VERSION").into(),
             name: rules
                 .get("Definition", "name")
                 .context("rules.txt missing mod name")?
@@ -192,6 +193,7 @@ impl ModPacker {
     pub fn parse_info(path: PathBuf) -> Result<Meta> {
         let info: InfoJson = serde_json::from_reader(fs::File::open(path)?)?;
         Ok(Meta {
+            api: env!("CARGO_PKG_VERSION").into(),
             name: info.name,
             description: info.desc,
             category: Default::default(),
@@ -667,6 +669,7 @@ mod tests {
             source,
             dest,
             Some(Meta {
+                api: env!("CARGO_PKG_VERSION").into(),
                 platform: ModPlatform::Specific(Endian::Big),
                 name: "Test Mod".into(),
                 version: "0.1.0".into(),

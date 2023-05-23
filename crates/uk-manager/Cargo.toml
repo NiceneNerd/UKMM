@@ -1,8 +1,8 @@
 [package]
 name = "uk-manager"
 authors = ["Caleb Smith <c.smith@tuta.io>"]
-version = "0.1.0"
 edition = "2021"
+version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }

@@ -35,6 +35,7 @@ impl ModPackerBuilder {
             source: Default::default(),
             dest:   Default::default(),
             meta:   Meta {
+                api: env!("CARGO_PKG_VERSION").into(),
                 name: Default::default(),
                 version: "1.0.0".into(),
                 author: Default::default(),

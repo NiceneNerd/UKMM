@@ -16,6 +16,7 @@ use dashmap::DashMap;
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
+use lenient_semver::Version;
 use mmap_rs::{Mmap, MmapOptions};
 use ouroboros::self_referencing;
 use path_slash::PathExt;
@@ -237,11 +238,30 @@ impl ModReader {
     pub fn open(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
         fn inner(path: &Path, options: Vec<ModOption>) -> Result<ModReader> {
             let path = path.to_path_buf();
-            if path.is_file() {
+            let result = if path.is_file() {
                 ModReader::open_zipped(path, options)
             } else {
                 ModReader::open_unzipped(path, options)
+            }?;
+            let name = result.meta.name.as_str();
+            let mod_api = Version::parse(&result.meta.api)
+                .map_err(|e| anyhow_ext::anyhow!("{e}"))
+                .context("Invalid API version for mod")?;
+            let current_api = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+            if current_api.major != mod_api.major {
+                anyhow_ext::bail!("{name} build with unsupported UKMM version: {mod_api}")
+            } else if current_api.minor > mod_api.minor && current_api.major == 0 {
+                log::warn!(
+                    "{name} is from an older UKMM prerelease (v{mod_api}), compatibility not \
+                     guaranteed"
+                )
+            } else if current_api.minor < mod_api.minor {
+                log::warn!(
+                    "{name} was made with a newer UKMM version (v{mod_api}), might contain \
+                     incompatible features"
+                )
             }
+            Ok(result)
         }
         inner(path.as_ref(), options.into())
     }
@@ -249,11 +269,30 @@ impl ModReader {
     pub fn open_peek(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
         fn inner(path: &Path, options: Vec<ModOption>) -> Result<ModReader> {
             let path = path.to_path_buf();
-            if path.is_file() {
+            let result = if path.is_file() {
                 ModReader::open_zipped_peek(path, options)
             } else {
                 ModReader::open_unzipped(path, options)
+            }?;
+            let name = result.meta.name.as_str();
+            let mod_api = Version::parse(&result.meta.api)
+                .map_err(|e| anyhow_ext::anyhow!("{e}"))
+                .context("Invalid API version for mod")?;
+            let current_api = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+            if current_api.major != mod_api.major {
+                anyhow_ext::bail!("{name} build with unsupported UKMM version: {mod_api}")
+            } else if current_api.minor > mod_api.minor && current_api.major == 0 {
+                log::warn!(
+                    "{name} is from an older UKMM prerelease (v{mod_api}), compatibility not \
+                     guaranteed"
+                )
+            } else if current_api.minor < mod_api.minor {
+                log::warn!(
+                    "{name} was made with a newer UKMM version (v{mod_api}), might contain \
+                     incompatible features"
+                )
             }
+            Ok(result)
         }
         inner(path.as_ref(), options.into())
     }
