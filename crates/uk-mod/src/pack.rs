@@ -550,7 +550,7 @@ impl ModPacker {
             } else {
                 None
             };
-            let manifest = serde_yaml::to_string(&Manifest {
+            let mut manifest = Manifest {
                 content_files: content_dir
                     .map(|content| {
                         log::info!("Collecting resources");
@@ -565,7 +565,20 @@ impl ModPacker {
                     })
                     .transpose()?
                     .unwrap_or_default(),
-            })?;
+            };
+            if manifest
+                .aoc_files
+                .iter()
+                .any(|f| f.contains("Map/MainField"))
+                && !manifest.aoc_files.contains("Pack/AocMainField.pack")
+            {
+                self_.write_resource(
+                    "Aoc/0010/Pack/AocMainField.pack",
+                    &ResourceData::Sarc(Default::default()),
+                )?;
+                manifest.aoc_files.insert("Pack/AocMainField.pack".into());
+            }
+            let manifest = serde_yaml::to_string(&manifest)?;
             log::info!("Writing manifest");
             let mut zip = self_.zip.lock();
             zip.start_file(
