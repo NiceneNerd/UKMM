@@ -89,6 +89,7 @@ impl<'de> Deserialize<'de> for ModReader {
                     manifest.ok_or_else(|| serde::de::Error::missing_field("manifest"))?;
                 Ok(ModReader {
                     meta,
+                    decompressor: super::init_decompressor(),
                     manifest,
                     options,
                     zip: Some(

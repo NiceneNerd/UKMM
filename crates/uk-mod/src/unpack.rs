@@ -19,6 +19,7 @@ use jwalk::WalkDir;
 use lenient_semver::Version;
 use mmap_rs::{Mmap, MmapOptions};
 use ouroboros::self_referencing;
+use parking_lot::Mutex;
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{
@@ -151,14 +152,36 @@ impl ParallelZipReader {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[inline]
+fn init_decompressor() -> Arc<Mutex<zstd::bulk::Decompressor<'static>>> {
+    Arc::new(Mutex::new(
+        zstd::bulk::Decompressor::with_dictionary(super::DICTIONARY).unwrap(),
+    ))
+}
+
+#[derive(Serialize)]
 pub struct ModReader {
     pub path: PathBuf,
     options: Vec<ModOption>,
     pub meta: Meta,
     pub manifest: Manifest,
+    #[serde(skip, default = "init_decompressor")]
+    decompressor: Arc<Mutex<zstd::bulk::Decompressor<'static>>>,
     #[serde(skip_serializing)]
     zip: Option<ParallelZipReader>,
+}
+
+impl std::fmt::Debug for ModReader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ModReader")
+            .field("path", &self.path)
+            .field("options", &self.options)
+            .field("meta", &self.meta)
+            .field("manifest", &self.manifest)
+            .field("decompressor", &"zstd::bulk::Decompressor<'static>")
+            .field("zip", &self.zip)
+            .finish()
+    }
 }
 
 #[typetag::serde]
@@ -173,7 +196,8 @@ impl ResourceLoader for ModReader {
         let canon = canonicalize(name);
         if let Some(zip) = self.zip.as_ref() {
             if let Ok(data) = zip.get_file(canon.as_str()) {
-                return Ok(zstd::decode_all(data.as_slice())
+                return Ok(self
+                    .decompress(data.as_slice())
                     .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
             }
         } else if let Some(path) = self.path.join(canon.as_str()).exists_then() {
@@ -183,7 +207,8 @@ impl ResourceLoader for ModReader {
             let path = Path::new("options").join(&opt.path).join(canon.as_str());
             if let Some(zip) = self.zip.as_ref() {
                 if let Ok(data) = zip.get_file(path) {
-                    return Ok(zstd::decode_all(data.as_slice())
+                    return Ok(self
+                        .decompress(data.as_slice())
                         .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
                 }
             } else if let Some(path) = self.path.join(path).exists_then() {
@@ -204,7 +229,8 @@ impl ResourceLoader for ModReader {
         let canon = canonicalize(jstr!("Aoc/0010/{name.to_str().unwrap_or_default()}"));
         if let Some(zip) = self.zip.as_ref() {
             if let Ok(data) = zip.get_file(canon.as_str()) {
-                return Ok(zstd::decode_all(data.as_slice())
+                return Ok(self
+                    .decompress(data.as_slice())
                     .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
             }
         } else if let Some(path) = self.path.join(canon.as_str()).exists_then() {
@@ -214,7 +240,8 @@ impl ResourceLoader for ModReader {
             let path = Path::new("options").join(&opt.path).join(canon.as_str());
             if let Some(zip) = self.zip.as_ref() {
                 if let Ok(data) = zip.get_file(path) {
-                    return Ok(zstd::decode_all(data.as_slice())
+                    return Ok(self
+                        .decompress(data.as_slice())
                         .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
                 }
             } else if let Some(path) = self.path.join(path).exists_then() {
@@ -235,6 +262,15 @@ impl ResourceLoader for ModReader {
 }
 
 impl ModReader {
+    #[inline]
+    fn decompress(&self, data: &[u8]) -> Result<Vec<u8>> {
+        let mut decomp = self.decompressor.lock();
+        let size = zstd::bulk::Decompressor::upper_bound(data).unwrap_or(data.len() * 1024);
+        decomp
+            .decompress(data, size)
+            .or_else(|e| zstd::decode_all(data).context(e))
+    }
+
     pub fn open(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
         fn inner(path: &Path, options: Vec<ModOption>) -> Result<ModReader> {
             let path = path.to_path_buf();
@@ -309,6 +345,7 @@ impl ModReader {
         }
         Ok(Self {
             path,
+            decompressor: init_decompressor(),
             options,
             meta,
             manifest,
@@ -370,6 +407,7 @@ impl ModReader {
         }
         Ok(Self {
             path,
+            decompressor: init_decompressor(),
             options,
             meta,
             manifest,
@@ -397,7 +435,7 @@ impl ModReader {
         if let Some(zip) = self.zip.as_ref() {
             if let Ok(data) = zip.get_file(canon.as_str()) {
                 versions.push(
-                    zstd::decode_all(data.as_slice())
+                    self.decompress(data.as_slice())
                         .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?,
                 );
             }
@@ -409,7 +447,7 @@ impl ModReader {
             if let Some(zip) = self.zip.as_ref() {
                 if let Ok(data) = zip.get_file(path) {
                     versions.push(
-                        zstd::decode_all(data.as_slice()).with_context(|| {
+                        self.decompress(data.as_slice()).with_context(|| {
                             jstr!("Failed to decompress file {&canon} from mod")
                         })?,
                     );
@@ -437,7 +475,7 @@ static RSTB_EXCLUDE_EXTS: &[&str] = &[
 ];
 static RSTB_EXCLUDE_NAMES: &[&str] = &["ActorInfo.product.byml"];
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct ModUnpacker {
     dump:     Arc<ResourceReader>,
     manifest: Option<Manifest>,

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Use dictionary for ZSTD compression
+
 ### Fixed
 
 - Fixed missing `AocMainField.pack` in some map mods

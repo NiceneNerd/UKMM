@@ -15,6 +15,8 @@ pub mod pack;
 pub mod unpack;
 pub use zstd;
 
+static DICTIONARY: &[u8] = include_bytes!("../data/zsdic");
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Manifest {
     #[serde(rename = "content")]

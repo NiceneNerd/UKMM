@@ -49,6 +49,7 @@ pub struct ModPacker {
     built_resources: Arc<RwLock<BTreeSet<String>>>,
     masters: Vec<Arc<uk_reader::ResourceReader>>,
     hash_table: &'static StockHashTable,
+    compressor: Arc<Mutex<zstd::bulk::Compressor<'static>>>,
     _zip_opts: FileOptions,
     _out_file: PathBuf,
 }
@@ -288,6 +289,9 @@ impl ModPacker {
                 },
                 meta,
                 built_resources: Arc::new(RwLock::new(BTreeSet::new())),
+                compressor: Arc::new(Mutex::new(
+                    zstd::bulk::Compressor::with_dictionary(8, super::DICTIONARY).unwrap(),
+                )),
                 _zip_opts: FileOptions::default()
                     .compression_method(zip::CompressionMethod::Stored),
                 _out_file: dest_file,
@@ -309,7 +313,7 @@ impl ModPacker {
             log::trace!("Writing {} to ZIP", canon);
             let mut zip = self.zip.lock();
             zip.start_file(zip_path.to_slash_lossy(), self._zip_opts)?;
-            zip.write_all(&zstd::encode_all(&*data, 3)?)?;
+            zip.write_all(&self.compressor.lock().compress(&data)?)?;
         }
         self.built_resources.write().insert(canon.into());
         Ok(())
