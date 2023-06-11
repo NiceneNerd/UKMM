@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed missing `AocMainField.pack` in some map mods
+- Minor patches to gamedata handling
 
 ## [0.10.0]
 

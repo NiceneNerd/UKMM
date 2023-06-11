@@ -42,6 +42,7 @@ impl BnpConverter {
                         for name in del {
                             base.flags.set_delete(name.as_string()?);
                         }
+                        base.flags.delete();
                     }
                     Ok(())
                 }
@@ -106,10 +107,10 @@ impl BnpConverter {
                                 base.flags.set_delete(name);
                                 revival_base.flags.set_delete(name);
                             }
+                            base.flags.delete();
                         }
                     }
                 }
-
                 self.inject_into_sarc(
                     "Pack/Bootup.pack//GameData/gamedata.ssarc",
                     base.into_binary(self.platform.into()),

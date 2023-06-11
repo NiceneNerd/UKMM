@@ -71,16 +71,19 @@ impl TryFrom<&Byml> for GameData {
                 .ok_or(UKError::MissingBymlKey("bgdata file missing data"))?
                 .as_array()?
                 .iter()
-                .filter_map(|item| -> Option<(String, FlagData)> {
-                    let name = item.as_map().ok()?.get("DataName")?.as_string().ok()?;
-                    Some((
+                .map(|item| -> Result<(String, FlagData)> {
+                    let name = item
+                        .as_map()?
+                        .get("DataName")
+                        .ok_or(UKError::MissingBymlKey("Gamedata flag missing DataName"))?
+                        .as_string()?;
+                    Ok((
                         name.clone(),
                         item.try_into()
-                            .with_context(|| jstr!("Failed to parse flag {&name}"))
-                            .ok()?,
+                            .with_context(|| jstr!("Failed to parse flag {&name}"))?,
                     ))
                 })
-                .collect(),
+                .collect::<Result<_>>()?,
         })
     }
 }
