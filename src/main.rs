@@ -14,6 +14,11 @@ use cli::Ukmm;
 extern "system" {
     fn AttachConsole(pid: i32) -> bool;
 }
+#[cfg(target_os = "windows")]
+#[link(name = "User32")]
+extern "system" {
+    fn MessageBoxW(hwnd: i32, message: *const i8, title: *const i8, utype: usize) -> i32;
+}
 
 fn main() -> Result<()> {
     #[cfg(target_os = "windows")]
@@ -28,7 +33,7 @@ fn main() -> Result<()> {
             .all(|a| gui_flags.contains(&a.as_str()))
     {
         if let Err(e) = std::panic::catch_unwind(gui::main) {
-            println!(
+            let error_msg = format!(
                 "An unrecoverable error occured. Error details: {}",
                 e.downcast::<String>()
                     .or_else(|e| e.downcast::<&'static str>().map(|s| Box::new((*s).into())))
@@ -39,6 +44,15 @@ fn main() -> Result<()> {
                         )
                     })
             );
+            #[cfg(windows)]
+            MessageBoxW(
+                0,
+                core::ffi::CStr::from(&error_msg).as_ptr(),
+                core::ffi::CStr::from("Error").as_ptr(),
+                0x0 | 0x10,
+            );
+            #[cfg(not(windows))]
+            println!("{}", error_msg);
             if let Some(file) = logger::LOGGER.log_path() {
                 logger::LOGGER.save_log();
                 println!(
