@@ -104,6 +104,8 @@ pub struct DeployConfig {
     pub auto: bool,
     #[serde(default)]
     pub cemu_rules: bool,
+    #[serde(default)]
+    pub executable: Option<PathBuf>,
 }
 
 impl Default for DeployConfig {
@@ -113,6 +115,7 @@ impl Default for DeployConfig {
             method: DeployMethod::Copy,
             auto: false,
             cemu_rules: false,
+            executable: None,
         }
     }
 }

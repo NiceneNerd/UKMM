@@ -1,3 +1,4 @@
+mod deploy;
 mod info;
 mod menus;
 mod modals;

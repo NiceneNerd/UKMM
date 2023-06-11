@@ -39,6 +39,26 @@ impl App {
             ui.close_menu();
             self.do_update(Message::ResetPending);
         }
+        if ui.button("Open Config Folder").clicked() {
+            ui.close_menu();
+            open::that(Settings::config_dir()).unwrap_or(());
+        }
+        let settings = self.core.settings();
+        if ui.button("Open Storage Folder").clicked() {
+            ui.close_menu();
+            open::that(&settings.storage_dir).unwrap_or(());
+        }
+        let deploy_dir = settings.deploy_dir();
+        if ui
+            .add_enabled(
+                deploy_dir.is_some(),
+                egui::Button::new("Open Deployment Folder"),
+            )
+            .clicked()
+        {
+            ui.close_menu();
+            open::that(deploy_dir.unwrap()).unwrap_or(());
+        }
     }
 
     pub fn window_menu(&mut self, ui: &mut Ui) {

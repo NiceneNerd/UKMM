@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added open folder buttons to tool menu
+- Added button to open emulator per-deployment config
+
 ### Changed
 
 - Use dictionary for ZSTD compression

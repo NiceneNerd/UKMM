@@ -244,6 +244,16 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                 changed |= ui.folder_picker(&mut config.output).changed();
             },
         );
+        render_setting(
+            "Emulator Executable",
+            "Path to the emulator to run for playing the game.",
+            ui,
+            |ui| {
+                changed |= ui
+                    .file_picker(config.executable.get_or_insert_default())
+                    .changed();
+            },
+        );
     });
     changed
 }
