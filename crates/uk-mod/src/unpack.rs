@@ -537,7 +537,7 @@ impl ModUnpacker {
                 .collect();
         }
         let mut modded_langs: IndexSet<Language> = Default::default();
-        for lang in Language::iter().filter(|l| l.short() == self.lang.short()) {
+        for lang in Language::iter() {
             if content_files.remove(&lang.bootup_path()) {
                 modded_langs.insert(*lang);
             }
