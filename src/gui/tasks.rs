@@ -209,7 +209,7 @@ pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
         let settings = core.settings();
         let config = settings
             .platform_config()
-            .context("No config for current platform")?;
+            .context("No config for current platform. Have you configured your settings?")?;
         for mod_ in mods {
             let name = mod_.meta.name.as_str();
             log::info!("Extracting {}…", name);

@@ -380,9 +380,9 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
         game_lang: core
             .settings()
             .platform_config()
-            .context("No config for current platform")?
+            .context("No config for current platform. Have you configured your settings?")?
             .language,
-        dump: core.settings().dump().context("No dump for current mode")?,
+        dump: core.settings().dump().context("No dump for current mode. Have you configured your settings?")?,
         content,
         aoc,
         packs: Default::default(),
