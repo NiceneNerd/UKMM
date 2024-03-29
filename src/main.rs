@@ -47,8 +47,8 @@ fn main() -> Result<()> {
             #[cfg(windows)]
             MessageBoxW(
                 0,
-                core::ffi::CStr::from(&error_msg).as_ptr(),
-                core::ffi::CStr::from("Error").as_ptr(),
+                &core::ffi::CStr::from(&error_msg).as_ptr(),
+                &core::ffi::CStr::from("Error").as_ptr(),
                 0x0 | 0x10,
             );
             #[cfg(not(windows))]
