@@ -283,7 +283,8 @@ impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
         if option_env!("UPDATE_PLATFORM").unwrap_or_default() == "steamdeck" {
             cc.egui_ctx.set_pixels_per_point(
-                option_env!("WINIT_X11_SCALE_FACTOR")
+                std::env::var("WINIT_X11_SCALE_FACTOR")
+                    .ok()
                     .and_then(|v| v.parse().ok())
                     .unwrap_or(1.0),
             );
