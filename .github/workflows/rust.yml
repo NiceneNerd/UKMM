@@ -55,6 +55,6 @@ jobs:
       with:
         toolchain: nightly
     - name: Build
-      run: cargo build
+      run: cargo +nightly build
     - name: Run `uk-content` tests
-      run: cargo test --package uk-content
+      run: cargo +nightly test --package uk-content
