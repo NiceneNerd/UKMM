@@ -23,10 +23,19 @@ Solutions to some known problems follow:
 
 This happens on some systems, *particularly Steam Deck*, for unknown reasons,
 but can be fixed by setting the environment variable
-`WINIT_X11_SCALE_FACTOR=1.0`. If you launch UKMM from the terminal, running
+`WINIT_X11_SCALE_FACTOR` to `1.0`. If you launch UKMM from the terminal, running
 it as `WINIT_X11_SCALE_FACTOR=1.0 ukmm` from the UKMM folder will work.
 Otherwise, you may try setting it in your `~/.profile` or `~/.Xprofile`, e.g.
-by adding the line `export WINIT_X11_SCALE_FACTOR=1.0`. Also note that some
-desktop environments contain tools for setting environment variables. If you
-need help with this, ArchWiki has an [excellent article on the
-topic](https://wiki.archlinux.org/title/environment_variables).
+by adding the line `export WINIT_X11_SCALE_FACTOR=1.0`. If perchance you run
+UKMM from Steam for some reason, you can set the launch options as
+`WINIT_X11_SCALE_FACTOR=1.0 %command%`.
+
+Also note that some desktop environments contain tools for setting environment
+variables. If you need help with this, ArchWiki has an [excellent article on
+the topic](https://wiki.archlinux.org/title/environment_variables).
+
+## "No config for current platform"
+
+If you see this error, it means that, for some reason, you skipped the initial
+setup where you configure all your settings for your game. Go back to [this 
+page](setup/configuration.md) and start there.

@@ -141,7 +141,7 @@ So, in sum:
 
 ---
 
-[^1] Starting back in Windows 10, build 14972, it has been possible to create
+[^1]: Starting back in Windows 10, build 14972, it has been possible to create
 symbolic links on Windows without administrator permissions, but it's not
 automatic. Check [the Windows blog
 announcement](https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/)

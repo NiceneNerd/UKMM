@@ -36,5 +36,5 @@ the next two sections.
 
 ---
 
-[^1] Should I really have to specify this? Probably not. Does *someone
+[^1]: Should I really have to specify this? Probably not. Does *someone
 somewhere* need me to? Yes.
