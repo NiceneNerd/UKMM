@@ -1,0 +1,824 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>U-King Mod Manager</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">Setup</li><li class="chapter-item expanded "><a href="setup/prerequisites.html"><strong aria-hidden="true">1.</strong> Prerequisites</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup/dump.html"><strong aria-hidden="true">1.1.</strong> Game Dump</a></li></ol></li><li class="chapter-item expanded "><a href="setup/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="setup/configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="setup/dump-settings.html"><strong aria-hidden="true">3.1.</strong> Dump Settings</a></li><li class="chapter-item expanded "><a href="setup/deploy.html"><strong aria-hidden="true">3.2.</strong> Deployment Config</a></li></ol></li><li class="chapter-item expanded "><li class="part-title">Usage</li><li class="chapter-item expanded "><a href="interface.html"><strong aria-hidden="true">4.</strong> Interface</a></li><li class="chapter-item expanded "><a href="using-mods.html"><strong aria-hidden="true">5.</strong> Using Mods</a></li><li class="chapter-item expanded "><a href="load-order.html"><strong aria-hidden="true">6.</strong> Load Order</a></li><li class="chapter-item expanded affix "><li class="part-title">General</li><li class="chapter-item expanded "><a href="mod_format.html"><strong aria-hidden="true">7.</strong> Mod Format</a></li><li class="chapter-item expanded "><a href="troubleshooting.html"><strong aria-hidden="true">8.</strong> Troubleshooting</a></li><li class="chapter-item expanded "><a href="migration.html"><strong aria-hidden="true">9.</strong> Migrating from BCML</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">U-King Mod Manager</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>Once upon a time, there was a program called BCML, that is, Breath of the Wild
+Cross-Platform Mod Loader. It existed because Breath of the Wild is very rather
+structurally hard to mod. The resource packing system, the resource size table,
+and similar features of the game make mods very collision-prone. Crashes, bugs,
+and other similar maladies appear frequently when multiple mods are naively
+combined. BCML was born in this darkness to heal broken RSTB files, colliding
+TitleBG packs, and similar woes.</p>
+<p>Alas, BCML was ill-fated from the start. The idiosyncracies of Python, the
+improvised and <em>ad hoc</em> nature of the solutions, and the growing complexity of
+an expanding feature set wed to backward compatibility all conspired to ensure
+it would one day grind to a halt.</p>
+<p>Enter <strong>UKMM</strong>, U-King Mod Manager, a complete, ground-up replacement for
+everything BCML did and more, written in pure Rust and compiled to a single
+binary. UKMM incorporates all of the lessons, skills, and general experience
+accumulated through the whole history of BOTW modding since BCML first began in
+a smooth, reliable, and robust mod management solution which solves nearly
+everything that made people (ever so often even justifiably) rage and screech
+about BCML.<sup class="footnote-reference"><a href="#1">1</a></sup></p>
+<p><img src="images/new-day.jpeg" alt="Dawn of a New Day" /></p>
+<hr />
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>Except, of course, the requirement to have a complete game dump. There
+will never be a way around that, guys.</p>
+</div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h1>
+<p>Fortunately, compared to BCML there are relatively few prerequisites for UKMM.</p>
+<ul>
+<li>A legal copy of <em>The Legend of Zelda: Breath of the Wild</em>, dumped to your PC</li>
+<li>A modern version of Windows (10 or 11) or Linux</li>
+</ul>
+<p>That's it. (No Python, yay!)</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="dumping-your-game"><a class="header" href="#dumping-your-game">Dumping Your Game</a></h1>
+<p>One of the most important (and most lamented) prerequisites for BOTW mod management is to have a copy of your game ROM on your PC. For emulator users (Cemu, Yuzu, or Ryujinx), this is usually already the case, but for console-only players it can be more difficult.</p>
+<p><em>You must have a modded/hacked console to dump your game.</em> If you do not have a modded console, you cannot legally acquire a game dump to use with UKMM.</p>
+<p>UKMM supports only the latest version of BOTW (1.5.0 on Wii U or 1.6.0 on Switch). Supported formats include:</p>
+<ul>
+<li>Unpacked MLC <img src="setup/../images/u.png" alt="Wii U" /> or RomFS <img src="setup/../images/nx.png" alt="Switch" /> dump</li>
+<li><img src="setup/../images/u.png" alt="Wii U" /> WUA (aka <a href="https://github.com/Exzap/ZArchive">ZArchive</a>, Cemu-specific)</li>
+</ul>
+<p>NSP and XCI support for Switch are possible eventual goals, but in the meantime if your dump is in one of those formats,
+you should unpack them. Yuzu and Ryujinx both have options to unpack the RomFS. If you don't use either of those, check
+GBAtemp, as the tooling for ROM format manipulation has changed too many times over the years to recommend a specific
+option.</p>
+<h2 id="dumping-guides"><a class="header" href="#dumping-guides">Dumping Guides</a></h2>
+<ul>
+<li><a href="https://zeldamods.org/wiki/Help:Dumping_games">Dumping Games - ZeldaMods</a></li>
+<li><a href="https://cemu.cfw.guide/using-dumpling.html">Using Dumpling | Cemu Guide</a></li>
+<li><a href="https://suchmememanyskill.github.io/guides/switchdumpguide/">Switch Dump &amp; Installing Guide - Such Meme, Many Skill's Dumping Ground</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
+<p>Once you have all your prerequisites in order, you can begin to use UKMM.</p>
+<p>UKMM consists of a single binary with all dependencies statically linked, making
+installation over 9000 times easier than BCML.</p>
+<h2 id="steps"><a class="header" href="#steps">Steps</a></h2>
+<ul>
+<li><a href="https://github.com/NiceneNerd/UKMM/releases/latest">Download the latest UKMM release for your operating system from
+GitHub</a></li>
+<li>Extract the archive (ZIP on Windows, tar on Linux) wherever suits you</li>
+<li>(Linux only) You may need to set the executable bit: <code>chmod +x ./ukmm</code></li>
+<li>Run the executable. You have UKMM ready to go!</li>
+</ul>
+<h2 id="configuration-storage"><a class="header" href="#configuration-storage">Configuration Storage</a></h2>
+<p>By default, UKMM will store your settings and similar data in an appropriate
+configuration folder for your platform. On Windows this should be
+<code>%APPDATA%\ukmm</code> and on Linux <code>~/.config/ukmm</code>.</p>
+<p>You can alternatively launch UKMM with the <code>--portable</code> flag, in which case it
+will use a <code>config</code> folder next to the UKMM executable.</p>
+<h2 id=""><a class="header" href="#"></a></h2>
+<p><img src="setup/../images/that-wasnt-so-hard.gif" alt="See, that wasn&#39;t so hard!" /></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<p>When you first run UKMM, you will need to configure some basic settings before
+you can do much of anything.</p>
+<h2 id="general-settings"><a class="header" href="#general-settings">General Settings</a></h2>
+<p>Settings under the General category apply to UKMM as a whole, not specifically
+Wii U or Switch mode.</p>
+<ul>
+<li><strong>Current Mode</strong>: Specifies whether to operate in Wii U or Switch mode. If
+using an emulator, go with the mode of your emulator's platform,<sup class="footnote-reference"><a href="#1">1</a></sup> so Wii U
+for Cemu or Switch for Yuzu/Ryujinx.</li>
+<li><strong>Storage Folder</strong>: Where to store mods, profiles, mod projects, etc. Defaults
+to <code>~/.local/share/ukmm</code> on Linux or <code>%LOCALAPPDATA%\ukmm</code> on Windows. Make
+sure to change this setting if you want to store mods and merges on a
+different partition or external drive.</li>
+<li><strong>Unpack Mods</strong>: By default UKMM stores mods as ZIP files with ZSTD
+compression. Turn on this option to unpack and decompress them instead,
+potentially improving performance at the cost of disk space.</li>
+<li><strong>Show Changelog</strong>: Whether to show a changelog after UKMM updates. Simple
+enough, right?</li>
+</ul>
+<h2 id="platform-specific-settings"><a class="header" href="#platform-specific-settings">Platform-Specific Settings</a></h2>
+<p>Most other settings apply independently to Switch or Wii U mode. The simplest of
+these is below:</p>
+<ul>
+<li><strong>Language</strong>: The language and region matching your game dump and play
+settings. If you for any reason do not set this correctly, you will probably
+not see any of changes any of your mods make to in-game text (dialogue, item
+descriptions, etc.).</li>
+</ul>
+<p>The rest of the platform-specific settings will be covered in more detail in
+the next two sections.</p>
+<hr />
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>Should I really have to specify this? Probably not. Does <em>someone
+somewhere</em> need me to? Yes.</p>
+</div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="dump-settings"><a class="header" href="#dump-settings">Dump Settings</a></h1>
+<p>As noted <a href="setup/dump.html">earlier</a>, you need a dump of BOTW on your PC to use UKMM. (If
+perchance you are curious why, <a href="setup/../faq.html">here's an explanation</a>.) I'll break
+down how to set this correctly per platform.</p>
+<h2 id="wii-u"><a class="header" href="#wii-u">Wii U</a></h2>
+<p>For Wii U, you have two supported dump options: unpacked MLC files (most common)
+or a <code>.wua</code> file (Cemu-specific format).</p>
+<p>For information on <code>.wua</code> files, check <a href="https://cemu.info/changelog.html">the changelog for Cemu
+v1.27.0b</a> or the <a href="https://github.com/Exzap/ZArchive">ZArchive
+repo</a>. The rest of this guide will focus on
+an unpacked dump.</p>
+<h3 id="unpacked-dump"><a class="header" href="#unpacked-dump">Unpacked Dump</a></h3>
+<p>There are three folders to specify for an unpacked game dump.</p>
+<ul>
+<li>
+<p><strong>Base Folder</strong>: This folder is the root of the plain, v1.0 BOTW assets which
+were included on the disk. If you are using Cemu, it will usually be in your
+MLC folder, with a path such as this (part of the title ID will be different
+for the EU or JP versions):<br />
+<code>mlc01/usr/title/00050000/101C9400/content</code></p>
+<p>You can verify the path is correct if it contains <code>Pack/Dungeon001.pack</code>.</p>
+</li>
+<li>
+<p><strong>Update Folder</strong>: The contains the BOTW v1.5.0 update data. It is absolutely
+necessary for the game to even run. If you are using Cemu, it will usually
+have a similar path to the base folder, but with an <code>E</code> at the end of the
+first half of the title ID:<br />
+<code>mlc01/usr/title/0005000E/101C9400/content</code></p>
+<p>You can verify the path is correct if it contains over 7000 files in the
+<code>Actor/Pack</code> folder.</p>
+</li>
+<li>
+<p><strong>DLC Folder</strong>: This contains most of the assets for the BOTW DLC. This one
+does <em>not</em> usually end in <code>content</code>, but must go one level further into a
+<code>0010</code> folder because of the way multiple kinds of add-on content are handled.
+If you are using Cemu, it will usually have a similar path to the base folder,
+but with a <code>C</code> at the end of the first half of the title ID:<br />
+<code>mlc01/usr/title/0005000C/101C9400/content/0010</code></p>
+<p>You can verify the path is correct if it contains <code>Pack/AocMainField.pack</code>.</p>
+</li>
+</ul>
+<h2 id="switch"><a class="header" href="#switch">Switch</a></h2>
+<p>At present only unpacked RomFS dumps are supported, but in the future NSP or XCI
+support may be added. In the meantime, if you have an NSP or XCI, dump its RomFS
+using Yuzu, Ryujinx, or another tool.</p>
+<h3 id="unpacked-dump-1"><a class="header" href="#unpacked-dump-1">Unpacked Dump</a></h3>
+<p>There are two folders to specify for an unpacked game dump.</p>
+<ul>
+<li>
+<p><strong>Base Folder</strong>: On Switch, following the usual guides with <code>nxdumptool</code>, this
+will usually be the combined base game and v1.6.0 update files. The path will
+probably contain the title ID of <code>01007EF00011E800</code> and end in <code>romfs</code>.</p>
+<p>You can verify the path is correct if it contains over 7000 files in the
+<code>Actor/Pack</code> folder.</p>
+</li>
+<li>
+<p><strong>DLC Folder</strong>: This contains most of the assets for the BOTW DLC. The path
+will probably contain a title ID like <code>01007EF00011F001</code> and end in <code>romfs</code>.</p>
+<p>You can verify the path is correct if it contains <code>Pack/AocMainField.pack</code>.</p>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="deployment-config"><a class="header" href="#deployment-config">Deployment Config</a></h1>
+<p>When you actually want to use your merged mods, they will need to be deployed.
+This is the most critical step to actually using mods when you play the game.</p>
+<p>Note that you have the option to deploy automatically or not. If you do not
+deploy automatically, you can make whatever changes to your load order, and even
+apply them, but still not export the final merged mod to its destination until
+you're ready. This is most useful for console players, who, for example, might
+want to manage mods on the PC at any time but wait until they're ready to insert
+their SD card before deploying the final pack. For emulator users, it is
+generally more useful to use automatic deployment.</p>
+<h2 id="deployment-locations"><a class="header" href="#deployment-locations">Deployment Locations</a></h2>
+<p>Where should you deploy your mods? It depends mostly on where you play your
+game.</p>
+<h3 id="cemu"><a class="header" href="#cemu">Cemu</a></h3>
+<p>Cemu users will generally want to deploy their mods as a graphic pack. In that
+case you will need to set your deployment location somewhere inside Cemu's
+<code>graphicPacks</code> folder. A customary option is a new folder named
+<code>BreathOfTheWild_UKMM</code>. So, for example, the full path might be something like:
+<code>C:\Cemu\graphicPacks\BreathOfTheWild_UKMM</code>.</p>
+<p><strong>Additional note for Cemu users</strong>: You almost certainly want the "Deploy
+rules.txt" option selected for Cemu integration.</p>
+<h3 id="wii-u-1"><a class="header" href="#wii-u-1">Wii U</a></h3>
+<p>Wii U users have a few options, but the most widely used and supported method to
+load mods is via <a href="https://zeldamods.org/wiki/Help:Using_mods#Setting_up_WUPS_SDCafiine">SDCafiine for the Wii U Plugin
+System</a>.
+In that case you would generally want your mods to end up on your SD card under
+something like <code>/sdcafiine/&lt;title ID&gt;/ukmm</code>.  If you use UKMM while your SD card
+is not in, however, you might want to set a temporary directory for deploying
+mods, or you can merge without the SD card but wait and deploy when the SD card
+is mountained.</p>
+<h3 id="switch-1"><a class="header" href="#switch-1">Switch</a></h3>
+<p>With the Switch, you generally want your mods to end up on your SD card under
+<code>/atmosphere/contents</code>. If you use UKMM while your SD card is not in, however,
+you might want to set a temporary directory for deploying mods, or you can merge
+without the SD card but wait and deploy when the SD card is mountained.</p>
+<h3 id="yuzu-or-ryujinx"><a class="header" href="#yuzu-or-ryujinx">Yuzu or Ryujinx</a></h3>
+<p>Yuzu and Ryujinx both allow you to install mods in two different locations, one
+specific to their own files and the other for emulating Atmosphere's LayeredFS
+setup on SD card. <em>You must use the LayeredFS arrangement.</em></p>
+<p>So, for example, the Yuzu user storage folder is
+<code>C:\Users\[USER]\AppData\Roaming\yuzu</code> on Windows or <code>~/.local/share/yuzu</code> on
+Linux. In this case, you want your deployment folder at
+<code>[USER-FOLDER]/sdmc/atmosphere/contents</code>.</p>
+<blockquote>
+<p><strong>Note on Switch-based deployment</strong>:
+When using Switch, Yuzu, or Ryujinx, you will need to generally use the
+<code>contents</code> folder as the actual deployment folder, and the two title ID
+folders for BOTW and its DLC will be used to store mod files. If you mod other
+games besides BOTW, note that they will also have their mods in a title ID
+folder in the same <code>contents</code> folder, and some operations could affect them.
+Be aware of this particularly when using the symlink method discussed below.</p>
+</blockquote>
+<h2 id="deployment-methods"><a class="header" href="#deployment-methods">Deployment Methods</a></h2>
+<p>UKMM offers three methods to deploy mods. Which one is best depends heavily on
+your system, so I recommend taking careful note of these options and how they
+work.</p>
+<h3 id="copy"><a class="header" href="#copy">Copy</a></h3>
+<p>The simplest option. It just copies everything from UKMM's internal merging
+folder into the deployment folder.</p>
+<p><strong>Advantages</strong></p>
+<ul>
+<li>Easy</li>
+<li>Pretty much always works</li>
+</ul>
+<p><strong>Disadvantages</strong></p>
+<ul>
+<li>Can be very slow</li>
+<li>Wastes disk space</li>
+</ul>
+<p><strong>Best for</strong>: SD cards</p>
+<h3 id="hard-links"><a class="header" href="#hard-links">Hard Links</a></h3>
+<p>A safe option to save space when everything is on the same volume/partition. It
+creates a hard link of every file from UKMM's internal merging folder into the
+deployment folder, which uses no additional disk space. Both copies are
+literally the same file.</p>
+<p><img src="setup/../images/hard-link.jpg" alt="&quot;Two&quot; hard linked files are just one file with two paths" /></p>
+<p><strong>Advantages</strong></p>
+<ul>
+<li>Pretty fast</li>
+<li>No wasted disk space</li>
+</ul>
+<p><strong>Disadvantages</strong></p>
+<ul>
+<li>Only works if everything is on the same volume/partition</li>
+<li>Slower than symlinks</li>
+</ul>
+<p><strong>Best for</strong>: Windows systems where everything is on one volume</p>
+<h3 id="symlink"><a class="header" href="#symlink">Symlink</a></h3>
+<p>Turns the deployment folder into a mere link to the UKMM's internal merged
+folder. This means deployment isn't even needed; all changes to your load order
+are automatically present wherever you have your mods deployed.</p>
+<p>Unfortunately, this is also the weirdest option on Windows. (On Linux it should
+pretty much Just Work™.) Windows is weird about symbolic links. Because of this,
+UKMM will first attempt to use a "directory junction," a dumb alternative to a
+symbolic link which only works on internal drives. Removeable drives and
+networked drives are not supported. If that fails, it will try to use a regular
+directory symbolic link. These have fewer restrictions, but usually (for some
+dumb reason) require administrator permissions to create.<sup class="footnote-reference"><a href="#1">1</a></sup></p>
+<blockquote>
+<p><strong>Note for Switch/Yuzu/Ryujinx:</strong> Since the deployment folder will need to be
+set the <code>atmosphere/contents</code> root, and it will deploy the two title ID folders
+for BOTW and its DLC inside, you may run into issues if you also have mods for
+other games (other title IDs). They might be erased or end up inside UKMM's
+storage folder, depening on your precise process and settings.</p>
+</blockquote>
+<p>So, in sum:</p>
+<p><strong>Advantages</strong></p>
+<ul>
+<li>Instant, transparent deployment</li>
+<li>No wasted disk space</li>
+</ul>
+<p><strong>Disadvantages</strong></p>
+<ul>
+<li>Windows support is complicated</li>
+<li>No chance to change your mind before deploying mods after applying load order
+changes</li>
+<li>Does not mesh well for Switch users modding other games</li>
+</ul>
+<p><strong>Best for</strong>: Linux systems, or advanced users on Windows</p>
+<hr />
+<div class="footnote-definition" id="1"><sup class="footnote-definition-label">1</sup>
+<p>Starting back in Windows 10, build 14972, it has been possible to create
+symbolic links on Windows without administrator permissions, but it's not
+automatic. Check <a href="https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/">the Windows blog
+announcement</a>
+for more information.</p>
+</div>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="interface"><a class="header" href="#interface">Interface</a></h1>
+<p><img src="images/ui.png" alt="The main UKMM interface" /> The main UKMM interface</p>
+<h2 id="general-use"><a class="header" href="#general-use">General Use</a></h2>
+<p>The UKMM interface is largely divided into docked, tabbed sections. These can be
+moved and resized into whatever arrangement you like (and you can use the Reset
+button under the Window menu if you end up not liking it). Let's cover a few of
+the most important parts.</p>
+<h3 id="mods-tab"><a class="header" href="#mods-tab">Mods Tab</a></h3>
+<p>Most of your real business is done here. Along the top bar of the mods tab you
+can switch, add, or manage mod profiles.</p>
+<p>Beneath is a table with all installed mods in the current profile. You can sort
+it by name, category, version, etc. by clicking on the respective headers. Mods
+can be enabled or disabled using the toggle boxes on their left.</p>
+<p>Mods can be dragged and dropped to change their priority order. Hold Shift or
+Control to select multiple mods. Right-clicking a mod exposes a few other
+options.</p>
+<p>No changes made on the mod list take effect until you apply them, which brings
+us to…</p>
+<h3 id="pending-changes-window"><a class="header" href="#pending-changes-window">Pending Changes Window</a></h3>
+<p>Any and all changes made to your mod collection will be queued for application.
+When changes are pending, the Pending Changes window will appear in the bottom
+right of the screen.</p>
+<ul>
+<li>If you click Cancel, all changes will be undone and your mod profile will
+revert to its last saved state.</li>
+<li>If you click Apply, your new mod settings will be saved, and all game files
+affected by the accumulated changes will be preprocessed and merged. (Note:
+This can take some time if very large mods are involved.)</li>
+</ul>
+<h3 id="info-tab"><a class="header" href="#info-tab">Info Tab</a></h3>
+<p>This is Captain Obvious, here to inform you that the Info tab shows information
+about the currently selected mod. There's not a great deal to say about this
+except for two potentially noteworthy features:</p>
+<ul>
+<li><strong>Option Settings</strong>: If you have a mod which includes configurable options,
+the Info tab will show which options are currently enabled. It will also have
+an icon button to change the enabled options. If you change options, those
+changes will be queued in the Pending Changes window per usual.</li>
+<li><strong>Manifest</strong>: For reference and perhaps debugging, the Info tab will also show
+a manifest listing what files are edited by the current mod. Can potentially
+be useful if tracking down some unexpected mod behavior.</li>
+</ul>
+<h3 id="install-tab"><a class="header" href="#install-tab">Install Tab</a></h3>
+<p>For convenience, UKMM also includes a file browser tab for quick mod
+installation. Use it if you want, or don't; it's up to you.</p>
+<h2 id="more"><a class="header" href="#more">More</a></h2>
+<ul>
+<li>Most of the Packaging tab is self-explanatory if you understand <a href="./mod_format.html">packaging
+UKMM mods</a>.</li>
+<li>Most of what you need to know about the Settings tab goes back to
+<a href="setup/configuration.html">Configuration</a>.</li>
+<li>The Deploy tab shows your current deployment settings. If you don't have
+automatic deployment turned on, you will need to click the Deploy button here
+to deploy your mods to their final destination.</li>
+<li>The Log tab is pretty much what it says on the tin. If you need to track down
+some error or problem, check here. If the default logging information isn't
+enough, you can enable verbose logging in the Help menu. If you don't care
+about performance and <em>really</em> need to dig deep, you can try setting the
+environment variable <code>RUST_LOG=trace</code>, but be warned, <strong>this is extreme
+logging that will slow down most operations</strong>.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="using-mods"><a class="header" href="#using-mods">Using Mods</a></h1>
+<p>So, you have everything set up. How does using mods actually work now?</p>
+<ol>
+<li>
+<p>Add mods to your current profile. You can add mods in one of three ways,
+which are functionally identical:</p>
+<ul>
+<li>Click the Open Mod… button in the File menu.</li>
+<li>Click the Open icon in the Install tab.</li>
+<li>Select the mod in the Install tab's file browser.</li>
+</ul>
+<blockquote>
+<p><strong>Note</strong>:
+UKMM supports installing mods in three formats:</p>
+<ul>
+<li>Mods packaged by UKMM (obviously)</li>
+<li>BCML 3 BNPs</li>
+<li>Graphic pack/RomFS mods</li>
+</ul>
+<p>Note that for graphic pack or RomFS mods, the folder structure needs to match
+what is described in the <a href="mod_format.html">UKMM mod format</a> instructions. By
+default UKMM will try to read any relevant metadata from a <code>rules.txt</code> or
+<code>info.json</code> file, but if those are absent it will prompt for the basic
+information.</p>
+</blockquote>
+</li>
+<li>
+<p>Enable any mods you are ready to use. Mods start disabled until you check the
+box.</p>
+</li>
+<li>
+<p>Click the Apply button in the Pending Changes window to apply your current
+mod configuration. All game files affected by the changes to your mod setup
+will be reprocessed and merged afresh.</p>
+</li>
+<li>
+<p>If you have don't automatic deployment turned on, click the Deploy button in
+the Deploy tab to export the finished mod pack to its intended destination.</p>
+</li>
+<li>
+<p>If you are a console user (or doing something else different), move or copy
+the deployed mods to their final destination (such an SD card set up for
+SDCafiine for Wii U or LayeredFS for Switch)</p>
+</li>
+</ol>
+<p>For Cemu users, auto deploy is recommended and the destination is usually a
+specific graphic pack folder, in which case your usual process will be only 1-3.</p>
+<p>This is the basic workflow. More details will be addressed where relevant. For
+information about how to use SDCafiine or LayeredFS to apply your mods on
+console, check <a href="https://zeldamods.org/wiki/Help:Using_mods">the guide on
+ZeldaMods</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="load-order"><a class="header" href="#load-order">Load Order</a></h1>
+<p>When mods make conflicting changes, they will be applied in a designated order
+of priority. Priority starts at 0. Priority 0 is the lowest priority, and
+anything with a <em>higher</em> priority will <em>overwrite</em> it where necessary.</p>
+<p><em><strong>To repeat</strong>: higher priority mods overwrite lower priority mods.</em></p>
+<p>Here are some general tips about load order:</p>
+<ul>
+<li>In general, skins should be higher than edits to behaviour or stats, at least
+for the same actors. For example: the Linkle mod should be higher than a mod
+which edits armour stats, otherwise you could have texture bugs.</li>
+<li>Optional components, addons, compatibility patches, or any mods that are based
+on other mods should <em>always</em> be given higher priority than the mods they're
+based on.</li>
+<li>Large overhaul-type mods (e.g. Second Wind or Relics of the Past) are
+complicated. When possible, they should take lower priority than other mods,
+functioning like an extension of the base game. They may, however, sometimes
+need to take priority over some or most other mods if more complex features
+(like some of those in Survival of the Wild) are not working properly.</li>
+<li>Any time you experience crashing or odd glitches, it can be worth it to try
+rearranging your load order.</li>
+</ul>
+<p>Apart from these basic guidelines, the merging process tends to make load order
+a fairly forgiving system. For the most part, load order will only matter if you
+have two mods that make obviously incompatible edits, in which case it's often
+as simple as just making sure you have the mod with the preferred behavior set
+higher in priority.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="mod-format"><a class="header" href="#mod-format">Mod Format</a></h1>
+<p>UKMM stores mods in its own, highly efficient and compressed format. For
+technical details, see the final section of this page.</p>
+<h2 id="format-for-development"><a class="header" href="#format-for-development">Format for Development</a></h2>
+<p>As a mod developer, you don't need to know anything about the internal format.
+Rather, you can continue to create mods with the traditional graphic pack/RomFS
+structure, with extensions for mod options, detailed below. There are no
+differences between this format between BCML and UKMM.</p>
+<p><strong>Wii U</strong></p>
+<pre><code>.
+├── content
+├── aoc (optional: for DLC files)
+└── options (optional: for optional mod components)
+    ├── option1 (any name allowed)
+    │   ├── content
+    │   └── aoc
+    ├── option2
+    │   └── content
+    └── ...
+</code></pre>
+<p><strong>Switch</strong></p>
+<pre><code>.
+├── 01007EF00011E000
+│   └── romfs
+├── 01007EF00011F001 (optional: for DLC files)
+│   └── romfs
+└── options (optional: for optional mod components)
+    ├── option1 (any name allowed)
+    │   ├── 01007EF00011E000
+    │   │   └── romfs
+    │   └── 01007EF00011F001
+    │       └── romfs
+    ├── option2
+    │   └── 01007EF00011E000
+    │       └── romfs
+    └── ...
+</code></pre>
+<p><strong>Just so you know</strong>: You can include a preview image in your mod by placing it
+in the root folder with a name like <code>thumb.jpg</code>. (Valid names include <code>thumb</code>,
+<code>thumbnail</code>, and <code>preview</code>. Valid formats include PNG, JPG, and SVG.)</p>
+<h2 id="dependencies-and-options"><a class="header" href="#dependencies-and-options">Dependencies and Options</a></h2>
+<p>You can specify any number of other mods as dependencies for your mod. If the
+user attempts to install without the necessary mod(s), UKMM will throw an error.</p>
+<p>You can also specify optional components for your mod. To add mod options, first
+create an "options" folder in the mod root. Then make subfolders for each option
+you want to add. In each subfolder, you will need to replicate a normal mod
+structure, but containing only files different from the main mod.</p>
+<p>Options are placed in groups, offering either multiple or exclusive choice.
+While there are no requirements about how multiple-choice options are grouped,
+for exclusive choice, only one option in that group can be selected.</p>
+<h2 id="cross-platform-mods"><a class="header" href="#cross-platform-mods">Cross-platform Mods</a></h2>
+<p>UKMM has limited support for mods that work with both the Wii U and Switch
+versions of the game. This is possible if and only if the mod consists solely of
+mergeable assets. While I cannot easily provide a complete list of mergeable
+assets (other than by referring you to the source code), in general this most
+commonly excludes models, textures, audio, and Havok physics. To create a
+cross-platform mod, check the "Mark as cross-platform" option in the mod
+packaging view.</p>
+<h2 id="internal-format-details"><a class="header" href="#internal-format-details">Internal Format Details</a></h2>
+<p>UKMM mods are packaged in ordinary ZIP files. The contents include mod metadata,
+a manifest of modified files, and UKMM-processed resources stored at their
+<a href="https://zeldamods.org/wiki/Canonical_resource_path">canonical resource paths</a>.
+An example contents in this format is below:</p>
+<pre><code>.
+├── Actor
+│   └── ActorInfo.product.byml
+├── Map
+│   └── MainField
+│       └── Static.mubin
+├── manifest.yml
+└── meta.yml
+</code></pre>
+<h3 id="compression"><a class="header" href="#compression">Compression</a></h3>
+<p>No ZIP-wide compression is used. The manifest and meta files are stored without
+compression, whereas mod files are compressed with <code>zstd</code>. This makes it quick
+and easy to parse mod information while nonetheless storing the real contents
+with an optimal balance of size and decompresison performance.</p>
+<h3 id="meta-file"><a class="header" href="#meta-file">Meta File</a></h3>
+<p>Mod metadata is stored in the YAML format under <code>meta.yml</code> in the ZIP root. It
+contains the mod name, description, option information, etc. Example contents:</p>
+<pre><code class="language-yaml">name: Test Mod
+version: 1.0.0
+author: Nicene Nerd
+category: Other
+description: A sample UKMM mod
+platform: !Specific Wii U
+url: null
+option_groups: []
+masters: {}
+</code></pre>
+<h3 id="manifest-file"><a class="header" href="#manifest-file">Manifest File</a></h3>
+<p>A manifest of all real files (as opposed to canonical resources) included in the
+mod is stored in YAML format under <code>manifest.yml</code> in the ZIP root. It contains
+separately a list of each base game file and each DLC file. Example contents:</p>
+<pre><code class="language-yaml">content:
+- Actor/ActorInfo.product.sbyml
+- Actor/Pack/AncientBallSwitch2C.sbactorpack
+aoc:
+- Map/CDungeon/Static.smubin
+- Pack/AocMainField.pack
+</code></pre>
+<h3 id="resources"><a class="header" href="#resources">Resources</a></h3>
+<p>All modified files, included nested files stored in SARCs, are stored at their
+canonical resource paths. <strong>Special note</strong>: <em>These are not stored as ordinary
+game files in their original formats.</em> Rather, UKMM parses most files into
+diffable, mergeable data structures representing their semantic content, and
+then stores only the diffs, serialized to <a href="https://cbor.io/">CBOR</a> using
+<a href="https://crates.io/crates/minicbor-ser"><code>minicbor-ser</code></a>.</p>
+<p>Even files which UKMM cannot parse and merge are still stored with CBOR metadata
+and thus cannot be used in the game as-is.</p>
+<h3 id="mod-options"><a class="header" href="#mod-options">Mod Options</a></h3>
+<p>Each option is stored in an <code>options</code> folder roughly the same layout as it is in
+the pre-packaging development format, but each option includes its own manifest
+and canonical resources.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h1>
+<p>Here are the most general rules for troubleshooting:</p>
+<ul>
+<li>Confirm your settings are valid, especially your game dump.</li>
+<li>If a problem happens when installing a mod, check whether it happens to other
+mods and, if so, whether it is all of them or if there seems to be something
+they have in common.</li>
+<li>Read over all the docs that look remotely relevant to your problem.</li>
+<li>If you need help, there are two main places to go:
+<ul>
+<li>If you think the problem is probably with your own settings, a specific
+mod or mods, or anything else that could be solved without patching UKMM,
+go to <a href="https://discord.gg/y7VJqMB329">my Discord server</a>.</li>
+<li>If you think the problem is probably with UKMM itself and would require
+changes to the code, <a href="https://github.com/NiceneNerd/UKMM/issues/new/choose">file an issue on
+GitHub</a>.</li>
+</ul>
+</li>
+<li>In case the program crashes completely, run it from a terminal/Command Prompt
+and check for panic output.</li>
+</ul>
+<p>Solutions to some known problems follow:</p>
+<h2 id="the-ui-is-scaled-badly-and-unusable"><a class="header" href="#the-ui-is-scaled-badly-and-unusable">The UI is scaled badly and unusable.</a></h2>
+<p>This happens on some systems, <em>particularly Steam Deck</em>, for unknown reasons,
+but can be fixed by setting the environment variable
+<code>WINIT_X11_SCALE_FACTOR</code> to <code>1.0</code>. If you launch UKMM from the terminal, running
+it as <code>WINIT_X11_SCALE_FACTOR=1.0 ukmm</code> from the UKMM folder will work.
+Otherwise, you may try setting it in your <code>~/.profile</code> or <code>~/.Xprofile</code>, e.g.
+by adding the line <code>export WINIT_X11_SCALE_FACTOR=1.0</code>. If perchance you run
+UKMM from Steam for some reason, you can set the launch options as
+<code>WINIT_X11_SCALE_FACTOR=1.0 %command%</code>.</p>
+<p>Also note that some desktop environments contain tools for setting environment
+variables. If you need help with this, ArchWiki has an <a href="https://wiki.archlinux.org/title/environment_variables">excellent article on
+the topic</a>.</p>
+<h2 id="no-config-for-current-platform"><a class="header" href="#no-config-for-current-platform">"No config for current platform"</a></h2>
+<p>If you see this error, it means that, for some reason, you skipped the initial
+setup where you configure all your settings for your game. Go back to <a href="setup/configuration.html">this
+page</a> and start there.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="migrating-from-bcml"><a class="header" href="#migrating-from-bcml">Migrating from BCML</a></h1>
+<p>For BCML users, a lot of the experience of UKMM should be familiar, but there
+are some important differences. For a smoother transition, keep the following in
+mind:</p>
+<ul>
+<li>You can attempt to import your BCML settings and mods by clicking Migrate from
+BCML in the settings tab.</li>
+<li>The merge and deploy process in UKMM is just plain different from BCML, though
+it can be setup to work functionally the same way. For more information on
+this, read over <a href="setup/deploy.html">the deployment page</a>.</li>
+<li>For mod developers: <em><strong>do not attempt to edit UKMM ZIPs directly</strong></em>. I know
+this was common in some circles with BNPs, but this will generally not work,
+will probably break your mod, and is officially frowned upon.</li>
+</ul>
+<p><img src="images/sad-face.gif" alt="My face if you directly edit a UKMM mod ZIP." /><br />
+<small>My face if you directly edit a UKMM mod ZIP.</small></p>
+<ul>
+<li>To be continued as feedback flows in…</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>
