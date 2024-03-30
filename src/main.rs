@@ -45,12 +45,14 @@ fn main() -> Result<()> {
                     })
             );
             #[cfg(windows)]
-            MessageBoxW(
-                0,
-                &core::ffi::CStr::from(&error_msg).as_ptr(),
-                &core::ffi::CStr::from("Error").as_ptr(),
-                0x0 | 0x10,
-            );
+            unsafe {
+                MessageBoxW(
+                    0,
+                    core::ffi::CStr::from_ptr(error_msg.as_ptr() as *const i8).as_ptr(),
+                    core::ffi::CStr::from_ptr("Error".as_ptr() as *const i8).as_ptr(),
+                    0x0 | 0x10,
+                );
+            }
             #[cfg(not(windows))]
             println!("{}", error_msg);
             if let Some(file) = logger::LOGGER.log_path() {
