@@ -722,7 +722,7 @@ impl ModUnpacker {
                     "No copy of {} found in game dump or any mod. Sometimes this is a problem with the mod or\
                     your game dump. However, it can also be a temporary cache error. If you know your dump and its\
                     configuration are sound, try restarting UKMM. If it persists, copy the error details and post \
-                    as a comment to https://github.com/NiceneNerd/ukmm/issues/120.", &file
+                    as a comment to https://github.com/NiceneNerd/UKMM/issues/120.", &file
                 );
                 for e in dump_error {
                     err = e.context(err);

@@ -296,8 +296,8 @@ impl App {
                     });
                     egui::Grid::new("about_box").num_columns(2).show(ui, |ui| {
                         ui.label("GitHub:");
-                        if ui.link("https://github.com/NiceneNerd/ukmm").clicked() {
-                            open::that("https://github.com/NiceneNerd/ukmm").unwrap_or(());
+                        if ui.link("https://github.com/NiceneNerd/UKMM").clicked() {
+                            open::that("https://github.com/NiceneNerd/UKMM").unwrap_or(());
                         }
                         ui.end_row();
                         ui.label("GUI library:");

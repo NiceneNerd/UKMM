@@ -118,7 +118,7 @@ impl App {
         }
         if ui.button("Help").clicked() {
             ui.close_menu();
-            open::that("https://nicenenerd.github.io/ukmm").unwrap_or(());
+            open::that("https://nicenenerd.github.io/UKMM").unwrap_or(());
         }
         if ui.button("About").clicked() {
             ui.close_menu();

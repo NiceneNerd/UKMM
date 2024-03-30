@@ -35,7 +35,7 @@ inspiration in some ways from the famous [Mod Organizer
 ## Setup and Use
 
 Unlike BCML, setup is pretty much just download and unzip. For more details
-consult [the Book](https://nicenenerd.github.io/ukmm/).
+consult [the Book](https://nicenenerd.github.io/UKMM/).
 
 ## Building from Source
 
@@ -52,7 +52,7 @@ build --release` in the root repo folder. It may take a while.
 
 ## Contributing 
 
-Issues: https://github.com/NiceneNerd/ukmm/issues
+Issues: https://github.com/NiceneNerd/UKMM/issues
 
 Contributions are always welcome. Some notes about the process:
 
@@ -69,4 +69,4 @@ Contributions are always welcome. Some notes about the process:
 
 This software is licensed under the terms of the GNU General Public License,
 version 3 or later. The source is publicly available on
-[GitHub](https://github.com/NiceneNerd/ukmm).
+[GitHub](https://github.com/NiceneNerd/UKMM).

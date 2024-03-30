@@ -33,7 +33,7 @@ jobs:
         run: |
           REV=$(git rev-parse --short HEAD)
           git init
-          git remote add upstream https://x-access-token:${{secrets.GITHUB_TOKEN}}@github.com/NiceneNerd/ukmm
+          git remote add upstream https://x-access-token:${{secrets.GITHUB_TOKEN}}@github.com/NiceneNerd/UKMM
           git config user.name "Nicene Nerd"
           git config user.email "c.smith@tuta.io"
           git add -A .

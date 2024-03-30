@@ -13,7 +13,7 @@ Here are the most general rules for troubleshooting:
       go to [my Discord server](https://discord.gg/y7VJqMB329).
     - If you think the problem is probably with UKMM itself and would require
       changes to the code, [file an issue on
-      GitHub](https://github.com/NiceneNerd/ukmm/issues/new/choose).
+      GitHub](https://github.com/NiceneNerd/UKMM/issues/new/choose).
 - In case the program crashes completely, run it from a terminal/Command Prompt
   and check for panic output.
 
