@@ -422,7 +422,7 @@ impl App {
                 }
             }
         });
-        if ui.button("Update").clicked() {
+        if ui.button("Dev Update").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Update);
         }
