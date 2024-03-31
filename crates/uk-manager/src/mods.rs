@@ -186,14 +186,14 @@ impl Profile {
     pub fn iter(self_: MappedRef<'_, String, Profile, Profile>) -> ModIterator<'_> {
         ModIterator {
             profile: self_,
-            index:   0,
+            index: 0,
         }
     }
 }
 
 pub struct ModIterator<'a> {
     profile: MappedRef<'a, String, Profile, Profile>,
-    index:   usize,
+    index: usize,
 }
 
 impl<'a> Iterator for ModIterator<'a> {
@@ -316,22 +316,19 @@ impl Manager {
         &'a self,
         ref_manifest: &'m Manifest,
     ) -> impl Iterator<Item = Mod> + 'm {
-        self.mods().filter(|mod_| {
-            match mod_.manifest() {
-                Ok(manifest) => {
-                    !ref_manifest
-                        .content_files
-                        .is_disjoint(&manifest.content_files)
-                        || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
-                }
-                Err(_) => false,
+        self.mods().filter(|mod_| match mod_.manifest() {
+            Ok(manifest) => {
+                !ref_manifest
+                    .content_files
+                    .is_disjoint(&manifest.content_files)
+                    || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
             }
+            Err(_) => false,
         })
     }
 
     /// Add a mod to the list of installed mods. This function assumes that the
     /// mod at the provided path has already been validated.
-
     pub fn add(&self, mod_path: &Path, profile: Option<&String>) -> Result<Mod> {
         let mut old_version = None;
         let mod_name = {
@@ -432,6 +429,17 @@ impl Manager {
             log::warn!("Mod with ID {} does not exist, doing nothing", hash);
             Ok(Default::default())
         }
+    }
+
+    pub fn replace(&self, mut mod_: Mod, old_hash: usize) -> Result<Mod> {
+        let profile_data = self.profile();
+        mod_.enabled = profile_data.mods_mut().remove(&old_hash).unwrap().enabled;
+        profile_data.mods_mut().insert(mod_.hash, mod_.clone());
+        let mut load_order = profile_data.load_order_mut();
+        if let Some(idx) = load_order.iter().position(|m| *m == old_hash) {
+            load_order[idx] = mod_.hash;
+        }
+        Ok(mod_)
     }
 
     pub fn set_enabled(
@@ -561,11 +569,15 @@ pub fn convert_gfx(
     let temp = util::get_temp_folder();
     log::debug!("Temp folder: {}", temp.display());
     log::info!("Attempting to convert mod...");
-    let packer = ModPacker::new(path, &*temp, meta, vec![
-        core.settings()
+    let packer = ModPacker::new(
+        path,
+        &*temp,
+        meta,
+        vec![core
+            .settings()
             .dump()
-            .context("No dump available for current platform")?,
-    ])?;
+            .context("No dump available for current platform")?],
+    )?;
     let result_path = packer.pack()?;
     log::info!("Conversion complete");
     Ok(result_path)

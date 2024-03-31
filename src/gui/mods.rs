@@ -17,6 +17,7 @@ use super::{App, FocusedPane, Message, Sort};
 enum ContextMenuMessage {
     CopyToProfile(smartstring::alias::String),
     Extract,
+    Update,
     Uninstall,
     Toggle(bool),
     Move(usize),
@@ -48,9 +49,9 @@ impl App {
         egui::Frame::none()
             .inner_margin(Margin {
                 bottom: 4.0,
-                top:    4.0,
-                left:   4.0,
-                right:  -12.0,
+                top: 4.0,
+                left: 4.0,
+                right: -12.0,
             })
             .show(ui, |ui| {
                 ui.style_mut()
@@ -89,7 +90,11 @@ impl App {
                         header.col(|ui| {
                             let is_current = self.sort.0 == Sort::Enabled;
                             let label = if is_current {
-                                if self.sort.1 { "⏷" } else { "⏶" }
+                                if self.sort.1 {
+                                    "⏷"
+                                } else {
+                                    "⏶"
+                                }
                             } else {
                                 "  "
                             };
@@ -358,6 +363,9 @@ impl App {
                     ContextMenuMessage::Extract => {
                         self.do_update(Message::Extract);
                     }
+                    ContextMenuMessage::Update => {
+                        self.do_update(Message::UpdateMod);
+                    }
                     ContextMenuMessage::Uninstall => {
                         let prompt = jstr!("Are you sure you want to uninstall {&mod_.meta.name}?");
                         self.do_update(Message::Confirm(
@@ -414,6 +422,10 @@ impl App {
                 }
             }
         });
+        if ui.button("Update").clicked() {
+            ui.close_menu();
+            result = Some(ContextMenuMessage::Update);
+        }
         if ui.button("Uninstall").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Uninstall);

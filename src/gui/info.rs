@@ -47,13 +47,11 @@ impl ModInfo<'_> {
         let mut preview = PREVIEW.write();
         preview
             .entry(self.0.hash())
-            .or_insert_with(|| {
-                match load_preview(self.0) {
-                    Ok(pre) => pre,
-                    Err(e) => {
-                        log::error!("Error loading mod preview: {}", e);
-                        None
-                    }
+            .or_insert_with(|| match load_preview(self.0) {
+                Ok(pre) => pre,
+                Err(e) => {
+                    log::error!("Error loading mod preview: {}", e);
+                    None
                 }
             })
             .clone()
@@ -144,10 +142,11 @@ impl Component for ModInfo<'_> {
     }
 }
 
+pub static ROOTS: Lazy<RwLock<FxHashMap<u64, PathNode>>> =
+    Lazy::new(|| RwLock::new(FxHashMap::default()));
+
 pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
     ui.scope(|ui| {
-        static ROOTS: Lazy<RwLock<FxHashMap<u64, PathNode>>> =
-            Lazy::new(|| RwLock::new(FxHashMap::default()));
         ui.style_mut().override_text_style = Some(egui::TextStyle::Body);
         ui.spacing_mut().item_spacing.y = 4.;
         if !manifest.content_files.is_empty() {

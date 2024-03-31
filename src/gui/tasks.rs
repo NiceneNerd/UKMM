@@ -200,6 +200,31 @@ pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message>
     Ok(Message::ResetPacker)
 }
 
+pub fn update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
+    for mod_ in mods {
+        log::info!("Updating {}…", mod_.meta.name.as_str());
+        if let Some(folder) = rfd::FileDialog::new()
+            .set_title(jstr!("Update {mod_.meta.name.as_str()} from Folder").as_str())
+            .pick_folder()
+        {
+            let hash = mod_.hash();
+            uk_mod::pack::ModPacker::new(
+                folder,
+                &mod_.path,
+                None,
+                [core.settings().dump().unwrap()].into_iter().collect(),
+            )
+            .context("Failed to initialize mod packager")?
+            .pack()
+            .context("Failed to package mod")?;
+            let new_mod = ModReader::open_peek(mod_.path, vec![])?;
+            core.mod_manager_mut()
+                .replace(Mod::from_reader(new_mod), hash)?;
+        }
+    }
+    Ok(Message::ResetMods)
+}
+
 pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
     let mut errors = vec![];
     if let Some(folder) = rfd::FileDialog::new()
@@ -340,14 +365,12 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             language: uk_content::constants::Language::USen,
             profile: "Default".into(),
             dump,
-            deploy_config: gfx_folder.map(|gfx_folder| {
-                DeployConfig {
-                    auto: true,
-                    method: uk_manager::settings::DeployMethod::Copy,
-                    output: gfx_folder.join("BreathOfTheWild_UKMM"),
-                    cemu_rules: true,
-                    executable: gfx_folder.with_file_name("Cemu.exe").exists_then(),
-                }
+            deploy_config: gfx_folder.map(|gfx_folder| DeployConfig {
+                auto: true,
+                method: uk_manager::settings::DeployMethod::Copy,
+                output: gfx_folder.join("BreathOfTheWild_UKMM"),
+                cemu_rules: true,
+                executable: gfx_folder.with_file_name("Cemu.exe").exists_then(),
             }),
         })
     };
@@ -398,20 +421,16 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
                 profile: "Default".into(),
                 deploy_config: bcml_settings
                     .export_dir
-                    .map(|export_dir| {
-                        DeployConfig {
-                            output: export_dir,
-                            cemu_rules: bcml_settings.cemu_dir.is_some(),
-                            ..Default::default()
-                        }
+                    .map(|export_dir| DeployConfig {
+                        output: export_dir,
+                        cemu_rules: bcml_settings.cemu_dir.is_some(),
+                        ..Default::default()
                     })
                     .or_else(|| {
-                        bcml_settings.cemu_dir.map(|cemu_dir| {
-                            DeployConfig {
-                                output: cemu_dir.join("graphicPacks/BreathOfTheWild_UKMM"),
-                                cemu_rules: true,
-                                ..Default::default()
-                            }
+                        bcml_settings.cemu_dir.map(|cemu_dir| DeployConfig {
+                            output: cemu_dir.join("graphicPacks/BreathOfTheWild_UKMM"),
+                            cemu_rules: true,
+                            ..Default::default()
                         })
                     }),
                 dump: Arc::new(ResourceReader::from_unpacked_dirs(
@@ -437,11 +456,9 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
             settings.switch_config = Some(PlatformSettings {
                 language: bcml_settings.lang,
                 profile: "Default".into(),
-                deploy_config: bcml_settings.export_dir_nx.map(|export_dir| {
-                    DeployConfig {
-                        output: export_dir,
-                        ..Default::default()
-                    }
+                deploy_config: bcml_settings.export_dir_nx.map(|export_dir| DeployConfig {
+                    output: export_dir,
+                    ..Default::default()
                 }),
                 dump: Arc::new(ResourceReader::from_unpacked_dirs(
                     Some(game_dir),
@@ -563,11 +580,9 @@ pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
                     std::cmp::Ordering::Greater => {
                         sender.send(Message::OfferUpdate(release.clone())).unwrap()
                     }
-                    std::cmp::Ordering::Less => {
-                        sender
-                            .send(Message::SetChangelog(release.description()))
-                            .unwrap()
-                    }
+                    std::cmp::Ordering::Less => sender
+                        .send(Message::SetChangelog(release.description()))
+                        .unwrap(),
                     _ => (),
                 }
             }
