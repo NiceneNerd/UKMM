@@ -193,6 +193,7 @@ pub enum Message {
     InstallMod(Mod),
     Log(Entry),
     MigrateBcml,
+    ModUpdate,
     MoveSelected(usize),
     NewProfile,
     Noop,
@@ -206,7 +207,7 @@ pub enum Message {
     RenameProfile(String, String),
     RequestMeta(PathBuf),
     RequestOptions(Mod, bool),
-    ResetMods,
+    ResetMods(Option<Manifest>),
     ResetPacker,
     ResetPending,
     ResetSettings,
@@ -226,7 +227,7 @@ pub enum Message {
     StartDrag(usize),
     Toast(String),
     ToggleMods(Option<Vec<Mod>>, bool),
-    UpdateMod,
+    DevUpdate,
     UpdatePackageMeta(Meta),
     UninstallMods(Option<Vec<Mod>>),
     UpdateOptions(Mod),
@@ -258,6 +259,7 @@ pub struct App {
     displayed_mods: Vec<Mod>,
     selected: Vec<Mod>,
     install_queue: VecDeque<PathBuf>,
+    update_mod: Option<Mod>,
     error_queue: VecDeque<anyhow_ext::Error>,
     drag_index: Option<usize>,
     hover_index: Option<usize>,
@@ -366,6 +368,7 @@ impl App {
             theme: ui_state.theme,
             dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
             install_queue: Default::default(),
+            update_mod: Default::default(),
             error_queue: Default::default(),
             new_version: None,
             core,
@@ -479,9 +482,12 @@ impl App {
                     }
                     self.logs.push(entry);
                 }
-                Message::ResetMods => {
+                Message::ResetMods(dirty) => {
                     self.busy.set(false);
                     self.dirty_mut().clear();
+                    if let Some(dirty) = dirty {
+                        self.dirty_mut().extend(&dirty);
+                    }
                     self.mods = self.core.mod_manager().all_mods().collect();
                     self.selected.retain(|m| self.mods.contains(m));
                     self.do_update(Message::RefreshModsDisplay);
@@ -643,7 +649,7 @@ impl App {
                 Message::AddProfile => {
                     if let Some(profile) = self.new_profile.take() {
                         match self.core.change_profile(profile) {
-                            Ok(()) => self.do_update(Message::ResetMods),
+                            Ok(()) => self.do_update(Message::ResetMods(None)),
                             Err(e) => self.do_update(Message::Error(e)),
                         };
                     }
@@ -685,6 +691,7 @@ impl App {
                 }
                 Message::SelectFile => {
                     if let Some(mut paths) = rfd::FileDialog::new()
+                        .set_title("Select a Mod")
                         .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
                         .add_filter("UKMM Mod (*.zip)", &["zip"])
                         .add_filter("BCML Mod (*.bnp)", &["bnp"])
@@ -731,17 +738,27 @@ impl App {
                     }
                 }
                 Message::InstallMod(tmp_mod_) => {
+                    let update_mod = self.update_mod.take();
                     self.do_task(move |core| {
                         let mods = core.mod_manager();
-                        let mod_ = mods.add(&tmp_mod_.path, None)?;
-                        let hash = mod_.as_map_id();
-                        if !tmp_mod_.enabled_options.is_empty() {
-                            mods.set_enabled_options(hash, tmp_mod_.enabled_options)?;
+                        if let Some(mod_) = update_mod {
+                            let mut dirty = Manifest::default();
+                            dirty.extend(&tmp_mod_.manifest().unwrap_or_default());
+                            mods.replace(tmp_mod_, mod_.hash())?;
+                            log::info!("Updated {}", mod_.meta.name);
+                            dirty.extend(&mod_.manifest().unwrap_or_default());
+                            Ok(Message::ResetMods(Some(dirty)))
+                        } else {
+                            let mod_ = mods.add(&tmp_mod_.path, None)?;
+                            let hash = mod_.as_map_id();
+                            if !tmp_mod_.enabled_options.is_empty() {
+                                mods.set_enabled_options(hash, tmp_mod_.enabled_options)?;
+                            }
+                            mods.save()?;
+                            log::info!("Added mod {} to current profile", mod_.meta.name.as_str());
+                            let mod_ = unsafe { mods.get_mod(hash).unwrap_unchecked() };
+                            Ok(Message::AddMod(mod_))
                         }
-                        mods.save()?;
-                        log::info!("Added mod {} to current profile", mod_.meta.name.as_str());
-                        let mod_ = unsafe { mods.get_mod(hash).unwrap_unchecked() };
-                        Ok(Message::AddMod(mod_))
                     });
                 }
                 Message::UninstallMods(mods) => {
@@ -757,9 +774,24 @@ impl App {
                         Ok(Message::RemoveMods(mods))
                     });
                 }
-                Message::UpdateMod => {
+                Message::ModUpdate => {
+                    if let Some(file) = rfd::FileDialog::new()
+                        .set_title("Select a Mod")
+                        .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
+                        .add_filter("UKMM Mod (*.zip)", &["zip"])
+                        .add_filter("BCML Mod (*.bnp)", &["bnp"])
+                        .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
+                        .add_filter("All files (*.*)", &["*"])
+                        .pick_file()
+                    {
+                        let path = file.clone();
+                        self.update_mod = Some(self.selected.first().unwrap().clone());
+                        self.do_task(move |core| tasks::open_mod(&core, &path, None));
+                    }
+                }
+                Message::DevUpdate => {
                     let mods = self.selected.clone();
-                    self.do_task(move |core| tasks::update_mods(&core, mods));
+                    self.do_task(move |core| tasks::dev_update_mods(&core, mods));
                 }
                 Message::ToggleMods(mods, enabled) => {
                     let mods = mods.as_ref().unwrap_or(&self.selected);
@@ -853,7 +885,7 @@ impl App {
                 Message::Deploy => self.do_task(move |core| {
                     log::info!("Deploying current mod configuration");
                     core.deploy_manager().deploy()?;
-                    Ok(Message::ResetMods)
+                    Ok(Message::ResetMods(None))
                 }),
                 Message::ResetPending => self.do_task(|core| {
                     log::info!("Resetting pending deployment data");
@@ -884,7 +916,7 @@ impl App {
                             }
                             self.package_builder.borrow_mut().reset(self.platform());
                             self.do_update(Message::ClearSelect);
-                            self.do_update(Message::ResetMods);
+                            self.do_update(Message::ResetMods(None));
                         }
                         Err(e) => self.do_update(Message::Error(e)),
                     };
@@ -900,7 +932,7 @@ impl App {
                     }
                     self.package_builder.borrow_mut().reset(self.platform());
                     self.do_update(Message::ClearSelect);
-                    self.do_update(Message::ResetMods);
+                    self.do_update(Message::ResetMods(None));
                 }
                 Message::RequestOptions(mut mod_, update) => {
                     if !update {

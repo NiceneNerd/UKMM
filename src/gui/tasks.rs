@@ -181,7 +181,7 @@ pub fn apply_changes(core: &Manager, mods: Vec<Mod>, dirty: Option<Manifest>) ->
             .context("Failed to deploy update to merged mod(s)")?;
     }
     log::info!("Done");
-    Ok(Message::ResetMods)
+    Ok(Message::ResetMods(None))
 }
 
 pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message> {
@@ -200,13 +200,15 @@ pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message>
     Ok(Message::ResetPacker)
 }
 
-pub fn update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
+pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
+    let mut dirty = Manifest::default();
     for mod_ in mods {
         log::info!("Updating {}…", mod_.meta.name.as_str());
         if let Some(folder) = rfd::FileDialog::new()
             .set_title(jstr!("Update {mod_.meta.name.as_str()} from Folder").as_str())
             .pick_folder()
         {
+            dirty.extend(&mod_.manifest().unwrap_or_default());
             let hash = mod_.hash();
             uk_mod::pack::ModPacker::new(
                 folder,
@@ -218,11 +220,14 @@ pub fn update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
             .pack()
             .context("Failed to package mod")?;
             let new_mod = ModReader::open_peek(mod_.path, vec![])?;
+            dirty.extend(&new_mod.manifest());
             core.mod_manager_mut()
                 .replace(Mod::from_reader(new_mod), hash)?;
+        } else {
+            return Ok(Message::Noop);
         }
     }
-    Ok(Message::ResetMods)
+    Ok(Message::ResetMods(Some(dirty)))
 }
 
 pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {

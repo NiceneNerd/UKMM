@@ -18,6 +18,7 @@ enum ContextMenuMessage {
     CopyToProfile(smartstring::alias::String),
     Extract,
     Update,
+    DevUpdate,
     Uninstall,
     Toggle(bool),
     Move(usize),
@@ -363,8 +364,9 @@ impl App {
                     ContextMenuMessage::Extract => {
                         self.do_update(Message::Extract);
                     }
-                    ContextMenuMessage::Update => {
-                        self.do_update(Message::UpdateMod);
+                    ContextMenuMessage::Update => self.do_update(Message::ModUpdate),
+                    ContextMenuMessage::DevUpdate => {
+                        self.do_update(Message::DevUpdate);
                     }
                     ContextMenuMessage::Uninstall => {
                         let prompt = jstr!("Are you sure you want to uninstall {&mod_.meta.name}?");
@@ -422,9 +424,13 @@ impl App {
                 }
             }
         });
-        if ui.button("Dev Update").clicked() {
+        if ui.button("Update").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Update);
+        }
+        if ui.button("Dev Update").clicked() {
+            ui.close_menu();
+            result = Some(ContextMenuMessage::DevUpdate);
         }
         if ui.button("Uninstall").clicked() {
             ui.close_menu();

@@ -6,8 +6,8 @@ use super::*;
 
 #[derive(Debug)]
 pub struct MetaInputModal {
-    meta:   Option<Meta>,
-    path:   Option<PathBuf>,
+    meta: Option<Meta>,
+    path: Option<PathBuf>,
     sender: Sender<Message>,
 }
 
@@ -410,7 +410,7 @@ impl App {
                                     self.do_update(Message::Apply);
                                 }
                                 if ui.icon_text_button("Cancel", Icon::Cancel).clicked() {
-                                    self.do_update(Message::ResetMods);
+                                    self.do_update(Message::ResetMods(None));
                                 }
                             });
                         });
