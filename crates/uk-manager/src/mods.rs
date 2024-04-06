@@ -433,7 +433,9 @@ impl Manager {
 
     pub fn replace(&self, mut mod_: Mod, old_hash: usize) -> Result<Mod> {
         let profile_data = self.profile();
-        mod_.enabled = profile_data.mods_mut().remove(&old_hash).unwrap().enabled;
+        let old_mod = profile_data.mods_mut().remove(&old_hash).unwrap();
+        mod_.enabled = old_mod.enabled;
+        mod_.path = old_mod.path;
         profile_data.mods_mut().insert(mod_.hash, mod_.clone());
         let mut load_order = profile_data.load_order_mut();
         if let Some(idx) = load_order.iter().position(|m| *m == old_hash) {
