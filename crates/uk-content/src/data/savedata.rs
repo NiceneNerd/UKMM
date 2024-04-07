@@ -4,7 +4,7 @@ use anyhow::Context;
 use join_str::jstr;
 use roead::{
     aamp::hash_name,
-    byml::Byml,
+    byml::{map, Byml},
     sarc::{Sarc, SarcWriter},
 };
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
-    util::{bhash, HashMap, SortedDeleteSet},
+    util::{HashMap, SortedDeleteSet},
     Result, UKError,
 };
 
@@ -83,7 +83,7 @@ impl Ord for Flag {
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct SaveData {
     pub header: SaveDataHeader,
-    pub flags:  SortedDeleteSet<Flag>,
+    pub flags: SortedDeleteSet<Flag>,
 }
 
 impl TryFrom<&Byml> for SaveData {
@@ -100,7 +100,7 @@ impl TryFrom<&Byml> for SaveData {
                 .get(0)
                 .ok_or(UKError::MissingBymlKey("bgsvdata missing header"))?
                 .try_into()?,
-            flags:  array
+            flags: array
                 .get(1)
                 .ok_or(UKError::MissingBymlKey("bgsvdata missing flag array"))?
                 .as_array()?
@@ -117,7 +117,7 @@ impl TryFrom<&Byml> for SaveData {
 
 impl From<SaveData> for Byml {
     fn from(val: SaveData) -> Self {
-        bhash!(
+        map!(
             "file_list" => [
                 val.header.into(),
                 val.flags.into_iter().map(Byml::from).collect::<Byml>(),
@@ -125,7 +125,7 @@ impl From<SaveData> for Byml {
             .into_iter()
             .collect::<Byml>(),
             "save_info" => Byml::Array(vec![
-                bhash!(
+                map!(
                     "directory_num" => Byml::I32(8),
                     "is_build_machine" => Byml::Bool(true),
                     "revision" => Byml::I32(18203),
@@ -144,7 +144,7 @@ impl Mergeable for SaveData {
         );
         Self {
             header: self.header.clone(),
-            flags:  self.flags.diff(&other.flags),
+            flags: self.flags.diff(&other.flags),
         }
     }
 
@@ -156,7 +156,7 @@ impl Mergeable for SaveData {
         );
         Self {
             header: self.header.clone(),
-            flags:  self.flags.merge(&diff.flags),
+            flags: self.flags.merge(&diff.flags),
         }
     }
 }
@@ -169,7 +169,7 @@ impl SaveData {
         for _ in 0..total {
             out.push(Self {
                 header: self.header.clone(),
-                flags:  iter.by_ref().take(8192).collect(),
+                flags: iter.by_ref().take(8192).collect(),
             });
         }
         out

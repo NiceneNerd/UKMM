@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use itertools::Itertools;
 use join_str::jstr;
-use roead::aamp::*;
+use roead::{aamp::*, byml::map};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
@@ -19,7 +19,7 @@ use crate::{
 #[cfg_attr(feature = "ui", derive(Editable))]
 pub struct ModelData {
     pub folder: String64,
-    pub units:  DeleteMap<String64, String64>,
+    pub units: DeleteMap<String64, String64>,
 }
 
 impl TryFrom<&ParameterList> for ModelData {
@@ -94,14 +94,14 @@ impl Mergeable for ModelData {
     fn diff(&self, other: &Self) -> Self {
         Self {
             folder: other.folder,
-            units:  self.units.diff(&other.units),
+            units: self.units.diff(&other.units),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
             folder: diff.folder,
-            units:  self.units.merge(&diff.units),
+            units: self.units.merge(&diff.units),
         }
     }
 }
@@ -179,11 +179,11 @@ impl From<ModelList> for ParameterIO {
     fn from(val: ModelList) -> Self {
         Self {
             param_root: ParameterList {
-                objects: pobjs!(
+                objects: objs!(
                     "ControllerInfo" => val.controller_info,
                     "Attention" => val.attention,
                 ),
-                lists:   plists!(
+                lists: lists!(
                     "ModelData" => ParameterList::new()
                         .with_lists(
                             val.model_data.into_iter().map(|(i, list)| {
@@ -202,8 +202,8 @@ impl From<ModelList> for ParameterIO {
                     .enumerate()
                     .map(|(i, obj)| (jstr!("Locator_{&lexical::to_string(i)}"), obj)),
             ),
-            version:    0,
-            data_type:  "xml".into(),
+            version: 0,
+            data_type: "xml".into(),
         }
     }
 }
@@ -216,12 +216,10 @@ impl Mergeable for ModelList {
             model_data: other
                 .model_data
                 .iter()
-                .filter_map(|(i, data)| {
-                    match self.model_data.get(i) {
-                        Some(v) if v == data => None,
-                        Some(v) if v != data => Some((*i, v.diff(data))),
-                        _ => Some((*i, data.clone())),
-                    }
+                .filter_map(|(i, data)| match self.model_data.get(i) {
+                    Some(v) if v == data => None,
+                    Some(v) if v != data => Some((*i, v.diff(data))),
+                    _ => Some((*i, data.clone())),
                 })
                 .collect(),
             anm_target: simple_index_diff(&self.anm_target, &other.anm_target),
@@ -241,14 +239,14 @@ impl Mergeable for ModelList {
                     .copied()
                     .collect();
                 keys.into_iter()
-                    .map(|i| {
-                        match (self.model_data.get(&i), diff.model_data.get(&i)) {
+                    .map(
+                        |i| match (self.model_data.get(&i), diff.model_data.get(&i)) {
                             (Some(data), Some(diff_data)) => (i, data.merge(diff_data)),
                             (Some(data), None) => (i, data.clone()),
                             (None, Some(diff_data)) => (i, diff_data.clone()),
                             _ => unreachable!(),
-                        }
-                    })
+                        },
+                    )
                     .collect()
             },
             anm_target: simple_index_merge(&self.anm_target, &diff.anm_target),
@@ -303,8 +301,8 @@ impl InfoSource for ModelList {
             if fm_center.x + fm_center.y + fm_center.z + fm_height + fm_radius > 0.0 {
                 info.insert(
                     "farModelCulling".into(),
-                    bhash!(
-                        "center" => bhash!(
+                    map!(
+                        "center" => map!(
                             "X" => fm_center.x.into(),
                             "Y" => fm_center.y.into(),
                             "Z" => fm_center.z.into()

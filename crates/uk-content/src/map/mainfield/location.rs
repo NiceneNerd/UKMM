@@ -1,11 +1,11 @@
-use roead::byml::Byml;
+use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
-    util::{bhash, DeleteVec, SortedDeleteMap},
+    util::{DeleteVec, SortedDeleteMap},
     Result, UKError,
 };
 
@@ -75,7 +75,7 @@ impl From<Location> for Byml {
                 entries
                     .into_iter()
                     .map(|pos| -> Byml {
-                        bhash!(
+                        map!(
                             "MessageID" => Byml::String(message.clone()),
                             "ShowLevel" => Byml::I32(pos.show_level as i32),
                             "Translate" => pos.translate,

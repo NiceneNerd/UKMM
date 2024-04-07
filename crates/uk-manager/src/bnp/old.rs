@@ -2,11 +2,15 @@ use std::{path::Path, str::FromStr};
 
 use anyhow::{bail, Context, Result};
 use fs_err as fs;
-use roead::{aamp::*, byml::Byml, sarc::Sarc, types::*};
+use roead::{
+    aamp::*,
+    byml::{map, Byml},
+    sarc::Sarc,
+    types::*,
+};
 use serde::Deserialize;
 use serde_yaml::Value;
 use uk_content::{
-    bhash,
     constants::Language,
     message::{Entry, Msyt},
     util::{HashMap, IteratorExt},
@@ -18,29 +22,25 @@ fn value_to_byml(value: Value) -> Result<Byml> {
     let by = match value {
         Value::Null => Byml::Null,
         Value::Bool(v) => Byml::Bool(v),
-        Value::Number(v) => {
-            match v.as_i64() {
-                Some(v) => Byml::I32(v as i32),
-                None => {
-                    v.as_f64()
-                        .map(|v| Byml::Float(v as f32))
-                        .context("Invalid numeric value")?
-                }
-            }
-        }
+        Value::Number(v) => match v.as_i64() {
+            Some(v) => Byml::I32(v as i32),
+            None => v
+                .as_f64()
+                .map(|v| Byml::Float(v as f32))
+                .context("Invalid numeric value")?,
+        },
         Value::String(v) => Byml::String(v.into()),
         Value::Sequence(seq) => {
             Byml::Array(seq.into_iter().map(value_to_byml).collect::<Result<_>>()?)
         }
-        Value::Mapping(map) => {
-            map.into_iter()
-                .map(|(k, v)| -> Result<(smartstring::alias::String, Byml)> {
-                    let k = k.as_str().context("Bad BYML key")?.into();
-                    let v = value_to_byml(v)?;
-                    Ok((k, v))
-                })
-                .collect::<Result<Byml>>()?
-        }
+        Value::Mapping(map) => map
+            .into_iter()
+            .map(|(k, v)| -> Result<(smartstring::alias::String, Byml)> {
+                let k = k.as_str().context("Bad BYML key")?.into();
+                let v = value_to_byml(v)?;
+                Ok((k, v))
+            })
+            .collect::<Result<Byml>>()?,
         Value::Tagged(v) => {
             if v.tag == "u" {
                 Byml::U32(v.value.as_u64().context("Invalid u32")? as u32)
@@ -151,10 +151,9 @@ fn handle_aamp_pair<T>(
 ) -> Option<Result<(Name, T)>> {
     match key.as_str() {
         Some(k) => Some(from(value).map(|v| (Name::from_str(k), v))),
-        None => {
-            key.as_u64()
-                .map(|k| from(value).map(|v| (Name::from(k as u32), v)))
-        }
+        None => key
+            .as_u64()
+            .map(|k| from(value).map(|v| (Name::from(k as u32), v))),
     }
 }
 
@@ -165,10 +164,9 @@ fn pobj_from_value(value: Value) -> Result<ParameterObject> {
     if value.tag != "obj" {
         bail!("Not a parameter object")
     }
-    let Value::Mapping(map) = value
-        .value else {
-            bail!("Invalid parameter object: not a map")
-        };
+    let Value::Mapping(map) = value.value else {
+        bail!("Invalid parameter object: not a map")
+    };
     let obj = map
         .into_iter()
         .filter_map(|(k, v)| handle_aamp_pair((k, v), param_from_value))
@@ -234,19 +232,18 @@ impl<'a> Bnp2xConverter<'a> {
                     Ok(Err(e)) => anyhow_ext::bail!(e),
                     Ok(Ok(_)) => (),
                     Err(e) => {
-                        anyhow::bail!(
-                            e.downcast::<String>()
-                                .or_else(|e| {
-                                    e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
-                                })
-                                .unwrap_or_else(|_| {
-                                    Box::new(
-                                        "An unknown error occured, check the log for possible \
+                        anyhow::bail!(e
+                            .downcast::<String>()
+                            .or_else(|e| {
+                                e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
+                            })
+                            .unwrap_or_else(|_| {
+                                Box::new(
+                                    "An unknown error occured, check the log for possible \
                                          details."
-                                            .to_string(),
-                                    )
-                                })
-                        )
+                                        .to_string(),
+                                )
+                            }))
                     }
                 }
             }
@@ -380,10 +377,7 @@ impl<'a> Bnp2xConverter<'a> {
             let new_log = log
                 .into_iter()
                 .map(|(data_type, diff)| {
-                    (
-                        data_type,
-                        bhash!("add" => diff, "del" => Byml::Array(vec![])),
-                    )
+                    (data_type, map!("add" => diff, "del" => Byml::Array(vec![])))
                 })
                 .collect::<Byml>();
             fs::write(gdata_log, new_log.to_text())?;
@@ -398,7 +392,7 @@ impl<'a> Bnp2xConverter<'a> {
             let log = Byml::from_text(fs::read_to_string(&sdata_log)?)?;
             fs::write(
                 sdata_log,
-                bhash!("add" => log, "del" => Byml::Array(vec![])).to_text(),
+                map!("add" => log, "del" => Byml::Array(vec![])).to_text(),
             )?;
         }
         Ok(())
@@ -418,8 +412,8 @@ impl<'a> Bnp2xConverter<'a> {
                     let Value::Mapping(mut diff) = diff else {
                         bail!("Bad map log")
                     };
-                    let new_diff = bhash!(
-                        "Objs" => bhash!(
+                    let new_diff = map!(
+                        "Objs" => map!(
                             "add" => diff.remove("add")
                                 .map(value_to_byml)
                                 .transpose()?
@@ -442,7 +436,7 @@ impl<'a> Bnp2xConverter<'a> {
                                 .transpose()?
                                 .unwrap_or_default()
                         ),
-                        "Rails" => bhash!(
+                        "Rails" => map!(
                             "add" => Byml::Array(vec![]),
                             "del" => Byml::Array(vec![]),
                             "mod" => Byml::Map(Default::default())

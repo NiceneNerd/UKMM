@@ -1,15 +1,11 @@
 use std::collections::BTreeMap;
 
-use roead::byml::Byml;
+use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
-use crate::{
-    prelude::*,
-    util::{bhash, DeleteVec},
-    Result, UKError,
-};
+use crate::{prelude::*, util::DeleteVec, Result, UKError};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(feature = "ui", derive(Editable))]
@@ -72,20 +68,18 @@ impl TryFrom<&Byml> for StatusEffectValues {
 impl From<StatusEffectValues> for Byml {
     fn from(val: StatusEffectValues) -> Self {
         match val {
-            StatusEffectValues::Special => Byml::Array(vec![bhash!("special" => Byml::Bool(true))]),
-            StatusEffectValues::Normal(values) => {
-                Byml::Array(vec![
-                    bhash!(
-                        "special" => Byml::Bool(false)
-                    ),
-                    bhash!(
-                        "values" => values
-                            .into_iter()
-                            .map(|v| bhash!("val" => Byml::Float(v)))
-                            .collect::<Byml>()
-                    ),
-                ])
-            }
+            StatusEffectValues::Special => Byml::Array(vec![map!("special" => Byml::Bool(true))]),
+            StatusEffectValues::Normal(values) => Byml::Array(vec![
+                map!(
+                    "special" => Byml::Bool(false)
+                ),
+                map!(
+                    "values" => values
+                        .into_iter()
+                        .map(|v| map!("val" => Byml::Float(v)))
+                        .collect::<Byml>()
+                ),
+            ]),
         }
     }
 }
@@ -136,12 +130,11 @@ impl TryFrom<&Byml> for StatusEffectList {
 
 impl From<StatusEffectList> for Byml {
     fn from(val: StatusEffectList) -> Self {
-        Self::Array(vec![
-            val.0
-                .into_iter()
-                .map(|(effect, values)| (effect.to_string(), values.into()))
-                .collect::<Byml>(),
-        ])
+        Self::Array(vec![val
+            .0
+            .into_iter()
+            .map(|(effect, values)| (effect.to_string(), values.into()))
+            .collect::<Byml>()])
     }
 }
 

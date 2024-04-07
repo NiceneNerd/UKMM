@@ -1,14 +1,10 @@
 use anyhow::Context;
-use roead::byml::Byml;
+use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
-use crate::{
-    prelude::*,
-    util::{bhash, SortedDeleteMap},
-    Result, UKError,
-};
+use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(feature = "ui", derive(Editable))]
@@ -59,7 +55,7 @@ impl From<ActorInfo> for Byml {
                 )
             })
             .unzip();
-        bhash!(
+        map!(
             "Actors" => Byml::Array(actors),
             "Hashes" => Byml::Array(hashes)
         )

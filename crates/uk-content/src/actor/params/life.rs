@@ -9,7 +9,7 @@ use crate::{
     actor::{InfoSource, ParameterResource},
     constants::{Time, Weather},
     prelude::*,
-    util::{params, DeleteSet, IteratorExt},
+    util::{DeleteSet, IteratorExt},
     Result, UKError,
 };
 
@@ -474,18 +474,14 @@ mod tests {
         let lifecondition = super::LifeCondition::try_from(&pio).unwrap();
         let mut info = roead::byml::Map::default();
         lifecondition.update_info(&mut info).unwrap();
-        assert!(
-            info["invalidTimes"]
-                .as_array()
-                .unwrap()
-                .contains(&Byml::String("Morning_B".into()))
-        );
-        assert!(
-            info["invalidWeathers"]
-                .as_array()
-                .unwrap()
-                .contains(&Byml::String("ThunderRain".into()))
-        );
+        assert!(info["invalidTimes"]
+            .as_array()
+            .unwrap()
+            .contains(&Byml::String("Morning_B".into())));
+        assert!(info["invalidWeathers"]
+            .as_array()
+            .unwrap()
+            .contains(&Byml::String("ThunderRain".into())));
         assert_eq!(info["traverseDist"], Byml::Float(0.0));
         assert_eq!(info["yLimitAlgo"], Byml::String("NoLimit".into()));
     }

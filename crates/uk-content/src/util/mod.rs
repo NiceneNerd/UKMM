@@ -12,7 +12,7 @@ use roead::{
 
 pub fn diff_plist<P: ParameterListing + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
-        lists:   other
+        lists: other
             .lists()
             .0
             .iter()
@@ -71,7 +71,7 @@ pub fn merge_plist<P: ParameterListing + From<ParameterList>>(base: &P, diff: &P
             }
             new
         },
-        lists:   {
+        lists: {
             let mut new = base.lists().clone();
             for (k, v) in &diff.lists().0 {
                 if !new.0.contains_key(k) {
@@ -263,94 +263,6 @@ impl From<&BymlHashValue> for Byml {
     }
 }
 
-/// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
-#[macro_export]
-macro_rules! bhash {
-    (@single $($x:tt)*) => (());
-    (@count $($rest:expr),*) => (<[()]>::len(&[$(bhash!(@single $rest)),*]));
-
-    ($($key:expr => $value:expr,)+) => { bhash!($($key => $value),+) };
-    ($($key:expr => $value:expr),*) => {
-        {
-            let _cap = bhash!(@count $($key),*);
-            let mut _map = ::roead::byml::Map::default();
-            _map.reserve(_cap);
-
-            $(
-                let _ = _map.insert(::smartstring::alias::String::from($key), $value);
-            )*
-            ::roead::byml::Byml::Map(_map)
-        }
-    };
-}
-pub use bhash;
-
-/// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
-#[macro_export]
-macro_rules! params {
-    (@single $($x:tt)*) => (());
-    (@count $($rest:expr),*) => (<[()]>::len(&[$(params!(@single $rest)),*]));
-
-    ($($key:expr => $value:expr,)+) => { params!($($key => $value),+) };
-    ($($key:expr => $value:expr),*) => {
-        {
-            let _cap = params!(@count $($key),*);
-            let mut _map = ::indexmap::IndexMap::<::roead::aamp::Name, ::roead::aamp::Parameter, ::std::hash::BuildHasherDefault<::rustc_hash::FxHasher>>::default();
-            _map.reserve(_cap);
-
-            $(
-                let _ = _map.insert($key.into(), $value);
-            )*
-            ::roead::aamp::ParameterObject(_map)
-        }
-    };
-}
-pub use params;
-
-/// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
-#[macro_export]
-macro_rules! pobjs {
-    (@single $($x:tt)*) => (());
-    (@count $($rest:expr),*) => (<[()]>::len(&[$(pobjs!(@single $rest)),*]));
-
-    ($($key:expr => $value:expr,)+) => { pobjs!($($key => $value),+) };
-    ($($key:expr => $value:expr),*) => {
-        {
-            let _cap = pobjs!(@count $($key),*);
-            let mut _map = ::indexmap::IndexMap::<::roead::aamp::Name, ::roead::aamp::ParameterObject, ::std::hash::BuildHasherDefault<::rustc_hash::FxHasher>>::default();
-            _map.reserve(_cap);
-
-            $(
-                let _ = _map.insert($key.into(), $value);
-            )*
-            ::roead::aamp::ParameterObjectMap(_map)
-        }
-    };
-}
-pub use pobjs;
-
-/// Adapted from https://github.com/bluss/maplit/blob/master/src/lib.rs
-#[macro_export]
-macro_rules! plists {
-    (@single $($x:tt)*) => (());
-    (@count $($rest:expr),*) => (<[()]>::len(&[$(plists!(@single $rest)),*]));
-
-    ($($key:expr => $value:expr,)+) => { plists!($($key => $value),+) };
-    ($($key:expr => $value:expr),*) => {
-        {
-            let _cap = plists!(@count $($key),*);
-            let mut _map = ::indexmap::IndexMap::<::roead::aamp::Name, ::roead::aamp::ParameterList, ::std::hash::BuildHasherDefault<::rustc_hash::FxHasher>>::default();
-            _map.reserve(_cap);
-
-            $(
-                let _ = _map.insert($key.into(), $value);
-            )*
-            ::roead::aamp::ParameterListMap(_map)
-        }
-    };
-}
-pub use plists;
-
 pub trait ParameterExt {
     fn as_safe_string<const N: usize>(&self) -> roead::Result<FixedSafeString<N>>;
 }
@@ -362,12 +274,10 @@ impl ParameterExt for Parameter {
             Self::String64(s) => Ok(s.as_str().into()),
             Self::String256(s) => Ok(s.as_str().into()),
             Self::StringRef(s) => Ok(s.as_str().into()),
-            _ => {
-                Err(roead::Error::TypeError(
-                    format!("{self:#?}").into(),
-                    "a string",
-                ))
-            }
+            _ => Err(roead::Error::TypeError(
+                format!("{self:#?}").into(),
+                "a string",
+            )),
         }
     }
 }
@@ -406,10 +316,10 @@ where
 impl<T> IteratorExt for T where T: Iterator {}
 
 pub struct NamedEnumerate<'a, I> {
-    iter:    I,
-    count:   usize,
-    name:    &'a str,
-    buffer:  Vec<u8>,
+    iter: I,
+    count: usize,
+    name: &'a str,
+    buffer: Vec<u8>,
     padding: Option<(&'static str, Vec<u8>)>,
 }
 

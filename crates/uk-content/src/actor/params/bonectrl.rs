@@ -10,14 +10,14 @@ use uk_util::OptionResultExt;
 use crate::{
     actor::ParameterResource,
     prelude::*,
-    util::{params, plists, pobjs, DeleteSet, IndexMap},
+    util::{DeleteSet, IndexMap},
     Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ui", derive(Editable))]
 pub struct BoneControl {
-    pub objects:     ParameterObjectMap,
+    pub objects: ParameterObjectMap,
     pub bone_groups: IndexMap<String64, DeleteSet<String64>>,
 }
 
@@ -34,7 +34,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         Ok(Self {
-            objects:     pio.objects().clone(),
+            objects: pio.objects().clone(),
             bone_groups: pio
                 .list("BoneGroups")
                 .ok_or(UKError::MissingAampKey(
@@ -78,7 +78,7 @@ impl From<BoneControl> for ParameterIO {
         Self {
             param_root: ParameterList {
                 objects: val.objects,
-                lists:   plists!(
+                lists: lists!(
                     "BoneGroups" => ParameterList {
                         lists: val
                             .bone_groups
@@ -88,7 +88,7 @@ impl From<BoneControl> for ParameterIO {
                                 (
                                     jstr!("BoneGroup_{&lexical::to_string(i)}"),
                                     ParameterList {
-                                        objects: pobjs!(
+                                        objects: objs!(
                                             "Param" => params!("GroupName" => Parameter::String64(Box::new(group))),
                                             "Bones" => bones
                                                 .into_iter()
@@ -110,8 +110,8 @@ impl From<BoneControl> for ParameterIO {
                     }
                 ),
             },
-            data_type:  "xml".into(),
-            version:    0,
+            data_type: "xml".into(),
+            version: 0,
         }
     }
 }
@@ -119,7 +119,7 @@ impl From<BoneControl> for ParameterIO {
 impl Mergeable for BoneControl {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            objects:     crate::util::diff_plist(
+            objects: crate::util::diff_plist(
                 &ParameterList {
                     objects: self.objects.clone(),
                     ..Default::default()
@@ -150,7 +150,7 @@ impl Mergeable for BoneControl {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            objects:     crate::util::merge_plist(
+            objects: crate::util::merge_plist(
                 &ParameterList {
                     objects: self.objects.clone(),
                     ..Default::default()

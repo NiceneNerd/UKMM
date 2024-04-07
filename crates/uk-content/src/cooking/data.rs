@@ -1,5 +1,5 @@
 use anyhow::Context;
-use roead::byml::Byml;
+use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
@@ -7,7 +7,7 @@ use uk_ui_derive::Editable;
 use crate::{
     cooking::{recipe::Recipe, single_recipe::SingleRecipe, system::System},
     prelude::*,
-    util::{bhash, DeleteVec},
+    util::DeleteVec,
     Result, UKError,
 };
 
@@ -52,7 +52,7 @@ impl TryFrom<&Byml> for CookData {
 
 impl From<CookData> for Byml {
     fn from(val: CookData) -> Self {
-        bhash!(
+        map!(
             "Recipes" => val.recipes.iter().map(Byml::from).collect(),
             "SingleRecipes" => val.single_recipes.iter().map(Byml::from).collect(),
             "System" => val.system.into(),

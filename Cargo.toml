@@ -29,7 +29,7 @@ serde_yaml = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
 zip = { workspace = true, default-features = false, features = ["deflate"]}
 
-astrolabe = "0.2.0"
+astrolabe = "0.5.1"
 egui_commonmark = { git = "https://github.com/NiceneNerd/egui_commonmark", features = ["svg", "fetch"] }
 egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
 env_logger = "0.10.0"
@@ -75,9 +75,9 @@ dashmap = "5.4"
 dircpy = "0.3.12"
 dirs2 = "3"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe", default-features = false }
-flume = "0.10.14"
+flume = "0.11.0"
 fs-err = "2.9"
-indexmap = "1.9"
+indexmap = { version = "2.2.6", features = ["serde"] }
 join_str = "0.1.0"
 jwalk = "0.8.1"
 lenient_semver = { version = "0.4.2", features = ["version_serde"] }
@@ -88,7 +88,7 @@ parking_lot = "0.12.1"
 path-slash = "0.2.1"
 rayon = "1.6"
 rfd = "0.11.1"
-roead = "0.23.0"
+roead = "0.25.1"
 rstb = { version = "0.8.1", features = ["complex", "stable"] }
 rustc-hash = "1.1.0"
 sanitise-file-name = "1"

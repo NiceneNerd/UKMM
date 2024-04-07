@@ -17,7 +17,7 @@ use crate::{prelude::*, Result, UKError};
 impl Mergeable for Msyt {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            msbt:    self.msbt.clone(),
+            msbt: self.msbt.clone(),
             entries: other
                 .entries
                 .iter()
@@ -43,7 +43,7 @@ impl Mergeable for Msyt {
                 nli1: self.msbt.nli1.clone(),
                 tsy1: self.msbt.tsy1.clone(),
             },
-            entries,
+            entries: entries.into_iter().collect(),
         }
     }
 }

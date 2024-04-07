@@ -1,11 +1,11 @@
-use roead::byml::Byml;
+use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
 use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
-    util::{bhash, DeleteMap, DeleteSet},
+    util::{DeleteMap, DeleteSet},
     Result, UKError,
 };
 
@@ -49,7 +49,7 @@ impl From<ResidentEvents> for Byml {
             .iter()
             .flat_map(|(entry, files)| {
                 files.iter().map(|file| {
-                    bhash!(
+                    map!(
                         "entry" => Byml::String(entry.clone()),
                         "file" => Byml::String(file.clone())
                     )

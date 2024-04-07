@@ -1,12 +1,11 @@
 use anyhow::{Context, Result};
 use fs_err as fs;
 use roead::{
-    byml::Byml,
+    byml::{map, Byml},
     yaz0::{compress, decompress},
 };
 use rustc_hash::FxHashMap;
 use smartstring::alias::String;
-use uk_content::bhash;
 
 use super::BnpConverter;
 
@@ -47,7 +46,7 @@ impl BnpConverter {
                     .iter()
                     .map(|(k, v)| (k.clone(), v.clone())),
             );
-            let dstatic = bhash!(
+            let dstatic = map!(
                 "StartPos" => dstatic.into_values().collect()
             );
             let dest_path = self
