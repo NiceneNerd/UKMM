@@ -1,5 +1,5 @@
 [package]
-name = "uk-ui"
+name = "nk-ui"
 edition = "2021"
 version.workspace = true
 

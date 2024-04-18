@@ -1,6 +1,6 @@
 use std::{hash::Hash, ops::DerefMut};
 
-use uk_ui::{
+use nk_ui::{
     editor::{EditableDisplay, EditableValue},
     egui::{self, Layout},
     ext::UiExt,

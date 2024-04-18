@@ -6,19 +6,19 @@ use std::{
 };
 
 use anyhow::Result;
+use nk_ui::{
+    egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
+    ext::UiExt,
+    icons::{self, IconButtonExt},
+    visuals::Theme,
+};
+use nk_util::{Lazy, OptionExt, OptionResultExt};
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
 use uk_content::constants::Language;
 use uk_manager::settings::{DeployConfig, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
-use uk_ui::{
-    egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
-    ext::UiExt,
-    icons::{self, IconButtonExt},
-    visuals::Theme,
-};
-use uk_util::{Lazy, OptionExt, OptionResultExt};
 
 use super::{App, Message};
 
@@ -520,7 +520,7 @@ impl App {
                                 .selected_text(self.theme.name())
                                 .show_ui(ui, |ui| {
                                     let mut current_theme = self.theme;
-                                    for theme in uk_ui::visuals::Theme::iter() {
+                                    for theme in nk_ui::visuals::Theme::iter() {
                                         if ui
                                             .selectable_value(
                                                 &mut current_theme,

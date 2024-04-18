@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
 
@@ -52,7 +52,7 @@ impl From<RagdollConfig> for ParameterIO {
     }
 }
 
-impl Mergeable for RagdollConfig {
+impl MergeableImpl for RagdollConfig {
     fn diff(&self, other: &Self) -> Self {
         Self {
             attack_type_impulse_data: util::diff_pobj(

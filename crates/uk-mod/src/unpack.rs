@@ -18,6 +18,7 @@ use join_str::jstr;
 use jwalk::WalkDir;
 use lenient_semver::Version;
 use mmap_rs::{Mmap, MmapOptions};
+use nk_util::PathExt as UkPathExt;
 use ouroboros::self_referencing;
 use parking_lot::Mutex;
 use path_slash::PathExt;
@@ -32,12 +33,11 @@ use uk_content::{
     canonicalize,
     constants::Language,
     platform_content, platform_prefixes,
-    prelude::{Endian, Mergeable, Resource},
+    prelude::{Endian, MergeableImpl, Resource},
     resource::{MergeableResource, ResourceData, SarcMap},
     util::{HashMap, IndexSet},
 };
 use uk_reader::{ResourceLoader, ResourceReader};
-use uk_util::PathExt as UkPathExt;
 
 use crate::{Manifest, Meta, ModOption};
 

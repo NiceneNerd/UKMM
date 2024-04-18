@@ -16,14 +16,14 @@ use editor::EditorTab;
 use eframe::egui::{panel::Side, Frame};
 use flume::{Receiver, Sender};
 use fs_err as fs;
-use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
-use serde::Deserialize;
-use uk_content::{canonicalize, prelude::Mergeable, resource::ResourceData};
-use uk_manager::core::Manager;
-use uk_ui::{
+use nk_ui::{
     egui,
     egui_dock::{self, Tree},
 };
+use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
+use serde::Deserialize;
+use uk_content::{canonicalize, prelude::MergeableImpl, resource::ResourceData};
+use uk_manager::core::Manager;
 
 use crate::project::Project;
 
@@ -40,7 +40,7 @@ pub enum Message {
 
 #[derive(Debug, Default, Deserialize)]
 struct UiState {
-    theme: uk_ui::visuals::Theme,
+    theme: nk_ui::visuals::Theme,
 }
 
 struct App {
@@ -56,15 +56,15 @@ struct App {
 
 impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
-        uk_ui::icons::load_icons();
-        uk_ui::load_fonts(&cc.egui_ctx);
+        nk_ui::icons::load_icons();
+        nk_ui::load_fonts(&cc.egui_ctx);
         let core = Arc::new(Manager::init().expect("Core manager failed to initialize"));
         let ui_state: UiState = fs::read_to_string(core.settings().state_file())
             .context("")
             .and_then(|s| serde_json::from_str(&s).context(""))
             .unwrap_or_default();
         ui_state.theme.set_theme(&cc.egui_ctx);
-        let mut dock_style = uk_ui::visuals::style_dock(&cc.egui_ctx.style());
+        let mut dock_style = nk_ui::visuals::style_dock(&cc.egui_ctx.style());
         dock_style.show_close_buttons = true;
         Self {
             core,

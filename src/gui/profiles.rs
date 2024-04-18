@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
 use fs_err as fs;
-use smartstring::alias::String as SmartString;
-use uk_content::util::HashMap;
-use uk_manager::mods::Profile as ProfileData;
-use uk_ui::{
+use nk_ui::{
     egui::{self, text::LayoutJob, Layout, TextStyle},
     icons::IconButtonExt,
 };
+use smartstring::alias::String as SmartString;
+use uk_content::util::HashMap;
+use uk_manager::mods::Profile as ProfileData;
 
 use super::{App, Message};
 
@@ -100,7 +100,7 @@ impl ProfileManagerState {
                         ui.horizontal(|ui| {
                             ui.text_edit_singleline(new_name);
                             if ui
-                                .icon_button(uk_ui::icons::Icon::Check)
+                                .icon_button(nk_ui::icons::Icon::Check)
                                 .on_hover_text("Save")
                                 .clicked()
                             {

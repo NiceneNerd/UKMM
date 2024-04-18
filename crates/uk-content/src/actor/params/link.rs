@@ -1,8 +1,8 @@
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     actor::{InfoSource, ParameterResource},
@@ -101,7 +101,7 @@ impl From<ActorLink> for ParameterIO {
     }
 }
 
-impl Mergeable for ActorLink {
+impl MergeableImpl for ActorLink {
     fn diff(&self, other: &Self) -> Self {
         Self {
             targets:  util::diff_pobj(&self.targets, &other.targets),

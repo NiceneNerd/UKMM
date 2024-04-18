@@ -13,8 +13,8 @@ pub use prelude::*;
 // };
 // use serde::{Deserialize, Serialize};
 
-// pub trait TargetParams: Clone + Mergeable + ParameterResource {}
-// impl<T> TargetParams for T where T: Clone + Mergeable + ParameterResource {}
+// pub trait TargetParams: Clone + MergeableImpl + ParameterResource {}
+// impl<T> TargetParams for T where T: Clone + MergeableImpl + ParameterResource {}
 
 // #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Editable)]
 // pub enum LinkTarget<T: TargetParams> {
@@ -29,7 +29,7 @@ pub use prelude::*;
 //     }
 // }
 
-// impl<T: TargetParams> Mergeable for LinkTarget<T> {
+// impl<T: TargetParams> MergeableImpl for LinkTarget<T> {
 //     fn diff(&self, other: &Self) -> Self {
 //         match (self, other) {
 //             (
@@ -287,7 +287,7 @@ pub use prelude::*;
 //     }
 // }
 
-// impl Mergeable for Actor {
+// impl MergeableImpl for Actor {
 //     fn diff(&self, other: &Self) -> Self {
 //         Self {
 //             name: self.name.clone(),

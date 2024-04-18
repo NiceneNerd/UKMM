@@ -1,7 +1,7 @@
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::{Byml, Map};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{prelude::*, resource::SortedDeleteMap, Result, UKError};
 
@@ -83,7 +83,7 @@ impl From<ResidentActors> for Byml {
     }
 }
 
-impl Mergeable for ResidentActors {
+impl MergeableImpl for ResidentActors {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.diff(&other.0))
     }

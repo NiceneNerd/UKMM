@@ -6,8 +6,8 @@ use std::{
 };
 
 use log::{LevelFilter, Record};
+use nk_util::{Lazy, OnceLock};
 use parking_lot::Mutex;
-use uk_util::{Lazy, OnceLock};
 
 use crate::gui::Message;
 

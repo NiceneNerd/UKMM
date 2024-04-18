@@ -2,6 +2,8 @@
 mod ui;
 use anyhow::Context;
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::{
     aamp::hash_name,
     byml::Byml,
@@ -9,8 +11,6 @@ use roead::{
 };
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
@@ -135,7 +135,7 @@ impl From<SaveData> for Byml {
     }
 }
 
-impl Mergeable for SaveData {
+impl MergeableImpl for SaveData {
     fn diff(&self, other: &Self) -> Self {
         assert_eq!(
             self.header, other.header,
@@ -241,7 +241,7 @@ impl SaveDataPack {
     }
 }
 
-impl Mergeable for SaveDataPack {
+impl MergeableImpl for SaveDataPack {
     fn diff(&self, other: &Self) -> Self {
         Self(
             ["game_data.sav", "caption.sav", "option.sav"]

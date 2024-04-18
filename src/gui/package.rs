@@ -1,18 +1,18 @@
 use std::{ops::DerefMut, path::PathBuf};
 
 use eframe::emath::Align;
+use nk_ui::{
+    editor::EditableValue,
+    egui::{self, Align2, Context, Id, Layout, Response, TextStyle, Ui},
+    ext::UiExt,
+    icons::{Icon, IconButtonExt},
+};
 use parking_lot::Mutex;
 use rustc_hash::FxHashSet;
 use uk_manager::settings::Platform;
 use uk_mod::{
     ExclusiveOptionGroup, Meta, ModOption, ModOptionGroup, ModPlatform, MultipleOptionGroup,
     OptionGroup, CATEGORIES,
-};
-use uk_ui::{
-    editor::EditableValue,
-    egui::{self, Align2, Context, Id, Layout, Response, TextStyle, Ui},
-    ext::UiExt,
-    icons::{Icon, IconButtonExt},
 };
 
 use super::{App, Message};
@@ -163,7 +163,7 @@ impl ModPackerBuilder {
                         ui.label("Group Name");
                         opt_group.name_mut().edit_ui_with_id(ui, id.with(i));
                         ui.label("Group Description");
-                        ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
+                        ui.text_edit_multiline(&mut nk_ui::editor::SmartStringWrapper(
                             opt_group.description_mut(),
                         ));
                         ui.label("Group Type");
@@ -280,7 +280,7 @@ impl ModPackerBuilder {
                     ui.label("Option Name");
                     option.name.edit_ui_with_id(ui, id.with("name"));
                     ui.label("Option Description");
-                    ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
+                    ui.text_edit_multiline(&mut nk_ui::editor::SmartStringWrapper(
                         &mut option.description,
                     ));
                     if let Some(ref mut defaults) = defaults {

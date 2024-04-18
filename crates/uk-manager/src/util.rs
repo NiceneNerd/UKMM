@@ -5,9 +5,9 @@ use std::{
 
 #[cfg(windows)]
 use anyhow_ext::Context;
+use nk_util::Lazy;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 pub use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
-use uk_util::Lazy;
 
 pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
     fn inner(dir: &Path) -> anyhow_ext::Result<()> {

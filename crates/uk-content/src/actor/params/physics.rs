@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::{InfoSource, ParameterResource},
@@ -143,7 +143,7 @@ impl From<ContactInfo> for ParameterList {
     }
 }
 
-impl Mergeable for ContactInfo {
+impl MergeableImpl for ContactInfo {
     fn diff(&self, other: &Self) -> Self {
         Self {
             contact_point_info: if other.contact_point_info != self.contact_point_info {
@@ -213,7 +213,7 @@ impl From<CharacterController> for ParameterList {
     }
 }
 
-impl Mergeable for CharacterController {
+impl MergeableImpl for CharacterController {
     fn diff(&self, other: &Self) -> Self {
         Self {
             header: util::diff_pobj(&self.header, &other.header),
@@ -317,7 +317,7 @@ impl From<Cloth> for ParameterList {
     }
 }
 
-impl Mergeable for Cloth {
+impl MergeableImpl for Cloth {
     fn diff(&self, other: &Self) -> Self {
         Self {
             setup_file_path: if other.setup_file_path != self.setup_file_path {
@@ -590,7 +590,7 @@ impl From<Physics> for ParameterIO {
     }
 }
 
-impl Mergeable for Physics {
+impl MergeableImpl for Physics {
     fn diff(&self, other: &Self) -> Self {
         Self {
             ragdoll: if other.ragdoll != self.ragdoll {

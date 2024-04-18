@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use ::msyt::model::MsbtInfo;
-use uk_ui::{editor::*, egui, ext::UiExt, icons::IconButtonExt};
+use nk_ui::{editor::*, egui, ext::UiExt, icons::IconButtonExt};
 
 use super::MessagePack;
 
@@ -32,7 +32,7 @@ impl EditableValue for MessagePack {
                 if let Some(new_key) = ui.get_temp_string(tmp_id) {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_key.write().deref_mut());
-                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                        if ui.icon_button(nk_ui::icons::Icon::Check).clicked() {
                             self.0.insert(new_key.read().as_str().into(), ::msyt::Msyt {
                                 msbt:    MsbtInfo {
                                     group_count: 0,
@@ -46,7 +46,7 @@ impl EditableValue for MessagePack {
                             clear_tmp = true;
                         }
                     });
-                } else if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                } else if ui.icon_button(nk_ui::icons::Icon::Add).clicked() {
                     ui.create_temp_string(tmp_id, None);
                 }
                 if clear_tmp {

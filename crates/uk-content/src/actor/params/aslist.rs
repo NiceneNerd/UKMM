@@ -1,10 +1,10 @@
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
 
@@ -150,7 +150,7 @@ impl From<ASList> for ParameterIO {
     }
 }
 
-impl Mergeable for ASList {
+impl MergeableImpl for ASList {
     fn diff(&self, other: &Self) -> Self {
         Self {
             common:     (other.common != self.common)

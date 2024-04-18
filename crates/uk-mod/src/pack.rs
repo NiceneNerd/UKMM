@@ -10,6 +10,7 @@ use botw_utils::hashes::StockHashTable;
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
+use nk_util::{Lazy, PathExt as UkPathExt, ResultExt};
 use parking_lot::{Mutex, RwLock};
 use path_slash::PathExt;
 use rayon::prelude::*;
@@ -22,10 +23,9 @@ use uk_content::{
     canonicalize,
     constants::Language,
     platform_prefixes,
-    prelude::{Endian, Mergeable},
+    prelude::{Endian, MergeableImpl},
     resource::{is_mergeable_sarc, ResourceData},
 };
-use uk_util::{Lazy, PathExt as UkPathExt, ResultExt};
 use zip::{write::FileOptions, ZipWriter as ZipW};
 
 use crate::{

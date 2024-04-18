@@ -8,13 +8,13 @@ use std::{
 use anyhow::Context;
 use itertools::Itertools;
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::{aamp::*, h};
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::ParameterResource,
@@ -68,7 +68,7 @@ pub struct AIEntry {
     pub children: Option<IndexMap<Name, AIEntry>>,
 }
 
-impl Mergeable for AIEntry {
+impl MergeableImpl for AIEntry {
     fn diff(&self, other: &Self) -> Self {
         Self {
             category: self.category,
@@ -654,7 +654,7 @@ impl Writer {
     }
 }
 
-impl Mergeable for AIProgram {
+impl MergeableImpl for AIProgram {
     fn diff(&self, other: &Self) -> Self {
         AIProgram {
             demos:     other

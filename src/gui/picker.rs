@@ -1,11 +1,11 @@
 use std::path::{Path, PathBuf};
 
 use fs_err as fs;
-use serde::{Deserialize, Serialize};
-use uk_ui::{
+use nk_ui::{
     egui::{self, Button, Key, Ui, Vec2},
     icons::{get_icon, Icon, IconButtonExt},
 };
+use serde::{Deserialize, Serialize};
 
 use super::{visuals, App, FocusedPane, Message};
 

@@ -1,9 +1,9 @@
 use eframe::egui::Button;
-use uk_mod::ModOptionGroup;
-use uk_ui::{
+use nk_ui::{
     egui::{self, Align, Checkbox, Context, Layout, Vec2},
     visuals,
 };
+use uk_mod::ModOptionGroup;
 
 use super::{App, Message};
 

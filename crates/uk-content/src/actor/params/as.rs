@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::ParameterResource,
@@ -84,7 +84,7 @@ impl Element {
     }
 }
 
-impl Mergeable for Element {
+impl MergeableImpl for Element {
     fn diff(&self, other: &Self) -> Self {
         Self {
             params:   other.params.clone(),
@@ -264,7 +264,7 @@ impl From<AS> for ParameterIO {
     }
 }
 
-impl Mergeable for AS {
+impl MergeableImpl for AS {
     fn diff(&self, other: &Self) -> Self {
         Self {
             root: other.root.as_ref().map(|other_root| {

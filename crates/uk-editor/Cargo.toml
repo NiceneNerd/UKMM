@@ -22,7 +22,7 @@ serde_yaml = { workspace = true }
 uk-content = { path = "../uk-content", features = ["ui"] }
 uk-manager = { path ="../uk-manager" }
 uk-mod = { path = "../uk-mod" }
-uk-ui = { path = "../uk-ui" }
-uk-ui-derive = { path = "../uk-ui-derive" }
-uk-util = { path = "../uk-util" }
+nk-ui = { path = "../nk-ui" }
+nk-ui-derive = { path = "../nk-ui-derive" }
+nk-util = { path = "../nk-util" }
 ron = "0.8.0"

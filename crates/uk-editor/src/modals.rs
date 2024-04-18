@@ -2,7 +2,7 @@ use eframe::{
     egui::{Id, Layout, RichText},
     emath::Align,
 };
-use uk_ui::egui::{Align2, Spinner, TextStyle, Vec2};
+use nk_ui::egui::{Align2, Spinner, TextStyle, Vec2};
 
 use super::*;
 

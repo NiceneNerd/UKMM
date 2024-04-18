@@ -5,17 +5,17 @@ use std::{
 };
 
 use anyhow::Result;
-use parking_lot::{Mutex, RwLock};
-use rustc_hash::{FxHashMap, FxHasher};
-use uk_manager::mods::Mod;
-use uk_mod::Manifest;
-use uk_ui::{
+use nk_ui::{
     egui::{self, Align, Label, Layout, RichText, Ui},
     egui_extras::RetainedImage,
     icons::IconButtonExt,
     PathNode,
 };
-use uk_util::Lazy;
+use nk_util::Lazy;
+use parking_lot::{Mutex, RwLock};
+use rustc_hash::{FxHashMap, FxHasher};
+use uk_manager::mods::Mod;
+use uk_mod::Manifest;
 
 use super::Component;
 
@@ -113,7 +113,7 @@ impl Component for ModInfo<'_> {
                     );
                     ui.add_space(8.);
                     ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                        if ui.icon_button(uk_ui::icons::Icon::Settings).clicked() {
+                        if ui.icon_button(nk_ui::icons::Icon::Settings).clicked() {
                             msg = Some(Message::RequestOptions);
                         }
                     })

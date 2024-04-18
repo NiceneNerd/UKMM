@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{prelude::*, Result, UKError};
 
-impl Mergeable for Msyt {
+impl MergeableImpl for Msyt {
     fn diff(&self, other: &Self) -> Self {
         Self {
             msbt:    self.msbt.clone(),
@@ -51,7 +51,7 @@ impl Mergeable for Msyt {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct MessagePack(pub BTreeMap<String, Msyt>);
 
-impl Mergeable for MessagePack {
+impl MergeableImpl for MessagePack {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other

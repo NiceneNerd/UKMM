@@ -1,4 +1,4 @@
-use uk_ui::{
+use nk_ui::{
     egui::{self, Label, Sense, Ui, WidgetText},
     egui_dock::{NodeIndex, TabViewer, Tree},
     visuals::Theme,

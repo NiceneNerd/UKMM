@@ -1,8 +1,8 @@
 use anyhow::Context;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     cooking::{recipe::Recipe, single_recipe::SingleRecipe, system::System},
@@ -60,7 +60,7 @@ impl From<CookData> for Byml {
     }
 }
 
-impl Mergeable for CookData {
+impl MergeableImpl for CookData {
     fn diff(&self, other: &Self) -> Self {
         Self {
             recipes: self.recipes.diff(&other.recipes),

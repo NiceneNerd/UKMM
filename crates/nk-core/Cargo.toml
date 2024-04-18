@@ -1,0 +1,12 @@
+[package]
+name = "nk-core"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+dashmap = { workspace = true }
+dyn_partial_eq = { workspace = true }
+roead = { workspace = true }
+smartstring = { workspace = true }
+thiserror = { workspace = true }

@@ -1,7 +1,7 @@
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
@@ -18,7 +18,7 @@ pub struct WeaponSeries {
     pub not_rank_up: bool,
 }
 
-impl Mergeable for WeaponSeries {
+impl MergeableImpl for WeaponSeries {
     fn diff(&self, other: &Self) -> Self {
         Self {
             actors: self.actors.diff(&other.actors),
@@ -265,7 +265,7 @@ impl From<LevelSensor> for Byml {
     }
 }
 
-impl Mergeable for LevelSensor {
+impl MergeableImpl for LevelSensor {
     fn diff(&self, other: &Self) -> Self {
         Self {
             enemy:   self.enemy.deep_diff(&other.enemy),

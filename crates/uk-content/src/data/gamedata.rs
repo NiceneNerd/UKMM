@@ -114,7 +114,7 @@ impl GameData {
     }
 }
 
-impl Mergeable for GameData {
+impl MergeableImpl for GameData {
     fn diff(&self, other: &Self) -> Self {
         assert_eq!(
             self.data_type, other.data_type,
@@ -470,7 +470,7 @@ impl GameDataPack {
     }
 }
 
-impl Mergeable for GameDataPack {
+impl MergeableImpl for GameDataPack {
     fn diff(&self, other: &Self) -> Self {
         Self {
             bool_array_data: self.bool_array_data.diff(&other.bool_array_data),

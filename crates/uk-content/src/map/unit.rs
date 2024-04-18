@@ -1,7 +1,7 @@
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 
@@ -88,7 +88,7 @@ impl From<MapUnit> for Byml {
     }
 }
 
-impl Mergeable for MapUnit {
+impl MergeableImpl for MapUnit {
     fn diff(&self, other: &Self) -> Self {
         Self {
             pos_x:   other.pos_x,

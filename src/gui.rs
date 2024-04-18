@@ -27,6 +27,17 @@ use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
 use join_str::jstr;
+pub use nk_ui::visuals;
+use nk_ui::{
+    egui::{
+        self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
+        Label, LayerId, Layout, RichText, Spinner, TextFormat, TextStyle, Ui, Vec2,
+    },
+    egui_dock::{DockArea, NodeIndex, Tree},
+    ext::UiExt,
+    icons::{Icon, IconButtonExt},
+};
+use nk_util::OptionResultExt;
 use parking_lot::{
     MappedRwLockReadGuard, MappedRwLockWriteGuard, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
 };
@@ -40,17 +51,6 @@ use uk_manager::{
     settings::{Platform, Settings},
 };
 use uk_mod::{pack::sanitise, Manifest, Meta, ModPlatform};
-pub use uk_ui::visuals;
-use uk_ui::{
-    egui::{
-        self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
-        Label, LayerId, Layout, RichText, Spinner, TextFormat, TextStyle, Ui, Vec2,
-    },
-    egui_dock::{DockArea, NodeIndex, Tree},
-    ext::UiExt,
-    icons::{Icon, IconButtonExt},
-};
-use uk_util::OptionResultExt;
 
 use self::{package::ModPackerBuilder, tasks::VersionResponse};
 use crate::{gui::modals::MetaInputModal, logger::Entry};
@@ -211,7 +211,7 @@ pub enum Message {
     SelectProfileManage(smartstring::alias::String),
     SetChangelog(String),
     SetFocus(FocusedPane),
-    SetTheme(uk_ui::visuals::Theme),
+    SetTheme(nk_ui::visuals::Theme),
     ShowAbout,
     ShowPackagingOptions(FxHashSet<PathBuf>),
     ShowPackagingDependencies,
@@ -226,7 +226,7 @@ pub enum Message {
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 struct UiState {
-    theme: uk_ui::visuals::Theme,
+    theme: nk_ui::visuals::Theme,
     picker_state: FilePickerState,
     #[serde(default = "tabs::default_ui")]
     tree: Tree<Tabs>,
@@ -235,7 +235,7 @@ struct UiState {
 impl Default for UiState {
     fn default() -> Self {
         Self {
-            theme: uk_ui::visuals::Theme::Sheikah,
+            theme: nk_ui::visuals::Theme::Sheikah,
             picker_state: FilePickerState::default(),
             tree: tabs::default_ui(),
         }
@@ -273,8 +273,8 @@ pub struct App {
     options_mod: Option<(Mod, bool)>,
     temp_settings: Settings,
     toasts: egui_notify::Toasts,
-    theme: uk_ui::visuals::Theme,
-    dock_style: uk_ui::egui_dock::Style,
+    theme: nk_ui::visuals::Theme,
+    dock_style: nk_ui::egui_dock::Style,
     changelog: Option<String>,
     new_version: Option<VersionResponse>,
 }
@@ -288,8 +288,8 @@ impl App {
                     .unwrap_or(1.0),
             );
         }
-        uk_ui::icons::load_icons();
-        uk_ui::load_fonts(&cc.egui_ctx);
+        nk_ui::icons::load_icons();
+        nk_ui::load_fonts(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
         let ui_state: UiState = fs::read_to_string(core.settings().state_file())
             .context("")
@@ -354,7 +354,7 @@ impl App {
             tree: Arc::new(RwLock::new(ui_state.tree)),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
-            dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
+            dock_style: nk_ui::visuals::style_dock(&cc.egui_ctx.style()),
             install_queue: Default::default(),
             error_queue: Default::default(),
             new_version: None,
@@ -671,7 +671,7 @@ impl App {
                 Message::SetTheme(theme) => {
                     theme.set_theme(ctx);
                     self.theme = theme;
-                    self.dock_style = uk_ui::visuals::style_dock(&ctx.style());
+                    self.dock_style = nk_ui::visuals::style_dock(&ctx.style());
                 }
                 Message::SelectFile => {
                     if let Some(mut paths) = rfd::FileDialog::new()

@@ -1,9 +1,9 @@
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::ParameterResource,
@@ -79,7 +79,7 @@ impl From<AttClientList> for ParameterIO {
     }
 }
 
-impl Mergeable for AttClientList {
+impl MergeableImpl for AttClientList {
     fn diff(&self, other: &Self) -> Self {
         Self {
             att_pos:     util::diff_pobj(&self.att_pos, &other.att_pos),

@@ -1,9 +1,9 @@
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::{InfoSource, ParameterResource},
@@ -200,7 +200,7 @@ impl From<LifeCondition> for ParameterIO {
     }
 }
 
-impl Mergeable for LifeCondition {
+impl MergeableImpl for LifeCondition {
     fn diff(&self, other: &Self) -> Self {
         Self {
             invalid_weathers: self

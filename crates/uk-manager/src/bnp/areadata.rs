@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use fs_err as fs;
 use roead::byml::Byml;
 use uk_content::{
-    prelude::{Mergeable, Resource},
+    prelude::{MergeableImpl, Resource},
     resource::{AreaData, MergeableResource},
 };
 

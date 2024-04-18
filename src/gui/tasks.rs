@@ -8,6 +8,7 @@ use std::{
 use anyhow::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
+use nk_util::{OptionExt, PathExt};
 use serde::Deserialize;
 use uk_content::constants::Language;
 use uk_manager::{
@@ -23,7 +24,6 @@ use uk_mod::{
     Manifest, Meta,
 };
 use uk_reader::ResourceReader;
-use uk_util::{OptionExt, PathExt};
 
 use super::{package::ModPackerBuilder, Message};
 

@@ -24,9 +24,11 @@ lighter = "0.1.0"
 mimalloc = { version = "0.1.30", default-features = false }
 msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }
 uk-content-derive = { path = "../uk-content-derive" }
-uk-ui = { path = "../uk-ui", optional = true }
-uk-ui-derive = { path = "../uk-ui-derive", optional = true }
-uk-util = { path = "../uk-util" }
+nk-core = { path = "../nk-core" }
+nk-ui = { path = "../nk-ui", optional = true }
+nk-ui-derive = { path = "../nk-ui-derive", optional = true }
+nk-util = { path = "../nk-util" }
+dyn_partial_eq = "0.1.2"
 
 [features]
-ui = ["uk-ui", "uk-ui-derive", "roead/yaml"]
+ui = ["nk-ui", "nk-ui-derive", "roead/yaml"]

@@ -10,6 +10,7 @@ use anyhow_ext::{Context, Result};
 use dashmap::DashMap;
 use fs_err as fs;
 use join_str::jstr;
+use nk_util::OptionResultExt;
 use parking_lot::RwLock;
 use path_slash::PathExt;
 use rayon::prelude::*;
@@ -22,7 +23,6 @@ use uk_mod::{
     unpack::{ModReader, ModUnpacker},
     Manifest,
 };
-use uk_util::OptionResultExt;
 
 use crate::{
     mods,

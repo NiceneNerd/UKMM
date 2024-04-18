@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
@@ -140,7 +140,7 @@ impl From<Static> for Byml {
     }
 }
 
-impl Mergeable for Static {
+impl MergeableImpl for Static {
     fn diff(&self, other: &Self) -> Self {
         Self {
             general:   other

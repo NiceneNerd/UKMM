@@ -1,6 +1,6 @@
+use nk_ui::editor::EditableValue;
 use uk_manager::settings::Platform;
 use uk_mod::{Meta, CATEGORIES};
-use uk_ui::editor::EditableValue;
 
 use super::*;
 

@@ -1,10 +1,10 @@
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::ParameterResource,
@@ -96,7 +96,7 @@ impl From<RagdollConfigList> for ParameterIO {
     }
 }
 
-impl Mergeable for RagdollConfigList {
+impl MergeableImpl for RagdollConfigList {
     fn diff(&self, other: &Self) -> Self {
         Self {
             common_data:     util::diff_pobj(&self.common_data, &other.common_data),

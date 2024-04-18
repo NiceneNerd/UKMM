@@ -1,8 +1,8 @@
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 
@@ -58,7 +58,7 @@ impl From<Tips> for Byml {
     }
 }
 
-impl Mergeable for Tips {
+impl MergeableImpl for Tips {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.diff(&other.0))
     }

@@ -23,7 +23,7 @@ impl TryFrom<&'_ Sarc<'_>> for LayoutArchive {
     }
 }
 
-impl Mergeable for LayoutArchive {
+impl MergeableImpl for LayoutArchive {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other
@@ -77,18 +77,18 @@ impl Resource for LayoutArchive {
 }
 
 #[cfg(feature = "ui")]
-impl uk_ui::editor::EditableValue for LayoutArchive {
-    const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Block;
+impl nk_ui::editor::EditableValue for LayoutArchive {
+    const DISPLAY: nk_ui::editor::EditableDisplay = nk_ui::editor::EditableDisplay::Block;
 
-    fn edit_ui(&mut self, ui: &mut uk_ui::egui::Ui) -> uk_ui::egui::Response {
+    fn edit_ui(&mut self, ui: &mut nk_ui::egui::Ui) -> nk_ui::egui::Response {
         ui.label("Cannot visually edit BLARC")
     }
 
     fn edit_ui_with_id(
         &mut self,
-        ui: &mut uk_ui::egui::Ui,
+        ui: &mut nk_ui::egui::Ui,
         _id: impl std::hash::Hash,
-    ) -> uk_ui::egui::Response {
+    ) -> nk_ui::egui::Response {
         self.edit_ui(ui)
     }
 }

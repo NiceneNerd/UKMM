@@ -6,6 +6,7 @@ use std::{
 use anyhow_ext::{Context, Result};
 use dashmap::DashSet;
 use fs_err as fs;
+use nk_util::PathExt;
 use parking_lot::RwLock;
 use rayon::prelude::*;
 use roead::{
@@ -17,7 +18,6 @@ use rustc_hash::FxHashMap;
 use uk_content::{constants::Language, util::HashSet};
 use uk_mod::pack::ModPacker;
 use uk_reader::ResourceReader;
-use uk_util::PathExt;
 
 use crate::{settings::Platform, util::extract_7z};
 mod actorinfo;

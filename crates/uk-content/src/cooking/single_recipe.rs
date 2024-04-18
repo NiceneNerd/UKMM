@@ -1,9 +1,9 @@
 use anyhow::Context;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use smartstring::{LazyCompact, SmartString};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     util::{DeleteVec, HashMap},

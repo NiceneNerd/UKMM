@@ -4,14 +4,14 @@ use std::{
 };
 
 use lighter::lighter;
-use roead::byml::Byml;
-use uk_ui::{
+use nk_ui::{
     editor::{EditableDisplay, EditableValue},
     egui,
     egui_extras::{self, Column},
     ext::UiExt,
     icons::IconButtonExt,
 };
+use roead::byml::Byml;
 
 fn edit_flag_val(val: &mut Byml, ui: &mut egui::Ui, id: egui::Id) -> egui::Response {
     match val {
@@ -39,7 +39,7 @@ fn edit_flag_ui(
     let mut changed = false;
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         ui.clipped_label(flag.data_name.as_str());
         // if let Some(ref name) = flag.data_name {
@@ -50,7 +50,7 @@ fn edit_flag_ui(
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed = changed
             || flag
@@ -60,13 +60,13 @@ fn edit_flag_ui(
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed |= edit_flag_val(&mut flag.init_value, ui, id.with("init_value")).changed();
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed = changed
             || flag
@@ -76,7 +76,7 @@ fn edit_flag_ui(
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed = changed
             || flag
@@ -86,7 +86,7 @@ fn edit_flag_ui(
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed = changed
             || flag
@@ -96,7 +96,7 @@ fn edit_flag_ui(
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed = changed
             || flag
@@ -106,7 +106,7 @@ fn edit_flag_ui(
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed = changed
             || flag
@@ -116,19 +116,19 @@ fn edit_flag_ui(
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed |= edit_flag_val(&mut flag.max_value, ui, id.with("max_value")).changed()
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed |= edit_flag_val(&mut flag.min_value, ui, id.with("min_value")).changed()
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed = changed
             || flag
@@ -138,7 +138,7 @@ fn edit_flag_ui(
     });
     row.col(|ui| {
         if *del {
-            ui.visuals_mut().override_text_color = Some(uk_ui::visuals::RED);
+            ui.visuals_mut().override_text_color = Some(nk_ui::visuals::RED);
         }
         changed |= del.edit_ui_with_id(ui, id.with("delete")).changed();
     });
@@ -219,14 +219,14 @@ impl EditableValue for super::GameData {
                             || ui
                                 .text_edit_singleline(new_flag.write().deref_mut())
                                 .changed();
-                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                        if ui.icon_button(nk_ui::icons::Icon::Check).clicked() {
                             self.flags
                                 .insert(new_flag.read().as_str(), super::FlagData::default());
                             clear_flag = true;
                         }
                     });
                 }
-                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                if ui.icon_button(nk_ui::icons::Icon::Add).clicked() {
                     ui.create_temp_string(new_flag_id, None);
                 }
                 if clear_flag {

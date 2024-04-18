@@ -7,7 +7,7 @@ use roead::{
     yaz0::compress_if,
 };
 use uk_content::{
-    prelude::{Mergeable, Resource},
+    prelude::{MergeableImpl, Resource},
     resource::ASList,
 };
 

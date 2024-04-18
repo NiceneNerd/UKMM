@@ -1,10 +1,10 @@
 use anyhow::Context;
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::{InfoSource, ParameterResource},
@@ -174,7 +174,7 @@ impl From<Recipe> for ParameterIO {
     }
 }
 
-impl Mergeable for Recipe {
+impl MergeableImpl for Recipe {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.deep_diff(&other.0))
     }

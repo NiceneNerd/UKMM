@@ -2,9 +2,9 @@ use std::{fmt, path::Path, str::FromStr};
 
 use join_str::jstr;
 use lighter::lighter;
-use serde::{Deserialize, Serialize};
 #[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+use nk_ui_derive::Editable;
+use serde::{Deserialize, Serialize};
 
 use crate::UKError;
 

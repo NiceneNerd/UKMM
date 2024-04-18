@@ -1,7 +1,7 @@
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
@@ -103,7 +103,7 @@ impl From<ShopGameDataInfo> for Byml {
     }
 }
 
-impl Mergeable for ShopGameDataInfo {
+impl MergeableImpl for ShopGameDataInfo {
     fn diff(&self, other: &Self) -> Self {
         Self {
             area_info:     self.area_info.diff(&other.area_info),

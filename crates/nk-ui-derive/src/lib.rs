@@ -41,13 +41,13 @@ fn impl_struct_named_fields(
             let str_name = name.to_string();
             quote! {
                 let child_id = id.with(#str_name);
-                match <#ty as ::uk_ui::editor::EditableValue>::DISPLAY {
-                    ::uk_ui::editor::EditableDisplay::Block => {
+                match <#ty as ::nk_ui::editor::EditableValue>::DISPLAY {
+                    ::nk_ui::editor::EditableDisplay::Block => {
                         egui::CollapsingHeader::new(#str_name).id_source(id.with(#str_name)).show(ui, |ui| {
                             changed |= self.#name.edit_ui_with_id(ui, child_id).changed();
                         });
                     }
-                    ::uk_ui::editor::EditableDisplay::Inline => {
+                    ::nk_ui::editor::EditableDisplay::Inline => {
                         ui.columns(2, |uis| {
                             uis[0].label(#str_name);
                             let res = self.#name.edit_ui_with_id(&mut uis[1], child_id);
@@ -71,13 +71,13 @@ fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStre
         let display = get_display_type(&field.ty);
         quote! {
             #[automatically_derived]
-            impl ::uk_ui::editor::EditableValue for #name {
-                const DISPLAY: ::uk_ui::editor::EditableDisplay = #display;
-                fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
+            impl ::nk_ui::editor::EditableValue for #name {
+                const DISPLAY: ::nk_ui::editor::EditableDisplay = #display;
+                fn edit_ui(&mut self, ui: &mut ::nk_ui::egui::Ui) -> ::nk_ui::egui::Response {
                     self.edit_ui_with_id(ui, #str_name)
                 }
-                fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
-                    use ::uk_ui::egui;
+                fn edit_ui_with_id(&mut self, ui: &mut ::nk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::nk_ui::egui::Response {
+                    use ::nk_ui::egui;
                     let id = egui::Id::new(id).with(#str_name);
                     let mut changed = false;
                     let mut res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
@@ -98,15 +98,15 @@ fn impl_struct_unnamed_fields(name: &Ident, fields: &FieldsUnnamed) -> TokenStre
         });
         quote! {
             #[automatically_derived]
-            impl ::uk_ui::editor::EditableValue for #name {
-                const DISPLAY: ::uk_ui::editor::EditableDisplay = ::uk_ui::editor::EditableDisplay::Block;
-                fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
-                    use ::uk_ui::editor::EditableValue;
+            impl ::nk_ui::editor::EditableValue for #name {
+                const DISPLAY: ::nk_ui::editor::EditableDisplay = ::nk_ui::editor::EditableDisplay::Block;
+                fn edit_ui(&mut self, ui: &mut ::nk_ui::egui::Ui) -> ::nk_ui::egui::Response {
+                    use ::nk_ui::editor::EditableValue;
                     self.edit_ui_with_id(ui, #str_name)
                 }
-                fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
-                    use ::uk_ui::editor::EditableValue;
-                    use ::uk_ui::egui;
+                fn edit_ui_with_id(&mut self, ui: &mut ::nk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::nk_ui::egui::Response {
+                    use ::nk_ui::editor::EditableValue;
+                    use ::nk_ui::egui;
                     let id = egui::Id::new(id).with(#str_name);
                     let mut changed = false;
                     let res = ui.group(|ui| {
@@ -130,7 +130,7 @@ fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
         Fields::Named(ref fields) => {
             (
                 impl_struct_named_fields(fields),
-                syn::parse_str::<Expr>("::uk_ui::editor::EditableDisplay::Block")
+                syn::parse_str::<Expr>("::nk_ui::editor::EditableDisplay::Block")
                     .expect("display variant should parse"),
             )
         }
@@ -139,16 +139,16 @@ fn impl_editable_struct(name: &Ident, struc: DataStruct) -> TokenStream {
     };
     quote! {
         #[automatically_derived]
-        impl ::uk_ui::editor::EditableValue for #name {
-            const DISPLAY: ::uk_ui::editor::EditableDisplay = #display;
-            fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
-                use ::uk_ui::editor::EditableValue;
+        impl ::nk_ui::editor::EditableValue for #name {
+            const DISPLAY: ::nk_ui::editor::EditableDisplay = #display;
+            fn edit_ui(&mut self, ui: &mut ::nk_ui::egui::Ui) -> ::nk_ui::egui::Response {
+                use ::nk_ui::editor::EditableValue;
                 self.edit_ui_with_id(ui, #str_name)
             }
 
-            fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
-                use ::uk_ui::egui;
-                use ::uk_ui::editor::EditableValue;
+            fn edit_ui_with_id(&mut self, ui: &mut ::nk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::nk_ui::egui::Response {
+                use ::nk_ui::egui;
+                use ::nk_ui::editor::EditableValue;
                 let id = egui::Id::new(id);
                 let mut changed = false;
                 let mut res = egui::CollapsingHeader::new(#str_name).id_source(id).show(ui, |ui| {
@@ -221,10 +221,10 @@ fn impl_editable_enum(name: &Ident, enu: DataEnum) -> TokenStream {
         quote!(#path => #var_name,)
     });
     let display = if inline {
-        syn::parse_str::<Expr>("::uk_ui::editor::EditableDisplay::Inline")
+        syn::parse_str::<Expr>("::nk_ui::editor::EditableDisplay::Inline")
             .expect("display variant should parse")
     } else {
-        syn::parse_str::<Expr>("::uk_ui::editor::EditableDisplay::Block")
+        syn::parse_str::<Expr>("::nk_ui::editor::EditableDisplay::Block")
             .expect("display variant should parse")
     };
     quote! {
@@ -237,16 +237,16 @@ fn impl_editable_enum(name: &Ident, enu: DataEnum) -> TokenStream {
         }
 
         #[automatically_derived]
-        impl ::uk_ui::editor::EditableValue for #name {
-            const DISPLAY: ::uk_ui::editor::EditableDisplay = #display;
-            fn edit_ui(&mut self, ui: &mut ::uk_ui::egui::Ui) -> ::uk_ui::egui::Response {
-                use ::uk_ui::editor::EditableValue;
+        impl ::nk_ui::editor::EditableValue for #name {
+            const DISPLAY: ::nk_ui::editor::EditableDisplay = #display;
+            fn edit_ui(&mut self, ui: &mut ::nk_ui::egui::Ui) -> ::nk_ui::egui::Response {
+                use ::nk_ui::editor::EditableValue;
                 self.edit_ui_with_id(ui, #str_name)
             }
 
-            fn edit_ui_with_id(&mut self, ui: &mut ::uk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::uk_ui::egui::Response {
-                use ::uk_ui::egui;
-                use ::uk_ui::editor::EditableValue;
+            fn edit_ui_with_id(&mut self, ui: &mut ::nk_ui::egui::Ui, id: impl ::std::hash::Hash) -> ::nk_ui::egui::Response {
+                use ::nk_ui::egui;
+                use ::nk_ui::editor::EditableValue;
                 let mut changed = false;
                 let id = egui::Id::new(id);
                 let mut res = egui::ComboBox::new(id, #str_name)

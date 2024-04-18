@@ -1,7 +1,7 @@
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
 
@@ -38,7 +38,7 @@ impl From<QuestProduct> for Byml {
     }
 }
 
-impl Mergeable for QuestProduct {
+impl MergeableImpl for QuestProduct {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.diff(&other.0))
     }

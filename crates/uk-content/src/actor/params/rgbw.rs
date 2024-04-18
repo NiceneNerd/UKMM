@@ -3,12 +3,12 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
+use nk_util::OptionResultExt;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::ParameterResource,
@@ -34,19 +34,19 @@ impl ToString for Key {
 }
 
 #[cfg(feature = "ui")]
-impl uk_ui::editor::EditableValue for Key {
-    const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Inline;
+impl nk_ui::editor::EditableValue for Key {
+    const DISPLAY: nk_ui::editor::EditableDisplay = nk_ui::editor::EditableDisplay::Inline;
 
-    fn edit_ui(&mut self, ui: &mut uk_ui::egui::Ui) -> uk_ui::egui::Response {
+    fn edit_ui(&mut self, ui: &mut nk_ui::egui::Ui) -> nk_ui::egui::Response {
         self.edit_ui_with_id(ui, "rgbw_key")
     }
 
     fn edit_ui_with_id(
         &mut self,
-        ui: &mut uk_ui::egui::Ui,
+        ui: &mut nk_ui::egui::Ui,
         id: impl std::hash::Hash,
-    ) -> uk_ui::egui::Response {
-        let id = uk_ui::egui::Id::new(id);
+    ) -> nk_ui::egui::Response {
+        let id = nk_ui::egui::Id::new(id);
         let mut changed = false;
         let mut res = ui
             .horizontal(|ui| {
@@ -149,7 +149,7 @@ impl From<RagdollBlendWeight> for ParameterIO {
     }
 }
 
-impl Mergeable for RagdollBlendWeight {
+impl MergeableImpl for RagdollBlendWeight {
     fn diff(&self, other: &Self) -> Self {
         Self(
             other
@@ -219,18 +219,18 @@ impl Resource for RagdollBlendWeight {
 }
 #[cfg(feature = "ui")]
 impl EditableValue for RagdollBlendWeight {
-    const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Block;
+    const DISPLAY: nk_ui::editor::EditableDisplay = nk_ui::editor::EditableDisplay::Block;
 
-    fn edit_ui(&mut self, ui: &mut uk_ui::egui::Ui) -> uk_ui::egui::Response {
+    fn edit_ui(&mut self, ui: &mut nk_ui::egui::Ui) -> nk_ui::egui::Response {
         self.edit_ui_with_id(ui, "rgbw")
     }
 
     fn edit_ui_with_id(
         &mut self,
-        ui: &mut uk_ui::egui::Ui,
+        ui: &mut nk_ui::egui::Ui,
         id: impl std::hash::Hash,
-    ) -> uk_ui::egui::Response {
-        use uk_ui::egui;
+    ) -> nk_ui::egui::Response {
+        use nk_ui::egui;
         let mut changed = false;
         let id = egui::Id::new(id);
         let res = egui::CollapsingHeader::new("RagdollBlendWeight")
@@ -251,11 +251,11 @@ impl EditableValue for RagdollBlendWeight {
         if let Some(new_key) = new_key {
             ui.horizontal(|ui| {
                 new_key.write().edit_ui_with_id(ui, tmp_id.with("value"));
-                if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                if ui.icon_button(nk_ui::icons::Icon::Check).clicked() {
                     add_new = true;
                 }
             });
-        } else if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+        } else if ui.icon_button(nk_ui::icons::Icon::Add).clicked() {
             ui.data()
                 .insert_temp(tmp_id, Arc::new(RwLock::new(Key::default())));
         }

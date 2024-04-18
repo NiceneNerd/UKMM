@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
@@ -90,7 +90,7 @@ impl From<StatusEffectValues> for Byml {
     }
 }
 
-impl Mergeable for StatusEffectValues {
+impl MergeableImpl for StatusEffectValues {
     fn diff(&self, other: &Self) -> Self {
         match (self, other) {
             (Self::Special, Self::Special) => Self::Special,
@@ -145,7 +145,7 @@ impl From<StatusEffectList> for Byml {
     }
 }
 
-impl Mergeable for StatusEffectList {
+impl MergeableImpl for StatusEffectList {
     fn diff(&self, other: &Self) -> Self {
         Self(
             self.0

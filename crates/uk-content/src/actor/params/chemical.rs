@@ -1,14 +1,14 @@
 use std::collections::BTreeMap;
 
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::{
     aamp::*,
     byml::{Byml, Map},
 };
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::{InfoSource, ParameterResource},
@@ -145,7 +145,7 @@ impl From<Chemical> for ParameterIO {
     }
 }
 
-impl Mergeable for Chemical {
+impl MergeableImpl for Chemical {
     fn diff(&self, other: &Self) -> Self {
         Self {
             unknown: if other.unknown != self.unknown {

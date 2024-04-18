@@ -13,14 +13,17 @@ use dashmap::DashMap;
 use include_flate::flate;
 use join_str::jstr;
 use moka::sync::Cache;
+use nk_util::{Lazy, PathExt};
 // use once_cell::sync::Lazy;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use uk_content::{
-    canonicalize, constants::Language, platform_prefixes, prelude::Endian, resource::*,
+    constants::Language,
+    platform_prefixes,
+    prelude::{BreathOfTheWild, Endian},
+    resource::*,
 };
-use uk_util::{Lazy, PathExt};
 
 use self::{unpacked::Unpacked, zarchive::ZArchive};
 
@@ -94,6 +97,7 @@ pub trait ResourceLoader: std::fmt::Debug + Send + Sync {
     fn get_aoc_file_data(&self, name: &Path) -> Result<Vec<u8>>;
     fn file_exists(&self, name: &Path) -> bool;
     fn host_path(&self) -> &Path;
+    fn canonicalize(&self, name: &Path) -> String;
 }
 
 fn construct_res_cache() -> ResourceCache {
@@ -123,6 +127,7 @@ fn init_nest_map() -> Arc<DashMap<String, Arc<str>>> {
 pub struct ResourceReader {
     bin_type: BinType,
     source: Box<dyn ResourceLoader>,
+    game: Box<dyn nk_core::Game>,
     #[serde(skip, default = "construct_res_cache")]
     cache: ResourceCache,
     #[serde(skip, default = "construct_sarc_cache")]
@@ -162,6 +167,7 @@ impl ResourceReader {
 
     pub fn from_zarchive(archive_path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
+            game: Box::new(BreathOfTheWild::wiiu()),
             source: Box::new(ZArchive::new(archive_path)?),
             cache: construct_res_cache(),
             sarc_cache: construct_sarc_cache(),
@@ -219,7 +225,7 @@ impl ResourceReader {
     }
 
     pub fn get_data(&self, path: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
-        let canon = canonicalize(path.as_ref());
+        let canon = self.canonicalize(path.as_ref());
         Ok(self.get_or_add_resource(path.as_ref(), canon)?)
     }
 
@@ -236,7 +242,7 @@ impl ResourceReader {
         let root = self
             .sarc_cache
             .try_get_with(
-                canonicalize(parts[0]),
+                self.canonicalize(parts[0]),
                 || -> anyhow_ext::Result<Arc<Sarc<'static>>> {
                     let sarc = self.source().get_data(parts[0].as_ref()).with_context(|| {
                         format!("Failed to get parent for nested file at {}", nest_path)
@@ -249,7 +255,7 @@ impl ResourceReader {
             let root = root.clone();
             Some(
                 self.sarc_cache
-                    .try_get_with(canonicalize(parts[1]), || -> uk_content::Result<_> {
+                    .try_get_with(self.canonicalize(parts[1]), || -> uk_content::Result<_> {
                         let sarc = Sarc::new(
                             root.get_data(parts[1])
                                 .context("Couldn't get nested SARC")?
@@ -356,7 +362,7 @@ impl ResourceReader {
         log::trace!("Resource is SARC, add contents to cache");
         for file in sarc.files() {
             let name = file.name().context("SARC file missing name")?.to_string();
-            let canon = canonicalize(&name);
+            let canon = self.canonicalize(&name);
             if !self.cache.contains_key(&canon) {
                 let data = file.data;
                 let data = roead::yaz0::decompress_if(data);

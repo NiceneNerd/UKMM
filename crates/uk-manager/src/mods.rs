@@ -10,6 +10,7 @@ use anyhow_ext::{Context, Result};
 use dashmap::{mapref::one::MappedRef, DashMap};
 use fs_err as fs;
 use lenient_semver::Version;
+use nk_util::Lazy;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use sanitise_file_name as sfn;
 use serde::{Deserialize, Serialize};
@@ -17,7 +18,6 @@ use serde_with::{serde_as, DisplayFromStr};
 use smartstring::alias::String;
 use uk_content::platform_prefixes;
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
-use uk_util::Lazy;
 
 use crate::{
     settings::Settings,

@@ -1,10 +1,10 @@
 use std::{cell::RefCell, ops::Deref, path::PathBuf};
 
-use uk_content::resource::ResourceData;
-use uk_ui::{
+use nk_ui::{
     editor::EditableValue,
     egui_dock::{TabViewer, Tree},
 };
+use uk_content::resource::ResourceData;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct EditorTab {

@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use fs_err as fs;
+use nk_util::OptionExt;
 use rayon::prelude::*;
 use roead::{
     aamp::{get_default_name_table, ParameterIO, ParameterList, ParameterListing},
@@ -11,7 +12,6 @@ use uk_content::{
     prelude::{Resource, String64},
     util::merge_plist,
 };
-use uk_util::OptionExt;
 
 use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
 

@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
 
-use uk_ui::{
+use nk_ui::{
     editor::{EditableDisplay, EditableValue},
     egui,
     ext::UiExt,
@@ -31,7 +31,7 @@ impl EditableValue for super::SaveData {
                             ui.horizontal(|ui| {
                                 if *del {
                                     ui.visuals_mut().override_text_color =
-                                        Some(uk_ui::visuals::RED);
+                                        Some(nk_ui::visuals::RED);
                                 }
                                 ui.label(flag.name.as_str());
                                 changed |= ui
@@ -46,13 +46,13 @@ impl EditableValue for super::SaveData {
         if let Some(new_flag) = ui.get_temp_string(tmp_id) {
             ui.horizontal(|ui| {
                 ui.text_edit_singleline(new_flag.write().deref_mut());
-                if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                if ui.icon_button(nk_ui::icons::Icon::Check).clicked() {
                     self.flags
                         .insert(super::Flag::from(new_flag.read().as_str()));
                     clear_new = true;
                 }
             });
-        } else if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+        } else if ui.icon_button(nk_ui::icons::Icon::Add).clicked() {
             ui.create_temp_string(tmp_id, None);
         }
         if clear_new {

@@ -1,8 +1,8 @@
 use anyhow::Context;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
@@ -66,7 +66,7 @@ impl From<ActorInfo> for Byml {
     }
 }
 
-impl Mergeable for ActorInfo {
+impl MergeableImpl for ActorInfo {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.deep_diff(&other.0))
     }

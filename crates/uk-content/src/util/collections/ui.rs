@@ -1,6 +1,6 @@
 use std::{ops::DerefMut, str::FromStr, sync::Arc};
 
-use uk_ui::{
+use nk_ui::{
     editor::{EditableDisplay, EditableValue},
     egui::{self, mutex::RwLock, Layout, RichText},
     ext::UiExt,
@@ -25,7 +25,7 @@ impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec
                 for (i, (val, del)) in self.0.iter_mut().enumerate() {
                     egui::Frame::none()
                         .fill(if *del {
-                            uk_ui::visuals::error_bg(ui.visuals())
+                            nk_ui::visuals::error_bg(ui.visuals())
                         } else {
                             egui::Color32::TRANSPARENT
                         })
@@ -46,7 +46,7 @@ impl<T: Default + EditableValue + Clone + PartialEq> EditableValue for DeleteVec
                             });
                         });
                 }
-                do_add = ui.icon_button(uk_ui::icons::Icon::Add).clicked();
+                do_add = ui.icon_button(nk_ui::icons::Icon::Add).clicked();
             })
             .response;
         if do_add {
@@ -83,7 +83,7 @@ where
                 if let Some(new_value) = new_value {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_value.write().deref_mut());
-                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                        if ui.icon_button(nk_ui::icons::Icon::Check).clicked() {
                             if let Ok(val) = T::try_from(new_value.read().as_str()) {
                                 self.0.insert(val, false);
                                 ui.data().remove::<Arc<RwLock<String>>>(id.with("new_val"))
@@ -91,7 +91,7 @@ where
                         }
                     });
                 }
-                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                if ui.icon_button(nk_ui::icons::Icon::Add).clicked() {
                     ui.data()
                         .insert_temp(id.with("new_val"), Arc::new(RwLock::new(String::new())));
                 }
@@ -122,7 +122,7 @@ where
                 for (val, del) in self.0.iter_mut() {
                     let mut label = RichText::new(format!("{}", val));
                     if *del {
-                        label = label.color(uk_ui::visuals::RED);
+                        label = label.color(nk_ui::visuals::RED);
                     }
                     changed |= ui
                         .checkbox(del, label)
@@ -139,7 +139,7 @@ where
                 if let Some(new_value) = new_value {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_value.write().deref_mut());
-                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                        if ui.icon_button(nk_ui::icons::Icon::Check).clicked() {
                             if let Ok(val) = T::try_from(new_value.read().as_str()) {
                                 self.0.insert(val, false);
                                 ui.data().remove::<Arc<RwLock<String>>>(id.with("new_val"))
@@ -147,7 +147,7 @@ where
                         }
                     });
                 }
-                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                if ui.icon_button(nk_ui::icons::Icon::Add).clicked() {
                     ui.data()
                         .insert_temp(id.with("new_val"), Arc::new(RwLock::new(String::new())));
                 }
@@ -183,7 +183,7 @@ where
                     match <U as EditableValue>::DISPLAY {
                         EditableDisplay::Block => {
                             egui::CollapsingHeader::new(if *del {
-                                egui::RichText::new(&str_key).color(uk_ui::visuals::RED)
+                                egui::RichText::new(&str_key).color(nk_ui::visuals::RED)
                             } else {
                                 egui::RichText::new(&str_key)
                             })
@@ -195,7 +195,7 @@ where
                                             del,
                                             if *del {
                                                 egui::RichText::new("Delete")
-                                                    .color(uk_ui::visuals::RED)
+                                                    .color(nk_ui::visuals::RED)
                                             } else {
                                                 egui::RichText::new("Delete")
                                             },
@@ -258,7 +258,7 @@ where
                 if let Some(new_key) = ui.get_temp_string(id.with("new_key")) {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_key.write().deref_mut());
-                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                        if ui.icon_button(nk_ui::icons::Icon::Check).clicked() {
                             if let Ok(k) = <&str as TryInto<T>>::try_into(new_key.read().as_str()) {
                                 self.0.insert(k, (U::default(), false));
                                 ui.clear_temp_string(id.with("new_key"));
@@ -266,7 +266,7 @@ where
                         }
                     });
                 }
-                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                if ui.icon_button(nk_ui::icons::Icon::Add).clicked() {
                     ui.create_temp_string(id.with("new_key"), None);
                 }
             })
@@ -301,7 +301,7 @@ where
                     match <U as EditableValue>::DISPLAY {
                         EditableDisplay::Block => {
                             egui::CollapsingHeader::new(if *del {
-                                egui::RichText::new(&str_key).color(uk_ui::visuals::RED)
+                                egui::RichText::new(&str_key).color(nk_ui::visuals::RED)
                             } else {
                                 egui::RichText::new(&str_key)
                             })
@@ -313,7 +313,7 @@ where
                                             del,
                                             if *del {
                                                 egui::RichText::new("Delete")
-                                                    .color(uk_ui::visuals::RED)
+                                                    .color(nk_ui::visuals::RED)
                                             } else {
                                                 egui::RichText::new("Delete")
                                             },
@@ -376,7 +376,7 @@ where
                 if let Some(new_key) = ui.get_temp_string(id.with("new_key")) {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_key.write().deref_mut());
-                        if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
+                        if ui.icon_button(nk_ui::icons::Icon::Check).clicked() {
                             if let Ok(k) = new_key.read().as_str().parse() {
                                 self.0.insert(k, (U::default(), false));
                                 ui.clear_temp_string(id.with("new_key"));
@@ -384,7 +384,7 @@ where
                         }
                     });
                 }
-                if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
+                if ui.icon_button(nk_ui::icons::Icon::Add).clicked() {
                     ui.create_temp_string(id.with("new_key"), None);
                 }
             })

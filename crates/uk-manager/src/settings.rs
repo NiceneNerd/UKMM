@@ -7,13 +7,13 @@ use std::{
 
 use anyhow_ext::{Context, Result};
 use fs_err as fs;
+use nk_util::Lazy;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DefaultOnError};
 use smartstring::alias::String;
 use uk_content::constants::Language;
 use uk_reader::ResourceReader;
-use uk_util::Lazy;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Platform {

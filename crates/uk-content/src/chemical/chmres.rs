@@ -1,8 +1,8 @@
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
 
@@ -62,7 +62,7 @@ impl From<ChemicalRes> for ParameterIO {
     }
 }
 
-impl Mergeable for ChemicalRes {
+impl MergeableImpl for ChemicalRes {
     fn diff(&self, other: &Self) -> Self {
         Self {
             world:    self.world.diff(&other.world),

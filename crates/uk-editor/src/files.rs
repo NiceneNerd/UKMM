@@ -4,14 +4,14 @@ use std::{
     path::PathBuf,
 };
 
-use parking_lot::RwLock;
-use path_slash::PathBufExt;
-use uk_content::util::HashMap;
-use uk_ui::{
+use nk_ui::{
     egui::{self, Ui},
     PathNode,
 };
-use uk_util::Lazy;
+use nk_util::Lazy;
+use parking_lot::RwLock;
+use path_slash::PathBufExt;
+use uk_content::util::HashMap;
 
 use crate::Message;
 

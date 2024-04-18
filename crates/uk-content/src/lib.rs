@@ -4,7 +4,6 @@ use mimalloc::MiMalloc;
 
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
-use std::path::Path;
 
 use smartstring::alias::String;
 use thiserror::Error;
@@ -154,57 +153,107 @@ pub const fn platform_prefixes(endian: prelude::Endian) -> (&'static str, &'stat
         prelude::Endian::Big => ("content", "aoc/0010"),
     }
 }
-
-pub fn canonicalize(path: impl AsRef<Path>) -> String {
-    fn canonicalize(path: &Path) -> String {
-        let path = path.to_str().unwrap_or("INVALID_FILENAME");
-        let mut canon = path.replace('\\', "/");
-        for (k, v) in [
-            ("Content/", ""),
-            ("content/", ""),
-            ("atmosphere/titles/", ""),
-            ("atmosphere/contents/", ""),
-            ("01007EF00011E000/romfs/", ""),
-            ("01007ef00011e000/romfs/", ""),
-            ("01007EF00011E001/romfs", "Aoc/0010"),
-            ("01007EF00011E002/romfs", "Aoc/0010"),
-            ("01007EF00011F001/romfs", "Aoc/0010"),
-            ("01007EF00011F002/romfs", "Aoc/0010"),
-            ("01007ef00011e001/romfs", "Aoc/0010"),
-            ("01007ef00011e002/romfs", "Aoc/0010"),
-            ("01007ef00011f001/romfs", "Aoc/0010"),
-            ("01007ef00011f002/romfs", "Aoc/0010"),
-            ("romfs/", ""),
-            ("aoc/content", "Aoc"),
-            ("aoc", "Aoc"),
-        ]
-        .into_iter()
-        {
-            if canon.starts_with(k) {
-                canon = [v, canon.trim_start_matches(k)].concat();
-            }
-        }
-        canon.replace(".s", ".").into()
-    }
-    canonicalize(path.as_ref())
-}
-
 pub mod prelude {
+    use nk_core::Game;
     pub(crate) use smartstring::alias::String;
     pub type String32 = roead::types::FixedSafeString<32>;
     pub type String64 = roead::types::FixedSafeString<64>;
     pub type String256 = roead::types::FixedSafeString<256>;
 
-    pub trait Mergeable {
-        #[must_use]
+    pub struct BreathOfTheWild {
+        platform: Endian,
+    }
+
+    impl BreathOfTheWild {
+        #[inline(always)]
+        pub fn switch() -> Self {
+            Self {
+                platform: Endian::Little,
+            }
+        }
+
+        #[inline(always)]
+        pub fn wiiu() -> Self {
+            Self {
+                platform: Endian::Big,
+            }
+        }
+
+        #[inline(always)]
+        fn rom_prefixes(&self) -> &[(&str, &str)] {
+            match self.platform {
+                Endian::Little => {
+                    &[
+                        ("atmosphere/titles/", ""),
+                        ("atmosphere/contents/", ""),
+                        ("01007EF00011E000/romfs/", ""),
+                        ("01007ef00011e000/romfs/", ""),
+                        ("01007EF00011E001/romfs", "Aoc/0010"),
+                        ("01007EF00011E002/romfs", "Aoc/0010"),
+                        ("01007EF00011F001/romfs", "Aoc/0010"),
+                        ("01007EF00011F002/romfs", "Aoc/0010"),
+                        ("01007ef00011e001/romfs", "Aoc/0010"),
+                        ("01007ef00011e002/romfs", "Aoc/0010"),
+                        ("01007ef00011f001/romfs", "Aoc/0010"),
+                        ("01007ef00011f002/romfs", "Aoc/0010"),
+                    ]
+                }
+                Endian::Big => {
+                    &[
+                        ("Content/", ""),
+                        ("content/", ""),
+                        ("aoc/content", "Aoc"),
+                        ("aoc", "Aoc"),
+                    ]
+                }
+            }
+        }
+    }
+
+    impl Game for BreathOfTheWild {
+        fn canonicalize(&self, path: impl AsRef<std::path::Path>) -> String {
+            let prefixes = self.rom_prefixes();
+            fn canonicalize(prefixes: &[(&str, &str)], path: &std::path::Path) -> String {
+                let path = path.to_str().unwrap_or("INVALID_FILENAME");
+                let mut canon = path.replace('\\', "/");
+                for (k, v) in prefixes.into_iter() {
+                    if canon.starts_with(k) {
+                        canon = [v, canon.trim_start_matches(k)].concat();
+                    }
+                }
+                canon.replace(".s", ".").into()
+            }
+            canonicalize(prefixes, path.as_ref())
+        }
+
+        #[inline]
+        fn content_prefix(&self) -> &str {
+            super::platform_content(self.platform)
+        }
+
+        #[inline]
+        fn dlc_prefix(&self) -> &str {
+            super::platform_aoc(self.platform)
+        }
+
+        #[inline]
+        fn update_rstb(
+            &self,
+            output: impl AsRef<std::path::Path>,
+            updates: impl Iterator<Item = (String, Option<u32>)>,
+        ) -> std::result::Result<(), nk_core::NKError> {
+            todo!()
+        }
+    }
+
+    pub trait MergeableImpl {
         fn diff(&self, other: &Self) -> Self;
-        #[must_use]
         fn merge(&self, diff: &Self) -> Self;
     }
 
     macro_rules! impl_simple_aamp {
         ($type:ty, $field:tt) => {
-            impl Mergeable for $type {
+            impl MergeableImpl for $type {
                 fn diff(&self, other: &Self) -> Self {
                     Self(ParameterIO {
                         param_root: crate::util::diff_plist(
@@ -230,7 +279,7 @@ pub mod prelude {
         };
     }
 
-    impl Mergeable for roead::aamp::ParameterIO {
+    impl MergeableImpl for roead::aamp::ParameterIO {
         fn diff(&self, other: &Self) -> Self {
             Self {
                 data_type:  self.data_type.clone(),
@@ -252,7 +301,7 @@ pub mod prelude {
 
     macro_rules! impl_simple_byml {
         ($type:ty, $field:tt) => {
-            impl Mergeable for $type {
+            impl MergeableImpl for $type {
                 fn diff(&self, other: &Self) -> Self {
                     crate::util::diff_byml_shallow(&self.$field, &other.$field).into()
                 }
@@ -264,7 +313,7 @@ pub mod prelude {
         };
     }
 
-    impl Mergeable for roead::byml::Byml {
+    impl MergeableImpl for roead::byml::Byml {
         fn diff(&self, other: &Self) -> Self {
             crate::util::diff_byml_shallow(self, other)
         }
@@ -361,8 +410,9 @@ pub mod prelude {
 #[cfg(test)]
 pub(crate) mod tests {
     use join_str::jstr;
+    use nk_core::Game;
 
-    use crate::canonicalize;
+    use crate::prelude::*;
 
     pub fn test_base_actorpack(name: &str) -> roead::sarc::Sarc<'static> {
         roead::sarc::Sarc::new(
@@ -386,30 +436,37 @@ pub(crate) mod tests {
 
     #[test]
     fn canon_names() {
+        let game_wiiu = BreathOfTheWild {
+            platform: Endian::Big,
+        };
+        let game_nx = BreathOfTheWild {
+            platform: Endian::Little,
+        };
         assert_eq!(
-            &canonicalize("content\\Actor\\Pack\\Enemy_Lizal_Senior.sbactorpack"),
+            &game_wiiu.canonicalize("content\\Actor\\Pack\\Enemy_Lizal_Senior.sbactorpack"),
             "Actor/Pack/Enemy_Lizal_Senior.bactorpack"
         );
         assert_eq!(
-            &canonicalize("aoc/0010/Map/MainField/A-1/A-1_Dynamic.smubin"),
+            &game_wiiu.canonicalize("aoc/0010/Map/MainField/A-1/A-1_Dynamic.smubin"),
             "Aoc/0010/Map/MainField/A-1/A-1_Dynamic.mubin"
         );
         assert_eq!(
-            &canonicalize(
+            &game_nx.canonicalize(
                 "atmosphere/contents/01007EF00011E000/romfs/Actor/ActorInfo.product.sbyml"
             ),
             "Actor/ActorInfo.product.byml"
         );
         assert_eq!(
-            &canonicalize("atmosphere/contents/01007EF00011F001/romfs/Pack/AocMainField.pack"),
+            &game_nx
+                .canonicalize("atmosphere/contents/01007EF00011F001/romfs/Pack/AocMainField.pack"),
             "Aoc/0010/Pack/AocMainField.pack"
         );
         assert_eq!(
-            &canonicalize("Hellow/Sweetie.tardis"),
+            &game_nx.canonicalize("Hellow/Sweetie.tardis"),
             "Hellow/Sweetie.tardis"
         );
         assert_eq!(
-            &canonicalize("Event/EventInfo.product.sbyml"),
+            &game_nx.canonicalize("Event/EventInfo.product.sbyml"),
             "Event/EventInfo.product.byml"
         )
     }

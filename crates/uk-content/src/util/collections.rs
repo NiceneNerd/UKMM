@@ -2,7 +2,7 @@ use std::{borrow::Borrow, collections::BTreeMap, hash::Hash, vec};
 
 use itertools::Itertools;
 
-use crate::prelude::Mergeable;
+use crate::prelude::MergeableImpl;
 #[cfg(feature = "ui")]
 mod ui;
 
@@ -148,7 +148,7 @@ impl<T: Clone + PartialEq> DeleteVec<T> {
     }
 }
 
-impl<T: Clone + PartialEq> Mergeable for DeleteVec<T> {
+impl<T: Clone + PartialEq> MergeableImpl for DeleteVec<T> {
     fn diff(&self, other: &Self) -> Self {
         other
             .iter()
@@ -279,7 +279,7 @@ impl<T: DeleteKey> DeleteSet<T> {
     }
 }
 
-impl<T: DeleteKey> Mergeable for DeleteSet<T> {
+impl<T: DeleteKey> MergeableImpl for DeleteSet<T> {
     fn diff(&self, other: &Self) -> Self {
         other
             .iter()
@@ -593,7 +593,7 @@ macro_rules! impl_delete_map {
             }
         }
 
-        impl<T: $($key)*, U: PartialEq + Clone> crate::prelude::Mergeable for $type<T, U> {
+        impl<T: $($key)*, U: PartialEq + Clone> crate::prelude::MergeableImpl for $type<T, U> {
             fn diff(&self, other: &Self) -> Self {
                 other
                     .0
@@ -618,7 +618,7 @@ macro_rules! impl_delete_map {
             }
         }
 
-        impl<T: $($key)*, U: crate::prelude::Mergeable + Clone + PartialEq + Default> $type<T, U> {
+        impl<T: $($key)*, U: crate::prelude::MergeableImpl + Clone + PartialEq + Default> $type<T, U> {
             pub fn deep_diff(&self, other: &Self) -> Self {
                 other
                     // .0

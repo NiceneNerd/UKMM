@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 
 use itertools::Itertools;
 use join_str::jstr;
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
+use nk_util::OptionResultExt;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
-use uk_util::OptionResultExt;
 
 use crate::{
     actor::{info_params_filtered, InfoSource, ParameterResource},
@@ -90,7 +90,7 @@ impl From<ModelData> for ParameterList {
     }
 }
 
-impl Mergeable for ModelData {
+impl MergeableImpl for ModelData {
     fn diff(&self, other: &Self) -> Self {
         Self {
             folder: other.folder,
@@ -208,7 +208,7 @@ impl From<ModelList> for ParameterIO {
     }
 }
 
-impl Mergeable for ModelList {
+impl MergeableImpl for ModelList {
     fn diff(&self, other: &Self) -> Self {
         Self {
             controller_info: diff_pobj(&self.controller_info, &other.controller_info),

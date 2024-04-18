@@ -1,0 +1,11 @@
+[package]
+name = "uk-core"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+nk-core = { path = "../nk-core" }
+serde = { workspace = true }
+smartstring = { workspace = true }
+roead = { workspace = true }
+rstb = { workspace = true }

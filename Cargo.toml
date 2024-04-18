@@ -1,6 +1,6 @@
 [package]
-name = "ukmm"
-description = "A new mod manager for The Legend of Zelda: Breath of the Wild. Successor to BCML."
+name = "nkmm"
+description = "A mod manager for The Legend of Zelda titles on Nintendo Switch, including BOTW and TOTK."
 authors = ["Caleb Smith <c.smith@tuta.io>"]
 edition = "2021"
 license = "GPL-3.0-or-later"
@@ -41,8 +41,8 @@ uk-content = { path = "crates/uk-content" }
 uk-manager = { path = "crates/uk-manager" }
 uk-mod = { path = "crates/uk-mod" }
 uk-reader = { path = "crates/uk-reader" }
-uk-ui = { path = "crates/uk-ui" }
-uk-util = { path = "crates/uk-util" }
+nk-ui = { path = "crates/nk-ui" }
+nk-util = { path = "crates/nk-util" }
 xflags = "0.3.1"
 
 [target.'cfg(windows)'.dependencies]
@@ -53,15 +53,16 @@ winres = "0.1.12"
 
 [workspace]
 members = [
+    "crates/nk-core",
     "crates/uk-content",
     "crates/uk-content-derive",
     "crates/uk-editor",
     "crates/uk-manager",
     "crates/uk-mod",
     "crates/uk-reader",
-    "crates/uk-ui",
-    "crates/uk-ui-derive",
-    "crates/uk-util",
+    "crates/nk-ui",
+    "crates/nk-ui-derive",
+    "crates/nk-util",
 
 ]
 
@@ -74,6 +75,7 @@ anyhow_ext = "0.2.1"
 dashmap = "5.4"
 dircpy = "0.3.12"
 dirs2 = "3"
+dyn_partial_eq = "0.1.2"
 eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe", default-features = false }
 flume = "0.10.14"
 fs-err = "2.9"

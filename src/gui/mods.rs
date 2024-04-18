@@ -1,8 +1,7 @@
 use std::process::Command;
 
 use join_str::jstr;
-use uk_manager::mods::Mod;
-use uk_ui::{
+use nk_ui::{
     egui::{
         self, style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, LayerId,
         Layout, Response, Sense, TextStyle, Ui, Vec2,
@@ -10,7 +9,8 @@ use uk_ui::{
     egui_extras::{Column, TableBuilder, TableRow},
     ext::UiExt,
 };
-use uk_util::OnceLock;
+use nk_util::OnceLock;
+use uk_manager::mods::Mod;
 
 use super::{App, FocusedPane, Message, Sort};
 

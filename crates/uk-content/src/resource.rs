@@ -1,10 +1,10 @@
 use std::{borrow::Cow, collections::BTreeMap, path::Path};
 
 use anyhow::{Context, Result};
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::{aamp::ParameterIO, byml::Byml, sarc::Sarc};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 pub use crate::{
     actor::{
@@ -241,7 +241,7 @@ impl_from_res!(Tips);
 impl_from_res!(UMii);
 impl_from_res!(WorldInfo);
 
-impl Mergeable for MergeableResource {
+impl MergeableImpl for MergeableResource {
     fn diff(&self, other: &Self) -> Self {
         match (self, other) {
             // (Self::Actor(a), Self::Actor(b)) => Self::Actor(Box::new(a.diff(b))),
@@ -689,7 +689,7 @@ pub struct SarcMap {
     pub files:     SortedDeleteSet<String>,
 }
 
-impl Mergeable for SarcMap {
+impl MergeableImpl for SarcMap {
     fn diff(&self, other: &Self) -> Self {
         Self {
             alignment: self.alignment,

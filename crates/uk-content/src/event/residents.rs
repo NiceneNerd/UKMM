@@ -1,7 +1,7 @@
+#[cfg(feature = "ui")]
+use nk_ui_derive::Editable;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
@@ -59,7 +59,7 @@ impl From<ResidentEvents> for Byml {
     }
 }
 
-impl Mergeable for ResidentEvents {
+impl MergeableImpl for ResidentEvents {
     fn diff(&self, other: &Self) -> Self {
         Self(self.0.diff(&other.0))
     }
