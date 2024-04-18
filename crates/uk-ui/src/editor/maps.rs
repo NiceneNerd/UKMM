@@ -52,15 +52,17 @@ where
                                 [ui.available_width(), ui.spacing().interact_size.y].into(),
                                 Layout::right_to_left(egui::Align::Center),
                                 |ui| {
-                                    let gallery = ui.fonts().layout_no_wrap(
-                                        str_key.clone(),
-                                        ui.style()
-                                            .text_styles
-                                            .get(&egui::TextStyle::Body)
-                                            .unwrap()
-                                            .clone(),
-                                        ui.visuals().text_color(),
-                                    );
+                                    let gallery = ui.fonts(|f| {
+                                        f.layout_no_wrap(
+                                            str_key.clone(),
+                                            ui.style()
+                                                .text_styles
+                                                .get(&egui::TextStyle::Body)
+                                                .unwrap()
+                                                .clone(),
+                                            ui.visuals().text_color(),
+                                        )
+                                    });
                                     let res = val.edit_ui_with_id(ui, id.with(key));
                                     changed |= res.changed();
                                     ui.allocate_space(
@@ -137,15 +139,17 @@ where
                                 [ui.available_width(), ui.spacing().interact_size.y].into(),
                                 Layout::right_to_left(egui::Align::Center),
                                 |ui| {
-                                    let gallery = ui.fonts().layout_no_wrap(
-                                        str_key.clone(),
-                                        ui.style()
-                                            .text_styles
-                                            .get(&egui::TextStyle::Body)
-                                            .unwrap()
-                                            .clone(),
-                                        ui.visuals().text_color(),
-                                    );
+                                    let gallery = ui.fonts(|f| {
+                                        f.layout_no_wrap(
+                                            str_key.clone(),
+                                            ui.style()
+                                                .text_styles
+                                                .get(&egui::TextStyle::Body)
+                                                .unwrap()
+                                                .clone(),
+                                            ui.visuals().text_color(),
+                                        )
+                                    });
                                     let res = val.edit_ui_with_id(ui, id.with(key));
                                     changed |= res.changed();
                                     ui.allocate_space(
@@ -217,15 +221,17 @@ where
                             [ui.available_width(), ui.spacing().interact_size.y].into(),
                             Layout::right_to_left(egui::Align::Center),
                             |ui| {
-                                let gallery = ui.fonts().layout_no_wrap(
-                                    str_key.clone(),
-                                    ui.style()
-                                        .text_styles
-                                        .get(&egui::TextStyle::Body)
-                                        .unwrap()
-                                        .clone(),
-                                    ui.visuals().text_color(),
-                                );
+                                let gallery = ui.fonts(|f| {
+                                    f.layout_no_wrap(
+                                        str_key.clone(),
+                                        ui.style()
+                                            .text_styles
+                                            .get(&egui::TextStyle::Body)
+                                            .unwrap()
+                                            .clone(),
+                                        ui.visuals().text_color(),
+                                    )
+                                });
                                 let res = val.edit_ui_with_id(ui, id.with(key));
                                 changed |= res.changed();
                                 ui.allocate_space(
@@ -302,15 +308,17 @@ where
                                 [ui.available_width(), ui.spacing().interact_size.y].into(),
                                 Layout::right_to_left(egui::Align::Center),
                                 |ui| {
-                                    let gallery = ui.fonts().layout_no_wrap(
-                                        str_key.clone(),
-                                        ui.style()
-                                            .text_styles
-                                            .get(&egui::TextStyle::Body)
-                                            .unwrap()
-                                            .clone(),
-                                        ui.visuals().text_color(),
-                                    );
+                                    let gallery = ui.fonts(|f| {
+                                        f.layout_no_wrap(
+                                            str_key.clone(),
+                                            ui.style()
+                                                .text_styles
+                                                .get(&egui::TextStyle::Body)
+                                                .unwrap()
+                                                .clone(),
+                                            ui.visuals().text_color(),
+                                        )
+                                    });
                                     let res = val.edit_ui_with_id(ui, id.with(key));
                                     changed |= res.changed();
                                     ui.allocate_space(

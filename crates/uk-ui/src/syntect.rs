@@ -8,7 +8,7 @@ pub fn code_view_ui(ui: &mut egui::Ui, mut code: &str) {
     let mut layouter = |ui: &egui::Ui, string: &str, _wrap_width: f32| {
         let layout_job = highlight(ui.ctx(), &theme, string, language);
         // layout_job.wrap.max_width = wrap_width; // no wrapping
-        ui.fonts().layout_job(layout_job)
+        ui.fonts(|f| f.layout_job(layout_job))
     };
 
     ui.add(
@@ -31,9 +31,10 @@ pub fn highlight(ctx: &egui::Context, theme: &CodeTheme, code: &str, language: &
 
     type HighlightCache = egui::util::cache::FrameCache<LayoutJob, Highlighter>;
 
-    let mut memory = ctx.memory();
-    let highlight_cache = memory.caches.cache::<HighlightCache>();
-    highlight_cache.get((theme, code, language))
+    ctx.memory_mut(|m| {
+        let highlight_cache = m.caches.cache::<HighlightCache>();
+        highlight_cache.get((theme, code, language))
+    })
 }
 
 #[derive(Clone, Copy, Hash, PartialEq)]
@@ -100,7 +101,7 @@ impl SyntectTheme {
 
 #[derive(Clone, Hash, PartialEq)]
 pub struct CodeTheme {
-    dark_mode:     bool,
+    dark_mode: bool,
     syntect_theme: SyntectTheme,
 }
 
@@ -121,21 +122,23 @@ impl CodeTheme {
 
     pub fn from_memory(ctx: &egui::Context) -> Self {
         if ctx.style().visuals.dark_mode {
-            ctx.data()
-                .get_temp(egui::Id::new("dark"))
-                .unwrap_or_else(CodeTheme::dark)
+            ctx.data(|d| {
+                d.get_temp(egui::Id::new("dark"))
+                    .unwrap_or_else(CodeTheme::dark)
+            })
         } else {
-            ctx.data()
-                .get_temp(egui::Id::new("light"))
-                .unwrap_or_else(CodeTheme::light)
+            ctx.data(|d| {
+                d.get_temp(egui::Id::new("light"))
+                    .unwrap_or_else(CodeTheme::light)
+            })
         }
     }
 
     pub fn store_in_memory(self, ctx: &egui::Context) {
         if self.dark_mode {
-            ctx.data().insert_temp(egui::Id::new("dark"), self);
+            ctx.data_mut(|d| d.insert_temp(egui::Id::new("dark"), self));
         } else {
-            ctx.data().insert_temp(egui::Id::new("light"), self);
+            ctx.data_mut(|d| d.insert_temp(egui::Id::new("light"), self));
         }
     }
 }
@@ -143,14 +146,14 @@ impl CodeTheme {
 impl CodeTheme {
     pub const fn dark() -> Self {
         Self {
-            dark_mode:     true,
+            dark_mode: true,
             syntect_theme: SyntectTheme::Base16MochaDark,
         }
     }
 
     pub fn light() -> Self {
         Self {
-            dark_mode:     false,
+            dark_mode: false,
             syntect_theme: SyntectTheme::SolarizedLight,
         }
     }

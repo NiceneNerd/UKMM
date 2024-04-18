@@ -1,18 +1,33 @@
 use uk_ui::{
     egui::{self, Label, Sense, Ui, WidgetText},
-    egui_dock::{NodeIndex, TabViewer, Tree},
+    egui_dock::{DockState, Node, NodeIndex, TabViewer, Tree},
     visuals::Theme,
 };
 
 use super::{info, visuals, Component, Tabs};
 
-pub fn default_ui() -> Tree<Tabs> {
-    let mut tree = Tree::new(vec![Tabs::Mods, Tabs::Package, Tabs::Settings]);
-    let [main, side] = tree.split_right(0.into(), 0.9, vec![Tabs::Info, Tabs::Install]);
-    let [_side_top, _side_bottom] = tree.split_below(side, 0.6, vec![Tabs::Deploy]);
-    let [main, _log] = tree.split_below(main, 0.99, vec![Tabs::Log]);
-    tree.set_focused_node(main);
-    tree
+pub fn default_ui() -> DockState<Tabs> {
+    let mut state = DockState::new(vec![Tabs::Mods, Tabs::Package, Tabs::Settings]);
+    let [main, side] = state.split(
+        (0.into(), 0.into()),
+        uk_ui::egui_dock::Split::Right,
+        0.9,
+        Node::leaf_with(vec![Tabs::Info, Tabs::Install]),
+    );
+    let [_side_top, _side_bottom] = state.split(
+        (0.into(), side),
+        uk_ui::egui_dock::Split::Below,
+        0.6,
+        Node::leaf(Tabs::Deploy),
+    );
+    let [main, _log] = state.split(
+        (0.into(), main),
+        uk_ui::egui_dock::Split::Below,
+        0.99,
+        Node::leaf(Tabs::Log),
+    );
+    state.set_focused_node_and_surface((0.into(), main));
+    state
 }
 
 impl TabViewer for super::App {
@@ -78,7 +93,7 @@ impl TabViewer for super::App {
                                     .on_hover_text("Click to copy")
                                     .clicked()
                                 {
-                                    ui.output().copied_text = self.log.text.clone();
+                                    ui.output_mut(|o| o.copied_text = self.log.text.clone());
                                 }
                                 ui.allocate_space(ui.available_size());
                             });

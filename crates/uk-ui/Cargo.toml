@@ -13,10 +13,10 @@ serde_yaml = { workspace = true }
 smartstring = { workspace = true }
 
 color-hex = "0.2.0"
-catppuccin-egui = { git = "https://github.com/NiceneNerd/egui-catppuccin" }
-egui = { git = "https://github.com/NiceneNerd/egui", package = "egui", default-features = false, features = ["color-hex", "persistence"] }
-egui_dock = { git = "https://github.com/NiceneNerd/egui_dock", features = ["serde"] }
-egui_extras = { git = "https://github.com/NiceneNerd/egui", package = "egui_extras", features = ["image", "svg"] }
+catppuccin-egui = { version = "5.0", default-features = false, features = ["egui27"] }
+egui = { version = "0.27", default-features = false, features = ["color-hex", "persistence"] }
+egui_dock = { version = "0.12.0", features = ["serde"] }
+egui_extras = { version = "0.27", features = ["image", "svg"] }
 font-loader = "0.11.0"
 hex = "0.4.3"
 msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }

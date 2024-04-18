@@ -26,7 +26,7 @@ impl App {
             self.do_update(Message::SelectFile);
         }
         if ui.button("Exit").clicked() {
-            frame.close();
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         }
     }
 
@@ -84,20 +84,25 @@ impl App {
                 .clicked()
             {
                 ui.close_menu();
-                let mut tree = self.tree.write();
                 if let Some(parent) = self.closed_tabs.remove(&tab) {
-                    if let Some(parent) =
-                        tree.iter_mut().nth(parent.0).filter(|p| p.tabs_count() > 0)
+                    if let Some(parent) = self
+                        .tree
+                        .write()
+                        .iter_all_nodes_mut()
+                        .nth(parent.0)
+                        .filter(|p| p.1.tabs_count() > 0)
                     {
-                        parent.append_tab(tab);
+                        parent.1.append_tab(tab);
                     } else {
-                        tree.push_to_focused_leaf(tab);
+                        self.tree.write().push_to_focused_leaf(tab);
+                    };
+                } else {
+                    let mut tree = self.tree.write();
+                    if let Some((_, parent_index, node_index)) = tree.find_tab(&tab) {
+                        let parent = tree.iter_all_nodes_mut().nth(parent_index.0).unwrap();
+                        parent.1.remove_tab(node_index);
+                        self.closed_tabs.insert(tab, parent_index);
                     }
-                } else if let Some((parent_index, node_index)) = tree.find_tab(&tab) {
-                    let parent = tree.iter_mut().nth(parent_index.0).unwrap();
-                    parent.remove_tab(node_index);
-                    self.closed_tabs.insert(tab, parent_index);
-                    tree.remove_empty_leaf();
                 }
             }
         }

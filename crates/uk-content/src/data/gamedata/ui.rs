@@ -205,8 +205,9 @@ impl EditableValue for super::GameData {
                         });
                     })
                     .body(|body| {
-                        body.rows(base_height, self.flags.len(), |i, mut row| {
-                            if let Some((hash, flag)) = self.flags.iter_full_mut().nth(i) {
+                        body.rows(base_height, self.flags.len(), |mut row| {
+                            if let Some((hash, flag)) = self.flags.iter_full_mut().nth(row.index())
+                            {
                                 changed |= edit_flag_ui(flag, &mut row, id.with(hash));
                             }
                         });
@@ -235,7 +236,7 @@ impl EditableValue for super::GameData {
             });
         if res.header_response.changed() {
             let table_id = inner_id.with("__table_resize");
-            ui.data().remove::<Vec<f32>>(table_id);
+            ui.data_mut(|d| d.remove::<Vec<f32>>(table_id));
         }
         let mut res = res.body_response.unwrap_or(res.header_response);
         if changed {
@@ -277,10 +278,10 @@ impl EditableValue for super::GameDataPack {
     fn edit_ui_with_id(&mut self, ui: &mut egui::Ui, id: impl std::hash::Hash) -> egui::Response {
         let id = egui::Id::new(id);
         let mut changed = false;
-        let selected = ui
-            .data()
-            .get_temp_mut_or_default::<Arc<AtomicUsize>>(id.with("current"))
-            .clone();
+        let selected = ui.data_mut(|d| {
+            d.get_temp_mut_or_default::<Arc<AtomicUsize>>(id.with("current"))
+                .clone()
+        });
         let res = egui::CollapsingHeader::new("GameDataPack")
             .id_source(id)
             .show(ui, |ui| {

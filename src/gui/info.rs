@@ -91,12 +91,12 @@ impl Component for ModInfo<'_> {
             });
             ui.label(RichText::new("Description").family(egui::FontFamily::Name("Bold".into())));
             ui.add_space(4.);
-            let md_cache = ui
-                .data()
-                .get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
+            let md_cache = ui.data_mut(|d| {
+                d.get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
                     egui::Id::new("md_cache"),
                 )
-                .clone();
+                .clone()
+            });
             egui_commonmark::CommonMarkViewer::new("mod_description").show(
                 ui,
                 &mut md_cache.lock(),

@@ -22,7 +22,7 @@ use std::{
 };
 
 use anyhow_ext::{Context, Result};
-use eframe::{egui::InnerResponse, epaint::text::TextWrapping, IconData, NativeOptions};
+use eframe::{egui::IconData, egui::InnerResponse, epaint::text::TextWrapping, NativeOptions};
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
@@ -43,10 +43,11 @@ use uk_mod::{pack::sanitise, Manifest, Meta, ModPlatform};
 pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
-        self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
+        self, epaint::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
         Label, LayerId, Layout, RichText, Spinner, TextFormat, TextStyle, Ui, Vec2,
+        ViewportBuilder,
     },
-    egui_dock::{DockArea, NodeIndex, Tree},
+    egui_dock::{DockArea, DockState, NodeIndex, Tree},
     ext::UiExt,
     icons::{Icon, IconButtonExt},
 };
@@ -239,7 +240,7 @@ struct UiState {
     theme: uk_ui::visuals::Theme,
     picker_state: FilePickerState,
     #[serde(default = "tabs::default_ui")]
-    tree: Tree<Tabs>,
+    tree: DockState<Tabs>,
 }
 
 impl Default for UiState {
@@ -267,7 +268,7 @@ pub struct App {
     profiles_state: RefCell<profiles::ProfileManagerState>,
     meta_input: modals::MetaInputModal,
     closed_tabs: HashMap<Tabs, NodeIndex>,
-    tree: Arc<RwLock<Tree<Tabs>>>,
+    tree: Arc<RwLock<DockState<Tabs>>>,
     focused: FocusedPane,
     logs: Vec<Entry>,
     log: LayoutJob,
@@ -454,7 +455,7 @@ impl App {
     }
 
     fn handle_drops(&mut self, ctx: &eframe::egui::Context) {
-        let files = &ctx.input().raw.dropped_files;
+        let files = ctx.input(|i| i.raw.dropped_files.clone());
         if !(self.modal_open() || files.is_empty()) {
             let first = files.first().and_then(|f| f.path.clone()).unwrap();
             self.install_queue
@@ -492,10 +493,11 @@ impl App {
                     self.selected.retain(|m| self.mods.contains(m));
                     self.do_update(Message::RefreshModsDisplay);
                     self.do_update(Message::ReloadProfiles);
-                    ctx.data()
-                        .remove::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(egui::Id::new(
+                    ctx.data_mut(|d| {
+                        d.remove::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(egui::Id::new(
                             "md_cache",
-                        ));
+                        ))
+                    });
                     info::ROOTS.write().clear();
                 }
                 Message::RefreshModsDisplay => {
@@ -571,13 +573,13 @@ impl App {
                     self.drag_index = None;
                 }
                 Message::StartDrag(i) => {
-                    if ctx.input().pointer.any_released() {
+                    if ctx.input(|i| i.pointer.any_released()) {
                         self.drag_index = None;
                     }
                     self.drag_index = Some(i);
                     let mod_ = &self.mods[i];
                     if !self.selected.contains(mod_) {
-                        if !ctx.input().modifiers.ctrl {
+                        if !ctx.input(|i| i.modifiers.ctrl) {
                             self.selected.clear();
                         }
                         self.selected.push(mod_.clone());
@@ -1067,7 +1069,7 @@ impl App {
                         std::os::unix::process::CommandExt::process_group(&mut command, 0);
                     }
                     command.spawn().unwrap();
-                    frame.close();
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 }
                 Message::Toast(msg) => {
                     self.toasts.add({
@@ -1119,7 +1121,7 @@ impl eframe::App for App {
         let ui_state = UiState {
             theme: self.theme,
             picker_state: std::mem::take(&mut self.picker_state),
-            tree: std::mem::take(&mut self.tree.write()),
+            tree: std::mem::replace(&mut self.tree.write(), tabs::default_ui()),
         };
         fs::write(
             self.core.settings().state_file(),
@@ -1137,16 +1139,22 @@ pub fn main() {
     eframe::run_native(
         "U-King Mod Manager",
         NativeOptions {
-            icon_data: Some(IconData {
-                height: 256,
-                width: 256,
-                rgba: image::load_from_memory(include_bytes!("../assets/ukmm.png"))
-                    .unwrap()
-                    .to_rgba8()
-                    .into_vec(),
-            }),
-            min_window_size: Some(egui::Vec2::new(850.0, 500.0)),
-            initial_window_size: Some(egui::Vec2::new(1200.0, 800.0)),
+            viewport: ViewportBuilder {
+                icon: Some(
+                    IconData {
+                        height: 256,
+                        width: 256,
+                        rgba: image::load_from_memory(include_bytes!("../assets/ukmm.png"))
+                            .unwrap()
+                            .to_rgba8()
+                            .into_vec(),
+                    }
+                    .into(),
+                ),
+                min_inner_size: Some(egui::Vec2::new(850.0, 500.0)),
+                inner_size: Some(egui::Vec2::new(1200.0, 800.0)),
+                ..Default::default()
+            },
             ..Default::default()
         },
         Box::new(|cc| Box::new(App::new(cc))),

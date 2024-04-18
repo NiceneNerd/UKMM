@@ -25,4 +25,5 @@ fn main() {
         eframe::NativeOptions::default(),
         Box::new(move |_cc| Box::new(EditorTest { value: pio })),
     )
+    .expect("eframe should just work")
 }

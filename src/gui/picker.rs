@@ -118,7 +118,7 @@ impl App {
                     ui.style_mut().visuals.widgets.inactive.bg_stroke.width = 0.0;
                     let entries = &self.picker_state.entries;
                     if self.focused == FocusedPane::FilePicker && !self.modal_open() {
-                        if ui.input().key_pressed(Key::ArrowDown) {
+                        if ui.input(|i| i.key_pressed(Key::ArrowDown)) {
                             let pos = match entries
                                 .iter()
                                 .position(|p| self.picker_state.selected.as_ref() == Some(p))
@@ -127,7 +127,7 @@ impl App {
                                 None => 0,
                             };
                             self.picker_state.selected = Some(entries[pos].to_path_buf());
-                        } else if ui.input().key_pressed(Key::ArrowUp) {
+                        } else if ui.input(|i| i.key_pressed(Key::ArrowUp)) {
                             let pos = match entries
                                 .iter()
                                 .position(|p| self.picker_state.selected.as_ref() == Some(p))
@@ -164,15 +164,14 @@ impl App {
                         Icon::FolderZip
                     },
                 ),
-                icon_size,
                 name,
             )
             .wrap(false)
-            .tint(if is_dir {
-                visuals::YELLOW
-            } else {
-                visuals::GREEN
-            })
+            // .tint(if is_dir {
+            //     visuals::YELLOW
+            // } else {
+            //     visuals::GREEN
+            // })
             .fill(if selected {
                 ui.style().visuals.selection.bg_fill
             } else {
@@ -180,7 +179,7 @@ impl App {
             }),
         );
         if res.double_clicked()
-            || (ui.input().key_pressed(Key::Enter) && selected && !self.modal_open())
+            || (ui.input(|i| i.key_pressed(Key::Enter)) && selected && !self.modal_open())
         {
             self.do_update(Message::SetFocus(FocusedPane::FilePicker));
             if path.is_dir() {

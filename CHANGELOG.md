@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added update mod button for developers
 - Added GUI error message for startup panics
 
+### Changed
+
+- Switched back from a custom fork of egui to the latest official version.
+  This brings some minor unwanted UI changes, but nothing, I think, that
+  affects anything functionally.
+
 ### Fixed
 
 - Fixed possible errors with missing game languages

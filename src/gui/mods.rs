@@ -4,8 +4,8 @@ use join_str::jstr;
 use uk_manager::mods::Mod;
 use uk_ui::{
     egui::{
-        self, style::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key, LayerId,
-        Layout, Response, Sense, TextStyle, Ui, Vec2,
+        self, epaint::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key,
+        LayerId, Layout, Response, Sense, TextStyle, Ui, Vec2,
     },
     egui_extras::{Column, TableBuilder, TableRow},
     ext::UiExt,
@@ -33,8 +33,8 @@ impl App {
             ICON_WIDTH.get_or_init(|| ui.spacing().icon_width + ui.spacing().button_padding.x);
         static NUMERIC_COL_WIDTH: OnceLock<f32> = OnceLock::new();
         let numeric_col_width = NUMERIC_COL_WIDTH.get_or_init(|| {
-            ui.fonts()
-                .layout_job(LayoutJob::simple_singleline(
+            ui.fonts(|f| {
+                f.layout_job(LayoutJob::simple_singleline(
                     "PriorityWW".to_owned(),
                     ui.style()
                         .text_styles
@@ -43,8 +43,9 @@ impl App {
                         .clone(),
                     ui.style().visuals.text_color(),
                 ))
-                .size()
-                .x
+            })
+            .size()
+            .x
         });
         static CATEGORY_WIDTH: OnceLock<f32> = OnceLock::new();
         egui::Frame::none()
@@ -63,7 +64,7 @@ impl App {
                     .color = ui.style().visuals.strong_text_color();
                 let max_width = ui.available_width();
                 TableBuilder::new(ui)
-                    .cell_sense(Sense::click_and_drag())
+                    .sense(Sense::click_and_drag())
                     .cell_layout(Layout::left_to_right(Align::Center))
                     .column(Column::exact(*icon_width))
                     .column(
@@ -165,18 +166,17 @@ impl App {
                         });
                     })
                     .body(|body| {
-                        body.rows(*text_height, self.displayed_mods.len(), |index, row| {
-                            self.render_mod_row(index, row);
+                        body.rows(*text_height, self.displayed_mods.len(), |row| {
+                            self.render_mod_row(row.index(), row);
                         });
                     });
             });
-        if ui.memory().focus().is_none()
+        if ui.memory(|m| m.focused().is_some())
             && self.focused == FocusedPane::ModList
             && !self.modal_open()
         {
             if let Some((last_index, _)) = ui
-                .input()
-                .key_pressed(Key::ArrowDown)
+                .input(|i| i.key_pressed(Key::ArrowDown))
                 .then(|| {
                     self.mods
                         .iter()
@@ -186,14 +186,13 @@ impl App {
                 })
                 .flatten()
             {
-                if !ui.input().modifiers.shift {
+                if !ui.input(|i| i.modifiers.shift) {
                     self.do_update(Message::SelectOnly(last_index + 1));
                 } else {
                     self.do_update(Message::SelectAlso(last_index + 1));
                 }
             } else if let Some((first_index, _)) = ui
-                .input()
-                .key_pressed(Key::ArrowUp)
+                .input(|i| i.key_pressed(Key::ArrowUp))
                 .then(|| {
                     self.mods
                         .iter()
@@ -203,7 +202,7 @@ impl App {
                 .flatten()
             {
                 let index = first_index.max(1);
-                if !ui.input().modifiers.shift {
+                if !ui.input(|i| i.modifiers.shift) {
                     self.do_update(Message::SelectOnly(index - 1));
                 } else {
                     self.do_update(Message::SelectAlso(index - 1));
@@ -211,10 +210,8 @@ impl App {
             }
         }
         self.render_drag_state(*text_height, *icon_width, *numeric_col_width, ui);
-        if ui.input().pointer.any_released() {
-            ui.memory()
-                .data
-                .insert_temp(Id::new("drag_delay_frames"), 0usize);
+        if ui.input_mut(|i| i.pointer.any_released()) {
+            ui.memory_mut(|m| m.data.insert_temp(Id::new("drag_delay_frames"), 0usize));
             if let Some((_start_index, dest_index)) = self
                 .drag_index
                 .and_then(|d| self.hover_index.map(|h| (d, h)))
@@ -224,7 +221,7 @@ impl App {
             } else {
                 self.do_update(Message::ClearDrag);
             }
-            ui.output().cursor_icon = CursorIcon::Default;
+            ui.output_mut(|o| o.cursor_icon = CursorIcon::Default);
         }
     }
 
@@ -235,18 +232,15 @@ impl App {
         numeric_col_width: f32,
         ui: &mut Ui,
     ) {
-        let being_dragged = ui.memory().is_anything_being_dragged();
-        let mut memory = ui.memory();
-        let delay_frames: &mut usize = memory
-            .data
-            .get_temp_mut_or_default(Id::new("drag_delay_frames"));
+        let being_dragged = ui.ctx().dragged_id().is_some();
+        let delay_id = Id::new("drag_delay_frames");
+        let mut delay_frames: usize = ui.memory_mut(|m| *m.data.get_temp_mut_or_default(delay_id));
         if being_dragged {
-            if *delay_frames < 6 {
-                *delay_frames += 1;
+            if delay_frames < 6 {
+                delay_frames += 1;
             } else {
-                drop(memory);
                 if let Some(drag_index) = self.drag_index {
-                    ui.output().cursor_icon = CursorIcon::Grabbing;
+                    ui.output_mut(|o| o.cursor_icon = CursorIcon::Grabbing);
                     let layer_id =
                         LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
                     let res = ui
@@ -258,32 +252,28 @@ impl App {
                                 .column(Column::exact(numeric_col_width))
                                 .column(Column::exact(numeric_col_width))
                                 .body(|body| {
-                                    body.rows(
-                                        text_height,
-                                        self.selected.len(),
-                                        |index, mut row| {
-                                            let mod_ = &self.selected[index];
-                                            let mut enabled = mod_.enabled;
+                                    body.rows(text_height, self.selected.len(), |mut row| {
+                                        let mod_ = &self.selected[row.index()];
+                                        let mut enabled = mod_.enabled;
+                                        row.col(|ui| {
+                                            ui.checkbox(&mut enabled, "");
+                                        });
+                                        for label in [
+                                            mod_.meta.name.as_str(),
+                                            mod_.meta.category.as_str(),
+                                            mod_.meta.version.to_string().as_str(),
+                                            self.mods
+                                                .iter()
+                                                .position(|m| m == mod_)
+                                                .unwrap()
+                                                .to_string()
+                                                .as_str(),
+                                        ] {
                                             row.col(|ui| {
-                                                ui.checkbox(&mut enabled, "");
+                                                ui.label(label);
                                             });
-                                            for label in [
-                                                mod_.meta.name.as_str(),
-                                                mod_.meta.category.as_str(),
-                                                mod_.meta.version.to_string().as_str(),
-                                                self.mods
-                                                    .iter()
-                                                    .position(|m| m == mod_)
-                                                    .unwrap()
-                                                    .to_string()
-                                                    .as_str(),
-                                            ] {
-                                                row.col(|ui| {
-                                                    ui.label(label);
-                                                });
-                                            }
-                                        },
-                                    );
+                                        }
+                                    });
                                 });
                         })
                         .response;
@@ -294,8 +284,9 @@ impl App {
                 }
             }
         } else {
-            *delay_frames = 0;
+            delay_frames = 0;
         }
+        ui.memory_mut(|m| m.data.insert_temp(delay_id, delay_frames));
     }
 
     fn render_mod_row(&mut self, index: usize, mut row: TableRow) {
@@ -325,14 +316,14 @@ impl App {
             };
 
             if selected {
-                row = row.selected(true);
+                row.set_selected(true);
             }
             let mut enabled = mod_.enabled;
             process_col_res(
                 row.col(|ui| {
                     toggled = ui.checkbox(&mut enabled, "").clicked();
-                    shift = ui.input().modifiers.shift;
-                    ctrl = ui.input().modifiers.ctrl;
+                    shift = ui.input(|i| i.modifiers.shift);
+                    ctrl = ui.input(|i| i.modifiers.ctrl);
                 })
                 .1,
             );

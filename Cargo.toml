@@ -30,8 +30,8 @@ smartstring = { workspace = true, features = ["serde"] }
 zip = { workspace = true, default-features = false, features = ["deflate"]}
 
 astrolabe = "0.5.1"
-egui_commonmark = { git = "https://github.com/NiceneNerd/egui_commonmark", features = ["svg", "fetch"] }
-egui-notify = { git = "https://github.com/NiceneNerd/egui-notify" }
+egui_commonmark = { version = "0.15.0", features = ["svg", "fetch"] }
+egui-notify = "0.14.0"
 env_logger = "0.10.0"
 http_req  = {version="^0.9", default-features = false, features = ["rust-tls"] }
 image = { version = "0.24.4", features = ["jpeg", "png"] }
@@ -74,7 +74,7 @@ anyhow_ext = "0.2.1"
 dashmap = "5.4"
 dircpy = "0.3.12"
 dirs2 = "3"
-eframe = { git = "https://github.com/NiceneNerd/egui", package = "eframe", default-features = false }
+eframe = { version = "0.27.2", default-features = false }
 flume = "0.11.0"
 fs-err = "2.9"
 indexmap = { version = "2.2.6", features = ["serde"] }

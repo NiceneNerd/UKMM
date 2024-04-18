@@ -1,7 +1,7 @@
 use color_hex::color_from_hex;
 use egui::{
-    epaint::{RectShape, Shadow, Tessellator},
-    style::{Margin, Selection, Spacing, WidgetVisuals, Widgets},
+    epaint::{Margin, RectShape, Shadow, Tessellator},
+    style::{Selection, Spacing, WidgetVisuals, Widgets},
     Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
 };
 use once_cell::sync::Lazy;
@@ -28,22 +28,20 @@ pub fn error_bg(visuals: &Visuals) -> Color32 {
 }
 
 pub fn style_dock(style: &egui::Style) -> egui_dock::Style {
-    egui_dock::StyleBuilder::from_egui(style)
-        .show_close_buttons(false)
-        .with_tab_rounding(Rounding {
-            ne: 2.0,
-            nw: 2.0,
-            ..Default::default()
-        })
-        .with_tab_text_color_focused(style.visuals.strong_text_color())
-        .with_tab_text_color_unfocused(style.visuals.weak_text_color())
-        .with_tab_outline_color(style.visuals.widgets.noninteractive.bg_stroke.color)
-        .with_border_width(1.0)
-        .with_border_color(style.visuals.widgets.noninteractive.bg_stroke.color)
-        .with_separator_width(1.0)
-        .with_separator_color(style.visuals.widgets.noninteractive.bg_stroke.color)
-        .with_padding(Margin::default())
-        .build()
+    let mut dock_style = egui_dock::Style::from_egui(style);
+    dock_style.tab.tab_body.rounding = Rounding {
+        ne: 2.0,
+        nw: 2.0,
+        ..Default::default()
+    };
+    dock_style.tab.focused.text_color = style.visuals.strong_text_color();
+    dock_style.tab.inactive.text_color = style.visuals.weak_text_color();
+    dock_style.tab.tab_body.stroke.color = style.visuals.widgets.noninteractive.bg_stroke.color;
+    dock_style.tab.active.outline_color = style.visuals.widgets.noninteractive.bg_stroke.color;
+    dock_style.separator.width = 1.0;
+    dock_style.separator.color_idle = style.visuals.widgets.noninteractive.bg_stroke.color;
+    dock_style.dock_area_padding = Some(Margin::default());
+    dock_style
 }
 
 pub fn slate_grid(ui: &mut Ui) {
@@ -54,16 +52,13 @@ pub fn slate_grid(ui: &mut Ui) {
         static GRID_COLOR: Lazy<Color32> = Lazy::new(|| BLUE.linear_multiply(0.0333));
         const GRID_OFFSET: f32 = 16.0;
         let bg_rect = Rect::from_min_size(ui.cursor().min, ui.available_size()); //.shrink(4.0);
-        ui.painter().rect_filled(
-            bg_rect,
-            Rounding::none(),
-            ui.style().visuals.extreme_bg_color,
-        );
+        ui.painter()
+            .rect_filled(bg_rect, Rounding::ZERO, ui.style().visuals.extreme_bg_color);
         ui.set_clip_rect(bg_rect);
         ui.painter().add({
             let mut mesh = Mesh::default();
             let mut tesselator = Tessellator::new(
-                ui.fonts().pixels_per_point(),
+                ui.fonts(|f| f.pixels_per_point()),
                 egui::epaint::TessellationOptions {
                     feathering: true,
                     feathering_size_in_pixels: 32.0,
@@ -149,44 +144,49 @@ impl Theme {
                         override_text_color: None,
                         widgets: Widgets {
                             noninteractive: WidgetVisuals {
-                                bg_fill:   hex_color!("#1C1E1F"),
+                                bg_fill: hex_color!("#1C1E1F"),
                                 bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
                                 fg_stroke: Stroke::new(1.0, hex_color!("#BCCAD1")),
-                                rounding:  Rounding::same(0.0),
+                                rounding: Rounding::same(0.0),
                                 expansion: 0.0,
+                                weak_bg_fill: Color32::TRANSPARENT,
                             },
                             inactive: WidgetVisuals {
-                                bg_fill:   hex_color!("#1d4e77"),
+                                bg_fill: hex_color!("#1d4e77"),
                                 bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
                                 fg_stroke: Stroke::new(1.0, hex_color!("#f0f0f0")),
-                                rounding:  Rounding::same(2.0),
+                                rounding: Rounding::same(2.0),
                                 expansion: 0.0,
+                                weak_bg_fill: Color32::TRANSPARENT,
                             },
                             hovered: WidgetVisuals {
-                                bg_fill:   hex_color!("#237ba3"),
+                                bg_fill: hex_color!("#237ba3"),
                                 bg_stroke: Stroke::new(1.0, hex_color!("#1d649a")),
                                 fg_stroke: Stroke::new(1.5, hex_color!("#f0f0f0")),
-                                rounding:  Rounding::same(2.0),
+                                rounding: Rounding::same(2.0),
                                 expansion: 1.0,
+                                weak_bg_fill: Color32::TRANSPARENT,
                             },
                             active: WidgetVisuals {
-                                bg_fill:   hex_color!("#12384f"),
+                                bg_fill: hex_color!("#12384f"),
                                 bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
                                 fg_stroke: Stroke::new(1.5, hex_color!("#D9EEFF")),
-                                rounding:  Rounding::same(2.0),
+                                rounding: Rounding::same(2.0),
                                 expansion: 1.0,
+                                weak_bg_fill: Color32::TRANSPARENT,
                             },
                             open: WidgetVisuals {
-                                bg_fill:   hex_color!("#1C1E1F"),
+                                bg_fill: hex_color!("#1C1E1F"),
                                 bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
                                 fg_stroke: Stroke::new(1.0, hex_color!("#D9EEFF")),
-                                rounding:  Rounding::same(2.0),
+                                rounding: Rounding::same(2.0),
                                 expansion: 0.0,
+                                weak_bg_fill: Color32::TRANSPARENT,
                             },
                         },
                         selection: Selection {
                             bg_fill: BLUE.linear_multiply(0.667),
-                            stroke:  Stroke::new(1.0, Color32::WHITE),
+                            stroke: Stroke::new(1.0, Color32::WHITE),
                         },
                         hyperlink_color: BLUE,
                         faint_bg_color: hex_color!("#252729"),
@@ -196,30 +196,33 @@ impl Theme {
                         error_fg_color: RED,    // red
                         window_rounding: Rounding::same(4.0),
                         window_shadow: Shadow {
-                            extrusion: 5.0,
-                            color:     Color32::from_black_alpha(45),
+                            offset: egui::Vec2::new(0., 0.),
+                            blur: 5.,
+                            spread: 5.,
+                            color: Color32::from_black_alpha(45),
                         },
                         popup_shadow: Shadow {
-                            extrusion: 5.0,
-                            color:     Color32::from_black_alpha(45),
+                            offset: egui::Vec2::new(0., 0.),
+                            blur: 5.,
+                            spread: 5.,
+                            color: Color32::from_black_alpha(45),
                         },
                         window_fill: hex_color!("#1C1E1F"),
                         window_stroke: Stroke::NONE,
                         panel_fill: hex_color!("#1C1E1F"),
                         resize_corner_size: 8.0,
-                        text_cursor_width: 2.0,
                         text_cursor_preview: false,
                         clip_rect_margin: 3.0, /* should be at least half the size of the widest
                                                 * frame stroke
                                                 * + max WidgetVisuals::expansion */
                         button_frame: true,
                         collapsing_header_frame: false,
+                        ..Default::default()
                     },
                     spacing: Spacing {
                         button_padding: [4.0, 2.0].into(),
                         icon_spacing: 4.0,
                         menu_margin: Margin::same(4.0),
-                        scroll_bar_width: 2.0,
                         indent_ends_with_horizontal_line: false,
                         ..Default::default()
                     },
