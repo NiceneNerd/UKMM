@@ -1244,6 +1244,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui-aesthetix"
+version = "0.2.2"
+source = "git+https://github.com/NiceneNerd/egui-aesthetix#d2caf2f42666b62de16dda0f6e2e20e1b8dc038a"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "egui-notify"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4761,6 +4769,7 @@ dependencies = [
  "color-hex",
  "eframe",
  "egui",
+ "egui-aesthetix",
  "egui_dock",
  "egui_extras",
  "font-loader",

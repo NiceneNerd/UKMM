@@ -14,6 +14,7 @@ smartstring = { workspace = true }
 
 color-hex = "0.2.0"
 catppuccin-egui = { version = "5.0", default-features = false, features = ["egui27"] }
+egui-aesthetix = { git = "https://github.com/NiceneNerd/egui-aesthetix", features = ["all_themes"] }
 egui = { version = "0.27", default-features = false, features = ["color-hex", "persistence"] }
 egui_dock = { version = "0.12.0", features = ["serde"] }
 egui_extras = { version = "0.27", features = ["image", "svg"] }

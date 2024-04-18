@@ -11,7 +11,7 @@ pub fn default_ui() -> DockState<Tabs> {
     let [main, side] = state.split(
         (0.into(), 0.into()),
         uk_ui::egui_dock::Split::Right,
-        0.9,
+        0.85,
         Node::leaf_with(vec![Tabs::Info, Tabs::Install]),
     );
     let [_side_top, _side_bottom] = state.split(
@@ -23,7 +23,7 @@ pub fn default_ui() -> DockState<Tabs> {
     let [main, _log] = state.split(
         (0.into(), main),
         uk_ui::egui_dock::Split::Below,
-        0.99,
+        0.75,
         Node::leaf(Tabs::Log),
     );
     state.set_focused_node_and_surface((0.into(), main));

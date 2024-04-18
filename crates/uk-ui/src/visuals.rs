@@ -4,8 +4,11 @@ use egui::{
     style::{Selection, Spacing, WidgetVisuals, Widgets},
     Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
 };
+use egui_aesthetix::Aesthetix;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+
+mod themes;
 
 macro_rules! hex_color {
     ($hex:expr) => {{
@@ -104,6 +107,10 @@ pub enum Theme {
     Latte,
     Macchiato,
     Mocha,
+    AdwaitaDark,
+    AdwaitaLight,
+    Carl,
+    SweetDark,
 }
 
 impl Theme {
@@ -117,6 +124,10 @@ impl Theme {
             Theme::Latte => "Latte",
             Theme::Macchiato => "Macchiato",
             Theme::Mocha => "Mocha",
+            Theme::AdwaitaDark => "Adwaita Dark",
+            Theme::AdwaitaLight => "Adwaita Light",
+            Theme::Carl => "Carl",
+            Theme::SweetDark => "Sweet Dark"
         }
     }
 
@@ -130,6 +141,10 @@ impl Theme {
             Theme::Latte,
             Theme::Macchiato,
             Theme::Mocha,
+            Theme::AdwaitaDark,
+            Theme::AdwaitaLight,
+            Theme::Carl,
+            Theme::SweetDark
         ]
         .into_iter()
     }
@@ -252,6 +267,18 @@ impl Theme {
             }
             Self::Mocha => {
                 catppuccin_egui::set_theme(ctx, catppuccin_egui::MOCHA);
+            }
+            Self::AdwaitaDark => {
+                ctx.set_style(egui_aesthetix::themes::StandardDark.custom_style());
+            }
+            Self::AdwaitaLight => {
+                ctx.set_style(egui_aesthetix::themes::StandardLight.custom_style());
+            }
+            Self::Carl => {
+                ctx.set_style(egui_aesthetix::themes::CarlDark.custom_style());
+            }
+            Self::SweetDark => {
+                ctx.set_style(themes::SweetDark.custom_style());
             }
         }
     }
