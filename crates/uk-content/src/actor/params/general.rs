@@ -281,10 +281,10 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
+        let gparamlist = super::GeneralParamList::from(&pio);
         let data = roead::aamp::ParameterIO::from(gparamlist.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
-        let gparamlist2 = super::GeneralParamList::try_from(&pio2).unwrap();
+        let gparamlist2 = super::GeneralParamList::from(&pio2);
         assert_eq!(gparamlist, gparamlist2);
     }
 
@@ -297,7 +297,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
+        let gparamlist = super::GeneralParamList::from(&pio);
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
@@ -305,7 +305,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let gparamlist2 = super::GeneralParamList::try_from(&pio2).unwrap();
+        let gparamlist2 = super::GeneralParamList::from(&pio2);
         let _diff = gparamlist.diff(&gparamlist2);
     }
 
@@ -319,14 +319,14 @@ mod tests {
         )
         .unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
-        let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
+        let gparamlist = super::GeneralParamList::from(&pio);
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_data("Actor/GeneralParamList/Enemy_Guardian_A.bgparamlist")
                 .unwrap(),
         )
         .unwrap();
-        let gparamlist2 = super::GeneralParamList::try_from(&pio2).unwrap();
+        let gparamlist2 = super::GeneralParamList::from(&pio2);
         let diff = gparamlist.diff(&gparamlist2);
         let merged = gparamlist.merge(&diff);
         assert_eq!(gparamlist2, merged);
@@ -342,7 +342,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let gparamlist = super::GeneralParamList::try_from(&pio).unwrap();
+        let gparamlist = super::GeneralParamList::from(&pio);
         let mut info = roead::byml::Map::default();
         gparamlist.update_info(&mut info).unwrap();
         assert_eq!(info["systemIsGetItemSelf"], Byml::Bool(false));

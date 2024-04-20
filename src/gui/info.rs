@@ -9,9 +9,10 @@ use parking_lot::{Mutex, RwLock};
 use rustc_hash::{FxHashMap, FxHasher};
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
+#[allow(deprecated)]
+use uk_ui::egui_extras::RetainedImage;
 use uk_ui::{
     egui::{self, Align, Label, Layout, RichText, Ui},
-    egui_extras::RetainedImage,
     icons::IconButtonExt,
     PathNode,
 };
@@ -27,6 +28,7 @@ pub enum Message {
 pub struct ModInfo<'a>(pub &'a Mod);
 
 impl ModInfo<'_> {
+    #[allow(deprecated)]
     pub fn preview(&self) -> Option<Arc<RetainedImage>> {
         fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
             let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
@@ -47,11 +49,13 @@ impl ModInfo<'_> {
         let mut preview = PREVIEW.write();
         preview
             .entry(self.0.hash())
-            .or_insert_with(|| match load_preview(self.0) {
-                Ok(pre) => pre,
-                Err(e) => {
-                    log::error!("Error loading mod preview: {}", e);
-                    None
+            .or_insert_with(|| {
+                match load_preview(self.0) {
+                    Ok(pre) => pre,
+                    Err(e) => {
+                        log::error!("Error loading mod preview: {}", e);
+                        None
+                    }
                 }
             })
             .clone()
@@ -91,12 +95,12 @@ impl Component for ModInfo<'_> {
             });
             ui.label(RichText::new("Description").family(egui::FontFamily::Name("Bold".into())));
             ui.add_space(4.);
-            let md_cache = ui
-                .data()
-                .get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
+            let md_cache = ui.data_mut(|d| {
+                d.get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
                     egui::Id::new("md_cache"),
                 )
-                .clone();
+                .clone()
+            });
             egui_commonmark::CommonMarkViewer::new("mod_description").show(
                 ui,
                 &mut md_cache.lock(),

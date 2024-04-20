@@ -66,10 +66,10 @@ mod tests {
             actor.get_data("Actor/LOD/EnemyNoCalcSkip.blod").unwrap(),
         )
         .unwrap();
-        let lod = super::Lod::try_from(&pio).unwrap();
+        let lod = super::Lod::from(&pio);
         let data = roead::aamp::ParameterIO::from(lod.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
-        let lod2 = super::Lod::try_from(&pio2).unwrap();
+        let lod2 = super::Lod::from(&pio2);
         assert_eq!(lod, lod2);
     }
 
@@ -80,13 +80,13 @@ mod tests {
             actor.get_data("Actor/LOD/EnemyNoCalcSkip.blod").unwrap(),
         )
         .unwrap();
-        let lod = super::Lod::try_from(&pio).unwrap();
+        let lod = super::Lod::from(&pio);
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2.get_data("Actor/LOD/EnemyNoCalcSkip.blod").unwrap(),
         )
         .unwrap();
-        let lod2 = super::Lod::try_from(&pio2).unwrap();
+        let lod2 = super::Lod::from(&pio2);
         let _diff = lod.diff(&lod2);
     }
 
@@ -98,12 +98,12 @@ mod tests {
         )
         .unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
-        let lod = super::Lod::try_from(&pio).unwrap();
+        let lod = super::Lod::from(&pio);
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2.get_data("Actor/LOD/EnemyNoCalcSkip.blod").unwrap(),
         )
         .unwrap();
-        let lod2 = super::Lod::try_from(&pio2).unwrap();
+        let lod2 = super::Lod::from(&pio2);
         let diff = lod.diff(&lod2);
         let merged = lod.merge(&diff);
         assert_eq!(lod2, merged);

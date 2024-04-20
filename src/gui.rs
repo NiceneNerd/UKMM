@@ -14,6 +14,7 @@ mod util;
 use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
+    fmt::Write,
     ops::DerefMut,
     path::PathBuf,
     sync::Arc,
@@ -22,7 +23,11 @@ use std::{
 };
 
 use anyhow_ext::{Context, Result};
-use eframe::{egui::InnerResponse, epaint::text::TextWrapping, IconData, NativeOptions};
+use eframe::{
+    egui::{IconData, InnerResponse},
+    epaint::text::TextWrapping,
+    NativeOptions,
+};
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
@@ -43,10 +48,11 @@ use uk_mod::{pack::sanitise, Manifest, Meta, ModPlatform};
 pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
-        self, style::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
+        self, epaint::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
         Label, LayerId, Layout, RichText, Spinner, TextFormat, TextStyle, Ui, Vec2,
+        ViewportBuilder,
     },
-    egui_dock::{DockArea, NodeIndex, Tree},
+    egui_dock::{DockArea, DockState, NodeIndex},
     ext::UiExt,
     icons::{Icon, IconButtonExt},
 };
@@ -57,39 +63,27 @@ use crate::{gui::modals::MetaInputModal, logger::Entry};
 
 impl Entry {
     pub fn format(&self, job: &mut LayoutJob) {
-        job.append(
-            &jstr!("[{&self.timestamp}] "),
-            0.,
-            TextFormat {
-                color: Color32::GRAY,
-                font_id: FontId::monospace(10.),
-                ..Default::default()
+        job.append(&jstr!("[{&self.timestamp}] "), 0., TextFormat {
+            color: Color32::GRAY,
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
+        job.append(&jstr!("{&self.level} "), 0., TextFormat {
+            color: match self.level.as_str() {
+                "INFO" => visuals::GREEN,
+                "WARN" => visuals::ORGANGE,
+                "ERROR" => visuals::RED,
+                "DEBUG" => visuals::BLUE,
+                _ => visuals::YELLOW,
             },
-        );
-        job.append(
-            &jstr!("{&self.level} "),
-            0.,
-            TextFormat {
-                color: match self.level.as_str() {
-                    "INFO" => visuals::GREEN,
-                    "WARN" => visuals::ORGANGE,
-                    "ERROR" => visuals::RED,
-                    "DEBUG" => visuals::BLUE,
-                    _ => visuals::YELLOW,
-                },
-                font_id: FontId::monospace(10.),
-                ..Default::default()
-            },
-        );
-        job.append(
-            &self.args,
-            1.,
-            TextFormat {
-                color: Color32::WHITE,
-                font_id: FontId::monospace(10.),
-                ..Default::default()
-            },
-        );
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
+        job.append(&self.args, 1., TextFormat {
+            color: Color32::WHITE,
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
         job.append("\n", 0.0, Default::default());
     }
 }
@@ -143,15 +137,19 @@ impl Sort {
             Sort::Name => {
                 Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| a.meta.name.cmp(&b.meta.name))
             }
-            Sort::Category => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                a.meta.category.cmp(&b.meta.category)
-            }),
-            Sort::Version => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                a.meta
-                    .version
-                    .partial_cmp(&b.meta.version)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            }),
+            Sort::Category => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                    a.meta.category.cmp(&b.meta.category)
+                })
+            }
+            Sort::Version => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                    a.meta
+                        .version
+                        .partial_cmp(&b.meta.version)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+            }
             Sort::Priority => Box::new(|&(a, _), &(b, _)| a.cmp(&b)),
         }
     }
@@ -239,7 +237,7 @@ struct UiState {
     theme: uk_ui::visuals::Theme,
     picker_state: FilePickerState,
     #[serde(default = "tabs::default_ui")]
-    tree: Tree<Tabs>,
+    tree: DockState<Tabs>,
 }
 
 impl Default for UiState {
@@ -267,7 +265,7 @@ pub struct App {
     profiles_state: RefCell<profiles::ProfileManagerState>,
     meta_input: modals::MetaInputModal,
     closed_tabs: HashMap<Tabs, NodeIndex>,
-    tree: Arc<RwLock<Tree<Tabs>>>,
+    tree: Arc<RwLock<DockState<Tabs>>>,
     focused: FocusedPane,
     logs: Vec<Entry>,
     log: LayoutJob,
@@ -423,10 +421,10 @@ impl App {
     fn do_task(
         &self,
         task: impl 'static
-            + Send
-            + Sync
-            + FnOnce(Arc<Manager>) -> Result<Message>
-            + std::panic::UnwindSafe,
+        + Send
+        + Sync
+        + FnOnce(Arc<Manager>) -> Result<Message>
+        + std::panic::UnwindSafe,
     ) {
         let sender = self.channel.0.clone();
         let core = self.core.clone();
@@ -436,15 +434,17 @@ impl App {
             let response = match std::panic::catch_unwind(|| task(core.clone())) {
                 Ok(Ok(msg)) => msg,
                 Ok(Err(e)) => Message::Error(e),
-                Err(e) => Message::Error(anyhow::format_err!(
-                    "{}",
-                    e.downcast::<String>().unwrap_or_else(|_| {
-                        Box::new(
-                            "An unknown error occured, check the log for possible details."
-                                .to_string(),
-                        )
-                    })
-                )),
+                Err(e) => {
+                    Message::Error(anyhow::format_err!(
+                        "{}",
+                        e.downcast::<String>().unwrap_or_else(|_| {
+                            Box::new(
+                                "An unknown error occured, check the log for possible details."
+                                    .to_string(),
+                            )
+                        })
+                    ))
+                }
             };
             if let Some(d) = core.settings().dump() {
                 d.clear_cache()
@@ -454,7 +454,7 @@ impl App {
     }
 
     fn handle_drops(&mut self, ctx: &eframe::egui::Context) {
-        let files = &ctx.input().raw.dropped_files;
+        let files = ctx.input(|i| i.raw.dropped_files.clone());
         if !(self.modal_open() || files.is_empty()) {
             let first = files.first().and_then(|f| f.path.clone()).unwrap();
             self.install_queue
@@ -464,7 +464,7 @@ impl App {
         }
     }
 
-    fn handle_update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+    fn handle_update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
                 Message::Noop => self.busy.set(false),
@@ -492,10 +492,11 @@ impl App {
                     self.selected.retain(|m| self.mods.contains(m));
                     self.do_update(Message::RefreshModsDisplay);
                     self.do_update(Message::ReloadProfiles);
-                    ctx.data()
-                        .remove::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(egui::Id::new(
+                    ctx.data_mut(|d| {
+                        d.remove::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(egui::Id::new(
                             "md_cache",
-                        ));
+                        ))
+                    });
                     info::ROOTS.write().clear();
                 }
                 Message::RefreshModsDisplay => {
@@ -555,7 +556,8 @@ impl App {
                             .mods
                             .iter()
                             .enumerate()
-                            .filter_map(|(i, m)| range.contains(&i).then(|| m.clone()))
+                            .filter(|&(i, _m)| range.contains(&i))
+                            .map(|(_i, m)| m.clone())
                             .collect();
                     }
                     self.drag_index = None;
@@ -571,13 +573,13 @@ impl App {
                     self.drag_index = None;
                 }
                 Message::StartDrag(i) => {
-                    if ctx.input().pointer.any_released() {
+                    if ctx.input(|i| i.pointer.any_released()) {
                         self.drag_index = None;
                     }
                     self.drag_index = Some(i);
                     let mod_ = &self.mods[i];
                     if !self.selected.contains(mod_) {
-                        if !ctx.input().modifiers.ctrl {
+                        if !ctx.input(|i| i.modifiers.ctrl) {
                             self.selected.clear();
                         }
                         self.selected.push(mod_.clone());
@@ -654,11 +656,13 @@ impl App {
                         };
                     }
                 }
-                Message::DeleteProfile(profile) => self.do_task(move |core| {
-                    let path = core.settings().profiles_dir().join(profile);
-                    fs::remove_dir_all(path)?;
-                    Ok(Message::ReloadProfiles)
-                }),
+                Message::DeleteProfile(profile) => {
+                    self.do_task(move |core| {
+                        let path = core.settings().profiles_dir().join(profile);
+                        fs::remove_dir_all(path)?;
+                        Ok(Message::ReloadProfiles)
+                    })
+                }
                 Message::DuplicateProfile(profile) => {
                     self.do_task(move |core| {
                         let profiles_dir = core.settings().profiles_dir();
@@ -669,11 +673,13 @@ impl App {
                         Ok(Message::ReloadProfiles)
                     });
                 }
-                Message::RenameProfile(profile, rename) => self.do_task(move |core| {
-                    let profiles_dir = core.settings().profiles_dir();
-                    fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
-                    Ok(Message::ReloadProfiles)
-                }),
+                Message::RenameProfile(profile, rename) => {
+                    self.do_task(move |core| {
+                        let profiles_dir = core.settings().profiles_dir();
+                        fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
+                        Ok(Message::ReloadProfiles)
+                    })
+                }
                 Message::ReloadProfiles => {
                     self.profiles_state.borrow_mut().reload(&self.core);
                     self.busy.set(false);
@@ -827,8 +833,10 @@ impl App {
                         let msg = self
                             .error_queue
                             .drain(..)
-                            .map(|e| format!("{e:?}\n"))
-                            .collect::<String>();
+                            .fold(String::new(), |mut acc, e| {
+                                writeln!(acc, "{:?}", e).expect("Failed to write to String");
+                                acc
+                            });
                         self.do_update(Message::Error(anyhow_ext::anyhow!("{msg}").context(
                             "One or more errors occured while installing your mods. Please see \
                              full details.",
@@ -882,16 +890,20 @@ impl App {
                     let dirty = std::mem::take(self.dirty_mut().deref_mut());
                     self.do_task(move |core| tasks::apply_changes(&core, mods, Some(dirty)));
                 }
-                Message::Deploy => self.do_task(move |core| {
-                    log::info!("Deploying current mod configuration");
-                    core.deploy_manager().deploy()?;
-                    Ok(Message::ResetMods(None))
-                }),
-                Message::ResetPending => self.do_task(|core| {
-                    log::info!("Resetting pending deployment data");
-                    core.deploy_manager().reset_pending()?;
-                    Ok(Message::Noop)
-                }),
+                Message::Deploy => {
+                    self.do_task(move |core| {
+                        log::info!("Deploying current mod configuration");
+                        core.deploy_manager().deploy()?;
+                        Ok(Message::ResetMods(None))
+                    })
+                }
+                Message::ResetPending => {
+                    self.do_task(|core| {
+                        log::info!("Resetting pending deployment data");
+                        core.deploy_manager().reset_pending()?;
+                        Ok(Message::Noop)
+                    })
+                }
                 Message::Remerge => {
                     self.do_task(|core| tasks::apply_changes(&core, vec![], None));
                 }
@@ -1067,7 +1079,7 @@ impl App {
                         std::os::unix::process::CommandExt::process_group(&mut command, 0);
                     }
                     command.spawn().unwrap();
-                    frame.close();
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 }
                 Message::Toast(msg) => {
                     self.toasts.add({
@@ -1119,7 +1131,7 @@ impl eframe::App for App {
         let ui_state = UiState {
             theme: self.theme,
             picker_state: std::mem::take(&mut self.picker_state),
-            tree: std::mem::take(&mut self.tree.write()),
+            tree: std::mem::replace(&mut self.tree.write(), tabs::default_ui()),
         };
         fs::write(
             self.core.settings().state_file(),
@@ -1130,25 +1142,31 @@ impl eframe::App for App {
     }
 }
 
-pub fn main() {
+pub fn main() -> Result<(), eframe::Error> {
     crate::logger::init();
     log::debug!("Logger initialized");
     log::info!("Started ukmm");
     eframe::run_native(
         "U-King Mod Manager",
         NativeOptions {
-            icon_data: Some(IconData {
-                height: 256,
-                width: 256,
-                rgba: image::load_from_memory(include_bytes!("../assets/ukmm.png"))
-                    .unwrap()
-                    .to_rgba8()
-                    .into_vec(),
-            }),
-            min_window_size: Some(egui::Vec2::new(850.0, 500.0)),
-            initial_window_size: Some(egui::Vec2::new(1200.0, 800.0)),
+            viewport: ViewportBuilder {
+                icon: Some(
+                    IconData {
+                        height: 256,
+                        width:  256,
+                        rgba:   image::load_from_memory(include_bytes!("../assets/ukmm.png"))
+                            .unwrap()
+                            .to_rgba8()
+                            .into_vec(),
+                    }
+                    .into(),
+                ),
+                min_inner_size: Some(egui::Vec2::new(850.0, 500.0)),
+                inner_size: Some(egui::Vec2::new(1200.0, 800.0)),
+                ..Default::default()
+            },
             ..Default::default()
         },
         Box::new(|cc| Box::new(App::new(cc))),
-    );
+    )
 }

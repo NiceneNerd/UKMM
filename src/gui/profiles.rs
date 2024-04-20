@@ -155,11 +155,9 @@ impl ProfileManagerState {
                                             .expect("Body style is real, bro")
                                             .clone();
                                         let color = ui.style().visuals.text_color();
-                                        let label = ui.fonts().layout_no_wrap(
-                                            p.as_str().into(),
-                                            font,
-                                            color,
-                                        );
+                                        let label = ui.fonts(|f| {
+                                            f.layout_no_wrap(p.as_str().into(), font, color)
+                                        });
                                         if ui
                                             .selectable_label(
                                                 self.selected

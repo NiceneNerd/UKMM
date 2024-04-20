@@ -311,10 +311,10 @@ impl EditableValue for ParameterList {
 
 fn edit_pio_code(pio: &mut ParameterIO, ui: &mut egui::Ui, id: Id) -> egui::Response {
     ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-        let yaml = ui
-            .data()
-            .get_temp_mut_or_insert_with(id, || Arc::new(RwLock::new(pio.to_text())))
-            .clone();
+        let yaml = ui.data_mut(|r| {
+            r.get_temp_mut_or_insert_with(id, || Arc::new(RwLock::new(pio.to_text())))
+                .clone()
+        });
         ui.allocate_ui_with_layout(
             [
                 ui.spacing().icon_width + ui.spacing().item_spacing.x * 2.0,
@@ -330,12 +330,10 @@ fn edit_pio_code(pio: &mut ParameterIO, ui: &mut egui::Ui, id: Id) -> egui::Resp
                 {
                     match roead::aamp::ParameterIO::from_text(yaml.read().as_str()) {
                         Ok(val) => {
-                            ui.memory()
-                                .data
-                                .insert_temp::<bool>(id.with("error"), false);
+                            ui.memory_mut(|m| m.data.insert_temp::<bool>(id.with("error"), false));
                             *pio = val;
                         }
-                        Err(_) => ui.memory().data.insert_temp(id.with("error"), true),
+                        Err(_) => ui.memory_mut(|m| m.data.insert_temp(id.with("error"), true)),
                     }
                 }
                 if ui
@@ -344,13 +342,11 @@ fn edit_pio_code(pio: &mut ParameterIO, ui: &mut egui::Ui, id: Id) -> egui::Resp
                     .clicked()
                 {
                     *yaml.write() = pio.to_text();
-                    ui.memory()
-                        .data
-                        .insert_temp::<bool>(id.with("error"), false);
+                    ui.memory_mut(|m| m.data.insert_temp::<bool>(id.with("error"), false));
                 }
             },
         );
-        let has_err = ui.memory().data.get_temp(id.with("error")).unwrap_or(false);
+        let has_err = ui.memory(|m| m.data.get_temp(id.with("error")).unwrap_or(false));
         if has_err {
             ui.visuals_mut().extreme_bg_color = visuals::error_bg(ui.visuals());
         }
@@ -362,7 +358,7 @@ fn edit_pio_code(pio: &mut ParameterIO, ui: &mut egui::Ui, id: Id) -> egui::Resp
                 "yaml",
             );
             layout_job.wrap.max_width = wrap_width;
-            ui.fonts().layout_job(layout_job)
+            ui.fonts(|f| f.layout_job(layout_job))
         };
         let res = egui::TextEdit::multiline(yaml.write().deref_mut())
             .layouter(&mut layouter)
@@ -387,7 +383,7 @@ impl EditableValue for ParameterIO {
             .with(self.data_type.as_str())
             .with(self.version)
             .with("code");
-        let mut code_editor = *ui.data().get_temp_mut_or_default::<bool>(code_flag_id);
+        let mut code_editor = ui.data_mut(|d| *d.get_temp_mut_or_default::<bool>(code_flag_id));
         let mut res = ui
             .vertical_centered_justified(|ui| {
                 egui::Grid::new("pio_meta")
@@ -398,11 +394,12 @@ impl EditableValue for ParameterIO {
                         ui.label("");
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                             if ui.toggle_value(&mut code_editor, "Code").changed() {
-                                ui.data().insert_temp(code_flag_id, code_editor);
+                                ui.data_mut(|d| d.insert_temp(code_flag_id, code_editor));
                                 if !code_editor {
                                     let text = ui
-                                        .data()
-                                        .get_temp::<Arc<RwLock<String>>>(Id::new("pio-code"))
+                                        .data(|d| {
+                                            d.get_temp::<Arc<RwLock<String>>>(Id::new("pio-code"))
+                                        })
                                         .expect("YAML text should exist");
                                     let text = text.read();
                                     if let Ok(pio) = ParameterIO::from_text(text.as_str()) {

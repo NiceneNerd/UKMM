@@ -247,7 +247,7 @@ impl EditableValue for RagdollBlendWeight {
             });
         let tmp_id = id.with("new_key");
         let mut add_new = false;
-        let new_key = ui.data().get_temp::<Arc<RwLock<Key>>>(tmp_id);
+        let new_key = ui.data_mut(|m| m.get_temp::<Arc<RwLock<Key>>>(tmp_id));
         if let Some(new_key) = new_key {
             ui.horizontal(|ui| {
                 new_key.write().edit_ui_with_id(ui, tmp_id.with("value"));
@@ -256,19 +256,19 @@ impl EditableValue for RagdollBlendWeight {
                 }
             });
         } else if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
-            ui.data()
-                .insert_temp(tmp_id, Arc::new(RwLock::new(Key::default())));
+            ui.data_mut(|m| m.insert_temp(tmp_id, Arc::new(RwLock::new(Key::default()))));
         }
         if add_new {
             self.0.insert(
-                ui.data()
-                    .get_temp::<Arc<RwLock<Key>>>(tmp_id)
-                    .expect("key should exist")
-                    .read()
-                    .clone(),
+                ui.data(|d| {
+                    d.get_temp::<Arc<RwLock<Key>>>(tmp_id)
+                        .expect("key should exist")
+                        .read()
+                        .clone()
+                }),
                 Default::default(),
             );
-            ui.data().remove::<Arc<RwLock<Key>>>(tmp_id);
+            ui.data_mut(|d| d.remove::<Arc<RwLock<Key>>>(tmp_id));
         }
         let mut res = res.body_response.unwrap_or(res.header_response);
         if changed {

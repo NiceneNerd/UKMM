@@ -48,7 +48,7 @@ impl App {
                                     self.do_update(Message::CloseError);
                                 }
                                 if ui.button("Copy").clicked() {
-                                    ui.output().copied_text = format!("{:?}", &err);
+                                    ui.output_mut(|o| o.copied_text = format!("{:?}", &err));
                                     egui::popup::show_tooltip(ctx, Id::new("copied"), |ui| {
                                         ui.label("Copied")
                                     });

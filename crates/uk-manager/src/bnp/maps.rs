@@ -108,7 +108,7 @@ impl BnpConverter {
                 .collect::<Result<BTreeMap<String, Vec<u8>>>>()?
                 .into_iter()
                 .split(|(k, _)| k.ends_with("Dynamic.smubin"));
-            merged_pack.add_files(statics.into_iter());
+            merged_pack.add_files(statics);
             dynamics
                 .collect::<BTreeMap<String, Vec<u8>>>()
                 .into_par_iter()

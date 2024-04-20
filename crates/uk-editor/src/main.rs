@@ -22,7 +22,7 @@ use uk_content::{canonicalize, prelude::Mergeable, resource::ResourceData};
 use uk_manager::core::Manager;
 use uk_ui::{
     egui,
-    egui_dock::{self, Tree},
+    egui_dock::{self, DockState},
 };
 
 use crate::project::Project;
@@ -47,7 +47,7 @@ struct App {
     core: Arc<Manager>,
     project: Option<Project>,
     channel: (Sender<Message>, Receiver<Message>),
-    tree: Arc<RwLock<Tree<EditorTab>>>,
+    tree: Arc<RwLock<DockState<EditorTab>>>,
     focused: Option<PathBuf>,
     dock_style: egui_dock::Style,
     busy: Cell<bool>,
@@ -64,13 +64,12 @@ impl App {
             .and_then(|s| serde_json::from_str(&s).context(""))
             .unwrap_or_default();
         ui_state.theme.set_theme(&cc.egui_ctx);
-        let mut dock_style = uk_ui::visuals::style_dock(&cc.egui_ctx.style());
-        dock_style.show_close_buttons = true;
+        let dock_style = uk_ui::visuals::style_dock(&cc.egui_ctx.style());
         Self {
             core,
             project: None,
             channel: flume::unbounded(),
-            tree: Arc::new(RwLock::new(editor::default_ui())),
+            tree: Arc::new(RwLock::new(DockState::new(vec![]))),
             focused: None,
             dock_style,
             busy: Cell::new(false),
@@ -85,7 +84,7 @@ impl App {
         } else {
             Some(RwLockReadGuard::map(tree, |tree| {
                 let leaf = tree.focused_leaf().unwrap();
-                let node = tree.iter().nth(leaf.0).unwrap();
+                let node = tree.iter_all_nodes().nth(leaf.1.0).unwrap().1;
                 match node {
                     egui_dock::Node::Leaf { tabs, active, .. } => &tabs[active.0],
                     _ => unreachable!(),
@@ -132,7 +131,7 @@ impl App {
         });
     }
 
-    fn file_menu(&self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+    fn file_menu(&self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         if ui.button("New Project…").clicked() {
             ui.close_menu();
             todo!("New Project");
@@ -171,7 +170,7 @@ impl App {
         });
         ui.separator();
         if ui.button("Exit").clicked() {
-            frame.close();
+            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         }
     }
 
@@ -271,4 +270,5 @@ fn main() {
         eframe::NativeOptions::default(),
         Box::new(|cc| Box::new(App::new(cc))),
     )
+    .expect("eframe should just work")
 }

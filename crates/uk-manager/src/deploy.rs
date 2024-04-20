@@ -22,7 +22,6 @@ use uk_mod::{
     unpack::{ModReader, ModUnpacker},
     Manifest,
 };
-use uk_util::OptionResultExt;
 
 use crate::{
     mods,

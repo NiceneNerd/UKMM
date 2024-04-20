@@ -7,7 +7,7 @@ use uk_ui::{
     icons::{get_icon, Icon, IconButtonExt},
 };
 
-use super::{visuals, App, FocusedPane, Message};
+use super::{App, FocusedPane, Message};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FilePickerState {
@@ -118,7 +118,7 @@ impl App {
                     ui.style_mut().visuals.widgets.inactive.bg_stroke.width = 0.0;
                     let entries = &self.picker_state.entries;
                     if self.focused == FocusedPane::FilePicker && !self.modal_open() {
-                        if ui.input().key_pressed(Key::ArrowDown) {
+                        if ui.input(|i| i.key_pressed(Key::ArrowDown)) {
                             let pos = match entries
                                 .iter()
                                 .position(|p| self.picker_state.selected.as_ref() == Some(p))
@@ -127,7 +127,7 @@ impl App {
                                 None => 0,
                             };
                             self.picker_state.selected = Some(entries[pos].to_path_buf());
-                        } else if ui.input().key_pressed(Key::ArrowUp) {
+                        } else if ui.input(|i| i.key_pressed(Key::ArrowUp)) {
                             let pos = match entries
                                 .iter()
                                 .position(|p| self.picker_state.selected.as_ref() == Some(p))
@@ -153,7 +153,7 @@ impl App {
             .unwrap_or_default();
         let is_dir = path.is_dir();
         let selected = self.picker_state.selected.as_ref().map(|p| p.as_ref()) == Some(path);
-        let icon_size: Vec2 = [ui.spacing().icon_width, ui.spacing().icon_width].into();
+        let _icon_size: Vec2 = [ui.spacing().icon_width, ui.spacing().icon_width].into();
         let res = ui.add(
             Button::image_and_text(
                 get_icon(
@@ -164,15 +164,14 @@ impl App {
                         Icon::FolderZip
                     },
                 ),
-                icon_size,
                 name,
             )
             .wrap(false)
-            .tint(if is_dir {
-                visuals::YELLOW
-            } else {
-                visuals::GREEN
-            })
+            // .tint(if is_dir {
+            //     visuals::YELLOW
+            // } else {
+            //     visuals::GREEN
+            // })
             .fill(if selected {
                 ui.style().visuals.selection.bg_fill
             } else {
@@ -180,7 +179,7 @@ impl App {
             }),
         );
         if res.double_clicked()
-            || (ui.input().key_pressed(Key::Enter) && selected && !self.modal_open())
+            || (ui.input(|i| i.key_pressed(Key::Enter)) && selected && !self.modal_open())
         {
             self.do_update(Message::SetFocus(FocusedPane::FilePicker));
             if path.is_dir() {

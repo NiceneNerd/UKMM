@@ -114,9 +114,7 @@ impl UiExt for Ui {
             max_width,
             ..Default::default()
         };
-        let gallery = self
-            .fonts()
-            .layout(text.clone(), font, color, f32::INFINITY);
+        let gallery = self.fonts(|f| f.layout(text.clone(), font, color, f32::INFINITY));
         let width = gallery.size().x;
         let res = self.label(job);
         if width > self.available_width() {
@@ -129,17 +127,17 @@ impl UiExt for Ui {
     #[inline]
     fn create_temp_string(&mut self, id: impl Hash, init: Option<String>) -> Arc<RwLock<String>> {
         let string = Arc::new(RwLock::new(init.unwrap_or_default()));
-        self.data().insert_temp(Id::new(id), string.clone());
+        self.data_mut(|d| d.insert_temp(Id::new(id), string.clone()));
         string
     }
 
     #[inline]
     fn get_temp_string(&mut self, id: impl Hash) -> Option<Arc<RwLock<String>>> {
-        self.data().get_temp::<Arc<RwLock<String>>>(Id::new(id))
+        self.data_mut(|d| d.get_temp::<Arc<RwLock<String>>>(Id::new(id)))
     }
 
     #[inline]
     fn clear_temp_string(&mut self, id: impl Hash) {
-        self.data().remove::<Arc<RwLock<String>>>(Id::new(id))
+        self.data_mut(|d| d.remove::<Arc<RwLock<String>>>(Id::new(id)))
     }
 }

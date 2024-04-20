@@ -68,10 +68,10 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let umii = super::UMii::try_from(&pio).unwrap();
+        let umii = super::UMii::from(&pio);
         let data = roead::aamp::ParameterIO::from(umii.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
-        let umii2 = super::UMii::try_from(&pio2).unwrap();
+        let umii2 = super::UMii::from(&pio2);
         assert_eq!(umii, umii2);
     }
 
@@ -84,7 +84,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let umii = super::UMii::try_from(&pio).unwrap();
+        let umii = super::UMii::from(&pio);
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
@@ -92,7 +92,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let umii2 = super::UMii::try_from(&pio2).unwrap();
+        let umii2 = super::UMii::from(&pio2);
         let _diff = umii.diff(&umii2);
     }
 
@@ -106,14 +106,14 @@ mod tests {
         )
         .unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Npc_TripMaster_00");
-        let umii = super::UMii::try_from(&pio).unwrap();
+        let umii = super::UMii::from(&pio);
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_data("Actor/UMii/Npc_TripMaster_00.bumii")
                 .unwrap(),
         )
         .unwrap();
-        let umii2 = super::UMii::try_from(&pio2).unwrap();
+        let umii2 = super::UMii::from(&pio2);
         let diff = umii.diff(&umii2);
         let merged = umii.merge(&diff);
         assert_eq!(umii2, merged);

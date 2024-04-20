@@ -1,4 +1,5 @@
-use egui::{Button, ImageButton, Response, TextureId, Ui, WidgetText};
+#![allow(deprecated)]
+use egui::{Button, ImageButton, Response, Ui, WidgetText};
 use egui_extras::RetainedImage;
 use once_cell::sync::OnceCell;
 use rustc_hash::FxHashMap;
@@ -140,8 +141,12 @@ pub fn load_icons() {
 }
 
 #[inline(always)]
-pub fn get_icon(ctx: &egui::Context, icon: Icon) -> TextureId {
-    unsafe { ICONS.get_unchecked().get(&icon).unwrap_unchecked() }.texture_id(ctx)
+pub fn get_icon(ctx: &egui::Context, icon: Icon) -> egui::load::SizedTexture {
+    let width = ctx.style().spacing.icon_width;
+    egui::load::SizedTexture::new(
+        unsafe { ICONS.get_unchecked().get(&icon).unwrap_unchecked() }.texture_id(ctx),
+        egui::Vec2::new(width, width),
+    )
 }
 
 pub trait IconButtonExt {
@@ -154,21 +159,14 @@ impl IconButtonExt for Ui {
         let button_padding = self.spacing().button_padding;
         self.spacing_mut().button_padding = button_padding / 2.;
         let res = self.add(
-            ImageButton::new(get_icon(self.ctx(), icon), [
-                self.spacing().icon_width,
-                self.spacing().icon_width,
-            ])
-            .tint(self.style().visuals.widgets.inactive.fg_stroke.color),
+            ImageButton::new(get_icon(self.ctx(), icon))
+                .tint(self.style().visuals.widgets.inactive.fg_stroke.color),
         );
         self.spacing_mut().button_padding = button_padding;
         res
     }
 
     fn icon_text_button(&mut self, text: impl Into<WidgetText>, icon: Icon) -> Response {
-        self.add(Button::image_and_text(
-            get_icon(self.ctx(), icon),
-            [self.spacing().icon_width, self.spacing().icon_width],
-            text,
-        ))
+        self.add(Button::image_and_text(get_icon(self.ctx(), icon), text))
     }
 }

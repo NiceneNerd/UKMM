@@ -25,4 +25,5 @@ fn main() {
         eframe::NativeOptions::default(),
         Box::new(|_cc| Box::new(EditorTest { value: byml })),
     )
+    .expect("eframe should just work")
 }

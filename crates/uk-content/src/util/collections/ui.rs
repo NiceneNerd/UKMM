@@ -77,23 +77,22 @@ where
                 for (val, del) in self.0.iter_mut() {
                     changed |= ui.checkbox(del, format!("{:#?}", val)).changed();
                 }
-                let new_value = ui
-                    .data()
-                    .get_temp::<Arc<RwLock<String>>>(id.with("new_val"));
+                let new_value = ui.data(|d| d.get_temp::<Arc<RwLock<String>>>(id.with("new_val")));
                 if let Some(new_value) = new_value {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_value.write().deref_mut());
                         if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
                             if let Ok(val) = T::try_from(new_value.read().as_str()) {
                                 self.0.insert(val, false);
-                                ui.data().remove::<Arc<RwLock<String>>>(id.with("new_val"))
+                                ui.data_mut(|d| d.remove::<Arc<RwLock<String>>>(id.with("new_val")))
                             }
                         }
                     });
                 }
                 if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
-                    ui.data()
-                        .insert_temp(id.with("new_val"), Arc::new(RwLock::new(String::new())));
+                    ui.data_mut(|d| {
+                        d.insert_temp(id.with("new_val"), Arc::new(RwLock::new(String::new())))
+                    });
                 }
             })
             .response;
@@ -133,23 +132,22 @@ where
                         })
                         .changed();
                 }
-                let new_value = ui
-                    .data()
-                    .get_temp::<Arc<RwLock<String>>>(id.with("new_val"));
+                let new_value = ui.data(|d| d.get_temp::<Arc<RwLock<String>>>(id.with("new_val")));
                 if let Some(new_value) = new_value {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(new_value.write().deref_mut());
                         if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
                             if let Ok(val) = T::try_from(new_value.read().as_str()) {
                                 self.0.insert(val, false);
-                                ui.data().remove::<Arc<RwLock<String>>>(id.with("new_val"))
+                                ui.data_mut(|d| d.remove::<Arc<RwLock<String>>>(id.with("new_val")))
                             }
                         }
                     });
                 }
                 if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
-                    ui.data()
-                        .insert_temp(id.with("new_val"), Arc::new(RwLock::new(String::new())));
+                    ui.data_mut(|d| {
+                        d.insert_temp(id.with("new_val"), Arc::new(RwLock::new(String::new())))
+                    });
                 }
             })
             .response;
@@ -214,19 +212,21 @@ where
                                 [ui.available_width(), ui.spacing().interact_size.y].into(),
                                 Layout::right_to_left(egui::Align::Center),
                                 |ui| {
-                                    let gallery = ui.fonts().layout_no_wrap(
-                                        str_key,
-                                        ui.style()
-                                            .text_styles
-                                            .get(&egui::TextStyle::Body)
-                                            .expect("Bad egui config")
-                                            .clone(),
-                                        if *del {
-                                            ui.visuals().error_fg_color
-                                        } else {
-                                            ui.visuals().text_color()
-                                        },
-                                    );
+                                    let gallery = ui.fonts(|f| {
+                                        f.layout_no_wrap(
+                                            str_key,
+                                            ui.style()
+                                                .text_styles
+                                                .get(&egui::TextStyle::Body)
+                                                .expect("Bad egui config")
+                                                .clone(),
+                                            if *del {
+                                                ui.visuals().error_fg_color
+                                            } else {
+                                                ui.visuals().text_color()
+                                            },
+                                        )
+                                    });
                                     changed = changed
                                         || ui
                                             .checkbox(del, "")
@@ -332,19 +332,21 @@ where
                                 [ui.available_width(), ui.spacing().interact_size.y].into(),
                                 Layout::right_to_left(egui::Align::Center),
                                 |ui| {
-                                    let gallery = ui.fonts().layout_no_wrap(
-                                        str_key,
-                                        ui.style()
-                                            .text_styles
-                                            .get(&egui::TextStyle::Body)
-                                            .expect("Bad egui config")
-                                            .clone(),
-                                        if *del {
-                                            ui.visuals().error_fg_color
-                                        } else {
-                                            ui.visuals().text_color()
-                                        },
-                                    );
+                                    let gallery = ui.fonts(|f| {
+                                        f.layout_no_wrap(
+                                            str_key,
+                                            ui.style()
+                                                .text_styles
+                                                .get(&egui::TextStyle::Body)
+                                                .expect("Bad egui config")
+                                                .clone(),
+                                            if *del {
+                                                ui.visuals().error_fg_color
+                                            } else {
+                                                ui.visuals().text_color()
+                                            },
+                                        )
+                                    });
                                     changed = changed
                                         || ui
                                             .checkbox(del, "")

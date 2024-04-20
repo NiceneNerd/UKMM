@@ -29,7 +29,8 @@ impl Mergeable for FontArchive {
             other
                 .0
                 .iter()
-                .filter_map(|(n, d)| (self.0.get(n) != Some(d)).then(|| (n.clone(), d.clone())))
+                .filter(|&(n, d)| (self.0.get(n) != Some(d)))
+                .map(|(n, d)| (n.clone(), d.clone()))
                 .collect(),
         )
     }

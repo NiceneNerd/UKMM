@@ -152,7 +152,7 @@ impl App {
                                     self.do_update(Message::CloseError);
                                 }
                                 if ui.button("Copy").clicked() {
-                                    ui.output().copied_text = format!("{:?}", &err);
+                                    ui.output_mut(|o| o.copied_text = format!("{:?}", &err));
                                     egui::popup::show_tooltip(ctx, Id::new("copied"), |ui| {
                                         ui.label("Copied")
                                     });
@@ -232,7 +232,7 @@ impl App {
         }
     }
 
-    pub fn render_busy(&self, ctx: &egui::Context, frame: &eframe::Frame) {
+    pub fn render_busy(&self, ctx: &egui::Context, _frame: &eframe::Frame) {
         if self.busy.get() {
             egui::Window::new("Working")
                 .default_size([240., 80.])
@@ -241,7 +241,7 @@ impl App {
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     let max_width =
-                        (ui.available_width() / 2.).min(frame.info().window_info.size.x - 64.0);
+                        (ui.available_width() / 2.).min(ctx.screen_rect().size().x - 64.0);
                     ui.vertical_centered(|ui| {
                         let text_height = ui.text_style_height(&TextStyle::Body) * 2.;
                         let padding = 80. - text_height - 8.;
@@ -427,12 +427,12 @@ impl App {
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
-                    let md_cache = ui
-                        .data()
-                        .get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
+                    let md_cache = ui.data_mut(|d| {
+                        d.get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
                             egui::Id::new("md_cache_changelog"),
                         )
-                        .clone();
+                        .clone()
+                    });
                     egui_commonmark::CommonMarkViewer::new("changelog").show(
                         ui,
                         &mut md_cache.lock(),
@@ -452,7 +452,9 @@ impl App {
                             .on_hover_text("Click to copy wallet address")
                             .clicked()
                         {
-                            ui.output().copied_text = "392YEGQ8WybkRSg4oyeLf7Pj2gQNhPcWoa".into();
+                            ui.output_mut(|o| {
+                                o.copied_text = "392YEGQ8WybkRSg4oyeLf7Pj2gQNhPcWoa".into()
+                            });
                             self.do_update(Message::Toast(
                                 "BTC address copied to clipboard".into(),
                             ));

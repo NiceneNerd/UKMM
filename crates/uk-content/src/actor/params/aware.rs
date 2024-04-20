@@ -68,10 +68,10 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let awareness = super::Awareness::try_from(&pio).unwrap();
+        let awareness = super::Awareness::from(&pio);
         let data = roead::aamp::ParameterIO::from(awareness.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
-        let awareness2 = super::Awareness::try_from(&pio2).unwrap();
+        let awareness2 = super::Awareness::from(&pio2);
         assert_eq!(awareness, awareness2);
     }
 
@@ -84,7 +84,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let awareness = super::Awareness::try_from(&pio).unwrap();
+        let awareness = super::Awareness::from(&pio);
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
@@ -92,7 +92,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let awareness2 = super::Awareness::try_from(&pio2).unwrap();
+        let awareness2 = super::Awareness::from(&pio2);
         let _diff = awareness.diff(&awareness2);
     }
 
@@ -106,14 +106,14 @@ mod tests {
         )
         .unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
-        let awareness = super::Awareness::try_from(&pio).unwrap();
+        let awareness = super::Awareness::from(&pio);
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_data("Actor/Awareness/Guardian.bawareness")
                 .unwrap(),
         )
         .unwrap();
-        let awareness2 = super::Awareness::try_from(&pio2).unwrap();
+        let awareness2 = super::Awareness::from(&pio2);
         let diff = awareness.diff(&awareness2);
         let merged = awareness.merge(&diff);
         assert_eq!(awareness2, merged);
