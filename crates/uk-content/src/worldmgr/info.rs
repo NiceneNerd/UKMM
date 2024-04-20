@@ -65,28 +65,28 @@ mod tests {
     #[test]
     fn serde() {
         let pio = load_winfo();
-        let winfo = super::WorldInfo::try_from(&pio).unwrap();
+        let winfo = super::WorldInfo::from(&pio);
         let data = ParameterIO::from(winfo.clone()).to_binary();
         let pio2 = ParameterIO::from_binary(data).unwrap();
-        let winfo2 = super::WorldInfo::try_from(&pio2).unwrap();
+        let winfo2 = super::WorldInfo::from(&pio2);
         assert_eq!(winfo, winfo2);
     }
 
     #[test]
     fn diff() {
         let pio = load_winfo();
-        let winfo = super::WorldInfo::try_from(&pio).unwrap();
+        let winfo = super::WorldInfo::from(&pio);
         let pio2 = load_mod_winfo();
-        let winfo2 = super::WorldInfo::try_from(&pio2).unwrap();
+        let winfo2 = super::WorldInfo::from(&pio2);
         let _diff = winfo.diff(&winfo2);
     }
 
     #[test]
     fn merge() {
         let pio = load_winfo();
-        let winfo = super::WorldInfo::try_from(&pio).unwrap();
+        let winfo = super::WorldInfo::from(&pio);
         let pio2 = load_mod_winfo();
-        let winfo2 = super::WorldInfo::try_from(&pio2).unwrap();
+        let winfo2 = super::WorldInfo::from(&pio2);
         let diff = winfo.diff(&winfo2);
         let merged = winfo.merge(&diff);
         assert_eq!(merged, winfo2);

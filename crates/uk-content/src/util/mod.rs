@@ -12,7 +12,7 @@ use roead::{
 
 pub fn diff_plist<P: ParameterListing + From<ParameterList>>(base: &P, other: &P) -> P {
     ParameterList {
-        lists: other
+        lists:   other
             .lists()
             .0
             .iter()
@@ -71,7 +71,7 @@ pub fn merge_plist<P: ParameterListing + From<ParameterList>>(base: &P, diff: &P
             }
             new
         },
-        lists: {
+        lists:   {
             let mut new = base.lists().clone();
             for (k, v) in &diff.lists().0 {
                 if !new.0.contains_key(k) {
@@ -106,9 +106,11 @@ pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
                         None
                     }
                 })
-                .chain(base.keys().filter_map(|key| {
-                    (!other.contains_key(key)).then(|| (key.clone(), Byml::Null))
-                }))
+                .chain(
+                    base.keys()
+                        .filter(|&key| (!other.contains_key(key)))
+                        .map(|key| (key.clone(), Byml::Null)),
+                )
                 .collect(),
         )
     } else {
@@ -138,9 +140,8 @@ pub fn simple_index_diff<T: Clone + PartialEq>(
 ) -> BTreeMap<usize, T> {
     other
         .iter()
-        .filter_map(|(i, other_item)| {
-            (base.get(i) != Some(other_item)).then(|| (*i, other_item.clone()))
-        })
+        .filter(|&(i, other_item)| (base.get(i) != Some(other_item)))
+        .map(|(i, other_item)| (*i, other_item.clone()))
         .collect()
 }
 
@@ -274,10 +275,12 @@ impl ParameterExt for Parameter {
             Self::String64(s) => Ok(s.as_str().into()),
             Self::String256(s) => Ok(s.as_str().into()),
             Self::StringRef(s) => Ok(s.as_str().into()),
-            _ => Err(roead::Error::TypeError(
-                format!("{self:#?}").into(),
-                "a string",
-            )),
+            _ => {
+                Err(roead::Error::TypeError(
+                    format!("{self:#?}").into(),
+                    "a string",
+                ))
+            }
         }
     }
 }
@@ -316,10 +319,10 @@ where
 impl<T> IteratorExt for T where T: Iterator {}
 
 pub struct NamedEnumerate<'a, I> {
-    iter: I,
-    count: usize,
-    name: &'a str,
-    buffer: Vec<u8>,
+    iter:    I,
+    count:   usize,
+    name:    &'a str,
+    buffer:  Vec<u8>,
     padding: Option<(&'static str, Vec<u8>)>,
 }
 

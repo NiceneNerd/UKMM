@@ -68,10 +68,10 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let dmgparam = super::DamageParam::try_from(&pio).unwrap();
+        let dmgparam = super::DamageParam::from(&pio);
         let data = roead::aamp::ParameterIO::from(dmgparam.clone()).to_binary();
         let pio2 = roead::aamp::ParameterIO::from_binary(data).unwrap();
-        let dmgparam2 = super::DamageParam::try_from(&pio2).unwrap();
+        let dmgparam2 = super::DamageParam::from(&pio2);
         assert_eq!(dmgparam, dmgparam2);
     }
 
@@ -84,7 +84,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let dmgparam = super::DamageParam::try_from(&pio).unwrap();
+        let dmgparam = super::DamageParam::from(&pio);
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
@@ -92,7 +92,7 @@ mod tests {
                 .unwrap(),
         )
         .unwrap();
-        let dmgparam2 = super::DamageParam::try_from(&pio2).unwrap();
+        let dmgparam2 = super::DamageParam::from(&pio2);
         let _diff = dmgparam.diff(&dmgparam2);
     }
 
@@ -106,14 +106,14 @@ mod tests {
         )
         .unwrap();
         let actor2 = crate::tests::test_mod_actorpack("Enemy_Guardian_A");
-        let dmgparam = super::DamageParam::try_from(&pio).unwrap();
+        let dmgparam = super::DamageParam::from(&pio);
         let pio2 = roead::aamp::ParameterIO::from_binary(
             actor2
                 .get_data("Actor/DamageParam/Guardian.bdmgparam")
                 .unwrap(),
         )
         .unwrap();
-        let dmgparam2 = super::DamageParam::try_from(&pio2).unwrap();
+        let dmgparam2 = super::DamageParam::from(&pio2);
         let diff = dmgparam.diff(&dmgparam2);
         let merged = dmgparam.merge(&diff);
         assert_eq!(dmgparam2, merged);

@@ -25,7 +25,7 @@ use uk_content::{
     prelude::{Endian, Mergeable},
     resource::{is_mergeable_sarc, ResourceData},
 };
-use uk_util::{Lazy, PathExt as UkPathExt, ResultExt};
+use uk_util::{Lazy, PathExt as UkPathExt};
 use zip::{write::FileOptions, ZipWriter as ZipW};
 
 use crate::{

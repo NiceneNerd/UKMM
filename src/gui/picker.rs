@@ -7,7 +7,7 @@ use uk_ui::{
     icons::{get_icon, Icon, IconButtonExt},
 };
 
-use super::{visuals, App, FocusedPane, Message};
+use super::{App, FocusedPane, Message};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FilePickerState {
@@ -153,7 +153,7 @@ impl App {
             .unwrap_or_default();
         let is_dir = path.is_dir();
         let selected = self.picker_state.selected.as_ref().map(|p| p.as_ref()) == Some(path);
-        let icon_size: Vec2 = [ui.spacing().icon_width, ui.spacing().icon_width].into();
+        let _icon_size: Vec2 = [ui.spacing().icon_width, ui.spacing().icon_width].into();
         let res = ui.add(
             Button::image_and_text(
                 get_icon(

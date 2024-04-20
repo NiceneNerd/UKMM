@@ -739,8 +739,6 @@ pub const EXCLUDE_NAMES: &[&str] = &["tera_resource.Nin_NX_NVN", "tera_resource.
 
 pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool {
     fn inner(name: &Path, data: &[u8]) -> bool {
-        let name = name;
-        let data = data;
         static MAGIC: &[u8; 4] = b"SARC";
         data.len() >= 0x40
             && (&data[..4] == MAGIC || &data[0x11..0x15] == MAGIC)
@@ -761,7 +759,6 @@ pub fn is_mergeable_sarc(name: impl AsRef<Path>, data: impl AsRef<[u8]>) -> bool
 impl ResourceData {
     pub fn from_binary<'a>(name: impl AsRef<Path>, data: impl Into<Cow<'a, [u8]>>) -> Result<Self> {
         fn inner(name: &Path, data: Cow<'_, [u8]>) -> Result<ResourceData> {
-            let name = name;
             let stem = name
                 .file_stem()
                 .unwrap_or_default()

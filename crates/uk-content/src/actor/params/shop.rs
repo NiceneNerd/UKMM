@@ -235,6 +235,7 @@ impl Mergeable for ShopData {
         )
     }
 
+    #[allow(clippy::filter_map_bool_then)]
     fn merge(&self, diff: &Self) -> Self {
         Self(
             self.0

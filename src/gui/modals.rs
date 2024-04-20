@@ -232,7 +232,7 @@ impl App {
         }
     }
 
-    pub fn render_busy(&self, ctx: &egui::Context, frame: &eframe::Frame) {
+    pub fn render_busy(&self, ctx: &egui::Context, _frame: &eframe::Frame) {
         if self.busy.get() {
             egui::Window::new("Working")
                 .default_size([240., 80.])

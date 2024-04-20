@@ -156,7 +156,8 @@ impl<T: Clone + PartialEq> Mergeable for DeleteVec<T> {
             .map(|it| (it.clone(), false))
             .chain(
                 self.iter()
-                    .filter_map(|it| (!other.contains(it)).then(|| (it.clone(), true))),
+                    .filter(|&it| (!other.contains(it)))
+                    .map(|it| (it.clone(), true)),
             )
             .collect()
     }
@@ -255,7 +256,8 @@ impl<T: DeleteKey> DeleteSet<T> {
             .map(|it| (it.clone(), false))
             .chain(
                 self.iter()
-                    .filter_map(|it| (!other.contains(it)).then(|| (it.clone(), true))),
+                    .filter(|&it| (!other.contains(it)))
+                    .map(|it| (it.clone(), true)),
             )
             .collect()
     }
@@ -287,7 +289,8 @@ impl<T: DeleteKey> Mergeable for DeleteSet<T> {
             .map(|it| (it.clone(), false))
             .chain(
                 self.iter()
-                    .filter_map(|it| (!other.contains(it)).then(|| (it.clone(), true))),
+                    .filter(|&it| (!other.contains(it)))
+                    .map(|it| (it.clone(), true)),
             )
             .collect()
     }
@@ -404,7 +407,8 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
             .map(|it| (it.clone(), false))
             .chain(
                 self.iter()
-                    .filter_map(|it| (!other.contains(it)).then(|| (it.clone(), true))),
+                    .filter(|&it| (!other.contains(it)))
+                    .map(|it| (it.clone(), true)),
             )
             .collect()
     }

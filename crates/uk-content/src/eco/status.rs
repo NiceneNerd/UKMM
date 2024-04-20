@@ -26,7 +26,7 @@ impl TryFrom<&Byml> for StatusEffectValues {
     fn try_from(byml: &Byml) -> Result<Self> {
         let array = byml.as_array()?;
         if array
-            .get(0)
+            .first()
             .ok_or(UKError::MissingBymlKey("Status effect list entry empty"))?
             .as_map()?
             .get("special")
@@ -69,17 +69,19 @@ impl From<StatusEffectValues> for Byml {
     fn from(val: StatusEffectValues) -> Self {
         match val {
             StatusEffectValues::Special => Byml::Array(vec![map!("special" => Byml::Bool(true))]),
-            StatusEffectValues::Normal(values) => Byml::Array(vec![
-                map!(
-                    "special" => Byml::Bool(false)
-                ),
-                map!(
-                    "values" => values
-                        .into_iter()
-                        .map(|v| map!("val" => Byml::Float(v)))
-                        .collect::<Byml>()
-                ),
-            ]),
+            StatusEffectValues::Normal(values) => {
+                Byml::Array(vec![
+                    map!(
+                        "special" => Byml::Bool(false)
+                    ),
+                    map!(
+                        "values" => values
+                            .into_iter()
+                            .map(|v| map!("val" => Byml::Float(v)))
+                            .collect::<Byml>()
+                    ),
+                ])
+            }
         }
     }
 }
@@ -116,7 +118,7 @@ impl TryFrom<&Byml> for StatusEffectList {
     fn try_from(byml: &Byml) -> Result<Self> {
         Ok(Self(
             byml.as_array()?
-                .get(0)
+                .first()
                 .ok_or(UKError::MissingBymlKey("Status effect list missing root"))?
                 .as_map()?
                 .iter()
@@ -130,11 +132,12 @@ impl TryFrom<&Byml> for StatusEffectList {
 
 impl From<StatusEffectList> for Byml {
     fn from(val: StatusEffectList) -> Self {
-        Self::Array(vec![val
-            .0
-            .into_iter()
-            .map(|(effect, values)| (effect.to_string(), values.into()))
-            .collect::<Byml>()])
+        Self::Array(vec![
+            val.0
+                .into_iter()
+                .map(|(effect, values)| (effect.to_string(), values.into()))
+                .collect::<Byml>(),
+        ])
     }
 }
 

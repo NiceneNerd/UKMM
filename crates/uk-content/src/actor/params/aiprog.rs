@@ -424,24 +424,20 @@ impl<'a> Parser<'a> {
                     .enumerate()
                     .map(|(i, v)| (i + self.action_offset, v, Category::Action)),
             )
-            .filter_map(|(i, list, category)| {
-                (!children.contains(&i)).then(|| -> Result<(String, AIEntry)> {
-                    let entry = self.entry_from_list(list, category)?;
-                    Ok((
-                        entry
-                            .def
-                            .name
-                            .as_ref()
-                            .ok_or_else(|| {
-                                UKError::MissingAampKey(
-                                    "AI entry def missing name",
-                                    Some(list.into()),
-                                )
-                            })?
-                            .clone(),
-                        entry,
-                    ))
-                })
+            .filter(|&(i, ..)| (!children.contains(&i)))
+            .map(|(_, list, category)| {
+                let entry = self.entry_from_list(list, category)?;
+                Ok((
+                    entry
+                        .def
+                        .name
+                        .as_ref()
+                        .ok_or_else(|| {
+                            UKError::MissingAampKey("AI entry def missing name", Some(list.into()))
+                        })?
+                        .clone(),
+                    entry,
+                ))
             })
             .collect::<Result<_>>()
             .context("Failed to collect AI program tree roots")?;
@@ -671,7 +667,8 @@ impl Mergeable for AIProgram {
             behaviors: other
                 .behaviors
                 .iter()
-                .filter_map(|(k, v)| (Some(v) != self.behaviors.get(k)).then(|| (*k, v.clone())))
+                .filter(|&(k, v)| (Some(v) != self.behaviors.get(k)))
+                .map(|(k, v)| (*k, v.clone()))
                 .collect(),
             queries:   other
                 .queries

@@ -186,14 +186,14 @@ impl Profile {
     pub fn iter(self_: MappedRef<'_, String, Profile, Profile>) -> ModIterator<'_> {
         ModIterator {
             profile: self_,
-            index: 0,
+            index:   0,
         }
     }
 }
 
 pub struct ModIterator<'a> {
     profile: MappedRef<'a, String, Profile, Profile>,
-    index: usize,
+    index:   usize,
 }
 
 impl<'a> Iterator for ModIterator<'a> {
@@ -316,14 +316,16 @@ impl Manager {
         &'a self,
         ref_manifest: &'m Manifest,
     ) -> impl Iterator<Item = Mod> + 'm {
-        self.mods().filter(|mod_| match mod_.manifest() {
-            Ok(manifest) => {
-                !ref_manifest
-                    .content_files
-                    .is_disjoint(&manifest.content_files)
-                    || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+        self.mods().filter(|mod_| {
+            match mod_.manifest() {
+                Ok(manifest) => {
+                    !ref_manifest
+                        .content_files
+                        .is_disjoint(&manifest.content_files)
+                        || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+                }
+                Err(_) => false,
             }
-            Err(_) => false,
         })
     }
 
@@ -433,7 +435,10 @@ impl Manager {
 
     pub fn replace(&self, mut mod_: Mod, old_hash: usize) -> Result<Mod> {
         let profile_data = self.profile();
-        let old_mod = profile_data.mods_mut().remove(&old_hash).unwrap();
+        let old_mod = profile_data
+            .mods_mut()
+            .remove(&old_hash)
+            .expect("The old mod has to be in the profile");
         mod_.enabled = old_mod.enabled;
         mod_.path = old_mod.path;
         profile_data.mods_mut().insert(mod_.hash, mod_.clone());
@@ -571,15 +576,11 @@ pub fn convert_gfx(
     let temp = util::get_temp_folder();
     log::debug!("Temp folder: {}", temp.display());
     log::info!("Attempting to convert mod...");
-    let packer = ModPacker::new(
-        path,
-        &*temp,
-        meta,
-        vec![core
-            .settings()
+    let packer = ModPacker::new(path, &*temp, meta, vec![
+        core.settings()
             .dump()
-            .context("No dump available for current platform")?],
-    )?;
+            .context("No dump available for current platform")?,
+    ])?;
     let result_path = packer.pack()?;
     log::info!("Conversion complete");
     Ok(result_path)

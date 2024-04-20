@@ -1,20 +1,13 @@
 use std::{cell::RefCell, ops::Deref, path::PathBuf};
 
 use uk_content::resource::ResourceData;
-use uk_ui::{
-    editor::EditableValue,
-    egui_dock::{TabViewer, Tree},
-};
+use uk_ui::{editor::EditableValue, egui_dock::TabViewer};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct EditorTab {
     pub path: PathBuf,
     pub ref_data: ResourceData,
     pub edit_data: RefCell<ResourceData>,
-}
-
-pub fn default_ui() -> Tree<EditorTab> {
-    Tree::new(vec![])
 }
 
 impl TabViewer for super::App {

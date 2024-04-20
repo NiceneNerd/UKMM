@@ -20,7 +20,7 @@ impl App {
         });
     }
 
-    pub fn file_menu(&self, ui: &mut Ui, frame: &mut eframe::Frame) {
+    pub fn file_menu(&self, ui: &mut Ui, _frame: &mut eframe::Frame) {
         if ui.button("Open mod…").clicked() {
             ui.close_menu();
             self.do_update(Message::SelectFile);

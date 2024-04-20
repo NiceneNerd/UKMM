@@ -51,9 +51,9 @@ impl App {
         egui::Frame::none()
             .inner_margin(Margin {
                 bottom: 4.0,
-                top: 4.0,
-                left: 4.0,
-                right: -12.0,
+                top:    4.0,
+                left:   4.0,
+                right:  -12.0,
             })
             .show(ui, |ui| {
                 ui.style_mut()
@@ -92,11 +92,7 @@ impl App {
                         header.col(|ui| {
                             let is_current = self.sort.0 == Sort::Enabled;
                             let label = if is_current {
-                                if self.sort.1 {
-                                    "⏷"
-                                } else {
-                                    "⏶"
-                                }
+                                if self.sort.1 { "⏷" } else { "⏶" }
                             } else {
                                 "  "
                             };
@@ -238,49 +234,48 @@ impl App {
         if being_dragged {
             if delay_frames < 6 {
                 delay_frames += 1;
-            } else {
-                if let Some(drag_index) = self.drag_index {
-                    ui.output_mut(|o| o.cursor_icon = CursorIcon::Grabbing);
-                    let layer_id =
-                        LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
-                    let res = ui
-                        .with_layer_id(layer_id, |ui| {
-                            TableBuilder::new(ui)
-                                .column(Column::exact(icon_width))
-                                .column(Column::remainder())
-                                .column(Column::initial(80.).at_least(16.).at_most(260.))
-                                .column(Column::exact(numeric_col_width))
-                                .column(Column::exact(numeric_col_width))
-                                .body(|body| {
-                                    body.rows(text_height, self.selected.len(), |mut row| {
-                                        let mod_ = &self.selected[row.index()];
-                                        let mut enabled = mod_.enabled;
-                                        row.col(|ui| {
-                                            ui.checkbox(&mut enabled, "");
-                                        });
-                                        for label in [
-                                            mod_.meta.name.as_str(),
-                                            mod_.meta.category.as_str(),
-                                            mod_.meta.version.to_string().as_str(),
-                                            self.mods
-                                                .iter()
-                                                .position(|m| m == mod_)
-                                                .unwrap()
-                                                .to_string()
-                                                .as_str(),
-                                        ] {
-                                            row.col(|ui| {
-                                                ui.label(label);
-                                            });
-                                        }
+            } else if let Some(drag_index) = self.drag_index {
+                ui.output_mut(|o| o.cursor_icon = CursorIcon::Grabbing);
+                let layer_id =
+                    LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
+                let res = ui
+                    .with_layer_id(layer_id, |ui| {
+                        TableBuilder::new(ui)
+                            .column(Column::exact(icon_width))
+                            .column(Column::remainder())
+                            .column(Column::initial(80.).at_least(16.).at_most(260.))
+                            .column(Column::exact(numeric_col_width))
+                            .column(Column::exact(numeric_col_width))
+                            .body(|body| {
+                                body.rows(text_height, self.selected.len(), |mut row| {
+                                    let mod_ = &self.selected[row.index()];
+                                    let mut enabled = mod_.enabled;
+                                    row.col(|ui| {
+                                        ui.checkbox(&mut enabled, "");
                                     });
+                                    for label in [
+                                        mod_.meta.name.as_str(),
+                                        mod_.meta.category.as_str(),
+                                        mod_.meta.version.to_string().as_str(),
+                                        self.mods
+                                            .iter()
+                                            .position(|m| m == mod_)
+                                            .unwrap()
+                                            .to_string()
+                                            .as_str(),
+                                    ] {
+                                        row.col(|ui| {
+                                            ui.label(label);
+                                        });
+                                    }
                                 });
-                        })
-                        .response;
-                    if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
-                        let delta = pointer_pos.y - res.rect.center().y;
-                        ui.ctx().translate_layer(layer_id, Vec2::new(0.0, delta));
-                    }
+                            });
+                    })
+                    .response;
+                if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
+                    let delta = pointer_pos.y - res.rect.center().y;
+                    #[allow(deprecated)]
+                    ui.ctx().translate_layer(layer_id, Vec2::new(0.0, delta));
                 }
             }
         } else {

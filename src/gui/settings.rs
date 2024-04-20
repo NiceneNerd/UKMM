@@ -28,7 +28,7 @@ fn render_setting<R>(
     ui: &mut Ui,
     add_contents: impl FnOnce(&mut Ui) -> R,
 ) -> InnerResponse<R> {
-    let icon_height = ui.text_style_height(&TextStyle::Small);
+    let _icon_height = ui.text_style_height(&TextStyle::Small);
     ui.horizontal(|ui| {
         ui.label(RichText::new(name).family(egui::FontFamily::Name("Bold".into())));
         ui.add(

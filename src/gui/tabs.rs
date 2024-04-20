@@ -1,6 +1,6 @@
 use uk_ui::{
     egui::{self, Label, Sense, Ui, WidgetText},
-    egui_dock::{DockState, Node, NodeIndex, TabViewer, Tree},
+    egui_dock::{DockState, Node, NodeIndex, TabViewer},
     visuals::Theme,
 };
 

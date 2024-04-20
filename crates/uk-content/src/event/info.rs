@@ -71,28 +71,28 @@ mod tests {
     #[test]
     fn serde() {
         let byml = load_eventinfo();
-        let eventinfo = super::EventInfo::try_from(&byml).unwrap();
+        let eventinfo = super::EventInfo::from(&byml);
         let data = Byml::from(eventinfo.clone()).to_binary(roead::Endian::Big);
         let byml2 = Byml::from_binary(data).unwrap();
-        let eventinfo2 = super::EventInfo::try_from(&byml2).unwrap();
+        let eventinfo2 = super::EventInfo::from(&byml2);
         assert_eq!(eventinfo, eventinfo2);
     }
 
     #[test]
     fn diff() {
         let byml = load_eventinfo();
-        let eventinfo = super::EventInfo::try_from(&byml).unwrap();
+        let eventinfo = super::EventInfo::from(&byml);
         let byml2 = load_mod_eventinfo();
-        let eventinfo2 = super::EventInfo::try_from(&byml2).unwrap();
+        let eventinfo2 = super::EventInfo::from(&byml2);
         let _diff = eventinfo.diff(&eventinfo2);
     }
 
     #[test]
     fn merge() {
         let byml = load_eventinfo();
-        let eventinfo = super::EventInfo::try_from(&byml).unwrap();
+        let eventinfo = super::EventInfo::from(&byml);
         let byml2 = load_mod_eventinfo();
-        let eventinfo2 = super::EventInfo::try_from(&byml2).unwrap();
+        let eventinfo2 = super::EventInfo::from(&byml2);
         let diff = eventinfo.diff(&eventinfo2);
         let merged = eventinfo.merge(&diff);
         assert_eq!(merged, eventinfo2);

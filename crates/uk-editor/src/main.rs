@@ -22,7 +22,7 @@ use uk_content::{canonicalize, prelude::Mergeable, resource::ResourceData};
 use uk_manager::core::Manager;
 use uk_ui::{
     egui,
-    egui_dock::{self, DockState, Tree},
+    egui_dock::{self, DockState},
 };
 
 use crate::project::Project;
@@ -64,7 +64,7 @@ impl App {
             .and_then(|s| serde_json::from_str(&s).context(""))
             .unwrap_or_default();
         ui_state.theme.set_theme(&cc.egui_ctx);
-        let mut dock_style = uk_ui::visuals::style_dock(&cc.egui_ctx.style());
+        let dock_style = uk_ui::visuals::style_dock(&cc.egui_ctx.style());
         Self {
             core,
             project: None,
@@ -84,7 +84,7 @@ impl App {
         } else {
             Some(RwLockReadGuard::map(tree, |tree| {
                 let leaf = tree.focused_leaf().unwrap();
-                let node = tree.iter_all_nodes().nth(leaf.1 .0).unwrap().1;
+                let node = tree.iter_all_nodes().nth(leaf.1.0).unwrap().1;
                 match node {
                     egui_dock::Node::Leaf { tabs, active, .. } => &tabs[active.0],
                     _ => unreachable!(),
@@ -101,10 +101,10 @@ impl App {
     fn do_task(
         &self,
         task: impl 'static
-            + Send
-            + Sync
-            + FnOnce(Arc<Manager>) -> Result<Message>
-            + std::panic::UnwindSafe,
+        + Send
+        + Sync
+        + FnOnce(Arc<Manager>) -> Result<Message>
+        + std::panic::UnwindSafe,
     ) {
         let sender = self.channel.0.clone();
         let core = self.core.clone();
@@ -115,21 +115,23 @@ impl App {
                 .send(match std::panic::catch_unwind(|| task(core)) {
                     Ok(Ok(msg)) => msg,
                     Ok(Err(e)) => Message::Error(e),
-                    Err(e) => Message::Error(anyhow::format_err!(
-                        "{}",
-                        e.downcast::<String>().unwrap_or_else(|_| {
-                            Box::new(
-                                "An unknown error occured, check the log for possible details."
-                                    .to_string(),
-                            )
-                        })
-                    )),
+                    Err(e) => {
+                        Message::Error(anyhow::format_err!(
+                            "{}",
+                            e.downcast::<String>().unwrap_or_else(|_| {
+                                Box::new(
+                                    "An unknown error occured, check the log for possible details."
+                                        .to_string(),
+                                )
+                            })
+                        ))
+                    }
                 })
                 .unwrap();
         });
     }
 
-    fn file_menu(&self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+    fn file_menu(&self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         if ui.button("New Project…").clicked() {
             ui.close_menu();
             todo!("New Project");

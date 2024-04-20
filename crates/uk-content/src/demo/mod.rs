@@ -65,28 +65,28 @@ mod tests {
     #[test]
     fn serde() {
         let pio = load_demo();
-        let demo = super::Demo::try_from(&pio).unwrap();
+        let demo = super::Demo::from(&pio);
         let data = ParameterIO::from(demo.clone()).to_binary();
         let pio2 = ParameterIO::from_binary(data).unwrap();
-        let demo2 = super::Demo::try_from(&pio2).unwrap();
+        let demo2 = super::Demo::from(&pio2);
         assert_eq!(demo, demo2);
     }
 
     #[test]
     fn diff() {
         let pio = load_demo();
-        let demo = super::Demo::try_from(&pio).unwrap();
+        let demo = super::Demo::from(&pio);
         let pio2 = load_mod_demo();
-        let demo2 = super::Demo::try_from(&pio2).unwrap();
+        let demo2 = super::Demo::from(&pio2);
         let _diff = demo.diff(&demo2);
     }
 
     #[test]
     fn merge() {
         let pio = load_demo();
-        let demo = super::Demo::try_from(&pio).unwrap();
+        let demo = super::Demo::from(&pio);
         let pio2 = load_mod_demo();
-        let demo2 = super::Demo::try_from(&pio2).unwrap();
+        let demo2 = super::Demo::from(&pio2);
         let diff = demo.diff(&demo2);
         let merged = demo.merge(&diff);
         assert_eq!(merged, demo2)

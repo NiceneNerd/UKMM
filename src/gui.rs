@@ -14,6 +14,7 @@ mod util;
 use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
+    fmt::Write,
     ops::DerefMut,
     path::PathBuf,
     sync::Arc,
@@ -22,7 +23,11 @@ use std::{
 };
 
 use anyhow_ext::{Context, Result};
-use eframe::{egui::IconData, egui::InnerResponse, epaint::text::TextWrapping, NativeOptions};
+use eframe::{
+    egui::{IconData, InnerResponse},
+    epaint::text::TextWrapping,
+    NativeOptions,
+};
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
@@ -47,7 +52,7 @@ use uk_ui::{
         Label, LayerId, Layout, RichText, Spinner, TextFormat, TextStyle, Ui, Vec2,
         ViewportBuilder,
     },
-    egui_dock::{DockArea, DockState, NodeIndex, Tree},
+    egui_dock::{DockArea, DockState, NodeIndex},
     ext::UiExt,
     icons::{Icon, IconButtonExt},
 };
@@ -58,39 +63,27 @@ use crate::{gui::modals::MetaInputModal, logger::Entry};
 
 impl Entry {
     pub fn format(&self, job: &mut LayoutJob) {
-        job.append(
-            &jstr!("[{&self.timestamp}] "),
-            0.,
-            TextFormat {
-                color: Color32::GRAY,
-                font_id: FontId::monospace(10.),
-                ..Default::default()
+        job.append(&jstr!("[{&self.timestamp}] "), 0., TextFormat {
+            color: Color32::GRAY,
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
+        job.append(&jstr!("{&self.level} "), 0., TextFormat {
+            color: match self.level.as_str() {
+                "INFO" => visuals::GREEN,
+                "WARN" => visuals::ORGANGE,
+                "ERROR" => visuals::RED,
+                "DEBUG" => visuals::BLUE,
+                _ => visuals::YELLOW,
             },
-        );
-        job.append(
-            &jstr!("{&self.level} "),
-            0.,
-            TextFormat {
-                color: match self.level.as_str() {
-                    "INFO" => visuals::GREEN,
-                    "WARN" => visuals::ORGANGE,
-                    "ERROR" => visuals::RED,
-                    "DEBUG" => visuals::BLUE,
-                    _ => visuals::YELLOW,
-                },
-                font_id: FontId::monospace(10.),
-                ..Default::default()
-            },
-        );
-        job.append(
-            &self.args,
-            1.,
-            TextFormat {
-                color: Color32::WHITE,
-                font_id: FontId::monospace(10.),
-                ..Default::default()
-            },
-        );
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
+        job.append(&self.args, 1., TextFormat {
+            color: Color32::WHITE,
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
         job.append("\n", 0.0, Default::default());
     }
 }
@@ -144,15 +137,19 @@ impl Sort {
             Sort::Name => {
                 Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| a.meta.name.cmp(&b.meta.name))
             }
-            Sort::Category => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                a.meta.category.cmp(&b.meta.category)
-            }),
-            Sort::Version => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                a.meta
-                    .version
-                    .partial_cmp(&b.meta.version)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            }),
+            Sort::Category => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                    a.meta.category.cmp(&b.meta.category)
+                })
+            }
+            Sort::Version => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                    a.meta
+                        .version
+                        .partial_cmp(&b.meta.version)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+            }
             Sort::Priority => Box::new(|&(a, _), &(b, _)| a.cmp(&b)),
         }
     }
@@ -424,10 +421,10 @@ impl App {
     fn do_task(
         &self,
         task: impl 'static
-            + Send
-            + Sync
-            + FnOnce(Arc<Manager>) -> Result<Message>
-            + std::panic::UnwindSafe,
+        + Send
+        + Sync
+        + FnOnce(Arc<Manager>) -> Result<Message>
+        + std::panic::UnwindSafe,
     ) {
         let sender = self.channel.0.clone();
         let core = self.core.clone();
@@ -437,15 +434,17 @@ impl App {
             let response = match std::panic::catch_unwind(|| task(core.clone())) {
                 Ok(Ok(msg)) => msg,
                 Ok(Err(e)) => Message::Error(e),
-                Err(e) => Message::Error(anyhow::format_err!(
-                    "{}",
-                    e.downcast::<String>().unwrap_or_else(|_| {
-                        Box::new(
-                            "An unknown error occured, check the log for possible details."
-                                .to_string(),
-                        )
-                    })
-                )),
+                Err(e) => {
+                    Message::Error(anyhow::format_err!(
+                        "{}",
+                        e.downcast::<String>().unwrap_or_else(|_| {
+                            Box::new(
+                                "An unknown error occured, check the log for possible details."
+                                    .to_string(),
+                            )
+                        })
+                    ))
+                }
             };
             if let Some(d) = core.settings().dump() {
                 d.clear_cache()
@@ -465,7 +464,7 @@ impl App {
         }
     }
 
-    fn handle_update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+    fn handle_update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
                 Message::Noop => self.busy.set(false),
@@ -557,7 +556,8 @@ impl App {
                             .mods
                             .iter()
                             .enumerate()
-                            .filter_map(|(i, m)| range.contains(&i).then(|| m.clone()))
+                            .filter(|&(i, _m)| range.contains(&i))
+                            .map(|(_i, m)| m.clone())
                             .collect();
                     }
                     self.drag_index = None;
@@ -656,11 +656,13 @@ impl App {
                         };
                     }
                 }
-                Message::DeleteProfile(profile) => self.do_task(move |core| {
-                    let path = core.settings().profiles_dir().join(profile);
-                    fs::remove_dir_all(path)?;
-                    Ok(Message::ReloadProfiles)
-                }),
+                Message::DeleteProfile(profile) => {
+                    self.do_task(move |core| {
+                        let path = core.settings().profiles_dir().join(profile);
+                        fs::remove_dir_all(path)?;
+                        Ok(Message::ReloadProfiles)
+                    })
+                }
                 Message::DuplicateProfile(profile) => {
                     self.do_task(move |core| {
                         let profiles_dir = core.settings().profiles_dir();
@@ -671,11 +673,13 @@ impl App {
                         Ok(Message::ReloadProfiles)
                     });
                 }
-                Message::RenameProfile(profile, rename) => self.do_task(move |core| {
-                    let profiles_dir = core.settings().profiles_dir();
-                    fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
-                    Ok(Message::ReloadProfiles)
-                }),
+                Message::RenameProfile(profile, rename) => {
+                    self.do_task(move |core| {
+                        let profiles_dir = core.settings().profiles_dir();
+                        fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
+                        Ok(Message::ReloadProfiles)
+                    })
+                }
                 Message::ReloadProfiles => {
                     self.profiles_state.borrow_mut().reload(&self.core);
                     self.busy.set(false);
@@ -829,8 +833,10 @@ impl App {
                         let msg = self
                             .error_queue
                             .drain(..)
-                            .map(|e| format!("{e:?}\n"))
-                            .collect::<String>();
+                            .fold(String::new(), |mut acc, e| {
+                                writeln!(acc, "{:?}", e).expect("Failed to write to String");
+                                acc
+                            });
                         self.do_update(Message::Error(anyhow_ext::anyhow!("{msg}").context(
                             "One or more errors occured while installing your mods. Please see \
                              full details.",
@@ -884,16 +890,20 @@ impl App {
                     let dirty = std::mem::take(self.dirty_mut().deref_mut());
                     self.do_task(move |core| tasks::apply_changes(&core, mods, Some(dirty)));
                 }
-                Message::Deploy => self.do_task(move |core| {
-                    log::info!("Deploying current mod configuration");
-                    core.deploy_manager().deploy()?;
-                    Ok(Message::ResetMods(None))
-                }),
-                Message::ResetPending => self.do_task(|core| {
-                    log::info!("Resetting pending deployment data");
-                    core.deploy_manager().reset_pending()?;
-                    Ok(Message::Noop)
-                }),
+                Message::Deploy => {
+                    self.do_task(move |core| {
+                        log::info!("Deploying current mod configuration");
+                        core.deploy_manager().deploy()?;
+                        Ok(Message::ResetMods(None))
+                    })
+                }
+                Message::ResetPending => {
+                    self.do_task(|core| {
+                        log::info!("Resetting pending deployment data");
+                        core.deploy_manager().reset_pending()?;
+                        Ok(Message::Noop)
+                    })
+                }
                 Message::Remerge => {
                     self.do_task(|core| tasks::apply_changes(&core, vec![], None));
                 }
@@ -1132,7 +1142,7 @@ impl eframe::App for App {
     }
 }
 
-pub fn main() {
+pub fn main() -> Result<(), eframe::Error> {
     crate::logger::init();
     log::debug!("Logger initialized");
     log::info!("Started ukmm");
@@ -1143,8 +1153,8 @@ pub fn main() {
                 icon: Some(
                     IconData {
                         height: 256,
-                        width: 256,
-                        rgba: image::load_from_memory(include_bytes!("../assets/ukmm.png"))
+                        width:  256,
+                        rgba:   image::load_from_memory(include_bytes!("../assets/ukmm.png"))
                             .unwrap()
                             .to_rgba8()
                             .into_vec(),
@@ -1158,5 +1168,5 @@ pub fn main() {
             ..Default::default()
         },
         Box::new(|cc| Box::new(App::new(cc))),
-    );
+    )
 }
