@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use anyhow::Context;
 use fs_err as fs;
 use serde::{Deserialize, Serialize};
 
@@ -121,8 +122,9 @@ impl super::ResourceLoader for Unpacked {
             .chain(self.content_dir.iter())
             .chain(self.aoc_dir.iter())
             .map(|dir| dir.join(name))
-            .find_map(|path| path.exists().then(|| fs::read(path).ok()))
-            .flatten()
+            .find(|path| path.exists())
+            .map(fs::read)
+            .transpose()?
             .ok_or_else(|| {
                 ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
             })
