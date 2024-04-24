@@ -35,7 +35,7 @@ jobs:
     if: ${{ needs.check_changes.outputs.code == 'true' }}
     strategy:
       matrix:
-        platform: [ubuntu-latest, windows-latest, macos-latest]
+        platform: [ubuntu-latest, windows-latest, macos-14]
     runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v3
