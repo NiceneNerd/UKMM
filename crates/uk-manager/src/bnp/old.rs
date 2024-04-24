@@ -22,25 +22,29 @@ fn value_to_byml(value: Value) -> Result<Byml> {
     let by = match value {
         Value::Null => Byml::Null,
         Value::Bool(v) => Byml::Bool(v),
-        Value::Number(v) => match v.as_i64() {
-            Some(v) => Byml::I32(v as i32),
-            None => v
-                .as_f64()
-                .map(|v| Byml::Float(v as f32))
-                .context("Invalid numeric value")?,
-        },
+        Value::Number(v) => {
+            match v.as_i64() {
+                Some(v) => Byml::I32(v as i32),
+                None => {
+                    v.as_f64()
+                        .map(|v| Byml::Float(v as f32))
+                        .context("Invalid numeric value")?
+                }
+            }
+        }
         Value::String(v) => Byml::String(v.into()),
         Value::Sequence(seq) => {
             Byml::Array(seq.into_iter().map(value_to_byml).collect::<Result<_>>()?)
         }
-        Value::Mapping(map) => map
-            .into_iter()
-            .map(|(k, v)| -> Result<(smartstring::alias::String, Byml)> {
-                let k = k.as_str().context("Bad BYML key")?.into();
-                let v = value_to_byml(v)?;
-                Ok((k, v))
-            })
-            .collect::<Result<Byml>>()?,
+        Value::Mapping(map) => {
+            map.into_iter()
+                .map(|(k, v)| -> Result<(smartstring::alias::String, Byml)> {
+                    let k = k.as_str().context("Bad BYML key")?.into();
+                    let v = value_to_byml(v)?;
+                    Ok((k, v))
+                })
+                .collect::<Result<Byml>>()?
+        }
         Value::Tagged(v) => {
             if v.tag == "u" {
                 Byml::U32(v.value.as_u64().context("Invalid u32")? as u32)
@@ -70,16 +74,37 @@ fn param_from_value(value: Value) -> Result<Parameter> {
         Value::Mapping(_) => bail!("AAMP parameters cannot be maps"),
         Value::Tagged(v) => {
             if v.tag == "u" {
-                Parameter::U32(v.value.as_u64().context("Invalid u32 parameter")? as u32)
+                Parameter::U32(
+                    v.value
+                        .as_u64()
+                        .context("Invalid u32 parameter in deepmerge log")?
+                        as u32,
+                )
             } else if v.tag == "str32" {
-                Parameter::String32(v.value.as_str().context("Invalid str32 param")?.into())
+                Parameter::String32(
+                    v.value
+                        .as_str()
+                        .map(FixedSafeString::from)
+                        .or_else(|| {
+                            v.value
+                                .as_i64()
+                                .map(|i| FixedSafeString::from(i.to_string()))
+                        })
+                        .context("Invalid str32 param in deepmerge log")?,
+                )
             } else if v.tag == "str64" {
                 Parameter::String64(Box::new(
-                    v.value.as_str().context("Invalid str64 param")?.into(),
+                    v.value
+                        .as_str()
+                        .context("Invalid str64 param in deepmerge log")?
+                        .into(),
                 ))
             } else if v.tag == "str256" {
                 Parameter::String256(Box::new(
-                    v.value.as_str().context("Invalid str64 param")?.into(),
+                    v.value
+                        .as_str()
+                        .context("Invalid str64 param in deepmerge log")?
+                        .into(),
                 ))
             } else if let Some(seq) = v.value.as_sequence().map(|s| {
                 s.iter()
@@ -88,7 +113,7 @@ fn param_from_value(value: Value) -> Result<Parameter> {
             }) {
                 if v.tag == "vec2" {
                     if seq.len() != 2 {
-                        bail!("Invalid vec2 param")
+                        bail!("Invalid vec2 param in deepmerge log")
                     }
                     Parameter::Vec2(Vector2f {
                         x: seq[0],
@@ -96,7 +121,7 @@ fn param_from_value(value: Value) -> Result<Parameter> {
                     })
                 } else if v.tag == "vec3" {
                     if seq.len() != 3 {
-                        bail!("Invalid vec3 param")
+                        bail!("Invalid vec3 param in deepmerge log")
                     }
                     Parameter::Vec3(Vector3f {
                         x: seq[0],
@@ -105,7 +130,7 @@ fn param_from_value(value: Value) -> Result<Parameter> {
                     })
                 } else if v.tag == "vec4" {
                     if seq.len() != 4 {
-                        bail!("Invalid vec4 param")
+                        bail!("Invalid vec4 param in deepmerge log")
                     }
                     Parameter::Vec4(Vector4f {
                         x: seq[0],
@@ -115,7 +140,7 @@ fn param_from_value(value: Value) -> Result<Parameter> {
                     })
                 } else if v.tag == "quat" {
                     if seq.len() != 4 {
-                        bail!("Invalid quat param")
+                        bail!("Invalid quat param in deepmerge log")
                     }
                     Parameter::Quat(Quat {
                         a: seq[0],
@@ -125,7 +150,7 @@ fn param_from_value(value: Value) -> Result<Parameter> {
                     })
                 } else if v.tag == "color" {
                     if seq.len() != 4 {
-                        bail!("Invalid color param")
+                        bail!("Invalid color param in deepmerge log")
                     }
                     Parameter::Color(Color {
                         r: seq[0],
@@ -134,10 +159,10 @@ fn param_from_value(value: Value) -> Result<Parameter> {
                         a: seq[3],
                     })
                 } else {
-                    bail!("Unsupported sequence param type")
+                    bail!("Unsupported sequence param type in deepmerge log")
                 }
             } else {
-                bail!("Unsupported param type")
+                bail!("Unsupported param type in deepmerge log")
             }
         }
     };
@@ -151,9 +176,10 @@ fn handle_aamp_pair<T>(
 ) -> Option<Result<(Name, T)>> {
     match key.as_str() {
         Some(k) => Some(from(value).map(|v| (Name::from_str(k), v))),
-        None => key
-            .as_u64()
-            .map(|k| from(value).map(|v| (Name::from(k as u32), v))),
+        None => {
+            key.as_u64()
+                .map(|k| from(value).map(|v| (Name::from(k as u32), v)))
+        }
     }
 }
 
@@ -232,18 +258,19 @@ impl<'a> Bnp2xConverter<'a> {
                     Ok(Err(e)) => anyhow_ext::bail!(e),
                     Ok(Ok(_)) => (),
                     Err(e) => {
-                        anyhow::bail!(e
-                            .downcast::<String>()
-                            .or_else(|e| {
-                                e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
-                            })
-                            .unwrap_or_else(|_| {
-                                Box::new(
-                                    "An unknown error occured, check the log for possible \
+                        anyhow::bail!(
+                            e.downcast::<String>()
+                                .or_else(|e| {
+                                    e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
+                                })
+                                .unwrap_or_else(|_| {
+                                    Box::new(
+                                        "An unknown error occured, check the log for possible \
                                          details."
-                                        .to_string(),
-                                )
-                            }))
+                                            .to_string(),
+                                    )
+                                })
+                        )
                     }
                 }
             }
