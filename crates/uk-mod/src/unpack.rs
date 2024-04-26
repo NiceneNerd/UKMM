@@ -590,11 +590,12 @@ impl ModUnpacker {
     fn unpack_texts(&self, mut langs: IndexSet<Language>) -> Result<()> {
         if !langs.is_empty() {
             log::info!("Unpacking game texts");
-            let Some(MergeableResource::MessagePack(mut base)) =
-                ResourceData::clone(
-                    self.dump.get_data(self.lang.message_path().as_str())?.deref()
-                ).take_mergeable() else
-            {
+            let Some(MergeableResource::MessagePack(mut base)) = ResourceData::clone(
+                self.dump
+                    .get_data(self.lang.message_path().as_str())?
+                    .deref(),
+            )
+            .take_mergeable() else {
                 bail!("Broken stock language pack for {}", self.lang);
             };
             langs.sort_unstable_by(|l1, l2| {
@@ -607,8 +608,8 @@ impl ModUnpacker {
                     if let Ok(packs) = mod_.get_versions(lang.message_path().as_str().as_ref()) {
                         for pack in packs {
                             let Some(MergeableResource::MessagePack(version)) =
-                                minicbor_ser::from_slice::<ResourceData>(&pack)?.take_mergeable() else
-                            {
+                                minicbor_ser::from_slice::<ResourceData>(&pack)?.take_mergeable()
+                            else {
                                 bail!("Broken mod language pack at {}", lang);
                             };
                             *base = base.merge(&version);

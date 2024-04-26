@@ -3,7 +3,7 @@ use fs_err as fs;
 use roead::sarc::SarcWriter;
 use rustc_hash::FxHashMap;
 use smartstring::alias::String;
-use uk_content::{constants::Language, message::*, prelude::Resource, resource::MergeableResource};
+use uk_content::{constants::Language, message::*, prelude::Resource};
 
 use super::BnpConverter;
 

@@ -45,16 +45,16 @@ fn render_setting<R>(
 #[serde(tag = "type")]
 pub enum DumpType {
     Unpacked {
-        host_path: PathBuf,
+        host_path:   PathBuf,
         content_dir: Option<PathBuf>,
-        update_dir: Option<PathBuf>,
-        aoc_dir: Option<PathBuf>,
+        update_dir:  Option<PathBuf>,
+        aoc_dir:     Option<PathBuf>,
     },
     ZArchive {
         content_dir: PathBuf,
-        update_dir: PathBuf,
-        aoc_dir: Option<PathBuf>,
-        host_path: PathBuf,
+        update_dir:  PathBuf,
+        aoc_dir:     Option<PathBuf>,
+        host_path:   PathBuf,
     },
 }
 
@@ -112,10 +112,10 @@ impl Default for PlatformSettingsUI {
             language: Language::USen,
             profile: "Default".into(),
             dump: DumpType::Unpacked {
-                host_path: Default::default(),
+                host_path:   Default::default(),
                 content_dir: Default::default(),
-                update_dir: Default::default(),
-                aoc_dir: Default::default(),
+                update_dir:  Default::default(),
+                aoc_dir:     Default::default(),
             },
             deploy_config: Default::default(),
         }
@@ -132,11 +132,13 @@ impl TryFrom<PlatformSettingsUI> for PlatformSettings {
                 update_dir,
                 aoc_dir,
                 ..
-            } => Arc::new(ResourceReader::from_unpacked_dirs(
-                content_dir,
-                update_dir,
-                aoc_dir,
-            )?),
+            } => {
+                Arc::new(ResourceReader::from_unpacked_dirs(
+                    content_dir,
+                    update_dir,
+                    aoc_dir,
+                )?)
+            }
             DumpType::ZArchive { host_path, .. } => {
                 Arc::new(ResourceReader::from_zarchive(host_path)?)
             }
@@ -295,10 +297,10 @@ fn render_platform_config(
                         .clicked()
                     {
                         config.dump = DumpType::Unpacked {
-                            host_path: Default::default(),
+                            host_path:   Default::default(),
                             content_dir: Default::default(),
-                            update_dir: Default::default(),
-                            aoc_dir: Default::default(),
+                            update_dir:  Default::default(),
+                            aoc_dir:     Default::default(),
                         };
                         changed = true;
                     }
@@ -308,9 +310,9 @@ fn render_platform_config(
                     {
                         config.dump = DumpType::ZArchive {
                             content_dir: Default::default(),
-                            update_dir: Default::default(),
-                            aoc_dir: Default::default(),
-                            host_path: Default::default(),
+                            update_dir:  Default::default(),
+                            aoc_dir:     Default::default(),
+                            host_path:   Default::default(),
                         };
                         changed = true;
                     }

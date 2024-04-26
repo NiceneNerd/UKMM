@@ -101,7 +101,7 @@ impl SyntectTheme {
 
 #[derive(Clone, Hash, PartialEq)]
 pub struct CodeTheme {
-    dark_mode: bool,
+    dark_mode:     bool,
     syntect_theme: SyntectTheme,
 }
 
@@ -146,14 +146,14 @@ impl CodeTheme {
 impl CodeTheme {
     pub const fn dark() -> Self {
         Self {
-            dark_mode: true,
+            dark_mode:     true,
             syntect_theme: SyntectTheme::Base16MochaDark,
         }
     }
 
     pub fn light() -> Self {
         Self {
-            dark_mode: false,
+            dark_mode:     false,
             syntect_theme: SyntectTheme::SolarizedLight,
         }
     }

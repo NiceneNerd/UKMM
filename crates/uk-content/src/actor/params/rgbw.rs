@@ -22,7 +22,7 @@ use crate::{
 )]
 pub struct Key {
     #[name = "StateKey"]
-    pub state_key: String32,
+    pub state_key:  String32,
     #[name = "SystemKey"]
     pub system_key: String32,
 }
@@ -129,7 +129,7 @@ impl From<RagdollBlendWeight> for ParameterIO {
                 jstr!("State_{&lexical::to_string(idx + 1)}"),
                 ParameterList {
                     objects: objs!("Setting" => key.into()),
-                    lists: lists!(
+                    lists:   lists!(
                         "InputWeightList" => ParameterList::new()
                             .with_objects(state.into_iter().enumerate().map(
                                 |(i, (name, rate))| {

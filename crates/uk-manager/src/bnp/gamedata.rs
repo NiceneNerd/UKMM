@@ -4,7 +4,7 @@ use roead::byml::{Byml, Map};
 use uk_content::{
     data::gamedata::{FlagData, GameData},
     prelude::Resource,
-    resource::{GameDataPack, MergeableResource},
+    resource::GameDataPack,
 };
 
 use super::BnpConverter;

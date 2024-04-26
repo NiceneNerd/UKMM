@@ -6,8 +6,8 @@ use super::*;
 
 #[derive(Debug)]
 pub struct MetaInputModal {
-    meta: Option<Meta>,
-    path: Option<PathBuf>,
+    meta:   Option<Meta>,
+    path:   Option<PathBuf>,
     sender: Sender<Message>,
 }
 
