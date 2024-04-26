@@ -59,8 +59,7 @@ impl BnpConverter {
                 .map(|(cat, entries)| -> Result<(String, Map)> { Ok((cat, entries.into_map()?)) })
                 .collect::<Result<_>>()?;
             let mut base: FxHashMap<String, Map> = Byml::from_binary(decompress(
-                self.dump
-                    .get_aoc_bytes_uncached("Map/MainField/Static.smubin")?,
+                self.get_master_aoc_bytes("Map/MainField/Static.smubin")?,
             )?)?
             .into_map()?
             .into_iter()

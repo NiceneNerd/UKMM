@@ -2,7 +2,9 @@ use anyhow::Result;
 use fs_err as fs;
 use roead::byml::Byml;
 use uk_content::{
-    actor::residents::ResidentActorData, prelude::Resource, resource::MergeableResource,
+    actor::residents::ResidentActorData,
+    prelude::Resource,
+    resource::{MergeableResource, ResidentActors},
 };
 
 use super::BnpConverter;
@@ -13,16 +15,8 @@ impl BnpConverter {
         if residents_path.exists() {
             log::debug!("Processing resident actors log");
             let diff = Byml::from_text(fs::read_to_string(residents_path)?)?.into_map()?;
-            let residents = self
-                .dump
-                .get_from_sarc(
-                    "Actor/ResidentActors.byml",
-                    "Pack/Bootup.pack//Actor/ResidentActors.byml",
-                )?
-                .as_mergeable()
-                .cloned();
-            if let Some(MergeableResource::ResidentActors(residents)) = residents {
-                let mut residents = *residents;
+            let data = self.get_from_master_sarc("Pack/Bootup.pack//Actor/ResidentActors.byml")?;
+            if let Ok(mut residents) = ResidentActors::from_binary(data) {
                 residents
                     .0
                     .extend(diff.into_iter().filter_map(|(name, data)| {

@@ -25,7 +25,7 @@ impl BnpConverter {
                     })
                     .collect::<Result<_>>()
                     .map(ActorInfo)?;
-            let actorinfo = self.dump.get_data("Actor/ActorInfo.product.sbyml")?;
+            let actorinfo = self.get_master_data("Actor/ActorInfo.product.sbyml")?;
             if let Some(MergeableResource::ActorInfo(info)) = actorinfo.as_mergeable() {
                 fs::create_dir_all(self.current_root.join(self.content).join("Actor"))?;
                 fs::write(

@@ -3,8 +3,9 @@ use std::{
     sync::Arc,
 };
 
+use anyhow::anyhow;
 use anyhow_ext::{Context, Result};
-use dashmap::DashSet;
+use dashmap::{DashMap, DashSet};
 use fs_err as fs;
 use parking_lot::RwLock;
 use rayon::prelude::*;
@@ -14,7 +15,7 @@ use roead::{
     yaz0::{compress_if, decompress_if},
 };
 use rustc_hash::FxHashMap;
-use uk_content::{constants::Language, util::HashSet};
+use uk_content::{constants::Language, resource::ResourceData, util::HashSet};
 use uk_mod::pack::ModPacker;
 use uk_reader::ResourceReader;
 use uk_util::PathExt;
@@ -106,6 +107,7 @@ struct BnpConverter {
     aoc: &'static str,
     packs: Arc<DashSet<PathBuf>>,
     parent_packs: RwLock<HashSet<PathBuf>>,
+    opt_master_cache: Arc<DashMap<PathBuf, Vec<u8>>>,
 }
 
 impl BnpConverter {
@@ -115,6 +117,101 @@ impl BnpConverter {
             .trim_start_matches(self.aoc)
             .trim_start_matches('/')
             .trim_start_matches('\\')
+    }
+
+    #[inline]
+    fn get_master_data(&self, path: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
+        if self.current_root == self.path {
+            Ok(self.dump.get_data(path)?)
+        } else {
+            let root_path = self.path.join(self.content).join(path.as_ref());
+            if root_path.exists() {
+                let data = self
+                    .opt_master_cache
+                    .entry(path.as_ref().to_path_buf())
+                    .or_try_insert_with(|| -> Result<Vec<u8>> { Ok(fs::read(root_path)?) })?;
+                Ok(Arc::new(ResourceData::from_binary(
+                    path.as_ref(),
+                    data.as_slice(),
+                )?))
+            } else {
+                Ok(self.dump.get_data(path)?)
+            }
+        }
+    }
+
+    fn get_master_bytes(&self, path: impl AsRef<Path>) -> Result<Vec<u8>> {
+        if self.current_root == self.path {
+            Ok(self.dump.get_bytes_uncached(path)?)
+        } else {
+            let root_path = self.path.join(self.content).join(path.as_ref());
+            if root_path.exists() {
+                let data = self
+                    .opt_master_cache
+                    .entry(path.as_ref().to_path_buf())
+                    .or_try_insert_with(|| -> Result<Vec<u8>> { Ok(fs::read(root_path)?) })?;
+                Ok(data.to_vec())
+            } else {
+                Ok(self.dump.get_bytes_uncached(path)?)
+            }
+        }
+    }
+
+    fn get_master_aoc_bytes(&self, path: impl AsRef<Path>) -> Result<Vec<u8>> {
+        if self.current_root == self.path {
+            Ok(self.dump.get_aoc_bytes_uncached(path)?)
+        } else {
+            let root_path = self.path.join(self.aoc).join(path.as_ref());
+            if root_path.exists() {
+                let data = self
+                    .opt_master_cache
+                    .entry(path.as_ref().to_path_buf())
+                    .or_try_insert_with(|| -> Result<Vec<u8>> { Ok(fs::read(root_path)?) })?;
+                Ok(data.to_vec())
+            } else {
+                Ok(self.dump.get_aoc_bytes_uncached(path)?)
+            }
+        }
+    }
+
+    fn get_from_master_sarc(&self, path: &str) -> Result<Vec<u8>> {
+        if self.current_root == self.path {
+            Ok(self.dump.get_bytes_from_sarc(path)?)
+        } else {
+            let parts = path.split("//").collect::<Vec<_>>();
+            let root_path = self.path.join(self.content).join(parts[0]);
+            if root_path.exists() {
+                let root_sarc = self
+                    .opt_master_cache
+                    .entry(parts[0].into())
+                    .or_try_insert_with(|| -> Result<Vec<u8>> { Ok(fs::read(root_path)?) })?;
+                let root_sarc = Sarc::new(root_sarc.as_slice())?;
+                let nested_parent = if parts.len() == 3 {
+                    let nested_data = self
+                        .opt_master_cache
+                        .entry(parts[1].into())
+                        .or_try_insert_with(|| -> Result<Vec<u8>> {
+                            root_sarc
+                                .get(parts[1])
+                                .ok_or_else(|| anyhow!("Sarc missing {}", parts[1]))
+                                .map(|f| f.data().to_vec())
+                        })?;
+                    Some(Sarc::new(nested_data.to_vec())?)
+                } else {
+                    None
+                };
+
+                let parent = nested_parent.as_ref().unwrap_or(&root_sarc);
+                Ok(roead::yaz0::decompress_if(
+                    parent
+                        .get_data(parts.last().expect("There is more than one part here"))
+                        .with_context(|| format!("Could not get nested file at {path}"))?,
+                )
+                .into())
+            } else {
+                Ok(self.dump.get_bytes_from_sarc(path)?)
+            }
+        }
     }
 
     fn open_or_create_sarc(&self, dest_path: &Path, root_path: &str) -> Result<SarcWriter> {
@@ -133,14 +230,6 @@ impl BnpConverter {
                 "sblarc",
                 "blarc",
             ];
-            static BCML_SPECIAL: &[&str] = &[
-                "gamedata",
-                "savedataformat",
-                "tera_resource.Nin_NX_NVN",
-                "Dungeon",
-                "Bootup_",
-                "AocMainField",
-            ];
             file.is_sarc()
                 && file
                     .name
@@ -150,7 +239,6 @@ impl BnpConverter {
                             .and_then(|e| e.to_str())
                             .map(|e| BCML_SARC_EXTS.contains(&e))
                             .unwrap_or(false)
-                            && !BCML_SPECIAL.iter().any(|xn| n.starts_with(xn))
                     })
                     .unwrap_or(false)
         }
@@ -197,24 +285,53 @@ impl BnpConverter {
             )?))
         } else {
             self.packs.remove(dest_path);
-            let stripped = Sarc::new(fs::read(dest_path)?)
-                .with_context(|| format!("Failed to parse SARC in mod at {root_path}"))?;
-            let mut sarc = SarcWriter::from_sarc(&stripped);
-            let parent_packs = self.parent_packs.read();
-            if let Some(parent_sarc) = parent_packs
-                .get(&self.path.join(self.content).join(root_path))
-                .or_else(|| parent_packs.get(&self.path.join(self.aoc).join(root_path)))
-                .and_then(|path| fs::read(path).ok())
-                .and_then(|bytes| Sarc::new(decompress_if(&bytes).to_vec()).ok())
+            match Sarc::new(fs::read(dest_path)?)
+                .with_context(|| format!("Failed to parse SARC in mod at {root_path}"))
             {
-                inflate_sarc(&mut sarc, &stripped, parent_sarc);
+                Ok(stripped) => {
+                    let mut sarc = SarcWriter::from_sarc(&stripped);
+                    let parent_packs = self.parent_packs.read();
+                    if let Some(parent_sarc) = parent_packs
+                        .get(&self.path.join(self.content).join(root_path))
+                        .or_else(|| parent_packs.get(&self.path.join(self.aoc).join(root_path)))
+                        .and_then(|path| fs::read(path).ok())
+                        .and_then(|bytes| Sarc::new(decompress_if(&bytes).to_vec()).ok())
+                    {
+                        inflate_sarc(&mut sarc, &stripped, parent_sarc);
+                    }
+                    if let Ok(base_sarc) = base_sarc
+                        .and_then(|data| Ok(Sarc::new(data).map_err(anyhow_ext::Error::from)?))
+                    {
+                        inflate_sarc(&mut sarc, &stripped, base_sarc);
+                    }
+                    Ok(sarc)
+                }
+                Err(e) => {
+                    static BCML_SPECIAL: &[&str] = &[
+                        "gamedata",
+                        "savedataformat",
+                        "tera_resource.Nin_NX_NVN",
+                        "Dungeon",
+                        "Bootup_",
+                        "AocMainField",
+                    ];
+                    if dest_path
+                        .file_name()
+                        .and_then(std::ffi::OsStr::to_str)
+                        .map(|n| BCML_SPECIAL.iter().any(|s| n.starts_with(s)))
+                        .unwrap_or(false)
+                    {
+                        let base_sarc = base_sarc?;
+                        dest_path.parent().map(fs::create_dir_all).transpose()?;
+                        fs::write(dest_path, &base_sarc)?;
+                        Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc).with_context(
+                            || format!("Failed to parse SARC {root_path} from dump"),
+                        )?))
+                    } else {
+                        Err(e)
+                    }
+                }
             }
-            if let Ok(base_sarc) =
-                base_sarc.and_then(|data| Ok(Sarc::new(data).map_err(anyhow_ext::Error::from)?))
-            {
-                inflate_sarc(&mut sarc, &stripped, base_sarc);
-            }
-            Ok(sarc)
         }
     }
 
@@ -382,13 +499,17 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
             .platform_config()
             .context("No config for current platform. Have you configured your settings?")?
             .language,
-        dump: core.settings().dump().context("No dump for current mode. Have you configured your settings?")?,
+        dump: core
+            .settings()
+            .dump()
+            .context("No dump for current mode. Have you configured your settings?")?,
         content,
         aoc,
         packs: Default::default(),
         parent_packs: Default::default(),
         current_root: tempdir.clone(),
         path: tempdir.clone(),
+        opt_master_cache: Default::default(),
     };
     let path = converter.convert()?;
     log::info!("BNP unpacked");

@@ -27,15 +27,11 @@ impl BnpConverter {
                     langs
                 )
             })?;
-            let base = self.dump.get_from_sarc(
-                &format!("Message/Msg_{}.product.sarc", self.game_lang),
-                &format!(
-                    "Pack/Bootup_{}.pack//Message/Msg_{}.product.ssarc",
-                    self.game_lang, self.game_lang,
-                ),
-            )?;
-            if let Some(MergeableResource::MessagePack(texts)) = (*base).clone().take_mergeable() {
-                let mut texts = *texts;
+            let base = self.get_from_master_sarc(&format!(
+                "Pack/Bootup_{}.pack//Message/Msg_{}.product.ssarc",
+                self.game_lang, self.game_lang,
+            ))?;
+            if let Ok(mut texts) = MessagePack::from_binary(base) {
                 for (file, diff) in diff {
                     let msyt = texts
                         .0

@@ -75,7 +75,7 @@ impl BnpConverter {
                         }
                         AampDiffEntry::Aamp(plist) => {
                             let pio = ASList::try_from(&ParameterIO::from_binary(
-                                self.dump.get_bytes_uncached(self.trim_prefixes(&root))?,
+                                self.get_master_bytes(self.trim_prefixes(&root))?,
                             )?)?;
                             let diff = ASList::try_from(&ParameterIO::new().with_root(plist))?;
                             let data = pio

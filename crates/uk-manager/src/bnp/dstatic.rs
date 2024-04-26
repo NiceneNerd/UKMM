@@ -16,8 +16,7 @@ impl BnpConverter {
             log::debug!("Processing dungeon static log");
             let dstatic_diff = Byml::from_text(fs::read_to_string(&dstatic_path)?)?;
             let base = Byml::from_binary(decompress(
-                self.dump
-                    .get_aoc_bytes_uncached("Map/CDungeon/Static.smubin")?,
+                self.get_master_aoc_bytes("Map/CDungeon/Static.smubin")?,
             )?)?;
             let mut dstatic: FxHashMap<String, Byml> = base
                 .as_map()?

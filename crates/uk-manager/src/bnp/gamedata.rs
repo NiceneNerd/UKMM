@@ -16,13 +16,9 @@ impl BnpConverter {
             log::debug!("Processing gamedata log");
             let diff = Byml::from_text(fs::read_to_string(gamedata_path)?)?.into_map()?;
             let base = self
-                .dump
-                .get_from_sarc(
-                    "GameData/gamedata.sarc",
-                    "Pack/Bootup.pack//GameData/gamedata.ssarc",
-                )
+                .get_from_master_sarc("Pack/Bootup.pack//GameData/gamedata.ssarc")
                 .context("Failed to parse gamedata pack from game dump")?;
-            if let Some(MergeableResource::GameDataPack(mut base)) = base.as_mergeable().cloned() {
+            if let Ok(mut base) = GameDataPack::from_binary(base) {
                 fn simple_add(base: &mut GameData, diff: &Map) -> Result<()> {
                     if let Some(Byml::Map(add)) = diff.get("add") {
                         base.flags.extend(add.iter().filter_map(|(name, flag)| {

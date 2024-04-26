@@ -70,7 +70,7 @@ impl BnpConverter {
                         }
                         AampDiffEntry::Aamp(plist) => {
                             let mut pio = ParameterIO::from_binary(
-                                self.dump.get_bytes_uncached(self.trim_prefixes(&root))?,
+                                self.get_master_bytes(self.trim_prefixes(&root))?,
                             )?;
                             pio.param_root = merge_plist(&pio.param_root, &plist);
                             fs::write(base_path, pio.to_binary())?;

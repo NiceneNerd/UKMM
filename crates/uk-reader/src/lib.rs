@@ -239,7 +239,11 @@ impl ResourceReader {
                 canonicalize(parts[0]),
                 || -> anyhow_ext::Result<Arc<Sarc<'static>>> {
                     let sarc = self.source().get_data(parts[0].as_ref()).with_context(|| {
-                        format!("Failed to get parent for nested file at {}", nest_path)
+                        format!(
+                            "Failed to get parent for nested file at {} using source {}",
+                            nest_path,
+                            self.source_ser()
+                        )
                     })?;
                     Ok(Arc::new(Sarc::new(sarc)?))
                 },

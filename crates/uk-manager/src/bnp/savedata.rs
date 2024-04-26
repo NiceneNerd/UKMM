@@ -1,7 +1,10 @@
 use anyhow::Result;
 use fs_err as fs;
 use roead::byml::Byml;
-use uk_content::{prelude::Resource, resource::MergeableResource};
+use uk_content::{
+    prelude::Resource,
+    resource::{MergeableResource, SaveDataPack},
+};
 
 use super::BnpConverter;
 
@@ -11,11 +14,9 @@ impl BnpConverter {
         if save_path.exists() {
             log::debug!("Processing savedata log");
             let mut diff = Byml::from_text(fs::read_to_string(save_path)?)?.into_map()?;
-            let base = self.dump.get_from_sarc(
-                "GameData/savedataformat.sarc",
-                "Pack/Bootup.pack//GameData/savedataformat.ssarc",
-            )?;
-            if let Some(MergeableResource::SaveDataPack(mut base)) = base.as_mergeable().cloned() {
+            let base =
+                self.get_from_master_sarc("Pack/Bootup.pack//GameData/savedataformat.ssarc")?;
+            if let Ok(mut base) = SaveDataPack::from_binary(base) {
                 if let Some(data) = base.0.get_mut("game_data.sav") {
                     if let Some(add) = diff.remove("add") {
                         data.flags.extend(

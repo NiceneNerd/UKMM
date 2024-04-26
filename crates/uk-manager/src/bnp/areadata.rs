@@ -3,7 +3,7 @@ use fs_err as fs;
 use roead::byml::Byml;
 use uk_content::{
     prelude::{Mergeable, Resource},
-    resource::{AreaData, MergeableResource},
+    resource::{AreaData, MergeableResource, ResourceData},
 };
 
 use super::BnpConverter;
@@ -25,11 +25,9 @@ impl BnpConverter {
                     })
                     .collect::<Result<_>>()
                     .map(AreaData)?;
-            let areadata = self.dump.get_from_sarc(
-                "Ecosystem/AreaData.byml",
-                "Pack/Bootup.pack//Ecosystem/AreaData.sbyml",
-            )?;
-            if let Some(MergeableResource::AreaData(data)) = areadata.as_mergeable() {
+            let areadata =
+                self.get_from_master_sarc("Pack/Bootup.pack//Ecosystem/AreaData.sbyml")?;
+            if let Ok(data) = AreaData::from_binary(areadata) {
                 self.inject_into_sarc(
                     "Pack/Bootup.pack//Ecosystem/AreaData.sbyml",
                     data.merge(&diff).into_binary(self.platform.into()),
