@@ -37,12 +37,14 @@ impl<'de> Deserialize<'de> for FilePickerState {
         struct __FieldVisitor;
         impl<'de> serde::de::Visitor<'de> for __FieldVisitor {
             type Value = __Field;
+
             fn expecting(
                 &self,
                 __formatter: &mut serde::__private::Formatter,
             ) -> serde::__private::fmt::Result {
                 serde::__private::Formatter::write_str(__formatter, "field identifier")
             }
+
             fn visit_u64<__E>(self, __value: u64) -> serde::__private::Result<Self::Value, __E>
             where
                 __E: serde::de::Error,
@@ -54,6 +56,7 @@ impl<'de> Deserialize<'de> for FilePickerState {
                     _ => serde::__private::Ok(__Field::__ignore),
                 }
             }
+
             fn visit_str<__E>(self, __value: &str) -> serde::__private::Result<Self::Value, __E>
             where
                 __E: serde::de::Error,
@@ -65,6 +68,7 @@ impl<'de> Deserialize<'de> for FilePickerState {
                     _ => serde::__private::Ok(__Field::__ignore),
                 }
             }
+
             fn visit_bytes<__E>(self, __value: &[u8]) -> serde::__private::Result<Self::Value, __E>
             where
                 __E: serde::de::Error,
@@ -88,17 +92,19 @@ impl<'de> Deserialize<'de> for FilePickerState {
         }
         #[doc(hidden)]
         struct __Visitor<'de> {
-            marker: serde::__private::PhantomData<FilePickerState>,
+            marker:   serde::__private::PhantomData<FilePickerState>,
             lifetime: serde::__private::PhantomData<&'de ()>,
         }
         impl<'de> serde::de::Visitor<'de> for __Visitor<'de> {
             type Value = FilePickerState;
+
             fn expecting(
                 &self,
                 __formatter: &mut serde::__private::Formatter,
             ) -> serde::__private::fmt::Result {
                 serde::__private::Formatter::write_str(__formatter, "struct FilePickerState")
             }
+
             #[inline]
             fn visit_seq<__A>(
                 self,
@@ -145,6 +151,7 @@ impl<'de> Deserialize<'de> for FilePickerState {
                     entries: __field4,
                 })
             }
+
             #[inline]
             fn visit_map<__A>(
                 self,
@@ -229,7 +236,7 @@ impl<'de> Deserialize<'de> for FilePickerState {
             "FilePickerState",
             FIELDS,
             __Visitor {
-                marker: serde::__private::PhantomData::<FilePickerState>,
+                marker:   serde::__private::PhantomData::<FilePickerState>,
                 lifetime: serde::__private::PhantomData,
             },
         )
