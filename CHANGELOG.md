@@ -5,10 +5,16 @@ All notable changes to UKMM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.11.1]
+
+### Changed
+
+- Stopped caching open directory contents so the file picker is accurate after
+  the app restarts
 
 ### Fixed
 
+- Fixed serious issues with reinflating BNPs with options
 - Fixed parsing numeric strings in BCML 2.*x* `deepmerge.yml` files
 
 ## [0.11.0]
