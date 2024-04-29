@@ -92,6 +92,7 @@ pub enum MergeableResource {
     WorldInfo(Box<WorldInfo>),
     GenericAamp(Box<ParameterIO>),
     GenericByml(Box<Byml>),
+    BinaryOverride(Box<(Vec<u8>, String)>),
 }
 
 impl std::fmt::Display for MergeableResource {
@@ -148,6 +149,7 @@ impl std::fmt::Display for MergeableResource {
             Self::WorldInfo(_) => "WorldInfo",
             Self::GenericAamp(_) => "GenericAamp",
             Self::GenericByml(_) => "GenericByml",
+            Self::BinaryOverride(_) => "BinaryOverride",
         }
         .fmt(f)
     }
@@ -329,6 +331,8 @@ impl Mergeable for MergeableResource {
             (Self::WorldInfo(a), Self::WorldInfo(b)) => Self::WorldInfo(Box::new(a.diff(b))),
             (Self::GenericByml(a), Self::GenericByml(b)) => Self::GenericByml(Box::new(a.diff(b))),
             (Self::GenericAamp(a), Self::GenericAamp(b)) => Self::GenericAamp(Box::new(a.diff(b))),
+            (Self::BinaryOverride(_), anything) => anything.clone(),
+            (_anything, Self::BinaryOverride(bin)) => Self::BinaryOverride(bin.clone()),
             _ => {
                 panic!(
                     "Tried to diff incompatible resources: {} and {}",
@@ -425,6 +429,8 @@ impl Mergeable for MergeableResource {
             (Self::WorldInfo(a), Self::WorldInfo(b)) => Self::WorldInfo(Box::new(a.merge(b))),
             (Self::GenericByml(a), Self::GenericByml(b)) => Self::GenericByml(Box::new(a.merge(b))),
             (Self::GenericAamp(a), Self::GenericAamp(b)) => Self::GenericAamp(Box::new(a.merge(b))),
+            (Self::BinaryOverride(bin), _anything) => Self::BinaryOverride(bin.clone()),
+            (_anything, Self::BinaryOverride(bin)) => Self::BinaryOverride(bin.clone()),
             _ => {
                 panic!(
                     "Tried to merge incompatible resources: {} and {}",
@@ -437,7 +443,7 @@ impl Mergeable for MergeableResource {
 
 impl MergeableResource {
     pub fn from_binary(name: &Path, data: &[u8]) -> Result<Option<MergeableResource>> {
-        if ActorInfo::path_matches(name) {
+        let result: anyhow::Result<Option<MergeableResource>> = if ActorInfo::path_matches(name) {
             Ok(Some(Self::ActorInfo(Box::new(ActorInfo::from_binary(
                 data,
             )?))))
@@ -607,6 +613,15 @@ impl MergeableResource {
             Ok(Some(Self::GenericByml(Box::new(Byml::from_binary(data)?))))
         } else {
             Ok(None)
+        };
+        match result {
+            Err(e) => {
+                Ok(Some(Self::BinaryOverride(Box::new((
+                    data.to_vec(),
+                    e.to_string().into(),
+                )))))
+            }
+            ok => ok,
         }
     }
 
@@ -663,6 +678,10 @@ impl MergeableResource {
             Self::WorldInfo(v) => v.into_binary(endian),
             Self::GenericAamp(v) => v.to_binary(),
             Self::GenericByml(v) => v.to_binary(endian.into()),
+            Self::BinaryOverride(v) => {
+                let (bin, _) = *v;
+                bin
+            }
         }
     }
 }

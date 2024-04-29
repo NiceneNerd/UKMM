@@ -75,27 +75,27 @@ impl std::fmt::Debug for ModPacker {
 #[serde(default)]
 #[serde_as]
 struct InfoJson {
-    name:     String,
-    desc:     String,
+    name: String,
+    desc: String,
     #[serde(deserialize_with = "serde_with::As::<DefaultOnError>::deserialize")]
-    version:  String,
+    version: String,
     platform: String,
-    options:  BnpOptions,
+    options: BnpOptions,
 }
 
 #[derive(Debug, Deserialize, Default)]
 struct BnpOptions {
     #[serde(default)]
-    multi:  Vec<BnpOption>,
+    multi: Vec<BnpOption>,
     #[serde(default)]
     single: Vec<BnpGroup>,
 }
 
 #[derive(Debug, Deserialize)]
 struct BnpOption {
-    name:    String,
-    desc:    String,
-    folder:  PathBuf,
+    name: String,
+    desc: String,
+    folder: PathBuf,
     default: Option<bool>,
 }
 
@@ -141,10 +141,10 @@ impl RequireValue {
 
 #[derive(Debug, Deserialize)]
 struct BnpGroup {
-    name:     String,
-    desc:     String,
+    name: String,
+    desc: String,
     required: Option<RequireValue>,
-    options:  Vec<BnpOption>,
+    options: Vec<BnpOption>,
 }
 
 impl From<BnpGroup> for ExclusiveOptionGroup {
@@ -370,6 +370,16 @@ impl ModPacker {
                 let resource = ResourceData::from_binary(name.as_str(), &*file_data)
                     .with_context(|| jstr!("Failed to parse resource {&name}"))?;
                 let is_mergeable = matches!(resource, ResourceData::Mergeable(_));
+                if let ResourceData::Mergeable(
+                    uk_content::resource::MergeableResource::BinaryOverride(v),
+                ) = &resource
+                {
+                    log::error!(
+                        "There was an error processing {name}. It will not be processed but will be \
+                         stored as-is, overriding anything else. Error details:\n{}",
+                        v.1
+                    );
+                }
                 self.process_resource(name.clone(), canon.clone(), resource, false)
                     .with_context(|| jstr!("Failed to process resource {&canon}"))?;
                 if !is_mergeable && is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
@@ -512,6 +522,16 @@ impl ModPacker {
             let resource = ResourceData::from_binary(name, &*file_data).with_context(|| {
                 jstr!("Failed to parse resource {&canon} in SARC {&path.display().to_string()}")
             })?;
+            if let ResourceData::Mergeable(
+                uk_content::resource::MergeableResource::BinaryOverride(v),
+            ) = &resource
+            {
+                log::error!(
+                    "There was an error processing {name}. It will not be processed but will be \
+                     stored as-is, overriding anything else. Error details:\n{}",
+                    v.1
+                );
+            }
             self.process_resource(name.into(), canon.clone(), resource, is_new_sarc)?;
             if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                 log::trace!(
@@ -562,7 +582,7 @@ impl ModPacker {
                     })
                     .transpose()?
                     .unwrap_or_default(),
-                aoc_files:     aoc_dir
+                aoc_files: aoc_dir
                     .map(|aoc| {
                         log::info!("Collecting DLC resources");
                         self_.collect_resources(aoc)
