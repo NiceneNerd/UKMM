@@ -6,8 +6,8 @@ use super::*;
 
 #[derive(Debug)]
 pub struct MetaInputModal {
-    meta:   Option<Meta>,
-    path:   Option<PathBuf>,
+    meta: Option<Meta>,
+    path: Option<PathBuf>,
     sender: Sender<Message>,
 }
 
@@ -291,7 +291,7 @@ impl App {
                     ui.spacing_mut().item_spacing.y = 8.0;
                     ui.vertical_centered(|ui| {
                         ui.strong_heading("U-King Mod Manager");
-                        ui.label("© 2022 Caleb Smith - GPLv3");
+                        ui.label(crate::COPYRIGHT);
                         ui.label(concat!("Version ", env!("CARGO_PKG_VERSION")));
                     });
                     egui::Grid::new("about_box").num_columns(2).show(ui, |ui| {

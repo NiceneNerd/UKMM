@@ -219,9 +219,9 @@ dependencies = [
 
 [[package]]
 name = "astrolabe"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55189fd93a1d108bb6fb4a7dc223c141a1200841dfeeea9f984b58338ef8fc24"
+checksum = "5e969b837a80addc9a03dcfcd5569fad8607d26fc9391ebdeb2c279f720fafbf"
 
 [[package]]
 name = "async-io"
@@ -650,9 +650,9 @@ dependencies = [
 
 [[package]]
 name = "chrono"
-version = "0.4.37"
+version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a0d04d43504c61aa6c7531f1871dd0d418d91130162063b789da00fd7057a5e"
+checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",

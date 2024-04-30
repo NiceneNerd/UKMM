@@ -45,6 +45,9 @@ uk-ui = { path = "crates/uk-ui" }
 uk-util = { path = "crates/uk-util" }
 xflags = "0.3.1"
 
+[build-dependencies]
+astrolabe = "0.5.2"
+
 [target.'cfg(windows)'.dependencies]
 remove_dir_all = "0.8"
 

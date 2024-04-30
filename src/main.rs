@@ -2,6 +2,7 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 mod cli;
 mod gui;
 mod logger;
