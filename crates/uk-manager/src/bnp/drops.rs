@@ -44,13 +44,11 @@ impl BnpConverter {
                             .get_data(path.split("//").last().context("Bad drop diff")?)
                             .ok()
                             .and_then(|res| {
-                                res.as_mergeable().and_then(|m| {
-                                    match m {
-                                        uk_content::resource::MergeableResource::DropTable(d) => {
-                                            Some(d.clone())
-                                        }
-                                        _ => None,
+                                res.as_mergeable().and_then(|m| match m {
+                                    uk_content::resource::MergeableResource::DropTable(d) => {
+                                        Some(d.clone())
                                     }
+                                    _ => None,
                                 })
                             })
                     } else {
@@ -97,7 +95,7 @@ impl BnpConverter {
                                             let i = i + 1;
                                             let prob = match prob {
                                                 ProbabilityValue::Underride(_) => {
-                                                    match ref_drop
+                                                    let underride = ref_drop
                                                         .as_ref()
                                                         .and_then(|r| r.0.get(table_name.as_str()))
                                                         .and_then(|table| {
@@ -112,7 +110,8 @@ impl BnpConverter {
                                                                 table.0.values().nth(i + 1)
                                                             })
                                                             .and_then(|v| v.as_f32().ok())
-                                                        }) {
+                                                        });
+                                                    match underride {
                                                         Some(v) => v,
                                                         None => return vec![],
                                                     }

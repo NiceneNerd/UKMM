@@ -68,7 +68,7 @@ where
     U: ResourceLoader,
 {
     iter: T,
-    res:  &'a U,
+    res: &'a U,
 }
 
 impl<'a, T, U> Iterator for LanguageIterator<'a, T, U>
@@ -301,7 +301,7 @@ impl ResourceReader {
         canon: String,
     ) -> uk_content::Result<Arc<ResourceData>> {
         log::trace!("Loading resource {}", &canon);
-        match self
+        let res_result = self
             .cache
             .try_get_with(canon.clone(), || -> uk_content::Result<_> {
                 log::trace!("Resource {} not in cache, pulling", &canon);
@@ -321,13 +321,12 @@ impl ResourceReader {
                         }
                         res
                     }
-                    BinType::MiniCbor => {
-                        minicbor_ser::from_slice(data.as_slice())
-                            .map_err(anyhow_ext::Error::from)?
-                    }
+                    BinType::MiniCbor => minicbor_ser::from_slice(data.as_slice())
+                        .map_err(anyhow_ext::Error::from)?,
                 };
                 Ok(Arc::new(resource))
-            }) {
+            });
+        match res_result {
             Ok(res) => Ok(res),
             Err(e) => {
                 log::trace!("Failed to get file from dump: {e}. Performing parent lookup...");
@@ -344,13 +343,11 @@ impl ResourceReader {
                             Ok(v) => Ok(v),
                         }
                     }
-                    None => {
-                        Err(ROMError::FileNotFound(
-                            path.to_string_lossy().into(),
-                            self.source.host_path().to_path_buf(),
-                        )
-                        .into())
-                    }
+                    None => Err(ROMError::FileNotFound(
+                        path.to_string_lossy().into(),
+                        self.source.host_path().to_path_buf(),
+                    )
+                    .into()),
                 }
             }
         }
