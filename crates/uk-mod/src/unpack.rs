@@ -77,10 +77,10 @@ impl std::fmt::Debug for ZipData {
 
 #[self_referencing]
 pub struct ParallelZipReader {
-    data: ZipData,
+    data:  ZipData,
     #[borrows(data)]
     #[covariant]
-    zip: piz::ZipArchive<'this>,
+    zip:   piz::ZipArchive<'this>,
     #[borrows(zip)]
     #[covariant]
     files: HashMap<&'this Path, &'this piz::read::FileMetadata<'this>>,
@@ -477,14 +477,14 @@ static RSTB_EXCLUDE_NAMES: &[&str] = &["ActorInfo.product.byml"];
 
 // #[derive(Debug)]
 pub struct ModUnpacker {
-    dump: Arc<ResourceReader>,
+    dump:     Arc<ResourceReader>,
     manifest: Option<Manifest>,
-    mods: Vec<ModReader>,
-    endian: Endian,
-    lang: Language,
-    rstb: DashMap<String, Option<u32>>,
-    hashes: StockHashTable,
-    out_dir: PathBuf,
+    mods:     Vec<ModReader>,
+    endian:   Endian,
+    lang:     Language,
+    rstb:     DashMap<String, Option<u32>>,
+    hashes:   StockHashTable,
+    out_dir:  PathBuf,
 }
 
 impl ModUnpacker {
@@ -566,18 +566,19 @@ impl ModUnpacker {
                     Ok(Err(e)) => anyhow_ext::bail!(e),
                     Ok(Ok(_)) => (),
                     Err(e) => {
-                        anyhow::bail!(e
-                            .downcast::<std::string::String>()
-                            .or_else(|e| {
-                                e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
-                            })
-                            .unwrap_or_else(|_| {
-                                Box::new(
-                                    "An unknown error occured, check the log for possible \
+                        anyhow::bail!(
+                            e.downcast::<std::string::String>()
+                                .or_else(|e| {
+                                    e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
+                                })
+                                .unwrap_or_else(|_| {
+                                    Box::new(
+                                        "An unknown error occured, check the log for possible \
                                          details."
-                                        .to_string(),
-                                )
-                            }))
+                                            .to_string(),
+                                    )
+                                })
+                        )
                     }
                 }
             }

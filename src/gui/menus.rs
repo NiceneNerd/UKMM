@@ -64,7 +64,7 @@ impl App {
     pub fn window_menu(&mut self, ui: &mut Ui) {
         if ui.button("Reset").clicked() {
             ui.close_menu();
-            *self.tree.write() = tabs::default_ui();
+            *self.tree.borrow_mut() = tabs::default_ui();
         }
         ui.separator();
         for tab in [
@@ -87,17 +87,17 @@ impl App {
                 if let Some(parent) = self.closed_tabs.remove(&tab) {
                     if let Some(parent) = self
                         .tree
-                        .write()
+                        .borrow_mut()
                         .iter_all_nodes_mut()
                         .nth(parent.0)
                         .filter(|p| p.1.tabs_count() > 0)
                     {
                         parent.1.append_tab(tab);
                     } else {
-                        self.tree.write().push_to_focused_leaf(tab);
+                        self.tree.borrow_mut().push_to_focused_leaf(tab);
                     };
                 } else {
-                    let mut tree = self.tree.write();
+                    let mut tree = self.tree.borrow_mut();
                     if let Some((_, parent_index, node_index)) = tree.find_tab(&tab) {
                         let parent = tree.iter_all_nodes_mut().nth(parent_index.0).unwrap();
                         parent.1.remove_tab(node_index);

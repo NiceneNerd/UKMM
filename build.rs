@@ -2,8 +2,9 @@
 extern crate winres;
 
 fn copyright_string() {
-    use astrolabe::DateUtilities;
     use std::io::Write;
+
+    use astrolabe::DateUtilities;
     let year = astrolabe::Date::now().year();
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let dest_path = format!("{}/build_info.rs", out_dir);

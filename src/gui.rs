@@ -17,6 +17,7 @@ use std::{
     fmt::Write,
     ops::DerefMut,
     path::PathBuf,
+    rc::Rc,
     sync::Arc,
     thread,
     time::Duration,
@@ -63,39 +64,27 @@ use crate::{gui::modals::MetaInputModal, logger::Entry};
 
 impl Entry {
     pub fn format(&self, job: &mut LayoutJob) {
-        job.append(
-            &jstr!("[{&self.timestamp}] "),
-            0.,
-            TextFormat {
-                color: Color32::GRAY,
-                font_id: FontId::monospace(10.),
-                ..Default::default()
+        job.append(&jstr!("[{&self.timestamp}] "), 0., TextFormat {
+            color: Color32::GRAY,
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
+        job.append(&jstr!("{&self.level} "), 0., TextFormat {
+            color: match self.level.as_str() {
+                "INFO" => visuals::GREEN,
+                "WARN" => visuals::ORGANGE,
+                "ERROR" => visuals::RED,
+                "DEBUG" => visuals::BLUE,
+                _ => visuals::YELLOW,
             },
-        );
-        job.append(
-            &jstr!("{&self.level} "),
-            0.,
-            TextFormat {
-                color: match self.level.as_str() {
-                    "INFO" => visuals::GREEN,
-                    "WARN" => visuals::ORGANGE,
-                    "ERROR" => visuals::RED,
-                    "DEBUG" => visuals::BLUE,
-                    _ => visuals::YELLOW,
-                },
-                font_id: FontId::monospace(10.),
-                ..Default::default()
-            },
-        );
-        job.append(
-            &self.args,
-            1.,
-            TextFormat {
-                color: Color32::WHITE,
-                font_id: FontId::monospace(10.),
-                ..Default::default()
-            },
-        );
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
+        job.append(&self.args, 1., TextFormat {
+            color: Color32::WHITE,
+            font_id: FontId::monospace(10.),
+            ..Default::default()
+        });
         job.append("\n", 0.0, Default::default());
     }
 }
@@ -149,15 +138,19 @@ impl Sort {
             Sort::Name => {
                 Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| a.meta.name.cmp(&b.meta.name))
             }
-            Sort::Category => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                a.meta.category.cmp(&b.meta.category)
-            }),
-            Sort::Version => Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                a.meta
-                    .version
-                    .partial_cmp(&b.meta.version)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            }),
+            Sort::Category => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                    a.meta.category.cmp(&b.meta.category)
+                })
+            }
+            Sort::Version => {
+                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
+                    a.meta
+                        .version
+                        .partial_cmp(&b.meta.version)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+            }
             Sort::Priority => Box::new(|&(a, _), &(b, _)| a.cmp(&b)),
         }
     }
@@ -273,7 +266,7 @@ pub struct App {
     profiles_state: RefCell<profiles::ProfileManagerState>,
     meta_input: modals::MetaInputModal,
     closed_tabs: HashMap<Tabs, NodeIndex>,
-    tree: Arc<RwLock<DockState<Tabs>>>,
+    tree: Rc<RefCell<DockState<Tabs>>>,
     focused: FocusedPane,
     logs: Vec<Entry>,
     log: LayoutJob,
@@ -369,7 +362,7 @@ impl App {
             },
             sort: (Sort::Priority, false),
             options_mod: None,
-            tree: Arc::new(RwLock::new(ui_state.tree)),
+            tree: Rc::new(RefCell::new(ui_state.tree)),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
             dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
@@ -429,10 +422,10 @@ impl App {
     fn do_task(
         &self,
         task: impl 'static
-            + Send
-            + Sync
-            + FnOnce(Arc<Manager>) -> Result<Message>
-            + std::panic::UnwindSafe,
+        + Send
+        + Sync
+        + FnOnce(Arc<Manager>) -> Result<Message>
+        + std::panic::UnwindSafe,
     ) {
         let sender = self.channel.0.clone();
         let core = self.core.clone();
@@ -442,15 +435,17 @@ impl App {
             let response = match std::panic::catch_unwind(|| task(core.clone())) {
                 Ok(Ok(msg)) => msg,
                 Ok(Err(e)) => Message::Error(e),
-                Err(e) => Message::Error(anyhow::format_err!(
-                    "{}",
-                    e.downcast::<String>().unwrap_or_else(|_| {
-                        Box::new(
-                            "An unknown error occured, check the log for possible details."
-                                .to_string(),
-                        )
-                    })
-                )),
+                Err(e) => {
+                    Message::Error(anyhow::format_err!(
+                        "{}",
+                        e.downcast::<String>().unwrap_or_else(|_| {
+                            Box::new(
+                                "An unknown error occured, check the log for possible details."
+                                    .to_string(),
+                            )
+                        })
+                    ))
+                }
             };
             if let Some(d) = core.settings().dump() {
                 d.clear_cache()
@@ -662,11 +657,13 @@ impl App {
                         };
                     }
                 }
-                Message::DeleteProfile(profile) => self.do_task(move |core| {
-                    let path = core.settings().profiles_dir().join(profile);
-                    fs::remove_dir_all(path)?;
-                    Ok(Message::ReloadProfiles)
-                }),
+                Message::DeleteProfile(profile) => {
+                    self.do_task(move |core| {
+                        let path = core.settings().profiles_dir().join(profile);
+                        fs::remove_dir_all(path)?;
+                        Ok(Message::ReloadProfiles)
+                    })
+                }
                 Message::DuplicateProfile(profile) => {
                     self.do_task(move |core| {
                         let profiles_dir = core.settings().profiles_dir();
@@ -677,11 +674,13 @@ impl App {
                         Ok(Message::ReloadProfiles)
                     });
                 }
-                Message::RenameProfile(profile, rename) => self.do_task(move |core| {
-                    let profiles_dir = core.settings().profiles_dir();
-                    fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
-                    Ok(Message::ReloadProfiles)
-                }),
+                Message::RenameProfile(profile, rename) => {
+                    self.do_task(move |core| {
+                        let profiles_dir = core.settings().profiles_dir();
+                        fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
+                        Ok(Message::ReloadProfiles)
+                    })
+                }
                 Message::ReloadProfiles => {
                     self.profiles_state.borrow_mut().reload(&self.core);
                     self.busy.set(false);
@@ -892,16 +891,20 @@ impl App {
                     let dirty = std::mem::take(self.dirty_mut().deref_mut());
                     self.do_task(move |core| tasks::apply_changes(&core, mods, Some(dirty)));
                 }
-                Message::Deploy => self.do_task(move |core| {
-                    log::info!("Deploying current mod configuration");
-                    core.deploy_manager().deploy()?;
-                    Ok(Message::ResetMods(None))
-                }),
-                Message::ResetPending => self.do_task(|core| {
-                    log::info!("Resetting pending deployment data");
-                    core.deploy_manager().reset_pending()?;
-                    Ok(Message::Noop)
-                }),
+                Message::Deploy => {
+                    self.do_task(move |core| {
+                        log::info!("Deploying current mod configuration");
+                        core.deploy_manager().deploy()?;
+                        Ok(Message::ResetMods(None))
+                    })
+                }
+                Message::ResetPending => {
+                    self.do_task(|core| {
+                        log::info!("Resetting pending deployment data");
+                        core.deploy_manager().reset_pending()?;
+                        Ok(Message::Noop)
+                    })
+                }
                 Message::Remerge => {
                     self.do_task(|core| tasks::apply_changes(&core, vec![], None));
                 }
@@ -1116,7 +1119,7 @@ impl eframe::App for App {
         let id = Id::new("egui_dock::DockArea");
         let mut ui = Ui::new(ctx.clone(), layer_id, id, max_rect, clip_rect);
         ui.spacing_mut().item_spacing = [8.0, 8.0].into();
-        DockArea::new(self.tree.clone().write().deref_mut())
+        DockArea::new(&mut Rc::clone(&self.tree).borrow_mut())
             .style(self.dock_style.clone())
             .show_inside(&mut ui, self);
         self.render_busy(ctx, frame);
@@ -1130,7 +1133,7 @@ impl eframe::App for App {
         let ui_state = UiState {
             theme: self.theme,
             picker_state: std::mem::take(&mut self.picker_state),
-            tree: std::mem::replace(&mut self.tree.write(), tabs::default_ui()),
+            tree: std::mem::replace(&mut self.tree.borrow_mut(), tabs::default_ui()),
         };
         fs::write(
             self.core.settings().state_file(),
@@ -1152,8 +1155,8 @@ pub fn main() -> Result<(), eframe::Error> {
                 icon: Some(
                     IconData {
                         height: 256,
-                        width: 256,
-                        rgba: image::load_from_memory(include_bytes!("../assets/ukmm.png"))
+                        width:  256,
+                        rgba:   image::load_from_memory(include_bytes!("../assets/ukmm.png"))
                             .unwrap()
                             .to_rgba8()
                             .into_vec(),

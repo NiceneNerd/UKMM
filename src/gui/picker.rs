@@ -92,7 +92,7 @@ impl<'de> Deserialize<'de> for FilePickerState {
         }
         #[doc(hidden)]
         struct __Visitor<'de> {
-            marker: serde::__private::PhantomData<FilePickerState>,
+            marker:   serde::__private::PhantomData<FilePickerState>,
             lifetime: serde::__private::PhantomData<&'de ()>,
         }
         impl<'de> serde::de::Visitor<'de> for __Visitor<'de> {
@@ -236,7 +236,7 @@ impl<'de> Deserialize<'de> for FilePickerState {
             "FilePickerState",
             FIELDS,
             __Visitor {
-                marker: serde::__private::PhantomData::<FilePickerState>,
+                marker:   serde::__private::PhantomData::<FilePickerState>,
                 lifetime: serde::__private::PhantomData,
             },
         )

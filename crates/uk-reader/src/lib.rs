@@ -68,7 +68,7 @@ where
     U: ResourceLoader,
 {
     iter: T,
-    res: &'a U,
+    res:  &'a U,
 }
 
 impl<'a, T, U> Iterator for LanguageIterator<'a, T, U>
@@ -321,8 +321,10 @@ impl ResourceReader {
                         }
                         res
                     }
-                    BinType::MiniCbor => minicbor_ser::from_slice(data.as_slice())
-                        .map_err(anyhow_ext::Error::from)?,
+                    BinType::MiniCbor => {
+                        minicbor_ser::from_slice(data.as_slice())
+                            .map_err(anyhow_ext::Error::from)?
+                    }
                 };
                 Ok(Arc::new(resource))
             });
@@ -343,11 +345,13 @@ impl ResourceReader {
                             Ok(v) => Ok(v),
                         }
                     }
-                    None => Err(ROMError::FileNotFound(
-                        path.to_string_lossy().into(),
-                        self.source.host_path().to_path_buf(),
-                    )
-                    .into()),
+                    None => {
+                        Err(ROMError::FileNotFound(
+                            path.to_string_lossy().into(),
+                            self.source.host_path().to_path_buf(),
+                        )
+                        .into())
+                    }
                 }
             }
         }
