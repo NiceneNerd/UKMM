@@ -5,3 +5,4 @@ tmp.txt
 jsconfig.json
 sciter.d.ts
 dump.bin
+/.cargo/
