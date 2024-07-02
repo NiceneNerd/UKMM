@@ -32,7 +32,6 @@ use eframe::{
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
-use join_str::jstr;
 use parking_lot::{
     MappedRwLockReadGuard, MappedRwLockWriteGuard, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
 };
@@ -49,9 +48,8 @@ use uk_mod::{pack::sanitise, Manifest, Meta, ModPlatform};
 pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
-        self, epaint::Margin, text::LayoutJob, Align, Align2, Color32, ComboBox, FontId, Frame, Id,
-        Label, LayerId, Layout, RichText, Spinner, TextFormat, TextStyle, Ui, Vec2,
-        ViewportBuilder,
+        self, epaint::Margin, text::LayoutJob, Align, Align2, ComboBox, Frame, Id, Label, LayerId,
+        Layout, RichText, Spinner, TextStyle, Ui, Vec2, ViewportBuilder,
     },
     egui_dock::{DockArea, DockState, NodeIndex},
     ext::UiExt,

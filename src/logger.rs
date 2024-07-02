@@ -6,11 +6,9 @@ use std::{
     sync::Arc,
 };
 
-use log::{LevelFilter, Record};
-use parking_lot::{Mutex, RwLock};
+use log::Record;
+use parking_lot::Mutex;
 use uk_util::{Lazy, OnceLock};
-
-use crate::gui::Message;
 
 pub static LOGGER: Lazy<Logger> = Lazy::new(|| {
     Logger {
