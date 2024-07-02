@@ -84,19 +84,13 @@ impl TabViewer for super::App {
                     .inner_margin(-2.0)
                     .outer_margin(0.0)
                     .show(ui, |ui| {
-                        egui::ScrollArea::new([true, true])
-                            .auto_shrink([false, true])
-                            .stick_to_bottom(true)
-                            .show(ui, |ui| {
-                                if ui
-                                    .add(Label::new(self.log.clone()).sense(Sense::click()))
-                                    .on_hover_text("Click to copy")
-                                    .clicked()
-                                {
-                                    ui.output_mut(|o| o.copied_text = self.log.text.clone());
-                                }
-                                ui.allocate_space(ui.available_size());
-                            });
+                        egui_logger::logger_ui(ui);
+                        // egui::ScrollArea::new([true, true])
+                        //     .auto_shrink([false, true])
+                        //     .stick_to_bottom(true)
+                        //     .show(ui, |ui| {
+
+                        //     });
                     });
                 ui.shrink_height_to_current();
             }

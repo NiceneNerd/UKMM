@@ -1331,6 +1331,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui_logger"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fce85f958e55de0295af328a0f0aa102b2b449b723b76dfaa03be0f06788e1d"
+dependencies = [
+ "egui",
+ "log",
+ "once_cell",
+ "regex",
+]
+
+[[package]]
 name = "ehttp"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4814,7 +4826,7 @@ dependencies = [
  "eframe",
  "egui-notify",
  "egui_commonmark",
- "env_logger",
+ "egui_logger",
  "flume",
  "fs-err",
  "http_req",

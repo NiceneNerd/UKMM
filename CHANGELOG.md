@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added experimental "binary override," as-is storage of technically invalid
   resources for mods which work despite minor "errors"
 
+### Changed
+
+- Completely reworked logger using `egui_logger`, hopefully more performant and
+  maintainable
+- Switched some `Arc`s to `Rc`s where possible
+
 ## [0.11.1]
 
 ### Changed

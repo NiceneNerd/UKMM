@@ -60,34 +60,7 @@ use uk_ui::{
 use uk_util::OptionResultExt;
 
 use self::{package::ModPackerBuilder, tasks::VersionResponse};
-use crate::{gui::modals::MetaInputModal, logger::Entry};
-
-impl Entry {
-    pub fn format(&self, job: &mut LayoutJob) {
-        job.append(&jstr!("[{&self.timestamp}] "), 0., TextFormat {
-            color: Color32::GRAY,
-            font_id: FontId::monospace(10.),
-            ..Default::default()
-        });
-        job.append(&jstr!("{&self.level} "), 0., TextFormat {
-            color: match self.level.as_str() {
-                "INFO" => visuals::GREEN,
-                "WARN" => visuals::ORGANGE,
-                "ERROR" => visuals::RED,
-                "DEBUG" => visuals::BLUE,
-                _ => visuals::YELLOW,
-            },
-            font_id: FontId::monospace(10.),
-            ..Default::default()
-        });
-        job.append(&self.args, 1., TextFormat {
-            color: Color32::WHITE,
-            font_id: FontId::monospace(10.),
-            ..Default::default()
-        });
-        job.append("\n", 0.0, Default::default());
-    }
-}
+use crate::gui::modals::MetaInputModal;
 
 pub trait Component {
     type Message;
@@ -190,7 +163,6 @@ pub enum Message {
     HandleSettings,
     ImportCemu,
     InstallMod(Mod),
-    Log(Entry),
     MigrateBcml,
     ModUpdate,
     MoveSelected(usize),
@@ -268,8 +240,6 @@ pub struct App {
     closed_tabs: HashMap<Tabs, NodeIndex>,
     tree: Rc<RefCell<DockState<Tabs>>>,
     focused: FocusedPane,
-    logs: Vec<Entry>,
-    log: LayoutJob,
     error: Option<anyhow_ext::Error>,
     new_profile: Option<String>,
     confirm: Option<(Message, String)>,
@@ -309,7 +279,6 @@ impl App {
         ui_state.theme.set_theme(&cc.egui_ctx);
         let mods: Vec<_> = core.mod_manager().all_mods().collect();
         let (send, recv) = flume::unbounded();
-        crate::logger::LOGGER.set_sender(send.clone());
         crate::logger::LOGGER.set_file(Settings::config_dir().join("log.txt"));
         log::info!("Logger initialized");
         let temp_settings = core.settings().clone();
@@ -340,8 +309,6 @@ impl App {
                 }
             },
             channel: (send, recv),
-            logs: Vec::new(),
-            log: LayoutJob::default(),
             closed_tabs: Default::default(),
             focused: FocusedPane::None,
             error: None,
@@ -469,20 +436,6 @@ impl App {
         if let Ok(msg) = self.channel.1.try_recv() {
             match msg {
                 Message::Noop => self.busy.set(false),
-                Message::Log(entry) => {
-                    if !entry.args.starts_with("PROGRESS") {
-                        entry.format(&mut self.log);
-                        if self.logs.len() > 100 {
-                            self.logs.remove(0);
-                            for _ in 0..4 {
-                                if !self.log.sections.is_empty() {
-                                    self.log.sections.remove(0);
-                                }
-                            }
-                        }
-                    }
-                    self.logs.push(entry);
-                }
                 Message::ResetMods(dirty) => {
                     self.busy.set(false);
                     self.dirty_mut().clear();

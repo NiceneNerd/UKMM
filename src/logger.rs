@@ -1,59 +1,38 @@
 use std::{
-    io::Write,
+    fmt::Write,
     ops::Deref,
+    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
-    sync::atomic::AtomicBool,
+    sync::Arc,
 };
 
 use log::{LevelFilter, Record};
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use uk_util::{Lazy, OnceLock};
 
 use crate::gui::Message;
 
 pub static LOGGER: Lazy<Logger> = Lazy::new(|| {
     Logger {
-        inner:  env_logger::builder().build(),
-        debug:  std::env::args().any(|arg| &arg == "--debug").into(),
-        queue:  Mutex::new(vec![]),
-        sender: OnceLock::new(),
-        record: Mutex::new(vec![]),
-        file:   OnceLock::new(),
+        text: Default::default(),
+        record_buf: Arc::new(Mutex::new(String::with_capacity(512))),
+        msg: Default::default(),
+        inner: &egui_logger::EguiLogger,
+        file: OnceLock::new(),
     }
 });
 
 pub fn init() {
     log::set_logger(LOGGER.deref()).unwrap();
-    let level = LOGGER.inner.filter();
-    log::set_max_level(level.max(log::LevelFilter::Debug));
-}
-
-#[derive(Debug, Clone)]
-pub struct Entry {
-    pub timestamp: String,
-    pub level: String,
-    pub target: String,
-    pub args: String,
-}
-
-impl From<&Record<'_>> for Entry {
-    fn from(record: &Record) -> Self {
-        Self {
-            timestamp: astrolabe::DateTime::now().format("y-MM-dd h:mm:ss"),
-            level: record.level().to_string(),
-            target: record.target().to_string(),
-            args: format!("{:?}", record.args()),
-        }
-    }
+    log::set_max_level(log::LevelFilter::max());
 }
 
 pub struct Logger {
-    inner:  env_logger::Logger,
-    debug:  AtomicBool,
-    queue:  Mutex<Vec<Entry>>,
-    sender: OnceLock<flume::Sender<Message>>,
-    record: Mutex<Vec<Entry>>,
-    file:   OnceLock<PathBuf>,
+    text: Arc<Mutex<String>>,
+    record_buf: Arc<Mutex<String>>,
+    msg: Arc<Mutex<Option<String>>>,
+    inner: &'static egui_logger::EguiLogger,
+    file: OnceLock<PathBuf>,
 }
 
 impl Drop for Logger {
@@ -71,29 +50,31 @@ impl Logger {
                 fs_err::File::create(path)
             }
             .unwrap();
-
-            for entry in self.record.lock().drain(..) {
-                writeln!(file, "[{}] {} {}", entry.timestamp, entry.level, entry.args)
-                    .unwrap_or(());
-            }
+            use std::io::Write;
+            let mut text = self.text.lock();
+            file.write(text.as_bytes()).unwrap_or_default();
+            text.clear();
         }
     }
 
-    pub fn debug(&self) -> bool {
-        self.debug.load(std::sync::atomic::Ordering::Relaxed)
-    }
-
-    pub fn set_debug(&self, debug: bool) {
-        self.debug
-            .store(debug, std::sync::atomic::Ordering::Relaxed);
-    }
-
-    pub fn set_sender(&self, sender: flume::Sender<Message>) {
-        self.sender.set(sender).unwrap_or(());
-        self.flush_queue();
-    }
-
-    pub fn set_file(&self, file: PathBuf) {
+    pub fn set_file(&self, mut file: PathBuf) {
+        if file
+            .metadata()
+            .map(|m| m.size() > 1_048_576)
+            .unwrap_or_default()
+        {
+            let file_num = file
+                .file_stem()
+                .expect("Bad log file stem")
+                .to_str()
+                .expect("Bad log file stem")
+                .trim_start_matches("log")
+                .trim_start_matches('.')
+                .parse::<u8>()
+                .unwrap_or_default()
+                + 1;
+            file.set_file_name(&format!("log.{}.txt", file_num));
+        }
         self.file.set(file).unwrap_or(());
     }
 
@@ -101,54 +82,61 @@ impl Logger {
         self.file.get().map(|f| f.as_path())
     }
 
-    pub fn flush_queue(&self) {
-        if let Some(sender) = self.sender.get() {
-            let mut queue = self.queue.lock();
-            if queue.len() > 1000 {
-                queue.drain(..500).count();
-            }
-            for entry in queue.drain(..) {
-                sender.send(Message::Log(entry)).unwrap();
-            }
-        }
+    pub fn get_progress(&self) -> Option<String> {
+        self.msg.lock().clone()
     }
 }
 
 impl log::Log for Logger {
+    #[inline]
     fn enabled(&self, metadata: &log::Metadata) -> bool {
         self.inner.enabled(metadata)
     }
 
     fn log(&self, record: &Record) {
-        let entry: Entry = record.into();
-        if record.target().starts_with("uk")
-            && (self.debug() || record.level() < LevelFilter::Debug)
-        {
-            if !entry.args.starts_with("PROGRESS") {
-                self.record.lock().push(entry.clone());
-            }
-            if let Some(sender) = self.sender.get() {
-                sender.send(Message::Log(entry)).unwrap();
-            } else {
-                self.queue.lock().push(entry);
-            }
-            if self.enabled(record.metadata())
-                && record
-                    .args()
-                    .as_str()
-                    .map(|s| !s.starts_with("PROGRESS"))
-                    .unwrap_or(true)
-            {
-                self.inner.log(record);
-            }
+        if !record.target().starts_with("uk") {
+            return;
         }
-        if self.record.lock().len() > 30 {
-            self.save_log();
+        let mut buf;
+        let txt = match record.args().as_str() {
+            Some(txt) => txt,
+            None => {
+                buf = self.record_buf.lock();
+                buf.clear();
+                let _ = buf.write_fmt(*record.args());
+                buf.as_str()
+            }
+        };
+        let progress_msg = txt.starts_with("PROGRESS");
+        if record.level() == log::Level::Info || progress_msg {
+            self.msg
+                .lock()
+                .replace(txt.trim_start_matches("PROGRESS").to_string());
+        } else if txt == "CLEARPROGRESS" {
+            *self.msg.lock() = None;
+            return;
+        }
+        if !progress_msg {
+            self.inner.log(record);
+            let mut text = self.text.lock();
+            writeln!(
+                text,
+                "[{}] {} {}",
+                astrolabe::DateTime::now().format("y-MM-dd h:mm:ss"),
+                record.level().as_str(),
+                record.args()
+            )
+            .expect("Failed to write to log");
+            if text.lines().count() > 1024 {
+                drop(text);
+                self.save_log();
+            }
         }
     }
 
+    #[inline]
     fn flush(&self) {
-        self.flush_queue();
         self.inner.flush();
+        self.save_log();
     }
 }

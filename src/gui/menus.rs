@@ -109,18 +109,6 @@ impl App {
     }
 
     pub fn help_menu(&self, ui: &mut Ui) {
-        let verbose = crate::logger::LOGGER.debug();
-        let verbose_button = if verbose {
-            ui.icon_text_button(" Verbose Logging", Icon::Check)
-        } else {
-            ui.button("Verbose Logging")
-        };
-        ui.separator();
-        if verbose_button.clicked() {
-            ui.close_menu();
-            crate::logger::LOGGER.set_debug(!verbose);
-            log::debug!("Verbose logging enabled"); // Think about it for a second
-        }
         if ui.button("Help").clicked() {
             ui.close_menu();
             open::that("https://nicenenerd.github.io/UKMM").unwrap_or(());

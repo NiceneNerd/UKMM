@@ -582,6 +582,7 @@ impl ModUnpacker {
                     }
                 }
             }
+            log::trace!("CLEARPROGRESS");
             Ok(())
         })?;
         Ok(self.rstb)
@@ -654,7 +655,7 @@ impl ModUnpacker {
             let percent = (progress as f64 / total_files as f64) * 100.0;
             let fract = percent.fract();
             if fract <= 0.1 || fract >= 0.95 {
-                log::info!(
+                log::trace!(
                     "PROGRESSBuilding {} files: {}%",
                     total_files,
                     percent as usize

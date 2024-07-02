@@ -27,13 +27,15 @@ serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
-zip = { workspace = true, default-features = false, features = ["deflate"]}
+zip = { workspace = true, default-features = false, features = ["deflate"] }
 
 astrolabe = "0.5.1"
 egui_commonmark = { version = "0.15.0", features = ["svg", "fetch"] }
 egui-notify = "0.14.0"
-env_logger = "0.10.0"
-http_req  = {version="^0.9", default-features = false, features = ["rust-tls"] }
+egui_logger = "0.4.4"
+http_req = { version = "^0.9", default-features = false, features = [
+    "rust-tls",
+] }
 image = { version = "0.24.4", features = ["jpeg", "png"] }
 open = "3.0.3"
 roxmltree = "0.18.0"
@@ -102,5 +104,5 @@ serde_with = "3.0"
 smartstring = "1"
 thiserror = "1.0.38"
 typetag = "0.2.1"
-zip =  { version = "0.6.2", default-features = false }
+zip = { version = "0.6.2", default-features = false }
 zstd = { version = "0.13.1", features = ["experimental"] }

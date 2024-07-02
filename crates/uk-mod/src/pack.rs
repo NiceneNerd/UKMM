@@ -401,7 +401,7 @@ impl ModPacker {
                 let percent = (progress as f64 / total_files as f64) * 100.0;
                 let fract = percent.fract();
                 if fract <= 0.1 || fract >= 0.95 {
-                    log::info!(
+                    log::trace!(
                         "PROGRESSBuilding {} files: {}%",
                         total_files,
                         percent as usize
@@ -590,6 +590,7 @@ impl ModPacker {
                     .transpose()?
                     .unwrap_or_default(),
             };
+            log::trace!("CLEARPROGRESS");
             if manifest
                 .aoc_files
                 .iter()

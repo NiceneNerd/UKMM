@@ -252,25 +252,9 @@ impl App {
                             ui.add_space(8.);
                             ui.vertical(|ui| {
                                 ui.label("Processing…");
-                                let mut job = LayoutJob::single_section(
-                                    self.logs
-                                        .iter()
-                                        .rev()
-                                        .find(|l| {
-                                            l.level == "INFO" || l.args.starts_with("PROGRESS")
-                                        })
-                                        .map(|l| l.args.as_str().trim_start_matches("PROGRESS"))
-                                        .unwrap_or_default()
-                                        .to_owned(),
-                                    TextFormat::default(),
-                                );
-                                job.wrap = TextWrapping {
-                                    max_width,
-                                    max_rows: 1,
-                                    break_anywhere: true,
-                                    ..Default::default()
-                                };
-                                ui.add(Label::new(job).wrap(false));
+                                if let Some(progress) = crate::logger::LOGGER.get_progress() {
+                                    ui.add(Label::new(progress).wrap(false));
+                                }
                             });
                             ui.shrink_width_to_current();
                         });
