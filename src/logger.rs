@@ -1,7 +1,6 @@
 use std::{
     fmt::Write,
     ops::Deref,
-    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -58,7 +57,7 @@ impl Logger {
     pub fn set_file(&self, mut file: PathBuf) {
         if file
             .metadata()
-            .map(|m| m.size() > 1_048_576)
+            .map(|m| m.len() > 1_048_576)
             .unwrap_or_default()
         {
             let file_num = file
