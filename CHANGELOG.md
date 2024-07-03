@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Restored missing Package button to Window menu
+- Fixed option descriptions not showing on multiple choice
 
 
 ## [0.12.0]

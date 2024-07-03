@@ -73,9 +73,9 @@ impl App {
                                                 } else {
                                                     mod_.enabled_options.retain(|o| o != opt);
                                                 }
-                                                if !opt.description.is_empty() {
-                                                    ui.small(opt.description.as_str());
-                                                }
+                                            }
+                                            if !opt.description.is_empty() {
+                                                ui.small(opt.description.as_str());
                                             }
                                         });
                                     }
@@ -95,6 +95,7 @@ impl App {
                     ui.colored_label(visuals::RED, "You must set all required option groups");
                 }
                 ui.horizontal(|ui| {
+                    ui.add_space(2.);
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         if ui.add_enabled(done, Button::new("OK")).clicked() {
                             let (mod_, update) = self.options_mod.take().unwrap();
