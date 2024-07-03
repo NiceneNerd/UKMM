@@ -72,6 +72,7 @@ impl App {
             Tabs::Install,
             Tabs::Deploy,
             Tabs::Mods,
+            Tabs::Package,
             Tabs::Settings,
             Tabs::Log,
         ] {
