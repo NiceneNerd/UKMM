@@ -7,6 +7,12 @@ edition = "2021"
 license = "GPL-3.0-or-later"
 version = { workspace = true }
 
+[package.metadata.wix]
+upgrade-guid = "0EC50392-193E-4A2B-9322-3CF045D8FCAE"
+path-guid = "BC0A4F00-5469-4677-B5F4-61A17A215A27"
+license = false
+eula = false
+
 [dependencies]
 anyhow = { workspace = true }
 anyhow_ext = { workspace = true }
@@ -107,3 +113,24 @@ thiserror = "1.0.38"
 typetag = "0.2.1"
 zip = { version = "0.6.2", default-features = false }
 zstd = { version = "0.13.1", features = ["experimental"] }
+
+# Config for 'cargo dist'
+[workspace.metadata.dist]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.17.0"
+# CI backends to support
+ci = "github"
+# The installers to generate for each app
+installers = ["shell", "powershell", "msi"]
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = ["x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+# Publish jobs to run in CI
+pr-run-mode = "plan"
+# Whether to install an updater program
+install-updater = true
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = true
+codegen-units = 2

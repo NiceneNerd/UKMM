@@ -1,7 +1,15 @@
 [package]
 name = "uk-editor"
+authors = ["Caleb Smith <c.smith@tuta.io>"]
 edition = "2021"
+publish = false
 version.workspace = true
+
+[package.metadata.wix]
+upgrade-guid = "53241AAE-2269-4EA6-96E9-E17D464137DA"
+path-guid = "E0CA8178-5543-41CD-BCA2-A36FDD406020"
+license = false
+eula = false
 
 [dependencies]
 anyhow = { workspace = true }
