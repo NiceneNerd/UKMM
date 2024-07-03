@@ -1,6 +1,7 @@
 [package]
 name = "ukmm"
 description = "A new mod manager for The Legend of Zelda: Breath of the Wild. Successor to BCML."
+repository = "https://github.com/NiceneNerd/ukmm"
 authors = ["Caleb Smith <c.smith@tuta.io>"]
 edition = "2021"
 license = "GPL-3.0-or-later"
