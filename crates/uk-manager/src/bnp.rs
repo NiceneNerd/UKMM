@@ -526,10 +526,10 @@ pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> 
         )
     })?;
     let tempfile = std::env::temp_dir();
-    let meta = if let Some(rules_path) = tempdir.join("rules.txt").exists_then() {
-        ModPacker::parse_rules(rules_path)?
+    let meta = if let Some(info_path) = tempdir.join("info.json").exists_then() {
+        ModPacker::parse_info(info_path)?
     } else {
-        ModPacker::parse_info(tempdir.join("info.json")).context("Failed to parse BNP metadata")?
+        ModPacker::parse_rules(tempdir.join("rules.txt")).context("Failed to parse BNP metadata")?
     };
     let name = meta.name.clone();
     let new_mod = ModPacker::new(tempdir, tempfile.as_path(), Some(meta), vec![

@@ -22,7 +22,7 @@ pub struct Manifest {
     #[serde(rename = "content")]
     pub content_files: BTreeSet<String>,
     #[serde(rename = "aoc")]
-    pub aoc_files: BTreeSet<String>,
+    pub aoc_files:     BTreeSet<String>,
 }
 
 impl Manifest {
@@ -214,6 +214,16 @@ pub static CATEGORIES: &[&str] = &[
 pub enum ModPlatform {
     Specific(Endian),
     Universal,
+}
+
+impl std::fmt::Display for ModPlatform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ModPlatform::Specific(Endian::Big) => "Wii U".fmt(f),
+            ModPlatform::Specific(Endian::Little) => "Switch".fmt(f),
+            ModPlatform::Universal => "any platform".fmt(f),
+        }
+    }
 }
 
 #[inline(always)]

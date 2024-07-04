@@ -44,7 +44,8 @@ impl Logger {
             let mut file = if path.exists() {
                 fs_err::OpenOptions::new().append(true).open(path)
             } else {
-                fs_err::create_dir_all(path.parent().expect("Weird log path")).expect("Yikes, folder problem");
+                fs_err::create_dir_all(path.parent().expect("Weird log path"))
+                    .expect("Yikes, folder problem");
                 fs_err::File::create(path)
             }
             .unwrap();

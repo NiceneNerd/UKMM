@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Added
+
+- Added `cargo dist` integration to provide simpler install and update methods
+
 ### Fixed
 
 - Restored missing Package button to Window menu
 - Fixed option descriptions not showing on multiple choice
+- Fixed misidentification of Switch BNPs with a `rules.txt` as Wii U mods
 
 
 ## [0.12.0]
