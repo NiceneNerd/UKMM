@@ -119,6 +119,7 @@ zstd = { version = "0.13.1", features = ["experimental"] }
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
+allow-dirty = ["msi"]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.18.0"
 # CI backends to support
