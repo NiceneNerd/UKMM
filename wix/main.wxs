@@ -60,7 +60,7 @@
 
     <Product
         Id='*'
-        Name='ukmm'
+        Name='U-King Mod Manager'
         UpgradeCode='0EC50392-193E-4A2B-9322-3CF045D8FCAE'
         Manufacturer='Caleb Smith'
         Language='1033'
@@ -83,9 +83,12 @@
             DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
 
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
-        <Property Id='DiskPrompt' Value='ukmm Installation'/>
+        <Property Id='DiskPrompt' Value='U-King Mod Manager Installation'/>
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ApplicationProgramsFolder" Name="U-King Mod Manager"/>
+            </Directory>
             <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
                 <Directory Id='APPLICATIONFOLDER' Name='ukmm'>
                     
@@ -132,6 +135,17 @@
                 </Directory>
             </Directory>
         </Directory>
+        <DirectoryRef Id="ApplicationProgramsFolder">
+            <Component Id="ApplicationShortcut" Guid="FC0A4F00-5469-4677-B5F4-61A17A215A27">
+                <Shortcut Id="ApplicationStartMenuShortcut" 
+                          Name="U-King Mod Manager"
+                          Description="A new mod manager for The Legend of Zelda: Breath of the Wild"
+                          Target="[#exe0]"
+                          WorkingDirectory="APPLICATIONFOLDER"/>
+                <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
+                <RegistryValue Root="HKCU" Key="Software\NiceneNerd\ukmm" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+            </Component>
+        </DirectoryRef>
 
         <Feature
             Id='Binaries'
@@ -150,6 +164,7 @@
             <!--<ComponentRef Id='License'/>-->
 
             <ComponentRef Id='binary0'/>
+            <ComponentRef Id="ApplicationShortcut" />
 
             <Feature
                 Id='Environment'
@@ -163,16 +178,14 @@
 
         <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
 
-        
         <!--
-          Uncomment the following `Icon` and `Property` tags to change the product icon.
-
-          The product icon is the graphic that appears in the Add/Remove
-          Programs control panel for the application.
+          Disabling the custom product icon for the application in the
+          Add/Remove Programs control panel requires commenting out or
+          removing the following `Icon` and `Property` tags.
         -->
-        <!--<Icon Id='ProductICO' SourceFile='wix\Product.ico'/>-->
-        <!--<Property Id='ARPPRODUCTICON' Value='ProductICO' />-->
-
+        <Icon Id='ProductICO' SourceFile='assets/ukmm.ico'/>
+        <Property Id='ARPPRODUCTICON' Value='ProductICO' />
+        
         <Property Id='ARPHELPLINK' Value='https://github.com/NiceneNerd/ukmm'/>
         
         <UI>
