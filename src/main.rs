@@ -47,10 +47,12 @@ fn main() -> Result<()> {
             );
             #[cfg(windows)]
             unsafe {
+                let error_msg = error_msg.encode_utf16().collect::<Vec<u16>>();
+                let title = "Error".encode_utf16().collect::<Vec<u16>>();
                 MessageBoxW(
                     0,
-                    core::ffi::CStr::from_ptr(error_msg.as_ptr() as *const i8).as_ptr(),
-                    core::ffi::CStr::from_ptr("Error".as_ptr() as *const i8).as_ptr(),
+                    error_msg.as_ptr() as *const i8,
+                    title.as_ptr() as *const i8,
                     0x0 | 0x10,
                 );
             }
