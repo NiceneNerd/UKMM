@@ -22,7 +22,7 @@ pub struct Manifest {
     #[serde(rename = "content")]
     pub content_files: BTreeSet<String>,
     #[serde(rename = "aoc")]
-    pub aoc_files:     BTreeSet<String>,
+    pub aoc_files: BTreeSet<String>,
 }
 
 impl Manifest {
