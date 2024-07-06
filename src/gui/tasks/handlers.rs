@@ -14,6 +14,7 @@ pub fn register_handlers() -> Result<()> {
     Ok(())
 }
 
+#[cfg(not(target_os = "windows"))]
 fn linux_create_handler() -> Result<()> {
     let home_dir = dirs2::home_dir().context("Failed to find home directory")?;
     let schema_file = home_dir
@@ -60,18 +61,18 @@ fn win_create_handler() -> Result<()> {
     let bcml_key = hkcu
         .create_subkey("Software\\Classes\\bcml")
         .context("Failed to create or open bcml registry key")?;
-    let exec_path = env::current_exe().unwrap().to_string_lossy();
+    let exec_path = env::current_exe().unwrap().to_string_lossy().to_string();
 
     let command_key_path = "Software\\Classes\\bcml\\shell\\open\\command";
     match hkcu.open_subkey_with_flags(command_key_path, KEY_READ) {
         Ok(okey) => {
             let value: String = okey.get_value("").context("Failed to get registry value")?;
             if !value.contains(&exec_path) {
-                set_windows_registry(&bcml_key, exec_path.as_str())?;
+                set_windows_registry(&bcml_key.0, &exec_path)?;
             }
         }
         Err(_) => {
-            set_windows_registry(&bcml_key, exec_path.as_str())?;
+            set_windows_registry(&bcml_key.0, &exec_path)?;
         }
     }
 
@@ -87,6 +88,7 @@ fn set_windows_registry(bcml_key: &RegKey, exec_path: &str) -> Result<()> {
         .create_subkey("shell\\open\\command")
         .context("Failed to create shell\\open\\command subkey")?;
     shell_open_key
+        .0
         .set_value("", &format!(r#"{} "%1""#, exec_path))
         .context("Failed to set command value")?;
     Ok(())
