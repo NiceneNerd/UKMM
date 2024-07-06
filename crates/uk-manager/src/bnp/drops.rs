@@ -10,6 +10,7 @@ use super::BnpConverter;
 type DropTables = FxHashMap<String, DropTable>;
 type DropDiff = FxHashMap<String, DropTables>;
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 enum ProbabilityValue {

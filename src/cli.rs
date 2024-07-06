@@ -62,6 +62,9 @@ xflags::xflags! {
 #[derive(Debug)]
 pub struct Ukmm {
     pub debug: bool,
+    /// While the `portable` flag needs to be recognized by xflags, it is
+    /// handled by [std::env::args] in the static Settings methods
+    #[allow(dead_code)]
     pub portable: bool,
     pub deploy: bool,
     pub subcommand: UkmmCmd,
@@ -195,6 +198,10 @@ impl Runner {
     }
 
     pub fn run(self) -> Result<()> {
+        if self.cli.debug {
+            env_logger::init();
+            log::set_max_level(log::LevelFilter::Debug);
+        }
         match &self.cli.subcommand {
             UkmmCmd::Mode(Mode { platform }) => {
                 self.core
