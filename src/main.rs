@@ -27,49 +27,62 @@ fn main() -> Result<()> {
         AttachConsole(-1);
     }
 
-    let gui_flags = ["-p", "--portable", "-d", "--debug"];
-    if std::env::args().count() == 1
-        || std::env::args()
-            .skip(1)
-            .all(|a| gui_flags.contains(&a.as_str()))
-    {
-        if let Err(e) = std::panic::catch_unwind(gui::main) {
-            let error_msg = format!(
-                "An unrecoverable error occured. Error details: {}",
-                e.downcast::<String>()
-                    .or_else(|e| e.downcast::<&'static str>().map(|s| Box::new((*s).into())))
-                    .unwrap_or_else(|_| {
-                        Box::new(
-                            "An unknown error occured, check the log for possible details."
-                                .to_string(),
-                        )
-                    })
-            );
-            #[cfg(windows)]
-            unsafe {
-                let error_msg = error_msg.encode_utf16().collect::<Vec<u16>>();
-                let title = "Error".encode_utf16().collect::<Vec<u16>>();
-                MessageBoxW(
-                    0,
-                    error_msg.as_ptr() as *const i8,
-                    title.as_ptr() as *const i8,
-                    0x0 | 0x10,
-                );
-            }
-            #[cfg(not(windows))]
-            println!("{}", error_msg);
-            if let Some(file) = logger::LOGGER.log_path() {
-                logger::LOGGER.save_log();
-                println!(
-                    "More information may be available in the log file at {}. You can run with \
-                     the --debug flag for additional detail.",
-                    file.display()
-                );
+    match Ukmm::from_env() {
+        Ok(command) => {
+            cli::Runner::new(command).run()?;
+        }
+        Err(e) => {
+            if !e.is_help() {
+                if let Some(path) = std::env::args().nth(1) {
+                    match path.strip_prefix("bcml:") {
+                        Some(url) => {
+                            gui::tasks::oneclick(url);
+                        }
+                        None => {
+                            gui::tasks::handle_mod_arg(path.into());
+                        }
+                    }
+                }
+                if let Err(e) = std::panic::catch_unwind(gui::main) {
+                    let error_msg = format!(
+                        "An unrecoverable error occured. Error details: {}",
+                        e.downcast::<String>()
+                            .or_else(|e| {
+                                e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
+                            })
+                            .unwrap_or_else(|_| {
+                                Box::new(
+                                    "An unknown error occured, check the log for possible details."
+                                        .to_string(),
+                                )
+                            })
+                    );
+                    #[cfg(windows)]
+                    unsafe {
+                        let error_msg = error_msg.encode_utf16().collect::<Vec<u16>>();
+                        let title = "Error".encode_utf16().collect::<Vec<u16>>();
+                        MessageBoxW(
+                            0,
+                            error_msg.as_ptr() as *const i8,
+                            title.as_ptr() as *const i8,
+                            0x0 | 0x10,
+                        );
+                    }
+                    #[cfg(not(windows))]
+                    println!("{}", error_msg);
+                    if let Some(file) = logger::LOGGER.log_path() {
+                        logger::LOGGER.save_log();
+                        println!(
+                            "More information may be available in the log file at {}. You can run \
+                             with the --debug flag for additional detail.",
+                            file.display()
+                        );
+                    }
+                }
+            } else {
+                Ukmm::from_env_or_exit();
             }
         }
-    } else {
-        let cmd = Ukmm::from_env_or_exit();
-        cli::Runner::new(cmd).run()?;
     }
     Ok(())
 }

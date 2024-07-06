@@ -19,14 +19,14 @@ use uk_manager::{
     util::get_temp_file,
 };
 use uk_mod::{
-    pack::ModPacker,
+    pack::{sanitise, ModPacker},
     unpack::{ModReader, ModUnpacker},
     Manifest, Meta,
 };
 use uk_reader::ResourceReader;
 use uk_util::{OptionExt, PathExt};
 
-use super::{package::ModPackerBuilder, Message};
+use super::{package::ModPackerBuilder, util::response, Message};
 
 fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
     let ext = path
@@ -552,28 +552,6 @@ impl VersionResponse {
     }
 }
 
-fn response(url: &str) -> Result<Vec<u8>> {
-    let url = url.try_into()?;
-    let mut buf = Vec::new();
-    http_req::request::Request::new(&url)
-        .header("User-Agent", "UKMM")
-        .method(http_req::request::Method::GET)
-        .send(&mut buf)
-        .context("HTTP request file")
-        .and_then(|res| {
-            if let Some(url) = res
-                .status_code()
-                .is_redirect()
-                .then(|| res.headers().get("Location"))
-                .flatten()
-            {
-                response(url)
-            } else {
-                Ok(buf)
-            }
-        })
-}
-
 pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
     let url = "https://api.github.com/repos/NiceneNerd/UKMM/releases?per_page=10";
     match response(url).and_then(|bytes| {
@@ -640,6 +618,69 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
         }
     };
     Ok(Message::Restart)
+}
+
+pub static ONECLICK_SENDER: uk_util::OnceLock<flume::Sender<super::Message>> =
+    uk_util::OnceLock::new();
+
+pub fn oneclick(url: &str) {
+    let mut parts = url.split(',');
+    let url = parts.next().unwrap_or_default().to_owned();
+    let cat = parts.next().unwrap_or_default().to_owned();
+    let id = parts.next().unwrap_or_default().to_owned();
+    std::thread::spawn(move || {
+        log::debug!("Processing GameBanana 1-click URL: {url}");
+        log::debug!("Checking mod name from API");
+        let mod_name = response(&format!(
+            "https://api.gamebanana.com/Core/Item/Data?itemtype={cat}&itemid={id}&fields=name"
+        ))
+        .and_then(|data| Ok(serde_json::from_slice::<Vec<String>>(&data)?))
+        .map(|mut res| sanitise(&res.remove(0)))
+        .unwrap_or_else(|_| "oneclick_mod".into());
+        log::info!("Downloading {mod_name} from GameBanana 1-click…");
+        let mut data = vec![];
+        let msg = http_req::request::Request::new(&url.as_str().try_into().unwrap())
+            .method(http_req::request::Method::GET)
+            .header("User-Agent", "UKMM")
+            .send(&mut data)
+            .with_context(|| format!("Failed to download mod from {url}"))
+            .and_then(|res| {
+                let redir = res
+                    .headers()
+                    .get("Location")
+                    .context("No location for redirect")?;
+                let filename = http_req::uri::Uri::try_from(redir.as_str())?
+                    .path()
+                    .unwrap_or_default()
+                    .split('/')
+                    .last()
+                    .map(|n| n.to_owned())
+                    .unwrap_or_else(|| format!("{mod_name}.bnp"));
+                let data = response(redir)
+                    .with_context(|| format!("Failed to download mod from {redir}"))?;
+                let tmp = get_temp_file().with_file_name(filename);
+                log::debug!("Saving mod to temp file at {}", tmp.display());
+                fs_err::write(tmp.as_path(), data).context("Failed to save mod to temp file")?;
+                log::info!("Finished downloading {mod_name}");
+                Ok(Message::OpenMod(tmp.to_path_buf()))
+            })
+            .map_err(Message::Error)
+            .unwrap_or_else(|e| e);
+        log::debug!("1-click mod downloaded, sending to UI for install");
+        ONECLICK_SENDER.wait().send(msg).expect("Broken channel")
+    });
+}
+
+pub fn handle_mod_arg(path: PathBuf) {
+    if path.exists() {
+        std::thread::spawn(|| {
+            log::info!("Opening mod at {} for installation…", path.display());
+            ONECLICK_SENDER
+                .wait()
+                .send(Message::OpenMod(path))
+                .expect("Broken channel")
+        });
+    }
 }
 
 #[cfg(test)]
