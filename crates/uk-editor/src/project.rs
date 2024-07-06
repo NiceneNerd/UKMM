@@ -12,16 +12,16 @@ use uk_mod::{pack::sanitise, unpack::ParallelZipReader, Meta};
 
 #[derive(Debug, Clone)]
 pub struct Project {
-    pub path: PathBuf,
-    pub meta: Meta,
+    pub path:  PathBuf,
+    pub meta:  Meta,
     pub files: BTreeSet<PathBuf>,
 }
 
 impl Project {
     pub fn new(name: &str, path: &Path, platform: Platform) -> Self {
         Project {
-            path: path.join(name),
-            meta: Meta {
+            path:  path.join(name),
+            meta:  Meta {
                 api: env!("CARGO_PKG_VERSION").into(),
                 name: name.into(),
                 author: Default::default(),
@@ -111,9 +111,11 @@ impl Project {
                         .with_context(|| format!("Failed to parse resource {}", file.display()))?;
                     let data = match resource {
                         ResourceData::Binary(bin) => bin,
-                        res => ron::ser::to_string_pretty(&res, Default::default())
-                            .expect("Failed to serialize resource to RON")
-                            .into(),
+                        res => {
+                            ron::ser::to_string_pretty(&res, Default::default())
+                                .expect("Failed to serialize resource to RON")
+                                .into()
+                        }
                     };
                     fs::write(dest, data)
                         .with_context(|| format!("Failed to extract file {}", file.display()))?;

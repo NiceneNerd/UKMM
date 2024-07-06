@@ -512,6 +512,24 @@ impl App {
                                 .send(Message::MigrateBcml)
                                 .expect("Broken channel");
                         }
+                        if ui
+                            .button("Register 1-Click Handler")
+                            .on_hover_text(
+                                "Sets up UKMM on your system to handle GameBanana 1-click links",
+                            )
+                            .clicked()
+                        {
+                            match crate::gui::tasks::register_handlers() {
+                                Ok(()) => log::info!("GameBanana 1-click handler registered"),
+                                Err(e) => {
+                                    self.channel
+                                        .0
+                                        .clone()
+                                        .send(Message::Error(e))
+                                        .expect("Broken channel")
+                                }
+                            }
+                        }
                         render_setting("Theme", "User interface theme", ui, |ui| {
                             egui::ComboBox::new("ui-theme", "")
                                 .selected_text(self.theme.name())

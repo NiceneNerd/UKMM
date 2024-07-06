@@ -28,6 +28,10 @@ use uk_util::{OptionExt, PathExt};
 
 use super::{package::ModPackerBuilder, util::response, Message};
 
+mod handlers;
+
+pub use handlers::register_handlers;
+
 fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
     let ext = path
         .extension()

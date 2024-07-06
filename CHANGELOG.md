@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Added**
 
-- Added handler for GameBanana 1-click URLs or opening mods with UKMM
+- Added full GameBanana 1-click and "open mod with UKMM" support
 
 ## [0.12.1] - 2024-07-04
 
