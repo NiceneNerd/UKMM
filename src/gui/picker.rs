@@ -324,6 +324,15 @@ impl App {
                         "Back",
                         Box::new(|| self.do_update(Message::FilePickerBack)) as Box<dyn FnOnce()>,
                     ),
+                    (
+                        Icon::Refresh,
+                        "Refresh",
+                        Box::new(|| {
+                            self.do_update(Message::FilePickerSet(Some(
+                                self.picker_state.path.clone(),
+                            )))
+                        }) as Box<dyn FnOnce()>,
+                    ),
                 ] {
                     if ui.icon_button(icon).on_hover_text(tooltip).clicked() {
                         cb();

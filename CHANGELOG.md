@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Added**
 
 - Added full GameBanana 1-click and "open mod with UKMM" support
+- Added Refresh button to file picker
 
 ## [0.12.1] - 2024-07-04
 
