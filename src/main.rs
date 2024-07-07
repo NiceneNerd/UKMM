@@ -21,6 +21,8 @@ extern "system" {
     fn MessageBoxW(hwnd: i32, message: *const i8, title: *const i8, utype: usize) -> i32;
 }
 
+const INTERFACE: ssilide::Interface = ssilide::Interface::new(6666);
+
 fn main() -> Result<()> {
     #[cfg(target_os = "windows")]
     unsafe {
@@ -43,6 +45,7 @@ fn main() -> Result<()> {
                         }
                     }
                 }
+                gui::tasks::wait_ipc();
                 if let Err(e) = std::panic::catch_unwind(gui::main) {
                     let error_msg = format!(
                         "An unrecoverable error occured. Error details: {}",

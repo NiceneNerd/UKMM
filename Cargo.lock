@@ -4398,6 +4398,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f2b15926089e5526bb2dd738a2eb0e59034356e06eb71e1cd912358c0e62c4d"
 
 [[package]]
+name = "ssilide"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2afc62cecb31ec7151e0fd5649540d9fd25221588857677e673b581ff0aa2b82"
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5075,6 +5081,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "smartstring",
+ "ssilide",
  "uk-content",
  "uk-manager",
  "uk-mod",

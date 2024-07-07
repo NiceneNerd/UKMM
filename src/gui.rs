@@ -188,6 +188,7 @@ pub enum Message {
     SelectThrough(usize),
     SelectProfileManage(smartstring::alias::String),
     SetChangelog(String),
+    SetDownloading(String),
     SetFocus(FocusedPane),
     SetTheme(uk_ui::visuals::Theme),
     ShowAbout,
@@ -640,6 +641,11 @@ impl App {
                 Message::SelectProfileManage(name) => {
                     self.profiles_state.borrow_mut().selected = Some(name);
                 }
+                Message::SetDownloading(mod_name) => {
+                    ctx.request_repaint();
+                    self.busy.set(true);
+                    log::info!("Downloading {mod_name} from GameBanana…");
+                }
                 Message::SetFocus(pane) => {
                     self.focused = pane;
                 }
@@ -668,6 +674,7 @@ impl App {
                 Message::OpenMod(path) => {
                     let core = self.core.clone();
                     let meta = self.meta_input.take();
+                    ctx.request_repaint();
                     self.do_task(move |_| tasks::open_mod(&core, &path, meta));
                 }
                 Message::HandleMod(mod_) => {

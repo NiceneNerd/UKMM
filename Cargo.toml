@@ -38,6 +38,7 @@ serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
+ssilide = "0.2.0"
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 
 astrolabe = "0.5.1"

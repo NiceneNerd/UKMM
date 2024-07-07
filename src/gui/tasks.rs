@@ -27,6 +27,7 @@ use uk_reader::ResourceReader;
 use uk_util::{OptionExt, PathExt};
 
 use super::{package::ModPackerBuilder, util::response, Message};
+use crate::INTERFACE;
 
 mod handlers;
 
@@ -627,12 +628,35 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
 pub static ONECLICK_SENDER: uk_util::OnceLock<flume::Sender<super::Message>> =
     uk_util::OnceLock::new();
 
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+enum IpcMessage {
+    OpenMod(PathBuf),
+    Error(String),
+    Starting(String),
+}
+
+impl From<IpcMessage> for Message {
+    fn from(value: IpcMessage) -> Self {
+        match value {
+            IpcMessage::OpenMod(path) => Message::OpenMod(path),
+            IpcMessage::Error(e) => Message::Error(anyhow::anyhow!(e)),
+            IpcMessage::Starting(mod_name) => Message::SetDownloading(mod_name),
+        }
+    }
+}
+
+impl IpcMessage {
+    fn into_bytes(self) -> Vec<u8> {
+        serde_json::to_vec(&self).unwrap()
+    }
+}
+
 pub fn oneclick(url: &str) {
-    let mut parts = url.split(',');
-    let url = parts.next().unwrap_or_default().to_owned();
-    let cat = parts.next().unwrap_or_default().to_owned();
-    let id = parts.next().unwrap_or_default().to_owned();
-    std::thread::spawn(move || {
+    fn process(url: &str) -> IpcMessage {
+        let mut parts = url.split(',');
+        let url = parts.next().unwrap_or_default().to_owned();
+        let cat = parts.next().unwrap_or_default().to_owned();
+        let id = parts.next().unwrap_or_default().to_owned();
         log::debug!("Processing GameBanana 1-click URL: {url}");
         log::debug!("Checking mod name from API");
         let mod_name = response(&format!(
@@ -642,6 +666,10 @@ pub fn oneclick(url: &str) {
         .map(|mut res| sanitise(&res.remove(0)))
         .unwrap_or_else(|_| "oneclick_mod".into());
         log::info!("Downloading {mod_name} from GameBanana 1-click…");
+        if let Ok(client) = INTERFACE.connect() {
+            let buf = IpcMessage::Starting(mod_name.clone()).into_bytes();
+            let _ = client.send(&buf);
+        }
         let mut data = vec![];
         let msg = http_req::request::Request::new(&url.as_str().try_into().unwrap())
             .method(http_req::request::Method::GET)
@@ -666,12 +694,55 @@ pub fn oneclick(url: &str) {
                 log::debug!("Saving mod to temp file at {}", tmp.display());
                 fs_err::write(tmp.as_path(), data).context("Failed to save mod to temp file")?;
                 log::info!("Finished downloading {mod_name}");
-                Ok(Message::OpenMod(tmp.to_path_buf()))
+                Ok(IpcMessage::OpenMod(tmp.to_path_buf()))
             })
-            .map_err(Message::Error)
+            .map_err(|e| IpcMessage::Error(e.to_string()))
             .unwrap_or_else(|e| e);
         log::debug!("1-click mod downloaded, sending to UI for install");
-        ONECLICK_SENDER.wait().send(msg).expect("Broken channel")
+        msg
+    }
+
+    match INTERFACE.connect() {
+        Ok(client) => {
+            let msg = process(url);
+            let buf = msg.into_bytes();
+            client
+                .send(&buf)
+                .expect("Failed to send mod to existing UKMM instance");
+            std::process::exit(0);
+        }
+        Err(_) => {
+            let url = url.to_owned();
+            std::thread::spawn(move || {
+                let msg = process(&url);
+                ONECLICK_SENDER
+                    .wait()
+                    .send(msg.into())
+                    .expect("Broken channel")
+            });
+        }
+    }
+}
+
+pub fn wait_ipc() {
+    std::thread::spawn(|| {
+        let sock = INTERFACE
+            .claim()
+            .expect("Failed to claim single instance interface. Is UKMM already open?");
+        let mut buf = vec![0; 2048];
+        loop {
+            if let Ok(len) = sock.recv(&mut buf) {
+                log::debug!("Received 1-click install message");
+                unsafe { buf.set_len(len) }
+                let msg: IpcMessage = serde_json::from_slice(&buf)
+                    .with_context(|| String::from_utf8(buf.clone()).unwrap_or_default())
+                    .expect("Broken IPC message");
+                ONECLICK_SENDER
+                    .wait()
+                    .send(msg.into())
+                    .expect("Broken channel");
+            }
+        }
     });
 }
 
