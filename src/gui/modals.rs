@@ -218,7 +218,13 @@ impl App {
                             Vec2::new(width, ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button("OK").clicked() {
+                                if ui
+                                    .add_enabled(
+                                        !self.new_profile.contains(&String::default()),
+                                        egui::Button::new("OK"),
+                                    )
+                                    .clicked()
+                                {
                                     self.do_update(Message::AddProfile);
                                 }
                                 if ui.button("Close").clicked() {
