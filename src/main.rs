@@ -36,6 +36,10 @@ fn main() -> Result<()> {
         Err(e) => {
             if !e.is_help() {
                 if let Some(path) = std::env::args().nth(1) {
+                    if std::env::args().any(|a| a == "--debug") {
+                        env_logger::init();
+                        log::set_max_level(log::LevelFilter::Debug);
+                    }
                     match path.strip_prefix("bcml:") {
                         Some(url) => {
                             gui::tasks::oneclick(url);

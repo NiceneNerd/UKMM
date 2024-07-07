@@ -675,6 +675,7 @@ impl App {
                     let core = self.core.clone();
                     let meta = self.meta_input.take();
                     ctx.request_repaint();
+                    println!("Opening mod at {}", path.display());
                     self.do_task(move |_| tasks::open_mod(&core, &path, meta));
                 }
                 Message::HandleMod(mod_) => {

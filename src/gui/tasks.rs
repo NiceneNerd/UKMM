@@ -729,18 +729,23 @@ pub fn wait_ipc() {
         let sock = INTERFACE
             .claim()
             .expect("Failed to claim single instance interface. Is UKMM already open?");
-        let mut buf = vec![0; 2048];
+        let mut buf = [0; 1024];
         loop {
-            if let Ok(len) = sock.recv(&mut buf) {
-                log::debug!("Received 1-click install message");
-                unsafe { buf.set_len(len) }
-                let msg: IpcMessage = serde_json::from_slice(&buf)
-                    .with_context(|| String::from_utf8(buf.clone()).unwrap_or_default())
-                    .expect("Broken IPC message");
-                ONECLICK_SENDER
-                    .wait()
-                    .send(msg.into())
-                    .expect("Broken channel");
+            match sock.recv(&mut buf) {
+                Ok(len) => {
+                    log::debug!("Received 1-click install message");
+                    let msg: IpcMessage = serde_json::from_slice(&buf[..len])
+                        .with_context(|| String::from_utf8(buf.to_vec()).unwrap_or_default())
+                        .expect("Broken IPC message");
+                    log::trace!("{:?}", &msg);
+                    ONECLICK_SENDER
+                        .wait()
+                        .send(msg.into())
+                        .expect("Broken channel");
+                }
+                Err(e) => {
+                    log::error!("IPC error: {}", e);
+                }
             }
         }
     });
