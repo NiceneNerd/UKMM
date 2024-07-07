@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use std::{env, fs, path::PathBuf, process::Command};
 
 use anyhow::{anyhow, Context, Result};
