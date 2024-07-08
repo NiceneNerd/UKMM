@@ -10,21 +10,16 @@ pub use egui_extras;
 use font_loader::system_fonts::FontPropertyBuilder;
 pub use paths::PathNode;
 
-// 自定义字体
 pub fn insert_custom_fonts(fonts: &mut egui::FontDefinitions) {
-    // 安装的字体支持.ttf和.otf文件
-    // 文件放在main.rs的同级目录下（可以自定义到其它目录）
     fonts.font_data.insert(
         "my_font".to_owned(),
         egui::FontData::from_static(include_bytes!("../../../assets/ZHcn.ttf")),
     );
-    // 将字体添加到 Proportional 字体族的第一个位置
     fonts
         .families
         .entry(egui::FontFamily::Proportional)
         .or_default()
         .insert(0, "my_font".to_owned());
-    // 将字体添加到 Monospace 字体族的末尾
     fonts
         .families
         .entry(egui::FontFamily::Monospace)
