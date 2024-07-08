@@ -13,16 +13,29 @@ serde_yaml = { workspace = true }
 smartstring = { workspace = true }
 
 color-hex = "0.2.0"
-catppuccin-egui = { version = "5.0", default-features = false, features = ["egui27"] }
-egui-aesthetix = { git = "https://github.com/NiceneNerd/egui-aesthetix", features = ["all_themes"] }
-egui = { version = "0.27", default-features = false, features = ["color-hex", "persistence"] }
+catppuccin-egui = { version = "5.0", default-features = false, features = [
+    "egui27",
+] }
+egui-aesthetix = { git = "https://github.com/NiceneNerd/egui-aesthetix", features = [
+    "all_themes",
+] }
+egui = { version = "0.27", default-features = false, features = [
+    "color-hex",
+    "persistence",
+] }
 egui_dock = { version = "0.12.0", features = ["serde"] }
 egui_extras = { version = "0.27", features = ["image", "svg"] }
 font-loader = "0.11.0"
 hex = "0.4.3"
-msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }
+msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "v1.4.0" }
 once_cell = "1.13.1"
-syntect = { version = "5", default-features = false, features = ["yaml-load", "regex-fancy", "default-themes", "dump-load", "default-syntaxes"] }
+syntect = { version = "5", default-features = false, features = [
+    "yaml-load",
+    "regex-fancy",
+    "default-themes",
+    "dump-load",
+    "default-syntaxes",
+] }
 
 [dev-dependencies]
 eframe = { workspace = true }

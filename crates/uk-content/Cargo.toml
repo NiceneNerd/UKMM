@@ -17,12 +17,12 @@ smartstring = { workspace = true, features = ["serde"] }
 thiserror = { workspace = true }
 zstd = { workspace = true }
 
-itertools = "0.10.3"
+itertools = "0.13.0"
 lexical = "6.1.1"
 lexical-core = "0.8.5"
 lighter = "0.1.0"
-mimalloc = { version = "0.1.30", default-features = false }
-msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }
+mimalloc = { version = "0.1.43", default-features = false }
+msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "v1.4.0" }
 uk-content-derive = { path = "../uk-content-derive" }
 uk-ui = { path = "../uk-ui", optional = true }
 uk-ui-derive = { path = "../uk-ui-derive", optional = true }
