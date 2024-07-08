@@ -286,7 +286,7 @@ mod tests {
         assert!(
             merged
                 .start_pos
-                .contains_key(&smartstring::alias::String::from("Dungeon200"))
+                .contains_key(smartstring::alias::String::from("Dungeon200"))
         );
         assert_eq!(merged, static2);
     }

@@ -59,7 +59,7 @@ impl TryFrom<&ParameterList> for ContactInfo {
             contact_point_info: Some(
                 (0..point_count)
                     .map(|i| -> Result<ContactInfoItem> {
-                        list.object(&jstr!("ContactPointInfo_{&lexical::to_string(i)}"))
+                        list.object(jstr!("ContactPointInfo_{&lexical::to_string(i)}"))
                             .ok_or(UKError::MissingAampKey(
                                 "Physics rigid contact info missing entry",
                                 None,
@@ -71,7 +71,7 @@ impl TryFrom<&ParameterList> for ContactInfo {
             collision_info:     Some(
                 (0..collision_count)
                     .map(|i| -> Result<ContactInfoItem> {
-                        list.object(&jstr!("CollisionInfo_{&lexical::to_string(i)}"))
+                        list.object(jstr!("CollisionInfo_{&lexical::to_string(i)}"))
                             .ok_or(UKError::MissingAampKey(
                                 "Physics rigid collision info missing entry",
                                 None,
@@ -274,7 +274,7 @@ impl TryFrom<&ParameterList> for Cloth {
                         .map(|i| -> Result<(usize, ParameterObject)> {
                             Ok((
                                 i as usize,
-                                list.object(&jstr!("Cloth_{&lexical::to_string(i)}"))
+                                list.object(jstr!("Cloth_{&lexical::to_string(i)}"))
                                     .ok_or_else(|| {
                                         UKError::MissingAampKeyD(jstr!(
                                             "Physics cloth missing Cloth_{&lexical::to_string(i)}"
@@ -450,7 +450,7 @@ impl TryFrom<&ParameterIO> for Physics {
                                 Ok((
                                     i as usize,
                                     rigid_body_set
-                                        .list(&jstr!("RigidBodySet_{&lexical::to_string(i)}"))
+                                        .list(jstr!("RigidBodySet_{&lexical::to_string(i)}"))
                                         .ok_or(UKError::MissingAampKey(
                                             "Physics missing rigid body set entry",
                                             None,

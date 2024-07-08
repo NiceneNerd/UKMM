@@ -66,12 +66,10 @@ impl Project {
     pub fn from_mod(core: &Manager, mod_: &Path) -> Result<Self> {
         let zip = ParallelZipReader::open(mod_, false).context("Failed to open ZIP file")?;
         let meta: Meta = serde_yaml::from_str(
-            std::str::from_utf8(&zip.get_file("meta.yml").context("Mod missing meta file")?).map(
-                |s| {
+            std::str::from_utf8(&zip.get_file("meta.yml").context("Mod missing meta file")?)
+                .inspect(|&s| {
                     dbg!(s);
-                    s
-                },
-            )?,
+                })?,
         )
         .context("Failed to parse mod meta")?;
         let path = core.settings().projects_dir().join(sanitise(&meta.name));

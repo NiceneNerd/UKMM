@@ -9,6 +9,7 @@ impl super::EditableValue for roead::byml::Byml {
     const DISPLAY: EditableDisplay = EditableDisplay::Block;
 
     fn edit_ui(&mut self, ui: &mut Ui) -> Response {
+        #[allow(clippy::needless_borrows_for_generic_args)]
         let id = Id::new(&self);
         self.edit_ui_with_id(ui, id)
     }
