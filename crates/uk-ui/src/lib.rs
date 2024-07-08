@@ -10,6 +10,28 @@ pub use egui_extras;
 use font_loader::system_fonts::FontPropertyBuilder;
 pub use paths::PathNode;
 
+// 自定义字体
+pub fn insert_custom_fonts(fonts: &mut egui::FontDefinitions) {
+    // 安装的字体支持.ttf和.otf文件
+    // 文件放在main.rs的同级目录下（可以自定义到其它目录）
+    fonts.font_data.insert(
+        "my_font".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../assets/ZHcn.ttf")),
+    );
+    // 将字体添加到 Proportional 字体族的第一个位置
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .insert(0, "my_font".to_owned());
+    // 将字体添加到 Monospace 字体族的末尾
+    fonts
+        .families
+        .entry(egui::FontFamily::Monospace)
+        .or_default()
+        .push("my_font".to_owned());
+}
+
 pub fn load_fonts(context: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
     let font_to_try = if cfg!(windows) {
@@ -66,5 +88,6 @@ pub fn load_fonts(context: &egui::Context) {
         .insert(egui::FontFamily::Name("Bold".into()), vec![
             "Bold".to_owned(),
         ]);
+        insert_custom_fonts(&mut fonts);
     context.set_fonts(fonts);
 }
