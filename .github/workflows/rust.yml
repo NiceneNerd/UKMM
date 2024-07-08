@@ -47,9 +47,12 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           ./target
-    - name: Install GTK
+    - name: Install GTK (Linux)
       if: matrix.platform == 'ubuntu-latest'
-      run: sudo apt update && sudo apt install libgtk-3-dev	
+      run: sudo apt update && sudo apt install libgtk-3-dev
+    - name: Install NASM (Windows)
+      if: matrix.platform == 'windows-latest'
+      uses: ilammy/setup-nasm@v1
     - name: Install latest nightly
       uses: actions-rs/toolchain@v1
       with:
