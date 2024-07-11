@@ -102,7 +102,7 @@ impl ParallelZipReader {
             let len = file.metadata()?.len() as usize;
             let self_ = ParallelZipReaderTryBuilder {
             data: if len > (1024 * 1024 * 256) || peek {
-                unsafe { ZipData::Memory(MmapOptions::new(len).with_file(file, 0).map()?) }
+                unsafe { ZipData::Memory(MmapOptions::new(len).expect("Bad map size").with_file(&file, 0).map()?) }
             } else {
                 let mut buffer = vec![0u8; len];
                 file.read_exact(&mut buffer)?;

@@ -26,7 +26,10 @@ use uk_content::{
     resource::{is_mergeable_sarc, ResourceData},
 };
 use uk_util::{Lazy, PathExt as UkPathExt};
-use zip::{write::FileOptions, ZipWriter as ZipW};
+use zip::{
+    write::{FileOptions, SimpleFileOptions},
+    ZipWriter as ZipW,
+};
 
 use crate::{
     ExclusiveOptionGroup, Manifest, Meta, ModOption, ModOptionGroup, ModPlatform,
@@ -50,7 +53,7 @@ pub struct ModPacker {
     masters: Vec<Arc<uk_reader::ResourceReader>>,
     hash_table: &'static StockHashTable,
     compressor: Arc<Mutex<zstd::bulk::Compressor<'static>>>,
-    _zip_opts: FileOptions,
+    _zip_opts: SimpleFileOptions,
     _out_file: PathBuf,
 }
 

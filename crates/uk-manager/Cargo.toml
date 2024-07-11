@@ -29,7 +29,7 @@ serde_with = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 
-sevenz-rust = "0.2.4"
+sevenz-rust = "0.6.0"
 split-iter = "0.1.0"
 tempfile = "3.3"
 uk-content = { path = "../uk-content" }

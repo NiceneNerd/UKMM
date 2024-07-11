@@ -86,17 +86,19 @@ impl App {
             {
                 ui.close_menu();
                 if let Some(parent) = self.closed_tabs.remove(&tab) {
-                    if let Some(parent) = self
-                        .tree
-                        .borrow_mut()
+                    let mut tree = self.tree.borrow_mut();
+                    let mut has_parent = false;
+                    if let Some(parent) = tree
                         .iter_all_nodes_mut()
                         .nth(parent.0)
                         .filter(|p| p.1.tabs_count() > 0)
                     {
+                        has_parent = true;
                         parent.1.append_tab(tab);
-                    } else {
-                        self.tree.borrow_mut().push_to_focused_leaf(tab);
-                    };
+                    }
+                    if !has_parent {
+                        tree.push_to_focused_leaf(tab);
+                    }
                 } else {
                     let mut tree = self.tree.borrow_mut();
                     if let Some((_, parent_index, node_index)) = tree.find_tab(&tab) {
