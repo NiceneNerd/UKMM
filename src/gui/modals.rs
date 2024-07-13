@@ -53,27 +53,26 @@ impl MetaInputModal {
     pub fn ui(&mut self, ctx: &egui::Context) {
         let mut should_clear = false;
         if let Some(meta) = self.meta.as_mut() {
-            egui::Window::new("Provide Mod Information")
+            egui::Window::new("提供模组信息")
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     ui.spacing_mut().item_spacing.y = 8.0;
                     ui.label(
-                        "The mod you selected does not include any metadata. Please provide the \
-                         basics below:",
+                        "您选择的模组不包含任何元数据。请填写以下基本信息：",
                     );
-                    ui.label("Name");
+                    ui.label("名称");
                     meta.name.edit_ui_with_id(ui, "mod-meta-name");
-                    egui::ComboBox::new("mod-meta-cat", "Category")
+                    egui::ComboBox::new("mod-meta-cat", "分类")
                         .selected_text(meta.category.as_str())
                         .show_ui(ui, |ui| {
                             CATEGORIES.iter().for_each(|cat| {
                                 ui.selectable_value(&mut meta.category, (*cat).into(), *cat);
                             });
                         });
-                    ui.label("Description");
-                    ui.small("Some Markdown formatting supported");
+                    ui.label("描述");
+                    ui.small("支持部分Markdown格式");
                     let string = ui.create_temp_string(
                         "mod-meta-desc",
                         Some(meta.description.as_str().into()),
@@ -91,16 +90,16 @@ impl MetaInputModal {
                             Vec2::new(ui.available_width(), ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button("OK").clicked() {
+                                if ui.button("确定").clicked() {
                                     self.sender
                                         .send(Message::OpenMod(
                                             self.path
                                                 .take()
-                                                .expect("There should be a mod path here"),
+                                                .expect("这里应该有一个模组路径"),
                                         ))
-                                        .expect("Broken channel");
+                                        .expect("通道已损坏");
                                 }
-                                if ui.button("Close").clicked() {
+                                if ui.button("关闭").clicked() {
                                     should_clear = true;
                                 }
                                 ui.shrink_width_to_current();
@@ -118,7 +117,7 @@ impl MetaInputModal {
 impl App {
     pub fn render_error(&mut self, ctx: &egui::Context) {
         if let Some(err) = self.error.as_ref() {
-            egui::Window::new("Error")
+            egui::Window::new("错误")
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .auto_sized()
@@ -127,7 +126,7 @@ impl App {
                     ui.add_space(8.);
                     ui.label(err.to_string());
                     ui.add_space(8.);
-                    egui::CollapsingHeader::new("Details").show(ui, |ui| {
+                    egui::CollapsingHeader::new("详情").show(ui, |ui| {
                         err.chain().enumerate().for_each(|(i, e)| {
                             ui.label(RichText::new(format!("{i}. {e}")).code());
                         });
@@ -137,7 +136,7 @@ impl App {
                         e.downcast_ref::<uk_content::UKError>()
                             .and_then(|e| e.context_data())
                     }) {
-                        egui::CollapsingHeader::new("Data Context").show(ui, |ui| {
+                        egui::CollapsingHeader::new("数据上下文").show(ui, |ui| {
                             ui.label(format!("{:#?}", context));
                         });
                     }
@@ -148,13 +147,13 @@ impl App {
                             Vec2::new(width, ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button("OK").clicked() {
+                                if ui.button("确定").clicked() {
                                     self.do_update(Message::CloseError);
                                 }
-                                if ui.button("Copy").clicked() {
+                                if ui.button("复制").clicked() {
                                     ui.output_mut(|o| o.copied_text = format!("{:?}", &err));
                                     egui::popup::show_tooltip(ctx, Id::new("copied"), |ui| {
-                                        ui.label("Copied")
+                                        ui.label("已复制")
                                     });
                                 }
                                 ui.shrink_width_to_current();
@@ -168,7 +167,7 @@ impl App {
     pub fn render_confirm(&mut self, ctx: &egui::Context) {
         let is_confirm = self.confirm.is_some();
         if is_confirm {
-            egui::Window::new("Confirm")
+            egui::Window::new("确认")
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .auto_sized()
@@ -183,12 +182,12 @@ impl App {
                             Vec2::new(width, ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button("OK").clicked() {
+                                if ui.button("确定").clicked() {
                                     let msg = self.confirm.take().unwrap().0;
                                     self.do_update(msg);
                                     self.do_update(Message::CloseConfirm);
                                 }
-                                if ui.button("Close").clicked() {
+                                if ui.button("关闭").clicked() {
                                     self.do_update(Message::CloseConfirm);
                                 }
                                 ui.shrink_width_to_current();
@@ -209,7 +208,7 @@ impl App {
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     ui.add_space(8.);
-                    ui.label("Enter name for new profile");
+                    ui.label("输入新配置文件的名称");
                     ui.add_space(8.);
                     ui.text_edit_singleline(self.new_profile.as_mut().unwrap());
                     let width = ui.min_size().x;
@@ -221,13 +220,13 @@ impl App {
                                 if ui
                                     .add_enabled(
                                         !self.new_profile.contains(&String::default()),
-                                        egui::Button::new("OK"),
+                                        egui::Button::new("确定"),
                                     )
                                     .clicked()
                                 {
                                     self.do_update(Message::AddProfile);
                                 }
-                                if ui.button("Close").clicked() {
+                                if ui.button("关闭").clicked() {
                                     self.new_profile = None;
                                 }
                                 ui.shrink_width_to_current();
@@ -240,7 +239,7 @@ impl App {
 
     pub fn render_busy(&self, ctx: &egui::Context, _frame: &eframe::Frame) {
         if self.busy.get() {
-            egui::Window::new("Working")
+            egui::Window::new("正在处理")
                 .default_size([240., 80.])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .collapsible(false)
@@ -257,7 +256,7 @@ impl App {
                             ui.add(Spinner::new().size(text_height));
                             ui.add_space(8.);
                             ui.vertical(|ui| {
-                                ui.label("Processing…");
+                                ui.label("处理中…");
                                 if let Some(progress) = crate::logger::LOGGER.get_progress() {
                                     ui.add(Label::new(progress).wrap(false));
                                 }
@@ -293,6 +292,16 @@ impl App {
                         ui.label("GUI library:");
                         if ui.link("egui (forked)").clicked() {
                             open::that("https://github.com/NiceneNerd/egui").unwrap_or(());
+                        }
+                        ui.end_row();
+                        ui.label("中文汉化分支:");
+                        if ui.link("https://github.com/k-carbonatedtea/UKMM").clicked() {
+                            open::that("https://github.com/k-carbonatedtea/UKMM").unwrap_or(());
+                        }
+                        ui.end_row();
+                        ui.label("MOD开发交流群:");
+                        if ui.link("419912412 (点击加入)").clicked() {
+                            open::that("https://qm.qq.com/q/q52TwKnEhq").unwrap_or(());
                         }
                         ui.end_row();
                     });
@@ -344,17 +353,17 @@ impl App {
                             });
                         })
                         .response
-                        .on_hover_text("Select Mod Profile");
+                        .on_hover_text("选择模组配置");
                     if ui
                         .icon_button(Icon::Add)
-                        .on_hover_text("New Profile")
+                        .on_hover_text("新建配置文件")
                         .clicked()
                     {
                         self.do_update(Message::NewProfile);
                     };
                     if ui
                         .icon_button(Icon::Menu)
-                        .on_hover_text("Manage Profiles…")
+                        .on_hover_text("管理配置文件…")
                         .clicked()
                     {
                         self.profiles_state.borrow_mut().show = true;
@@ -363,7 +372,7 @@ impl App {
                         ui.add_space(20.);
                         ui.label(
                             RichText::new(format!(
-                                "{} Mods / {} Active",
+                                "{} 个模组 / {} 个激活",
                                 self.mods.len(),
                                 self.mods.iter().filter(|m| m.enabled).count()
                             ))
@@ -376,7 +385,7 @@ impl App {
 
     pub fn render_pending(&self, ui: &mut Ui) {
         if !self.dirty().is_empty() {
-            egui::Window::new("Pending Changes")
+            egui::Window::new("待处理更改")
                 .anchor(Align2::RIGHT_BOTTOM, [-32.0, -32.0])
                 .collapsible(true)
                 .show(ui.ctx(), |ui| {
@@ -386,7 +395,7 @@ impl App {
                             .auto_shrink([true, true])
                             .max_height(200.)
                             .show(ui, |ui| {
-                                egui::CollapsingHeader::new("Files Pending Update").show(
+                                egui::CollapsingHeader::new("待更新文件").show(
                                     ui,
                                     |ui| {
                                         info::render_manifest(&self.dirty(), ui);
@@ -396,10 +405,10 @@ impl App {
                         ui.add_space(8.0);
                         ui.horizontal(|ui| {
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                if ui.icon_text_button("Apply", Icon::Check).clicked() {
+                                if ui.icon_text_button("应用", Icon::Check).clicked() {
                                     self.do_update(Message::Apply);
                                 }
-                                if ui.icon_text_button("Cancel", Icon::Cancel).clicked() {
+                                if ui.icon_text_button("取消", Icon::Cancel).clicked() {
                                     self.do_update(Message::ResetMods(None));
                                 }
                             });
@@ -411,7 +420,7 @@ impl App {
 
     pub fn render_changelog(&self, ctx: &egui::Context) {
         if let Some(ref last_version) = self.changelog {
-            egui::Window::new("What's New")
+            egui::Window::new("更新日志")
                 .collapsible(false)
                 .scroll2([false, true])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
@@ -431,22 +440,22 @@ impl App {
                     ui.separator();
                     ui.horizontal(|ui| {
                         if ui
-                            .icon_text_button("Subscribe to Patreon", Icon::Patreon)
+                            .icon_text_button("订阅 Patreon", Icon::Patreon)
                             .on_hover_text("https://www.patreon.com/nicenenerd")
                             .clicked()
                         {
                             open::that("https://www.patreon.com/nicenenerd").unwrap_or(());
                         }
                         if ui
-                            .icon_text_button("Bitcoin", Icon::Bitcoin)
-                            .on_hover_text("Click to copy wallet address")
+                            .icon_text_button("比特币", Icon::Bitcoin)
+                            .on_hover_text("点击复制钱包地址")
                             .clicked()
                         {
                             ui.output_mut(|o| {
                                 o.copied_text = "392YEGQ8WybkRSg4oyeLf7Pj2gQNhPcWoa".into()
                             });
                             self.do_update(Message::Toast(
-                                "BTC address copied to clipboard".into(),
+                                "BTC地址已复制到剪贴板".into(),
                             ));
                         }
                     });
@@ -457,13 +466,13 @@ impl App {
                             Layout::right_to_left(Align::Center),
                             |ui| {
                                 if self.new_version.is_some() {
-                                    if ui.button("Update").clicked() {
+                                    if ui.button("更新").clicked() {
                                         self.do_update(Message::DoUpdate);
                                     }
-                                    if ui.button("Cancel").clicked() {
+                                    if ui.button("取消").clicked() {
                                         self.do_update(Message::CloseChangelog);
                                     }
-                                } else if ui.button("OK").clicked() {
+                                } else if ui.button("确定").clicked() {
                                     self.do_update(Message::CloseChangelog);
                                 }
                                 ui.shrink_width_to_current();

@@ -107,14 +107,14 @@ impl ModPackerBuilder {
 
     fn render_package_opts(&mut self, app: &App, ctx: &Context) {
         if let Some(ref folders) = app.opt_folders {
-            egui::Window::new("Configure Mod Options")
+            egui::Window::new("配置模组选项")
                 .anchor(Align2::CENTER_CENTER, [0., 0.])
                 .scroll2([false, true])
                 .show(ctx, |ui| {
                     egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
                         ui.spacing_mut().item_spacing.y = 8.0;
                         ui.horizontal(|ui| {
-                            if ui.icon_text_button("Add Option Group", Icon::Add).clicked() {
+                            if ui.icon_text_button("添加选项组", Icon::Add).clicked() {
                                 self.meta
                                     .options
                                     .push(OptionGroup::Multiple(Default::default()));
@@ -130,7 +130,7 @@ impl ModPackerBuilder {
                             [ui.available_width(), ui.spacing().interact_size.y].into(),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button("OK").clicked() {
+                                if ui.button("确定").clicked() {
                                     app.do_update(Message::ClosePackagingOptions);
                                 }
                                 ui.shrink_width_to_current();
@@ -150,26 +150,26 @@ impl ModPackerBuilder {
             for (i, opt_group) in opt_groups.iter_mut().enumerate() {
                 let id = id.with(i);
                 let group_name = if opt_group.name().is_empty() {
-                    "New Option Group"
+                    "新选项组"
                 } else {
                     opt_group.name()
                 };
                 egui::CollapsingHeader::new(group_name)
                     .default_open(true)
                     .show(ui, |ui| {
-                        if ui.icon_text_button("Delete", Icon::Delete).clicked() {
+                        if ui.icon_text_button("删除", Icon::Delete).clicked() {
                             delete = Some(i);
                         }
-                        ui.label("Group Name");
+                        ui.label("组名");
                         opt_group.name_mut().edit_ui_with_id(ui, id.with(i));
-                        ui.label("Group Description");
+                        ui.label("组描述");
                         ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
                             opt_group.description_mut(),
                         ));
-                        ui.label("Group Type");
+                        ui.label("组类型");
                         ui.horizontal(|ui| {
                             if ui
-                                .radio(matches!(opt_group, OptionGroup::Exclusive(_)), "Exclusive")
+                                .radio(matches!(opt_group, OptionGroup::Exclusive(_)), "独占")
                                 .clicked()
                             {
                                 *opt_group = OptionGroup::Exclusive(ExclusiveOptionGroup {
@@ -181,7 +181,7 @@ impl ModPackerBuilder {
                                 });
                             }
                             if ui
-                                .radio(matches!(opt_group, OptionGroup::Multiple(_)), "Multiple")
+                                .radio(matches!(opt_group, OptionGroup::Multiple(_)), "多选")
                                 .clicked()
                             {
                                 *opt_group = OptionGroup::Multiple(MultipleOptionGroup {
@@ -193,8 +193,8 @@ impl ModPackerBuilder {
                                 });
                             }
                         });
-                        ui.checkbox(opt_group.required_mut(), "Required")
-                            .on_hover_text("Require the user to select an option in this group");
+                        ui.checkbox(opt_group.required_mut(), "必选")
+                            .on_hover_text("要求用户在此组中选择一个选项");
                         if let OptionGroup::Exclusive(group) = opt_group {
                             let id = Id::new(group.name.as_str()).with("default");
                             let def_name = group
@@ -206,8 +206,8 @@ impl ModPackerBuilder {
                                         .iter()
                                         .find_map(|o| o.path.eq(opt).then(|| o.name.as_str()))
                                 })
-                                .unwrap_or("None");
-                            egui::ComboBox::new(id, "Default Option")
+                                .unwrap_or("无");
+                            egui::ComboBox::new(id, "默认选项")
                                 .selected_text(def_name)
                                 .show_ui(ui, |ui| {
                                     group.options.iter().for_each(|opt| {

@@ -296,7 +296,7 @@ impl Manager {
             self.path().join("profile.yml"),
             serde_yaml::to_string(self.profile().deref())?,
         )?;
-        log::info!("Saved profile data");
+        log::info!("保存配置文件数据");
         log::debug!("{:#?}", &self.profile());
         Ok(())
     }

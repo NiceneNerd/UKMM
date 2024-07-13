@@ -53,7 +53,7 @@ impl TabViewer for super::App {
                     }
                 } else {
                     ui.centered_and_justified(|ui| {
-                        ui.label("No mod selected");
+                        ui.label("未选择任何模组");
                     });
                 }
             }

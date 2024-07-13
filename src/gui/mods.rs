@@ -112,10 +112,10 @@ impl App {
                             }
                         });
                         [
-                            ("Mod Name", Sort::Name),
-                            ("Category", Sort::Category),
-                            ("Version", Sort::Version),
-                            ("Priority", Sort::Priority),
+                            ("模组名称", Sort::Name),
+                            ("类别", Sort::Category),
+                            ("版本", Sort::Version),
+                            ("优先级", Sort::Priority),
                         ]
                         .into_iter()
                         .for_each(|(label, sort)| {
@@ -355,7 +355,7 @@ impl App {
                         self.do_update(Message::DevUpdate);
                     }
                     ContextMenuMessage::Uninstall => {
-                        let prompt = jstr!("Are you sure you want to uninstall {&mod_.meta.name}?");
+                        let prompt = jstr!("您确定要卸载 {&mod_.meta.name}?");
                         self.do_update(Message::Confirm(
                             Message::UninstallMods(None).into(),
                             prompt,
@@ -398,7 +398,7 @@ impl App {
         ui: &mut Ui,
     ) -> Option<ContextMenuMessage> {
         let mut result = None;
-        ui.menu_button("Send to profile", |ui| {
+        ui.menu_button("发送到档案", |ui| {
             for profile in core
                 .settings()
                 .profiles()
@@ -410,26 +410,26 @@ impl App {
                 }
             }
         });
-        if ui.button("Update").clicked() {
+        if ui.button("更新").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Update);
         }
-        if ui.button("Dev Update").clicked() {
+        if ui.button("开发更新").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::DevUpdate);
         }
-        if ui.button("Uninstall").clicked() {
+        if ui.button("卸载").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Uninstall);
         }
         if ui
-            .button(if mod_.enabled { "Disable" } else { "Enable" })
+            .button(if mod_.enabled { "禁用" } else { "启用" })
             .clicked()
         {
             ui.close_menu();
             result = Some(ContextMenuMessage::Toggle(!mod_.enabled));
         }
-        if ui.button("View folder").clicked() {
+        if ui.button("查看文件夹").clicked() {
             ui.close_menu();
             let _ = Command::new(if cfg!(windows) {
                 "explorer"
@@ -443,15 +443,15 @@ impl App {
             })
             .output();
         }
-        if ui.button("Extract").clicked() {
+        if ui.button("提取").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Extract);
         }
-        if ui.button("Move to start").clicked() {
+        if ui.button("移到开始").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Move(0));
         }
-        if ui.button("Move to end").clicked() {
+        if ui.button("移到末尾").clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Move(9999));
         }

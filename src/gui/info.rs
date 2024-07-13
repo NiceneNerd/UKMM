@@ -53,7 +53,7 @@ impl ModInfo<'_> {
                 match load_preview(self.0) {
                     Ok(pre) => pre,
                     Err(e) => {
-                        log::error!("Error loading mod preview: {}", e);
+                        log::error!("错误 加载模组预览时出错: {}", e);
                         None
                     }
                 }
@@ -77,23 +77,23 @@ impl Component for ModInfo<'_> {
             }
             let ver = mod_.meta.version.to_string();
             [
-                ("Name", mod_.meta.name.as_str()),
-                ("Version", ver.as_str()),
-                ("Category", mod_.meta.category.as_str()),
-                ("Author", mod_.meta.author.as_str()),
+                ("名称", mod_.meta.name.as_str()),
+                ("版本", ver.as_str()),
+                ("分类", mod_.meta.category.as_str()),
+                ("作者", mod_.meta.author.as_str()),
             ]
             .into_iter()
             .filter(|(_, v)| !v.is_empty())
             .for_each(|(label, value)| {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new(label).family(egui::FontFamily::Name("Bold".into())));
+                    ui.label(RichText::new(label));
                     ui.add_space(8.);
                     ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                         ui.add(Label::new(value).wrap(true));
                     })
                 });
             });
-            ui.label(RichText::new("Description").family(egui::FontFamily::Name("Bold".into())));
+            ui.label(RichText::new("描述"));
             ui.add_space(4.);
             let md_cache = ui.data_mut(|d| {
                 d.get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
@@ -110,9 +110,7 @@ impl Component for ModInfo<'_> {
             if !mod_.meta.options.is_empty() {
                 ui.horizontal(|ui| {
                     ui.label(
-                        RichText::new("Enabled Options")
-                            .family(egui::FontFamily::Name("Bold".into())),
-                    );
+                        RichText::new("已启用选项"));
                     ui.add_space(8.);
                     ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                         if ui.icon_button(uk_ui::icons::Icon::Settings).clicked() {
@@ -128,16 +126,16 @@ impl Component for ModInfo<'_> {
                         });
                     });
                 } else {
-                    ui.label("No options enabled");
+                    ui.label("未启用任何选项");
                 }
                 ui.add_space(4.0);
             }
-            ui.label(RichText::new("Manifest").family(egui::FontFamily::Name("Bold".into())));
+            ui.label(RichText::new("清单"));
             match mod_.manifest() {
                 Ok(manifest) => render_manifest(&manifest, ui),
                 Err(e) => {
                     log::error!("{:#?}", e);
-                    ui.label(RichText::new("FAILED TO LOAD MANIFEST").strong());
+                    ui.label(RichText::new("加载清单失败").strong());
                 }
             }
             ui.add_space(8.0);
@@ -158,7 +156,7 @@ pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
             manifest.content_files.hash(&mut hasher);
             let mut roots = ROOTS.write();
             let content_root = roots.entry(hasher.finish()).or_insert_with(|| {
-                let mut root = PathNode::dir("Base Files");
+                let mut root = PathNode::dir("基础文件");
                 manifest.content_files.iter().for_each(|file| {
                     root.build_tree(&file.split('/').map(|s| s.to_owned()).collect(), 0);
                 });
@@ -171,7 +169,7 @@ pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
             manifest.aoc_files.hash(&mut hasher);
             let mut roots = ROOTS.write();
             let aoc_root = roots.entry(hasher.finish()).or_insert_with(|| {
-                let mut root = PathNode::dir("DLC Files");
+                let mut root = PathNode::dir("DLC文件");
                 manifest.aoc_files.iter().for_each(|file| {
                     root.build_tree(&file.split('/').map(|s| s.to_owned()).collect(), 0);
                 });

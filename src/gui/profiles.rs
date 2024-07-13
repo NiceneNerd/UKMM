@@ -113,16 +113,16 @@ impl ProfileManagerState {
                     }
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
-                        if ui.button("Rename").clicked() {
+                        if ui.button("重命名").clicked() {
                             self.rename = Some(name.to_string());
                         }
-                        if ui.button("Duplicate").clicked() {
+                        if ui.button("复制").clicked() {
                             app.do_update(Message::DuplicateProfile(name.to_string()));
                         }
-                        if ui.button("Delete").clicked() {
+                        if ui.button("删除").clicked() {
                             app.do_update(Message::Confirm(
                                 Message::DeleteProfile(name.to_string()).into(),
-                                format!("Are you sure you want to delete the profile {}?", name),
+                                format!("确定要删除配置文件 {} 吗？", name),                        
                             ));
                         }
                     });
@@ -135,7 +135,7 @@ impl ProfileManagerState {
 
     pub fn render(&mut self, app: &App, ctx: &egui::Context) {
         if self.show {
-            egui::Window::new("Profiles")
+            egui::Window::new("配置文件")
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
                 .resizable(true)
                 .default_size([320.0, 240.0])
@@ -182,7 +182,7 @@ impl ProfileManagerState {
                     ui.add_space(4.0);
                     ui.horizontal(|ui| {
                         ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("Close").clicked() {
+                            if ui.button("关闭").clicked() {
                                 app.do_update(Message::CloseProfiles);
                             }
                         });

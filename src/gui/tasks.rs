@@ -80,22 +80,22 @@ fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
 }
 
 pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Message> {
-    log::info!("Opening mod at {}", path.display());
+    log::info!("正在打开路径为 {} 的模组", path.display());
     if path
         .extension()
         .and_then(|e| e.to_str())
         .map(|e| e.to_lowercase() == "bnp")
         .unwrap_or(false)
     {
-        let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKMM mod")?;
+        let mod_ = convert_bnp(core, path).context("将BNP转换为UKMM模组失败")?;
         return Ok(Message::HandleMod(Mod::from_reader(
-            ModReader::open_peek(mod_, vec![]).context("Failed to open converted mod")?,
+            ModReader::open_peek(mod_, vec![]).context("打开转换后的模组失败")?,
         )));
     }
     let mod_ = match ModReader::open_peek(path, vec![]) {
         Ok(reader) => Mod::from_reader(reader),
         Err(err) => {
-            log::warn!("Could not open mod, let's find out why");
+            log::warn!("无法打开模组，请查找原因");
             let err_msg = err.to_string();
             if let Some(has_meta) = (err_msg.contains("meta file")
                 || err_msg.contains("meta.yml")
@@ -104,18 +104,18 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
             .filter(|(is_mod, _has_meta)| *is_mod)
             .map(|(_, has_meta)| has_meta)
             {
-                log::info!("Maybe it's not a UKMM mod, let's to convert it");
+                log::info!("可能不是UKMM模组，尝试转换");
                 if !has_meta && meta.is_none() {
-                    log::info!("Mod has no meta info, requesting manual input");
+                    log::info!("模组没有元信息，请求手动输入");
                     return Ok(Message::RequestMeta(path.to_path_buf()));
                 }
                 if let Some(ref meta) = meta {
-                    log::info!("Converting mod {}…", meta.name);
+                    log::info!("转换模组 {}…", meta.name);
                 }
                 let converted_path =
                     uk_manager::mods::convert_gfx(core, path, meta).with_context(|| {
                         format!(
-                            "Failed to convert {}",
+                            "转换失败 {}",
                             path.file_name()
                                 .and_then(|n| n.to_str())
                                 .unwrap_or_default()
@@ -123,21 +123,21 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
                     })?;
                 Mod::from_reader(
                     ModReader::open_peek(converted_path, vec![])
-                        .context("Failed to open converted mod")?,
+                        .context("打开转换后的模组失败")?,
                 )
             } else {
-                return Err(err.context(format!("Failed to open mod {}", path.display())));
+                return Err(err.context(format!("无法打开模组 {}", path.display())));
             }
         }
     };
     Ok(Message::HandleMod(mod_))
-}
+}   
 
 pub fn apply_changes(core: &Manager, mods: Vec<Mod>, dirty: Option<Manifest>) -> Result<Message> {
     let mod_manager = core.mod_manager();
-    log::info!("Applying pending changes to mod configuration");
+    log::info!("应用待处理的模组配置更改");
     if !mods.is_empty() {
-        log::info!("Updating mod states");
+        log::info!("更新模组状态");
         mods.iter()
             .try_for_each(|m| -> Result<()> {
                 let mod_ = mod_manager
@@ -149,50 +149,50 @@ pub fn apply_changes(core: &Manager, mods: Vec<Mod>, dirty: Option<Manifest>) ->
                         .set_enabled(m.hash(), m.enabled, None)
                         .with_context(|| {
                             format!(
-                                "Failed to {} {}",
-                                if m.enabled { "enable" } else { "disable" },
+                                "无法{} {}",
+                                if m.enabled { "启用" } else { "禁用" },
                                 m.meta.name.as_str()
                             )
                         })?;
                     mod_manager
                         .set_enabled_options(m.hash(), m.enabled_options.clone())
                         .with_context(|| {
-                            format!("Failed to update options on {}", m.meta.name.as_str())
+                            format!("无法更新 {} 的选项", m.meta.name.as_str())
                         })?;
                 }
                 Ok(())
             })
-            .context("Failed to update mod state")?;
-        log::info!("Updating load order");
+            .context("更新模组状态失败")?;
+        log::info!("更新加载顺序");
         let order = mods.iter().map(|m| m.hash()).collect();
         mod_manager.set_order(order);
         mod_manager
             .save()
-            .context("Failed to save mod configuration for current profile")?;
+            .context("保存当前配置文件的模组配置失败")?;
     }
-    log::info!("Applying changes");
+    log::info!("应用更改");
     let deploy_manager = core.deploy_manager();
     deploy_manager
         .apply(dirty)
-        .context("Failed to apply pending mod changes")?;
+        .context("应用待处理的模组更改失败")?;
     if core
         .settings()
         .platform_config()
         .and_then(|c| c.deploy_config.as_ref().map(|c| c.auto))
         .unwrap_or(false)
     {
-        log::info!("Deploying changes");
+        log::info!("部署更改");
         deploy_manager
             .deploy()
-            .context("Failed to deploy update to merged mod(s)")?;
+            .context("部署合并模组更新失败")?;
     }
-    log::info!("Done");
+    log::info!("完成");
     Ok(Message::ResetMods(None))
 }
 
 pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message> {
     let Some(dump) = core.settings().dump() else {
-        anyhow::bail!("No dump for current platform")
+        anyhow::bail!("当前平台没有可用的 dump")
     };
     uk_mod::pack::ModPacker::new(
         builder.source,
@@ -200,18 +200,18 @@ pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message>
         Some(builder.meta),
         [dump].into_iter().collect(),
     )
-    .context("Failed to initialize mod packager")?
+    .context("初始化模组打包器失败")?
     .pack()
-    .context("Failed to package mod")?;
+    .context("打包模组失败")?;
     Ok(Message::ResetPacker)
 }
 
 pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
     let mut dirty = Manifest::default();
     for mod_ in mods {
-        log::info!("Updating {}…", mod_.meta.name.as_str());
+        log::info!("更新 {}…", mod_.meta.name.as_str());
         if let Some(folder) = rfd::FileDialog::new()
-            .set_title(jstr!("Update {mod_.meta.name.as_str()} from Folder").as_str())
+            .set_title(jstr!("从 {mod_.meta.name.as_str()} 文件夹更新").as_str())
             .pick_folder()
         {
             dirty.extend(&mod_.manifest().unwrap_or_default());
@@ -222,9 +222,9 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
                 None,
                 [core.settings().dump().unwrap()].into_iter().collect(),
             )
-            .context("Failed to initialize mod packager")?
+            .context("初始化模组打包器失败")?
             .pack()
-            .context("Failed to package mod")?;
+            .context("打包模组失败")?;
             let new_mod = ModReader::open_peek(mod_.path, vec![])?;
             dirty.extend(new_mod.manifest());
             core.mod_manager_mut()
@@ -239,16 +239,16 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
 pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
     let mut errors = vec![];
     if let Some(folder) = rfd::FileDialog::new()
-        .set_title("Select Directory to Unpack Mod(s)")
+        .set_title("选择要解包的目录(s)")
         .pick_folder()
     {
         let settings = core.settings();
         let config = settings
             .platform_config()
-            .context("No config for current platform. Have you configured your settings?")?;
+            .context("当前平台没有配置。请配置您的设置。")?;
         for mod_ in mods {
             let name = mod_.meta.name.as_str();
-            log::info!("Extracting {}…", name);
+            log::info!("解包 {}…", name);
             let unpacker = ModUnpacker::new(
                 config.dump.clone(),
                 core.settings().current_mode.into(),
@@ -265,7 +265,7 @@ pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
             Ok(Message::Noop)
         } else {
             anyhow_ext::bail!(
-                "One or more mods encountered errors when extracting. Details below:\n{}",
+                "解包一个或多个模组时遇到错误。以下是详细信息:\n{}",
                 errors.into_iter().fold(String::new(), |mut acc, e| {
                     writeln!(acc, "{:?}", e).expect("Failed to write to String");
                     acc
@@ -297,11 +297,11 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     {
         path
     } else {
-        anyhow::bail!("Could not find Cemu settings file")
+        anyhow::bail!("找不到Cemu设置文件")
     };
-    let text = fs::read_to_string(settings_path).context("Failed to open Cemu settings file")?;
+    let text = fs::read_to_string(settings_path).context("无法打开Cemu设置文件")?;
     let tree = roxmltree::Document::parse(&text)
-        .context("Failed to parse Cemu settings file: invalid XML")?;
+        .context("解析Cemu设置文件失败：XML格式无效")?;
     let mlc_path = tree
         .descendants()
         .find_map(|n| {
@@ -313,7 +313,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 .flatten()
         })
         .or_else(|| {
-            log::warn!("No MLC folder found in Cemu settings. Let's guess instead…");
+            log::warn!("在Cemu设置中找不到MLC文件夹。让我们猜一下…");
             let path = path.with_file_name("mlc01");
             path.exists().then_some(path)
         })
@@ -342,7 +342,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             });
             (base_folder, update_folder, dlc_folder)
         })
-        .ok_or_else(|| anyhow::anyhow!("Could not find game dump from Cemu settings"))?;
+        .ok_or_else(|| anyhow::anyhow!("无法从Cemu设置中找到游戏dump"))?;
     let gfx_folder = if let Some(path) = path.with_file_name("graphicPacks").exists_then() {
         Some(path)
     } else if let Some(path) = dirs2::data_local_dir()
@@ -352,14 +352,14 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     {
         Some(path)
     } else {
-        log::warn!("Cemu graphic pack folder not found");
+        log::warn!("找不到Cemu图形包文件夹");
         None
     };
     let mut settings = core.settings_mut();
     settings.current_mode = Platform::WiiU;
     let dump = Arc::new(
         ResourceReader::from_unpacked_dirs(base, update, dlc)
-            .context("Failed to validate game dump")?,
+            .context("验证游戏dump失败")?,
     );
     if let Some(wiiu_config) = settings.wiiu_config.as_mut() {
         if mlc_path.is_some() {
@@ -374,7 +374,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     } else {
         settings.wiiu_config = Some(PlatformSettings {
             language: uk_content::constants::Language::USen,
-            profile: "Default".into(),
+            profile: "默认".into(),
             dump,
             deploy_config: gfx_folder.map(|gfx_folder| {
                 DeployConfig {
@@ -386,7 +386,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 }
             }),
         })
-    };
+    }; 
     settings.save()?;
     Ok(Message::ResetSettings)
 }
@@ -407,7 +407,7 @@ struct BcmlSettings {
 }
 
 pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
-    log::info!("Attempting to import BCML settings");
+    log::info!("尝试导入BCML设置");
     let current_mode = core.settings().current_mode;
     let settings_path = if cfg!(windows) {
         dirs2::data_local_dir()
@@ -417,9 +417,9 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
     .unwrap()
     .join("bcml/settings.json");
     let bcml_settings: BcmlSettings = serde_json::from_str(
-        &fs::read_to_string(settings_path).context("Failed to read BCML settings file")?,
+        &fs::read_to_string(settings_path).context("读取BCML设置文件失败")?,
     )
-    .context("Failed to parse BCML settings file")?;
+    .context("解析BCML设置文件失败")?;
     if let (Some(game_dir), Some(update_dir)) = (
         bcml_settings.game_dir.filter(|d| !d.as_os_str().is_empty()),
         bcml_settings
@@ -427,11 +427,11 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
             .filter(|d| !d.as_os_str().is_empty()),
     ) {
         {
-            log::info!("Import BCML Wii U game dump settings");
+            log::info!("导入BCML Wii U游戏dump设置");
             let mut settings = core.settings_mut();
             settings.wiiu_config = Some(PlatformSettings {
                 language: bcml_settings.lang,
-                profile: "Default".into(),
+                profile: "默认".into(),
                 deploy_config: bcml_settings
                     .export_dir
                     .map(|export_dir| {
@@ -460,7 +460,7 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
             settings.save()?;
         }
         core.reload()?;
-        log::info!("Attempting to import BCML Wii U mods");
+        log::info!("尝试导入BCML Wii U模组");
         import_mods(&core, bcml_settings.store_dir.join("mods"))?;
     }
     if let Some(game_dir) = bcml_settings
@@ -468,11 +468,11 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
         .filter(|d| !d.as_os_str().is_empty())
     {
         {
-            log::info!("Import BCML Switch game dump settings");
+            log::info!("导入BCML Switch游戏dump设置");
             let mut settings = core.settings_mut();
             settings.switch_config = Some(PlatformSettings {
                 language: bcml_settings.lang,
-                profile: "Default".into(),
+                profile: "默认".into(),
                 deploy_config: bcml_settings.export_dir_nx.map(|export_dir| {
                     DeployConfig {
                         output: export_dir,
@@ -489,7 +489,7 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
             settings.save()?;
         }
         core.reload()?;
-        log::info!("Attempting to import BCML Switch mods");
+        log::info!("尝试导入BCML Switch模组");
         import_mods(&core, bcml_settings.store_dir.join("mods_nx"))?;
     }
     let mode_changed = core.settings().current_mode != current_mode;
@@ -525,7 +525,7 @@ fn import_mods(core: &Manager, mod_dir: PathBuf) -> Result<()> {
                 Ok(path) => {
                     core.mod_manager().add(&path, None)?;
                 }
-                Err(e) => log::warn!("Failed to import BCML mod: {}", e),
+                Err(e) => log::warn!("导入BCML模组失败: {}", e),
             }
         }
         core.mod_manager().save()?;
@@ -551,7 +551,7 @@ pub struct VersionResponse {
 impl VersionResponse {
     pub fn description(&self) -> String {
         format!(
-            "# Release {} Notes\n\n**{}**\n\n{}",
+            "# 发布 {} 说明\n\n**{}**\n\n{}",
             self.tag_name, self.name, self.body
         )
     }
@@ -561,7 +561,7 @@ pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
     let url = "https://api.github.com/repos/NiceneNerd/UKMM/releases?per_page=10";
     match response(url).and_then(|bytes| {
         serde_json::from_slice::<Vec<VersionResponse>>(&bytes)
-            .context("Failed to parse GitHub response")
+            .context("解析GitHub响应失败")
     }) {
         Ok(mut releases) => {
             let current_semver = lenient_semver::parse(env!("CARGO_PKG_VERSION")).unwrap();
@@ -591,14 +591,14 @@ pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
 }
 
 pub fn do_update(version: VersionResponse) -> Result<Message> {
-    log::info!("Updating... UKMM will restart when complete");
+    log::info!("正在更新... 更新完成后UKMM将重新启动");
     let platform =
         option_env!("UPDATE_PLATFORM").unwrap_or(if cfg!(windows) { "windows" } else { "linux" });
     let asset = version
         .assets
         .iter()
         .find(|asset| asset.name[..asset.name.len() - 4].ends_with(platform))
-        .context("No matching platform for update")?;
+        .context("找不到匹配的更新平台")?;
     let data = response(asset.browser_download_url.as_str())?;
     let tmpfile = get_temp_file();
     dbg!(tmpfile.as_path());
@@ -606,7 +606,7 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
     let exe = std::env::current_exe().unwrap();
     if cfg!(windows) {
         let mut arc = zip::ZipArchive::new(fs::File::open(tmpfile.as_path())?)?;
-        arc.extract(tmpfile.parent().context("Weird, no temp file parent")?)?;
+        arc.extract(tmpfile.parent().context("奇怪，找不到临时文件的父目录")?)?;
         fs::rename(&exe, exe.with_extension("bak"))?;
         fs::copy(tmpfile.with_file_name("ukmm.exe"), exe)?;
     } else {
@@ -615,7 +615,7 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
             .arg("xf")
             .arg(tmpfile.as_path())
             .arg("-C")
-            .arg(exe.parent().context("Weird, no exe parent")?)
+            .arg(exe.parent().context("奇怪，找不到exe的父目录")?)
             .arg("--overwrite")
             .output()?;
         if !out.stderr.is_empty() {
@@ -657,15 +657,15 @@ pub fn oneclick(url: &str) {
         let url = parts.next().unwrap_or_default().to_owned();
         let cat = parts.next().unwrap_or_default().to_owned();
         let id = parts.next().unwrap_or_default().to_owned();
-        log::debug!("Processing GameBanana 1-click URL: {url}");
-        log::debug!("Checking mod name from API");
+        log::debug!("处理GameBanana的一键安装URL: {url}");
+        log::debug!("从API检查模组名称");
         let mod_name = response(&format!(
             "https://api.gamebanana.com/Core/Item/Data?itemtype={cat}&itemid={id}&fields=name"
         ))
         .and_then(|data| Ok(serde_json::from_slice::<Vec<String>>(&data)?))
         .map(|mut res| sanitise(&res.remove(0)))
         .unwrap_or_else(|_| "oneclick_mod".into());
-        log::info!("Downloading {mod_name} from GameBanana 1-click…");
+        log::info!("正在从GameBanana的一键安装下载 {mod_name}...");
         if let Ok(client) = INTERFACE.connect() {
             let buf = IpcMessage::Starting(mod_name.clone()).into_bytes();
             let _ = client.send(&buf);
@@ -675,12 +675,12 @@ pub fn oneclick(url: &str) {
             .method(http_req::request::Method::GET)
             .header("User-Agent", "UKMM")
             .send(&mut data)
-            .with_context(|| format!("Failed to download mod from {url}"))
+            .with_context(|| format!("从 {url} 下载模组失败"))
             .and_then(|res| {
                 let redir = res
                     .headers()
                     .get("Location")
-                    .context("No location for redirect")?;
+                    .context("未找到重定向地址")?;
                 let filename = http_req::uri::Uri::try_from(redir.as_str())?
                     .path()
                     .unwrap_or_default()
@@ -689,16 +689,16 @@ pub fn oneclick(url: &str) {
                     .map(|n| n.to_owned())
                     .unwrap_or_else(|| format!("{mod_name}.bnp"));
                 let data = response(redir)
-                    .with_context(|| format!("Failed to download mod from {redir}"))?;
+                    .with_context(|| format!("从 {redir} 下载模组失败"))?;
                 let tmp = get_temp_file().with_file_name(filename);
-                log::debug!("Saving mod to temp file at {}", tmp.display());
-                fs_err::write(tmp.as_path(), data).context("Failed to save mod to temp file")?;
-                log::info!("Finished downloading {mod_name}");
+                log::debug!("将模组保存到临时文件 {}", tmp.display());
+                fs_err::write(tmp.as_path(), data).context("保存模组到临时文件失败")?;
+                log::info!("完成下载 {mod_name}");
                 Ok(IpcMessage::OpenMod(tmp.to_path_buf()))
             })
             .map_err(|e| IpcMessage::Error(e.to_string()))
             .unwrap_or_else(|e| e);
-        log::debug!("1-click mod downloaded, sending to UI for install");
+        log::debug!("一键安装模组下载完成，发送到UI进行安装");
         msg
     }
 
@@ -708,7 +708,7 @@ pub fn oneclick(url: &str) {
             let buf = msg.into_bytes();
             client
                 .send(&buf)
-                .expect("Failed to send mod to existing UKMM instance");
+                .expect("向已存在的UKMM实例发送模组失败");
             std::process::exit(0);
         }
         Err(_) => {
@@ -718,7 +718,7 @@ pub fn oneclick(url: &str) {
                 ONECLICK_SENDER
                     .wait()
                     .send(msg.into())
-                    .expect("Broken channel")
+                    .expect("通道中断")
             });
         }
     }
@@ -728,23 +728,23 @@ pub fn wait_ipc() {
     std::thread::spawn(|| {
         let sock = INTERFACE
             .claim()
-            .expect("Failed to claim single instance interface. Is UKMM already open?");
+            .expect("无法获取单一实例接口。UKMM可能已经打开了吗？");
         let mut buf = [0; 1024];
         loop {
             match sock.recv(&mut buf) {
                 Ok(len) => {
-                    log::debug!("Received 1-click install message");
+                    log::debug!("收到一键安装消息");
                     let msg: IpcMessage = serde_json::from_slice(&buf[..len])
                         .with_context(|| String::from_utf8(buf.to_vec()).unwrap_or_default())
-                        .expect("Broken IPC message");
+                        .expect("破损的IPC消息");
                     log::trace!("{:?}", &msg);
                     ONECLICK_SENDER
                         .wait()
                         .send(msg.into())
-                        .expect("Broken channel");
+                        .expect("通道中断");
                 }
                 Err(e) => {
-                    log::error!("IPC error: {}", e);
+                    log::error!("IPC错误: {}", e);
                 }
             }
         }
@@ -754,11 +754,11 @@ pub fn wait_ipc() {
 pub fn handle_mod_arg(path: PathBuf) {
     if path.exists() {
         std::thread::spawn(|| {
-            log::info!("Opening mod at {} for installation…", path.display());
+            log::info!("打开位于 {} 的模组以进行安装…", path.display());
             ONECLICK_SENDER
                 .wait()
                 .send(Message::OpenMod(path))
-                .expect("Broken channel")
+                .expect("通道中断")
         });
     }
 }

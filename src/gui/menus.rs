@@ -6,10 +6,10 @@ impl App {
             ui.style_mut().visuals.button_frame = false;
             ui.set_enabled(!self.modal_open());
             ui.horizontal(|ui| {
-                ui.menu_button("File", |ui| self.file_menu(ui, frame));
-                ui.menu_button("Tools", |ui| self.tool_menu(ui));
-                ui.menu_button("Window", |ui| self.window_menu(ui));
-                ui.menu_button("Help", |ui| self.help_menu(ui));
+                ui.menu_button("文件", |ui| self.file_menu(ui, frame));
+                ui.menu_button("工具", |ui| self.tool_menu(ui));
+                ui.menu_button("窗口", |ui| self.window_menu(ui));
+                ui.menu_button("帮助", |ui| self.help_menu(ui));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.label(
                         RichText::new(self.platform().to_string().to_uppercase())
@@ -21,30 +21,30 @@ impl App {
     }
 
     pub fn file_menu(&self, ui: &mut Ui, _frame: &mut eframe::Frame) {
-        if ui.button("Open mod…").clicked() {
+        if ui.button("打开 mod…").clicked() {
             ui.close_menu();
             self.do_update(Message::SelectFile);
         }
-        if ui.button("Exit").clicked() {
+        if ui.button("退出").clicked() {
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         }
     }
 
     pub fn tool_menu(&mut self, ui: &mut Ui) {
-        if ui.button("Refresh Merge").clicked() {
+        if ui.button("刷新合并").clicked() {
             ui.close_menu();
             self.do_update(Message::Remerge);
         }
-        if ui.button("Reset Pending").clicked() {
+        if ui.button("重置待处理").clicked() {
             ui.close_menu();
             self.do_update(Message::ResetPending);
         }
-        if ui.button("Open Config Folder").clicked() {
+        if ui.button("打开配置文件夹").clicked() {
             ui.close_menu();
             open::that(Settings::config_dir()).unwrap_or(());
         }
         let settings = self.core.settings();
-        if ui.button("Open Storage Folder").clicked() {
+        if ui.button("打开存储文件夹").clicked() {
             ui.close_menu();
             open::that(&settings.storage_dir).unwrap_or(());
         }
@@ -52,7 +52,7 @@ impl App {
         if ui
             .add_enabled(
                 deploy_dir.is_some(),
-                egui::Button::new("Open Deployment Folder"),
+                egui::Button::new("打开部署文件夹"),
             )
             .clicked()
         {
@@ -62,7 +62,7 @@ impl App {
     }
 
     pub fn window_menu(&mut self, ui: &mut Ui) {
-        if ui.button("Reset").clicked() {
+        if ui.button("重置").clicked() {
             ui.close_menu();
             *self.tree.borrow_mut() = tabs::default_ui();
         }

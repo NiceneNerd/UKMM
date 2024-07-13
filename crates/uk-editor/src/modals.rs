@@ -14,7 +14,7 @@ impl App {
 
     pub fn render_error(&self, ctx: &egui::Context) {
         if let Some(err) = self.error.as_ref() {
-            egui::Window::new("Error")
+            egui::Window::new("错误")
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .auto_sized()
@@ -23,7 +23,7 @@ impl App {
                     ui.add_space(8.);
                     ui.label(err.to_string());
                     ui.add_space(8.);
-                    egui::CollapsingHeader::new("Details").show(ui, |ui| {
+                    egui::CollapsingHeader::new("详情").show(ui, |ui| {
                         err.chain().enumerate().for_each(|(i, e)| {
                             ui.label(RichText::new(format!("{i}. {e}")).code());
                         });
@@ -33,7 +33,7 @@ impl App {
                         e.downcast_ref::<uk_content::UKError>()
                             .and_then(|e| e.context_data())
                     }) {
-                        egui::CollapsingHeader::new("Data Context").show(ui, |ui| {
+                        egui::CollapsingHeader::new("数据上下文").show(ui, |ui| {
                             ui.label(format!("{:#?}", context));
                         });
                     }
@@ -44,13 +44,13 @@ impl App {
                             Vec2::new(width, ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button("OK").clicked() {
+                                if ui.button("确定").clicked() {
                                     self.do_update(Message::CloseError);
                                 }
-                                if ui.button("Copy").clicked() {
+                                if ui.button("复制").clicked() {
                                     ui.output_mut(|o| o.copied_text = format!("{:?}", &err));
                                     egui::popup::show_tooltip(ctx, Id::new("copied"), |ui| {
-                                        ui.label("Copied")
+                                        ui.label("已复制")
                                     });
                                 }
                                 ui.shrink_width_to_current();
@@ -63,7 +63,7 @@ impl App {
 
     pub fn render_busy(&self, ctx: &egui::Context) {
         if self.busy.get() {
-            egui::Window::new("Working")
+            egui::Window::new("正在处理")
                 .default_size([240., 80.])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .collapsible(false)
@@ -79,7 +79,7 @@ impl App {
                             ui.add(Spinner::new().size(text_height));
                             ui.add_space(8.);
                             ui.vertical(|ui| {
-                                ui.label("Processing…");
+                                ui.label("处理中…");
                             });
                             ui.shrink_width_to_current();
                         });
