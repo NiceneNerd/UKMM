@@ -25,9 +25,7 @@ impl App {
                         });
                         ui.horizontal(|ui| {
                             ui.label(
-                                RichText::new("Auto Deploy")
-                                    .family(egui::FontFamily::Name("Bold".into())),
-                            );
+                                RichText::new("自动部署"));
                             // ui.add_space(8.);
                             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                                 ui.label(if config.auto {
@@ -39,9 +37,7 @@ impl App {
                         });
                         ui.vertical(|ui| {
                             ui.label(
-                                RichText::new("Target Folder")
-                                    .family(egui::FontFamily::Name("Bold".into())),
-                            );
+                                RichText::new("目标文件夹"));
                             let mut job = LayoutJob::simple_singleline(
                                 config.output.to_string_lossy().into(),
                                 ui.style()
@@ -80,13 +76,13 @@ impl App {
                                 egui::Frame::none().show(ui, |ui| {
                                     if let Some(ref exe) = config.executable {
                                         ui.add_space(4.);
-                                        if ui.button("Open Emulator").clicked() {
+                                        if ui.button("打开模拟器").clicked() {
                                             let _ = std::process::Command::new(exe).spawn();
                                         }
                                     }
                                     if !config.auto || self.core.deploy_manager().pending() {
                                         if ui
-                                            .add_enabled(pending, egui::Button::new("Deploy"))
+                                            .add_enabled(pending, egui::Button::new("部署"))
                                             .clicked()
                                         {
                                             self.do_update(super::Message::Deploy);
@@ -94,8 +90,7 @@ impl App {
                                         if config.auto {
                                             ui.label(
                                                 RichText::new(
-                                                    "Auto deploy incomplete, please deploy \
-                                                     manually",
+                                                    "自动部署不完整，请手动部署",
                                                 )
                                                 .color(visuals::RED),
                                             );
@@ -109,7 +104,7 @@ impl App {
             }
             None => {
                 ui.centered_and_justified(|ui| {
-                    ui.label("No deployment config for current platform");
+                    ui.label("当前平台没有部署配置");
                 });
             }
         }

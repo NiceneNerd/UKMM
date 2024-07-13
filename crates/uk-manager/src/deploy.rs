@@ -80,23 +80,23 @@ impl Manager {
         settings: &Arc<RwLock<Settings>>,
         mod_manager: &Arc<RwLock<mods::Manager>>,
     ) -> Result<Self> {
-        log::info!("Initializing deployment manager");
+        log::info!("初始化部署管理器");
         let pending = match fs::read_to_string(Self::log_path(&settings.read()))
             .map_err(anyhow_ext::Error::from)
             .and_then(|text| Ok(serde_yaml::from_str::<PendingLog>(&text)?))
         {
             Ok(log) => {
                 if !log.files.is_empty() || !log.delete.is_empty() {
-                    log::info!("Pending deployment data found");
+                    log::info!("发现待处理的部署数据");
                     log::debug!("{:#?}", &log);
                 } else {
-                    log::info!("No files pending deployment");
+                    log::info!("没有待处理的部署文件");
                 }
                 log
             }
             Err(e) => {
-                log::warn!("Could not load pending deployment data:\n{}", &e);
-                log::info!("No files pending deployment");
+                log::warn!("无法加载待处理的部署数据:\n{}", &e);
+                log::info!("没有待处理的部署文件");
                 Default::default()
             }
         };
@@ -129,13 +129,13 @@ impl Manager {
         let settings = self
             .settings
             .upgrade()
-            .expect("YIKES the settings manager is gone");
+            .expect("哎呀，设置管理器不见了");
         let settings = settings.read();
         let source = settings.merged_dir();
         let config = settings
             .platform_config()
             .and_then(|c| c.deploy_config.as_ref())
-            .context("No deployment config for current platform")?;
+            .context("当前平台没有部署配置")?;
         let dest = &config.output;
         let (content, aoc) = platform_prefixes(settings.current_mode.into());
 
@@ -207,7 +207,7 @@ impl Manager {
         let settings = self
             .settings
             .upgrade()
-            .expect("YIKES, the settings manager is gone");
+            .expect("哎呀，设置管理器不见了");
         let settings = settings.read();
         let mut lang = Language::USen;
         let config = settings
@@ -216,37 +216,37 @@ impl Manager {
                 lang = c.language;
                 c.deploy_config.as_ref()
             })
-            .context("No deployment config for current platform")?;
-        log::debug!("Deployment config:\n{:#?}", &config);
+            .context("当前平台没有部署配置")?;
+        log::debug!("部署配置:\n{:#?}", &config);
         if config.method == DeployMethod::Symlink {
-            log::info!("Deploy method is symlink, checking for symlink");
+            log::info!("部署方法是 symlink, 正在检查 symlink");
             if !is_symlink(&config.output) {
                 if config.output.exists() {
-                    log::warn!("Removing old stuff from deploy folder");
+                    log::warn!("从部署文件夹中移除旧内容");
                     util::remove_dir_all(&config.output)
-                        .context("Failed to remove old deployment folder")?;
+                        .context("无法删除旧的部署文件夹")?;
                 }
-                log::info!("Creating new symlink");
+                log::info!("创建新的符号链接（symlink）");
                 create_symlink(&config.output, &settings.merged_dir())
-                    .context("Failed to symlink deployment folder")?;
+                    .context("创建符号链接部署文件夹失败")?;
             } else {
-                log::info!("Symlink exists, no deployment needed")
+                log::info!("符号链接已存在，无需部署")
             }
         } else {
             if is_symlink(&config.output) {
                 anyhow_ext::bail!(
-                    "Deployment folder is currently a symlink or junction, but the current \
-                     deployment method is not symlinking. Please manually remove the existing \
-                     link at {} to prevent unexpected results.",
+                    "部署文件夹当前为符号链接或连接点，\
+                    但当前的部署方法不是创建符号链接。\
+                    请手动移除位于 {} 的现有链接，以避免意外结果。.",
                     config.output.display()
                 );
             }
             let (content, aoc) = uk_content::platform_prefixes(settings.current_mode.into());
             let deletes = self.pending_delete.read();
-            log::debug!("Deployed files to delete:\n{:#?}", &deletes);
+            log::debug!("要删除的部署文件:\n{:#?}", &deletes);
             let syncs = self.pending_files.read();
-            log::debug!("Files to deploy\n{:#?}", &syncs);
-            log::info!("Deploying by {}", match config.method {
+            log::debug!("要部署的文件\n{:#?}", &syncs);
+            log::info!("部署方式 {}", match config.method {
                 DeployMethod::Copy => "copy",
                 DeployMethod::HardLink => "hard links",
                 DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
@@ -286,12 +286,11 @@ impl Manager {
                                 DeployMethod::HardLink => fs::hard_link(from, &out),
                                 DeployMethod::Symlink => unreachable!(),
                             }
-                            .with_context(|| format!("Failed to deploy {} to {}", f, out.display()))
+                            .with_context(|| format!("部署失败 {} 或 {}", f, out.display()))
                             .map_err(|e| {
-                                if e.root_cause().to_string().contains("os error 17") {
+                                if e.root_cause().to_string().contains("操作系统错误 17") {
                                     e.context(
-                                        "Hard linking failed because the output folder is on a \
-                                         different disk or partition than the storage folder.",
+                                        "硬链接(Hard linking)失败，因为输出文件夹与存储文件夹位于不同的磁盘或分区上。.",
                                     )
                                 } else {
                                     e
@@ -300,8 +299,7 @@ impl Manager {
                             Ok(())
                         } else {
                             log::warn!(
-                                "Source file {} missing, we're assuming it was a deletion lost \
-                                 track of",
+                                "源文件 {} 丢失，我们假设它是一个丢失跟踪的删除操作。",
                                 from.display()
                             );
                             Ok(())
@@ -309,7 +307,7 @@ impl Manager {
                     },
                 )?;
             }
-            log::info!("Deployment complete");
+            log::info!("部署完成");
         }
         let rules_path = config.output.join("rules.txt");
         if settings.current_mode == Platform::WiiU
@@ -347,11 +345,11 @@ impl Manager {
                 .collect(),
         );
         if orphans_content.is_empty() && orphans_aoc.is_empty() {
-            log::debug!("No orphans");
+            log::debug!("没有孤立文件");
             return Ok(());
         }
         log::debug!(
-            "Orphans to delete:\n{:#?}\n{:#?}",
+            "要删除的孤立文件:\n{:#?}\n{:#?}",
             &orphans_content,
             &orphans_aoc
         );
@@ -369,7 +367,7 @@ impl Manager {
                 let file = out_dir.join(f.as_str());
                 if file.exists() {
                     fs::remove_file(&file)
-                        .with_context(|| jstr!("Failed to delete orphan file {f.as_str()}"))?;
+                        .with_context(|| jstr!("删除孤立文件失败 {f.as_str()}"))?;
                 }
                 let parent = file.parent().unwrap();
                 if std::fs::read_dir(parent)
@@ -381,7 +379,7 @@ impl Manager {
                 Ok(())
             })?;
         }
-        log::info!("Deleted orphans");
+        log::info!("已删除孤立文件");
         Ok(())
     }
 
@@ -392,18 +390,18 @@ impl Manager {
         updates: DashMap<String, Option<u32>>,
     ) -> Result<()> {
         static RSTB_PATH: &str = "System/Resource/ResourceSizeTable.product.srsizetable";
-        log::debug!("RSTB updates:\n{:#?}", &updates);
+        log::debug!("RSTB 更新:\n{:#?}", &updates);
         let content = uk_content::platform_content(platform.into());
         let table_path = merged.join(content).join(RSTB_PATH);
         let mut table = if table_path.exists() {
-            log::debug!("Updating existing merged RSTB");
+            log::debug!("更新现有的合并 RSTB");
             ResourceSizeTable::from_binary(
-                decompress(fs::read(&table_path).context("Failed to open merged RSTB")?)
-                    .context("Failed to decompress merged RSTB")?,
+                decompress(fs::read(&table_path).context("无法打开合并的 RSTB")?)
+                    .context("无法解压合并的 RSTB")?,
             )
-            .context("Failed to parse merged RSTB")?
+            .context("无法解析合并的 RSTB")?
         } else {
-            log::debug!("Creating new RSTB");
+            log::debug!("创建新的 RSTB");
             ResourceSizeTable::new_from_stock(platform.into())
         };
         for (canon, size) in updates {
@@ -418,10 +416,10 @@ impl Manager {
                 }
             }
         }
-        log::info!("Updated RSTB");
+        log::info!("更新了 RSTB");
         fs::create_dir_all(table_path.parent().unwrap())?;
         fs::write(table_path, compress(table.to_binary(platform.into())))
-            .context("Failed to write merged RSTB")?;
+            .context("无法写入合并的 RSTB")?;
         self.pending_files
             .write()
             .content_files
@@ -433,19 +431,19 @@ impl Manager {
         let mod_manager = self
             .mod_manager
             .upgrade()
-            .expect("YIKES, the mod manager system is gone");
+            .expect("哎呀，模组管理系统不见了");
         let settings = self
             .settings
             .upgrade()
-            .expect("YIKES, the settings manager is gone");
+            .expect("哎呀，设置管理器不见了");
         let settings = settings.try_read().unwrap();
         let dump = settings
             .dump()
-            .context("No dump available for current platform")?;
+            .context("当前平台没有可用的转储")?;
         let endian = settings.current_mode.into();
         let out_dir = settings.merged_dir();
         let unpacker = if let Some(mut manifest) = manifest {
-            log::info!("Manifest provided, applying limited changes");
+            log::info!("提供了清单，正在应用有限的更改");
             let mut total_manifest = Manifest::default();
             let mods = mod_manager
                 .read()
@@ -453,7 +451,7 @@ impl Manager {
                 .map(|m| {
                     ModReader::open(&m.path, m.enabled_options.clone())
                         .inspect(|m| total_manifest.extend(&m.manifest))
-                        .with_context(|| jstr!("Failed to open mod: {&m.meta.name}"))
+                        .with_context(|| jstr!("无法打开 Mod: {&m.meta.name}"))
                 })
                 .collect::<Result<Vec<_>>>()?;
             self.handle_orphans(
@@ -462,7 +460,7 @@ impl Manager {
                 &out_dir,
                 settings.current_mode,
             )?;
-            log::debug!("Change manifest: {:#?}", &manifest);
+            log::debug!("更改清单: {:#?}", &manifest);
             self.pending_files.write().extend(&manifest);
             ModUnpacker::new(
                 dump,
@@ -473,7 +471,7 @@ impl Manager {
             )
             .with_manifest(manifest)
         } else {
-            log::info!("Manifest not provided, remerging all mods");
+            log::info!("未提供清单，重新合并所有的 Mod");
             let mut total_manifest = Manifest::default();
             let mods = mod_manager
                 .read()
@@ -481,10 +479,10 @@ impl Manager {
                 .map(|m| {
                     ModReader::open(&m.path, m.enabled_options.clone())
                         .inspect(|m| total_manifest.extend(&m.manifest))
-                        .with_context(|| jstr!("Failed to open mod: {&m.meta.name}"))
+                        .with_context(|| jstr!("打开 Mod 失败: {&m.meta.name}"))
                 })
                 .collect::<Result<Vec<_>>>()?;
-            util::remove_dir_all(&out_dir).context("Failed to clear merged folder")?;
+            util::remove_dir_all(&out_dir).context("F清除合并文件夹失败r")?;
             self.pending_files.write().extend(&total_manifest);
             ModUnpacker::new(
                 dump,
@@ -494,11 +492,11 @@ impl Manager {
                 out_dir.clone(),
             )
         };
-        log::info!("Applying changes");
+        log::info!("应用更改中");
         let rstb_updates = unpacker.unpack()?;
         self.apply_rstb(&out_dir, settings.current_mode, rstb_updates)?;
         self.save()?;
-        log::info!("All changed applied successfully");
+        log::info!("所有更改成功应用");
         Ok(())
     }
 }

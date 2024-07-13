@@ -30,7 +30,7 @@ fn render_setting<R>(
 ) -> InnerResponse<R> {
     let _icon_height = ui.text_style_height(&TextStyle::Small);
     ui.horizontal(|ui| {
-        ui.label(RichText::new(name).family(egui::FontFamily::Name("Bold".into())));
+        ui.label(RichText::new(name));
         ui.add(
             ImageButton::new(icons::get_icon(ui.ctx(), icons::Icon::Info))
                 .frame(false)
@@ -184,39 +184,36 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
     ui.group(|ui| {
         ui.allocate_space([ui.available_width(), -8.0].into());
         render_setting(
-            "Deploy Method",
-            "There are three methods of deployment: copying, hard linking, and symlinking. \
-             Generally copying is slow and should be avoided if possible. For more on this, \
-             consult the docs.",
+            "部署方法",
+            "有三种部署方法：复制、硬链接和符号链接。通常情况下，复制速度较慢，应尽量避免。如需了解更多，请参阅文档。",
             ui,
             |ui| {
                 changed |= ui
                     .radio_value(
                         &mut config.method,
                         uk_manager::settings::DeployMethod::Copy,
-                        "Copy",
+                        " 复制",
                     )
                     .changed();
                 changed |= ui
                     .radio_value(
                         &mut config.method,
                         uk_manager::settings::DeployMethod::HardLink,
-                        "Hard Links",
+                        "硬链接",
                     )
                     .changed();
                 changed |= ui
                     .radio_value(
                         &mut config.method,
                         uk_manager::settings::DeployMethod::Symlink,
-                        "Symlink",
+                        "符号链接",
                     )
                     .changed();
             },
         );
         render_setting(
-            "Auto Deploy",
-            "Whether to automatically deploy changes to the mod configuration every time they are \
-             applied.",
+            "自动部署",
+            "是否在每次应用更改时自动部署 Mod 配置.",
             ui,
             |ui| {
                 changed |= ui.checkbox(&mut config.auto, "").changed();
@@ -224,8 +221,8 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
         );
         if platform == Platform::WiiU {
             render_setting(
-                "Deploy rules.txt",
-                "Automatically adds a rules.txt file when deploying for Cemu integration.",
+                "部署 rules.txt",
+                "在部署时自动添加一个 rules.txt 文件以便于 Cemu 集成.",
                 ui,
                 |ui| {
                     changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
@@ -234,16 +231,16 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             ui.add_space(8.0);
         }
         render_setting(
-            "Output Folder",
-            "Where to deploy the final merged mod pack.",
+            "输出文件夹",
+            "部署最终合并 Mod 包的位置.",
             ui,
             |ui| {
                 changed |= ui.folder_picker(&mut config.output).changed();
             },
         );
         render_setting(
-            "Emulator Executable",
-            "Path to the emulator to run for playing the game.",
+            "模拟器可执行文件",
+            "用于运行游戏的模拟器路径.",
             ui,
             |ui| {
                 changed |= ui
@@ -266,8 +263,8 @@ fn render_platform_config(
         .entry(platform)
         .or_insert_with(|| config.as_ref().map(|c| c.into()).unwrap_or_default());
     render_setting(
-        "Language",
-        "Select the language and region corresponding to your game version and settings.",
+        "游戏语言",
+        "选择与您的游戏版本和设置相对应的语言和地区。.",
         ui,
         |ui| {
             egui::ComboBox::new(format!("lang-{platform}"), "")
@@ -287,9 +284,8 @@ fn render_platform_config(
         ui.allocate_space([ui.available_width(), -8.0].into());
         if platform == Platform::WiiU {
             render_setting(
-                "Dump Type",
-                "For Wii U, you have two supported dump options: unpacked MLC files (most common) \
-                 or a .wua file (Cemu-specific format).",
+                "游戏转储",
+                "对于 Wii U，您有两种支持的转储选项：未打包的 MLC 文件（最常见）或 .wua 文件（特定于 Cemu 的格式.",
                 ui,
                 |ui| {
                     if ui
@@ -328,12 +324,10 @@ fn render_platform_config(
             } => {
                 if platform == Platform::WiiU {
                     render_setting(
-                        "Base Folder",
-                        "This folder is the root of the plain, v1.0 BOTW assets which were \
-                         included on the disk. If you are using Cemu, it will usually be in your \
-                         MLC folder, with a path such as this (part of the title ID will be \
-                         different for the EU or JP versions): \
-                         mlc01/usr/title/00050000/101C9400/content",
+                        "基础文件夹",
+                        "此文件夹是磁盘中包含的 BOTW v1.0 资源的根目录。\
+                        如果您使用 Cemu，它通常位于您的 MLC 文件夹中，\
+                        路径类似于（EU 或 JP 版本的部分标题 ID 会有所不同）：mlc01/usr/title/00050000/101C9400/content",
                         ui,
                         |ui| {
                             if ui
@@ -348,10 +342,10 @@ fn render_platform_config(
                 }
                 if platform == Platform::Switch {
                     render_setting(
-                        "Base with Update Folder",
-                        "Following the usual guides with nxdumptool, this will usually be the \
-                         combined base game and v1.6.0 update files. The path will probably \
-                         contain the title ID of 01007EF00011E800 and end in romfs.",
+                        "基础文件夹与更新文件夹。",
+                        "按照使用 nxdumptool 的常规指南，\
+                        这通常是基础游戏和 v1.6.0 更新文件的组合。\
+                        路径可能包含标题 ID 01007EF00011E000，并以 romfs 结尾。.",
                         ui,
                         |ui| {
                             if ui
@@ -366,11 +360,10 @@ fn render_platform_config(
                 }
                 if platform == Platform::WiiU {
                     render_setting(
-                        "Update Folder",
-                        "The contains the BOTW v1.5.0 update data. It is absolutely necessary for \
-                         the game to even run. If you are using Cemu, it will usually have a \
-                         similar path to the base folder, but with an E at the end of the first \
-                         half of the title ID: mlc01/usr/title/0005000E/101C9400/content",
+                        "更新文件夹",
+                        "此文件夹包含 BOTW v1.5.0 更新数据。它对于游戏的运行至关重要。\
+                        如果您使用 Cemu，它通常与基础文件夹的路径相似，\
+                        但标题 ID 的前半部分末尾带有一个 ID：mlc01/usr/title/0005000E/101C9400/content。",
                         ui,
                         |ui| {
                             if ui
@@ -385,13 +378,11 @@ fn render_platform_config(
                 }
                 if platform == Platform::WiiU {
                     render_setting(
-                        "DLC Folder",
-                        "This contains most of the assets for the BOTW DLC. This one does not \
-                         usually end in content, but must go one level further into a 0010 folder \
-                         because of the way multiple kinds of add-on content are handled. If you \
-                         are using Cemu, it will usually have a similar path to the base folder, \
-                         but with a C at the end of the first half of the title ID: \
-                         mlc01/usr/title/0005000C/101C9400/content/0010",
+                        "DLC 文件夹",
+                        "此文件夹包含大部分 BOTW DLC 的资源。它通常不以 content 结尾，\
+                        而是因为处理多种附加内容的方式，必须深入到一个 0010 文件夹。\
+                        如果您使用 Cemu，它的路径通常与基础文件夹类似，\
+                        但标题 ID 的前半部分末尾带有一个 ID：mlc01/usr/title/0005000C/101C9400/content/0010。",
                         ui,
                         |ui| {
                             if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
@@ -404,8 +395,8 @@ fn render_platform_config(
                 if platform == Platform::Switch {
                     render_setting(
                         "DLC Folder",
-                        "This contains most of the assets for the BOTW DLC. The path will \
-                         probably contain a title ID like 01007EF00011F001 and end in romfs.",
+                        "这包含大部分 BOTW DLC 的资源。\
+                        路径可能包含类似于 01007EF00011F001 的标题 ID，并以 romfs 结尾。.",
                         ui,
                         |ui| {
                             if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
@@ -423,9 +414,8 @@ fn render_platform_config(
                 host_path,
             } => {
                 render_setting(
-                    "WUA Path",
-                    "This should contain the entire BOTW game with the Base, Update, and DLC and \
-                     should have a file extension of .wua",
+                    "WUA 路径",
+                    "这应该包含整个 BOTW 游戏，包括基础游戏、更新和 DLC，并且文件扩展名应为 .wua",
                     ui,
                     |ui| {
                         changed |= ui.file_picker(host_path).changed();
@@ -503,7 +493,7 @@ impl App {
                     .default_open(true)
                     .show(ui, |ui| {
                         if ui
-                            .icon_text_button("Migrate from BCML", icons::Icon::Import)
+                            .icon_text_button("迁移自 BCML", icons::Icon::Import)
                             .clicked()
                         {
                             self.channel
@@ -513,14 +503,14 @@ impl App {
                                 .expect("Broken channel");
                         }
                         if ui
-                            .button("Register 1-Click Handler")
+                            .button("注册一键处理程序")
                             .on_hover_text(
-                                "Sets up UKMM on your system to handle GameBanana 1-click links",
+                                "设置 UKMM 在您的系统上处理 GameBanana 的一键链接。",
                             )
                             .clicked()
                         {
                             match crate::gui::tasks::register_handlers() {
-                                Ok(()) => log::info!("GameBanana 1-click handler registered"),
+                                Ok(()) => log::info!("GameBanana 的一键处理程序已注册"),
                                 Err(e) => {
                                     self.channel
                                         .0
@@ -530,7 +520,7 @@ impl App {
                                 }
                             }
                         }
-                        render_setting("Theme", "User interface theme", ui, |ui| {
+                        render_setting("主题", "用户界面主题", ui, |ui| {
                             egui::ComboBox::new("ui-theme", "")
                                 .selected_text(self.theme.name())
                                 .show_ui(ui, |ui| {
@@ -550,8 +540,8 @@ impl App {
                                 });
                         });
                         render_setting(
-                            "Current Mode",
-                            "Select whether to manage the Wii U or Switch version of the game",
+                            "当前模式",
+                            "选择管理 Wii U 版本还是 Switch 版本的游戏",
                             ui,
                             |ui| {
                                 ui.radio_value(&mut settings.current_mode, Platform::WiiU, "Wii U");
@@ -563,32 +553,30 @@ impl App {
                             },
                         );
                         render_setting(
-                            "Storage Folder",
-                            "UKMM will store mods, profiles, and similar data here.",
+                            "存储文件夹",
+                            "UKMM 将在此存储 Mods、配置文件和类似数据.",
                             ui,
                             |ui| {
                                 ui.folder_picker(&mut settings.storage_dir);
                             },
                         );
                         render_setting(
-                            "Use System 7z",
-                            "By default UKMM will attempt to use 7z from your system PATH to \
-                             extract 7-Zip files (like BNPs). Otherwise it will fall back to a \
-                             slower built-in 7z extraction library. If you have 7z-related \
-                             errors, try disabling this option.",
+                            "使用系统的 7z",
+                            "默认情况下，UKMM 将尝试使用系统 PATH 中的 7z 来解压 7-Zip 文件（如 BNPs）\
+                            否则，它将退回到较慢的内置 7z 解压库。如果出现与 7z 相关的错误，请尝试禁用此选项。.",
                             ui,
                             |ui| ui.checkbox(&mut settings.system_7z, ""),
                         );
                         render_setting(
-                            "Show Changelog",
-                            "Show a summary of recent changes after UKMM updates.",
+                            "显示更新日志",
+                            "显示 UKMM 更新后的最新变更摘要。",
                             ui,
                             |ui| ui.add(Checkbox::new(&mut settings.show_changelog, "")),
                         );
                     });
                 egui::CollapsingHeader::new("Wii U Config").show(ui, |ui| {
                     if ui
-                        .icon_text_button("Import Cemu Settings", icons::Icon::Import)
+                        .icon_text_button("导入 Cemu 设置", icons::Icon::Import)
                         .clicked()
                     {
                         self.channel

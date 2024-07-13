@@ -246,7 +246,7 @@ impl Manager {
     pub fn create_profile_if(&self, profile: &str) -> Result<()> {
         let path = self.dir.join(profile);
         if !path.exists() {
-            log::info!("Profile {profile} does not exist, creating it now");
+            log::info!("配置文件 {profile} 不存在，正在创建");
             fs::create_dir_all(path)?;
             self.profiles.insert(profile.into(), Default::default());
             self.save()?;
@@ -261,14 +261,14 @@ impl Manager {
     }
 
     pub fn init(settings: &Arc<RwLock<Settings>>) -> Result<Self> {
-        log::info!("Initializing mod manager");
+        log::info!("正在初始化 Mod 管理器");
         let current_profile = settings
             .read()
             .platform_config()
             .as_ref()
             .map(|c| c.profile.clone())
             .unwrap_or_else(|| "Default".into());
-        log::info!("Current profile: {}", current_profile);
+        log::info!("当前配置文件：{}", current_profile);
         let path = settings.read().profiles_dir();
         let profiles = settings
             .read()
@@ -276,9 +276,9 @@ impl Manager {
             .map(|profile| {
                 let profile_path = path.join(profile.as_str()).join("profile.yml");
                 fs::read_to_string(profile_path)
-                    .context("Failed to read profile data")
-                    .and_then(|t| serde_yaml::from_str(&t).context("Failed to parse profile data"))
-                    .map(|v| (profile, v))
+                .context("无法读取配置文件数据")
+                .and_then(|t| serde_yaml::from_str(&t).context("无法解析配置文件数据"))
+                .map(|v| (profile, v))            
             })
             .collect::<Result<_>>()?;
         let self_ = Self {
@@ -342,12 +342,12 @@ impl Manager {
                 if Version::parse(peeker.meta.version.as_str())
                     .and_then(|pv| Version::parse(mod_.meta.version.as_str()).map(|mv| pv > mv))
                     .map_err(|e| anyhow_ext::anyhow!("{e}"))
-                    .context("Bad version strings")?
+                    .context("版本字符串错误")?
                 {
-                    log::info!("Updating {name} to version {}", peeker.meta.version);
-                    old_version = Some(mod_);
+                    log::info!("更新 {name} 至版本 {}", peeker.meta.version);
+                old_version = Some(mod_);                
                 } else {
-                    anyhow_ext::bail!("Mod \"{}\" already installed", peeker.meta.name);
+                    anyhow_ext::bail!("Mod \"{}\" 已经安装", peeker.meta.name);
                 }
             }
             peeker.meta.name
@@ -366,16 +366,16 @@ impl Manager {
             .mods_dir()
             .join(sanitized + ".zip");
         if stored_path.exists() && old_version.is_none() {
-            log::debug!("Mod already stored, no need to store it");
+            log::debug!("Mod 已经存储，无需再存储");
         } else {
             stored_path.parent().map(fs::create_dir_all).transpose()?;
             if mod_path.is_file() {
-                fs::copy(mod_path, &stored_path).context("Failed to copy mod to storage folder")?;
+                fs::copy(mod_path, &stored_path).context("无法将 Mod 复制到存储文件夹")?;
             } else {
                 dircpy::copy_dir(mod_path, &stored_path)
-                    .context("Failed to copy mod to storage folder")?;
+                    .context("无法将 Mod 复制到存储文件夹")?;
             }
-        }
+        }        
         let reader = ModReader::open_peek(&stored_path, vec![])?;
         let mut mod_ = Mod::from_reader(reader);
         mod_.enabled = true;
@@ -386,14 +386,14 @@ impl Manager {
             profile_data.load_order_mut().retain(|h| *h != old_mod.hash);
             profile_data.mods_mut().remove(&old_mod.hash);
             log::info!(
-                "Updated mod {} in profile {} to version {}",
+               "更新了配置文件 {} 中的 Mod {} 至版本 {}",
                 mod_.meta.name,
                 profile.unwrap_or(&self.current_profile).as_str(),
                 mod_.meta.version
             );
         } else {
             log::info!(
-                "Added mod {} to profile {}",
+                "将 Mod {} 添加到配置文件 {}",
                 mod_.meta.name,
                 profile.unwrap_or(&self.current_profile).as_str()
             );
@@ -422,13 +422,13 @@ impl Manager {
             }
             profile_data.load_order_mut().retain(|m| m != &hash);
             log::info!(
-                "Deleted mod {} from profile {}",
+                "从配置文件 {} 中删除了 Mod {}",
                 mod_.meta.name,
                 profile.unwrap_or(&self.current_profile).as_str()
             );
             Ok(manifest)
         } else {
-            log::warn!("Mod with ID {} does not exist, doing nothing", hash);
+            log::warn!("ID 为 {} 的 Mod 不存在，不执行任何操作", hash);
             Ok(Default::default())
         }
     }
@@ -438,7 +438,7 @@ impl Manager {
         let old_mod = profile_data
             .mods_mut()
             .remove(&old_hash)
-            .expect("The old mod has to be in the profile");
+            .expect("旧 Mod 必须存在于配置文件中");
         mod_.enabled = old_mod.enabled;
         mod_.path = old_mod.path;
         profile_data.mods_mut().insert(mod_.hash, mod_.clone());
@@ -462,13 +462,14 @@ impl Manager {
             mod_.enabled = enabled;
             manifest = mod_.manifest()?;
             log::info!(
-                "{} mod {} in profile {}",
-                if enabled { "Enabled" } else { "Disabled" },
+                "{} Mod {} 在配置文件 {} 中",
+                if enabled { "启用" } else { "禁用" },
                 mod_.meta.name,
                 profile.unwrap_or(&self.current_profile).as_str()
             );
-        } else {
-            log::warn!("Mod with ID {} does not exist, doing nothing", hash);
+            } else {
+            log::warn!("ID 为 {} 的 Mod 不存在，不执行任何操作", hash);
+            
             return Ok(Default::default());
         }
         Ok(manifest)
@@ -485,7 +486,7 @@ impl Manager {
             manifest = mod_.manifest_with_options(&options)?;
             mod_.enabled_options = options;
         } else {
-            log::warn!("Mod with ID {} does not exist, doing nothing", hash);
+            log::warn!("ID 为 {} 的 Mod 不存在，不执行任何操作", hash);
             return Ok(Default::default());
         }
         Ok(manifest)
@@ -505,7 +506,7 @@ pub fn convert_gfx(
     path: &Path,
     meta: Option<Meta>,
 ) -> Result<PathBuf> {
-    log::info!("Attempting to convert mod at {}", path.display());
+    log::info!("正在尝试转换路径 {} 处的 Mod", path.display());
     let path = if path.is_file() {
         let ext = path
             .extension()
@@ -539,50 +540,50 @@ pub fn convert_gfx(
         };
 
         if ext == "ZIP" {
-            log::info!("Extracting ZIP file...");
+            log::info!("正在解压 ZIP 文件...");
             let tmpdir = util::get_temp_folder();
             zip::ZipArchive::new(BufReader::new(fs::File::open(path)?))
-                .context("Failed to open ZIP")?
+                .context("无法打开 ZIP 文件")?
                 .extract(&*tmpdir)
-                .context("Failed to extract ZIP")?;
+                .context("无法解压 ZIP 文件")?;
             if meta.is_none() {
-                find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
+                find_rules(&tmpdir).context("在解压的 Mod 中找不到 rules.txt 文件")?
             } else {
                 find_root(&tmpdir)
-                    .context("Could not find base or DLC content folder in extracted mod")?
+                    .context("在解压的 Mod 中找不到基础或 DLC 内容文件夹")?            
             }
         } else if ext == "7Z" {
-            log::info!("Extracting 7Z file...");
+            log::info!("正在解压 7Z 文件...");
             let tmpdir = util::get_temp_folder();
-            extract_7z(path, &tmpdir).context("Failed to extract 7Z file")?;
+            extract_7z(path, &tmpdir).context("无法解压 7Z 文件")?;
             if meta.is_none() {
-                find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
+                find_rules(&tmpdir).context("在解压的 Mod 中找不到 rules.txt 文件")?
             } else {
                 find_root(&tmpdir)
-                    .context("Could not find base or DLC content folder in extracted mod")?
+                    .context("在解压的 Mod 中找不到基础或 DLC 内容文件夹")?
             }
-        } else if path.file_name().context("No file name")?.to_str() == Some("rules.txt") {
+            } else if path.file_name().context("找不到文件名")?.to_str() == Some("rules.txt") {
             path.parent()
-                .expect("Parent path gotta' exist, right?")
-                .to_owned()
-        } else {
-            log::error!("{} is not a supported mod archive", path.display());
-            anyhow_ext::bail!("{} files are not supported", ext)
+            .expect("父路径必须存在")
+            .to_owned()
+            } else {
+            log::error!("{} 不是受支持的 Mod 存档", path.display());
+            anyhow_ext::bail!("{} 文件不受支持", ext)            
         }
     } else {
         log::info!("Unpacked mod, that's easy");
         path.to_path_buf()
     };
     let temp = util::get_temp_folder();
-    log::debug!("Temp folder: {}", temp.display());
-    log::info!("Attempting to convert mod...");
+    log::debug!("临时文件夹: {}", temp.display());
+    log::info!("正在尝试转换 Mod...");
     let packer = ModPacker::new(path, &*temp, meta, vec![
         core.settings()
             .dump()
-            .context("No dump available for current platform")?,
+            .context("当前平台无可用的转储")?,
     ])?;
     let result_path = packer.pack()?;
-    log::info!("Conversion complete");
+    log::info!("转换完成");    
     Ok(result_path)
 }
 

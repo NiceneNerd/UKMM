@@ -280,7 +280,7 @@ impl App {
         let (send, recv) = flume::unbounded();
         tasks::ONECLICK_SENDER.set(send.clone()).unwrap_or(());
         crate::logger::LOGGER.set_file(Settings::config_dir().join("log.txt"));
-        log::info!("Logger initialized");
+        log::info!("日志记录器已初始化");
         let temp_settings = core.settings().clone();
         let platform = core.settings().current_mode;
         Self {
@@ -407,7 +407,7 @@ impl App {
                         "{}",
                         e.downcast::<String>().unwrap_or_else(|_| {
                             Box::new(
-                                "An unknown error occured, check the log for possible details."
+                                "发生未知错误，请检查日志获取可能的详细信息。"
                                     .to_string(),
                             )
                         })
@@ -644,7 +644,7 @@ impl App {
                 Message::SetDownloading(mod_name) => {
                     ctx.request_repaint();
                     self.busy.set(true);
-                    log::info!("Downloading {mod_name} from GameBanana…");
+                    log::info!("从GameBanana下载…{mod_name} ");
                 }
                 Message::SetFocus(pane) => {
                     self.focused = pane;
@@ -656,12 +656,12 @@ impl App {
                 }
                 Message::SelectFile => {
                     if let Some(mut paths) = rfd::FileDialog::new()
-                        .set_title("Select a Mod")
-                        .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
+                        .set_title("选择一个Mod")
+                        .add_filter("任何 Mod（*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
                         .add_filter("UKMM Mod (*.zip)", &["zip"])
                         .add_filter("BCML Mod (*.bnp)", &["bnp"])
                         .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
-                        .add_filter("All files (*.*)", &["*"])
+                        .add_filter("所有文件 (*.*)", &["*"])
                         .pick_files()
                         .filter(|p| !p.is_empty())
                     {
@@ -684,7 +684,7 @@ impl App {
                     for (hash, (name, version)) in mod_.meta.masters.iter() {
                         if !self.mods.iter().any(|m| m.hash() == *hash) {
                             self.do_update(Message::Error(anyhow_ext::anyhow!(
-                                "Could not find required mod dependency {} (version {})",
+                                "未找到所需的 Mod 依赖  {} (version {})",
                                 name,
                                 version
                             )));
@@ -694,7 +694,7 @@ impl App {
                         && mod_.meta.platform != ModPlatform::Specific(self.platform().into())
                     {
                         self.do_update(Message::Error(anyhow_ext::anyhow!(
-                            "Mod is for {:?}, current mode is {}",
+                            "Mod 适用于 {:?}, 当前模式是 {}",
                             mod_.meta.platform,
                             self.platform()
                         )));
@@ -722,7 +722,7 @@ impl App {
                                 mods.set_enabled_options(hash, tmp_mod_.enabled_options)?;
                             }
                             mods.save()?;
-                            log::info!("Added mod {} to current profile", mod_.meta.name.as_str());
+                            log::info!("将 Mod {} 添加到当前配置文件", mod_.meta.name.as_str());
                             let mod_ = unsafe { mods.get_mod(hash).unwrap_unchecked() };
                             Ok(Message::AddMod(mod_))
                         }
@@ -734,7 +734,7 @@ impl App {
                         let manager = core.mod_manager();
                         mods.iter().try_for_each(|m| -> Result<()> {
                             manager.del(m.as_map_id(), None)?;
-                            log::info!("Removed mod {} from current profile", m.meta.name.as_str());
+                            log::info!("从当前配置文件中移除 Mod {}", m.meta.name.as_str());
                             Ok(())
                         })?;
                         manager.save()?;
@@ -743,7 +743,7 @@ impl App {
                 }
                 Message::ModUpdate => {
                     if let Some(file) = rfd::FileDialog::new()
-                        .set_title("Select a Mod")
+                        .set_title("选择一个 Mod")
                         .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
                         .add_filter("UKMM Mod (*.zip)", &["zip"])
                         .add_filter("BCML Mod (*.bnp)", &["bnp"])
@@ -795,12 +795,11 @@ impl App {
                             .error_queue
                             .drain(..)
                             .fold(String::new(), |mut acc, e| {
-                                writeln!(acc, "{:?}", e).expect("Failed to write to String");
+                                writeln!(acc, "{:?}", e).expect("写入字符串失败");
                                 acc
                             });
                         self.do_update(Message::Error(anyhow_ext::anyhow!("{msg}").context(
-                            "One or more errors occured while installing your mods. Please see \
-                             full details.",
+                            "安装 Mod 时发生一个或多个错误。请查看完整的详细信息。.",
                         )));
                     }
                 }
@@ -829,7 +828,7 @@ impl App {
                     if !err {
                         self.toasts.add({
                             let mut toast =
-                                Toast::success(format!("Mod(s) added to profile {}", profile));
+                                Toast::success(format!("Mod(s) 已添加到配置文件 {}", profile));
                             toast.set_duration(Some(Duration::new(2, 0)));
                             toast
                         });
@@ -853,14 +852,14 @@ impl App {
                 }
                 Message::Deploy => {
                     self.do_task(move |core| {
-                        log::info!("Deploying current mod configuration");
+                        log::info!("部署当前的 Mod 配置");
                         core.deploy_manager().deploy()?;
                         Ok(Message::ResetMods(None))
                     })
                 }
                 Message::ResetPending => {
                     self.do_task(|core| {
-                        log::info!("Resetting pending deployment data");
+                        log::info!("重置待处理的部署数据");
                         core.deploy_manager().reset_pending()?;
                         Ok(Message::Noop)
                     })
@@ -881,7 +880,7 @@ impl App {
                     match save_res {
                         Ok(()) => {
                             self.toasts.add({
-                                let mut toast = Toast::success("Settings saved");
+                                let mut toast = Toast::success("设置已保存");
                                 toast.set_duration(Some(Duration::new(2, 0)));
                                 toast
                             });
@@ -944,7 +943,7 @@ impl App {
                         self.busy.set(false);
                         self.error = Some(error);
                     } else {
-                        log::warn!("More operations in queue, stashing error and continuing…");
+                        log::warn!("队列中有更多操作，正在暂存错误并继续…");
                         self.error_queue.push_back(error);
                         if let Some(path) = self.install_queue.pop_front() {
                             self.do_task(move |core| tasks::open_mod(&core, &path, None));
@@ -990,7 +989,7 @@ impl App {
                     let default_name = sanitise(&builder.meta.name) + ".zip";
                     if let Some(dest) = rfd::FileDialog::new()
                         .add_filter("UKMM Mod", &["zip"])
-                        .set_title("Save Mod Package")
+                        .set_title("保存 Mod 包")
                         .set_file_name(&default_name)
                         .save_file()
                     {
@@ -1004,7 +1003,7 @@ impl App {
                 }
                 Message::ImportCemu => {
                     if let Some(path) = rfd::FileDialog::new()
-                        .set_title("Select Cemu Directory")
+                        .set_title("选择 Cemu 目录")
                         .pick_folder()
                     {
                         self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
@@ -1020,7 +1019,7 @@ impl App {
                 Message::CloseChangelog => self.changelog = None,
                 Message::OfferUpdate(version) => {
                     self.changelog = Some(format!(
-                        "A new update is available!\n\n{}",
+                        "有新的更新可用!\n\n{}",
                         version.description()
                     ));
                     self.new_version = Some(version);
@@ -1106,8 +1105,8 @@ impl eframe::App for App {
 
 pub fn main() -> Result<(), eframe::Error> {
     crate::logger::init();
-    log::debug!("Logger initialized");
-    log::info!("Started ukmm");
+    log::debug!("日志记录器已初始化");
+    log::info!("已启动 UKMM");
     eframe::run_native(
         "U-King Mod Manager",
         NativeOptions {
