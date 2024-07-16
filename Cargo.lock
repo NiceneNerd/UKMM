@@ -5151,8 +5151,6 @@ dependencies = [
  "lexical",
  "lexical-core",
  "lighter",
- "mimalloc",
- "minicbor-ser",
  "msyt",
  "roead",
  "rstb",
@@ -5163,7 +5161,6 @@ dependencies = [
  "thiserror",
  "uk-content-derive",
  "uk-util",
- "zstd",
 ]
 
 [[package]]
@@ -5292,15 +5289,10 @@ dependencies = [
  "egui_extras",
  "font-loader",
  "hex",
- "indexmap 2.2.6",
- "msyt",
  "once_cell",
  "rfd",
- "roead",
  "rustc-hash",
  "serde",
- "serde_yaml",
- "smartstring",
  "syntect",
 ]
 
@@ -5333,6 +5325,7 @@ dependencies = [
  "jwalk",
  "lenient_semver",
  "log",
+ "mimalloc",
  "once_cell",
  "open",
  "parking_lot",

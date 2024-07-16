@@ -2,6 +2,10 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
 mod cli;
 mod gui;

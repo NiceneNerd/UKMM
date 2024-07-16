@@ -7,7 +7,6 @@ version.workspace = true
 anyhow = { workspace = true }
 indexmap = { workspace = true }
 join_str = { workspace = true }
-minicbor-ser = { workspace = true }
 roead = { workspace = true, features = ["with-serde"] }
 rustc-hash = { workspace = true }
 rstb = { workspace = true }
@@ -15,13 +14,11 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
 thiserror = { workspace = true }
-zstd = { workspace = true }
 
 itertools = "0.13.0"
 lexical = "6.1.1"
 lexical-core = "0.8.5"
 lighter = "0.1.0"
-mimalloc = { version = "0.1.43", default-features = false }
 msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "v1.4.0" }
 uk-content-derive = { path = "../uk-content-derive" }
 uk-util = { path = "../uk-util" }

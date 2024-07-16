@@ -49,6 +49,7 @@ http_req = { version = "0.11", default-features = false, features = [
     "rust-tls",
 ] }
 image = { version = "0.25.1", features = ["jpeg", "png"] }
+mimalloc = { version = "0.1.43", default-features = false }
 open = "5.2"
 roxmltree = "0.20.0"
 uk-content = { path = "crates/uk-content" }

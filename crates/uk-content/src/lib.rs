@@ -1,9 +1,5 @@
 #![allow(clippy::derive_partial_eq_without_eq, unstable_name_collisions)]
 #![deny(clippy::unwrap_used)]
-use mimalloc::MiMalloc;
-
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
 use std::path::Path;
 
 use smartstring::alias::String;

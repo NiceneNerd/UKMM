@@ -2,7 +2,6 @@ use anyhow::Context;
 use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 
-
 use crate::{
     cooking::{recipe::Recipe, single_recipe::SingleRecipe, system::System},
     prelude::*,

@@ -1,7 +1,6 @@
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
-
 use crate::prelude::*;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]

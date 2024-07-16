@@ -1,7 +1,6 @@
 use roead::byml::{Byml, Map};
 use serde::{Deserialize, Serialize};
 
-
 use crate::{prelude::*, resource::SortedDeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]

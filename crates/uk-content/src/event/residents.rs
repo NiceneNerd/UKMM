@@ -1,7 +1,6 @@
 use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 
-
 use crate::{
     prelude::*,
     util::{DeleteMap, DeleteSet},

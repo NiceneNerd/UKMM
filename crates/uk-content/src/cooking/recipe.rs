@@ -2,7 +2,6 @@ use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use smartstring::{LazyCompact, SmartString};
 
-
 use crate::{
     util::{DeleteVec, HashMap},
     Result, UKError,
