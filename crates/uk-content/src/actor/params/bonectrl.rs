@@ -3,8 +3,7 @@ use std::collections::HashSet;
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 use uk_util::OptionResultExt;
 
 use crate::{
@@ -15,7 +14,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct BoneControl {
     pub objects:     ParameterObjectMap,
     pub bone_groups: IndexMap<String64, DeleteSet<String64>>,

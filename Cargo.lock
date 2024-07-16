@@ -5162,8 +5162,6 @@ dependencies = [
  "smartstring",
  "thiserror",
  "uk-content-derive",
- "uk-ui",
- "uk-ui-derive",
  "uk-util",
  "zstd",
 ]
@@ -5175,33 +5173,6 @@ dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "uk-editor"
-version = "0.12.1"
-dependencies = [
- "anyhow",
- "eframe",
- "flume",
- "fs-err",
- "jwalk",
- "minicbor-ser",
- "parking_lot",
- "path-slash",
- "rayon",
- "rfd",
- "roead",
- "ron",
- "serde",
- "serde_json",
- "serde_yaml",
- "uk-content",
- "uk-manager",
- "uk-mod",
- "uk-ui",
- "uk-ui-derive",
- "uk-util",
 ]
 
 [[package]]
@@ -5331,15 +5302,6 @@ dependencies = [
  "serde_yaml",
  "smartstring",
  "syntect",
-]
-
-[[package]]
-name = "uk-ui-derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
- "syn 1.0.109",
 ]
 
 [[package]]

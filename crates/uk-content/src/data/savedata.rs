@@ -1,5 +1,3 @@
-#[cfg(feature = "ui")]
-mod ui;
 use anyhow::Context;
 use join_str::jstr;
 use roead::{
@@ -9,8 +7,6 @@ use roead::{
 };
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{
     prelude::*,
@@ -177,7 +173,7 @@ impl SaveData {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct SaveDataPack(pub HashMap<String, SaveData>);
 
 impl SaveDataPack {

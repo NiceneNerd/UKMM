@@ -4,8 +4,7 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 use uk_util::OptionResultExt;
 
 use crate::{
@@ -15,7 +14,7 @@ use crate::{
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, ParamData)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct ContactInfoItem {
     pub name: String32,
     #[name = "type"]
@@ -24,7 +23,7 @@ pub struct ContactInfoItem {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct ContactInfo {
     pub contact_point_info: Option<Vec<ContactInfoItem>>,
     pub collision_info:     Option<Vec<ContactInfoItem>>,
@@ -175,7 +174,7 @@ impl Mergeable for ContactInfo {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct CharacterController {
     pub header: ParameterObject,
     pub forms:  BTreeMap<usize, ParameterList>,
@@ -229,7 +228,7 @@ impl Mergeable for CharacterController {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct Cloth {
     pub setup_file_path: Option<String>,
     pub subwind: ParameterObject,
@@ -343,7 +342,7 @@ impl Mergeable for Cloth {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct Physics {
     pub ragdoll: Option<String>,
     pub support_bone: Option<String>,

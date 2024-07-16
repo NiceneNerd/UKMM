@@ -1,12 +1,11 @@
 use roead::byml::{Byml, Map};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 
 use crate::{prelude::*, resource::SortedDeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct ResidentActorData {
     pub only_res: bool,
     pub scale:    Option<Byml>,
@@ -29,7 +28,7 @@ impl TryFrom<&Map> for ResidentActorData {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct ResidentActors(pub SortedDeleteMap<String, ResidentActorData>);
 
 impl TryFrom<&Byml> for ResidentActors {

@@ -1,7 +1,6 @@
 use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 
 use crate::{
     prelude::*,
@@ -10,7 +9,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct ResidentEvents(pub DeleteMap<String, DeleteSet<String>>);
 
 impl TryFrom<&Byml> for ResidentEvents {

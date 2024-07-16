@@ -3,8 +3,6 @@ use std::{borrow::Cow, collections::BTreeMap, path::Path};
 use anyhow::{Context, Result};
 use roead::{aamp::ParameterIO, byml::Byml, sarc::Sarc};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 pub use crate::{
     actor::{
@@ -39,7 +37,7 @@ pub use crate::{
 use crate::{prelude::*, util::SortedDeleteSet};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub enum MergeableResource {
     // Actor(Box<Actor>),
     ActorInfo(Box<ActorInfo>),

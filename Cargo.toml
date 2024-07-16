@@ -73,12 +73,10 @@ winres = "0.1.12"
 members = [
     "crates/uk-content",
     "crates/uk-content-derive",
-    "crates/uk-editor",
     "crates/uk-manager",
     "crates/uk-mod",
     "crates/uk-reader",
     "crates/uk-ui",
-    "crates/uk-ui-derive",
     "crates/uk-util",
 
 ]

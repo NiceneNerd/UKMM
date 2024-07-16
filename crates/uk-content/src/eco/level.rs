@@ -1,14 +1,13 @@
 use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
 
 type Series = DeleteMap<String, f32>;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct WeaponSeries {
     pub actors: DeleteMap<String, (i32, f32)>,
     pub not_rank_up: bool,
@@ -31,7 +30,7 @@ impl Mergeable for WeaponSeries {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct LevelSensor {
     pub enemy:   DeleteMap<String, Series>,
     pub flag:    Series,

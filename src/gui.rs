@@ -991,7 +991,7 @@ impl App {
                     if let Some(dest) = rfd::FileDialog::new()
                         .add_filter("UKMM Mod", &["zip"])
                         .set_title("Save Mod Package")
-                        .set_file_name(&default_name)
+                        .set_file_name(default_name)
                         .save_file()
                     {
                         builder.dest = dest;

@@ -1,13 +1,9 @@
 use std::collections::HashSet;
-#[cfg(feature = "ui")]
-use std::sync::Arc;
 
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui::{editor::EditableValue, egui::mutex::RwLock, icons::IconButtonExt};
 use uk_util::OptionResultExt;
 
 use crate::{
@@ -30,44 +26,6 @@ pub struct Key {
 impl std::fmt::Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         jstr!("StateKey: {&self.state_key} :: SystemKey: {&self.system_key}").fmt(f)
-    }
-}
-
-#[cfg(feature = "ui")]
-impl uk_ui::editor::EditableValue for Key {
-    const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Inline;
-
-    fn edit_ui(&mut self, ui: &mut uk_ui::egui::Ui) -> uk_ui::egui::Response {
-        self.edit_ui_with_id(ui, "rgbw_key")
-    }
-
-    fn edit_ui_with_id(
-        &mut self,
-        ui: &mut uk_ui::egui::Ui,
-        id: impl std::hash::Hash,
-    ) -> uk_ui::egui::Response {
-        let id = uk_ui::egui::Id::new(id);
-        let mut changed = false;
-        let mut res = ui
-            .horizontal(|ui| {
-                ui.label("State Key: ");
-                changed = changed
-                    || self
-                        .state_key
-                        .edit_ui_with_id(ui, id.with("state_key"))
-                        .changed();
-                ui.label("System Key: ");
-                changed = changed
-                    || self
-                        .system_key
-                        .edit_ui_with_id(ui, id.with("system_key"))
-                        .changed();
-            })
-            .response;
-        if changed {
-            res.mark_changed();
-        }
-        res
     }
 }
 
@@ -215,66 +173,6 @@ impl Resource for RagdollBlendWeight {
             .extension()
             .and_then(|ext| ext.to_str())
             .contains(&"brgbw")
-    }
-}
-#[cfg(feature = "ui")]
-impl EditableValue for RagdollBlendWeight {
-    const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Block;
-
-    fn edit_ui(&mut self, ui: &mut uk_ui::egui::Ui) -> uk_ui::egui::Response {
-        self.edit_ui_with_id(ui, "rgbw")
-    }
-
-    fn edit_ui_with_id(
-        &mut self,
-        ui: &mut uk_ui::egui::Ui,
-        id: impl std::hash::Hash,
-    ) -> uk_ui::egui::Response {
-        use uk_ui::egui;
-        let mut changed = false;
-        let id = egui::Id::new(id);
-        let res = egui::CollapsingHeader::new("RagdollBlendWeight")
-            .id_source(id)
-            .show(ui, |ui| {
-                for (k, v) in self.0.iter_mut() {
-                    egui::CollapsingHeader::new(k.to_string())
-                        .id_source(id.with(k))
-                        .show(ui, |ui| {
-                            changed = changed
-                                || v.edit_ui_with_id(ui, id.with(k).with("inner")).changed();
-                        });
-                }
-            });
-        let tmp_id = id.with("new_key");
-        let mut add_new = false;
-        let new_key = ui.data_mut(|m| m.get_temp::<Arc<RwLock<Key>>>(tmp_id));
-        if let Some(new_key) = new_key {
-            ui.horizontal(|ui| {
-                new_key.write().edit_ui_with_id(ui, tmp_id.with("value"));
-                if ui.icon_button(uk_ui::icons::Icon::Check).clicked() {
-                    add_new = true;
-                }
-            });
-        } else if ui.icon_button(uk_ui::icons::Icon::Add).clicked() {
-            ui.data_mut(|m| m.insert_temp(tmp_id, Arc::new(RwLock::new(Key::default()))));
-        }
-        if add_new {
-            self.0.insert(
-                ui.data(|d| {
-                    d.get_temp::<Arc<RwLock<Key>>>(tmp_id)
-                        .expect("key should exist")
-                        .read()
-                        .clone()
-                }),
-                Default::default(),
-            );
-            ui.data_mut(|d| d.remove::<Arc<RwLock<Key>>>(tmp_id));
-        }
-        let mut res = res.body_response.unwrap_or(res.header_response);
-        if changed {
-            res.mark_changed();
-        }
-        res
     }
 }
 

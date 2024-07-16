@@ -1,14 +1,13 @@
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 use uk_util::OptionResultExt;
 
 use crate::{actor::ParameterResource, prelude::*};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct DamageParam(pub ParameterIO);
 
 impl From<&ParameterIO> for DamageParam {

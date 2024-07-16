@@ -2,8 +2,7 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 use uk_util::OptionResultExt;
 
 use crate::{
@@ -14,7 +13,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, ParamData)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct BodyParam {
     #[name = "RigidName"]
     pub name: String64,
@@ -25,7 +24,7 @@ pub struct BodyParam {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct RagdollConfigList {
     pub common_data:     ParameterObject,
     pub impulse_params:  ParameterList,

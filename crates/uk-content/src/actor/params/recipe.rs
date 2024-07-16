@@ -2,8 +2,7 @@ use anyhow::Context;
 use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 use uk_util::OptionResultExt;
 
 use crate::{
@@ -16,7 +15,7 @@ use crate::{
 type RecipeTable = DeleteMap<String64, u8>;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct Recipe(pub DeleteMap<String64, RecipeTable>);
 
 impl TryFrom<&ParameterIO> for Recipe {

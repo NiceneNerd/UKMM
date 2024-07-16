@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed crash when reopening tabs closed by their buttons
 
+**Removed**
+
+- Removed everything related to the mod editor tool, which will probably never
+  be finished
+
 ## [0.12.1] - 2024-07-04
 
 **Added**

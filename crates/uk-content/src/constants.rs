@@ -3,8 +3,6 @@ use std::{fmt, path::Path, str::FromStr};
 use join_str::jstr;
 use lighter::lighter;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::UKError;
 
@@ -148,7 +146,7 @@ impl From<Language> for &str {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub enum Weather {
     #[default]
     Bluesky,
@@ -224,7 +222,7 @@ impl fmt::Display for Weather {
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub enum Time {
     Morning_A,
     Morning_B,

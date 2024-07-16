@@ -24,9 +24,4 @@ lighter = "0.1.0"
 mimalloc = { version = "0.1.43", default-features = false }
 msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "v1.4.0" }
 uk-content-derive = { path = "../uk-content-derive" }
-uk-ui = { path = "../uk-ui", optional = true }
-uk-ui-derive = { path = "../uk-ui-derive", optional = true }
 uk-util = { path = "../uk-util" }
-
-[features]
-ui = ["uk-ui", "uk-ui-derive", "roead/yaml"]

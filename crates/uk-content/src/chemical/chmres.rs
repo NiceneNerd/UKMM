@@ -1,13 +1,12 @@
 use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct ChemicalRes {
     pub world:    DeleteMap<String256, ParameterObject>,
     pub material: DeleteMap<String256, ParameterObject>,

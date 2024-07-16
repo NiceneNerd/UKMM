@@ -1,8 +1,7 @@
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use smartstring::{LazyCompact, SmartString};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 
 use crate::{
     util::{DeleteVec, HashMap},
@@ -10,7 +9,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct Recipe {
     pub actors: Option<DeleteVec<DeleteVec<i32>>>,
     pub hb:     Option<i32>,

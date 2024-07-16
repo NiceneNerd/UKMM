@@ -1,4 +1,3 @@
-pub mod editor;
 pub mod ext;
 pub mod icons;
 mod paths;

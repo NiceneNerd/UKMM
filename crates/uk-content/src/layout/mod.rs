@@ -76,20 +76,3 @@ impl Resource for LayoutArchive {
             .unwrap_or(false)
     }
 }
-
-#[cfg(feature = "ui")]
-impl uk_ui::editor::EditableValue for LayoutArchive {
-    const DISPLAY: uk_ui::editor::EditableDisplay = uk_ui::editor::EditableDisplay::Block;
-
-    fn edit_ui(&mut self, ui: &mut uk_ui::egui::Ui) -> uk_ui::egui::Response {
-        ui.label("Cannot visually edit BLARC")
-    }
-
-    fn edit_ui_with_id(
-        &mut self,
-        ui: &mut uk_ui::egui::Ui,
-        _id: impl std::hash::Hash,
-    ) -> uk_ui::egui::Response {
-        self.edit_ui(ui)
-    }
-}

@@ -1,12 +1,10 @@
 use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 
 use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct LazyTraverseList(pub SortedDeleteMap<String, SortedDeleteMap<u32, String>>);
 
 impl TryFrom<&Byml> for LazyTraverseList {

@@ -4,8 +4,7 @@ use itertools::Itertools;
 use join_str::jstr;
 use roead::{aamp::*, byml::map};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 use uk_util::OptionResultExt;
 
 use crate::{
@@ -16,7 +15,7 @@ use crate::{
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct ModelData {
     pub folder: String64,
     pub units:  DeleteMap<String64, String64>,
@@ -107,7 +106,7 @@ impl Mergeable for ModelData {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct ModelList {
     pub controller_info: ParameterObject,
     pub attention: ParameterObject,

@@ -1,5 +1,3 @@
-#[cfg(feature = "ui")]
-mod ui;
 use std::{
     collections::{BTreeMap, HashSet},
     hash::Hash,
@@ -12,8 +10,6 @@ use roead::{aamp::*, h};
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
 use uk_util::OptionResultExt;
 
 use crate::{
@@ -27,7 +23,7 @@ use crate::{
 pub struct BehaviorMap(pub IndexMap<u32, String32>);
 
 #[derive(Debug, Default, Clone, PartialEq, Hash, Eq, Deserialize, Serialize, ParamData)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct AIDef {
     #[name = "Name"]
     pub name: Option<String>,
@@ -38,7 +34,7 @@ pub struct AIDef {
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Hash, Eq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub enum Category {
     #[default]
     AI,
@@ -59,7 +55,7 @@ impl std::fmt::Display for Category {
 }
 
 #[derive(Debug, Default, PartialEq, Clone, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct AIEntry {
     pub category: Category,
     pub def: AIDef,
@@ -182,7 +178,7 @@ impl Mergeable for AIEntry {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct AIProgram {
     pub demos:     IndexMap<Name, AIEntry>,
     pub behaviors: BTreeMap<usize, AIEntry>,
@@ -841,20 +837,6 @@ mod tests {
             actor
                 .get_data("Actor/AIProgram/Guardian_A.baiprog")
                 .unwrap(),
-        )
-        .unwrap();
-        let aiprog = super::AIProgram::try_from(&pio).unwrap();
-        let data = roead::aamp::ParameterIO::from(aiprog.clone()).to_binary();
-        let pio2 = ParameterIO::from_binary(data).unwrap();
-        let aiprog2 = super::AIProgram::try_from(&pio2).unwrap();
-        assert_eq!(aiprog, aiprog2);
-    }
-
-    #[cfg(feature = "ui")]
-    #[test]
-    fn serde_woodball() {
-        let pio = ParameterIO::from_text(
-            std::fs::read_to_string("test/Actor/AIProgram/WoodBall_Golf.aiprog.yml").unwrap(),
         )
         .unwrap();
         let aiprog = super::AIProgram::try_from(&pio).unwrap();

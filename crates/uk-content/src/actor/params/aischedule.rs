@@ -1,14 +1,13 @@
 use join_str::jstr;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 use uk_util::OptionResultExt;
 
 use crate::{actor::ParameterResource, prelude::*};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct AISchedule(pub Byml);
 
 impl From<Byml> for AISchedule {

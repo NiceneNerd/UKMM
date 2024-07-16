@@ -2,13 +2,12 @@ use anyhow::Context;
 use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 use smartstring::{LazyCompact, SmartString};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 
 use crate::{prelude::Mergeable, util::DeleteVec, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct System {
     pub cei:    DeleteVec<Cei>,
     pub fa:     SmartString<LazyCompact>,
@@ -142,7 +141,7 @@ impl Mergeable for System {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct Cei {
     bt:  i32,
     mr:  f32,

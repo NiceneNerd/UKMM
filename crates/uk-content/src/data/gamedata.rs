@@ -11,8 +11,6 @@ use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
 
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
-#[cfg(feature = "ui")]
-mod ui;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
 pub struct FlagData {

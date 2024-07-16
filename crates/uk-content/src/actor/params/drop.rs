@@ -2,8 +2,7 @@ use anyhow::Context;
 use join_str::jstr;
 use roead::{aamp::*, byml::Byml};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ui")]
-use uk_ui_derive::Editable;
+
 use uk_util::OptionResultExt;
 
 use crate::{
@@ -14,7 +13,7 @@ use crate::{
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
-#[cfg_attr(feature = "ui", derive(Editable))]
+
 pub struct DropTable(pub IndexMap<String64, ParameterObject>);
 
 impl From<DropTable> for ParameterIO {

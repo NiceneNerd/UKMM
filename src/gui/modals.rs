@@ -1,6 +1,6 @@
 use uk_manager::settings::Platform;
 use uk_mod::{Meta, CATEGORIES};
-use uk_ui::editor::EditableValue;
+use util::SmartStringWrapper;
 
 use super::*;
 
@@ -64,7 +64,7 @@ impl MetaInputModal {
                          basics below:",
                     );
                     ui.label("Name");
-                    meta.name.edit_ui_with_id(ui, "mod-meta-name");
+                    ui.text_edit_singleline(&mut SmartStringWrapper(&mut meta.name));
                     egui::ComboBox::new("mod-meta-cat", "Category")
                         .selected_text(meta.category.as_str())
                         .show_ui(ui, |ui| {

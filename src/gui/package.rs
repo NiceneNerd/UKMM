@@ -9,13 +9,13 @@ use uk_mod::{
     OptionGroup, CATEGORIES,
 };
 use uk_ui::{
-    editor::EditableValue,
     egui::{self, Align2, Context, Id, Layout, Response, TextStyle, Ui},
     ext::UiExt,
     icons::{Icon, IconButtonExt},
 };
 
 use super::{App, Message};
+use crate::gui::util::SmartStringWrapper;
 
 fn render_field(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> Response) {
     ui.label(name);
@@ -161,9 +161,9 @@ impl ModPackerBuilder {
                             delete = Some(i);
                         }
                         ui.label("Group Name");
-                        opt_group.name_mut().edit_ui_with_id(ui, id.with(i));
+                        ui.text_edit_singleline(&mut SmartStringWrapper(opt_group.name_mut()));
                         ui.label("Group Description");
-                        ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
+                        ui.text_edit_multiline(&mut SmartStringWrapper(
                             opt_group.description_mut(),
                         ));
                         ui.label("Group Type");
@@ -278,11 +278,9 @@ impl ModPackerBuilder {
                         *delete = Some(i);
                     }
                     ui.label("Option Name");
-                    option.name.edit_ui_with_id(ui, id.with("name"));
+                    ui.text_edit_singleline(&mut SmartStringWrapper(&mut option.name));
                     ui.label("Option Description");
-                    ui.text_edit_multiline(&mut uk_ui::editor::SmartStringWrapper(
-                        &mut option.description,
-                    ));
+                    ui.text_edit_multiline(&mut SmartStringWrapper(&mut option.description));
                     if let Some(ref mut defaults) = defaults {
                         let mut default = defaults.contains(&option.path);
                         if ui.checkbox(&mut default, "Enable by default").changed() {
@@ -373,16 +371,15 @@ impl ModPackerBuilder {
                 }
             }
             render_field("Name", ui, |ui| {
-                self.meta.name.edit_ui_with_id(ui, id.with("Name"))
+                ui.text_edit_singleline(&mut SmartStringWrapper(&mut self.meta.name))
             });
             render_field("Version", ui, |ui| {
                 let tmp_version = ui.create_temp_string(
                     "mod-self-version",
                     Some(self.meta.version.as_str().into()),
                 );
-                let res = tmp_version
-                    .write()
-                    .edit_ui(ui)
+                let res = ui
+                    .text_edit_singleline(tmp_version.write().deref_mut())
                     .on_hover_text("Must conform to semantic versioning");
                 if res.changed() {
                     let ver = tmp_version.read();
@@ -393,7 +390,7 @@ impl ModPackerBuilder {
                 res
             });
             render_field("Author", ui, |ui| {
-                self.meta.author.edit_ui_with_id(ui, id.with("Author"))
+                ui.text_edit_singleline(&mut SmartStringWrapper(&mut self.meta.author))
             });
             render_field("Category", ui, |ui| {
                 egui::ComboBox::new(id.with("category"), "")
@@ -418,7 +415,7 @@ impl ModPackerBuilder {
                     .clone();
                 let res = {
                     let mut url = url.write();
-                    url.edit_ui_with_id(ui, id)
+                    ui.text_edit_singleline(url.deref_mut())
                 };
                 if res.changed() {
                     let url = url.read();
