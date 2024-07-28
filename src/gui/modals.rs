@@ -153,9 +153,12 @@ impl App {
                                 }
                                 if ui.button("Copy").clicked() {
                                     ui.output_mut(|o| o.copied_text = format!("{:?}", &err));
-                                    egui::popup::show_tooltip(ctx, Id::new("copied"), |ui| {
-                                        ui.label("Copied")
-                                    });
+                                    egui::popup::show_tooltip(
+                                        ctx,
+                                        ui.layer_id(),
+                                        Id::new("copied"),
+                                        |ui| ui.label("Copied"),
+                                    );
                                 }
                                 ui.shrink_width_to_current();
                             },
@@ -259,7 +262,10 @@ impl App {
                             ui.vertical(|ui| {
                                 ui.label("Processing…");
                                 if let Some(progress) = crate::logger::LOGGER.get_progress() {
-                                    ui.add(Label::new(progress).wrap(false));
+                                    ui.add(
+                                        Label::new(progress)
+                                            .wrap_mode(egui::TextWrapMode::Truncate),
+                                    );
                                 }
                             });
                             ui.shrink_width_to_current();
@@ -291,8 +297,8 @@ impl App {
                         }
                         ui.end_row();
                         ui.label("GUI library:");
-                        if ui.link("egui (forked)").clicked() {
-                            open::that("https://github.com/NiceneNerd/egui").unwrap_or(());
+                        if ui.link("egui").clicked() {
+                            open::that("https://github.com/emilk/egui").unwrap_or(());
                         }
                         ui.end_row();
                     });
@@ -413,7 +419,7 @@ impl App {
         if let Some(ref last_version) = self.changelog {
             egui::Window::new("What's New")
                 .collapsible(false)
-                .scroll2([false, true])
+                .scroll([false, true])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {

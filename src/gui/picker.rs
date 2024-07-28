@@ -399,7 +399,7 @@ impl App {
                 ),
                 name,
             )
-            .wrap(false)
+            .wrap_mode(egui::TextWrapMode::Truncate)
             // .tint(if is_dir {
             //     visuals::YELLOW
             // } else {

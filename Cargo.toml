@@ -42,12 +42,10 @@ ssilide = "0.2.0"
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 
 astrolabe = "0.5.1"
-egui_commonmark = { version = "0.15.0", features = ["svg", "fetch"] }
-egui-notify = "0.14.0"
-egui_logger = "0.4.4"
-http_req = { version = "0.11", default-features = false, features = [
-    "rust-tls",
-] }
+egui_commonmark = { version = "0.17.0", features = ["svg", "fetch"] }
+egui-notify = "0.15.0"
+egui_logger = "0.5"
+http_req = "0.11"
 image = { version = "0.25.1", features = ["jpeg", "png"] }
 mimalloc = { version = "0.1.43", default-features = false }
 open = "5.2"
@@ -91,7 +89,7 @@ anyhow_ext = "0.2.1"
 dashmap = "5.4"
 dircpy = "0.3.12"
 dirs2 = "3"
-eframe = { version = "0.27.2", default-features = false }
+eframe = { version = "0.28", default-features = false }
 flume = "0.11.0"
 fs-err = "2.9"
 indexmap = { version = "2.2.6", features = ["serde"] }

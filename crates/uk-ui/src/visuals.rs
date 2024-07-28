@@ -1,7 +1,7 @@
 use color_hex::color_from_hex;
 use egui::{
     epaint::{Margin, RectShape, Shadow, Tessellator},
-    style::{Selection, Spacing, WidgetVisuals, Widgets},
+    style::{Selection, Spacing, TextCursorStyle, WidgetVisuals, Widgets},
     vec2, Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
 };
 use egui_aesthetix::Aesthetix;
@@ -226,7 +226,10 @@ impl Theme {
                         window_stroke: Stroke::NONE,
                         panel_fill: hex_color!("#1C1E1F"),
                         resize_corner_size: 8.0,
-                        text_cursor_preview: false,
+                        text_cursor: TextCursorStyle {
+                            preview: false,
+                            ..Default::default()
+                        },
                         clip_rect_margin: 3.0, /* should be at least half the size of the widest
                                                 * frame stroke
                                                 * + max WidgetVisuals::expansion */
@@ -359,8 +362,11 @@ impl Theme {
                             color: Color32::from_black_alpha(96),
                         },
                         resize_corner_size: 12.0,
-                        text_cursor: Stroke::new(2.0, Color32::from_rgb(192, 222, 255)),
-                        text_cursor_preview: false,
+                        text_cursor: TextCursorStyle {
+                            preview: false,
+                            stroke: Stroke::new(2.0, Color32::from_rgb(192, 222, 255)),
+                            ..Default::default()
+                        },
                         clip_rect_margin: 3.0, // should be at least half the size of the widest frame stroke + max WidgetVisuals::expansion
                         button_frame: true,
                         collapsing_header_frame: false,
@@ -392,6 +398,7 @@ impl Theme {
                         combo_height: 200.0,
                         scroll: Default::default(),
                         indent_ends_with_horizontal_line: false,
+                        default_area_size: vec2(600.0, 400.0)
                     },
                     ..Default::default()
                 });

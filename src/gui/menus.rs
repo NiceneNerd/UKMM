@@ -4,17 +4,18 @@ impl App {
     pub fn render_menu(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             ui.style_mut().visuals.button_frame = false;
-            ui.set_enabled(!self.modal_open());
-            ui.horizontal(|ui| {
-                ui.menu_button("File", |ui| self.file_menu(ui, frame));
-                ui.menu_button("Tools", |ui| self.tool_menu(ui));
-                ui.menu_button("Window", |ui| self.window_menu(ui));
-                ui.menu_button("Help", |ui| self.help_menu(ui));
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    ui.label(
-                        RichText::new(self.platform().to_string().to_uppercase())
-                            .family(egui::FontFamily::Name("Bold".into())),
-                    );
+            ui.add_enabled_ui(!self.modal_open(), |ui| {
+                ui.horizontal(|ui| {
+                    ui.menu_button("File", |ui| self.file_menu(ui, frame));
+                    ui.menu_button("Tools", |ui| self.tool_menu(ui));
+                    ui.menu_button("Window", |ui| self.window_menu(ui));
+                    ui.menu_button("Help", |ui| self.help_menu(ui));
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        ui.label(
+                            RichText::new(self.platform().to_string().to_uppercase())
+                                .family(egui::FontFamily::Name("Bold".into())),
+                        );
+                    });
                 });
             });
         });

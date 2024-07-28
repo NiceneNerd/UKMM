@@ -15,7 +15,7 @@ impl App {
         }
         egui::Window::new("Select Mod Options")
             .collapsible(false)
-            .scroll2([false, true])
+            .scroll([false, true])
             .anchor(egui::Align2::CENTER_CENTER, Vec2::default())
             .show(ctx, |ui| {
                 let mod_ = unsafe { &mut self.options_mod.as_mut().unwrap_unchecked().0 };

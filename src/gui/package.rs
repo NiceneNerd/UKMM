@@ -109,7 +109,7 @@ impl ModPackerBuilder {
         if let Some(ref folders) = app.opt_folders {
             egui::Window::new("Configure Mod Options")
                 .anchor(Align2::CENTER_CENTER, [0., 0.])
-                .scroll2([false, true])
+                .scroll([false, true])
                 .show(ctx, |ui| {
                     egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
                         ui.spacing_mut().item_spacing.y = 8.0;

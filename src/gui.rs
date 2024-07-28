@@ -50,7 +50,7 @@ pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
         self, epaint::Margin, text::LayoutJob, Align, Align2, ComboBox, Frame, Id, Label, LayerId,
-        Layout, RichText, Spinner, TextStyle, Ui, Vec2, ViewportBuilder,
+        Layout, RichText, Spinner, TextStyle, Ui, UiStackInfo, Vec2, ViewportBuilder,
     },
     egui_dock::{DockArea, DockState, NodeIndex},
     ext::UiExt,
@@ -450,7 +450,14 @@ impl eframe::App for App {
         let max_rect = ctx.available_rect();
         let clip_rect = ctx.available_rect();
         let id = Id::new("egui_dock::DockArea");
-        let mut ui = Ui::new(ctx.clone(), layer_id, id, max_rect, clip_rect);
+        let mut ui = Ui::new(
+            ctx.clone(),
+            layer_id,
+            id,
+            max_rect,
+            clip_rect,
+            UiStackInfo::new(egui::UiKind::CentralPanel),
+        );
         ui.spacing_mut().item_spacing = [8.0, 8.0].into();
         DockArea::new(&mut Rc::clone(&self.tree).borrow_mut())
             .style(self.dock_style.clone())
@@ -502,6 +509,6 @@ pub fn main() -> Result<(), eframe::Error> {
             },
             ..Default::default()
         },
-        Box::new(|cc| Box::new(App::new(cc))),
+        Box::new(|cc| Ok(Box::new(App::new(cc)))),
     )
 }

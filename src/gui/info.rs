@@ -89,7 +89,7 @@ impl Component for ModInfo<'_> {
                     ui.label(RichText::new(label).family(egui::FontFamily::Name("Bold".into())));
                     ui.add_space(8.);
                     ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                        ui.add(Label::new(value).wrap(true));
+                        ui.add(Label::new(value).wrap_mode(egui::TextWrapMode::Truncate));
                     })
                 });
             });
