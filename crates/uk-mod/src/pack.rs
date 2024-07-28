@@ -315,8 +315,13 @@ impl ModPacker {
         {
             log::trace!("Writing {} to ZIP", canon);
             let mut zip = self.zip.lock();
-            zip.start_file(zip_path.to_slash_lossy(), self._zip_opts)?;
-            zip.write_all(&self.compressor.lock().compress(&data)?)?;
+            match zip.start_file(zip_path.to_slash_lossy(), self._zip_opts) {
+                Ok(_) => zip.write_all(&self.compressor.lock().compress(&data)?)?,
+                Err(zip::result::ZipError::InvalidArchive("Duplicate filename")) => {
+                    log::warn!("Attempted to duplicate resource {}, skipping", canon);
+                }
+                e => return Err(e.unwrap_err().into()),
+            }
         }
         self.built_resources.write().insert(canon.into());
         Ok(())
