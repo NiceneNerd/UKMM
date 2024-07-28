@@ -714,9 +714,22 @@ impl ModUnpacker {
             })
             .flatten()
         {
-            versions.push_back(Arc::new(minicbor_ser::from_slice(&data).with_context(
-                || jstr!(r#"Failed to parse mod resource {&file} in mod '{mod_}'"#),
-            )?));
+            let res = minicbor_ser::from_slice(&data);
+            match res {
+                Ok(res) => versions.push_back(Arc::new(res)),
+                Err(e) => {
+                    let msg = format!("{}", e);
+                    if msg.contains("unknown variant") {
+                        anyhow::bail!(
+                            "Error deserializing resource {canon} from mod {mod_}. This is \
+                             probably because this mod was built with an old, incompatible beta \
+                             of UKMM."
+                        );
+                    } else {
+                        anyhow::bail!("Error deserializing resource {canon} from mod {mod_}. Error: {e}");
+                    }
+                }
+            }
         }
         let base_version = versions
             .pop_front()

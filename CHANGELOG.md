@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added full GameBanana 1-click and "open mod with UKMM" support
 - Added Refresh button to file picker
+- Added specific error about mods made with old roead versions
 
 **Fixed**
 
