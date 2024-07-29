@@ -2,7 +2,7 @@ use std::{
     collections::BTreeSet,
     io::Write,
     path::{Path, PathBuf},
-    sync::{atomic::AtomicUsize, Arc},
+    sync::{atomic::AtomicUsize, Arc, LazyLock},
 };
 
 use anyhow_ext::{Context, Result};
@@ -25,7 +25,7 @@ use uk_content::{
     prelude::{Endian, Mergeable},
     resource::{is_mergeable_sarc, ResourceData},
 };
-use uk_util::{Lazy, PathExt as UkPathExt};
+use uk_util::PathExt as UkPathExt;
 use zip::{
     write::{FileOptions, SimpleFileOptions},
     ZipWriter as ZipW,
@@ -38,10 +38,10 @@ use crate::{
 
 pub type ZipWriter = Arc<Mutex<ZipW<fs::File>>>;
 
-static NX_HASH_TABLE: Lazy<StockHashTable> =
-    Lazy::new(|| StockHashTable::new(&botw_utils::hashes::Platform::Switch));
-static WIIU_HASH_TABLE: Lazy<StockHashTable> =
-    Lazy::new(|| StockHashTable::new(&botw_utils::hashes::Platform::WiiU));
+static NX_HASH_TABLE: LazyLock<StockHashTable> =
+    LazyLock::new(|| StockHashTable::new(&botw_utils::hashes::Platform::Switch));
+static WIIU_HASH_TABLE: LazyLock<StockHashTable> =
+    LazyLock::new(|| StockHashTable::new(&botw_utils::hashes::Platform::WiiU));
 
 pub struct ModPacker {
     source_dir: PathBuf,

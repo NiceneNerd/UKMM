@@ -4254,13 +4254,12 @@ checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
 
 [[package]]
 name = "rstb"
-version = "0.9.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe0870ba0dd7f71f00e32079a9a41c16c0007649d3af650782fe2768dd414ee7"
+checksum = "4dd1ba79c81f67f9ef9edd6c455e07278cd4c3a70bbf86d6e5bd5f3cde6ddfab"
 dependencies = [
  "crc",
  "include-flate",
- "once_cell",
  "phf",
  "roead",
  "serde",
@@ -5360,7 +5359,6 @@ dependencies = [
  "egui_extras",
  "font-loader",
  "hex",
- "once_cell",
  "rfd",
  "rustc-hash",
  "serde",
@@ -5370,9 +5368,6 @@ dependencies = [
 [[package]]
 name = "uk-util"
 version = "0.13.0"
-dependencies = [
- "once_cell",
-]
 
 [[package]]
 name = "ukmm"
@@ -5397,7 +5392,6 @@ dependencies = [
  "lenient_semver",
  "log",
  "mimalloc",
- "once_cell",
  "open",
  "parking_lot",
  "rayon",

@@ -625,8 +625,8 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
     Ok(Message::Restart)
 }
 
-pub static ONECLICK_SENDER: uk_util::OnceLock<flume::Sender<super::Message>> =
-    uk_util::OnceLock::new();
+pub static ONECLICK_SENDER: std::sync::OnceLock<flume::Sender<super::Message>> =
+    std::sync::OnceLock::new();
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 enum IpcMessage {
@@ -715,10 +715,11 @@ pub fn oneclick(url: &str) {
             let url = url.to_owned();
             std::thread::spawn(move || {
                 let msg = process(&url);
-                ONECLICK_SENDER
-                    .wait()
-                    .send(msg.into())
-                    .expect("Broken channel")
+                let mut sender = ONECLICK_SENDER.get();
+                while sender.is_none() {
+                    sender = ONECLICK_SENDER.get();
+                }
+                sender.unwrap().send(msg.into()).expect("Broken channel")
             });
         }
     }
@@ -738,10 +739,11 @@ pub fn wait_ipc() {
                         .with_context(|| String::from_utf8(buf.to_vec()).unwrap_or_default())
                         .expect("Broken IPC message");
                     log::trace!("{:?}", &msg);
-                    ONECLICK_SENDER
-                        .wait()
-                        .send(msg.into())
-                        .expect("Broken channel");
+                    let mut sender = ONECLICK_SENDER.get();
+                    while sender.is_none() {
+                        sender = ONECLICK_SENDER.get();
+                    }
+                    sender.unwrap().send(msg.into()).expect("Broken channel");
                 }
                 Err(e) => {
                     log::error!("IPC error: {}", e);
@@ -755,8 +757,12 @@ pub fn handle_mod_arg(path: PathBuf) {
     if path.exists() {
         std::thread::spawn(|| {
             log::info!("Opening mod at {} for installation…", path.display());
-            ONECLICK_SENDER
-                .wait()
+            let mut sender = ONECLICK_SENDER.get();
+            while sender.is_none() {
+                sender = ONECLICK_SENDER.get();
+            }
+            sender
+                .unwrap()
                 .send(Message::OpenMod(path))
                 .expect("Broken channel")
         });

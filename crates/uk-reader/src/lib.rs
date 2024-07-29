@@ -4,7 +4,7 @@ mod zarchive;
 
 use std::{
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, LazyLock},
     time::Duration,
 };
 
@@ -13,14 +13,13 @@ use dashmap::DashMap;
 use include_flate::flate;
 use join_str::jstr;
 use moka::sync::Cache;
-// use once_cell::sync::Lazy;
 use roead::sarc::Sarc;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use uk_content::{
     canonicalize, constants::Language, platform_prefixes, prelude::Endian, resource::*,
 };
-use uk_util::{Lazy, PathExt};
+use uk_util::PathExt;
 
 use self::{unpacked::Unpacked, zarchive::ZArchive};
 
@@ -62,32 +61,6 @@ pub enum BinType {
     MiniCbor,
 }
 
-pub struct LanguageIterator<'a, T, U>
-where
-    T: Iterator<Item = Language>,
-    U: ResourceLoader,
-{
-    iter: T,
-    res:  &'a U,
-}
-
-impl<'a, T, U> Iterator for LanguageIterator<'a, T, U>
-where
-    T: Iterator<Item = Language>,
-    U: ResourceLoader,
-{
-    type Item = Language;
-
-    fn next(&mut self) -> Option<Self::Item>
-    where
-        T: Iterator,
-        U: ResourceLoader,
-    {
-        self.iter
-            .find(|l| self.res.file_exists(l.bootup_path().as_str().as_ref()))
-    }
-}
-
 #[typetag::serde(tag = "type")]
 pub trait ResourceLoader: std::fmt::Debug + Send + Sync {
     fn get_data(&self, name: &Path) -> Result<Vec<u8>>;
@@ -114,8 +87,8 @@ fn construct_sarc_cache() -> SarcCache {
 
 fn init_nest_map() -> Arc<DashMap<String, Arc<str>>> {
     log::trace!("Initializing nest map...");
-    static STOCK: Lazy<Arc<DashMap<String, Arc<str>>>> =
-        Lazy::new(|| Arc::new(serde_json::from_str(NEST_MAP.as_ref()).unwrap()));
+    static STOCK: LazyLock<Arc<DashMap<String, Arc<str>>>> =
+        LazyLock::new(|| Arc::new(serde_json::from_str(NEST_MAP.as_ref()).unwrap()));
     STOCK.clone()
 }
 
@@ -386,7 +359,7 @@ impl ResourceReader {
         std::path::PathBuf,
         std::vec::Vec<uk_content::constants::Language>,
     > {
-        static LANGS: Lazy<DashMap<PathBuf, Vec<Language>>> = Lazy::new(Default::default);
+        static LANGS: LazyLock<DashMap<PathBuf, Vec<Language>>> = LazyLock::new(Default::default);
         LANGS
             .entry(self.source().host_path().to_path_buf())
             .or_insert_with(|| {

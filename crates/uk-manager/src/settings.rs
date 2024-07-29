@@ -2,7 +2,7 @@
 
 use std::{
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 
 use anyhow_ext::{Context, Result};
@@ -13,7 +13,6 @@ use serde_with::{serde_as, DefaultOnError};
 use smartstring::alias::String;
 use uk_content::constants::Language;
 use uk_reader::ResourceReader;
-use uk_util::Lazy;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Platform {
@@ -196,12 +195,13 @@ impl Default for Settings {
 
 impl Settings {
     pub fn path() -> &'static Path {
-        static PATH: Lazy<PathBuf> = Lazy::new(|| Settings::config_dir().join("settings.yml"));
+        static PATH: LazyLock<PathBuf> =
+            LazyLock::new(|| Settings::config_dir().join("settings.yml"));
         PATH.as_path()
     }
 
     pub fn config_dir() -> &'static Path {
-        static PATH: Lazy<PathBuf> = Lazy::new(|| {
+        static PATH: LazyLock<PathBuf> = LazyLock::new(|| {
             if std::env::args().any(|a| a == "--portable") {
                 std::env::current_exe()
                     .expect("No current executable???")

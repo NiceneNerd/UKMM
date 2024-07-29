@@ -1,7 +1,7 @@
 use std::{
     hash::{Hash, Hasher},
     io::{BufReader, Read},
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 
 use anyhow::Result;
@@ -16,7 +16,6 @@ use uk_ui::{
     icons::IconButtonExt,
     PathNode,
 };
-use uk_util::Lazy;
 
 use super::Component;
 
@@ -44,8 +43,8 @@ impl ModInfo<'_> {
             }
             Ok(None)
         }
-        static PREVIEW: Lazy<RwLock<FxHashMap<usize, Option<Arc<RetainedImage>>>>> =
-            Lazy::new(|| RwLock::new(FxHashMap::default()));
+        static PREVIEW: LazyLock<RwLock<FxHashMap<usize, Option<Arc<RetainedImage>>>>> =
+            LazyLock::new(|| RwLock::new(FxHashMap::default()));
         let mut preview = PREVIEW.write();
         preview
             .entry(self.0.hash())
@@ -146,8 +145,8 @@ impl Component for ModInfo<'_> {
     }
 }
 
-pub static ROOTS: Lazy<RwLock<FxHashMap<u64, PathNode>>> =
-    Lazy::new(|| RwLock::new(FxHashMap::default()));
+pub static ROOTS: LazyLock<RwLock<FxHashMap<u64, PathNode>>> =
+    LazyLock::new(|| RwLock::new(FxHashMap::default()));
 
 pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
     ui.scope(|ui| {

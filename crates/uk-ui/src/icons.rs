@@ -1,10 +1,11 @@
 #![allow(deprecated)]
+use std::sync::OnceLock;
+
 use egui::{Button, ImageButton, Response, Ui, WidgetText};
 use egui_extras::RetainedImage;
-use once_cell::sync::OnceCell;
 use rustc_hash::FxHashMap;
 
-static ICONS: OnceCell<FxHashMap<Icon, RetainedImage>> = OnceCell::new();
+static ICONS: OnceLock<FxHashMap<Icon, RetainedImage>> = OnceLock::new();
 
 static ADD: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path stroke="white" fill="white" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>"#;
 static ARROW_BACK: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path stroke="white" fill="white" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>"#;
@@ -150,7 +151,7 @@ pub fn load_icons() {
 pub fn get_icon(ctx: &egui::Context, icon: Icon) -> egui::load::SizedTexture {
     let width = ctx.style().spacing.icon_width;
     egui::load::SizedTexture::new(
-        unsafe { ICONS.get_unchecked().get(&icon).unwrap_unchecked() }.texture_id(ctx),
+        unsafe { ICONS.get().unwrap_unchecked().get(&icon).unwrap_unchecked() }.texture_id(ctx),
         egui::Vec2::new(width, width),
     )
 }

@@ -2,14 +2,13 @@ use std::{
     fmt::Write,
     ops::Deref,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, LazyLock, OnceLock},
 };
 
 use log::Record;
 use parking_lot::Mutex;
-use uk_util::{Lazy, OnceLock};
 
-pub static LOGGER: Lazy<Logger> = Lazy::new(|| {
+pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
     Logger {
         text: Default::default(),
         record_buf: Arc::new(Mutex::new(String::with_capacity(512))),

@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use color_hex::color_from_hex;
 use egui::{
     epaint::{Margin, RectShape, Shadow, Tessellator},
@@ -5,7 +7,6 @@ use egui::{
     vec2, Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
 };
 use egui_aesthetix::Aesthetix;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 macro_rules! hex_color {
@@ -52,7 +53,7 @@ pub fn slate_grid(ui: &mut Ui) {
         let cursor = ui.cursor();
         let width = ui.available_width();
         let height = ui.available_height() * 1.5;
-        static GRID_COLOR: Lazy<Color32> = Lazy::new(|| BLUE.linear_multiply(0.0333));
+        static GRID_COLOR: LazyLock<Color32> = LazyLock::new(|| BLUE.linear_multiply(0.0333));
         const GRID_OFFSET: f32 = 16.0;
         let bg_rect = Rect::from_min_size(ui.cursor().min, ui.available_size()); //.shrink(4.0);
         ui.painter()
