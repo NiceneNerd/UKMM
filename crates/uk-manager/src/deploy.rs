@@ -220,7 +220,39 @@ impl Manager {
         log::debug!("Deployment config:\n{:#?}", &config);
         if config.method == DeployMethod::Symlink {
             log::info!("Deploy method is symlink, checking for symlink");
-            if !is_symlink(&config.output) {
+            if settings.current_mode == Platform::Switch {
+                let base_path = &config.output.join("01007EF00011E000");
+                let dlc_path = &config.output.join("01007EF00011F001");
+                if !&config.output.exists() {
+                    std::fs::create_dir_all(&config.output)
+                        .context("Output dir does not exist and could not be created")?;
+                }
+                if !is_symlink(&base_path) || !is_symlink(dlc_path) {
+                    if !is_symlink(base_path) {
+                        if base_path.exists() {
+                            log::warn!("Removing old stuff from base game deploy folder");
+                            util::remove_dir_all(base_path)
+                                .context("Failed to remove old base game deployment folder")?;
+                        }
+                        log::info!("Creating new symlink to base game deployment folder");
+                        create_symlink(&config.output, &settings.merged_dir())
+                            .context("Failed to symlink base game deployment folder")?;
+                    }
+                    if !is_symlink(dlc_path) {
+                        if dlc_path.exists() {
+                            log::warn!("Removing old stuff from dlc deploy folder");
+                            util::remove_dir_all(dlc_path)
+                                .context("Failed to remove old dlc deployment folder")?;
+                        }
+                        log::info!("Creating new symlink to dlc deployment folder");
+                        create_symlink(&config.output, &settings.merged_dir())
+                            .context("Failed to symlink dlc deployment folder")?;
+                    }
+                } else {
+                    log::info!("Symlinks exist, no deployment needed")
+                }
+            }
+            else if !is_symlink(&config.output) {
                 if config.output.exists() {
                     log::warn!("Removing old stuff from deploy folder");
                     util::remove_dir_all(&config.output)
