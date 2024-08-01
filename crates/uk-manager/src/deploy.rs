@@ -227,7 +227,7 @@ impl Manager {
                     std::fs::create_dir_all(&config.output)
                         .context("Output dir does not exist and could not be created")?;
                 }
-                if !is_symlink(&base_path) || !is_symlink(dlc_path) {
+                if !is_symlink(base_path) || !is_symlink(dlc_path) {
                     if !is_symlink(base_path) {
                         if base_path.exists() {
                             log::warn!("Removing old stuff from base game deploy folder");
