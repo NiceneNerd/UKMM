@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use itertools::Itertools;
 use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +10,7 @@ use crate::{prelude::*, util::DeleteVec, Result, UKError};
 
 pub enum StatusEffectValues {
     Special,
-    Normal(DeleteVec<f32>),
+    Normal(DeleteVec<(i32, f32)>),
 }
 
 impl Default for StatusEffectValues {
@@ -48,14 +49,18 @@ impl TryFrom<&Byml> for StatusEffectValues {
                     ))?
                     .as_array()?
                     .iter()
-                    .map(|val| -> Result<f32> {
-                        Ok(val
-                            .as_map()?
-                            .get("val")
-                            .ok_or(UKError::MissingBymlKey(
-                                "Status effect list entry value missing val item",
-                            ))?
-                            .as_float()?)
+                    .enumerate()
+                    .map(|(idx, val)| -> Result<(i32, f32)> {
+                        Ok((
+                            idx as i32,
+                            val
+                                .as_map()?
+                                .get("val")
+                                .ok_or(UKError::MissingBymlKey(
+                                    "Status effect list entry value missing val item",
+                                ))?
+                                .as_float()?
+                        ))
                     })
                     .collect::<Result<_>>()?,
             ))
@@ -75,7 +80,8 @@ impl From<StatusEffectValues> for Byml {
                     map!(
                         "values" => values
                             .into_iter()
-                            .map(|v| map!("val" => Byml::Float(v)))
+                            .sorted_by(|a, b| Ord::cmp(&a.0, &b.0))
+                            .map(|(_, v)| map!("val" => Byml::Float(v)))
                             .collect::<Byml>()
                     ),
                 ])
