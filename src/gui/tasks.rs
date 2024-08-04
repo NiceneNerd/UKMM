@@ -288,7 +288,9 @@ pub fn parse_meta(file: PathBuf) -> Result<Message> {
 }
 
 pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
-    let settings_path = if let Some(path) = path.join("settings.xml").exists_then() {
+    let settings_path = if let Some(path) = path.join("portable/settings.xml").exists_then() {
+        path
+    } else if let Some(path) = path.join("settings.xml").exists_then() {
         path
     } else if let Some(path) = dirs2::config_dir()
         .expect("YIKES")
@@ -296,10 +298,16 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         .exists_then()
     {
         path
+    } else if let Some(path) = dirs2::data_local_dir()
+        .expect("DOUBLE YIKES")
+        .join("Cemu/settings.xml")
+        .exists_then()
+    {
+        path
     } else {
-        anyhow::bail!("Could not find Cemu settings file")
+        anyhow::bail!("Could not find Cemu settings file. Please run Cemu at least once to generate it.")
     };
-    let text = fs::read_to_string(settings_path).context("Failed to open Cemu settings file")?;
+    let text = fs::read_to_string(&settings_path).context("Failed to open Cemu settings file")?;
     let tree = roxmltree::Document::parse(&text)
         .context("Failed to parse Cemu settings file: invalid XML")?;
     let mlc_path = tree
@@ -318,7 +326,11 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             path.exists().then_some(path)
         })
         .or_else(|| {
-            let path = dirs2::data_local_dir().expect("YIKES").join("Cemu/mlc01");
+            let path = dirs2::config_dir().expect("YIKES").join("Cemu/mlc01");
+            path.exists().then_some(path)
+        })
+        .or_else(|| {
+            let path = dirs2::data_local_dir().expect("DOUBLE YIKES").join("Cemu/mlc01");
             path.exists().then_some(path)
         });
     let (base, update, dlc) = mlc_path
@@ -344,16 +356,18 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         })
         .ok_or_else(|| anyhow::anyhow!("Could not find game dump from Cemu settings"))?;
     let gfx_folder = if let Some(path) = path.with_file_name("graphicPacks").exists_then() {
-        Some(path)
+        path
     } else if let Some(path) = dirs2::data_local_dir()
         .expect("YIKES")
         .join("Cemu/graphicPacks")
         .exists_then()
     {
-        Some(path)
+        path
+    } else if let Some(path) = settings_path.parent() {
+        log::warn!("Cemu graphic pack folder not found. Defaulting to settings.xml location");
+        path.to_path_buf().join("graphicPacks")
     } else {
-        log::warn!("Cemu graphic pack folder not found");
-        None
+        anyhow::bail!("We lost our settings path somehow...");
     };
     let mut settings = core.settings_mut();
     settings.current_mode = Platform::WiiU;
@@ -365,26 +379,22 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         if mlc_path.is_some() {
             wiiu_config.dump = dump;
         }
-        if let Some(gfx_folder) = gfx_folder {
-            let deploy_config = wiiu_config.deploy_config.get_or_insert_default();
-            deploy_config.auto = true;
-            deploy_config.output = gfx_folder.join("BreathOfTheWild_UKMM");
-            deploy_config.executable = gfx_folder.with_file_name("Cemu.exe").exists_then();
-        }
+        let deploy_config = wiiu_config.deploy_config.get_or_insert_default();
+        deploy_config.auto = true;
+        deploy_config.output = gfx_folder.join("BreathOfTheWild_UKMM");
+        deploy_config.executable = gfx_folder.with_file_name("Cemu.exe").exists_then();
     } else {
         settings.wiiu_config = Some(PlatformSettings {
             language: uk_content::constants::Language::USen,
             profile: "Default".into(),
             dump,
-            deploy_config: gfx_folder.map(|gfx_folder| {
-                DeployConfig {
+            deploy_config: Some(DeployConfig {
                     auto: true,
                     method: uk_manager::settings::DeployMethod::Copy,
                     output: gfx_folder.join("BreathOfTheWild_UKMM"),
                     cemu_rules: true,
                     executable: gfx_folder.with_file_name("Cemu.exe").exists_then(),
-                }
-            }),
+                }),
         })
     };
     settings.save()?;
