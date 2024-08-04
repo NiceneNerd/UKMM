@@ -357,6 +357,12 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         .ok_or_else(|| anyhow::anyhow!("Could not find game dump from Cemu settings"))?;
     let gfx_folder = if let Some(path) = path.with_file_name("graphicPacks").exists_then() {
         path
+    } else if let Some(path) = dirs2::config_dir()
+        .expect("YIKES")
+        .join("Cemu/graphicPacks")
+        .exists_then()
+    {
+        path
     } else if let Some(path) = dirs2::data_local_dir()
         .expect("YIKES")
         .join("Cemu/graphicPacks")
