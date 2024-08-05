@@ -8,7 +8,7 @@ type Series = DeleteMap<String, f32>;
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 
 pub struct WeaponSeries {
-    pub actors: DeleteMap<String, (i32, f32)>,
+    pub actors: DeleteMap<(String, i32), f32>,
     pub not_rank_up: bool,
 }
 
@@ -155,17 +155,17 @@ impl TryFrom<&Byml> for LevelSensor {
                                 ))?
                                 .as_array()?
                                 .iter()
-                                .map(|actor| -> Result<(String, (i32, f32))> {
+                                .map(|actor| -> Result<((String, i32), f32)> {
                                     let actor = actor.as_map()?;
                                     Ok((
-                                        actor
-                                            .get("name")
-                                            .ok_or(UKError::MissingBymlKey(
-                                                "Level sensor weapons actor entry missing name",
-                                            ))?
-                                            .as_string()?
-                                            .clone(),
                                         (
+                                            actor
+                                                .get("name")
+                                                .ok_or(UKError::MissingBymlKey(
+                                                    "Level sensor weapons actor entry missing name",
+                                                ))?
+                                                .as_string()?
+                                                .clone(),
                                             actor
                                                 .get("plus")
                                                 .ok_or(UKError::MissingBymlKey(
@@ -173,14 +173,14 @@ impl TryFrom<&Byml> for LevelSensor {
                                                      plus value",
                                                 ))?
                                                 .as_int()?,
-                                            actor
-                                                .get("value")
-                                                .ok_or(UKError::MissingBymlKey(
-                                                    "Level sensor weapons actor entry missing \
-                                                     value",
-                                                ))?
-                                                .as_float()?,
                                         ),
+                                        actor
+                                            .get("value")
+                                            .ok_or(UKError::MissingBymlKey(
+                                                "Level sensor weapons actor entry missing \
+                                                    value",
+                                            ))?
+                                            .as_float()?,
                                     ))
                                 })
                                 .collect::<Result<_>>()?,
@@ -240,7 +240,7 @@ impl From<LevelSensor> for Byml {
                                 "actors" => weapons
                                     .actors
                                     .into_iter()
-                                    .map(|(name, (plus, value))| {
+                                    .map(|((name, plus), value)| {
                                         map!(
                                             "name" => name.into(),
                                             "plus" => plus.into(),
