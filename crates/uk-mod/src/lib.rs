@@ -8,8 +8,7 @@ use anyhow_ext::Context;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use uk_content::{
-    prelude::Endian,
-    util::{HashSet, IndexMap},
+    constants::Language, prelude::Endian, util::{HashSet, IndexMap}
 };
 pub mod pack;
 pub mod unpack;
@@ -26,6 +25,19 @@ pub struct Manifest {
 }
 
 impl Manifest {
+    pub fn languages(&self) -> Vec<Language> {
+        self.content_files
+            .iter()
+            .filter_map(|file| {
+                if let Some(lang) = Language::from_path(Path::new(file.as_str())) {
+                    Some(lang)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
+    }
+
     pub fn resources(&self) -> impl Iterator<Item = String> + '_ {
         self.content_files
             .iter()
