@@ -318,10 +318,14 @@ impl Manager {
         self.mods().filter(|mod_| {
             match mod_.manifest() {
                 Ok(manifest) => {
-                    !ref_manifest
-                        .content_files
-                        .is_disjoint(&manifest.content_files)
+                    let languages = manifest.languages();
+                    !ref_manifest.content_files.is_disjoint(&manifest.content_files)
                         || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+                        || (
+                            ref_manifest.languages()
+                                .iter()
+                                .any(|l| languages.contains(l))
+                        )
                 }
                 Err(_) => false,
             }

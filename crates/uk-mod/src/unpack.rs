@@ -537,10 +537,9 @@ impl ModUnpacker {
                 .collect();
         }
         let mut modded_langs: IndexSet<Language> = Default::default();
-        for lang in Language::iter() {
-            if content_files.remove(&lang.bootup_path()) {
-                modded_langs.insert(*lang);
-            }
+        for lang in self.mods.iter().flat_map(|m| m.manifest.languages()) {
+            modded_langs.insert(lang);
+            content_files.remove(&lang.bootup_path());
         }
         let (content, aoc) = platform_prefixes(self.endian);
         let total = content_files.len() + aoc_files.len();
