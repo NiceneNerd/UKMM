@@ -396,7 +396,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             dump,
             deploy_config: Some(DeployConfig {
                     auto: true,
-                    method: uk_manager::settings::DeployMethod::Copy,
+                    method: uk_manager::settings::DeployMethod::Symlink,
                     output: gfx_folder.join("BreathOfTheWild_UKMM"),
                     cemu_rules: true,
                     executable: gfx_folder.with_file_name("Cemu.exe").exists_then(),
