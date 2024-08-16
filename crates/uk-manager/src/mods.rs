@@ -315,14 +315,15 @@ impl Manager {
         &'a self,
         ref_manifest: &'m Manifest,
     ) -> impl Iterator<Item = Mod> + 'm {
-        self.mods().filter(|mod_| {
+        let ref_languages = ref_manifest.languages();
+        self.mods().filter(move |mod_| {
             match mod_.manifest() {
                 Ok(manifest) => {
                     let languages = manifest.languages();
                     !ref_manifest.content_files.is_disjoint(&manifest.content_files)
                         || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
                         || (
-                            ref_manifest.languages()
+                            ref_languages
                                 .iter()
                                 .any(|l| languages.contains(l))
                         )
