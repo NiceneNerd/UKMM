@@ -67,12 +67,13 @@ impl TryFrom<&ParameterList> for ModelData {
 
 impl From<ModelData> for ParameterList {
     fn from(val: ModelData) -> Self {
-        ParameterList::new()
+        let data = ParameterList::new()
             .with_object(
                 "Base",
                 ParameterObject::new().with_parameter("Folder", val.folder.into()),
-            )
-            .with_list(
+            );
+        if val.units.len() > 0 {
+            data.with_list(
                 "Unit",
                 ParameterList::new().with_objects(val.units.into_iter().enumerate().map(
                     |(i, (name, bone))| {
@@ -85,6 +86,9 @@ impl From<ModelData> for ParameterList {
                     },
                 )),
             )
+        } else {
+            data
+        }
     }
 }
 
