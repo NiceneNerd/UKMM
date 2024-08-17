@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**Added**
+
+- Added support for new Cemu config paths
+- Experimental support for arm64 macOS
+
+**Changed**
+
+- Switched to symlink deployment by default for Cemu
+- Minor performance improvements
+
 **Fixed**
+
+- Fixed issues with language differences in text merging
+- Fixed issues with StatusEffectList and LevelSensor mergers
 - Reverted msyt version to fix BNP compatibility
 
 ## [0.13.0] - 2024-07-28
