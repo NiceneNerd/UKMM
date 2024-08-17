@@ -152,7 +152,6 @@ impl Runner {
     }
 
     fn check_mod(&self, path: &Path) -> Result<Option<PathBuf>> {
-        println!("Opening mod at {}...", path.display());
         let (mod_, path) = match ModReader::open(path, vec![]) {
             Ok(mod_) => (mod_, path.to_path_buf()),
             Err(e) => {
