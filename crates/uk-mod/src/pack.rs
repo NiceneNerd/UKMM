@@ -582,21 +582,26 @@ impl ModPacker {
             } else {
                 None
             };
+            let content_files = content_dir
+                .map(|content| {
+                    log::info!("Collecting resources");
+                    self_.collect_resources(content)
+                })
+                .transpose()?
+                .inspect(|_| log::info!("Finished collecting resources"))
+                .unwrap_or_default();
+            let aoc_files = aoc_dir
+                .map(|aoc| {
+                    log::info!("Collecting DLC resources");
+                    self_.collect_resources(aoc)
+                })
+                .transpose()?
+                .inspect(|_| log::info!("Finished collecting DLC resources"))
+                .unwrap_or_default();
+            log::info!("Generating manifest");
             let mut manifest = Manifest {
-                content_files: content_dir
-                    .map(|content| {
-                        log::info!("Collecting resources");
-                        self_.collect_resources(content)
-                    })
-                    .transpose()?
-                    .unwrap_or_default(),
-                aoc_files:     aoc_dir
-                    .map(|aoc| {
-                        log::info!("Collecting DLC resources");
-                        self_.collect_resources(aoc)
-                    })
-                    .transpose()?
-                    .unwrap_or_default(),
+                content_files,
+                aoc_files,
             };
             log::trace!("CLEARPROGRESS");
             if manifest

@@ -547,6 +547,7 @@ impl ModUnpacker {
         std::thread::scope(|s| -> Result<()> {
             let jobs = [
                 s.spawn(|| {
+                    log::info!("Unpacking base files…");
                     self.unpack_files(
                         content_files,
                         self.out_dir.join(content),
@@ -554,16 +555,22 @@ impl ModUnpacker {
                         &current,
                         false,
                     )
+                    .map(|_| "base files")
                 }),
                 s.spawn(|| {
+                    log::info!("Unpacking DLC files…");
                     self.unpack_files(aoc_files, self.out_dir.join(aoc), total, &current, true)
+                        .map(|_| "DLC files")
                 }),
-                s.spawn(|| self.unpack_texts(modded_langs)),
+                s.spawn(|| {
+                    log::info!("Unpacking game texts…");
+                    self.unpack_texts(modded_langs).map(|_| "game texts")
+                }),
             ];
             for job in jobs {
                 match job.join() {
                     Ok(Err(e)) => anyhow_ext::bail!(e),
-                    Ok(Ok(_)) => (),
+                    Ok(Ok(what)) => log::info!("Finished unpacking {what}"),
                     Err(e) => {
                         anyhow::bail!(
                             e.downcast::<std::string::String>()
@@ -653,7 +660,7 @@ impl ModUnpacker {
             current_file.store(progress, Ordering::Relaxed);
             let percent = (progress as f64 / total_files as f64) * 100.0;
             let fract = percent.fract();
-            if fract <= 0.1 || fract >= 0.95 {
+            if fract <= 0.1 || fract >= 0.95 || percent == 100.0 {
                 log::trace!(
                     "PROGRESSBuilding {} files: {}%",
                     total_files,
@@ -725,7 +732,9 @@ impl ModUnpacker {
                              of UKMM."
                         );
                     } else {
-                        anyhow::bail!("Error deserializing resource {canon} from mod {mod_}. Error: {e}");
+                        anyhow::bail!(
+                            "Error deserializing resource {canon} from mod {mod_}. Error: {e}"
+                        );
                     }
                 }
             }

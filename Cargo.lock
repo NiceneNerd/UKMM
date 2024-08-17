@@ -564,7 +564,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "173901312e9850391d4d7c1318c4e099fdc037d61870fca427429830efdb4e5f"
 dependencies = [
  "array-init",
- "binrw_derive",
+ "binrw_derive 0.13.3",
+ "bytemuck",
+]
+
+[[package]]
+name = "binrw"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f36b7cb3ab9ff6a2858650d8dc360e783a5d14dc29594db48c56a3c233cc265"
+dependencies = [
+ "array-init",
+ "binrw_derive 0.14.0",
  "bytemuck",
 ]
 
@@ -573,6 +584,19 @@ name = "binrw_derive"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb515fdd6f8d3a357c8e19b8ec59ef53880807864329b1cb1cba5c53bf76557e"
+dependencies = [
+ "either",
+ "owo-colors",
+ "proc-macro2 1.0.86",
+ "quote 1.0.36",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "binrw_derive"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20ea7a8c5c8eeffffac6d54d172444e15beffac6f817fac714460a9a9aa88da3"
 dependencies = [
  "either",
  "owo-colors",
@@ -703,7 +727,7 @@ dependencies = [
  "include-flate",
  "once_cell",
  "regex",
- "roead",
+ "roead 0.25.3",
  "serde_json",
  "twox-hash",
 ]
@@ -1305,11 +1329,12 @@ checksum = "7762d17f1241643615821a8455a0b2c3e803784b058693d990b11f2dce25a0ca"
 
 [[package]]
 name = "dashmap"
-version = "5.5.3"
+version = "6.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
+checksum = "804c8821570c3f8b70230c2ba75ffa5c0f9a4189b9a432b6656c536712acae28"
 dependencies = [
  "cfg-if 1.0.0",
+ "crossbeam-utils",
  "hashbrown 0.14.5",
  "lock_api",
  "once_cell",
@@ -4209,19 +4234,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4727c05997dc74a6fc4fb56acdc76aeb3bcbc409242f4b5a6bebd409b6dc3860"
 dependencies = [
  "almost",
+ "binrw 0.13.3",
+ "cxx",
+ "cxx-build",
+ "indexmap 2.2.6",
+ "join_str",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "parking_lot",
+ "rustc-hash 1.1.0",
+ "serde",
+ "serde_json",
+ "smartstring",
+ "thiserror",
+]
+
+[[package]]
+name = "roead"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "caa4e7e992638f39b4ecbde6f11e02dfbcf81dae42954ee5fba32111dd9e39ce"
+dependencies = [
+ "almost",
  "base64 0.22.1",
- "binrw",
+ "binrw 0.14.0",
  "cxx",
  "cxx-build",
  "indexmap 2.2.6",
  "join_str",
  "lexical",
+ "lexical-core",
  "num-integer",
  "num-traits",
- "once_cell",
  "parking_lot",
- "rustc-hash",
+ "rustc-hash 2.0.0",
+ "rustc_version",
  "ryml",
+ "scc",
  "serde",
  "serde_json",
  "smartstring",
@@ -4261,7 +4311,7 @@ dependencies = [
  "crc",
  "include-flate",
  "phf",
- "roead",
+ "roead 0.25.3",
  "serde",
  "serde_json",
  "thiserror",
@@ -4272,6 +4322,12 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
+
+[[package]]
+name = "rustc-hash"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "583034fd73374156e66797ed8e5b0d5690409c9226b22d87cb7f19821c05d152"
 
 [[package]]
 name = "rustc_version"
@@ -4362,6 +4418,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19d36299972b96b8ae7e8f04ecbf75fb41a27bf3781af00abcf57609774cb911"
 
 [[package]]
+name = "scc"
+version = "2.1.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aeb7ac86243095b70a7920639507b71d51a63390d1ba26c4f60a552fbb914a37"
+dependencies = [
+ "sdd",
+]
+
+[[package]]
 name = "schannel"
 version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4387,6 +4452,12 @@ name = "scratch"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3cf7c11c38cb994f3d40e8a8cde3bbd1f72a435e4c49e85d6553d8312306152"
+
+[[package]]
+name = "sdd"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0495e4577c672de8254beb68d01a9b62d0e8a13c099edecdbedccce3223cd29f"
 
 [[package]]
 name = "security-framework"
@@ -5222,9 +5293,9 @@ dependencies = [
  "lexical-core",
  "lighter",
  "msyt",
- "roead",
+ "roead 1.0.0",
  "rstb",
- "rustc-hash",
+ "rustc-hash 2.0.0",
  "serde",
  "serde_json",
  "smartstring",
@@ -5261,9 +5332,9 @@ dependencies = [
  "path-slash",
  "rayon",
  "remove_dir_all",
- "roead",
+ "roead 1.0.0",
  "rstb",
- "rustc-hash",
+ "rustc-hash 2.0.0",
  "sanitise-file-name",
  "serde",
  "serde_json",
@@ -5304,7 +5375,7 @@ dependencies = [
  "path-slash",
  "piz",
  "rayon",
- "roead",
+ "roead 1.0.0",
  "rstb",
  "sanitise-file-name",
  "serde",
@@ -5335,7 +5406,7 @@ dependencies = [
  "minicbor-ser",
  "moka",
  "parking_lot",
- "roead",
+ "roead 1.0.0",
  "serde",
  "serde_json",
  "smartstring",
@@ -5360,7 +5431,7 @@ dependencies = [
  "font-loader",
  "hex",
  "rfd",
- "rustc-hash",
+ "rustc-hash 2.0.0",
  "serde",
  "syntect",
 ]
@@ -5398,7 +5469,7 @@ dependencies = [
  "remove_dir_all",
  "rfd",
  "roxmltree 0.20.0",
- "rustc-hash",
+ "rustc-hash 2.0.0",
  "serde",
  "serde_json",
  "serde_yaml 0.9.34+deprecated",

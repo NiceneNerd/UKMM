@@ -67,12 +67,11 @@ impl TryFrom<&ParameterList> for ModelData {
 
 impl From<ModelData> for ParameterList {
     fn from(val: ModelData) -> Self {
-        let data = ParameterList::new()
-            .with_object(
-                "Base",
-                ParameterObject::new().with_parameter("Folder", val.folder.into()),
-            );
-        if val.units.len() > 0 {
+        let data = ParameterList::new().with_object(
+            "Base",
+            ParameterObject::new().with_parameter("Folder", val.folder.into()),
+        );
+        if !val.units.is_empty() {
             data.with_list(
                 "Unit",
                 ParameterList::new().with_objects(val.units.into_iter().enumerate().map(
