@@ -7,7 +7,6 @@ use anyhow::anyhow;
 use anyhow_ext::{Context, Result};
 use dashmap::{DashMap, DashSet};
 use fs_err as fs;
-use parking_lot::RwLock;
 use rayon::prelude::*;
 use roead::{
     aamp::{ParameterIO, ParameterList, ParameterListing},
@@ -15,7 +14,7 @@ use roead::{
     yaz0::{compress_if, decompress_if},
 };
 use rustc_hash::FxHashMap;
-use uk_content::{constants::Language, resource::ResourceData, util::HashSet};
+use uk_content::{constants::Language, resource::ResourceData};
 use uk_mod::pack::ModPacker;
 use uk_reader::ResourceReader;
 use uk_util::PathExt;
@@ -106,7 +105,7 @@ struct BnpConverter {
     content: &'static str,
     aoc: &'static str,
     packs: Arc<DashSet<PathBuf>>,
-    parent_packs: RwLock<HashSet<PathBuf>>,
+    parent_packs: DashSet<PathBuf>,
     opt_master_cache: Arc<DashMap<PathBuf, Vec<u8>>>,
 }
 
@@ -290,11 +289,14 @@ impl BnpConverter {
             {
                 Ok(stripped) => {
                     let mut sarc = SarcWriter::from_sarc(&stripped);
-                    let parent_packs = self.parent_packs.read();
-                    if let Some(parent_sarc) = parent_packs
+                    if let Some(parent_sarc) = self
+                        .parent_packs
                         .get(&self.path.join(self.content).join(root_path))
-                        .or_else(|| parent_packs.get(&self.path.join(self.aoc).join(root_path)))
-                        .and_then(|path| fs::read(path).ok())
+                        .or_else(|| {
+                            self.parent_packs
+                                .get(&self.path.join(self.aoc).join(root_path))
+                        })
+                        .and_then(|path| fs::read(&*path).ok())
                         .and_then(|bytes| Sarc::new(decompress_if(&bytes).to_vec()).ok())
                     {
                         inflate_sarc(&mut sarc, &stripped, parent_sarc);
@@ -385,7 +387,7 @@ impl BnpConverter {
                     .then(|| self.current_root.join(p))
             }) {
                 if is_root {
-                    self.parent_packs.write().insert(pack.clone());
+                    self.parent_packs.insert(pack.clone());
                 }
                 self.packs.insert(pack);
             }
