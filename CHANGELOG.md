@@ -20,8 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Fixed**
 
 - Fixed issues with language differences in text merging
-- Fixed issues with StatusEffectList and LevelSensor mergers
-- Reverted msyt version to fix BNP compatibility
+- Fixed issues with StatusEffectList and LevelSensor mergers. **This is a
+  breaking change which requires reinstalling mods which modify StatusEffectList
+  or LevelSensor.**
+- Reverted msyt version to fix BNP compatibility. **This is a reversion of an
+  unintentional breaking change in the last release. It will require
+  reinstalling mods which modify game texts.**
+
+**Removed**
+
+- Removed merging for actor recipes (`.brecipe`). Diffs will be stored whole and
+  merging will simply overwrite with the highest priority. **This is a breaking
+  change which requires reinstalling all mods which modify recipe files.**
 
 ## [0.13.0] - 2024-07-28
 
