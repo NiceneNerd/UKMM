@@ -42,6 +42,20 @@ fn is_symlink(link: &Path) -> bool {
 }
 
 #[inline(always)]
+fn is_symlink_to(link: &Path, dest: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        (junction::exists(link).unwrap_or(false)
+            && junction::get_target(link).expect("Path does not exist") == dest)
+            || (link.is_symlink() && link.read_link().expect("Path does not exist") == dest)
+    }
+    #[cfg(unix)]
+    {
+        link.is_symlink() && link.read_link().expect("Path does not exist") == dest
+    }
+}
+
+#[inline(always)]
 fn create_symlink(link: &Path, target: &Path) -> Result<()> {
     #[cfg(windows)]
     junction::create(target, link).or_else(|_| std::os::windows::fs::symlink_dir(target, link))?;
@@ -210,10 +224,12 @@ impl Manager {
             .expect("YIKES, the settings manager is gone");
         let settings = settings.read();
         let mut lang = Language::USen;
+        let mut profile = String::from("");
         let config = settings
             .platform_config()
             .and_then(|c| {
                 lang = c.language;
+                profile = c.profile.clone();
                 c.deploy_config.as_ref()
             })
             .context("No deployment config for current platform")?;
@@ -229,17 +245,24 @@ impl Manager {
                 log::info!("Creating new symlink");
                 create_symlink(&config.output, &settings.merged_dir())
                     .context("Failed to symlink deployment folder")?;
+            } else if !is_symlink_to(&config.output, &settings.merged_dir()) {
+                log::info!("Refreshing symlink to correct profile");
+                util::remove_symlink(&config.output)?;
+                create_symlink(&config.output, &settings.merged_dir())?;
             } else {
                 log::info!("Symlink exists, no deployment needed")
             }
         } else {
             if is_symlink(&config.output) {
+                util::remove_symlink(&config.output)?;
+                /*
                 anyhow_ext::bail!(
                     "Deployment folder is currently a symlink or junction, but the current \
                      deployment method is not symlinking. Please manually remove the existing \
                      link at {} to prevent unexpected results.",
                     config.output.display()
                 );
+                */
             }
             let (content, aoc) = uk_content::platform_prefixes(settings.current_mode.into());
             let deletes = self.pending_delete.read();

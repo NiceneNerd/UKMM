@@ -19,6 +19,17 @@ pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()
     inner(dir.as_ref())
 }
 
+pub fn remove_symlink(link: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
+    fn inner(link: &Path) -> anyhow_ext::Result<()> {
+        #[cfg(windows)]
+        fs_err::remove_dir(link)?;
+        #[cfg(not(windows))]
+        fs_err::remove_file(link)?;
+        Ok(())
+    }
+    inner(link.as_ref())
+}
+
 static TEMP_FS: LazyLock<RwLock<HashSet<PathBuf>>> =
     LazyLock::new(|| RwLock::new(HashSet::default()));
 
