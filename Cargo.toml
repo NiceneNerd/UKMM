@@ -45,11 +45,12 @@ astrolabe = "0.5.1"
 egui_commonmark = { version = "0.17.0", features = ["svg", "fetch"] }
 egui-notify = "0.15.0"
 egui_logger = "0.5"
-http_req = "0.11"
+http_req  = { version="^0.12", default-features = false, features = ["rust-tls"] }
 image = { version = "0.25.1", features = ["jpeg", "png"] }
 mimalloc = { version = "0.1.43", default-features = false }
 open = "5.2"
 roxmltree = "0.20.0"
+rustls = "0.23.12"
 uk-content = { path = "crates/uk-content" }
 uk-manager = { path = "crates/uk-manager" }
 uk-mod = { path = "crates/uk-mod" }

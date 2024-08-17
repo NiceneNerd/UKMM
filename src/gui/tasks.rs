@@ -305,7 +305,9 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     {
         path
     } else {
-        anyhow::bail!("Could not find Cemu settings file. Please run Cemu at least once to generate it.")
+        anyhow::bail!(
+            "Could not find Cemu settings file. Please run Cemu at least once to generate it."
+        )
     };
     let text = fs::read_to_string(&settings_path).context("Failed to open Cemu settings file")?;
     let tree = roxmltree::Document::parse(&text)
@@ -330,7 +332,9 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             path.exists().then_some(path)
         })
         .or_else(|| {
-            let path = dirs2::data_local_dir().expect("DOUBLE YIKES").join("Cemu/mlc01");
+            let path = dirs2::data_local_dir()
+                .expect("DOUBLE YIKES")
+                .join("Cemu/mlc01");
             path.exists().then_some(path)
         });
     let (base, update, dlc) = mlc_path
@@ -395,12 +399,12 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             profile: "Default".into(),
             dump,
             deploy_config: Some(DeployConfig {
-                    auto: true,
-                    method: uk_manager::settings::DeployMethod::Symlink,
-                    output: gfx_folder.join("BreathOfTheWild_UKMM"),
-                    cemu_rules: true,
-                    executable: gfx_folder.with_file_name("Cemu.exe").exists_then(),
-                }),
+                auto: true,
+                method: uk_manager::settings::DeployMethod::Symlink,
+                output: gfx_folder.join("BreathOfTheWild_UKMM"),
+                cemu_rules: true,
+                executable: gfx_folder.with_file_name("Cemu.exe").exists_then(),
+            }),
         })
     };
     settings.save()?;

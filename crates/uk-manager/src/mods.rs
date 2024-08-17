@@ -320,13 +320,11 @@ impl Manager {
             match mod_.manifest() {
                 Ok(manifest) => {
                     let languages = manifest.languages();
-                    !ref_manifest.content_files.is_disjoint(&manifest.content_files)
+                    !ref_manifest
+                        .content_files
+                        .is_disjoint(&manifest.content_files)
                         || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
-                        || (
-                            ref_languages
-                                .iter()
-                                .any(|l| languages.contains(l))
-                        )
+                        || (ref_languages.iter().any(|l| languages.contains(l)))
                 }
                 Err(_) => false,
             }

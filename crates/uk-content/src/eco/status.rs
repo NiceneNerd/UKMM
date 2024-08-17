@@ -53,13 +53,12 @@ impl TryFrom<&Byml> for StatusEffectValues {
                     .map(|(idx, val)| -> Result<(i32, f32)> {
                         Ok((
                             idx as i32,
-                            val
-                                .as_map()?
+                            val.as_map()?
                                 .get("val")
                                 .ok_or(UKError::MissingBymlKey(
                                     "Status effect list entry value missing val item",
                                 ))?
-                                .as_float()?
+                                .as_float()?,
                         ))
                     })
                     .collect::<Result<_>>()?,

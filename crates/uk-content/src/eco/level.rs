@@ -177,8 +177,7 @@ impl TryFrom<&Byml> for LevelSensor {
                                         actor
                                             .get("value")
                                             .ok_or(UKError::MissingBymlKey(
-                                                "Level sensor weapons actor entry missing \
-                                                    value",
+                                                "Level sensor weapons actor entry missing value",
                                             ))?
                                             .as_float()?,
                                     ))
