@@ -281,6 +281,7 @@ jobs:
     runs-on: "ubuntu-20.04"
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OPENSSL_STATIC: 1
     steps:
       - uses: actions/checkout@v4
         with:
