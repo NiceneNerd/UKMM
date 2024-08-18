@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Fixed**
 
+- Fixed settings refresh after BCML migration
 - Fixed broken symlink on switching profiles
 - Fixed issues with language differences in text merging
 - Fixed issues with StatusEffectList and LevelSensor mergers. **This is a

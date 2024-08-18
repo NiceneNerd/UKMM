@@ -468,6 +468,7 @@ impl App {
                     };
                 }
                 Message::HandleSettings => {
+                    self.temp_settings = self.core.settings().clone();
                     self.toasts.add({
                         let mut toast = Toast::success("Settings saved");
                         toast.set_duration(Some(Duration::new(2, 0)));
