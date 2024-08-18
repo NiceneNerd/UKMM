@@ -243,11 +243,12 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
         );
         render_setting(
             "Emulator Executable",
-            "Path to the emulator to run for playing the game.",
+            "Command line for the emulator to run for playing the game. This can be an \
+             arbitrarily complex command which will be passed to your default shell.",
             ui,
             |ui| {
                 changed |= ui
-                    .file_picker(config.executable.get_or_insert_default())
+                    .file_picker_string(config.executable.get_or_insert_default())
                     .changed();
             },
         );

@@ -104,7 +104,7 @@ pub struct DeployConfig {
     #[serde(default)]
     pub cemu_rules: bool,
     #[serde(default)]
-    pub executable: Option<PathBuf>,
+    pub executable: Option<std::string::String>,
 }
 
 impl Default for DeployConfig {

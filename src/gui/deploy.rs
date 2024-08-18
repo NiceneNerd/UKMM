@@ -81,7 +81,12 @@ impl App {
                                     if let Some(ref exe) = config.executable {
                                         ui.add_space(4.);
                                         if ui.button("Open Emulator").clicked() {
-                                            let _ = std::process::Command::new(exe).spawn();
+                                            let cmd = util::default_shell();
+                                            let (shell, arg) = (&cmd.0, &cmd.1);
+                                            let _ = std::process::Command::new(shell)
+                                                .args(arg.iter())
+                                                .arg(exe)
+                                                .spawn();
                                         }
                                     }
                                     if !config.auto || self.core.deploy_manager().pending() {

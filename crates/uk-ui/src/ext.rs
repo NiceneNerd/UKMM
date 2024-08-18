@@ -1,4 +1,4 @@
-use std::{hash::Hash, path::PathBuf, sync::Arc};
+use std::{hash::Hash, path::PathBuf, str::FromStr, sync::Arc};
 
 use egui::{
     epaint::text::TextWrapping, mutex::RwLock, text::LayoutJob, Button, Direction, Id, NumExt,
@@ -8,6 +8,7 @@ use egui::{
 pub trait UiExt {
     fn folder_picker(&mut self, value: &mut PathBuf) -> Response;
     fn file_picker(&mut self, value: &mut PathBuf) -> Response;
+    fn file_picker_string(&mut self, value: &mut String) -> Response;
     fn strong_heading(&mut self, text: impl Into<String>) -> Response;
     fn clipped_label(&mut self, text: impl Into<String>) -> Response;
     fn create_temp_string(&mut self, id: impl Hash, init: Option<String>) -> Arc<RwLock<String>>;
@@ -86,6 +87,15 @@ impl UiExt for Ui {
 
     fn file_picker(&mut self, value: &mut PathBuf) -> Response {
         render_picker(false, self, value)
+    }
+
+    fn file_picker_string(&mut self, value: &mut String) -> Response {
+        let mut path = PathBuf::from_str(value).unwrap();
+        let res = render_picker(false, self, &mut path);
+        if res.changed() {
+            *value = path.to_str().unwrap().to_owned();
+        }
+        res
     }
 
     fn strong_heading(&mut self, text: impl Into<String>) -> Response {

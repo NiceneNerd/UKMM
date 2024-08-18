@@ -49,3 +49,38 @@ impl uk_ui::egui::TextBuffer for SmartStringWrapper<'_> {
         self.0.drain(start..end);
     }
 }
+
+pub fn default_shell() -> &'static std::sync::LazyLock<(std::path::PathBuf, Option<&'static str>)> {
+    use which::which_global;
+    static SHELL_PATH: std::sync::LazyLock<(std::path::PathBuf, Option<&'static str>)> =
+        std::sync::LazyLock::new(|| {
+            #[cfg(target_os = "windows")]
+            {
+                (
+                    which_global("pwsh.exe")
+                        .or_else(|_| which_global("powershell.exe"))
+                        .unwrap(),
+                    None,
+                )
+            }
+            #[cfg(target_os = "linux")]
+            {
+                (
+                    std::env::var("SHELL")
+                        .ok()
+                        .and_then(|s| which_global(s).ok())
+                        .or_else(|| which_global("sh").ok())
+                        .unwrap(),
+                    Some("-c"),
+                )
+            }
+            #[cfg(target_os = "macos")]
+            {
+                (
+                    which_global("zsh").or_else(|_| which_global("sh")).unwrap(),
+                    Some("-c"),
+                )
+            }
+        });
+    &SHELL_PATH
+}
