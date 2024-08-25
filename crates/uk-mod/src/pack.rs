@@ -10,7 +10,7 @@ use botw_utils::hashes::StockHashTable;
 use fs_err as fs;
 use join_str::jstr;
 use jwalk::WalkDir;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::Mutex;
 use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::{sarc::Sarc, yaz0::decompress_if};
@@ -49,7 +49,7 @@ pub struct ModPacker {
     meta: Meta,
     zip: ZipWriter,
     endian: Endian,
-    built_resources: Arc<RwLock<BTreeSet<String>>>,
+    built_resources: dashmap::DashSet<String>,
     masters: Vec<Arc<uk_reader::ResourceReader>>,
     hash_table: &'static StockHashTable,
     compressor: Arc<Mutex<zstd::bulk::Compressor<'static>>>,
@@ -291,7 +291,7 @@ impl ModPacker {
                     Endian::Big => &WIIU_HASH_TABLE,
                 },
                 meta,
-                built_resources: Arc::new(RwLock::new(BTreeSet::new())),
+                built_resources: Default::default(),
                 compressor: Arc::new(Mutex::new(
                     zstd::bulk::Compressor::with_dictionary(8, super::DICTIONARY).unwrap(),
                 )),
@@ -323,7 +323,7 @@ impl ModPacker {
                 e => return Err(e.unwrap_err().into()),
             }
         }
-        self.built_resources.write().insert(canon.into());
+        self.built_resources.insert(canon.into());
         Ok(())
     }
 
@@ -433,7 +433,7 @@ impl ModPacker {
         mut resource: ResourceData,
         in_new_sarc: bool,
     ) -> Result<()> {
-        if self.built_resources.read().contains(&canon) {
+        if self.built_resources.contains(&canon) {
             log::trace!("Already processed {}, skipping", &canon);
             return Ok(());
         }
@@ -564,7 +564,7 @@ impl ModPacker {
     fn pack_root(&self, root: impl AsRef<Path>) -> Result<()> {
         fn inner(self_: &ModPacker, root: &Path) -> Result<()> {
             log::debug!("Packing from root of {}", root.display());
-            self_.built_resources.write().clear();
+            self_.built_resources.clear();
             let (content, aoc) = platform_prefixes(self_.endian);
             let content_dir = root.join(content);
             log::debug!("Checking for content folder at {}", content_dir.display());
