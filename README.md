@@ -43,7 +43,7 @@ Unlike BCML, building from source is easy.
 
 Requirements:
 
-- Recent Rust toolchain (MSRV 1.69)
+- Recent Rust toolchain (MSRV 1.80)
 - A compiler that supports C++17
 - Modern CMake (3.12+)
 
@@ -52,14 +52,14 @@ build --release` in the root repo folder. It may take a while.
 
 ## Contributing 
 
-Issues: https://github.com/NiceneNerd/UKMM/issues
+Issues: <https://github.com/NiceneNerd/UKMM/issues>
 
 Contributions are always welcome. Some notes about the process:
 
 - At present, some tests need to be setup manually, as they require you to have
   a game dump and a Wii U mod to test on. However, all tests in the `uk-content`
   package are standalone and should be pass without any setup.
-- As this codebase grew is complicated ways over a period of about 8 months,
+- As this codebase grew is complicated ways over a period of a few years now,
   some parts might not be entirely consistent in conventions or could use
   refactoring. If you work on any part of the code that could use improvement in
   consistency or sustainability, please go ahead and do what seems right in your

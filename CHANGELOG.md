@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.15.0] - 2024-08-29
+
+This release is fairly significant and includes *multiple breaking changes* to
+the UKMM mod format. This means there is a *high likehood* that you will need to
+reinstall and/or repackage existing UKMM mods to avoid errors. Ideally, this
+should be the last breaking release before stabilizaiton.
+
 **Added**
 
 - Added support for new Cemu config paths
