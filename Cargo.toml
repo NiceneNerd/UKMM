@@ -141,6 +141,8 @@ targets = [
 pr-run-mode = "plan"
 # Whether to install an updater program
 install-updater = true
+[workspace.metadata.dist.github-custom-runners]
+x86_64-unknown-linux-gnu = "ubuntu-22.04"
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
