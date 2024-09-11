@@ -108,7 +108,7 @@ path-slash = "0.2.1"
 rayon = "1.6"
 rfd = "0.14.1"
 roead = "1"
-rstb = { version = "1", features = ["complex"] }
+rstb = { git = "https://github.com/GingerAvalanche/rstb-rust.git", branch = "chemical", features = ["complex"] }
 rustc-hash = "2"
 sanitise-file-name = "1"
 serde = "1"

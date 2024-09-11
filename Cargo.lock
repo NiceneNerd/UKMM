@@ -4281,16 +4281,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4727c05997dc74a6fc4fb56acdc76aeb3bcbc409242f4b5a6bebd409b6dc3860"
 dependencies = [
  "almost",
+ "base64 0.22.1",
  "binrw 0.13.3",
  "cxx",
  "cxx-build",
  "indexmap 2.2.6",
  "join_str",
+ "lexical",
  "num-integer",
  "num-traits",
  "once_cell",
  "parking_lot",
  "rustc-hash 1.1.0",
+ "ryml",
  "serde",
  "serde_json",
  "smartstring",
@@ -4352,8 +4355,7 @@ checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
 [[package]]
 name = "rstb"
 version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4dd1ba79c81f67f9ef9edd6c455e07278cd4c3a70bbf86d6e5bd5f3cde6ddfab"
+source = "git+https://github.com/GingerAvalanche/rstb-rust.git?branch=chemical#61346dec51a3e805902776bede1c174e6ba4e462"
 dependencies = [
  "crc",
  "include-flate",
