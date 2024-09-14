@@ -11,7 +11,7 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DefaultOnError};
 use smartstring::alias::String;
-use uk_content::constants::Language;
+use uk_content::{constants::Language, prelude::Endian};
 use uk_reader::ResourceReader;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -105,6 +105,48 @@ pub struct DeployConfig {
     pub cemu_rules: bool,
     #[serde(default)]
     pub executable: Option<std::string::String>,
+    #[serde(default)]
+    pub layout: DeployLayout,
+}
+
+impl DeployConfig {
+    pub fn final_output_paths(&self, endian: Endian) -> (PathBuf, PathBuf) {
+        match endian {
+            Endian::Little => {
+                match self.layout {
+                    DeployLayout::WithoutName => (
+                        self.output.join("01007EF00011E000").join("romfs"),
+                        self.output.join("01007EF00011F001").join("romfs"),
+                    ),
+                    DeployLayout::WithName => (
+                        self.output
+                            .join("01007EF00011E000")
+                            .join("BreathOfTheWild_UKMM")
+                            .join("romfs"),
+                        self.output
+                            .join("01007EF00011F001")
+                            .join("BreathOfTheWild_UKMM")
+                            .join("romfs"),
+                    ),
+                }
+            }
+            Endian::Big => {
+                match self.layout {
+                    DeployLayout::WithoutName => (
+                        self.output.join("content"),
+                        self.output.join("aoc").join("0010"),
+                    ),
+                    DeployLayout::WithName => (
+                        self.output.join("BreathOfTheWild_UKMM").join("content"),
+                        self.output
+                            .join("BreathOfTheWild_UKMM")
+                            .join("aoc")
+                            .join("0010"),
+                    ),
+                }
+            }
+        }
+    }
 }
 
 impl Default for DeployConfig {
@@ -115,6 +157,7 @@ impl Default for DeployConfig {
             auto: false,
             cemu_rules: false,
             executable: None,
+            layout: DeployLayout::WithoutName,
         }
     }
 }
@@ -133,6 +176,23 @@ impl DeployMethod {
             DeployMethod::Copy => "Copy",
             DeployMethod::HardLink => "Hard Links",
             DeployMethod::Symlink => "Symlink",
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum DeployLayout {
+    #[default]
+    WithoutName,
+    WithName
+}
+
+impl DeployLayout {
+    #[inline(always)]
+    pub fn name(&self) -> &str {
+        match self {
+            DeployLayout::WithoutName => "SD Card",
+            DeployLayout::WithName => "Emulator",
         }
     }
 }

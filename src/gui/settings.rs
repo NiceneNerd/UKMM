@@ -214,6 +214,33 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             },
         );
         render_setting(
+            "Deploy Layout",
+            "There are two methods of deployment layout: without a folder named for UKMM, \
+             and with a folder named for UKMM. If you select With Name, UKMM will add a \
+             BreathOfTheWild_UKMM folder to the end of your Output Folder path, where appropriate. \
+             If you don't know what to choose for this: On WiiU, choose With Name. On Switch consoles or \
+             when your output folder is an atmosphere folder, choose Without Name. On Switch emulators \
+             where your output folder is NOT an atmosphere folder, choose With Name. For more on this, \
+             consult the docs.",
+            ui,
+            |ui| {
+                changed |= ui
+                    .radio_value(
+                        &mut config.layout,
+                        uk_manager::settings::DeployLayout::WithoutName,
+                        "Without Name",
+                    )
+                    .changed();
+                changed |= ui
+                    .radio_value(
+                        &mut config.layout,
+                        uk_manager::settings::DeployLayout::WithName,
+                        "With Name",
+                    )
+                    .changed();
+            }
+        );
+        render_setting(
             "Auto Deploy",
             "Whether to automatically deploy changes to the mod configuration every time they are \
              applied.",
