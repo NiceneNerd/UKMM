@@ -13,15 +13,16 @@ generally more useful to use automatic deployment.
 
 ## Deployment Locations
 
-Where should you deploy your mods? It depends mostly on where you play your
-game.
+Where should you deploy your mods and what layout should you use? It depends
+mostly on where you play your game.
 
 ### Cemu
 
 Cemu users will generally want to deploy their mods as a graphic pack. In that
-case you will need to set your deployment location somewhere inside Cemu's
-`graphicPacks` folder. A customary option is a new folder named
-`BreathOfTheWild_UKMM`. So, for example, the full path might be something like:
+case, the best idea is to set your deployment location to Cemu's `graphicPacks`
+folder and turn on the With Name option for Deploy Layout. So, for example, the
+full path might be something like: `C:\Cemu\graphicPacks\`. For that example,
+and with the With Name option, UKMM will actually deploy to
 `C:\Cemu\graphicPacks\BreathOfTheWild_UKMM`.
 
 **Additional note for Cemu users**: You almost certainly want the "Deploy
@@ -32,37 +33,41 @@ rules.txt" option selected for Cemu integration.
 Wii U users have a few options, but the most widely used and supported method to
 load mods is via [SDCafiine for the Wii U Plugin
 System](https://zeldamods.org/wiki/Help:Using_mods#Setting_up_WUPS_SDCafiine).
-In that case you would generally want your mods to end up on your SD card under
-something like `/sdcafiine/<title ID>/ukmm`.  If you use UKMM while your SD card
-is not in, however, you might want to set a temporary directory for deploying
-mods, or you can merge without the SD card but wait and deploy when the SD card
-is mountained.
+In that case, you would generally want your mods to end up on your SD card under
+something like `/sdcafiine/<title ID>/ukmm`. To achieve that, you could set the
+folder directly and choose the Without Name option for Deploy Layout.
+
+You could also set the deployment location to `/sdcafiine/<title ID>` and choose
+the With Name option, and UKMM will add the final folder on its own.
+
+If you use UKMM while your SD card is not in, however, you might want to set a
+temporary directory for deploying mods, or you can merge without the SD card but
+wait and deploy when the SD card is mounted.
 
 ### Switch
 
 With the Switch, you generally want your mods to end up on your SD card under
-`/atmosphere/contents`. If you use UKMM while your SD card is not in, however,
-you might want to set a temporary directory for deploying mods, or you can merge
-without the SD card but wait and deploy when the SD card is mountained.
+`/atmosphere/contents`, and you will always want to use Without Name for the
+Deploy Layout. If you use UKMM while your SD card is not in, however, you might
+want to set a temporary directory for deploying mods, or you can merge without
+the SD card but wait and deploy when the SD card is mounted.
 
 ### Yuzu or Ryujinx
 
 Yuzu and Ryujinx both allow you to install mods in two different locations, one
 specific to their own files and the other for emulating Atmosphere's LayeredFS
-setup on SD card. *You must use the LayeredFS arrangement.*
+setup on SD card. You may use either arrangement, but you *must* choose the
+correct Deploy Layout, or the emulator will not read the merged mod correctly.
 
-So, for example, the Yuzu user storage folder is
-`C:\Users\[USER]\AppData\Roaming\yuzu` on Windows or `~/.local/share/yuzu` on
-Linux. In this case, you want your deployment folder at
-`[USER-FOLDER]/sdmc/atmosphere/contents`.
+So, for example, if you want to use Yuzu with the Atmosphere implementation, then
+the Yuzu user storage folder is `C:\Users\[USER]\AppData\Roaming\yuzu` on Windows
+or `~/.local/share/yuzu` on Linux. In this case, you want your deployment folder at
+`[USER-FOLDER]/sdmc/atmosphere/contents` and you want your Deploy Layout set to
+Without Name.
 
-> **Note on Switch-based deployment**:
-> When using Switch, Yuzu, or Ryujinx, you will need to generally use the
-> `contents` folder as the actual deployment folder, and the two title ID
-> folders for BOTW and its DLC will be used to store mod files. If you mod other
-> games besides BOTW, note that they will also have their mods in a title ID
-> folder in the same `contents` folder, and some operations could affect them.
-> Be aware of this particularly when using the symlink method discussed below.
+If you want to use Yuzu's specific mod loader implementation, then that will read
+from `[YUZU-DIRECTORY]/load`, so you will set that as your deployment location and
+set your Deploy Layout to With Name.
 
 ## Deployment Methods
 
@@ -119,12 +124,6 @@ networked drives are not supported. If that fails, it will try to use a regular
 directory symbolic link. These have fewer restrictions, but usually (for some
 dumb reason) require administrator permissions to create.[^1]
 
-> **Note for Switch/Yuzu/Ryujinx:** Since the deployment folder will need to be
-> set the `atmosphere/contents` root, and it will deploy the two title ID folders
-> for BOTW and its DLC inside, you may run into issues if you also have mods for
-> other games (other title IDs). They might be erased or end up inside UKMM's
-> storage folder, depening on your precise process and settings.
-
 So, in sum:
 
 **Advantages**
@@ -135,9 +134,42 @@ So, in sum:
 - Windows support is complicated
 - No chance to change your mind before deploying mods after applying load order
   changes
-- Does not mesh well for Switch users modding other games
 
 **Best for**: Linux systems, or advanced users on Windows
+
+## Deployment Layouts
+
+### Without Name
+
+UKMM will not add any folders called `BreathOfTheWild_UKMM` without you telling it.
+On WiiU, this means that content files will be deployed to `[Output Folder]/content`
+and dlc files will be deployed to `[Output Folder]/aoc`. On Switch, this means that
+content files will be deployed to `[Output Folder]/01007EF00011E000/romfs` and dlc
+files will be deployed to `[Output Folder]/01007EF00011F001/romfs`.
+
+This is useful for if you're following an old setup tutorial that tells you to put a
+specific folder for your mod manager in the output path, if you're on a Switch
+console, or if you're on a Switch emulator and using the atmosphere mod directory for
+it.
+
+This is how BCML and previous beta builds of UKMM always handled deployment. If
+you are upgrading from BCML or an old build of UKMM and your paths already work
+for you, then you can leave this as your deployment layout and it will just work.
+
+### With Name
+
+UKMM will add folders called `BreathOfTheWild_UKMM` to the appropriate places when
+deploying. On WiiU, this means that content files will be deployed to
+`[Output Folder]/BreathOfTheWild_UKMM/content` and dlc fils will be deployed to
+`[Output Folder]/BreathOfTheWild_UKMM/aoc`. On Switch, this means that content files
+will be deployed to `[Output Folder]/01007EF00011E000/BreathOfTheWild_UKMM/romfs`
+and dlc files will be deployed to
+`[Output Folder]/01007EF00011F001/BreathOfTheWild_UKMM/romfs`.
+
+This is useful if you just want to point UKMM at your Cemu graphic pack folder or
+WiiU SD Card and call it a day, or if you're using a Switch emulator and deploying
+to the regular mods directory so that you can activate/deactivate mods in the
+in-emulator menu.
 
 ---
 
