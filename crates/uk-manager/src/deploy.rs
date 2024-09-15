@@ -254,13 +254,9 @@ impl Manager {
                 (src_content, dest_content.clone(), "content"),
                 (src_aoc, dest_aoc, "aoc")
             ] {
-                let actual_src = match (type_, settings.current_mode) {
-                    ("content", Platform::WiiU) => src.parent().unwrap(),
-                    _ => src.as_ref(),
-                };
-                let actual_dest = match (type_, settings.current_mode) {
-                    ("aoc", Platform::WiiU) => dest.parent().unwrap(),
-                    _ => dest.as_ref(),
+                let (actual_src, actual_dest) = match (type_, settings.current_mode) {
+                    ("aoc", Platform::WiiU) => (src.parent().unwrap(), dest.parent().unwrap()),
+                    _ => (src.as_ref(), dest.as_ref()),
                 };
                 log::info!("Generating {} links", type_);
                 let parent = actual_dest.parent().context("Dest has no parent?")?;
