@@ -254,13 +254,17 @@ impl Manager {
                 (src_content, dest_content.clone(), "content"),
                 (src_aoc, dest_aoc, "aoc")
             ] {
+                let actual_src = match (type_, settings.current_mode) {
+                    ("content", Platform::WiiU) => src.parent().unwrap(),
+                    _ => src.as_ref(),
+                };
                 let actual_dest = match (type_, settings.current_mode) {
                     ("aoc", Platform::WiiU) => dest.parent().unwrap(),
                     _ => dest.as_ref(),
                 };
                 log::info!("Generating {} links", type_);
                 let parent = actual_dest.parent().context("Dest has no parent?")?;
-                if src.exists() && !parent.exists() {
+                if actual_src.exists() && !parent.exists() {
                     fs::create_dir_all(parent)
                         .context("Failed to create parents for dest folder")?;
                 }
@@ -269,20 +273,20 @@ impl Manager {
                     util::remove_dir_all(actual_dest)
                         .context("Failed to remove old deployment folder")?;
                 }
-                if src.exists() && !actual_dest.exists() {
+                if actual_src.exists() && !actual_dest.exists() {
                     log::info!("Creating new symlink for {} folder", type_);
-                    create_symlink(actual_dest, &src)
+                    create_symlink(actual_dest, actual_src)
                         .context("Failed to deploy symlink")?;
-                } else if !src.exists() && actual_dest.exists() {
+                } else if !actual_src.exists() && actual_dest.exists() {
                     log::info!("No {} files, removing link", type_);
                     util::remove_symlink(actual_dest)
                         .context("Failed to remove symlink to non-existent folder")?;
-                } else if src.exists() && actual_dest.exists() &&
-                    !is_symlink_to(actual_dest, &src) {
+                } else if actual_src.exists() && actual_dest.exists() &&
+                    !is_symlink_to(actual_dest, actual_src) {
                     log::info!("Refreshing {} link to correct profile", type_);
                     util::remove_symlink(actual_dest)
                         .context("Failed to remove symlink to incorrect profile")?;
-                    create_symlink(actual_dest, &src)
+                    create_symlink(actual_dest, actual_src)
                         .context("Failed to create symlink to correct profile")?;
                 } else {
                     log::info!("Symlink exists, no deployment needed")
