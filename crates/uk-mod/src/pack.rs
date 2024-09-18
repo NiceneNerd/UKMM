@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeSet, HashSet},
     io::Write,
     path::{Path, PathBuf},
     sync::{atomic::AtomicUsize, Arc, LazyLock},
@@ -634,12 +634,12 @@ impl ModPacker {
 
     fn collect_roots(&self) -> Vec<PathBuf> {
         let opt_root = self.source_dir.join("options");
-        let mut roots = Vec::new();
+        let mut roots = HashSet::new();
         for group in &self.meta.options {
             roots.extend(group.options().iter().map(|opt| opt_root.join(&opt.path)))
         }
         log::debug!("Detected options:\n{:#?}", &roots);
-        roots
+        roots.into_iter().collect()
     }
 
     fn pack_thumbnail(&self) -> Result<()> {
