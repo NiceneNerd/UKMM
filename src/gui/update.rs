@@ -193,7 +193,7 @@ impl App {
                 Message::DuplicateProfile(profile) => {
                     self.do_task(move |core| {
                         let profiles_dir = core.settings().profiles_dir();
-                        dircpy::copy_dir(
+                        uk_manager::util::copy_dir(
                             profiles_dir.join(&profile),
                             profiles_dir.join(profile + "_copy"),
                         )?;
