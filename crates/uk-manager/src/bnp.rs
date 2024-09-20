@@ -482,7 +482,8 @@ impl BnpConverter {
 pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
     let tempdir = crate::util::get_temp_folder();
     if path.is_dir() {
-        dircpy::copy_dir(path, tempdir.as_path()).context("Failed to copy files to temp folder")?;
+        crate::util::copy_dir(path, tempdir.as_path())
+            .context("Failed to copy files to temp folder")?;
     } else {
         log::info!("Extracting BNP…");
         extract_7z(path, &tempdir).context("Failed to extract BNP")?;

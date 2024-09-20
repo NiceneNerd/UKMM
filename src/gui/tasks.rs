@@ -34,6 +34,15 @@ mod handlers;
 pub use handlers::register_handlers;
 
 fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
+    if path
+        .file_name()
+        .unwrap_or_default()
+        .to_str()
+        .unwrap_or_default()
+        == "rules.txt"
+    {
+        return (true, true);
+    }
     let ext = path
         .extension()
         .and_then(|e| e.to_str().map(|e| e.to_lowercase()))
@@ -42,14 +51,6 @@ fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
         (false, false)
     } else if ext == "7z" {
         (true, false)
-    } else if path
-        .file_name()
-        .unwrap_or_default()
-        .to_str()
-        .unwrap_or_default()
-        == "rules.txt"
-    {
-        (true, true)
     } else {
         match fs::File::open(path)
             .context("")
@@ -104,7 +105,7 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
             .filter(|(is_mod, _has_meta)| *is_mod)
             .map(|(_, has_meta)| has_meta)
             {
-                log::info!("Maybe it's not a UKMM mod, let's to convert it");
+                log::info!("Maybe it's not a UKMM mod, let's try to convert it");
                 if !has_meta && meta.is_none() {
                     log::info!("Mod has no meta info, requesting manual input");
                     return Ok(Message::RequestMeta(path.to_path_buf()));

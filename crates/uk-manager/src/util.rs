@@ -8,6 +8,19 @@ use anyhow_ext::Context;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 pub use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
+pub fn copy_dir<T: AsRef<Path>, U: AsRef<Path>>(src: T, dst: U) -> anyhow_ext::Result<()> {
+    for p in jwalk::WalkDir::new(&src) {
+        let from = p?.path();
+        let to = dst.as_ref().join(from.strip_prefix(&src)?);
+        if from.is_dir() {
+            std::fs::create_dir(to)?;
+        } else if from.is_file() {
+            std::fs::copy(from, to)?;
+        }
+    }
+    Ok(())
+}
+
 pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
     fn inner(dir: &Path) -> anyhow_ext::Result<()> {
         #[cfg(windows)]

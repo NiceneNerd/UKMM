@@ -374,7 +374,7 @@ impl Manager {
             if mod_path.is_file() {
                 fs::copy(mod_path, &stored_path).context("Failed to copy mod to storage folder")?;
             } else {
-                dircpy::copy_dir(mod_path, &stored_path)
+                util::copy_dir(mod_path, &stored_path)
                     .context("Failed to copy mod to storage folder")?;
             }
         }

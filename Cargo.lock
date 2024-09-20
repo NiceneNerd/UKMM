@@ -1451,17 +1451,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dircpy"
-version = "0.3.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "015cf520d424257fb8fbeccda4ee8d921b02907ae612484f036fa1a432b9036e"
-dependencies = [
- "jwalk",
- "log",
- "walkdir",
-]
-
-[[package]]
 name = "dirs-sys"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5355,7 +5344,6 @@ dependencies = [
  "anyhow",
  "anyhow_ext",
  "dashmap",
- "dircpy",
  "dirs2",
  "fs-err",
  "join_str",
@@ -5482,7 +5470,6 @@ dependencies = [
  "anyhow",
  "anyhow_ext",
  "astrolabe",
- "dircpy",
  "dirs2",
  "eframe",
  "egui-notify",
