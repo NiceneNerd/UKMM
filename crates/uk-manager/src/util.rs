@@ -12,7 +12,7 @@ pub fn copy_dir<T: AsRef<Path>, U: AsRef<Path>>(src: T, dst: U) -> anyhow_ext::R
     for p in jwalk::WalkDir::new(&src) {
         let from = p?.path();
         let to = dst.as_ref().join(from.strip_prefix(&src)?);
-        if from.is_dir() {
+        if from.is_dir() && !to.exists() {
             std::fs::create_dir(to)?;
         } else if from.is_file() {
             std::fs::copy(from, to)?;
