@@ -20,7 +20,6 @@ product-icon = "assets/ukmm.ico"
 [dependencies]
 anyhow = { workspace = true }
 anyhow_ext = { workspace = true }
-dircpy = { workspace = true }
 dirs2 = { workspace = true }
 eframe = { workspace = true, features = ["glow"] }
 env_logger = "0.11.3"
@@ -92,7 +91,6 @@ version = "0.15.0"
 anyhow = "1"
 anyhow_ext = "0.2.1"
 dashmap = "6"
-dircpy = "0.3.12"
 dirs2 = "3"
 eframe = { version = "0.28", default-features = false }
 flume = "0.11.0"

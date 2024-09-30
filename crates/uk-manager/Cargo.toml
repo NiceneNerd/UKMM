@@ -8,7 +8,6 @@ version.workspace = true
 anyhow = { workspace = true }
 anyhow_ext = { workspace = true }
 dashmap = { workspace = true, features = ["rayon"] }
-dircpy = { workspace = true }
 dirs2 = { workspace = true }
 fs-err = { workspace = true }
 join_str = { workspace = true }
