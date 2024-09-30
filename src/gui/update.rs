@@ -230,10 +230,10 @@ impl App {
                 Message::SelectFile => {
                     if let Some(mut paths) = rfd::FileDialog::new()
                         .set_title("Select a Mod")
-                        .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
+                        .add_filter("Any mod (*.zip, *.7z, *.bnp, rules.txt)", &["zip", "bnp", "7z", "txt"])
                         .add_filter("UKMM Mod (*.zip)", &["zip"])
                         .add_filter("BCML Mod (*.bnp)", &["bnp"])
-                        .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
+                        .add_filter("Legacy Mod (*.zip, *.7z, rules.txt)", &["zip", "7z", "txt"])
                         .add_filter("All files (*.*)", &["*"])
                         .pick_files()
                         .filter(|p| !p.is_empty())
