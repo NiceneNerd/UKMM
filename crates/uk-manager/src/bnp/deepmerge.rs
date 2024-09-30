@@ -15,9 +15,10 @@ fn handle_diff_entry(
     nest_root: &str,
     contents: &AampDiffEntry,
 ) -> Result<()> {
+    let empty = ParameterIO::new().to_binary();
     let nested_bytes = sarc
         .get_file(nest_root)
-        .with_context(|| format!("SARC missing file at {nest_root}"))?;
+        .unwrap_or(&empty);
     match contents {
         AampDiffEntry::Sarc(nest_map) => {
             let mut nest_sarc = SarcWriter::from_sarc(&Sarc::new(nested_bytes)?);
