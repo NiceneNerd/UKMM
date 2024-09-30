@@ -86,7 +86,10 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
         .extension()
         .and_then(|e| e.to_str())
         .map(|e| e.to_lowercase() == "bnp")
-        .unwrap_or(false)
+        .unwrap_or(false) ||
+       path
+        .join("info.json")
+        .exists()
     {
         let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKMM mod")?;
         return Ok(Message::HandleMod(Mod::from_reader(
