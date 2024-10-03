@@ -234,37 +234,69 @@ impl Manager {
             })
             .context("No deployment config for current platform")?;
         log::debug!("Deployment config:\n{:#?}", &config);
+
+        // Determine src and dest folders
+        let (content, aoc) = uk_content::platform_prefixes(settings.current_mode.into());
+        let src_content  = settings.merged_dir().join(content);
+        let src_aoc = settings.merged_dir().join(aoc);
+        let (dest_content, dest_aoc) = config.final_output_paths(settings.current_mode.into());
+        // Remove old behavior
+        if is_symlink(&config.output) {
+            log::info!("Removing old symlink deployment behavior");
+            util::remove_symlink(&config.output)
+                .context("Failed to remove old deployment behavior symlink")?;
+        }
+
         if config.method == DeployMethod::Symlink {
             log::info!("Deploy method is symlink, checking for symlink");
-            if !is_symlink(&config.output) {
-                if config.output.exists() {
-                    log::warn!("Removing old stuff from deploy folder");
-                    util::remove_dir_all(&config.output)
+
+            for (src, dest, type_) in [
+                (src_content, dest_content.clone(), "content"),
+                (src_aoc, dest_aoc, "aoc")
+            ] {
+                let (actual_src, actual_dest) = match (type_, settings.current_mode) {
+                    ("aoc", Platform::WiiU) => (src.parent().unwrap(), dest.parent().unwrap()),
+                    _ => (src.as_ref(), dest.as_ref()),
+                };
+                log::info!("Generating {} links", type_);
+                let parent = actual_dest.parent().context("Dest has no parent?")?;
+                if actual_src.exists() && !parent.exists() {
+                    fs::create_dir_all(parent)
+                        .context("Failed to create parents for dest folder")?;
+                }
+                if actual_dest.exists() && !is_symlink(actual_dest) {
+                    log::warn!("Removing old stuff from {} deploy folder", type_);
+                    util::remove_dir_all(actual_dest)
                         .context("Failed to remove old deployment folder")?;
                 }
-                log::info!("Creating new symlink");
-                create_symlink(&config.output, &settings.merged_dir())
-                    .context("Failed to symlink deployment folder")?;
-            } else if !is_symlink_to(&config.output, &settings.merged_dir()) {
-                log::info!("Refreshing symlink to correct profile");
-                util::remove_symlink(&config.output)?;
-                create_symlink(&config.output, &settings.merged_dir())?;
-            } else {
-                log::info!("Symlink exists, no deployment needed")
+                if actual_src.exists() && !actual_dest.exists() {
+                    log::info!("Creating new symlink for {} folder", type_);
+                    create_symlink(actual_dest, actual_src)
+                        .context("Failed to deploy symlink")?;
+                } else if !actual_src.exists() && actual_dest.exists() {
+                    log::info!("No {} files, removing link", type_);
+                    util::remove_symlink(actual_dest)
+                        .context("Failed to remove symlink to non-existent folder")?;
+                } else if actual_src.exists() && actual_dest.exists() &&
+                    !is_symlink_to(actual_dest, actual_src) {
+                    log::info!("Refreshing {} link to correct profile", type_);
+                    util::remove_symlink(actual_dest)
+                        .context("Failed to remove symlink to incorrect profile")?;
+                    create_symlink(actual_dest, actual_src)
+                        .context("Failed to create symlink to correct profile")?;
+                } else {
+                    log::info!("Symlink exists, no deployment needed")
+                }
             }
         } else {
-            if is_symlink(&config.output) {
-                util::remove_symlink(&config.output)?;
-                /*
-                anyhow_ext::bail!(
-                    "Deployment folder is currently a symlink or junction, but the current \
-                     deployment method is not symlinking. Please manually remove the existing \
-                     link at {} to prevent unexpected results.",
-                    config.output.display()
-                );
-                */
+            if is_symlink(&dest_content) {
+                util::remove_symlink(&dest_content)
+                    .context("Failed to remove symlink to old symlinked content")?;
             }
-            let (content, aoc) = uk_content::platform_prefixes(settings.current_mode.into());
+            if is_symlink(&dest_aoc) {
+                util::remove_symlink(&dest_aoc)
+                    .context("Failed to remove symlink to old symlinked dlc")?;
+            }
             let deletes = self.pending_delete.read();
             log::debug!("Deployed files to delete:\n{:#?}", &deletes);
             let syncs = self.pending_files.read();
@@ -274,17 +306,16 @@ impl Manager {
                 DeployMethod::HardLink => "hard links",
                 DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
             });
+            log::info!("Deploy layout: {}", config.layout.name());
 
             let filter_xbootup = |file: &&String| -> bool {
                 !file.starts_with("Pack/Bootup_") || **file == lang.bootup_path()
             };
 
-            for (dir, dels, syncs) in [
-                (content, &deletes.content_files, &syncs.content_files),
-                (aoc, &deletes.aoc_files, &syncs.aoc_files),
+            for (source, dest,  dels, syncs) in [
+                (src_content, dest_content.clone(), &deletes.content_files, &syncs.content_files),
+                (src_aoc, dest_aoc, &deletes.aoc_files, &syncs.aoc_files),
             ] {
-                let dest = config.output.join(dir);
-                let source = settings.merged_dir().join(dir);
                 dels.par_iter()
                     .filter(filter_xbootup)
                     .try_for_each(|f| -> Result<()> {
@@ -334,7 +365,7 @@ impl Manager {
             }
             log::info!("Deployment complete");
         }
-        let rules_path = config.output.join("rules.txt");
+        let rules_path = dest_content.parent().unwrap().join("rules.txt");
         if settings.current_mode == Platform::WiiU
             && settings
                 .platform_config()
