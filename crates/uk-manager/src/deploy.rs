@@ -289,6 +289,14 @@ impl Manager {
                 }
             }
         } else {
+            if is_symlink(&dest_content) {
+                util::remove_symlink(&dest_content)
+                    .context("Failed to remove symlink to old symlinked content")?;
+            }
+            if is_symlink(&dest_aoc) {
+                util::remove_symlink(&dest_aoc)
+                    .context("Failed to remove symlink to old symlinked dlc")?;
+            }
             let deletes = self.pending_delete.read();
             log::debug!("Deployed files to delete:\n{:#?}", &deletes);
             let syncs = self.pending_files.read();
