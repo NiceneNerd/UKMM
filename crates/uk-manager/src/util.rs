@@ -32,6 +32,48 @@ pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()
     inner(dir.as_ref())
 }
 
+#[inline(always)]
+pub fn is_symlink(link: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        junction::exists(link).unwrap_or(false) || link.is_symlink()
+    }
+    #[cfg(unix)]
+    {
+        link.is_symlink()
+    }
+}
+
+#[inline(always)]
+pub fn is_symlink_to(link: &Path, dest: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        (junction::exists(link).unwrap_or(false)
+            && junction::get_target(link).expect("Path does not exist") == dest)
+            || (link.is_symlink() && link.read_link().expect("Path does not exist") == dest)
+    }
+    #[cfg(unix)]
+    {
+        link.is_symlink() && link.read_link().expect("Path does not exist") == dest
+    }
+}
+
+#[inline(always)]
+pub fn create_symlink(link: &Path, target: &Path) -> anyhow_ext::Result<()> {
+    #[cfg(windows)]
+    junction::create(target, link).or_else(|_| std::os::windows::fs::symlink_dir(target, link))?;
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(target, link).with_context(|| {
+        format!(
+            "Failed to symlink {} to {}",
+            target.display(),
+            link.display()
+        )
+    })?;
+    Ok(())
+}
+
+#[inline(always)]
 pub fn remove_symlink(link: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
     fn inner(link: &Path) -> anyhow_ext::Result<()> {
         #[cfg(windows)]

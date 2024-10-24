@@ -29,47 +29,6 @@ use crate::{
     util,
 };
 
-#[inline(always)]
-fn is_symlink(link: &Path) -> bool {
-    #[cfg(windows)]
-    {
-        junction::exists(link).unwrap_or(false) || link.is_symlink()
-    }
-    #[cfg(unix)]
-    {
-        link.is_symlink()
-    }
-}
-
-#[inline(always)]
-fn is_symlink_to(link: &Path, dest: &Path) -> bool {
-    #[cfg(windows)]
-    {
-        (junction::exists(link).unwrap_or(false)
-            && junction::get_target(link).expect("Path does not exist") == dest)
-            || (link.is_symlink() && link.read_link().expect("Path does not exist") == dest)
-    }
-    #[cfg(unix)]
-    {
-        link.is_symlink() && link.read_link().expect("Path does not exist") == dest
-    }
-}
-
-#[inline(always)]
-fn create_symlink(link: &Path, target: &Path) -> Result<()> {
-    #[cfg(windows)]
-    junction::create(target, link).or_else(|_| std::os::windows::fs::symlink_dir(target, link))?;
-    #[cfg(unix)]
-    std::os::unix::fs::symlink(target, link).with_context(|| {
-        format!(
-            "Failed to symlink {} to {}",
-            target.display(),
-            link.display()
-        )
-    })?;
-    Ok(())
-}
-
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct PendingLog {
     files:  Manifest,
@@ -241,7 +200,7 @@ impl Manager {
         let src_aoc = settings.merged_dir().join(aoc);
         let (dest_content, dest_aoc) = config.final_output_paths(settings.current_mode.into());
         // Remove old behavior
-        if is_symlink(&config.output) {
+        if util::is_symlink(&config.output) {
             log::info!("Removing old symlink deployment behavior");
             util::remove_symlink(&config.output)
                 .context("Failed to remove old deployment behavior symlink")?;
@@ -264,36 +223,36 @@ impl Manager {
                     fs::create_dir_all(parent)
                         .context("Failed to create parents for dest folder")?;
                 }
-                if actual_dest.exists() && !is_symlink(actual_dest) {
+                if actual_dest.exists() && !util::is_symlink(actual_dest) {
                     log::warn!("Removing old stuff from {} deploy folder", type_);
                     util::remove_dir_all(actual_dest)
                         .context("Failed to remove old deployment folder")?;
                 }
                 if actual_src.exists() && !actual_dest.exists() {
                     log::info!("Creating new symlink for {} folder", type_);
-                    create_symlink(actual_dest, actual_src)
+                    util::create_symlink(actual_dest, actual_src)
                         .context("Failed to deploy symlink")?;
                 } else if !actual_src.exists() && actual_dest.exists() {
                     log::info!("No {} files, removing link", type_);
                     util::remove_symlink(actual_dest)
                         .context("Failed to remove symlink to non-existent folder")?;
                 } else if actual_src.exists() && actual_dest.exists() &&
-                    !is_symlink_to(actual_dest, actual_src) {
+                    !util::is_symlink_to(actual_dest, actual_src) {
                     log::info!("Refreshing {} link to correct profile", type_);
                     util::remove_symlink(actual_dest)
                         .context("Failed to remove symlink to incorrect profile")?;
-                    create_symlink(actual_dest, actual_src)
+                    util::create_symlink(actual_dest, actual_src)
                         .context("Failed to create symlink to correct profile")?;
                 } else {
                     log::info!("Symlink exists, no deployment needed")
                 }
             }
         } else {
-            if is_symlink(&dest_content) {
+            if util::is_symlink(&dest_content) {
                 util::remove_symlink(&dest_content)
                     .context("Failed to remove symlink to old symlinked content")?;
             }
-            if is_symlink(&dest_aoc) {
+            if util::is_symlink(&dest_aoc) {
                 util::remove_symlink(&dest_aoc)
                     .context("Failed to remove symlink to old symlinked dlc")?;
             }
