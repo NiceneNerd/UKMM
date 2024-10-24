@@ -446,6 +446,23 @@ impl App {
                     settings::CONFIG.write().clear();
                 }
                 Message::SaveSettings => {
+                    let mut needs_reset = false;
+                    self.core.settings().platform_config().map(|old_plat| {
+                        old_plat.deploy_config.as_ref().map(|old_dep| {
+                            if let Some(new_plat) = &self.temp_settings.platform_config() {
+                                new_plat.deploy_config.as_ref().map(|new_dep| {
+                                    if old_dep.layout != new_dep.layout ||
+                                        old_dep.method != new_dep.method ||
+                                        old_dep.output != new_dep.output {
+                                        if let Ok(_) = self.core.settings()
+                                            .wipe_output(self.core.settings().current_mode.into()) {
+                                            needs_reset = true;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    });
                     let save_res = self.temp_settings.save().and_then(|_| {
                         self.core.reload()?;
                         Ok(())
@@ -463,6 +480,9 @@ impl App {
                             self.package_builder.borrow_mut().reset(self.platform());
                             self.do_update(Message::ClearSelect);
                             self.do_update(Message::ResetMods(None));
+                            if needs_reset {
+                                self.do_update(Message::ResetPending);
+                            }
                         }
                         Err(e) => self.do_update(Message::Error(e)),
                     };

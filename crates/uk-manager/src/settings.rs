@@ -14,6 +14,8 @@ use smartstring::alias::String;
 use uk_content::{constants::Language, prelude::Endian};
 use uk_reader::ResourceReader;
 
+use crate::util;
+
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Platform {
     #[default]
@@ -327,6 +329,36 @@ impl Settings {
         );
         fs::write(Self::path(), serde_yaml::to_string(self)?)?;
         log::info!("Settings saved");
+        Ok(())
+    }
+
+    pub fn wipe_output(&self, endian: Endian) -> Result<()> {
+        let (content, aoc) = match endian {
+            Endian::Big => self.wiiu_config
+                .as_ref()
+                .unwrap()
+                .deploy_config
+                .as_ref()
+                .unwrap()
+                .final_output_paths(endian),
+            Endian::Little => self.switch_config
+                .as_ref()
+                .unwrap()
+                .deploy_config
+                .as_ref()
+                .unwrap()
+                .final_output_paths(endian),
+        };
+        if util::is_symlink(content.as_ref()) {
+            util::remove_symlink(content)?;
+        } else if content.exists() {
+            util::remove_dir_all(content)?;
+        }
+        if util::is_symlink(aoc.as_ref()) {
+            util::remove_symlink(aoc)?;
+        } else if aoc.exists() {
+            util::remove_dir_all(aoc)?;
+        }
         Ok(())
     }
 
