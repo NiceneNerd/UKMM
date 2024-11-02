@@ -60,7 +60,7 @@ impl ModPackerBuilder {
         egui::Window::new("Select Dependencies")
             .anchor(Align2::CENTER_CENTER, [0., 0.])
             .show(ctx, |ui| {
-                egui::ScrollArea::new([true, false])
+                egui::ScrollArea::new([true, true])
                     .id_source("modal-pkg-deps")
                     .show_rows(
                         ui,
