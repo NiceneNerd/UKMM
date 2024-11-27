@@ -3,7 +3,6 @@ use std::{
     sync::{atomic::AtomicBool, LazyLock},
 };
 
-#[cfg(windows)]
 use anyhow_ext::Context;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 pub use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
