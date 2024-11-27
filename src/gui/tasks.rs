@@ -390,7 +390,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             .context("Failed to validate game dump")?,
     );
     if let Some(wiiu_config) = settings.wiiu_config.as_mut() {
-        if mlc_path.is_some() {
+        if base.is_some() {
             wiiu_config.dump = dump;
         }
         let deploy_config = wiiu_config.deploy_config.get_or_insert_default();
