@@ -341,28 +341,76 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 .join("Cemu/mlc01");
             path.exists().then_some(path)
         });
-    let (base, update, dlc) = mlc_path
-        .as_ref()
-        .map(|mlc_path| {
-            let title_path = mlc_path.join("usr/title");
-            static REGIONS: &[&str] = &[
-                "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
-            ];
-            let base_folder = REGIONS.iter().find_map(|r| {
-                let path = title_path.join(jstr!("00050000/{r}/content"));
-                path.exists().then_some(path)
+    static REGIONS: &[&str] = &[
+        "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
+    ];
+    let (base, update, dlc, wua) = if let Ok(title_list_cache) = settings_path.parent()
+        .expect("Lost settings path")
+        .join("title_list_cache.xml")
+        .exists_then()
+        .ok_or("Cemu title cache does not exist, set up Cemu first and try again") {
+        let title_list = fs::read_to_string(&title_list_cache).context("Failed to open Cemu title cache file")?;
+        let title_tree = roxmltree::Document::parse(&title_list)
+            .context("Failed to parse Cemu title cache file: invalid XML")?;
+        let mut base_folder: Option<PathBuf> = None;
+        let mut update_folder: Option<PathBuf> = None;
+        let mut dlc_folder: Option<PathBuf> = None;
+        let mut wua_file: Option<PathBuf> = None;
+        title_tree.descendants()
+            .filter_map(|n| {
+                if n.tag_name().name() != "title" {
+                    None
+                } else {
+                    let title_id = n.attribute("titleId").expect("invalid title");
+                    if !REGIONS.contains(&&title_id[8..]) {
+                        None
+                    } else {
+                        let format = n.descendants()
+                            .find(|c| c.tag_name().name() == "format")
+                            .expect("invalid title")
+                            .text()
+                            .expect("invalid format")
+                            .parse::<u32>()
+                            .expect("invalid format");
+                        let path = PathBuf::from(n.descendants()
+                            .find(|c| c.tag_name().name() == "path")
+                            .expect("invalid title")
+                            .text()
+                            .expect("invalid path"));
+                        Some((&title_id[..8], format, path))
+                    }
+                }
+            }).for_each(|(dump_type, format, path)| {
+                match (dump_type, format) {
+                    ("00050000", 1) => base_folder = Some(path.join("content")),
+                    ("0005000c", 1) => dlc_folder = Some(path.join("content").join("0010")),
+                    ("0005000e", 1) => update_folder = Some(path.join("content")),
+                    ("00050000", 3) => wua_file = Some(path),
+                    _ => {},
+                }
             });
-            let update_folder = REGIONS.iter().find_map(|r| {
-                let path = title_path.join(jstr!("0005000E/{r}/content"));
-                path.exists().then_some(path)
-            });
-            let dlc_folder = REGIONS.iter().find_map(|r| {
-                let path = title_path.join(jstr!("0005000C/{r}/content/0010"));
-                path.exists().then_some(path)
-            });
-            (base_folder, update_folder, dlc_folder)
-        })
-        .ok_or_else(|| anyhow::anyhow!("Could not find game dump from Cemu settings"))?;
+        (base_folder, update_folder, dlc_folder, wua_file)
+    } else {
+        mlc_path
+            .as_ref()
+            .map(|mlc_path| {
+                let title_path = mlc_path.join("usr/title");
+                let base_folder = REGIONS.iter().find_map(|r| {
+                    let path = title_path.join(jstr!("00050000/{r}/content"));
+                    path.exists().then_some(path)
+                });
+                let update_folder = REGIONS.iter().find_map(|r| {
+                    let path = title_path.join(jstr!("0005000e/{r}/content"));
+                    path.exists().then_some(path)
+                });
+                let dlc_folder = REGIONS.iter().find_map(|r| {
+                    let path = title_path.join(jstr!("0005000c/{r}/content/0010"));
+                    path.exists().then_some(path)
+                });
+                (base_folder, update_folder, dlc_folder, None)
+            })
+            .expect("Could not find unpacked game dump from Cemu settings.")
+    };
     let gfx_folder = if let Some(path) = path.with_file_name("graphicPacks").exists_then() {
         path
     } else if let Some(path) = dirs2::config_dir()
@@ -385,14 +433,15 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     };
     let mut settings = core.settings_mut();
     settings.current_mode = Platform::WiiU;
-    let dump = Arc::new(
-        ResourceReader::from_unpacked_dirs(base, update, dlc)
-            .context("Failed to validate game dump")?,
-    );
+    let dump = if wua.is_some() {
+        Arc::new(ResourceReader::from_zarchive(unsafe { wua.unwrap_unchecked() })
+            .context("Failed to validate game dump")?)
+    } else {
+        Arc::new(ResourceReader::from_unpacked_dirs(base, update, dlc)
+            .context("Failed to validate game dump")?)
+    };
     if let Some(wiiu_config) = settings.wiiu_config.as_mut() {
-        if base.is_some() {
-            wiiu_config.dump = dump;
-        }
+        wiiu_config.dump = dump;
         let deploy_config = wiiu_config.deploy_config.get_or_insert_default();
         deploy_config.auto = true;
         deploy_config.output = gfx_folder.clone();
