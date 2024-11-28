@@ -396,8 +396,8 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         let deploy_config = wiiu_config.deploy_config.get_or_insert_default();
         deploy_config.auto = true;
         deploy_config.output = gfx_folder.clone();
-        deploy_config.executable = gfx_folder
-            .with_file_name("Cemu.exe")
+        deploy_config.executable = path
+            .join("Cemu.exe")
             .exists_then()
             .map(|p| p.display().to_string());
         deploy_config.layout = uk_manager::settings::DeployLayout::WithName;
@@ -411,8 +411,8 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 method: uk_manager::settings::DeployMethod::Symlink,
                 output: gfx_folder.clone(),
                 cemu_rules: true,
-                executable: gfx_folder
-                    .with_file_name("Cemu.exe")
+                executable: path
+                    .join("Cemu.exe")
                     .exists_then()
                     .map(|p| p.display().to_string()),
                 layout: uk_manager::settings::DeployLayout::WithName,
