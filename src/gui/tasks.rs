@@ -372,12 +372,16 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                             .expect("invalid format")
                             .parse::<u32>()
                             .expect("invalid format");
-                        let path = PathBuf::from(n.descendants()
+                        if let Ok(path) = PathBuf::from(n.descendants()
                             .find(|c| c.tag_name().name() == "path")
                             .expect("invalid title")
                             .text()
-                            .expect("invalid path"));
-                        Some((&title_id[..8], format, path))
+                            .expect("invalid path"))
+                            .canonicalize() {
+                            Some((&title_id[..8], format, path))
+                        } else {
+                            None
+                        }
                     }
                 }
             }).for_each(|(dump_type, format, path)| {
