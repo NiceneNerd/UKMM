@@ -415,13 +415,15 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         path
     } else if let Some(path) = dirs2::config_dir()
         .expect("YIKES")
-        .join("Cemu/graphicPacks")
+        .join("Cemu")
+        .join("graphicPacks")
         .exists_then()
     {
         path
     } else if let Some(path) = dirs2::data_local_dir()
         .expect("YIKES")
-        .join("Cemu/graphicPacks")
+        .join("Cemu")
+        .join("graphicPacks")
         .exists_then()
     {
         path
