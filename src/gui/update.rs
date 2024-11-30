@@ -185,9 +185,9 @@ impl App {
                 }
                 Message::DeleteProfile(profile) => {
                     self.do_task(move |core| {
-                        let path = core.settings().profiles_dir().join(profile);
+                        let path = core.settings().profiles_dir().join(profile.as_str());
                         fs::remove_dir_all(path)?;
-                        Ok(Message::ReloadProfiles)
+                        Ok(Message::CleanProfile(profile))
                     })
                 }
                 Message::DuplicateProfile(profile) => {
@@ -206,6 +206,23 @@ impl App {
                         fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
                         Ok(Message::ReloadProfiles)
                     })
+                }
+                Message::CleanProfile(profile) => {
+                    let mut state = self.profiles_state.borrow_mut();
+                    let mods = state
+                        .profiles
+                        .get(profile.as_str())
+                        .unwrap()
+                        .mods()
+                        .iter()
+                        .map(|(h, m)| (*h, m.path.clone()))
+                        .collect::<HashMap<_,_>>();
+                    state.reload(&self.core);
+                    let assigned = state.all_assigned_mod_hashes();
+                    mods.iter()
+                        .filter(|(h, _)| !assigned.contains(h))
+                        .for_each(|(_, p)| fs::remove_file(p).unwrap_or_default());
+                    self.busy.set(false);
                 }
                 Message::ReloadProfiles => {
                     self.profiles_state.borrow_mut().reload(&self.core);

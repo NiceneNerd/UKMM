@@ -137,6 +137,7 @@ pub enum Message {
     ChangeProfile(String),
     ChangeSort(Sort, bool),
     CheckMeta,
+    CleanProfile(String),
     ClearDrag,
     ClearSelect,
     CloseAbout,

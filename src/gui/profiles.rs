@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use fs_err as fs;
 use smartstring::alias::String as SmartString;
-use uk_content::util::HashMap;
+use uk_content::util::{HashMap, HashSet};
 use uk_manager::mods::Profile as ProfileData;
 use uk_ui::{
     egui::{self, text::LayoutJob, Layout, TextStyle},
@@ -189,5 +189,18 @@ impl ProfileManagerState {
                     });
                 });
         }
+    }
+
+    #[inline]
+    pub fn all_assigned_mod_hashes(&self) -> HashSet<usize> {
+        self.profiles
+            .values()
+            .map(|m| m.mods()
+                .keys()
+                .copied()
+                .collect::<Vec<_>>()
+            )
+            .flatten()
+            .collect()
     }
 }
