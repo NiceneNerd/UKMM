@@ -645,7 +645,7 @@ impl VersionResponse {
 }
 
 pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
-    let url = "https://api.github.com/repos/NiceneNerd/UKMM/releases?per_page=10";
+    let url = "https://api.github.com/repos/GingerAvalanche/UKMM/releases?per_page=10";
     match response(url).and_then(|bytes| {
         serde_json::from_slice::<Vec<VersionResponse>>(&bytes)
             .context("Failed to parse GitHub response")
