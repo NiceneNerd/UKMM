@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.15.1] - 2024-12-01
+
+**Added**
+
+- Added Deploy Layout settings option, to give more control over deploy output location
+- Added extra context to various BNP conversion errors
+- Added option to install unpacked loose file mods via rules.txt
+
+**Changed**
+
+- Reworked RSTB calculation, for more efficient file sizes and fewer panic moons
+- Reworked deployment, to better support Switch emulators
+- Reworked deployment config validation, to ensure you don't accidentally leave
+  behind a bunch of useless links or files when the effective output location changes
+- Updated tooltip for deploy method, to give more clarity inside the app
+- Enabled vertical scrolling in package dependency window, for long mod lists
+
+**Fixed**
+
+- Fixed mods that include multiple occurrences of the same option in their bnp
+  throwing errors on trying to add those options to the UKMM zip
+- Fixed merging CDungeon/Static.smubin, fixes warping in over a chasm and
+  repeatedly dying in one of the DLC shrines
+- Fixed a bug where Copy mode on Windows did not copy files
+- Fixed various (but not all) errors when importing improperly-made BCML mods,
+  related to mod authors adding diff logs for files with no vanilla counterpart
+- Fixed various bugs related to BCML migration
+- Fixed a rare bug where a mod might not be properly marked for merging
+- Fixed a bug where some mods that were part of a profile could not be reinstalled
+  after deleting that profile
+- Fixed Cemu settings import
+- Fixed a bug where mods with text changes may not apply those changes, depending
+  on what language was chosen in the settings and what languages other mods contained
+- Fixed a bug where a different language than the one chosen in the settings would
+  be used for the final merge, when mods contained two many languages
+
 ## [0.15.0] - 2024-08-29
 
 This release is fairly significant and includes *multiple breaking changes* to
