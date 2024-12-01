@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed a bug where mods with text changes may not apply those changes, depending
   on what language was chosen in the settings and what languages other mods contained
 - Fixed a bug where a different language than the one chosen in the settings would
-  be used for the final merge, when mods contained two many languages
+  be used for the final merge, when mods contained too many languages
 
 ## [0.15.0] - 2024-08-29
 
