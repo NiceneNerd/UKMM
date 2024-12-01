@@ -186,8 +186,11 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
         render_setting(
             "Deploy Method",
             "There are three methods of deployment: copying, hard linking, and symlinking. \
-             Generally copying is slow and should be avoided if possible. For more on this, \
-             consult the docs.",
+             Copying is slow and should only be used to deploy for consoles. \
+             Hard links are faster and the most well-supported by Windows. \
+             Symlinks are the fastest, but may fail to deploy automatically on Windows. \
+             Always use Copy for consoles. Probably use Symlinks for emulators. \
+             For more on this, consult the docs.",
             ui,
             |ui| {
                 changed |= ui
