@@ -606,8 +606,8 @@ impl ModUnpacker {
                 bail!("Broken stock language pack for {}", self.lang);
             };
             langs.sort_unstable_by(|l1, l2| {
-                (*l1 == self.lang).cmp(&(*l2 == self.lang)).then_with(|| {
-                    (l1.short() == self.lang.short()).cmp(&(l2.short() == self.lang.short()))
+                (*l2 == self.lang).cmp(&(*l1 == self.lang)).then_with(|| {
+                    (l2.short() == self.lang.short()).cmp(&(l1.short() == self.lang.short()))
                 })
             });
             for mod_ in self.mods.iter() {
