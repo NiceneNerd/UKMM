@@ -186,7 +186,7 @@
         <Icon Id='ProductICO' SourceFile='assets/ukmm.ico'/>
         <Property Id='ARPPRODUCTICON' Value='ProductICO' />
         
-        <Property Id='ARPHELPLINK' Value='https://github.com/NiceneNerd/ukmm'/>
+        <Property Id='ARPHELPLINK' Value='https://github.com/GingerAvalanche/ukmm'/>
         
         <UI>
             <UIRef Id='WixUI_FeatureTree'/>
