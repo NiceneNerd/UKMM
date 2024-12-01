@@ -80,6 +80,14 @@ impl Language {
             .and_then(|n| Self::from_str(&n[n.len() - 4..]).ok())
     }
 
+    #[inline(always)]
+    pub fn from_message_path(path: &Path) -> Option<Self> {
+        path.file_stem()
+            .and_then(|n| n.to_str())
+            .filter(|n| n.len() >= 4)
+            .and_then(|n| Self::from_str(&n[n.len() - 12..n.len() - 8]).ok())
+    }
+
     #[inline]
     pub fn bootup_path(&self) -> smartstring::alias::String {
         let mut string = smartstring::alias::String::from("Pack/Bootup_");

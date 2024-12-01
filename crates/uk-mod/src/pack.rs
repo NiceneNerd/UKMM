@@ -437,6 +437,10 @@ impl ModPacker {
             log::trace!("Already processed {}, skipping", &canon);
             return Ok(());
         }
+        if canon.starts_with("Pack/Bootup_") {
+            log::trace!("{} must always contain the same single file, skipping", &canon);
+            return Ok(());
+        }
         if resource.as_binary().is_some() && self.meta.platform == ModPlatform::Universal {
             anyhow_ext::bail!(
                 "The resource {} is not a mergeable asset. Cross-platform mods must consist only \
@@ -464,13 +468,13 @@ impl ModPacker {
                     .inspect_err(|err| log::trace!("{err}"))
                     .or_else(|err| {
                         if let Some(lang) = canon
-                            .starts_with("Pack/Bootup_")
-                            .then(|| Language::from_path(ref_name.as_ref()))
+                            .starts_with("Message/Msg_")
+                            .then(|| Language::from_message_path(ref_name.as_ref()))
                             .flatten()
                         {
                             let langs = master.languages();
                             match langs.iter().find(|l| l.short() == lang.short()) {
-                                Some(ref_lang) => master.get_data(ref_lang.bootup_path().as_str()),
+                                Some(ref_lang) => master.get_data(ref_lang.message_path().as_str()),
                                 None => Err(err),
                             }
                         } else {
