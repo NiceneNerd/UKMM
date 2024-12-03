@@ -30,7 +30,7 @@ impl BnpConverter {
             let base = self.get_from_master_sarc(&format!(
                 "Pack/Bootup_{}.pack//Message/Msg_{}.product.ssarc",
                 self.game_lang, self.game_lang,
-            ))?;
+            )).expect("Your language in UKMM's settings should be a language your dump has.");
             if let Ok(mut texts) = MessagePack::from_binary(base) {
                 for (file, diff) in diff {
                     let msyt = texts
