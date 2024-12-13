@@ -11,7 +11,6 @@ use uk_content::{
     prelude::{Resource, String64},
     util::merge_plist,
 };
-use uk_util::OptionExt;
 
 use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
 

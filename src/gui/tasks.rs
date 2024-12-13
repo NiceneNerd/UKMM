@@ -24,7 +24,7 @@ use uk_mod::{
     Manifest, Meta,
 };
 use uk_reader::ResourceReader;
-use uk_util::{OptionExt, PathExt};
+use uk_util::PathExt;
 
 use super::{package::ModPackerBuilder, util::response, Message};
 use crate::INTERFACE;

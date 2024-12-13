@@ -18,7 +18,7 @@ use uk_ui::{
     icons::{self, IconButtonExt},
     visuals::Theme,
 };
-use uk_util::{OptionExt, OptionResultExt};
+use uk_util::OptionResultExt;
 
 use super::{App, Message};
 
