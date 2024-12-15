@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**Fixed**
+
+- Fixed Cemu settings importer on Linux
+- Fixed Copy mode deployment sometimes attempting to use file
+  copier to copy folders
+
 ## [0.15.1] - 2024-12-01
 
 **Added**
