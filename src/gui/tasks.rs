@@ -327,18 +327,21 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 .flatten()
         })
         .or_else(|| {
-            log::warn!("No MLC folder found in Cemu settings. Let's guess instead…");
             let path = path.with_file_name("mlc01");
             path.exists().then_some(path)
         })
         .or_else(|| {
-            let path = dirs2::config_dir().expect("YIKES").join("Cemu/mlc01");
+            let path = dirs2::config_dir()
+                .expect("YIKES")
+                .join("Cemu")
+                .join("mlc01");
             path.exists().then_some(path)
         })
         .or_else(|| {
             let path = dirs2::data_local_dir()
                 .expect("DOUBLE YIKES")
-                .join("Cemu/mlc01");
+                .join("Cemu")
+                .join("mlc01");
             path.exists().then_some(path)
         });
     static REGIONS: &[&str] = &[
