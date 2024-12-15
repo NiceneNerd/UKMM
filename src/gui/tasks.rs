@@ -344,15 +344,24 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 .join("mlc01");
             path.exists().then_some(path)
         });
+    let title_list_cache = dirs2::config_dir()
+        .expect("YIKES")
+        .join("Cemu")
+        .join("title_list_cache.xml")
+        .exists_then()
+        .or_else(|| {
+            dirs2::data_local_dir()
+                .expect("YIKES")
+                .join("Cemu")
+                .join("title_list_cache.xml")
+                .exists_then()
+        });
     static REGIONS: &[&str] = &[
         "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
     ];
-    let (base, update, dlc, wua) = if let Ok(title_list_cache) = settings_path.parent()
-        .expect("Lost settings path")
-        .join("title_list_cache.xml")
-        .exists_then()
-        .ok_or("Cemu title cache does not exist, set up Cemu first and try again") {
-        let title_list = fs::read_to_string(&title_list_cache).context("Failed to open Cemu title cache file")?;
+    let (base, update, dlc, wua) = if let Some(cache) = title_list_cache
+    {
+        let title_list = fs::read_to_string(&cache).context("Failed to open Cemu title cache file")?;
         let title_tree = roxmltree::Document::parse(&title_list)
             .context("Failed to parse Cemu title cache file: invalid XML")?;
         let mut base_folder: Option<PathBuf> = None;
@@ -361,9 +370,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         let mut wua_file: Option<PathBuf> = None;
         title_tree.descendants()
             .filter_map(|n| {
-                if n.tag_name().name() != "title" {
-                    None
-                } else {
+                if n.tag_name().name() == "title" {
                     let title_id = n.attribute("titleId").expect("invalid title");
                     if !REGIONS.contains(&&title_id[8..]) {
                         None
@@ -386,6 +393,8 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                             None
                         }
                     }
+                } else {
+                    None
                 }
             }).for_each(|(dump_type, format, path)| {
                 match (dump_type, format) {
