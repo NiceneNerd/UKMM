@@ -327,22 +327,21 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 .flatten()
         })
         .or_else(|| {
-            let path = path.with_file_name("mlc01");
-            path.exists().then_some(path)
+            path.with_file_name("mlc01").exists_then()
         })
         .or_else(|| {
-            let path = dirs2::config_dir()
+            dirs2::config_dir()
                 .expect("YIKES")
                 .join("Cemu")
-                .join("mlc01");
-            path.exists().then_some(path)
+                .join("mlc01")
+                .exists_then()
         })
         .or_else(|| {
-            let path = dirs2::data_local_dir()
+            dirs2::data_local_dir()
                 .expect("DOUBLE YIKES")
                 .join("Cemu")
-                .join("mlc01");
-            path.exists().then_some(path)
+                .join("mlc01")
+                .exists_then()
         });
     static REGIONS: &[&str] = &[
         "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
