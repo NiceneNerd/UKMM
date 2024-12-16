@@ -344,7 +344,10 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 .join("mlc01");
             path.exists().then_some(path)
         });
-    let title_list_cache = dirs2::config_dir()
+    static REGIONS: &[&str] = &[
+        "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
+    ];
+    let (base, update, dlc, wua) = if let Some(cache) = dirs2::config_dir()
         .expect("YIKES")
         .join("Cemu")
         .join("title_list_cache.xml")
@@ -355,11 +358,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 .join("Cemu")
                 .join("title_list_cache.xml")
                 .exists_then()
-        });
-    static REGIONS: &[&str] = &[
-        "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
-    ];
-    let (base, update, dlc, wua) = if let Some(cache) = title_list_cache
+        })
     {
         let title_list = fs::read_to_string(&cache).context("Failed to open Cemu title cache file")?;
         let title_tree = roxmltree::Document::parse(&title_list)
