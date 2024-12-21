@@ -272,7 +272,7 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             },
         );
         render_setting(
-            "Emulator Executable",
+            "Emulator Executable (Optional)",
             "Command line for the emulator to run for playing the game. This can be an \
              arbitrarily complex command which will be passed to your default shell.",
             ui,
