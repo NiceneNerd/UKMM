@@ -218,27 +218,34 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
         );
         render_setting(
             "Deploy Layout",
-            "There are two methods of deployment layout: without a folder named for UKMM, \
-             and with a folder named for UKMM. If you select With Name, UKMM will add a \
-             BreathOfTheWild_UKMM folder to the end of your Output Folder path, where appropriate. \
-             If you don't know what to choose for this: On WiiU, choose With Name. On Switch consoles or \
-             when your output folder is an atmosphere folder, choose Without Name. On Switch emulators \
-             where your output folder is NOT an atmosphere folder, choose With Name. For more on this, \
-             consult the docs.",
+            match platform {
+                Platform::WiiU => "In most cases, you want With Named Folder. \
+                This is only set to Without Named Folder by default to provide compatibility \
+                for pre-v0.15.0 installations.",
+                Platform::Switch => "What you select depends on your emulator setup: \
+                Atmosphere Layout: for consoles or Ryujinx Atmosphere mod folder \
+                Emulator Mod Layout: for Yuzu or Ryujinx mod folder",
+            },
             ui,
             |ui| {
                 changed |= ui
                     .radio_value(
                         &mut config.layout,
                         uk_manager::settings::DeployLayout::WithoutName,
-                        "Without Name",
+                        match platform {
+                            Platform::WiiU => "Without Named Folder",
+                            Platform::Switch => "Atmosphere Layout",
+                        },
                     )
                     .changed();
                 changed |= ui
                     .radio_value(
                         &mut config.layout,
                         uk_manager::settings::DeployLayout::WithName,
-                        "With Name",
+                        match platform {
+                            Platform::WiiU => "With Named Folder",
+                            Platform::Switch => "Emulator Mod Layout",
+                        },
                     )
                     .changed();
             }
