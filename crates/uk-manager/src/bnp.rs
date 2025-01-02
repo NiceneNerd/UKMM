@@ -273,65 +273,67 @@ impl BnpConverter {
             }))
         }
 
-        if let Ok(base_sarc) = self.dump.get_bytes_uncached(root_path) {
-            if !dest_path.exists() {
-                dest_path.parent().map(fs::create_dir_all).transpose()?;
-                fs::write(dest_path, &base_sarc)?;
-                Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc).with_context(
-                    || format!("Failed to parse SARC {root_path} from dump"),
-                )?))
-            } else {
-                self.packs.remove(dest_path);
-                match Sarc::new(fs::read(dest_path)?)
-                    .with_context(|| format!("Failed to parse SARC in mod at {root_path}"))
-                {
-                    Ok(stripped) => {
-                        let mut sarc = SarcWriter::from_sarc(&stripped);
-                        if let Some(parent_sarc) = self
-                            .parent_packs
-                            .get(&self.path.join(self.content).join(root_path))
-                            .or_else(|| {
-                                self.parent_packs
-                                    .get(&self.path.join(self.aoc).join(root_path))
-                            })
-                            .and_then(|path| fs::read(&*path).ok())
-                            .and_then(|bytes| Sarc::new(decompress_if(&bytes).to_vec()).ok())
-                        {
-                            inflate_sarc(&mut sarc, &stripped, parent_sarc);
-                        }
-                        let base_sarc = Sarc::new(base_sarc)
-                            .map_err(anyhow_ext::Error::from)?;
-                        inflate_sarc(&mut sarc, &stripped, base_sarc);
-                        Ok(sarc)
+        let base_sarc = self.dump.get_bytes_uncached(root_path);
+        if !dest_path.exists() {
+            let base_sarc = base_sarc
+                .with_context(|| format!("Failed to get base game SARC at {root_path}"))?;
+            dest_path.parent().map(fs::create_dir_all).transpose()?;
+            fs::write(dest_path, &base_sarc)?;
+            Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc).with_context(
+                || format!("Failed to parse SARC {root_path} from dump"),
+            )?))
+        } else {
+            self.packs.remove(dest_path);
+            match Sarc::new(fs::read(dest_path)?)
+                .with_context(|| format!("Failed to parse SARC in mod at {root_path}"))
+            {
+                Ok(stripped) => {
+                    let mut sarc = SarcWriter::from_sarc(&stripped);
+                    if let Some(parent_sarc) = self
+                        .parent_packs
+                        .get(&self.path.join(self.content).join(root_path))
+                        .or_else(|| {
+                            self.parent_packs
+                                .get(&self.path.join(self.aoc).join(root_path))
+                        })
+                        .and_then(|path| fs::read(&*path).ok())
+                        .and_then(|bytes| Sarc::new(decompress_if(&bytes).to_vec()).ok())
+                    {
+                        inflate_sarc(&mut sarc, &stripped, parent_sarc);
                     }
-                    Err(e) => {
-                        static BCML_SPECIAL: &[&str] = &[
-                            "gamedata",
-                            "savedataformat",
-                            "tera_resource.Nin_NX_NVN",
-                            "Dungeon",
-                            "Bootup_",
-                            "AocMainField",
-                        ];
-                        if dest_path
-                            .file_name()
-                            .and_then(std::ffi::OsStr::to_str)
-                            .map(|n| BCML_SPECIAL.iter().any(|s| n.starts_with(s)))
-                            .unwrap_or(false)
-                        {
-                            dest_path.parent().map(fs::create_dir_all).transpose()?;
-                            fs::write(dest_path, &base_sarc)?;
-                            Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc).with_context(
-                                || format!("Failed to parse SARC {root_path} from dump"),
-                            )?))
-                        } else {
-                            Err(e)
-                        }
+                    if let Ok(base_sarc) = base_sarc
+                        .and_then(|data| Ok(Sarc::new(data).map_err(anyhow_ext::Error::from)?))
+                    {
+                        inflate_sarc(&mut sarc, &stripped, base_sarc);
+                    }
+                    Ok(sarc)
+                }
+                Err(e) => {
+                    static BCML_SPECIAL: &[&str] = &[
+                        "gamedata",
+                        "savedataformat",
+                        "tera_resource.Nin_NX_NVN",
+                        "Dungeon",
+                        "Bootup_",
+                        "AocMainField",
+                    ];
+                    if dest_path
+                        .file_name()
+                        .and_then(std::ffi::OsStr::to_str)
+                        .map(|n| BCML_SPECIAL.iter().any(|s| n.starts_with(s)))
+                        .unwrap_or(false)
+                    {
+                        let base_sarc = base_sarc?;
+                        dest_path.parent().map(fs::create_dir_all).transpose()?;
+                        fs::write(dest_path, &base_sarc)?;
+                        Ok(SarcWriter::from_sarc(&Sarc::new(&base_sarc).with_context(
+                            || format!("Failed to parse SARC {root_path} from dump"),
+                        )?))
+                    } else {
+                        Err(e)
                     }
                 }
             }
-        } else {
-            Ok(SarcWriter::new(self.platform.into()))
         }
     }
 
