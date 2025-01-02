@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.15.2] - 2025-01-02
+
 **Fixed**
 
 - Fixed Cemu settings importer on Linux
-- Fixed Copy mode deployment sometimes attempting to use file
-  copier to copy folders
+- Fixed Copy mode deployment sometimes attempting to use file copier to copy folders
+- Fixed a regression that caused bnps that added new actors to crash
+- Fixed Open Emulator button not opening emulator properly on Windows
 
 ## [0.15.1] - 2024-12-01
 
