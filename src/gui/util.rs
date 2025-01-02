@@ -57,7 +57,8 @@ pub fn default_shell() -> &'static std::sync::LazyLock<(std::path::PathBuf, Opti
             #[cfg(target_os = "windows")]
             {
                 (
-                    which_global("pwsh.exe")
+                    which_global("cmd.exe")
+                        .or_else(|_| which_global("pwsh.exe"))
                         .or_else(|_| which_global("powershell.exe"))
                         .unwrap(),
                     None,
