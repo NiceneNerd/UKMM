@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added extra context to profile initialization errors
 
+**Fixed**
+
+- Fixed a crash that could occur if you loaded a profile that you had duplicated,
+  and hadn't restarted ukmm since you'd done that duplication
+
 ## [0.15.2] - 2025-01-02
 
 **Fixed**

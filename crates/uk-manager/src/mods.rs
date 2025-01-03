@@ -242,6 +242,25 @@ impl Manager {
             .map(|f| f)
     }
 
+    pub fn add_profile(&self, name: String) {
+        self.profiles.insert(
+            name.clone(),
+            serde_yaml::from_str(
+                &fs_err::read_to_string(
+                        self.settings
+                        .upgrade()
+                        .expect("Settings is GONE!")
+                        .read()
+                        .profiles_dir()
+                        .join(name.to_string())
+                        .join("profile.yml")
+                    )
+                    .unwrap()
+            )
+            .unwrap()
+        );
+    }
+
     pub fn create_profile_if(&self, profile: &str) -> Result<()> {
         let path = self.dir.join(profile);
         if !path.exists() {

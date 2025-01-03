@@ -193,10 +193,12 @@ impl App {
                 Message::DuplicateProfile(profile) => {
                     self.do_task(move |core| {
                         let profiles_dir = core.settings().profiles_dir();
+                        let new_profile = format!("{profile}_copy");
                         uk_manager::util::copy_dir(
-                            profiles_dir.join(&profile),
-                            profiles_dir.join(profile + "_copy"),
+                            profiles_dir.join(profile),
+                            profiles_dir.join(&new_profile),
                         )?;
+                        core.mod_manager().add_profile(new_profile.into());
                         Ok(Message::ReloadProfiles)
                     });
                 }
