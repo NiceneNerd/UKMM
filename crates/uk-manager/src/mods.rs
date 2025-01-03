@@ -274,9 +274,17 @@ impl Manager {
             .profiles()
             .map(|profile| {
                 let profile_path = path.join(profile.as_str()).join("profile.yml");
-                fs::read_to_string(profile_path)
-                    .context("Failed to read profile data")
-                    .and_then(|t| serde_yaml::from_str(&t).context("Failed to parse profile data"))
+                fs::read_to_string(&profile_path)
+                    .with_context(|| format!(
+                        "Failed to read profile data from {}",
+                        profile_path.to_string_lossy()
+                    ))
+                    .and_then(|t| serde_yaml::from_str(&t)
+                        .with_context(|| format!(
+                            "Failed to parse profile data from {}",
+                            profile_path.to_string_lossy()
+                        ))
+                    )
                     .map(|v| (profile, v))
             })
             .collect::<Result<_>>()?;

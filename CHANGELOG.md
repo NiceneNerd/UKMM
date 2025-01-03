@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**Added**
+
+- Added extra context to profile initialization errors
+
 ## [0.15.2] - 2025-01-02
 
 **Fixed**
