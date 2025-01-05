@@ -689,12 +689,24 @@ pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
 
 pub fn do_update(version: VersionResponse) -> Result<Message> {
     log::info!("Updating... UKMM will restart when complete");
-    let platform =
-        option_env!("UPDATE_PLATFORM").unwrap_or(if cfg!(windows) { "windows" } else { "linux" });
+    #[cfg(target_os = "windows")]
+    let asset_name = "ukmm-x86_64-pc-windows-msvc.zip";
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    let asset_name = "ukmm-aarch64-apple-darwin.tar.xz";
+    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+    let asset_name = "ukmm-x86_64-apple-darwin.tar.xz";
+    #[cfg(target_os = "linux")]
+    let asset_name = "ukmm-x86_64-unknown-linux-gnu.tar.xz";
+    #[cfg(not(any(
+        target_os = "windows",
+        target_os = "macos",
+        target_os = "linux"
+    )))]
+    let asset_name = "";
     let asset = version
         .assets
         .iter()
-        .find(|asset| asset.name[..asset.name.len() - 4].ends_with(platform))
+        .find(|asset| asset.name == asset_name)
         .context("No matching platform for update")?;
     let data = response(asset.browser_download_url.as_str())?;
     let tmpfile = get_temp_file();
