@@ -5,6 +5,7 @@ fn copyright_string() {
     use std::io::Write;
 
     use astrolabe::DateUtilities;
+    let start = 2022;
     let year = astrolabe::Date::now().year();
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let dest_path = format!("{}/build_info.rs", out_dir);
@@ -12,7 +13,8 @@ fn copyright_string() {
 
     writeln!(
         &mut file,
-        "pub const COPYRIGHT: &str = \"© {} Caleb Smith - GPLv3\";",
+        "pub const COPYRIGHT: &str = \"© {}-{} Caleb Smith, Ginger Chody - GPLv3\";",
+        start,
         year
     )
     .unwrap();
