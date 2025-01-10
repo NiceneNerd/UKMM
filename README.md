@@ -86,6 +86,6 @@ version 3 or later. The source is publicly available on
 Gray: Dutch localization  
 Nebroc: French localization  
 Waikuteru: German localization  
-carbonatedtea: Japanese localization  
 𝘽𝙤𝙤𝙢𝙞𝙚𝙨!★: Italian, Russian localization  
+carbonatedtea: Simplified Chinese localization  
 Harlock: Spanish localization  

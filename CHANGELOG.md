@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added extra context to profile initialization errors
 - Multiple language localization! Currently supported languages are: English,
-  Dutch, French, German, Italian, Japanese, Russian, Spanish.
-  - Looking for translators to translate: Korean, Simplified Chinese
+  Dutch, French, German, Italian, Russian, Simplified Chinese, Spanish.
+  - Looking for translators to translate: Japanese, Korean
 
 **Changed**
 

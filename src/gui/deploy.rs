@@ -21,7 +21,7 @@ impl App {
                             );
                             // ui.add_space(8.);
                             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                                ui.label(config.method.name());
+                                ui.label(loc.get(config.method.name()));
                             })
                         });
                         ui.horizontal(|ui| {
@@ -32,13 +32,11 @@ impl App {
                             // ui.add_space(8.);
                             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                                 ui.label(if config.auto {
-                                    RichText::new(
-                                        loc.get("Generic_Yes")
-                                    ).color(visuals::GREEN)
+                                    RichText::new(loc.get("Generic_Yes"))
+                                        .color(visuals::GREEN)
                                 } else {
-                                    RichText::new(
-                                        loc.get("Generic_No")
-                                    ).color(visuals::RED)
+                                    RichText::new(loc.get("Generic_No"))
+                                        .color(visuals::RED)
                                 });
                             })
                         });

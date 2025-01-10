@@ -173,11 +173,11 @@ pub enum DeployMethod {
 
 impl DeployMethod {
     #[inline(always)]
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &'static str {
         match self {
-            DeployMethod::Copy => "Copy",
-            DeployMethod::HardLink => "Hard Links",
-            DeployMethod::Symlink => "Symlink",
+            DeployMethod::Copy => "Settings_Platform_Deploy_Method_Copy",
+            DeployMethod::HardLink => "Settings_Platform_Deploy_Method_HardLink",
+            DeployMethod::Symlink => "Settings_Platform_Deploy_Method_Symlink",
         }
     }
 }

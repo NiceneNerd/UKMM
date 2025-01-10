@@ -95,7 +95,7 @@ impl LocLang {
 
 pub struct Localization<'a> {
     pub language: LocLang,
-    strings: DashMap<&'static str, Cow<'a, str>>
+    strings: DashMap<&'a str, Cow<'a, str>>
 }
 
 impl<'a> From<LocLang> for Localization<'a> {
@@ -119,7 +119,7 @@ impl<'a> From<LocLang> for Localization<'a> {
 }
 
 impl<'a> Localization<'a> {
-    pub fn get(&self, key: &'static str) -> Cow<'a, str> {
+    pub fn get(&self, key: &'a str) -> Cow<'a, str> {
         self.strings.get(&key)
             .map(|v| v.clone())
             .unwrap_or(key.into())
