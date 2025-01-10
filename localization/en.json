@@ -134,7 +134,7 @@
     "Settings_Platform_Deploy": "Deployment",
     "Settings_Platform_Deploy_Auto": "Auto Deploy",
     "Settings_Platform_Deploy_Auto_Desc": "Whether to automatically deploy changes to the mod configuration every time they are applied.",
-    "Settings_Platform_Deploy_Emu": "Emulator Executabule (Optional)",
+    "Settings_Platform_Deploy_Emu": "Emulator Executable (Optional)",
     "Settings_Platform_Deploy_Emu_Desc": "Command line for the emulator to run for playing the game.\nThis can be an arbitrarily complex command which will be passed to your default shell.",
     "Settings_Platform_Deploy_Layout": "Deploy Layout",
     "Settings_Platform_Deploy_Layout_NX_Desc": "What you select depends on your emulator setup.\nAtmosphere Layout: for Atmosphere mod folder with consoles or Ryujinx.\nEmulator Mod Layout: for Yuzu or Ryujinx mod folder",
