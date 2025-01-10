@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Added**
 
 - Added extra context to profile initialization errors
+- Multiple language localization! Currently supported languages are: English,
+  Dutch, French, German, Italian, Japanese, Russian, Spanish.
+  - Looking for translators to translate: Korean, Simplified Chinese
+
+**Changed**
+
+- When a mod is installed in the wrong mode (i.e. a WiiU mod in Switch mode or
+  a Switch mod in WiiU mode) the error message will now be more straightforward
+- When installing a mod with no metadata, the message will be more clear, and the
+  archive name will be put in the mod name field by default
 
 **Fixed**
 
