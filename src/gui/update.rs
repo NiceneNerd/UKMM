@@ -1,4 +1,5 @@
 use strfmt::Format;
+use uk_content::prelude::Endian;
 
 use super::*;
 
@@ -292,7 +293,11 @@ impl App {
                     {
                         self.do_update(Message::Error(anyhow_ext::anyhow!(
                             "Mod is for {:?}, current mode is {}",
-                            mod_.meta.platform,
+                            match mod_.meta.platform {
+                                ModPlatform::Specific(Endian::Little) => "Switch",
+                                ModPlatform::Specific(Endian::Big) => "Wii U",
+                                ModPlatform::Universal => "any console",
+                            },
                             self.platform()
                         )));
                     } else if !mod_.meta.options.is_empty() {
