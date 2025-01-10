@@ -33,7 +33,11 @@ impl MetaInputModal {
     pub fn open(&mut self, path: PathBuf, platform: Platform) {
         self.meta = Some(Meta {
             api: env!("CARGO_PKG_VERSION").into(),
-            name: Default::default(),
+            name: path.file_stem()
+                .expect("Filepath has no file?")
+                .to_string_lossy()
+                .replace("_", " ")
+                .into(),
             description: Default::default(),
             category: "Other".into(),
             author: Default::default(),
