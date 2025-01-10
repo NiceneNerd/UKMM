@@ -81,11 +81,11 @@ version 3 or later. The source is publicly available on
 
 ## Special Thanks
 
-@leoetlino: oead, many other BotW libraries
-@anna-is-cute: original BotW MSBT libraries
-Gray: Dutch localization
-Nebroc: French localization
-Waikuteru: German localization
-carbonatedtea: Japanese localization
-𝘽𝙤𝙤𝙢𝙞𝙚𝙨!★: Italian, Russian localization
-Harlock: Spanish localization
+@leoetlino: oead, many other BotW libraries  
+@anna-is-cute: original BotW MSBT libraries  
+Gray: Dutch localization  
+Nebroc: French localization  
+Waikuteru: German localization  
+carbonatedtea: Japanese localization  
+𝘽𝙤𝙤𝙢𝙞𝙚𝙨!★: Italian, Russian localization  
+Harlock: Spanish localization  
