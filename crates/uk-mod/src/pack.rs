@@ -180,7 +180,7 @@ impl ModPacker {
                 .context("rules.txt missing mod description")?
                 .trim_matches('"')
                 .into(),
-            category: Default::default(),
+            category: crate::ModCategory::Other,
             author: Default::default(),
             masters: Default::default(),
             options: vec![],
@@ -200,7 +200,7 @@ impl ModPacker {
             api: env!("CARGO_PKG_VERSION").into(),
             name: info.name,
             description: info.desc,
-            category: Default::default(),
+            category: crate::ModCategory::Other,
             author: Default::default(),
             masters: Default::default(),
             options: (!info.options.multi.is_empty())
@@ -728,7 +728,7 @@ mod tests {
                 platform: ModPlatform::Specific(Endian::Big),
                 name: "Test Mod".into(),
                 version: "0.1.0".into(),
-                category: "Overhaul".into(),
+                category: crate::ModCategory::Overhaul,
                 author: "Lord Caleb".into(),
                 description: "A test mod".into(),
                 masters: IndexMap::default(),

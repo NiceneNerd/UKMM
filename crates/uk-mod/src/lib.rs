@@ -198,25 +198,139 @@ pub enum OptionGroup {
     Multiple(MultipleOptionGroup),
 }
 
-pub static CATEGORIES: &[&str] = &[
-    "Animations",
-    "Balance",
-    "Crafting",
-    "Customization",
-    "Difficulty",
-    "Enemies",
-    "Expansion",
-    "Items",
-    "Meme/Gimmick",
-    "Other",
-    "Overhaul",
-    "Overworld",
-    "Player",
-    "QoL",
-    "Quest",
-    "Shrine",
-    "Skin/Texture",
-];
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ModCategory {
+    #[serde(alias = "")]
+    None,
+    Animations,
+    Balance,
+    Crafting,
+    Customization,
+    Difficulty,
+    Enemies,
+    Expansion,
+    Items,
+    #[serde(alias = "Meme/Gimmick")]
+    Meme,
+    Other,
+    Overhaul,
+    Overworld,
+    Player,
+    QoL,
+    Quest,
+    Shrine,
+    #[serde(alias = "Skin/Texture")]
+    Texture
+}
+
+impl ModCategory {
+    pub fn iter() -> std::slice::Iter<'static, Self> {
+        [
+            Self::Animations,
+            Self::Balance,
+            Self::Crafting,
+            Self::Customization,
+            Self::Difficulty,
+            Self::Enemies,
+            Self::Expansion,
+            Self::Items,
+            Self::Meme,
+            Self::Other,
+            Self::Overhaul,
+            Self::Overworld,
+            Self::Player,
+            Self::QoL,
+            Self::Quest,
+            Self::Shrine,
+            Self::Texture,
+            Self::None,
+        ]
+        .iter()
+    }
+
+    pub fn to_loc_str(&self) -> &'static str {
+        match self {
+            ModCategory::None => "Mod_Category_None",
+            ModCategory::Animations => "Mod_Category_Anim",
+            ModCategory::Balance => "Mod_Category_Balance",
+            ModCategory::Crafting => "Mod_Category_Crafting",
+            ModCategory::Customization => "Mod_Category_Customization",
+            ModCategory::Difficulty => "Mod_Category_Difficulty",
+            ModCategory::Enemies => "Mod_Category_Enemies",
+            ModCategory::Expansion => "Mod_Category_Expansion",
+            ModCategory::Items => "Mod_Category_Items",
+            ModCategory::Meme => "Mod_Category_Meme",
+            ModCategory::Other => "Mod_Category_Other",
+            ModCategory::Overhaul => "Mod_Category_Overhaul",
+            ModCategory::Overworld => "Mod_Category_Overworld",
+            ModCategory::Player => "Mod_Category_Player",
+            ModCategory::QoL => "Mod_Category_QoL",
+            ModCategory::Quest => "Mod_Category_Quest",
+            ModCategory::Shrine => "Mod_Category_Shrine",
+            ModCategory::Texture => "Mod_Category_Texture",
+        }
+    }
+
+    #[inline(always)]
+    pub fn to_str(&self) -> &'static str {
+        <&'static str>::from(*self)
+    }
+
+    #[inline(always)]
+    pub fn u8(&self) -> u8 {
+        *self as u8
+    }
+}
+
+impl From<ModCategory> for &'static str {
+    fn from(value: ModCategory) -> Self {
+        match value {
+            ModCategory::None => "None",
+            ModCategory::Animations => "Animations",
+            ModCategory::Balance => "Balance",
+            ModCategory::Crafting => "Crafting",
+            ModCategory::Customization => "Customization",
+            ModCategory::Difficulty => "Difficulty",
+            ModCategory::Enemies => "Enemies",
+            ModCategory::Expansion => "Expansion",
+            ModCategory::Items => "Items",
+            ModCategory::Meme => "Meme/Gimmick",
+            ModCategory::Other => "Other",
+            ModCategory::Overhaul => "Overhaul",
+            ModCategory::Overworld => "Overworld",
+            ModCategory::Player => "Player",
+            ModCategory::QoL => "QoL",
+            ModCategory::Quest => "Quest",
+            ModCategory::Shrine => "Shrine",
+            ModCategory::Texture => "Skin/Texture",
+        }
+    }
+}
+
+impl From<&str> for ModCategory {
+    fn from(value: &str) -> Self {
+        match value {
+            "Animations" => Self::Animations,
+            "Balance" => Self::Balance,
+            "Crafting" => Self::Crafting,
+            "Customization" => Self::Customization,
+            "Difficulty" => Self::Difficulty,
+            "Enemies" => Self::Enemies,
+            "Expansion" => Self::Expansion,
+            "Items" => Self::Items,
+            "Meme/Gimmick" => Self::Meme,
+            "Other" => Self::Other,
+            "Overhaul" => Self::Overhaul,
+            "Overworld" => Self::Overworld,
+            "Player" => Self::Player,
+            "QoL" => Self::QoL,
+            "Quest" => Self::Quest,
+            "Shrine" => Self::Shrine,
+            "Skin/Texture" => Self::Texture,
+            _ => Self::None,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub enum ModPlatform {
@@ -247,7 +361,7 @@ pub struct Meta {
     pub name: String,
     pub version: String,
     pub author: String,
-    pub category: String,
+    pub category: ModCategory,
     pub description: String,
     pub platform: ModPlatform,
     pub url: Option<String>,
@@ -307,7 +421,7 @@ mod tests {
                 api: env!("CARGO_PKG_VERSION").into(),
                 name: "Test Mod".into(),
                 description: "A sample UKMM mod".into(),
-                category: "Other".into(),
+                category: ModCategory::Other,
                 author: "Nicene Nerd".into(),
                 platform: ModPlatform::Universal,
                 url: None,

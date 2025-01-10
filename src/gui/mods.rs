@@ -257,7 +257,7 @@ impl App {
                                     });
                                     for label in [
                                         mod_.meta.name.as_str(),
-                                        mod_.meta.category.as_str(),
+                                        &LOCALIZATION.read().get(mod_.meta.category.to_loc_str()),
                                         mod_.meta.version.to_string().as_str(),
                                         self.mods
                                             .iter()
@@ -331,7 +331,7 @@ impl App {
                 .1,
             );
             for label in [
-                mod_.meta.category.as_str(),
+                &LOCALIZATION.read().get(mod_.meta.category.to_loc_str()),
                 mod_.meta.version.to_string().as_str(),
                 index.to_string().as_str(),
             ] {

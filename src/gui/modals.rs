@@ -1,5 +1,5 @@
 use uk_manager::settings::Platform;
-use uk_mod::{Meta, CATEGORIES};
+use uk_mod::{Meta, ModCategory};
 use util::SmartStringWrapper;
 
 use super::*;
@@ -39,7 +39,7 @@ impl MetaInputModal {
                 .replace("_", " ")
                 .into(),
             description: Default::default(),
-            category: "Other".into(),
+            category: ModCategory::Other,
             author: Default::default(),
             masters: Default::default(),
             options: Default::default(),
@@ -68,10 +68,14 @@ impl MetaInputModal {
                     ui.label(loc.get("Info_Name"));
                     ui.text_edit_singleline(&mut SmartStringWrapper(&mut meta.name));
                     egui::ComboBox::new("mod-meta-cat", loc.get("Info_Category"))
-                        .selected_text(meta.category.as_str())
+                        .selected_text(loc.get(meta.category.to_loc_str()))
                         .show_ui(ui, |ui| {
-                            CATEGORIES.iter().for_each(|cat| {
-                                ui.selectable_value(&mut meta.category, (*cat).into(), *cat);
+                            ModCategory::iter().for_each(|cat| {
+                                ui.selectable_value(
+                                    &mut meta.category,
+                                    *cat,
+                                    loc.get(cat.to_loc_str())
+                                );
                             });
                         });
                     ui.label(loc.get("Info_Description"));

@@ -79,7 +79,7 @@ impl Component for ModInfo<'_> {
             [
                 (loc.get("Info_Name"), mod_.meta.name.as_str()),
                 (loc.get("Info_Version"), ver.as_str()),
-                (loc.get("Info_Category"), mod_.meta.category.as_str()),
+                (loc.get("Info_Category"), mod_.meta.category.into()),
                 (loc.get("Info_Author"), mod_.meta.author.as_str()),
             ]
             .into_iter()

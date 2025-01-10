@@ -125,7 +125,7 @@ impl Sort {
             }
             Sort::Category => {
                 Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                    a.meta.category.cmp(&b.meta.category)
+                    a.meta.category.u8().cmp(&b.meta.category.u8())
                 })
             }
             Sort::Version => {

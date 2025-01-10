@@ -6,7 +6,7 @@ use rustc_hash::FxHashSet;
 use uk_manager::settings::Platform;
 use uk_mod::{
     ExclusiveOptionGroup, Meta, ModOption, ModOptionGroup, ModPlatform, MultipleOptionGroup,
-    OptionGroup, CATEGORIES,
+    OptionGroup, ModCategory,
 };
 use uk_ui::{
     egui::{self, Align2, Context, Id, Layout, Response, TextStyle, Ui},
@@ -39,7 +39,7 @@ impl ModPackerBuilder {
                 name: Default::default(),
                 version: "1.0.0".into(),
                 author: Default::default(),
-                category: "Other".into(),
+                category: ModCategory::Other,
                 description: Default::default(),
                 platform: uk_mod::ModPlatform::Specific(platform.into()),
                 url: Default::default(),
@@ -424,10 +424,14 @@ impl ModPackerBuilder {
             name = loc.get("Info_Category");
             render_field(&name, ui, |ui| {
                 egui::ComboBox::new(id.with("category"), "")
-                    .selected_text(self.meta.category.as_str())
+                    .selected_text(loc.get(self.meta.category.to_loc_str()))
                     .show_ui(ui, |ui| {
-                        CATEGORIES.iter().for_each(|cat| {
-                            ui.selectable_value(&mut self.meta.category, (*cat).into(), *cat);
+                        ModCategory::iter().for_each(|cat| {
+                            ui.selectable_value(
+                                &mut self.meta.category,
+                                *cat,
+                                loc.get(cat.to_loc_str())
+                            );
                         });
                     })
                     .response
