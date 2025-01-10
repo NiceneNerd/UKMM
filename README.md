@@ -82,10 +82,10 @@ version 3 or later. The source is publicly available on
 ## Special Thanks
 
 [Léo Lam](https://github.com/leoetlino): oead, many other BotW libraries  
-[Anna](https://github.com/anna-is-cute): original BotW MSBT libraries  
+[Anna Clemens](https://github.com/anna-is-cute): original BotW MSBT libraries  
 Gray: Dutch localization  
 Nebroc: French localization  
 Waikuteru: German localization  
 𝘽𝙤𝙤𝙢𝙞𝙚𝙨!★: Italian, Russian localization  
-carbonatedtea: Simplified Chinese localization  
+[carbonatedtea](https://github.com/k-carbonatedtea): Simplified Chinese localization  
 Harlock: Spanish localization  
