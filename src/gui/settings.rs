@@ -515,7 +515,7 @@ impl App {
                         .on_hover_text(loc.get("Generic_Reset"))
                         .clicked()
                     {
-                        self.temp_settings.lang = self.core.settings().lang;
+                        self.do_update(Message::SetLanguage(self.core.settings().lang));
                         CONFIG.write().clear();
                         self.do_update(Message::ResetSettings);
                     }
@@ -748,6 +748,7 @@ impl App {
                             self.do_update(Message::SaveSettings);
                         }
                         if ui.button(loc.get("Generic_Reset")).clicked() {
+                            self.do_update(Message::SetLanguage(self.core.settings().lang));
                             CONFIG.write().clear();
                             self.do_update(Message::ResetSettings);
                         }
