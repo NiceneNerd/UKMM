@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -91,12 +93,12 @@ impl LocLang {
     }
 }
 
-pub struct Localization {
+pub struct Localization<'a> {
     pub language: LocLang,
-    strings: DashMap<&'static str, &'static str>
+    strings: DashMap<&'static str, Cow<'a, str>>
 }
 
-impl From<LocLang> for Localization {
+impl<'a> From<LocLang> for Localization<'a> {
     fn from(value: LocLang) -> Self {
         Self {
             strings: match value {
@@ -116,11 +118,11 @@ impl From<LocLang> for Localization {
     }
 }
 
-impl Localization {
-    pub fn get(&self, key: &'static str) -> &'static str {
+impl<'a> Localization<'a> {
+    pub fn get(&self, key: &'static str) -> Cow<'a, str> {
         self.strings.get(&key)
-            .map(|v| &**v)
-            .unwrap_or(key)
+            .map(|v| v.clone())
+            .unwrap_or(key.into())
     }
 
     pub fn update_language(&mut self, lang: &LocLang) {

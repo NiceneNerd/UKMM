@@ -158,7 +158,7 @@ impl ModPackerBuilder {
                 let group_name = if opt_group.name().is_empty() {
                     loc.get("Options_Group_New")
                 } else {
-                    opt_group.name()
+                    opt_group.name().into()
                 };
                 egui::CollapsingHeader::new(group_name)
                     .default_open(true)
@@ -212,6 +212,7 @@ impl ModPackerBuilder {
                             .on_hover_text(loc.get("Options_Group_Required_Desc"));
                         if let OptionGroup::Exclusive(group) = opt_group {
                             let id = Id::new(group.name.as_str()).with("default");
+                            let default = loc.get("Options_None");
                             let def_name = group
                                 .default
                                 .as_ref()
@@ -221,7 +222,7 @@ impl ModPackerBuilder {
                                         .iter()
                                         .find_map(|o| o.path.eq(opt).then(|| o.name.as_str()))
                                 })
-                                .unwrap_or(loc.get("Options_None"));
+                                .unwrap_or(&default);
                             egui::ComboBox::new(id, loc.get("Options_Default"))
                                 .selected_text(def_name)
                                 .show_ui(ui, |ui| {
@@ -284,7 +285,7 @@ impl ModPackerBuilder {
             let opt_name = if option.name.is_empty() {
                 loc.get("Options_New")
             } else {
-                option.name.as_str()
+                option.name.as_str().into()
             };
             egui::CollapsingHeader::new(opt_name)
                 .id_source(id.with("header"))
@@ -371,13 +372,18 @@ impl ModPackerBuilder {
                 }
             });
             ui.add_space(8.0);
-            render_field(loc.get("Package_RootFolder"), ui, |ui| {
-                let res = ui.folder_picker(&mut self.source);
-                if res.changed() {
-                    app.do_update(Message::CheckMeta);
+            let mut name = loc.get("Package_RootFolder");
+            render_field(
+                &name,
+                ui,
+                |ui| {
+                    let res = ui.folder_picker(&mut self.source);
+                    if res.changed() {
+                        app.do_update(Message::CheckMeta);
+                    }
+                    res
                 }
-                res
-            });
+            );
             let mut cross = matches!(self.meta.platform, ModPlatform::Universal);
             if ui
                 .checkbox(&mut cross, loc.get("Package_CrossPlatform"))
@@ -390,10 +396,12 @@ impl ModPackerBuilder {
                     self.meta.platform = ModPlatform::Specific(app.platform().into());
                 }
             }
-            render_field(loc.get("Info_Name"), ui, |ui| {
+            name = loc.get("Info_Name");
+            render_field(&name, ui, |ui| {
                 ui.text_edit_singleline(&mut SmartStringWrapper(&mut self.meta.name))
             });
-            render_field(loc.get("Info_Version"), ui, |ui| {
+            name = loc.get("Info_Version");
+            render_field(&name, ui, |ui| {
                 let tmp_version = ui.create_temp_string(
                     "mod-self-version",
                     Some(self.meta.version.as_str().into()),
@@ -409,10 +417,12 @@ impl ModPackerBuilder {
                 }
                 res
             });
-            render_field(loc.get("Info_Author"), ui, |ui| {
+            name = loc.get("Info_Author");
+            render_field(&name, ui, |ui| {
                 ui.text_edit_singleline(&mut SmartStringWrapper(&mut self.meta.author))
             });
-            render_field(loc.get("Info_Category"), ui, |ui| {
+            name = loc.get("Info_Category");
+            render_field(&name, ui, |ui| {
                 egui::ComboBox::new(id.with("category"), "")
                     .selected_text(self.meta.category.as_str())
                     .show_ui(ui, |ui| {
@@ -422,7 +432,8 @@ impl ModPackerBuilder {
                     })
                     .response
             });
-            render_field(loc.get("Info_URL"), ui, |ui| {
+            let name = loc.get("Info_URL");
+            render_field(&name, ui, |ui| {
                 let id = id.with("url");
                 let url = ui
                     .get_temp_string(id.with("tmp"))

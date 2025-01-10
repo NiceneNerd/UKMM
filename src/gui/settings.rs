@@ -184,9 +184,11 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
     let mut changed = false;
     ui.group(|ui| {
         ui.allocate_space([ui.available_width(), -8.0].into());
+        let mut name = loc.get("Settings_Platform_Deploy_Method");
+        let mut description = loc.get("Settings_Platform_Deploy_Method_Desc");
         render_setting(
-            loc.get("Settings_Platform_Deploy_Method"),
-            loc.get("Settings_Platform_Deploy_Method_Desc"),
+            &name,
+            &description,
             ui,
             |ui| {
                 changed |= ui
@@ -212,12 +214,14 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                     .changed();
             },
         );
+        name = loc.get("Settings_Platform_Deploy_Layout");
+        description = match platform {
+            Platform::WiiU => loc.get("Settings_Platform_Deploy_Layout_WiiU_Desc"),
+            Platform::Switch => loc.get("Settings_Platform_Deploy_Layout_NX_Desc"),
+        };
         render_setting(
-            loc.get("Settings_Platform_Deploy_Layout"),
-            match platform {
-                Platform::WiiU => loc.get("Settings_Platform_Deploy_Layout_WiiU_Desc"),
-                Platform::Switch => loc.get("Settings_Platform_Deploy_Layout_NX_Desc"),
-            },
+            &name,
+            &description,
             ui,
             |ui| {
                 changed |= ui
@@ -246,18 +250,22 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                     .changed();
             }
         );
+        name = loc.get("Settings_Platform_Deploy_Auto");
+        description = loc.get("Settings_Platform_Deploy_Auto_Desc");
         render_setting(
-            loc.get("Settings_Platform_Deploy_Auto"),
-            loc.get("Settings_Platform_Deploy_Auto_Desc"),
+            &name,
+            &description,
             ui,
             |ui| {
                 changed |= ui.checkbox(&mut config.auto, "").changed();
             },
         );
         if platform == Platform::WiiU {
+            name = loc.get("Settings_Platform_Deploy_Rules");
+            description = loc.get("Settings_Platform_Deploy_Rules_Desc");
             render_setting(
-                loc.get("Settings_Platform_Deploy_Rules"),
-                loc.get("Settings_Platform_Deploy_Rules_Desc"),
+                &name,
+                &description,
                 ui,
                 |ui| {
                     changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
@@ -265,17 +273,21 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             );
             ui.add_space(8.0);
         }
+        name = loc.get("Settings_Platform_Deploy_Output");
+        description = loc.get("Settings_Platform_Deploy_Output_Desc");
         render_setting(
-            loc.get("Settings_Platform_Deploy_Output"),
-            loc.get("Settings_Platform_Deploy_Output_Desc"),
+            &name,
+            &description,
             ui,
             |ui| {
                 changed |= ui.folder_picker(&mut config.output).changed();
             },
         );
+        name = loc.get("Settings_Platform_Deploy_Emu");
+        description = loc.get("Settings_Platform_Deploy_Emu_Desc");
         render_setting(
-            loc.get("Settings_Platform_Deploy_Emu"),
-            loc.get("Settings_Platform_Deploy_Emu_Desc"),
+            &name,
+            &description,
             ui,
             |ui| {
                 changed |= ui
@@ -298,9 +310,11 @@ fn render_platform_config(
         .entry(platform)
         .or_insert_with(|| config.as_ref().map(|c| c.into()).unwrap_or_default());
     let loc = LOCALIZATION.read();
+    let mut name = loc.get("Settings_Platform_Language");
+    let mut description = loc.get("Settings_Platform_Language_Desc");
     render_setting(
-        loc.get("Settings_Platform_Language"),
-        loc.get("Settings_Platform_Language_Desc"),
+        &name,
+        &description,
         ui,
         |ui| {
             egui::ComboBox::new(format!("lang-{platform}"), "")
@@ -319,16 +333,18 @@ fn render_platform_config(
     ui.group(|ui| {
         ui.allocate_space([ui.available_width(), -8.0].into());
         if platform == Platform::WiiU {
+            name = loc.get("Settings_Platform_Dump_Type");
+            description = loc.get("Settings_Platform_Dump_Type_Desc");
             render_setting(
-                loc.get("Settings_Platform_Dump_Type"),
-                loc.get("Settings_Platform_Dump_Type_Desc"),
+                &name,
+                &description,
                 ui,
                 |ui| {
                     if ui
-                        .radio(matches!(
-                            config.dump, DumpType::Unpacked { .. }),
-                            loc.get("Settings_Platform_Dump_Type_Unpacked"
-                        ))
+                        .radio(
+                            matches!(config.dump, DumpType::Unpacked { .. }),
+                            loc.get("Settings_Platform_Dump_Type_Unpacked")
+                        )
                         .clicked()
                     {
                         config.dump = DumpType::Unpacked {
@@ -340,10 +356,10 @@ fn render_platform_config(
                         changed = true;
                     }
                     if ui
-                        .radio(matches!(
-                            config.dump, DumpType::ZArchive { .. }),
-                            loc.get("Settings_Platform_Dump_Type_WUA"
-                        ))
+                        .radio(
+                            matches!(config.dump, DumpType::ZArchive { .. }),
+                            loc.get("Settings_Platform_Dump_Type_WUA")
+                        )
                         .clicked()
                     {
                         config.dump = DumpType::ZArchive {
@@ -364,15 +380,19 @@ fn render_platform_config(
                 update_dir,
                 aoc_dir,
             } => {
+                (name, description) = match platform {
+                    Platform::WiiU => (
+                        loc.get("Settings_Platform_Dump_WiiU_Base"),
+                        loc.get("Settings_Platform_Dump_WiiU_Base_Desc")
+                    ),
+                    Platform::Switch => (
+                        loc.get("Settings_Platform_Dump_NX_Base"),
+                        loc.get("Settings_Platform_Dump_NX_Base_Desc")
+                    ),
+                };
                 render_setting(
-                    match platform {
-                        Platform::WiiU => loc.get("Settings_Platform_Dump_WiiU_Base"),
-                        Platform::Switch => loc.get("Settings_Platform_Dump_NX_Base"),
-                    },
-                    match platform {
-                        Platform::WiiU => loc.get("Settings_Platform_Dump_WiiU_Base_Desc"),
-                        Platform::Switch => loc.get("Settings_Platform_Dump_NX_Base_Desc"),
-                    },
+                    &name,
+                    &description,
                     ui,
                     |ui| {
                         if ui
@@ -385,9 +405,11 @@ fn render_platform_config(
                     },
                 );
                 if platform == Platform::WiiU {
+                    name = loc.get("Settings_Platform_Dump_Update");
+                    description = loc.get("Settings_Platform_Dump_Update_Desc");
                     render_setting(
-                        loc.get("Settings_Platform_Dump_Update"),
-                        loc.get("Settings_Platform_Dump_Update_Desc"),
+                        &name,
+                        &description,
                         ui,
                         |ui| {
                             if ui
@@ -400,12 +422,14 @@ fn render_platform_config(
                         },
                     );
                 }
+                name = loc.get("Settings_Platform_Dump_DLC");
+                description = match platform {
+                    Platform::WiiU => loc.get("Settings_Platform_Dump_DLC_WiiU_Desc"),
+                    Platform::Switch => loc.get("Settings_Platform_Dump_DLC_NX_Desc"),
+                };
                 render_setting(
-                    loc.get("Settings_Platform_Dump_DLC"),
-                    match platform {
-                        Platform::WiiU => loc.get("Settings_Platform_Dump_DLC_WiiU_Desc"),
-                        Platform::Switch => loc.get("Settings_Platform_Dump_DLC_NX_Desc"),
-                    },
+                    &name,
+                    &description,
                     ui,
                     |ui| {
                         if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
@@ -421,9 +445,11 @@ fn render_platform_config(
                 aoc_dir: _,
                 host_path,
             } => {
+                name = loc.get("Settings_Platform_Dump_WUA");
+                description = loc.get("Settings_Platform_Dump_WUA_Desc");
                 render_setting(
-                    loc.get("Settings_Platform_Dump_WUA"),
-                    loc.get("Settings_Platform_Dump_WUA_Desc"),
+                    &name,
+                    &description,
                     ui,
                     |ui| {
                         changed |= ui.file_picker(host_path).changed();
@@ -529,9 +555,11 @@ impl App {
                                 }
                             }
                         }
+                        let mut name = loc.get("Settings_Theme");
+                        let mut description = loc.get("Settings_Theme_Desc");
                         render_setting(
-                            loc.get("Settings_Theme"),
-                            loc.get("Settings_Theme_Desc"),
+                            &name,
+                            &description,
                             ui,
                             |ui| {
                                 egui::ComboBox::new("ui-theme", "")
@@ -553,9 +581,11 @@ impl App {
                                     });
                             }
                         );
+                        name = loc.get("Settings_Language");
+                        description = loc.get("Settings_Language_Desc");
                         render_setting(
-                            loc.get("Settings_Language"),
-                            loc.get("Settings_Language_Desc"),
+                            &name,
+                            &description,
                             ui,
                             |ui| {
                                 egui::ComboBox::new("lang-ukmm", "")
@@ -576,9 +606,11 @@ impl App {
                                     });
                             },
                         );
+                        name = loc.get("Settings_Mode");
+                        description = loc.get("Settings_Mode_Desc");
                         render_setting(
-                            loc.get("Settings_Mode"),
-                            loc.get("Settings_Mode_Desc"),
+                            &name,
+                            &description,
                             ui,
                             |ui| {
                                 ui.radio_value(
@@ -593,23 +625,29 @@ impl App {
                                 );
                             },
                         );
+                        name = loc.get("Settings_Storage");
+                        description = loc.get("Settings_Storage_Desc");
                         render_setting(
-                            loc.get("Settings_Storage"),
-                            loc.get("Settings_Storage_Desc"),
+                            &name,
+                            &description,
                             ui,
                             |ui| {
                                 ui.folder_picker(&mut settings.storage_dir);
                             },
                         );
+                        name = loc.get("Settings_Sys7z");
+                        description = loc.get("Settings_Sys7z_Desc");
                         render_setting(
-                            loc.get("Settings_Sys7z"),
-                            loc.get("Settings_Sys7z_Desc"),
+                            &name,
+                            &description,
                             ui,
                             |ui| ui.checkbox(&mut settings.system_7z, ""),
                         );
+                        name = loc.get("Settings_Changelog");
+                        description = loc.get("Settings_Changelog_Desc");
                         render_setting(
-                            loc.get("Settings_Changelog"),
-                            loc.get("Settings_Changelog_Desc"),
+                            &name,
+                            &description,
                             ui,
                             |ui| ui.add(Checkbox::new(&mut settings.show_changelog, "")),
                         );

@@ -161,7 +161,8 @@ pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
             manifest.content_files.hash(&mut hasher);
             let mut roots = ROOTS.write();
             let content_root = roots.entry(hasher.finish()).or_insert_with(|| {
-                let mut root = PathNode::dir(loc.get("Info_Manifest_BaseFiles"));
+                let val = loc.get("Info_Manifest_BaseFiles");
+                let mut root = PathNode::dir(&val);
                 manifest.content_files.iter().for_each(|file| {
                     root.build_tree(&file.split('/').map(|s| s.to_owned()).collect(), 0);
                 });
@@ -174,7 +175,8 @@ pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
             manifest.aoc_files.hash(&mut hasher);
             let mut roots = ROOTS.write();
             let aoc_root = roots.entry(hasher.finish()).or_insert_with(|| {
-                let mut root = PathNode::dir(loc.get("Info_Manifest_DLCFiles"));
+                let val = loc.get("Info_Manifest_DLCFiles");
+                let mut root = PathNode::dir(&val);
                 manifest.aoc_files.iter().for_each(|file| {
                     root.build_tree(&file.split('/').map(|s| s.to_owned()).collect(), 0);
                 });
