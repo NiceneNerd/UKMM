@@ -255,9 +255,9 @@ impl Manager {
                         .join(name.to_string())
                         .join("profile.yml")
                     )
-                    .unwrap()
+                    .expect("Lost profile we just created?")
             )
-            .unwrap()
+            .expect("Copied profile contains errors?")
         );
     }
 
