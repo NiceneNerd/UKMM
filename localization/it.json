@@ -193,7 +193,7 @@
     "Settings_Storage": "Cartella di immagazzinamento",
     "Settings_Storage_Desc": "UKMM immagazzinerà qui informazioni riguardanti i profili, le mod e altro.",
     "Settings_Sys7z": "Usa 7z di sistema",
-    "Settings_Sys7z_Desc": "By default UKMM will attempt to use 7z from your system PATH to extract 7-Zip files (like BNPs). Otherwise it will fall back to a slower built-in 7z extraction library. If you have 7z-related errors, try disabling this option. Da impostazione predefinita, UKMM tenterà di usare il 7z del tuo sistema per estrarre i file 7-zip (come i BNPs). Altrimenti, cercherà di utilizzare un sistema di estrazione pre-installato ma più lento. Se hai errori relativi a 7z, disabilita questa opzione.",
+    "Settings_Sys7z_Desc": "Da impostazione predefinita, UKMM tenterà di usare il 7z del tuo sistema per estrarre i file 7-zip (come i BNPs). Altrimenti, cercherà di utilizzare un sistema di estrazione pre-installato ma più lento. Se hai errori relativi a 7z, disabilita questa opzione.",
     "Settings_Theme": "Tema",
     "Settings_Theme_Desc": "Tema dell'interfaccia utente",
     "Tab_Deploy": "Schieramento",
