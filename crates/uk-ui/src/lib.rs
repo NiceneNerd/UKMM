@@ -55,15 +55,56 @@ pub fn load_fonts(context: &egui::Context) {
             .font_data
             .insert("Bold".to_owned(), egui::FontData::from_owned(system_font.0));
     }
+    fonts.font_data.insert(
+        "Noto".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../fonts/NotoSans-Regular.ttf"))
+    );
+    fonts.font_data.insert(
+        "NotoBold".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../fonts/NotoSans-Bold.ttf"))
+    );
+    fonts.font_data.insert(
+        "NotoJP".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../fonts/NotoSansJP-Regular.ttf"))
+    );
+    fonts.font_data.insert(
+        "NotoJPBold".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../fonts/NotoSansJP-Bold.ttf"))
+    );
+    fonts.font_data.insert(
+        "NotoKR".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../fonts/NotoSansKR-Regular.ttf"))
+    );
+    fonts.font_data.insert(
+        "NotoKRBold".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../fonts/NotoSansKR-Bold.ttf"))
+    );
+    fonts.font_data.insert(
+        "NotoSC".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../fonts/NotoSansSC-Regular.ttf"))
+    );
+    fonts.font_data.insert(
+        "NotoSCBold".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../fonts/NotoSansSC-Bold.ttf"))
+    );
+    if let Some(family) = fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional) {
+        ["NotoSC", "NotoKR", "NotoJP", "Noto", "System"].iter().for_each(|s| {
+            family.insert(0, s.to_string());
+        });
+    }
     fonts
         .families
-        .get_mut(&egui::FontFamily::Proportional)
-        .unwrap()
-        .insert(0, "System".to_owned());
-    fonts
-        .families
-        .insert(egui::FontFamily::Name("Bold".into()), vec![
-            "Bold".to_owned(),
-        ]);
+        .insert(
+            egui::FontFamily::Name("Bold".into()),
+            vec![
+                "Bold".to_owned(),
+                "NotoBold".to_owned(),
+                "NotoJPBold".to_owned(),
+                "NotoKRBold".to_owned(),
+                "NotoSCBold".to_owned(),
+            ]
+        );
     context.set_fonts(fonts);
 }
