@@ -4,7 +4,7 @@ use uk_ui::{
     visuals::Theme,
 };
 
-use super::{info, visuals, Component, Tabs};
+use super::{info, visuals, Component, Tabs, LOCALIZATION};
 
 pub fn default_ui() -> DockState<Tabs> {
     let mut state = DockState::new(vec![Tabs::Mods, Tabs::Package, Tabs::Settings]);
@@ -53,8 +53,9 @@ impl TabViewer for super::App {
                             self.do_update(super::Message::RequestOptions(mod_.clone(), true));
                         }
                     } else {
+                        let loc = LOCALIZATION.read();
                         ui.centered_and_justified(|ui| {
-                            ui.label("No mod selected");
+                            ui.label(loc.get("Mod_Selected_None"));
                         });
                     }
                 }

@@ -14,7 +14,7 @@ use uk_ui::{
     icons::{Icon, IconButtonExt},
 };
 
-use super::{App, Message};
+use super::{App, Message, LOCALIZATION};
 use crate::gui::util::SmartStringWrapper;
 
 fn render_field(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> Response) {
@@ -57,7 +57,8 @@ impl ModPackerBuilder {
         if !app.show_package_deps {
             return;
         }
-        egui::Window::new("Select Dependencies")
+        let loc = LOCALIZATION.read();
+        egui::Window::new(loc.get("Package_Dependencies"))
             .anchor(Align2::CENTER_CENTER, [0., 0.])
             .show(ctx, |ui| {
                 egui::ScrollArea::new([true, true])
@@ -96,7 +97,7 @@ impl ModPackerBuilder {
                     [ui.available_width(), ui.spacing().interact_size.y].into(),
                     Layout::right_to_left(Align::Center),
                     |ui| {
-                        if ui.button("OK").clicked() {
+                        if ui.button(loc.get("Generic_OK")).clicked() {
                             app.do_update(Message::ClosePackagingDependencies);
                         }
                         ui.shrink_width_to_current();
@@ -107,14 +108,18 @@ impl ModPackerBuilder {
 
     fn render_package_opts(&mut self, app: &App, ctx: &Context) {
         if let Some(ref folders) = app.opt_folders {
-            egui::Window::new("Configure Mod Options")
+            let loc = LOCALIZATION.read();
+            egui::Window::new(loc.get("Options_Configure"))
                 .anchor(Align2::CENTER_CENTER, [0., 0.])
                 .scroll([false, true])
                 .show(ctx, |ui| {
                     egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
                         ui.spacing_mut().item_spacing.y = 8.0;
                         ui.horizontal(|ui| {
-                            if ui.icon_text_button("Add Option Group", Icon::Add).clicked() {
+                            if ui.icon_text_button(
+                                loc.get("Options_Group_Add"),
+                                Icon::Add
+                            ).clicked() {
                                 self.meta
                                     .options
                                     .push(OptionGroup::Multiple(Default::default()));
@@ -130,7 +135,7 @@ impl ModPackerBuilder {
                             [ui.available_width(), ui.spacing().interact_size.y].into(),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button("OK").clicked() {
+                                if ui.button(loc.get("Generic_OK")).clicked() {
                                     app.do_update(Message::ClosePackagingOptions);
                                 }
                                 ui.shrink_width_to_current();
@@ -146,30 +151,37 @@ impl ModPackerBuilder {
             id: Id,
             ui: &mut Ui,
         ) {
+            let loc = LOCALIZATION.read();
             let mut delete = None;
             for (i, opt_group) in opt_groups.iter_mut().enumerate() {
                 let id = id.with(i);
                 let group_name = if opt_group.name().is_empty() {
-                    "New Option Group"
+                    loc.get("Options_Group_New")
                 } else {
                     opt_group.name()
                 };
                 egui::CollapsingHeader::new(group_name)
                     .default_open(true)
                     .show(ui, |ui| {
-                        if ui.icon_text_button("Delete", Icon::Delete).clicked() {
+                        if ui.icon_text_button(
+                            loc.get("Generic_Delete"),
+                            Icon::Delete
+                        ).clicked() {
                             delete = Some(i);
                         }
-                        ui.label("Group Name");
+                        ui.label(loc.get("Options_Group_Name"));
                         ui.text_edit_singleline(&mut SmartStringWrapper(opt_group.name_mut()));
-                        ui.label("Group Description");
+                        ui.label(loc.get("Options_Group_Desc"));
                         ui.text_edit_multiline(&mut SmartStringWrapper(
                             opt_group.description_mut(),
                         ));
-                        ui.label("Group Type");
+                        ui.label(loc.get("Options_Group_Type"));
                         ui.horizontal(|ui| {
                             if ui
-                                .radio(matches!(opt_group, OptionGroup::Exclusive(_)), "Exclusive")
+                                .radio(
+                                    matches!(opt_group, OptionGroup::Exclusive(_)),
+                                    loc.get("Options_Group_Exclusive")
+                                )
                                 .clicked()
                             {
                                 *opt_group = OptionGroup::Exclusive(ExclusiveOptionGroup {
@@ -181,7 +193,10 @@ impl ModPackerBuilder {
                                 });
                             }
                             if ui
-                                .radio(matches!(opt_group, OptionGroup::Multiple(_)), "Multiple")
+                                .radio(
+                                    matches!(opt_group, OptionGroup::Multiple(_)),
+                                    loc.get("Options_Group_Multiple")
+                                )
                                 .clicked()
                             {
                                 *opt_group = OptionGroup::Multiple(MultipleOptionGroup {
@@ -193,8 +208,8 @@ impl ModPackerBuilder {
                                 });
                             }
                         });
-                        ui.checkbox(opt_group.required_mut(), "Required")
-                            .on_hover_text("Require the user to select an option in this group");
+                        ui.checkbox(opt_group.required_mut(), loc.get("Options_Group_Required"))
+                            .on_hover_text(loc.get("Options_Group_Required_Desc"));
                         if let OptionGroup::Exclusive(group) = opt_group {
                             let id = Id::new(group.name.as_str()).with("default");
                             let def_name = group
@@ -206,8 +221,8 @@ impl ModPackerBuilder {
                                         .iter()
                                         .find_map(|o| o.path.eq(opt).then(|| o.name.as_str()))
                                 })
-                                .unwrap_or("None");
-                            egui::ComboBox::new(id, "Default Option")
+                                .unwrap_or(loc.get("Options_None"));
+                            egui::ComboBox::new(id, loc.get("Options_Default"))
                                 .selected_text(def_name)
                                 .show_ui(ui, |ui| {
                                     group.options.iter().for_each(|opt| {
@@ -222,7 +237,7 @@ impl ModPackerBuilder {
                                 });
                         }
                         ui.add_enabled_ui(!folders.lock().is_empty(), |ui| {
-                            if ui.icon_text_button("Add Option", Icon::Add).clicked() {
+                            if ui.icon_text_button(loc.get("Options_Add"), Icon::Add).clicked() {
                                 opt_group.options_mut().push(ModOption {
                                     name: Default::default(),
                                     description: Default::default(),
@@ -264,9 +279,10 @@ impl ModPackerBuilder {
             id: Id,
             ui: &mut Ui,
         ) {
+            let loc = LOCALIZATION.read();
             let id = id.with(i);
             let opt_name = if option.name.is_empty() {
-                "New Option"
+                loc.get("Options_New")
             } else {
                 option.name.as_str()
             };
@@ -274,16 +290,16 @@ impl ModPackerBuilder {
                 .id_source(id.with("header"))
                 .default_open(true)
                 .show(ui, |ui| {
-                    if ui.icon_text_button("Delete", Icon::Delete).clicked() {
+                    if ui.icon_text_button(loc.get("Generic_Delete"), Icon::Delete).clicked() {
                         *delete = Some(i);
                     }
-                    ui.label("Option Name");
+                    ui.label(loc.get("Options_Name"));
                     ui.text_edit_singleline(&mut SmartStringWrapper(&mut option.name));
-                    ui.label("Option Description");
+                    ui.label(loc.get("Options_Desc"));
                     ui.text_edit_multiline(&mut SmartStringWrapper(&mut option.description));
                     if let Some(ref mut defaults) = defaults {
                         let mut default = defaults.contains(&option.path);
-                        if ui.checkbox(&mut default, "Enable by default").changed() {
+                        if ui.checkbox(&mut default, loc.get("Options_Default_Enable")).changed() {
                             if default {
                                 defaults.insert(option.path.clone());
                             } else {
@@ -291,7 +307,7 @@ impl ModPackerBuilder {
                             }
                         }
                     }
-                    egui::ComboBox::new(id.with("path"), "Option Folder")
+                    egui::ComboBox::new(id.with("path"), loc.get("Options_Folder"))
                         .selected_text(option.path.display().to_string())
                         .show_ui(ui, |ui| {
                             let mut new_folder: Option<PathBuf> = None;
@@ -329,6 +345,7 @@ impl ModPackerBuilder {
     }
 
     pub fn render(&mut self, app: &App, ui: &mut Ui) {
+        let loc = LOCALIZATION.read();
         egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
             let id = Id::new("packer_data");
             self.render_package_deps(app, ui.ctx());
@@ -336,22 +353,25 @@ impl ModPackerBuilder {
             ui.horizontal(|ui| {
                 let source_set = self.source.exists();
                 ui.add_enabled_ui(source_set, |ui| {
-                    if ui.icon_text_button("Manage Options", Icon::Tune).clicked() {
+                    if ui.icon_text_button(
+                        loc.get("Package_ManageOptions"),
+                        Icon::Tune
+                    ).clicked() {
                         app.do_update(Message::GetPackagingOptions);
                     }
                 });
                 if ui
-                    .icon_text_button("Set Dependencies", Icon::List)
+                    .icon_text_button(loc.get("Package_Dependencies"), Icon::List)
                     .clicked()
                 {
                     app.do_update(Message::ShowPackagingDependencies);
                 }
-                if ui.icon_text_button("Help", Icon::Help).clicked() {
+                if ui.icon_text_button(loc.get("Menu_Help"), Icon::Help).clicked() {
                     open::that("https://nicenenerd.github.io/UKMM/mod_format.html").unwrap_or(());
                 }
             });
             ui.add_space(8.0);
-            render_field("Source", ui, |ui| {
+            render_field(loc.get("Package_RootFolder"), ui, |ui| {
                 let res = ui.folder_picker(&mut self.source);
                 if res.changed() {
                     app.do_update(Message::CheckMeta);
@@ -360,8 +380,8 @@ impl ModPackerBuilder {
             });
             let mut cross = matches!(self.meta.platform, ModPlatform::Universal);
             if ui
-                .checkbox(&mut cross, " Mark as cross-platform")
-                .on_hover_text("Allow mod to be used for Switch or Wii U")
+                .checkbox(&mut cross, loc.get("Package_CrossPlatform"))
+                .on_hover_text(loc.get("Package_CrossPlatform_Desc"))
                 .changed()
             {
                 if cross {
@@ -370,17 +390,17 @@ impl ModPackerBuilder {
                     self.meta.platform = ModPlatform::Specific(app.platform().into());
                 }
             }
-            render_field("Name", ui, |ui| {
+            render_field(loc.get("Info_Name"), ui, |ui| {
                 ui.text_edit_singleline(&mut SmartStringWrapper(&mut self.meta.name))
             });
-            render_field("Version", ui, |ui| {
+            render_field(loc.get("Info_Version"), ui, |ui| {
                 let tmp_version = ui.create_temp_string(
                     "mod-self-version",
                     Some(self.meta.version.as_str().into()),
                 );
                 let res = ui
                     .text_edit_singleline(tmp_version.write().deref_mut())
-                    .on_hover_text("Must conform to semantic versioning");
+                    .on_hover_text(loc.get("Package_Version_Desc"));
                 if res.changed() {
                     let ver = tmp_version.read();
                     if lenient_semver::Version::parse(ver.as_str()).is_ok() {
@@ -389,10 +409,10 @@ impl ModPackerBuilder {
                 }
                 res
             });
-            render_field("Author", ui, |ui| {
+            render_field(loc.get("Info_Author"), ui, |ui| {
                 ui.text_edit_singleline(&mut SmartStringWrapper(&mut self.meta.author))
             });
-            render_field("Category", ui, |ui| {
+            render_field(loc.get("Info_Category"), ui, |ui| {
                 egui::ComboBox::new(id.with("category"), "")
                     .selected_text(self.meta.category.as_str())
                     .show_ui(ui, |ui| {
@@ -402,7 +422,7 @@ impl ModPackerBuilder {
                     })
                     .response
             });
-            render_field("URL", ui, |ui| {
+            render_field(loc.get("Info_URL"), ui, |ui| {
                 let id = id.with("url");
                 let url = ui
                     .get_temp_string(id.with("tmp"))
@@ -428,8 +448,8 @@ impl ModPackerBuilder {
                 res
             });
             ui.add_space(8.0);
-            ui.label("Description");
-            ui.small("Some Markdown formatting supported");
+            ui.label(loc.get("Info_Description"));
+            ui.small(loc.get("Generic_MarkdownSupported"));
             ui.add_space(4.0);
             let string = ui.create_temp_string(
                 id.with("Description"),
@@ -453,7 +473,7 @@ impl ModPackerBuilder {
                     [ui.available_width(), ui.spacing().interact_size.y].into(),
                     Layout::right_to_left(Align::Center),
                     |ui| {
-                        if ui.button("Package Mod").clicked() {
+                        if ui.button(loc.get("Package_Finish")).clicked() {
                             app.do_update(Message::PackageMod);
                         }
                     },

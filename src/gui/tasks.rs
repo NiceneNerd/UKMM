@@ -10,6 +10,7 @@ use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
 use serde::Deserialize;
+use strfmt::Format;
 use uk_content::constants::Language;
 use uk_manager::{
     bnp::convert_bnp,
@@ -27,7 +28,7 @@ use uk_reader::ResourceReader;
 use uk_util::PathExt;
 
 use super::{package::ModPackerBuilder, util::response, Message};
-use crate::INTERFACE;
+use crate::{gui::LOCALIZATION, INTERFACE};
 
 mod handlers;
 
@@ -214,8 +215,13 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
     let mut dirty = Manifest::default();
     for mod_ in mods {
         log::info!("Updating {}…", mod_.meta.name.as_str());
+        let loc = LOCALIZATION.read();
+        let message = loc.get("Mod_Update_Folder");
+        let vars = std::collections::HashMap::from(
+            [("mod_name".to_string(), mod_.meta.name.to_string())]
+        );
         if let Some(folder) = rfd::FileDialog::new()
-            .set_title(jstr!("Update {mod_.meta.name.as_str()} from Folder").as_str())
+            .set_title(message.format(&vars).unwrap())
             .pick_folder()
         {
             dirty.extend(&mod_.manifest().unwrap_or_default());
@@ -242,8 +248,9 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
 
 pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
     let mut errors = vec![];
+    let loc = LOCALIZATION.read();
     if let Some(folder) = rfd::FileDialog::new()
-        .set_title("Select Directory to Unpack Mod(s)")
+        .set_title(loc.get("Mod_Unpack_Folder"))
         .pick_folder()
     {
         let settings = core.settings();

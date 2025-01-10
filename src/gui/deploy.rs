@@ -13,9 +13,10 @@ impl App {
                     ui.spacing_mut().item_spacing.y = 8.0;
                     ui.with_layout(Layout::top_down(Align::Center), |ui| {
                         let pending = self.core.deploy_manager().pending();
+                        let loc = LOCALIZATION.read();
                         ui.horizontal(|ui| {
                             ui.label(
-                                RichText::new("Method")
+                                RichText::new(loc.get("Settings_Platform_Deploy_Method"))
                                     .family(egui::FontFamily::Name("Bold".into())),
                             );
                             // ui.add_space(8.);
@@ -25,21 +26,25 @@ impl App {
                         });
                         ui.horizontal(|ui| {
                             ui.label(
-                                RichText::new("Auto Deploy")
+                                RichText::new(loc.get("Settings_Platform_Deploy_Auto"))
                                     .family(egui::FontFamily::Name("Bold".into())),
                             );
                             // ui.add_space(8.);
                             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                                 ui.label(if config.auto {
-                                    RichText::new("Yes").color(visuals::GREEN)
+                                    RichText::new(
+                                        loc.get("Generic_Yes")
+                                    ).color(visuals::GREEN)
                                 } else {
-                                    RichText::new("No").color(visuals::RED)
+                                    RichText::new(
+                                        loc.get("Generic_No")
+                                    ).color(visuals::RED)
                                 });
                             })
                         });
                         ui.vertical(|ui| {
                             ui.label(
-                                RichText::new("Target Folder")
+                                RichText::new(loc.get("Settings_Platform_Deploy_Output"))
                                     .family(egui::FontFamily::Name("Bold".into())),
                             );
                             let mut job = LayoutJob::simple_singleline(
@@ -80,7 +85,7 @@ impl App {
                                 egui::Frame::none().show(ui, |ui| {
                                     if let Some(ref exe) = config.executable {
                                         ui.add_space(4.);
-                                        if ui.button("Open Emulator").clicked() {
+                                        if ui.button(loc.get("Deploy_OpenEmu")).clicked() {
                                             let cmd = util::default_shell();
                                             let (shell, arg) = (&cmd.0, &cmd.1);
                                             let _ = std::process::Command::new(shell)
@@ -91,7 +96,8 @@ impl App {
                                     }
                                     if !config.auto || self.core.deploy_manager().pending() {
                                         if ui
-                                            .add_enabled(pending, egui::Button::new("Deploy"))
+                                            .add_enabled(pending, egui::Button::new(
+                                                loc.get("Tab_Deploy")))
                                             .clicked()
                                         {
                                             self.do_update(super::Message::Deploy);
@@ -99,8 +105,7 @@ impl App {
                                         if config.auto {
                                             ui.label(
                                                 RichText::new(
-                                                    "Auto deploy incomplete, please deploy \
-                                                     manually",
+                                                    loc.get("Deploy_Auto_Failed")
                                                 )
                                                 .color(visuals::RED),
                                             );
@@ -114,7 +119,7 @@ impl App {
             }
             None => {
                 ui.centered_and_justified(|ui| {
-                    ui.label("No deployment config for current platform");
+                    ui.label(LOCALIZATION.read().get("Deploy_NoConfig"));
                 });
             }
         }

@@ -19,7 +19,7 @@ use std::{
     ops::DerefMut,
     path::PathBuf,
     rc::Rc,
-    sync::Arc,
+    sync::{Arc, LazyLock},
     thread,
     time::Duration,
 };
@@ -42,6 +42,7 @@ use serde::{Deserialize, Serialize};
 use uk_content::util::HashMap;
 use uk_manager::{
     core::Manager,
+    localization::*,
     mods::{LookupMod, Mod},
     settings::{Platform, Settings},
 };
@@ -61,6 +62,8 @@ use uk_util::OptionResultExt;
 use self::{package::ModPackerBuilder, tasks::VersionResponse};
 use crate::gui::modals::MetaInputModal;
 
+pub static LOCALIZATION: LazyLock<RwLock<Localization>> = std::sync::LazyLock::new(|| Localization::from(LocLang::English).into());
+
 pub trait Component {
     type Message;
     fn show(&self, ui: &mut Ui) -> InnerResponse<Option<Self::Message>>;
@@ -79,7 +82,17 @@ pub enum Tabs {
 
 impl std::fmt::Display for Tabs {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        let loc = LOCALIZATION.read();
+        let string = match self {
+            Self::Info => loc.get("Tab_Info"),
+            Self::Install => loc.get("Tab_Install"),
+            Self::Deploy => loc.get("Tab_Deploy"),
+            Self::Mods => loc.get("Tab_Mods"),
+            Self::Log => loc.get("Tab_Log"),
+            Self::Settings => loc.get("Tab_Settings"),
+            Self::Package => loc.get("Tab_Package"),
+        };
+        write!(f, "{}", string)
     }
 }
 
@@ -192,6 +205,7 @@ pub enum Message {
     SetChangelog(String),
     SetDownloading(String),
     SetFocus(FocusedPane),
+    SetLanguage(LocLang),
     SetTheme(uk_ui::visuals::Theme),
     ShowAbout,
     ShowPackagingOptions(FxHashSet<PathBuf>),
@@ -285,6 +299,7 @@ impl App {
         log::info!("Logger initialized");
         let temp_settings = core.settings().clone();
         let platform = core.settings().current_mode;
+        LOCALIZATION.write().update_language(&temp_settings.lang);
         Self {
             selected: mods.first().cloned().into_iter().collect(),
             drag_index: None,

@@ -7,7 +7,7 @@ use uk_ui::{
     icons::{get_icon, Icon, IconButtonExt},
 };
 
-use super::{App, FocusedPane, Message};
+use super::{App, FocusedPane, Message, LOCALIZATION};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct FilePickerState {
@@ -306,27 +306,28 @@ impl FilePickerState {
 
 impl App {
     pub fn render_file_picker(&mut self, ui: &mut Ui) {
+        let loc = LOCALIZATION.read();
         egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
             ui.horizontal(|ui| {
                 for (icon, tooltip, cb) in [
                     (
                         Icon::FolderOpen,
-                        "Open Mod…",
+                        loc.get("Menu_File_Open"),
                         Box::new(|| self.do_update(Message::SelectFile)) as Box<dyn FnOnce()>,
                     ),
                     (
                         Icon::ArrowUp,
-                        "Up One Level",
+                        loc.get("FilePicker_Up"),
                         Box::new(|| self.do_update(Message::FilePickerUp)) as Box<dyn FnOnce()>,
                     ),
                     (
                         Icon::ArrowBack,
-                        "Back",
+                        loc.get("FilePicker_Back"),
                         Box::new(|| self.do_update(Message::FilePickerBack)) as Box<dyn FnOnce()>,
                     ),
                     (
                         Icon::Refresh,
-                        "Refresh",
+                        loc.get("FilePicker_Refresh"),
                         Box::new(|| {
                             self.do_update(Message::FilePickerSet(Some(
                                 self.picker_state.path.clone(),

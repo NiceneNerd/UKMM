@@ -2,14 +2,15 @@ use super::*;
 
 impl App {
     pub fn render_menu(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        let loc = LOCALIZATION.read();
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             ui.style_mut().visuals.button_frame = false;
             ui.add_enabled_ui(!self.modal_open(), |ui| {
                 ui.horizontal(|ui| {
-                    ui.menu_button("File", |ui| self.file_menu(ui, frame));
-                    ui.menu_button("Tools", |ui| self.tool_menu(ui));
-                    ui.menu_button("Window", |ui| self.window_menu(ui));
-                    ui.menu_button("Help", |ui| self.help_menu(ui));
+                    ui.menu_button(loc.get("Menu_File"), |ui| self.file_menu(ui, frame));
+                    ui.menu_button(loc.get("Menu_Tools"), |ui| self.tool_menu(ui));
+                    ui.menu_button(loc.get("Menu_Window"), |ui| self.window_menu(ui));
+                    ui.menu_button(loc.get("Menu_Help"), |ui| self.help_menu(ui));
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         ui.label(
                             RichText::new(self.platform().to_string().to_uppercase())
@@ -22,30 +23,32 @@ impl App {
     }
 
     pub fn file_menu(&self, ui: &mut Ui, _frame: &mut eframe::Frame) {
-        if ui.button("Open mod…").clicked() {
+        let loc = LOCALIZATION.read();
+        if ui.button(loc.get("Menu_File_Open")).clicked() {
             ui.close_menu();
             self.do_update(Message::SelectFile);
         }
-        if ui.button("Exit").clicked() {
+        if ui.button(loc.get("Generic_Exit")).clicked() {
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         }
     }
 
     pub fn tool_menu(&mut self, ui: &mut Ui) {
-        if ui.button("Refresh Merge").clicked() {
+        let loc = LOCALIZATION.read();
+        if ui.button(loc.get("Menu_Tools_RefreshMerge")).clicked() {
             ui.close_menu();
             self.do_update(Message::Remerge);
         }
-        if ui.button("Reset Pending").clicked() {
+        if ui.button(loc.get("Menu_Tools_ResetPending")).clicked() {
             ui.close_menu();
             self.do_update(Message::ResetPending);
         }
-        if ui.button("Open Config Folder").clicked() {
+        if ui.button(loc.get("Menu_Tools_ConfigFolder")).clicked() {
             ui.close_menu();
             open::that(Settings::config_dir()).unwrap_or(());
         }
         let settings = self.core.settings();
-        if ui.button("Open Storage Folder").clicked() {
+        if ui.button(loc.get("Menu_Tools_StorageFolder")).clicked() {
             ui.close_menu();
             open::that(&settings.storage_dir).unwrap_or(());
         }
@@ -53,7 +56,7 @@ impl App {
         if ui
             .add_enabled(
                 deploy_dir.is_some(),
-                egui::Button::new("Open Deployment Folder"),
+                egui::Button::new(loc.get("Menu_Tools_DeployFolder")),
             )
             .clicked()
         {
@@ -63,7 +66,8 @@ impl App {
     }
 
     pub fn window_menu(&mut self, ui: &mut Ui) {
-        if ui.button("Reset").clicked() {
+        let loc = LOCALIZATION.read();
+        if ui.button(loc.get("Menu_Window_Reset")).clicked() {
             ui.close_menu();
             *self.tree.borrow_mut() = tabs::default_ui();
         }
@@ -113,11 +117,12 @@ impl App {
     }
 
     pub fn help_menu(&self, ui: &mut Ui) {
-        if ui.button("Help").clicked() {
+        let loc = LOCALIZATION.read();
+        if ui.button(loc.get("Menu_Help")).clicked() {
             ui.close_menu();
             open::that("https://nicenenerd.github.io/UKMM").unwrap_or(());
         }
-        if ui.button("About").clicked() {
+        if ui.button(loc.get("Menu_Help_About")).clicked() {
             ui.close_menu();
             self.do_update(Message::ShowAbout);
         }

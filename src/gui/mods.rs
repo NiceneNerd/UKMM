@@ -1,6 +1,6 @@
-use std::{process::Command, sync::OnceLock};
+use std::{collections::HashMap, process::Command, sync::OnceLock};
 
-use join_str::jstr;
+use strfmt::Format;
 use uk_manager::mods::Mod;
 use uk_ui::{
     egui::{
@@ -10,6 +10,8 @@ use uk_ui::{
     egui_extras::{Column, TableBuilder, TableRow},
     ext::UiExt,
 };
+
+use crate::gui::LOCALIZATION;
 
 use super::{App, FocusedPane, Message, Sort};
 
@@ -46,6 +48,7 @@ impl App {
             .size()
             .x
         });
+        let loc = LOCALIZATION.read();
         static CATEGORY_WIDTH: OnceLock<f32> = OnceLock::new();
         egui::Frame::none()
             .inner_margin(Margin {
@@ -111,10 +114,10 @@ impl App {
                             }
                         });
                         [
-                            ("Mod Name", Sort::Name),
-                            ("Category", Sort::Category),
-                            ("Version", Sort::Version),
-                            ("Priority", Sort::Priority),
+                            (loc.get("Info_Name"), Sort::Name),
+                            (loc.get("Info_Category"), Sort::Category),
+                            (loc.get("Info_Version"), Sort::Version),
+                            (loc.get("Info_Priority"), Sort::Priority),
                         ]
                         .into_iter()
                         .for_each(|(label, sort)| {
@@ -155,7 +158,7 @@ impl App {
                                 })
                                 .0
                                 .width();
-                            if CATEGORY_WIDTH.get().is_none() && label == "Category" {
+                            if CATEGORY_WIDTH.get().is_none() && sort == Sort::Category {
                                 CATEGORY_WIDTH.set(width).unwrap();
                             }
                         });
@@ -354,7 +357,12 @@ impl App {
                         self.do_update(Message::DevUpdate);
                     }
                     ContextMenuMessage::Uninstall => {
-                        let prompt = jstr!("Are you sure you want to uninstall {&mod_.meta.name}?");
+                        let loc = LOCALIZATION.read();
+                        let message = loc.get("Mod_Uninstall_Confirmation");
+                        let vars = HashMap::from(
+                            [("mod_name".to_string(), mod_.meta.name.to_string())]
+                        );
+                        let prompt = message.format(&vars).unwrap();
                         self.do_update(Message::Confirm(
                             Message::UninstallMods(None).into(),
                             prompt,
@@ -396,8 +404,9 @@ impl App {
         mod_: Mod,
         ui: &mut Ui,
     ) -> Option<ContextMenuMessage> {
+        let loc = LOCALIZATION.read();
         let mut result = None;
-        ui.menu_button("Send to profile", |ui| {
+        ui.menu_button(loc.get("Mod_Send"), |ui| {
             for profile in core
                 .settings()
                 .profiles()
@@ -409,26 +418,30 @@ impl App {
                 }
             }
         });
-        if ui.button("Update").clicked() {
+        if ui.button(loc.get("Generic_Update")).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Update);
         }
-        if ui.button("Dev Update").clicked() {
+        if ui.button(loc.get("Mod_Dev_Update")).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::DevUpdate);
         }
-        if ui.button("Uninstall").clicked() {
+        if ui.button(loc.get("Mod_Uninstall")).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Uninstall);
         }
         if ui
-            .button(if mod_.enabled { "Disable" } else { "Enable" })
+            .button(if mod_.enabled {
+                loc.get("Mod_Disable")
+            } else {
+                loc.get("Mod_Enable")
+            })
             .clicked()
         {
             ui.close_menu();
             result = Some(ContextMenuMessage::Toggle(!mod_.enabled));
         }
-        if ui.button("View folder").clicked() {
+        if ui.button(loc.get("Mod_View")).clicked() {
             ui.close_menu();
             let _ = Command::new(if cfg!(windows) {
                 "explorer"
@@ -442,15 +455,15 @@ impl App {
             })
             .output();
         }
-        if ui.button("Extract").clicked() {
+        if ui.button(loc.get("Mod_Extract")).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Extract);
         }
-        if ui.button("Move to start").clicked() {
+        if ui.button(loc.get("Mod_Move_Start")).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Move(0));
         }
-        if ui.button("Move to end").clicked() {
+        if ui.button(loc.get("Mod_Move_End")).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Move(9999));
         }

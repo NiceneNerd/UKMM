@@ -14,7 +14,7 @@ use smartstring::alias::String;
 use uk_content::{constants::Language, prelude::Endian};
 use uk_reader::ResourceReader;
 
-use crate::util;
+use crate::{localization::*, util};
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Platform {
@@ -238,6 +238,7 @@ pub struct Settings {
     pub last_version: Option<String>,
     pub wiiu_config: Option<PlatformSettings>,
     pub switch_config: Option<PlatformSettings>,
+    pub lang: LocLang,
 }
 
 impl Default for Settings {
@@ -251,6 +252,7 @@ impl Default for Settings {
             check_updates: UpdatePreference::Stable,
             show_changelog: true,
             last_version: None,
+            lang: LocLang::English,
         }
     }
 }
