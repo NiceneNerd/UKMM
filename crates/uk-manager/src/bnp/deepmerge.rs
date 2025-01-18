@@ -46,7 +46,11 @@ impl BnpConverter {
         let deepmerge_path = self.current_root.join("logs/deepmerge.aamp");
         if deepmerge_path.exists() {
             log::debug!("Processing deepmerge log");
-            let pio = ParameterIO::from_binary(fs::read(deepmerge_path)?)?;
+            let data = fs::read(&deepmerge_path)?;
+            let pio  = match &data[0..4] {
+                b"AAMP" => ParameterIO::from_binary(data),
+                _ => ParameterIO::from_text(fs::read_to_string(&deepmerge_path)?),
+            }?;
             let diff = parse_aamp_diff("FileTable", &pio)?;
             diff.into_par_iter()
                 .try_for_each(|(root, contents)| -> Result<()> {
