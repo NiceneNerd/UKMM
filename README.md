@@ -86,6 +86,5 @@ version 3 or later. The source is publicly available on
 Gray: Dutch localization  
 [Nebroc](https://gamebanana.com/members/1920307): French localization  
 Waikuteru: German localization  
-𝘽𝙤𝙤𝙢𝙞𝙚𝙨!★: Italian, Russian localization  
+𝘽𝙤𝙤𝙢𝙞𝙚𝙨!★: Italian localization  
 [carbonatedtea](https://github.com/k-carbonatedtea): Simplified Chinese localization  
-Harlock: Spanish localization  

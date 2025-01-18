@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.15.3] - 2025-01-17
+
+Special Mipha's Grace beta release edition
+
 **Added**
 
 - Added extra context to profile initialization errors
 - Multiple language localization! Currently supported languages are: English,
-  Dutch, French, German, Italian, Russian, Simplified Chinese, Spanish.
+  Dutch, French, German, Italian, and Simplified Chinese. Spanish and Russian
+  are on the way.
   - Looking for translators to translate: Japanese, Korean
 
 **Changed**
@@ -25,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed a crash that could occur if you loaded a profile that you had duplicated,
   and hadn't restarted ukmm since you'd done that duplication
+- Fixed an error with installing bnp's that had deepmerge logs so large that they
+  had to be stored as text (looking at you, Miss Graceful Fish...)
 
 ## [0.15.2] - 2025-01-02
 
