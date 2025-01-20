@@ -84,10 +84,24 @@ impl App {
                                         ui.add_space(4.);
                                         if ui.button(loc.get("Deploy_OpenEmu")).clicked() {
                                             let cmd = util::default_shell();
+                                            #[cfg(windows)]
+                                            let user_arg = shlex::split(exe)
+                                                    .map(|v| {
+                                                        [
+                                                            "&".to_string(),
+                                                            v.iter()
+                                                                .map(|s| format!("'{}'", s))
+                                                                .collect::<Vec<_>>()
+                                                                .join(" "),
+                                                        ].join(" ")
+                                                    })
+                                                    .unwrap_or_default();
+                                            #[cfg(not(windows))]
+                                            let user_arg = exe;
                                             let (shell, arg) = (&cmd.0, &cmd.1);
                                             let _ = std::process::Command::new(shell)
                                                 .args(arg.iter())
-                                                .arg(exe)
+                                                .arg(user_arg)
                                                 .spawn();
                                         }
                                     }

@@ -26,6 +26,7 @@ file is located inside Bootup.pack, so it may not be obvious from the Info tab.
   Log tab
 - Fixed an error with merging LevelSensor.sbyml which would cause scaled enemies
   to spawn out of order if new enemy actors were added to an existing species
+- Fixed the Open Emulator button on Windows. Again. Fourth time, now? Please kill me
 
 ## [0.15.3] - 2025-01-17
 
