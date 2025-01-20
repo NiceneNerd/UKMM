@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+This release includes *breaking changes* to the UKMM mod format, specifically to the
+merging of the LevelSensor.sbyml file. This means that you will need to reinstall
+and/or repackage all existing UKMM mods that edit that file, to avoid errors. The
+file is located inside Bootup.pack, so it may not be obvious from the Info tab.
+
+**Fixed**
+
+- Fixed an error with merging LevelSensor.sbyml which would cause scaled enemies
+  to spawn out of order if new enemy actors were added to an existing species
+
 ## [0.15.3] - 2025-01-17
 
 Special Mipha's Grace beta release edition
