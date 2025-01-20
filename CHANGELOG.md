@@ -12,6 +12,13 @@ merging of the LevelSensor.sbyml file. This means that you will need to reinstal
 and/or repackage all existing UKMM mods that edit that file, to avoid errors. The
 file is located inside Bootup.pack, so it may not be obvious from the Info tab.
 
+**Changed**
+
+- Made the Deploy button always visible, so that you don't need to remerge to deploy
+  when auto deploy is turned on, e.g. when switching profiles. Auto deploy still
+  works as before, where you don't need to click the button unless it gives you a
+  message telling you to.
+
 **Fixed**
 
 - Fixed an error with the --debug switch that would cause the app to crash. If you

@@ -12,7 +12,6 @@ impl App {
                 egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
                     ui.spacing_mut().item_spacing.y = 8.0;
                     ui.with_layout(Layout::top_down(Align::Center), |ui| {
-                        let pending = self.core.deploy_manager().pending();
                         let loc = LOCALIZATION.read();
                         ui.horizontal(|ui| {
                             ui.label(
@@ -92,22 +91,19 @@ impl App {
                                                 .spawn();
                                         }
                                     }
-                                    if !config.auto || self.core.deploy_manager().pending() {
-                                        if ui
-                                            .add_enabled(pending, egui::Button::new(
-                                                loc.get("Tab_Deploy")))
-                                            .clicked()
-                                        {
-                                            self.do_update(super::Message::Deploy);
-                                        }
-                                        if config.auto {
-                                            ui.label(
-                                                RichText::new(
-                                                    loc.get("Deploy_Auto_Failed")
-                                                )
-                                                .color(visuals::RED),
-                                            );
-                                        }
+                                    if ui
+                                        .add(egui::Button::new(loc.get("Tab_Deploy")))
+                                        .clicked()
+                                    {
+                                        self.do_update(super::Message::Deploy);
+                                    }
+                                    if config.auto && self.core.deploy_manager().pending() {
+                                        ui.label(
+                                            RichText::new(
+                                                loc.get("Deploy_Auto_Failed")
+                                            )
+                                            .color(visuals::RED),
+                                        );
                                     }
                                 });
                             },
