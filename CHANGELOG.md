@@ -14,6 +14,9 @@ file is located inside Bootup.pack, so it may not be obvious from the Info tab.
 
 **Fixed**
 
+- Fixed an error with the --debug switch that would cause the app to crash. If you
+  want to view debug strings, you still need to use the Log Levels dropdown in the
+  Log tab
 - Fixed an error with merging LevelSensor.sbyml which would cause scaled enemies
   to spawn out of order if new enemy actors were added to an existing species
 
