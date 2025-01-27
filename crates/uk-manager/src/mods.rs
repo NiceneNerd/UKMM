@@ -188,6 +188,30 @@ impl Profile {
             index:   0,
         }
     }
+
+    pub fn validated(&self) -> Self {
+        // Forgive me for my sins
+        let mods = self.mods.read()
+            .iter()
+            .filter_map(|(k, v)| if v.path.exists() {
+                    Some((*k, v.clone()))
+                } else {
+                    None
+                })
+            .collect::<HashMap<_,_>>();
+        let load_order = self.load_order.read()
+            .iter()
+            .filter(|k| mods.contains_key(k))
+            .chain(
+                mods.keys().filter(|k| !self.load_order.read().contains(k))
+            )
+            .map(|k| *k)
+            .collect::<Vec<_>>();
+        Self {
+            mods: mods.into(),
+            load_order: load_order.into(),
+        }
+    }
 }
 
 pub struct ModIterator<'a> {
@@ -298,11 +322,13 @@ impl Manager {
                         "Failed to read profile data from {}",
                         profile_path.to_string_lossy()
                     ))
-                    .and_then(|t| serde_yaml::from_str(&t)
-                        .with_context(|| format!(
-                            "Failed to parse profile data from {}",
-                            profile_path.to_string_lossy()
-                        ))
+                    .and_then(|t|
+                        serde_yaml::from_str::<Profile>(&t)
+                            .with_context(|| format!(
+                                "Failed to parse profile data from {}",
+                                profile_path.to_string_lossy()
+                            ))
+                            .and_then(|p| Ok(p.validated()))
                     )
                     .map(|v| (profile, v))
             })
