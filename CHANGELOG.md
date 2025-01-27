@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-This release includes *breaking changes* to the UKMM mod format, specifically to the
-merging of the LevelSensor.sbyml file. This means that you will need to reinstall
-and/or repackage all existing UKMM mods that edit that file, to avoid errors. The
-file is located inside Bootup.pack, so it may not be obvious from the Info tab.
+This release includes a *breaking change* to the UKMM mod format, specifically to
+the merging of the LevelSensor.sbyml file. This means that you will need to
+reinstall and/or repackage all existing UKMM mods that edit that file, to avoid
+errors. The file is located inside Bootup.pack, so it may not be obvious from the
+Info tab.
 
 **Changed**
 
@@ -26,6 +27,8 @@ file is located inside Bootup.pack, so it may not be obvious from the Info tab.
   Log tab
 - Fixed an error with merging LevelSensor.sbyml which would cause scaled enemies
   to spawn out of order if new enemy actors were added to an existing species
+  - This is a breaking change to the format of LevelSensor.byml inside Bootup.pack,
+  and any mods that edit this file will need to be reinstalled
 - Fixed the Open Emulator button on Windows. Again. Fourth time, now? Please kill me
 - Fixed multiple errors that would cause UKMM to fail to boot if the storage folders
   were tampered with since the last time UKMM booted. It's still a bad idea to do so
