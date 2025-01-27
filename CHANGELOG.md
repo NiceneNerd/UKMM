@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.16.0] - 2025-01-27
+
 This release includes a *breaking change* to the UKMM mod format, specifically to
 the merging of the LevelSensor.sbyml file. This means that you will need to
 reinstall and/or repackage all existing UKMM mods that edit that file, to avoid
