@@ -27,6 +27,10 @@ file is located inside Bootup.pack, so it may not be obvious from the Info tab.
 - Fixed an error with merging LevelSensor.sbyml which would cause scaled enemies
   to spawn out of order if new enemy actors were added to an existing species
 - Fixed the Open Emulator button on Windows. Again. Fourth time, now? Please kill me
+- Fixed multiple errors that would cause UKMM to fail to boot if the storage folders
+  were tampered with since the last time UKMM booted. It's still a bad idea to do so
+  because your load order may remove some mods, or have some mods out of order, but
+  at least UKMM will boot under those conditions
 
 ## [0.15.3] - 2025-01-17
 
