@@ -467,11 +467,13 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         wiiu_config.dump = dump;
         let deploy_config = wiiu_config.deploy_config.get_or_insert_default();
         deploy_config.auto = true;
+        deploy_config.cemu_rules = true;
         deploy_config.output = gfx_folder.clone();
         deploy_config.executable = path
             .join("Cemu.exe")
             .exists_then()
             .map(|p| p.display().to_string());
+        deploy_config.method = uk_manager::settings::DeployMethod::Symlink;
         deploy_config.layout = uk_manager::settings::DeployLayout::WithName;
     } else {
         settings.wiiu_config = Some(PlatformSettings {
