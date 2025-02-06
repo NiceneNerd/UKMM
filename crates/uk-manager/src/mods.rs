@@ -19,7 +19,7 @@ use uk_content::platform_prefixes;
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
 
 use crate::{
-    settings::Settings,
+    settings::{Platform, Settings},
     util::{self, extract_7z, HashMap},
 };
 
@@ -189,14 +189,33 @@ impl Profile {
         }
     }
 
-    pub fn validated(&self) -> Self {
+    pub fn validated(&self, settings: &Arc<RwLock<Settings>>) -> Self {
         // Forgive me for my sins
         let mods = self.mods.read()
             .iter()
             .filter_map(|(k, v)| if v.path.exists() {
                     Some((*k, v.clone()))
                 } else {
-                    None
+                    let rel_path = settings.read()
+                        .get_platform_dir(v.path
+                            .to_string_lossy()
+                            .contains("wiiu")
+                            .then(|| Platform::WiiU)
+                            .or(Some(Platform::Switch))
+                            .unwrap())
+                        .join("mods")
+                        .join(v.path.file_name().expect("mod has no filename?"));
+                    if rel_path.exists() {
+                        Some((*k, Mod {
+                            meta: v.meta.clone(),
+                            enabled_options: v.enabled_options.clone(),
+                            enabled: v.enabled,
+                            path: rel_path,
+                            hash: v.hash,
+                        }))
+                    } else {
+                        None
+                    }
                 })
             .collect::<HashMap<_,_>>();
         let load_order = self.load_order.read()
@@ -328,7 +347,7 @@ impl Manager {
                                 "Failed to parse profile data from {}",
                                 profile_path.to_string_lossy()
                             ))
-                            .and_then(|p| Ok(p.validated()))
+                            .and_then(|p| Ok(p.validated(settings)))
                     )
                     .map(|v| (profile, v))
             })

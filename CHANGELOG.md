@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**Fixed**
+
+- Fixed profile validation when dualbooting multiple operating systems, where
+  both systems are reading from the same effective storage folder. For example,
+  if Windows reads from %LocalAppData%/ukmm, and another operating system has
+  a symbolic link to read from that same folder, then ukmm will reconstruct mod
+  paths on boot, to ensure that you can properly merge from both systems
+
 ## [0.16.0] - 2025-01-27
 
 This release includes a *breaking change* to the UKMM mod format, specifically to
