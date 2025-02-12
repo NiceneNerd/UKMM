@@ -91,7 +91,7 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
        path
         .join("info.json")
         .exists()
-    {
+    { // TODO
         let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKMM mod")?;
         return Ok(Message::HandleMod(Mod::from_reader(
             ModReader::open_peek(mod_, vec![]).context("Failed to open converted mod")?,
@@ -460,8 +460,53 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         Arc::new(ResourceReader::from_zarchive(unsafe { wua.unwrap_unchecked() })
             .context("Failed to validate game dump")?)
     } else {
-        Arc::new(ResourceReader::from_unpacked_dirs(base, update, dlc)
+        Arc::new(ResourceReader::from_unpacked_dirs(base.as_ref(), update, dlc)
             .context("Failed to validate game dump")?)
+    };
+    let exe = path
+        .join("Cemu.exe")
+        .exists_then()
+        .map(|p| {
+            let str_ = p.display().to_string();
+            #[cfg(windows)]
+            {
+                format!("\"{str_}\"")
+            }
+            #[cfg(not(windows))]
+            {
+                if str_.contains(' ') {
+                    format!("\"{str_}\"")
+                } else {
+                    str_
+                }
+            }
+        });
+    let exe_cmd = if exe.is_some() {
+        if base.is_some() {
+            let rpx = PathBuf::from(base.unwrap())
+                .parent()
+                .unwrap()
+                .join("code")
+                .join("U-King.rpx")
+                .display()
+                .to_string();
+            #[cfg(windows)]
+            {
+                Some(format!("{} -g \"{}\"", exe.unwrap(), rpx.strip_prefix(r"\\?\").unwrap()))
+            }
+            #[cfg(not(windows))]
+            {
+                if rpx.contains(' ') {
+                    Some(format!("{} -g \"{}\"", exe.unwrap(), rpx))
+                } else {
+                    Some(format!("{} -g {}", exe.unwrap(), rpx))
+                }
+            }
+        } else {
+            exe
+        }
+    } else {
+        None
     };
     if let Some(wiiu_config) = settings.wiiu_config.as_mut() {
         wiiu_config.dump = dump;
@@ -469,10 +514,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         deploy_config.auto = true;
         deploy_config.cemu_rules = true;
         deploy_config.output = gfx_folder.clone();
-        deploy_config.executable = path
-            .join("Cemu.exe")
-            .exists_then()
-            .map(|p| p.display().to_string());
+        deploy_config.executable = exe_cmd;
         deploy_config.method = uk_manager::settings::DeployMethod::Symlink;
         deploy_config.layout = uk_manager::settings::DeployLayout::WithName;
     } else {
@@ -485,10 +527,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 method: uk_manager::settings::DeployMethod::Symlink,
                 output: gfx_folder.clone(),
                 cemu_rules: true,
-                executable: path
-                    .join("Cemu.exe")
-                    .exists_then()
-                    .map(|p| p.display().to_string()),
+                executable: exe_cmd,
                 layout: uk_manager::settings::DeployLayout::WithName,
             }),
         })

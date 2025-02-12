@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+**Changed**
+
+- Changed cemu settings importer to populate the emulator executable path with
+  a path that will boot directly into botw, skipping the game list, if the dump
+  is in the unpacked format. Otherwise, it will populate it with a path that will
+  open cemu to the game list. Also added quotes to it on Windows or when the path
+  has spaces in it, to ensure that powershell doesn't vomit all over a completely
+  valid path
+
 **Fixed**
 
 - Fixed profile validation when dualbooting multiple operating systems, where
