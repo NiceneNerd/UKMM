@@ -26,7 +26,7 @@ pub use crate::{
     event::{info::EventInfo, residents::ResidentEvents},
     font::FontArchive,
     layout::LayoutArchive,
-    map::{lazy::LazyTraverseList, mainfield::location::Location, static_::Static, unit::MapUnit},
+    map::{lazy::LazyTraverseList, mainfield::location::Location, static_::{MainStatic, Static}, unit::MapUnit},
     message::MessagePack,
     quest::product::QuestProduct,
     sound::barslist::BarslistInfo,
@@ -69,6 +69,7 @@ pub enum MergeableResource {
     LifeCondition(Box<LifeCondition>),
     Location(Box<Location>),
     Lod(Box<Lod>),
+    MainStatic(Box<MainStatic>),
     MapUnit(Box<MapUnit>),
     MessagePack(Box<MessagePack>),
     ModelList(Box<ModelList>),
@@ -126,6 +127,7 @@ impl std::fmt::Display for MergeableResource {
             Self::LifeCondition(_) => "LifeCondition",
             Self::Location(_) => "Location",
             Self::Lod(_) => "Lod",
+            Self::MainStatic(_) => "MainStatic",
             Self::MapUnit(_) => "MapUnit",
             Self::MessagePack(_) => "MessagePack",
             Self::ModelList(_) => "ModelList",
@@ -221,6 +223,7 @@ impl_from_res!(LevelSensor);
 impl_from_res!(LifeCondition);
 impl_from_res!(Location);
 impl_from_res!(Lod);
+impl_from_res!(MainStatic);
 impl_from_res!(MapUnit);
 impl_from_res!(MessagePack);
 impl_from_res!(ModelList);
@@ -290,6 +293,7 @@ impl Mergeable for MergeableResource {
             }
             (Self::Location(a), Self::Location(b)) => Self::Location(Box::new(a.diff(b))),
             (Self::Lod(a), Self::Lod(b)) => Self::Lod(Box::new(a.diff(b))),
+            (Self::MainStatic(a), Self::MainStatic(b)) => Self::MainStatic(Box::new(a.diff(b))),
             (Self::MapUnit(a), Self::MapUnit(b)) => Self::MapUnit(Box::new(a.diff(b))),
             (Self::MessagePack(a), Self::MessagePack(b)) => Self::MessagePack(Box::new(a.diff(b))),
             (Self::ModelList(a), Self::ModelList(b)) => Self::ModelList(Box::new(a.diff(b))),
@@ -388,6 +392,7 @@ impl Mergeable for MergeableResource {
             }
             (Self::Location(a), Self::Location(b)) => Self::Location(Box::new(a.merge(b))),
             (Self::Lod(a), Self::Lod(b)) => Self::Lod(Box::new(a.merge(b))),
+            (Self::MainStatic(a), Self::MainStatic(b)) => Self::MainStatic(Box::new(a.merge(b))),
             (Self::MapUnit(a), Self::MapUnit(b)) => Self::MapUnit(Box::new(a.merge(b))),
             (Self::MessagePack(a), Self::MessagePack(b)) => Self::MessagePack(Box::new(a.merge(b))),
             (Self::ModelList(a), Self::ModelList(b)) => Self::ModelList(Box::new(a.merge(b))),
@@ -541,6 +546,8 @@ impl MergeableResource {
             Ok(Some(Self::Location(Box::new(Location::from_binary(data)?))))
         } else if Lod::path_matches(name) {
             Ok(Some(Self::Lod(Box::new(Lod::from_binary(data)?))))
+        } else if MainStatic::path_matches(name) {
+            Ok(Some(Self::MainStatic(Box::new(MainStatic::from_binary(data)?))))
         } else if MapUnit::path_matches(name) {
             Ok(Some(Self::MapUnit(Box::new(MapUnit::from_binary(data)?))))
         } else if MessagePack::path_matches(name) {
@@ -655,6 +662,7 @@ impl MergeableResource {
             Self::LifeCondition(v) => v.into_binary(endian),
             Self::Location(v) => v.into_binary(endian),
             Self::Lod(v) => v.into_binary(endian),
+            Self::MainStatic(v) => v.into_binary(endian),
             Self::MapUnit(v) => v.into_binary(endian),
             Self::MessagePack(v) => v.into_binary(endian),
             Self::ModelList(v) => v.into_binary(endian),
