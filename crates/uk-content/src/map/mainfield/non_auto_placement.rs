@@ -57,10 +57,11 @@ impl TryFrom<&Byml> for NonAutoPlacement {
                 .context("NonAutoPlacement must have NonEnemySearchPlayer")?
                 .as_bool()
                 .context("NonAutoPlacement NonEnemySearchPlayer must be Bool")?),
-            not_use_for_stats: Some(map.get("NotUseForStats")
-                .context("NonAutoPlacement must have NotUseForStats")?
-                .as_bool()
-                .context("NonAutoPlacement NotUseForStats must be Bool")?),
+            not_use_for_stats: map.get("NotUseForStats")
+                .map(|b| b.as_bool()
+                    .context("NonAutoPlacement NotUseForStats must be Bool")
+                    .unwrap()
+                ),
             rotate_y: Some(map.get("RotateY")
                 .context("NonAutoPlacement must have RotateY")?
                 .as_float()
