@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
@@ -12,38 +13,40 @@ pub struct RoadNpcRestStation {
     pub translate:          DeleteVec<(char, f32)>,
 }
 
-impl From<&Byml> for RoadNpcRestStation {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for RoadNpcRestStation {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("RoadNpcRestStation node must be HashMap");
-        Self {
+            .context("RoadNpcRestStation node must be HashMap")?;
+        Ok(Self {
             rest_horse_left: Some(map.get("RestHorseLeft")
-                .expect("RoadNpcRestStation must have RestHorseLeft")
+                .context("RoadNpcRestStation must have RestHorseLeft")?
                 .as_bool()
-                .expect("RoadNpcRestStation RestHorseLeft must be Bool")),
+                .context("RoadNpcRestStation RestHorseLeft must be Bool")?),
             rest_only_npc: Some(map.get("RestOnlyNpc")
-                .expect("RoadNpcRestStation must have RestOnlyNpc")
+                .context("RoadNpcRestStation must have RestOnlyNpc")?
                 .as_bool()
-                .expect("RoadNpcRestStation RestOnlyNpc must be Bool")),
+                .context("RoadNpcRestStation RestOnlyNpc must be Bool")?),
             rest_with_horse: Some(map.get("RestWithHorse")
-                .expect("RoadNpcRestStation must have PosName")
+                .context("RoadNpcRestStation must have PosName")?
                 .as_bool()
-                .expect("RoadNpcRestStation RestWithHorse must be Bool")),
+                .context("RoadNpcRestStation RestWithHorse must be Bool")?),
             rotate_y: Some(map.get("RotateY")
-                .expect("RoadNpcRestStation must have RotateY")
+                .context("RoadNpcRestStation must have RotateY")?
                 .as_float()
-                .expect("RoadNpcRestStation RotateY must be Float")),
+                .context("RoadNpcRestStation RotateY must be Float")?),
             translate: map.get("Translate")
-                .expect("RoadNpcRestStation must have Translate")
+                .context("RoadNpcRestStation must have Translate")?
                 .as_map()
-                .expect("Invalid RoadNpcRestStation Translate")
+                .context("Invalid RoadNpcRestStation Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
-        }
+        })
     }
 }
 

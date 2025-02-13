@@ -1,3 +1,4 @@
+use anyhow::Context;
 use itertools::Itertools;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
@@ -261,31 +262,33 @@ pub struct ScaleTranslate {
     pub translate:  DeleteVec<(char, f32)>,
 }
 
-impl From<&Byml> for ScaleTranslate {
-    fn from(value: &Byml) -> Self {
-        let map = value.as_map().expect("ScaleTranslate node must be HashMap");
-        Self {
+impl TryFrom<&Byml> for ScaleTranslate {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
+        let map = value.as_map().context("ScaleTranslate node must be HashMap")?;
+        Ok(Self {
             scale: map.get("Scale")
-                .expect("ScaleTranslate must have Scale")
+                .context("ScaleTranslate must have Scale")?
                 .as_map()
-                .expect("Invalid ScaleTranslate Scale")
+                .context("Invalid ScaleTranslate Scale")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
             translate: map.get("Translate")
-                .expect("ScaleTranslate must have Translate")
+                .context("ScaleTranslate must have Translate")?
                 .as_map()
-                .expect("Invalid ScaleTranslate Translate")
+                .context("Invalid ScaleTranslate Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
-        }
+        })
     }
 }
 

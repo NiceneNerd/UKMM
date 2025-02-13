@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
@@ -9,24 +10,26 @@ pub struct StaticGrudgeLocation {
     pub translate:          DeleteVec<(char, f32)>,
 }
 
-impl From<&Byml> for StaticGrudgeLocation {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for StaticGrudgeLocation {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("StaticGrudgeLocation node must be HashMap");
-        Self {
+            .context("StaticGrudgeLocation node must be HashMap")?;
+        Ok(Self {
             eyeball_hash_id: map.get("EyeballHashId")
-                .map(|b| b.as_u32().expect("EyeballHashId must be u32")),
+                .map(|b| b.as_u32().context("EyeballHashId must be u32").unwrap()),
             translate: map.get("Translate")
-                .expect("StaticGrudgeLocation must have Translate")
+                .context("StaticGrudgeLocation must have Translate")?
                 .as_map()
-                .expect("Invalid StaticGrudgeLocation Translate")
+                .context("Invalid StaticGrudgeLocation Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
-        }
+        })
     }
 }
 
@@ -51,7 +54,7 @@ impl Mergeable for StaticGrudgeLocation {
             eyeball_hash_id: other.eyeball_hash_id
                 .ne(&self.eyeball_hash_id)
                 .then(|| other.eyeball_hash_id)
-                .unwrap(),
+                .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
         }
     }

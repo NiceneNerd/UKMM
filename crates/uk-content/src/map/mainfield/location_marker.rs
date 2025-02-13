@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
@@ -109,47 +110,55 @@ pub struct LocationMarker {
     pub warp_dest_pos_name: Option<String>,
 }
 
-impl From<&Byml> for LocationMarker {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for LocationMarker {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("TargetPosMarker node must be HashMap");
-        Self {
+            .context("TargetPosMarker node must be HashMap")?;
+        Ok(Self {
             icon: map.get("Icon")
-                .map(|b| b.try_into().expect("LocationMarker Icon invalid")),
+                .map(|b| b.try_into()
+                    .context("LocationMarker Icon invalid")
+                    .unwrap()
+                ),
             message_id: map.get("MessageID")
                 .map(|b| b.as_string()
-                    .expect("LocationMarker MessageID must be String")
+                    .context("LocationMarker MessageID must be String")
+                    .unwrap()
                     .clone()
                 ),
             priority: Some(map.get("Priority")
-                .expect("LocationMarker must have Priority")
+                .context("LocationMarker must have Priority")?
                 .as_i32()
-                .expect("LocationMarker Priority must be Int")),
+                .context("LocationMarker Priority must be Int")?),
             save_flag: Some(map.get("SaveFlag")
-                .expect("LocationMarker must have SaveFlag")
+                .context("LocationMarker must have SaveFlag")?
                 .as_string()
-                .expect("LocationMarker SaveFlag must be String")
+                .context("LocationMarker SaveFlag must be String")?
                 .clone()),
             translate: map.get("Translate")
-                .expect("LocationMarker must have Translate")
+                .context("LocationMarker must have Translate")?
                 .as_map()
-                .expect("Invalid LocationMarker Translate")
+                .context("Invalid LocationMarker Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
             warp_dest_map_name: map.get("WarpDestMapName")
                 .map(|b| b.try_into()
-                    .expect("LocationMarker WarpDestMapName must be String")
+                    .context("LocationMarker WarpDestMapName must be String")
+                    .unwrap()
                 ),
             warp_dest_pos_name: map.get("WarpDestPosName")
                 .map(|b| b.as_string()
-                    .expect("LocationMarker WarpDestPosName must be String")
+                    .context("LocationMarker WarpDestPosName must be String")
+                    .unwrap()
                     .clone()
                 ),
-        }
+        })
     }
 }
 

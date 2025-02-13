@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
@@ -69,71 +70,73 @@ pub struct KorokLocation {
     pub translate:                      DeleteVec<(char, f32)>,
 }
 
-impl From<&Byml> for KorokLocation {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for KorokLocation {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("TargetPosMarker node must be HashMap");
-        Self {
+            .context("TargetPosMarker node must be HashMap")?;
+        Ok(Self {
             flag: Some(map.get("Flag")
-                .expect("KorokLocation must have Flag")
+                .context("KorokLocation must have Flag")?
                 .as_string()
-                .expect("KorokLocation Flag must be String")
+                .context("KorokLocation Flag must be String")?
                 .clone()),
             hidden_korok_body_color: Some(map.get("HiddenKorokBodyColor")
-                .expect("KorokLocation must have HiddenKorokBodyColor")
+                .context("KorokLocation must have HiddenKorokBodyColor")?
                 .as_i32()
-                .expect("KorokLocation HiddenKorokBodyColor must be Int")),
+                .context("KorokLocation HiddenKorokBodyColor must be Int")?),
             hidden_korok_left_plant_type: Some(map.get("HiddenKorokLeftPlantType")
-                .expect("KorokLocation must have HiddenKorokLeftPlantType")
+                .context("KorokLocation must have HiddenKorokLeftPlantType")?
                 .as_i32()
-                .expect("KorokLocation HiddenKorokLeftPlantType must be Int")),
+                .context("KorokLocation HiddenKorokLeftPlantType must be Int")?),
             hidden_korok_mask_type: Some(map.get("HiddenKorokMaskType")
-                .expect("KorokLocation must have HiddenKorokMaskType")
+                .context("KorokLocation must have HiddenKorokMaskType")?
                 .as_i32()
-                .expect("KorokLocation HiddenKorokMaskType must be Int")),
+                .context("KorokLocation HiddenKorokMaskType must be Int")?),
             hidden_korok_right_plant_type: Some(map.get("HiddenKorokRightPlantType")
-                .expect("KorokLocation must have HiddenKorokRightPlantType")
+                .context("KorokLocation must have HiddenKorokRightPlantType")?
                 .as_i32()
-                .expect("KorokLocation HiddenKorokRightPlantType must be Int")),
+                .context("KorokLocation HiddenKorokRightPlantType must be Int")?),
             is_appear_check: Some(map.get("IsAppearCheck")
-                .expect("KorokLocation must have IsAppearCheck")
+                .context("KorokLocation must have IsAppearCheck")?
                 .as_bool()
-                .expect("KorokLocation IsAppearCheck must be Bool")),
+                .context("KorokLocation IsAppearCheck must be Bool")?),
             is_hidden_korok_lift_appear: Some(map.get("IsHiddenKorokLiftAppear")
-                .expect("KorokLocation must have IsHiddenKorokLiftAppear")
+                .context("KorokLocation must have IsHiddenKorokLiftAppear")?
                 .as_bool()
-                .expect("KorokLocation IsHiddenKorokLiftAppear must be Bool")),
+                .context("KorokLocation IsHiddenKorokLiftAppear must be Bool")?),
             is_invisible_korok: Some(map.get("IsInvisibleKorok")
-                .expect("KorokLocation must have IsInvisibleKorok")
+                .context("KorokLocation must have IsInvisibleKorok")?
                 .as_bool()
-                .expect("KorokLocation IsInvisibleKorok must be Bool")),
+                .context("KorokLocation IsInvisibleKorok must be Bool")?),
             korok_event_start_wait_frame: Some(map.get("KorokEventStartWaitFrame")
-                .expect("KorokLocation must have KorokEventStartWaitFrame")
+                .context("KorokLocation must have KorokEventStartWaitFrame")?
                 .as_i32()
-                .expect("KorokLocation KorokEventStartWaitFrame must be Int")),
+                .context("KorokLocation KorokEventStartWaitFrame must be Int")?),
             placement_type: Some(map.get("PlacementType")
-                .expect("KorokLocation must have PlacementType")
+                .context("KorokLocation must have PlacementType")?
                 .try_into()
-                .expect("Invalid KorokLocation PlacementType")),
+                .context("Invalid KorokLocation PlacementType")?),
             rail_move_speed: Some(map.get("RailMoveSpeed")
-                .expect("KorokLocation must have RailMoveSpeed")
+                .context("KorokLocation must have RailMoveSpeed")?
                 .as_float()
-                .expect("KorokLocation RailMoveSpeed must be Float")),
+                .context("KorokLocation RailMoveSpeed must be Float")?),
             territory_area: Some(map.get("TerritoryArea")
-                .expect("KorokLocation must have TerritoryArea")
+                .context("KorokLocation must have TerritoryArea")?
                 .as_float()
-                .expect("KorokLocation TerritoryArea must be Float")),
+                .context("KorokLocation TerritoryArea must be Float")?),
             translate: map.get("Translate")
-                .expect("KorokLocation must have Translate")
+                .context("KorokLocation must have Translate")?
                 .as_map()
-                .expect("Invalid KorokLocation Translate")
+                .context("Invalid KorokLocation Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
-        }
+        })
     }
 }
 

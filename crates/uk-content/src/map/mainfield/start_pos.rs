@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
@@ -73,45 +74,48 @@ pub struct StartPos {
     pub translate:      DeleteVec<(char, f32)>,
 }
 
-impl From<&Byml> for StartPos {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for StartPos {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("StartPos node must be HashMap");
-        Self {
+            .context("StartPos node must be HashMap")?;
+        Ok(Self {
             map: Some(map.get("Map")
-                .expect("StartPos must have Map")
+                .context("StartPos must have Map")?
                 .as_string()
-                .expect("StartPos Map must be String")
+                .context("StartPos Map must be String")?
                 .as_str()
                 .into()),
             player_state: map.get("PlayerState")
-                .map(|b| b.try_into().expect("Invalid PlayerState")),
+                .map(|b| b.try_into().context("Invalid PlayerState").unwrap()),
             pos_name: map.get("PosName")
                 .map(|b| b.as_string()
-                    .expect("StartPos PosName must be String")
+                    .context("StartPos PosName must be String")
+                    .unwrap()
                     .clone()
                 ),
             rotate: map.get("Rotate")
-                .expect("StartPos must have Rotate")
+                .context("StartPos must have Rotate")?
                 .as_map()
-                .expect("Invalid StartPos Rotate")
+                .context("Invalid StartPos Rotate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
             translate: map.get("Translate")
-                .expect("StartPos must have Translate")
+                .context("StartPos must have Translate")?
                 .as_map()
-                .expect("Invalid StartPos Translate")
+                .context("Invalid StartPos Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
-        }
+        })
     }
 }
 

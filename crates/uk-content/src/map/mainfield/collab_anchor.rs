@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
@@ -14,49 +15,51 @@ pub struct CollabAnchor {
     pub collabo_ssquest_flag:               Option<String>,
 }
 
-impl From<&Byml> for CollabAnchor {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for CollabAnchor {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
             .expect("TargetPosMarker node must be HashMap");
-        Self {
+        Ok(Self {
             collabo_shooting_star_direction: Some(map.get("CollaboShootingStarDirection")
-                .expect("CollabAnchor must have CollaboShootingStarDirection")
+                .context("CollabAnchor must have CollaboShootingStarDirection")?
                 .as_i32()
-                .expect("CollabAnchor CollaboShootingStarDirection must be Int")),
+                .context("CollabAnchor CollaboShootingStarDirection must be Int")?),
             collabo_shooting_star_end_hour: Some(map.get("CollaboShootingStarEndHour")
-                .expect("CollabAnchor must have CollaboShootingStarEndHour")
+                .context("CollabAnchor must have CollaboShootingStarEndHour")?
                 .as_i32()
-                .expect("CollabAnchor CollaboShootingStarEndHour must be Int")),
+                .context("CollabAnchor CollaboShootingStarEndHour must be Int")?),
             collabo_shooting_star_start_hour: Some(map.get("CollaboShootingStarStartHour")
-                .expect("CollabAnchor must have CollaboShootingStarStartHour")
+                .context("CollabAnchor must have CollaboShootingStarStartHour")?
                 .as_i32()
-                .expect("CollabAnchor CollaboShootingStarStartHour must be Int")),
+                .context("CollabAnchor CollaboShootingStarStartHour must be Int")?),
             translate: map.get("Translate")
-                .expect("CollabAnchor must have Translate")
+                .context("CollabAnchor must have Translate")?
                 .as_map()
-                .expect("Invalid CollabAnchor Translate")
+                .context("Invalid CollabAnchor Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
             collabo_ssfallout_flag_name: Some(map.get("collaboSSFalloutFlagName")
-                .expect("CollabAnchor must have collaboSSFalloutFlagName")
+                .context("CollabAnchor must have collaboSSFalloutFlagName")?
                 .as_string()
-                .expect("CollabAnchor collaboSSFalloutFlagName must be String")
+                .context("CollabAnchor collaboSSFalloutFlagName must be String")?
                 .clone()),
             collabo_ssopen_flag_name: Some(map.get("collaboSSOpenFlagName")
-                .expect("CollabAnchor must have collaboSSOpenFlagName")
+                .context("CollabAnchor must have collaboSSOpenFlagName")?
                 .as_string()
-                .expect("CollabAnchor collaboSSOpenFlagName must be String")
+                .context("CollabAnchor collaboSSOpenFlagName must be String")?
                 .clone()),
             collabo_ssquest_flag: Some(map.get("collaboSSQuestFlag")
-                .expect("CollabAnchor must have collaboSSQuestFlag")
+                .context("CollabAnchor must have collaboSSQuestFlag")?
                 .as_string()
-                .expect("CollabAnchor collaboSSQuestFlag must be String")
+                .context("CollabAnchor collaboSSQuestFlag must be String")?
                 .clone()),
-        }
+        })
     }
 }
 

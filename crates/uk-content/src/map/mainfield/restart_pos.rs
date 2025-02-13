@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
@@ -10,37 +11,39 @@ pub struct RestartPos {
     pub unique_name:    Option<String>,
 }
 
-impl From<&Byml> for RestartPos {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for RestartPos {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("TargetPosMarker node must be HashMap");
-        Self {
+            .context("TargetPosMarker node must be HashMap")?;
+        Ok(Self {
             scale: map.get("Scale")
-                .expect("RestartPos must have Scale")
+                .context("RestartPos must have Scale")?
                 .as_map()
-                .expect("Invalid RestartPos Scale")
+                .context("Invalid RestartPos Scale")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
             translate: map.get("Translate")
-                .expect("RestartPos must have Translate")
+                .context("RestartPos must have Translate")?
                 .as_map()
-                .expect("Invalid RestartPos Translate")
+                .context("Invalid RestartPos Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
             unique_name: Some(map.get("UniqueName")
-                .expect("RestartPos must have UniqueName")
+                .context("RestartPos must have UniqueName")?
                 .as_string()
-                .expect("RestartPos UniqueName must be String")
+                .context("RestartPos UniqueName must be String")?
                 .clone()),
-        }
+        })
     }
 }
 

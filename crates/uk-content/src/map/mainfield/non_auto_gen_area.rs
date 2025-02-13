@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
@@ -14,44 +15,46 @@ pub struct NonAutoGenArea {
     pub translate:          DeleteVec<(char, f32)>,
 }
 
-impl From<&Byml> for NonAutoGenArea {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for NonAutoGenArea {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("TargetPosMarker node must be HashMap");
-        Self {
+            .context("TargetPosMarker node must be HashMap")?;
+        Ok(Self {
             enable_auto_flower: Some(map.get("EnableAutoFlower")
-                .expect("NonAutoGenArea must have EnableAutoFlower")
+                .context("NonAutoGenArea must have EnableAutoFlower")?
                 .as_bool()
-                .expect("NonAutoGenArea EnableAutoFlower must be Bool")),
+                .context("NonAutoGenArea EnableAutoFlower must be Bool")?),
             rotate_y: Some(map.get("RotateY")
-                .expect("NonAutoGenArea must have RotateY")
+                .context("NonAutoGenArea must have RotateY")?
                 .as_float()
-                .expect("NonAutoGenArea RotateY must be Float")),
+                .context("NonAutoGenArea RotateY must be Float")?),
             scale: map.get("Scale")
-                .expect("NonAutoGenArea must have Scale")
+                .context("NonAutoGenArea must have Scale")?
                 .as_map()
-                .expect("Invalid NonAutoGenArea Scale")
+                .context("Invalid NonAutoGenArea Scale")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
             shape: Some(map.get("Shape")
-                .expect("NonAutoGenArea must have Shape")
+                .context("NonAutoGenArea must have Shape")?
                 .try_into()
-                .expect("NonAutoGenArea has invalid Shape")),
+                .context("NonAutoGenArea has invalid Shape")?),
             translate: map.get("Translate")
-                .expect("NonAutoGenArea must have Translate")
+                .context("NonAutoGenArea must have Translate")?
                 .as_map()
-                .expect("Invalid NonAutoGenArea Translate")
+                .context("Invalid NonAutoGenArea Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
-        }
+        })
     }
 }
 

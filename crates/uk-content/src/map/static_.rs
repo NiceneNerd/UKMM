@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use anyhow::Context;
 use itertools::Itertools;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
@@ -239,11 +240,13 @@ impl TryFrom<&Byml> for MainStatic {
                     Some(b.as_array()
                         .expect("Invalid DLCRestartPos")
                         .iter()
+                        .enumerate()
                         .try_fold(
                             DeleteMap::new(),
-                            |mut entry_map, entry|
+                            |mut entry_map, (index, entry)|
                             -> Result<DeleteMap<String, RestartPos>> {
-                                let entry: RestartPos = entry.into();
+                                let entry: RestartPos = entry.try_into()
+                                    .with_context(|| format!("Could not read RestartPos {}", index))?;
                                 entry_map.insert(entry.unique_name.clone().unwrap(), entry);
                                 Ok(entry_map)
                             },
@@ -258,11 +261,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, CollabAnchor>> {
-                        let entry: CollabAnchor = entry.into();
+                        let entry: CollabAnchor = entry.try_into()
+                            .with_context(|| format!("Could not read CollabAnchor {}", index))?;
                         entry_map.insert(entry.collabo_ssopen_flag_name.clone().unwrap(), entry);
                         Ok(entry_map)
                     },
@@ -274,11 +279,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, KorokLocation>> {
-                        let entry: KorokLocation = entry.into();
+                        let entry: KorokLocation = entry.try_into()
+                            .with_context(|| format!("Could not read KorokLocation {}", index))?;
                         entry_map.insert(entry.flag.clone().unwrap(), entry);
                         Ok(entry_map)
                     },
@@ -290,11 +297,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, LocationMarker>> {
-                        let entry: LocationMarker = entry.into();
+                        let entry: LocationMarker = entry.try_into()
+                            .with_context(|| format!("Could not read LocationMarker {}", index))?;
                         entry_map.insert(
                             format!(
                                 "{}{}",
@@ -313,11 +322,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, LocationPointer>> {
-                        let entry: LocationPointer = entry.into();
+                        let entry: LocationPointer = entry.try_into()
+                            .with_context(|| format!("Could not read LocationPointer {}", index))?;
                         entry_map.insert(
                             format!(
                                 "{}{}",
@@ -336,11 +347,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, NonAutoGenArea>> {
-                        let entry: NonAutoGenArea = entry.into();
+                        let entry: NonAutoGenArea = entry.try_into()
+                            .with_context(|| format!("Could not read NonAutoGenArea {}", index))?;
                         entry_map.insert(
                             format!(
                                 "{}{}{}",
@@ -360,11 +373,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, NonAutoPlacement>> {
-                        let entry: NonAutoPlacement = entry.into();
+                        let entry: NonAutoPlacement = entry.try_into()
+                            .with_context(|| format!("Could not read NonAutoPlacement {}", index))?;
                         entry_map.insert(
                             format!(
                                 "{}{}{}",
@@ -384,11 +399,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, RoadNpcRestStation>> {
-                        let entry: RoadNpcRestStation = entry.into();
+                        let entry: RoadNpcRestStation = entry.try_into()
+                            .with_context(|| format!("Could not read RoadNpcRestStation {}", index))?;
                         entry_map.insert(
                             entry.translate.clone()
                                 .iter()
@@ -406,11 +423,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, StartPos>> {
-                        let entry: StartPos = entry.into();
+                        let entry: StartPos = entry.try_into()
+                            .with_context(|| format!("Could not read StartPos {}", index))?;
                         entry_map.insert(
                             format!(
                                 "{}{}",
@@ -429,11 +448,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, StaticGrudgeLocation>> {
-                        let entry: StaticGrudgeLocation = entry.into();
+                        let entry: StaticGrudgeLocation = entry.try_into()
+                            .with_context(|| format!("Could not read StaticGrudgeLocation {}", index))?;
                         entry_map.insert(
                             format!(
                                 "{}{}",
@@ -452,12 +473,21 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, TargetPosMarker>> {
-                        let entry: TargetPosMarker = entry.into();
-                        entry_map.insert(entry.unique_name.clone().unwrap(), entry);
+                        let entry: TargetPosMarker = entry.try_into()
+                            .with_context(|| format!("Could not read TargetPosMarker {}", index))?;
+                        entry_map.insert(
+                            format!(
+                                "{}{}",
+                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
+                                entry.unique_name.clone().unwrap_or_default(),
+                            ),
+                            entry,
+                        );
                         Ok(entry_map)
                     },
                 )?,
@@ -468,11 +498,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, ScaleTranslate>> {
-                        let entry: ScaleTranslate = entry.into();
+                        let entry: ScaleTranslate = entry.try_into()
+                            .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
                         entry_map.insert(
                             format!(
                                 "{}{}",
@@ -491,11 +523,13 @@ impl TryFrom<&Byml> for MainStatic {
                 ))?
                 .as_array()?
                 .iter()
+                .enumerate()
                 .try_fold(
                     DeleteMap::new(),
-                    |mut entry_map, entry|
+                    |mut entry_map, (index, entry)|
                     -> Result<DeleteMap<String, ScaleTranslate>> {
-                        let entry: ScaleTranslate = entry.into();
+                        let entry: ScaleTranslate = entry.try_into()
+                            .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
                         entry_map.insert(
                             format!(
                                 "{}{}",

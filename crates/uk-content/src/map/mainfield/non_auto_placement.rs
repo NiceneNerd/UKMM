@@ -1,7 +1,8 @@
-use roead::byml::{map, Byml};
+use anyhow::Context;
+use roead::byml::Byml;
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::DeleteVec};
+use crate::{prelude::Mergeable, util::{DeleteVec, HashMap}};
 
 use super::AreaShape;
 
@@ -14,98 +15,109 @@ pub struct NonAutoPlacement {
     pub non_auto_placement_insect:      Option<bool>,
     pub non_auto_placement_material:    Option<bool>,
     pub non_enemy_search_player:        Option<bool>,
+    pub not_use_for_stats:              Option<bool>,
     pub rotate_y:                       Option<f32>,
     pub scale:                          DeleteVec<(char, f32)>,
     pub shape:                          Option<AreaShape>,
     pub translate:                      DeleteVec<(char, f32)>,
 }
 
-impl From<&Byml> for NonAutoPlacement {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for NonAutoPlacement {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("TargetPosMarker node must be HashMap");
-        Self {
+            .context("TargetPosMarker node must be HashMap")?;
+        Ok(Self {
             non_auto_placement_animal: Some(map.get("NonAutoPlacementAnimal")
-                .expect("NonAutoPlacement must have NonAutoPlacementAnimal")
+                .context("NonAutoPlacement must have NonAutoPlacementAnimal")?
                 .as_bool()
-                .expect("NonAutoPlacement NonAutoPlacementAnimal must be Bool")),
+                .context("NonAutoPlacement NonAutoPlacementAnimal must be Bool")?),
             non_auto_placement_bird: Some(map.get("NonAutoPlacementBird")
-                .expect("NonAutoPlacement must have NonAutoPlacementBird")
+                .context("NonAutoPlacement must have NonAutoPlacementBird")?
                 .as_bool()
-                .expect("NonAutoPlacement NonAutoPlacementBird must be Bool")),
+                .context("NonAutoPlacement NonAutoPlacementBird must be Bool")?),
             non_auto_placement_enemy: Some(map.get("NonAutoPlacementEnemy")
-                .expect("NonAutoPlacement must have NonAutoPlacementEnemy")
+                .context("NonAutoPlacement must have NonAutoPlacementEnemy")?
                 .as_bool()
-                .expect("NonAutoPlacement NonAutoPlacementEnemy must be Bool")),
+                .context("NonAutoPlacement NonAutoPlacementEnemy must be Bool")?),
             non_auto_placement_fish: Some(map.get("NonAutoPlacementFish")
-                .expect("NonAutoPlacement must have NonAutoPlacementFish")
+                .context("NonAutoPlacement must have NonAutoPlacementFish")?
                 .as_bool()
-                .expect("NonAutoPlacement NonAutoPlacementFish must be Bool")),
+                .context("NonAutoPlacement NonAutoPlacementFish must be Bool")?),
             non_auto_placement_insect: Some(map.get("NonAutoPlacementInsect")
-                .expect("NonAutoPlacement must have NonAutoPlacementInsect")
+                .context("NonAutoPlacement must have NonAutoPlacementInsect")?
                 .as_bool()
-                .expect("NonAutoPlacement NonAutoPlacementInsect must be Bool")),
+                .context("NonAutoPlacement NonAutoPlacementInsect must be Bool")?),
             non_auto_placement_material: Some(map.get("NonAutoPlacementMaterial")
-                .expect("NonAutoPlacement must have NonAutoPlacementMaterial")
+                .context("NonAutoPlacement must have NonAutoPlacementMaterial")?
                 .as_bool()
-                .expect("NonAutoPlacement NonAutoPlacementMaterial must be Bool")),
+                .context("NonAutoPlacement NonAutoPlacementMaterial must be Bool")?),
             non_enemy_search_player: Some(map.get("NonEnemySearchPlayer")
-                .expect("NonAutoPlacement must have NonEnemySearchPlayer")
+                .context("NonAutoPlacement must have NonEnemySearchPlayer")?
                 .as_bool()
-                .expect("NonAutoPlacement NonEnemySearchPlayer must be Bool")),
+                .context("NonAutoPlacement NonEnemySearchPlayer must be Bool")?),
+            not_use_for_stats: Some(map.get("NotUseForStats")
+                .context("NonAutoPlacement must have NotUseForStats")?
+                .as_bool()
+                .context("NonAutoPlacement NotUseForStats must be Bool")?),
             rotate_y: Some(map.get("RotateY")
-                .expect("NonAutoPlacement must have RotateY")
+                .context("NonAutoPlacement must have RotateY")?
                 .as_float()
-                .expect("NonAutoPlacement RotateY must be Float")),
+                .context("NonAutoPlacement RotateY must be Float")?),
             scale: map.get("Scale")
-                .expect("NonAutoPlacement must have Scale")
+                .context("NonAutoPlacement must have Scale")?
                 .as_map()
-                .expect("Invalid NonAutoPlacement Scale")
+                .context("Invalid NonAutoPlacement Scale")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
             shape: Some(map.get("Shape")
-                .expect("NonAutoPlacement must have Shape")
+                .context("NonAutoPlacement must have Shape")?
                 .try_into()
-                .expect("NonAutoPlacement has invalid Shape")),
+                .context("NonAutoPlacement has invalid Shape")?),
             translate: map.get("Translate")
-                .expect("NonAutoPlacement must have Translate")
+                .context("NonAutoPlacement must have Translate")?
                 .as_map()
-                .expect("Invalid NonAutoPlacement Translate")
+                .context("Invalid NonAutoPlacement Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
-        }
+        })
     }
 }
 
 impl From<NonAutoPlacement> for Byml {
-    fn from(val: NonAutoPlacement) -> Self {
-        map!{
-            "NonAutoPlacementAnimal" => val.non_auto_placement_animal.unwrap().into(),
-            "NonAutoPlacementBird" => val.non_auto_placement_bird.unwrap().into(),
-            "NonAutoPlacementEnemy" => val.non_auto_placement_enemy.unwrap().into(),
-            "NonAutoPlacementFish" => val.non_auto_placement_fish.unwrap().into(),
-            "NonAutoPlacementInsect" => val.non_auto_placement_insect.unwrap().into(),
-            "NonAutoPlacementMaterial" => val.non_auto_placement_material.unwrap().into(),
-            "NonEnemySearchPlayer" => val.non_enemy_search_player.unwrap().into(),
-            "RotateY" => val.rotate_y.unwrap().into(),
-            "Scale" => Byml::Map(val.scale
-                .iter()
-                .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-                .collect::<crate::util::HashMap<String, Byml>>()),
-            "Shape" => (&val.shape.unwrap()).into(),
-            "Translate" => Byml::Map(val.translate
-                .iter()
-                .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-                .collect::<crate::util::HashMap<String, Byml>>()),
-        }
+    fn from(value: NonAutoPlacement) -> Self {
+        let mut map: HashMap<String, Byml> = Default::default();
+        map.insert("NonAutoPlacementAnimal".into(), value.non_auto_placement_animal.unwrap().into());
+        map.insert("NonAutoPlacementBird".into(), value.non_auto_placement_bird.unwrap().into());
+        map.insert("NonAutoPlacementEnemy".into(), value.non_auto_placement_enemy.unwrap().into());
+        map.insert("NonAutoPlacementFish".into(), value.non_auto_placement_fish.unwrap().into());
+        map.insert("NonAutoPlacementInsect".into(), value.non_auto_placement_insect.unwrap().into());
+        map.insert("NonAutoPlacementMaterial".into(), value.non_auto_placement_material.unwrap().into());
+        map.insert("NonEnemySearchPlayer".into(), value.non_enemy_search_player.unwrap().into());
+        match value.not_use_for_stats {
+            Some(p) => map.insert("NotUseForStats".into(), p.into()),
+            None => None,
+        };
+        map.insert("RotateY".into(), value.rotate_y.unwrap().into());
+        map.insert("Scale".into(), Byml::Map(value.scale
+            .iter()
+            .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
+            .collect::<crate::util::HashMap<String, Byml>>()));
+        map.insert("Shape".into(), (&value.shape.unwrap()).into());
+        map.insert("Translate".into(), Byml::Map(value.translate
+            .iter()
+            .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
+            .collect::<crate::util::HashMap<String, Byml>>()));
+        Byml::Map(map)
     }
 }
 
@@ -140,6 +152,10 @@ impl Mergeable for NonAutoPlacement {
                 .ne(&self.non_enemy_search_player)
                 .then(|| other.non_enemy_search_player)
                 .unwrap(),
+            not_use_for_stats: other.not_use_for_stats
+                .ne(&self.not_use_for_stats)
+                .then(|| other.not_use_for_stats)
+                .unwrap_or_default(),
             rotate_y: other.rotate_y
                 .ne(&self.rotate_y)
                 .then(|| other.rotate_y)
@@ -169,6 +185,8 @@ impl Mergeable for NonAutoPlacement {
                 .or(self.non_auto_placement_material),
             non_enemy_search_player: diff.non_enemy_search_player
                 .or(self.non_enemy_search_player),
+            not_use_for_stats: diff.not_use_for_stats
+                .or(self.not_use_for_stats),
             rotate_y: diff.rotate_y
                 .or(self.rotate_y),
             scale: self.scale.diff(&diff.scale),

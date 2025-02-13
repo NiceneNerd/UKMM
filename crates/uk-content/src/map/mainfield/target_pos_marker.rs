@@ -1,7 +1,8 @@
-use roead::byml::{map, Byml};
+use anyhow::Context;
+use roead::byml::Byml;
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::DeleteVec};
+use crate::{prelude::Mergeable, util::{DeleteVec, HashMap}};
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct TargetPosMarker {
@@ -10,53 +11,59 @@ pub struct TargetPosMarker {
     pub unique_name:    Option<String>,
 }
 
-impl From<&Byml> for TargetPosMarker {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for TargetPosMarker {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("TargetPosMarker node must be HashMap");
-        Self {
+            .context("TargetPosMarker node must be HashMap")?;
+        Ok(Self {
             rotate: map.get("Rotate")
-                .expect("TargetPosMarker must have Rotate")
+                .context("TargetPosMarker must have Rotate")?
                 .as_map()
-                .expect("Invalid TargetPosMarker Rotate")
+                .context("Invalid TargetPosMarker Rotate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
             translate: map.get("Translate")
-                .expect("TargetPosMarker must have Translate")
+                .context("TargetPosMarker must have Translate")?
                 .as_map()
-                .expect("Invalid TargetPosMarker Translate")
+                .context("Invalid TargetPosMarker Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
-            unique_name: Some(map.get("UniqueName")
-                .expect("TargetPosMarker must have UniqueName")
-                .as_string()
-                .expect("TargetPosMarker UniqueName must be String")
-                .clone()),
-        }
+                unique_name: map.get("UniqueName")
+                .map(|b| b.as_string()
+                    .context("TargetPosMarker UniqueName must be String")
+                    .unwrap()
+                    .clone()
+                ),
+        })
     }
 }
 
 impl From<TargetPosMarker> for Byml {
     fn from(val: TargetPosMarker) -> Self {
-        map!(
-            "Rotate" => Byml::Map(val.rotate
-                .iter()
-                .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-                .collect::<crate::util::HashMap<String, Byml>>()),
-            "Translate" => Byml::Map(val.translate
-                .iter()
-                .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-                .collect::<crate::util::HashMap<String, Byml>>()),
-            "UniqueName" => val.unique_name.unwrap().into(),
-        )
+        let mut map: HashMap<String, Byml> = Default::default();
+        map.insert("Rotate".into(), Byml::Map(val.rotate
+            .iter()
+            .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
+            .collect::<crate::util::HashMap<String, Byml>>()));
+        map.insert("Translate".into(), Byml::Map(val.translate
+            .iter()
+            .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
+            .collect::<crate::util::HashMap<String, Byml>>()));
+        match &val.unique_name {
+            Some(p) => map.insert("UniqueName".into(), p.into()),
+            None => None,
+        };
+        Byml::Map(map)
     }
 }
 
@@ -68,7 +75,7 @@ impl Mergeable for TargetPosMarker {
             unique_name: other.unique_name
                 .ne(&self.unique_name)
                 .then(|| other.unique_name.clone())
-                .unwrap(),
+                .unwrap_or_default(),
         }
     }
 

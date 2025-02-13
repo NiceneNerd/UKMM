@@ -1,3 +1,4 @@
+use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
@@ -13,44 +14,48 @@ pub struct LocationPointer {
     pub translate:          DeleteVec<(char, f32)>,
 }
 
-impl From<&Byml> for LocationPointer {
-    fn from(value: &Byml) -> Self {
+impl TryFrom<&Byml> for LocationPointer {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .expect("TargetPosMarker node must be HashMap");
-        Self {
+            .context("TargetPosMarker node must be HashMap")?;
+        Ok(Self {
             location_priority: Some(map.get("LocationPriority")
-                .expect("LocationPointer must have LocationPriority")
+                .context("LocationPointer must have LocationPriority")?
                 .as_i32()
-                .expect("LocationPointer LocationPriority must be Int")),
+                .context("LocationPointer LocationPriority must be Int")?),
             message_id: map.get("MessageID")
                 .map(|b| b.as_string()
-                    .expect("LocationPointer MessageID must be String")
+                    .context("LocationPointer MessageID must be String")
+                    .unwrap()
                     .clone()
                 ),
             pointer_type: Some(map.get("PointerType")
-                .expect("LocationPointer must have PointerType")
+                .context("LocationPointer must have PointerType")?
                 .as_i32()
-                .expect("LocationPointer PointerType must be Int")),
+                .context("LocationPointer PointerType must be Int")?),
             save_flag: map.get("SaveFlag")
                 .map(|b| b.as_string()
-                    .expect("LocationPointer SaveFlag must be String")
+                    .context("LocationPointer SaveFlag must be String")
+                    .unwrap()
                     .clone()
                 ),
             show_level: Some(map.get("ShowLevel")
-                .expect("LocationPointer must have ShowLevel")
+                .context("LocationPointer must have ShowLevel")?
                 .as_i32()
-                .expect("LocationPointer ShowLevel must be Int")),
+                .context("LocationPointer ShowLevel must be Int")?),
             translate: map.get("Translate")
-                .expect("LocationPointer must have Translate")
+                .context("LocationPointer must have Translate")?
                 .as_map()
-                .expect("Invalid LocationPointer Translate")
+                .context("Invalid LocationPointer Translate")?
                 .iter()
                 .map(|(k, v)| (
                     k.chars().next().unwrap(),
-                    v.as_float().expect("Invalid Float"))
-                )
+                    v.as_float().context("Invalid Float").unwrap()
+                ))
                 .collect::<DeleteVec<_>>(),
-        }
+        })
     }
 }
 
