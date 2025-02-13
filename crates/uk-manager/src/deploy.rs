@@ -123,7 +123,7 @@ impl Manager {
                             let path = file.path();
                             let rel = path.strip_prefix(&source).unwrap();
                             let dest = dest.join(rel);
-                            if !dest.is_dir() && (!dest.exists()
+                            if !source.is_dir() && (!dest.exists()
                                 || dest.metadata().ok()?.modified().ok()? < meta.modified().ok()?)
                             {
                                 Some(rel.to_slash_lossy().into())
@@ -151,7 +151,7 @@ impl Manager {
                         let path = file.path();
                         let rel = path.strip_prefix(&source).unwrap();
                         let dest = dest.join(rel);
-                        (dest.exists() && !dest.is_dir() && !path.exists())
+                        (dest.exists() && !source.is_dir() && !path.exists())
                             .then_some(rel.to_slash_lossy().into())
                     })
                 })
