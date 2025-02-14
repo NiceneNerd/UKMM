@@ -42,8 +42,10 @@ impl TryFrom<&Byml> for CollabAnchor {
                 .enumerate()
                 .map(|(i, (k, v))| {
                     match (k.chars().next(), v.as_float()) {
-                        (Some(d), Ok(f)) => Ok((d, f)),
-                        _ => Err(anyhow::anyhow!("Invalid LocationMarker Translate index {i}")),
+                        (Some(c), Ok(f)) => Ok((c, f)),
+                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid CollabAnchor Translate with value {f}")),
+                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid CollabAnchor Translate {c}: {e}")),
+                        _ => Err(anyhow::anyhow!("Invalid CollabAnchor Translate index {i}")),
                     }
                 })
                 .collect::<Result<DeleteVec<_>, _>>()?,

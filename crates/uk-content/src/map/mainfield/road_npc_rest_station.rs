@@ -44,8 +44,10 @@ impl TryFrom<&Byml> for RoadNpcRestStation {
                 .enumerate()
                 .map(|(i, (k, v))| {
                     match (k.chars().next(), v.as_float()) {
-                        (Some(d), Ok(f)) => Ok((d, f)),
-                        _ => Err(anyhow::anyhow!("Invalid RoadNpcRestStation Translate index {i}")),
+                        (Some(c), Ok(f)) => Ok((c, f)),
+                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid RoadNpcRestStation Translate with value {f}")),
+                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid RoadNpcRestStation Translate {c}: {e}")),
+                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid RoadNpcRestStation Translate index {i}: {e}")),
                     }
                 })
                 .collect::<Result<DeleteVec<_>, _>>()?,

@@ -74,8 +74,10 @@ impl TryFrom<&Byml> for NonAutoPlacement {
                 .enumerate()
                 .map(|(i, (k, v))| {
                     match (k.chars().next(), v.as_float()) {
-                        (Some(d), Ok(f)) => Ok((d, f)),
-                        _ => Err(anyhow::anyhow!("Invalid NonAutoPlacement Scale index {i}")),
+                        (Some(c), Ok(f)) => Ok((c, f)),
+                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Scale with value {f}")),
+                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Scale {c}: {e}")),
+                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Scale index {i}: {e}")),
                     }
                 })
                 .collect::<Result<DeleteVec<_>, _>>()?,
@@ -91,8 +93,10 @@ impl TryFrom<&Byml> for NonAutoPlacement {
                 .enumerate()
                 .map(|(i, (k, v))| {
                     match (k.chars().next(), v.as_float()) {
-                        (Some(d), Ok(f)) => Ok((d, f)),
-                        _ => Err(anyhow::anyhow!("Invalid NonAutoPlacement Translate index {i}")),
+                        (Some(c), Ok(f)) => Ok((c, f)),
+                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Translate with value {f}")),
+                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Translate {c}: {e}")),
+                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Translate index {i}: {e}")),
                     }
                 })
                 .collect::<Result<DeleteVec<_>, _>>()?,

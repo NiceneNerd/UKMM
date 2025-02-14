@@ -145,8 +145,10 @@ impl TryFrom<&Byml> for LocationMarker {
                 .enumerate()
                 .map(|(i, (k, v))| {
                     match (k.chars().next(), v.as_float()) {
-                        (Some(d), Ok(f)) => Ok((d, f)),
-                        _ => Err(anyhow::anyhow!("Invalid LocationMarker Translate index {i}")),
+                        (Some(c), Ok(f)) => Ok((c, f)),
+                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid LocationMarker Translate with value {f}")),
+                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid LocationMarker Translate {c}: {e}")),
+                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid LocationMarker Translate index {i}: {e}")),
                     }
                 })
                 .collect::<Result<DeleteVec<_>, _>>()?,

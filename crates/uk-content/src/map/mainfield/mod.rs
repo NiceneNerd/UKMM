@@ -276,8 +276,10 @@ impl TryFrom<&Byml> for ScaleTranslate {
                 .enumerate()
                 .map(|(i, (k, v))| {
                     match (k.chars().next(), v.as_float()) {
-                        (Some(d), Ok(f)) => Ok((d, f)),
-                        _ => Err(anyhow::anyhow!("Invalid ScaleTranslate Scale index {i}")),
+                        (Some(c), Ok(f)) => Ok((c, f)),
+                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Scale with value {f}")),
+                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Scale {c}: {e}")),
+                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Scale index {i}: {e}")),
                     }
                 })
                 .collect::<Result<DeleteVec<_>, _>>()?,
@@ -289,8 +291,10 @@ impl TryFrom<&Byml> for ScaleTranslate {
                 .enumerate()
                 .map(|(i, (k, v))| {
                     match (k.chars().next(), v.as_float()) {
-                        (Some(d), Ok(f)) => Ok((d, f)),
-                        _ => Err(anyhow::anyhow!("Invalid ScaleTranslate Translate index {i}")),
+                        (Some(c), Ok(f)) => Ok((c, f)),
+                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Translate with value {f}")),
+                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Translate {c}: {e}")),
+                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Translate index {i}: {e}")),
                     }
                 })
                 .collect::<Result<DeleteVec<_>, _>>()?,

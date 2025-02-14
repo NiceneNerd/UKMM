@@ -38,8 +38,10 @@ impl TryFrom<&Byml> for NonAutoGenArea {
                 .enumerate()
                 .map(|(i, (k, v))| {
                     match (k.chars().next(), v.as_float()) {
-                        (Some(d), Ok(f)) => Ok((d, f)),
-                        _ => Err(anyhow::anyhow!("Invalid NonAutoGenArea Scale index {i}")),
+                        (Some(c), Ok(f)) => Ok((c, f)),
+                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Scale with value {f}")),
+                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Scale {c}: {e}")),
+                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Scale index {i}: {e}")),
                     }
                 })
                 .collect::<Result<DeleteVec<_>, _>>()?,
@@ -55,8 +57,10 @@ impl TryFrom<&Byml> for NonAutoGenArea {
                 .enumerate()
                 .map(|(i, (k, v))| {
                     match (k.chars().next(), v.as_float()) {
-                        (Some(d), Ok(f)) => Ok((d, f)),
-                        _ => Err(anyhow::anyhow!("Invalid NonAutoGenArea Translate index {i}")),
+                        (Some(c), Ok(f)) => Ok((c, f)),
+                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Translate with value {f}")),
+                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Translate {c}: {e}")),
+                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Translate index {i}: {e}")),
                     }
                 })
                 .collect::<Result<DeleteVec<_>, _>>()?,
