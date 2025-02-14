@@ -18,17 +18,21 @@ impl TryFrom<&Byml> for StaticGrudgeLocation {
             .context("StaticGrudgeLocation node must be HashMap")?;
         Ok(Self {
             eyeball_hash_id: map.get("EyeballHashId")
-                .map(|b| b.as_u32().context("EyeballHashId must be u32").unwrap()),
+                .map(|b| b.as_u32().context("EyeballHashId must be u32"))
+                .transpose()?,
             translate: map.get("Translate")
                 .context("StaticGrudgeLocation must have Translate")?
                 .as_map()
                 .context("Invalid StaticGrudgeLocation Translate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid StaticGrudgeLocation Translate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
         })
     }
 }

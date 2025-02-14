@@ -23,27 +23,33 @@ impl TryFrom<&Byml> for TargetPosMarker {
                 .as_map()
                 .context("Invalid TargetPosMarker Rotate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid TargetPosMarker Rotate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
             translate: map.get("Translate")
                 .context("TargetPosMarker must have Translate")?
                 .as_map()
                 .context("Invalid TargetPosMarker Translate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
-                unique_name: map.get("UniqueName")
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid TargetPosMarker Translate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
+            unique_name: map.get("UniqueName")
                 .map(|b| b.as_string()
                     .context("TargetPosMarker UniqueName must be String")
-                    .unwrap()
-                    .clone()
-                ),
+                )
+                .transpose()?
+                .map(|s| s.clone()),
         })
     }
 }

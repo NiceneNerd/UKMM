@@ -131,11 +131,14 @@ impl TryFrom<&Byml> for KorokLocation {
                 .as_map()
                 .context("Invalid KorokLocation Translate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid CollabAnchor Translate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
         })
     }
 }

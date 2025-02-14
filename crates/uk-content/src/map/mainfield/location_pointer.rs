@@ -19,7 +19,7 @@ impl TryFrom<&Byml> for LocationPointer {
 
     fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map()
-            .context("TargetPosMarker node must be HashMap")?;
+            .context("LocationPointer node must be HashMap")?;
         Ok(Self {
             location_priority: Some(map.get("LocationPriority")
                 .context("LocationPointer must have LocationPriority")?
@@ -28,9 +28,9 @@ impl TryFrom<&Byml> for LocationPointer {
             message_id: map.get("MessageID")
                 .map(|b| b.as_string()
                     .context("LocationPointer MessageID must be String")
-                    .unwrap()
-                    .clone()
-                ),
+                )
+                .transpose()?
+                .map(|s| s.clone()),
             pointer_type: Some(map.get("PointerType")
                 .context("LocationPointer must have PointerType")?
                 .as_i32()
@@ -38,9 +38,9 @@ impl TryFrom<&Byml> for LocationPointer {
             save_flag: map.get("SaveFlag")
                 .map(|b| b.as_string()
                     .context("LocationPointer SaveFlag must be String")
-                    .unwrap()
-                    .clone()
-                ),
+                )
+                .transpose()?
+                .map(|s| s.clone()),
             show_level: Some(map.get("ShowLevel")
                 .context("LocationPointer must have ShowLevel")?
                 .as_i32()
@@ -50,11 +50,14 @@ impl TryFrom<&Byml> for LocationPointer {
                 .as_map()
                 .context("Invalid LocationPointer Translate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid LocationPointer Translate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
         })
     }
 }

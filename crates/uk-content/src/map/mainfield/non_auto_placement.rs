@@ -60,8 +60,8 @@ impl TryFrom<&Byml> for NonAutoPlacement {
             not_use_for_stats: map.get("NotUseForStats")
                 .map(|b| b.as_bool()
                     .context("NonAutoPlacement NotUseForStats must be Bool")
-                    .unwrap()
-                ),
+                )
+                .transpose()?,
             rotate_y: Some(map.get("RotateY")
                 .context("NonAutoPlacement must have RotateY")?
                 .as_float()
@@ -71,11 +71,14 @@ impl TryFrom<&Byml> for NonAutoPlacement {
                 .as_map()
                 .context("Invalid NonAutoPlacement Scale")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid NonAutoPlacement Scale index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
             shape: Some(map.get("Shape")
                 .context("NonAutoPlacement must have Shape")?
                 .try_into()
@@ -85,11 +88,14 @@ impl TryFrom<&Byml> for NonAutoPlacement {
                 .as_map()
                 .context("Invalid NonAutoPlacement Translate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid NonAutoPlacement Translate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
         })
     }
 }

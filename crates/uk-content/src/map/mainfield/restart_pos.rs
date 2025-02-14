@@ -23,21 +23,27 @@ impl TryFrom<&Byml> for RestartPos {
                 .as_map()
                 .context("Invalid RestartPos Scale")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid RestartPos Scale index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
             translate: map.get("Translate")
                 .context("RestartPos must have Translate")?
                 .as_map()
                 .context("Invalid RestartPos Translate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid RestartPos Translate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
             unique_name: Some(map.get("UniqueName")
                 .context("RestartPos must have UniqueName")?
                 .as_string()

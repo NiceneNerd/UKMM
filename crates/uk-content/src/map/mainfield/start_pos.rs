@@ -88,33 +88,40 @@ impl TryFrom<&Byml> for StartPos {
                 .as_str()
                 .into()),
             player_state: map.get("PlayerState")
-                .map(|b| b.try_into().context("Invalid PlayerState").unwrap()),
+                .map(|b| b.try_into().context("Invalid PlayerState"))
+                .transpose()?,
             pos_name: map.get("PosName")
                 .map(|b| b.as_string()
                     .context("StartPos PosName must be String")
-                    .unwrap()
-                    .clone()
-                ),
+                )
+                .transpose()?
+                .map(|s| s.clone()),
             rotate: map.get("Rotate")
                 .context("StartPos must have Rotate")?
                 .as_map()
                 .context("Invalid StartPos Rotate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid StartPos Rotate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
             translate: map.get("Translate")
                 .context("StartPos must have Translate")?
                 .as_map()
                 .context("Invalid StartPos Translate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid StartPos Translate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
         })
     }
 }

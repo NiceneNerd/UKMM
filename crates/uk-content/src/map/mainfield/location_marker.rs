@@ -120,14 +120,14 @@ impl TryFrom<&Byml> for LocationMarker {
             icon: map.get("Icon")
                 .map(|b| b.try_into()
                     .context("LocationMarker Icon invalid")
-                    .unwrap()
-                ),
+                )
+                .transpose()?,
             message_id: map.get("MessageID")
                 .map(|b| b.as_string()
                     .context("LocationMarker MessageID must be String")
-                    .unwrap()
-                    .clone()
-                ),
+                )
+                .transpose()?
+                .map(|s| s.clone()),
             priority: Some(map.get("Priority")
                 .context("LocationMarker must have Priority")?
                 .as_i32()
@@ -142,22 +142,25 @@ impl TryFrom<&Byml> for LocationMarker {
                 .as_map()
                 .context("Invalid LocationMarker Translate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid LocationMarker Translate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
             warp_dest_map_name: map.get("WarpDestMapName")
                 .map(|b| b.try_into()
-                    .context("LocationMarker WarpDestMapName must be String")
-                    .unwrap()
-                ),
+                    .context("Invalid LocationMarker WarpDestMapName")
+                )
+                .transpose()?,
             warp_dest_pos_name: map.get("WarpDestPosName")
                 .map(|b| b.as_string()
                     .context("LocationMarker WarpDestPosName must be String")
-                    .unwrap()
-                    .clone()
-                ),
+                )
+                .transpose()?
+                .map(|s| s.clone()),
         })
     }
 }

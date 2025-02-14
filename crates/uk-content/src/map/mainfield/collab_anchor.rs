@@ -39,11 +39,14 @@ impl TryFrom<&Byml> for CollabAnchor {
                 .as_map()
                 .context("Invalid CollabAnchor Translate")?
                 .iter()
-                .map(|(k, v)| (
-                    k.chars().next().unwrap(),
-                    v.as_float().context("Invalid Float").unwrap()
-                ))
-                .collect::<DeleteVec<_>>(),
+                .enumerate()
+                .map(|(i, (k, v))| {
+                    match (k.chars().next(), v.as_float()) {
+                        (Some(d), Ok(f)) => Ok((d, f)),
+                        _ => Err(anyhow::anyhow!("Invalid LocationMarker Translate index {i}")),
+                    }
+                })
+                .collect::<Result<DeleteVec<_>, _>>()?,
             collabo_ssfallout_flag_name: Some(map.get("collaboSSFalloutFlagName")
                 .context("CollabAnchor must have collaboSSFalloutFlagName")?
                 .as_string()
