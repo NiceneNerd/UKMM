@@ -220,31 +220,67 @@ impl Mergeable for KorokLocation {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            flag: diff.flag.clone()
-                .or(self.flag.clone()),
+            flag: diff.flag
+                .eq(&self.flag)
+                .then(|| self.flag.clone())
+                .or_else(|| Some(diff.flag.clone()))
+                .unwrap(),
             hidden_korok_body_color: diff.hidden_korok_body_color
-                .or(self.hidden_korok_body_color),
+                .eq(&self.hidden_korok_body_color)
+                .then(|| self.hidden_korok_body_color)
+                .or_else(|| Some(diff.hidden_korok_body_color))
+                .unwrap(),
             hidden_korok_left_plant_type: diff.hidden_korok_left_plant_type
-                .or(self.hidden_korok_left_plant_type),
+                .eq(&self.hidden_korok_left_plant_type)
+                .then(|| self.hidden_korok_left_plant_type)
+                .or_else(|| Some(diff.hidden_korok_left_plant_type))
+                .unwrap(),
             hidden_korok_mask_type: diff.hidden_korok_mask_type
-                .or(self.hidden_korok_mask_type),
+                .eq(&self.hidden_korok_mask_type)
+                .then(|| self.hidden_korok_mask_type)
+                .or_else(|| Some(diff.hidden_korok_mask_type))
+                .unwrap(),
             hidden_korok_right_plant_type: diff.hidden_korok_right_plant_type
-                .or(self.hidden_korok_right_plant_type),
+                .eq(&self.hidden_korok_right_plant_type)
+                .then(|| self.hidden_korok_right_plant_type)
+                .or_else(|| Some(diff.hidden_korok_right_plant_type))
+                .unwrap(),
             is_appear_check: diff.is_appear_check
-                .or(self.is_appear_check),
+                .eq(&self.is_appear_check)
+                .then(|| self.is_appear_check)
+                .or_else(|| Some(diff.is_appear_check))
+                .unwrap(),
             is_hidden_korok_lift_appear: diff.is_hidden_korok_lift_appear
-                .or(self.is_hidden_korok_lift_appear),
+                .eq(&self.is_hidden_korok_lift_appear)
+                .then(|| self.is_hidden_korok_lift_appear)
+                .or_else(|| Some(diff.is_hidden_korok_lift_appear))
+                .unwrap(),
             is_invisible_korok: diff.is_invisible_korok
-                .or(self.is_invisible_korok),
+                .eq(&self.is_invisible_korok)
+                .then(|| self.is_invisible_korok)
+                .or_else(|| Some(diff.is_invisible_korok))
+                .unwrap(),
             korok_event_start_wait_frame: diff.korok_event_start_wait_frame
-                .or(self.korok_event_start_wait_frame),
+                .eq(&self.korok_event_start_wait_frame)
+                .then(|| self.korok_event_start_wait_frame)
+                .or_else(|| Some(diff.korok_event_start_wait_frame))
+                .unwrap(),
             placement_type: diff.placement_type
-                .or(self.placement_type),
+                .eq(&self.placement_type)
+                .then(|| self.placement_type)
+                .or_else(|| Some(diff.placement_type))
+                .unwrap(),
             rail_move_speed: diff.rail_move_speed
-                .or(self.rail_move_speed),
+                .eq(&self.rail_move_speed)
+                .then(|| self.rail_move_speed)
+                .or_else(|| Some(diff.rail_move_speed))
+                .unwrap(),
             territory_area: diff.territory_area
-                .or(self.territory_area),
-            translate: self.translate.diff(&diff.translate),
+                .eq(&self.territory_area)
+                .then(|| self.territory_area)
+                .or_else(|| Some(diff.territory_area))
+                .unwrap(),
+            translate: self.translate.merge(&diff.translate),
         }
     }
 }

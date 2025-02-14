@@ -225,18 +225,36 @@ impl Mergeable for LocationMarker {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             icon: diff.icon
-                .or(self.icon),
-            message_id: diff.message_id.clone()
-                .or(self.message_id.clone()),
+                .eq(&self.icon)
+                .then(|| self.icon)
+                .or_else(|| Some(diff.icon))
+                .unwrap(),
+            message_id: diff.message_id
+                .eq(&self.message_id)
+                .then(|| self.message_id.clone())
+                .or_else(|| Some(diff.message_id.clone()))
+                .unwrap(),
             priority: diff.priority
-                .or(self.priority),
-            save_flag: diff.save_flag.clone()
-                .or(self.save_flag.clone()),
-            translate: self.translate.diff(&diff.translate),
-            warp_dest_map_name: diff.warp_dest_map_name.clone()
-                .or(self.warp_dest_map_name.clone()),
-            warp_dest_pos_name: diff.warp_dest_pos_name.clone()
-                .or(self.warp_dest_pos_name.clone()),
+                .eq(&self.priority)
+                .then(|| self.priority)
+                .or_else(|| Some(diff.priority))
+                .unwrap(),
+            save_flag: diff.save_flag
+                .eq(&self.save_flag)
+                .then(|| self.save_flag.clone())
+                .or_else(|| Some(diff.save_flag.clone()))
+                .unwrap(),
+            translate: self.translate.merge(&diff.translate),
+            warp_dest_map_name: diff.warp_dest_map_name
+                .eq(&self.warp_dest_map_name)
+                .then(|| self.warp_dest_map_name.clone())
+                .or_else(|| Some(diff.warp_dest_map_name.clone()))
+                .unwrap(),
+            warp_dest_pos_name: diff.warp_dest_pos_name
+                .eq(&self.warp_dest_pos_name)
+                .then(|| self.warp_dest_pos_name.clone())
+                .or_else(|| Some(diff.warp_dest_pos_name.clone()))
+                .unwrap(),
         }
     }
 }

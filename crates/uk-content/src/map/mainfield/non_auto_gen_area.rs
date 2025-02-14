@@ -99,13 +99,22 @@ impl Mergeable for NonAutoGenArea {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             enable_auto_flower: diff.enable_auto_flower
-                .or(self.enable_auto_flower),
+                .eq(&self.enable_auto_flower)
+                .then(|| self.enable_auto_flower)
+                .or_else(|| Some(diff.enable_auto_flower))
+                .unwrap(),
             rotate_y: diff.rotate_y
-                .or(self.rotate_y),
-            scale: self.scale.diff(&diff.scale),
+                .eq(&self.rotate_y)
+                .then(|| self.rotate_y)
+                .or_else(|| Some(diff.rotate_y))
+                .unwrap(),
+            scale: self.scale.merge(&diff.scale),
             shape: diff.shape
-                .or(self.shape),
-            translate: self.translate.diff(&diff.translate),
+                .eq(&self.shape)
+                .then(|| self.shape)
+                .or_else(|| Some(diff.shape))
+                .unwrap(),
+            translate: self.translate.merge(&diff.translate),
         }
     }
 }

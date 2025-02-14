@@ -111,16 +111,31 @@ impl Mergeable for LocationPointer {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             location_priority: diff.location_priority
-                .or(self.location_priority),
-            message_id: diff.message_id.clone()
-                .or(self.message_id.clone()),
+                .eq(&self.location_priority)
+                .then(|| self.location_priority)
+                .or_else(|| Some(diff.location_priority))
+                .unwrap(),
+            message_id: diff.message_id
+                .eq(&self.message_id)
+                .then(|| self.message_id.clone())
+                .or_else(|| Some(diff.message_id.clone()))
+                .unwrap(),
             pointer_type: diff.pointer_type
-                .or(self.pointer_type),
-            save_flag: diff.save_flag.clone()
-                .or(self.save_flag.clone()),
+                .eq(&self.pointer_type)
+                .then(|| self.pointer_type)
+                .or_else(|| Some(diff.pointer_type))
+                .unwrap(),
+            save_flag: diff.save_flag
+                .eq(&self.save_flag)
+                .then(|| self.save_flag.clone())
+                .or_else(|| Some(diff.save_flag.clone()))
+                .unwrap(),
             show_level: diff.show_level
-                .or(self.show_level),
-            translate: self.translate.diff(&diff.translate),
+                .eq(&self.show_level)
+                .then(|| self.show_level)
+                .or_else(|| Some(diff.show_level))
+                .unwrap(),
+            translate: self.translate.merge(&diff.translate),
         }
     }
 }

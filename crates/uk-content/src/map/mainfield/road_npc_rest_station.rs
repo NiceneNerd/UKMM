@@ -91,14 +91,26 @@ impl Mergeable for RoadNpcRestStation {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             rest_horse_left: diff.rest_horse_left
-                .or(self.rest_horse_left),
+                .eq(&self.rest_horse_left)
+                .then(|| self.rest_horse_left)
+                .or_else(|| Some(diff.rest_horse_left))
+                .unwrap(),
             rest_only_npc: diff.rest_only_npc
-                .or(self.rest_only_npc),
+                .eq(&self.rest_only_npc)
+                .then(|| self.rest_only_npc)
+                .or_else(|| Some(diff.rest_only_npc))
+                .unwrap(),
             rest_with_horse: diff.rest_with_horse
-                .or(self.rest_with_horse),
+                .eq(&self.rest_with_horse)
+                .then(|| self.rest_with_horse)
+                .or_else(|| Some(diff.rest_with_horse))
+                .unwrap(),
             rotate_y: diff.rotate_y
-                .or(self.rotate_y),
-            translate: self.translate.diff(&diff.translate),
+                .eq(&self.rotate_y)
+                .then(|| self.rotate_y)
+                .or_else(|| Some(diff.rotate_y))
+                .unwrap(),
+            translate: self.translate.merge(&diff.translate),
         }
     }
 }

@@ -173,27 +173,57 @@ impl Mergeable for NonAutoPlacement {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             non_auto_placement_animal: diff.non_auto_placement_animal
-                .or(self.non_auto_placement_animal),
+                .eq(&self.non_auto_placement_animal)
+                .then(|| self.non_auto_placement_animal)
+                .or_else(|| Some(diff.non_auto_placement_animal))
+                .unwrap(),
             non_auto_placement_bird: diff.non_auto_placement_bird
-                .or(self.non_auto_placement_bird),
+                .eq(&self.non_auto_placement_bird)
+                .then(|| self.non_auto_placement_bird)
+                .or_else(|| Some(diff.non_auto_placement_bird))
+                .unwrap(),
             non_auto_placement_enemy: diff.non_auto_placement_enemy
-                .or(self.non_auto_placement_enemy),
+                .eq(&self.non_auto_placement_enemy)
+                .then(|| self.non_auto_placement_enemy)
+                .or_else(|| Some(diff.non_auto_placement_enemy))
+                .unwrap(),
             non_auto_placement_fish: diff.non_auto_placement_fish
-                .or(self.non_auto_placement_fish),
+                .eq(&self.non_auto_placement_fish)
+                .then(|| self.non_auto_placement_fish)
+                .or_else(|| Some(diff.non_auto_placement_fish))
+                .unwrap(),
             non_auto_placement_insect: diff.non_auto_placement_insect
-                .or(self.non_auto_placement_insect),
+                .eq(&self.non_auto_placement_insect)
+                .then(|| self.non_auto_placement_insect)
+                .or_else(|| Some(diff.non_auto_placement_insect))
+                .unwrap(),
             non_auto_placement_material: diff.non_auto_placement_material
-                .or(self.non_auto_placement_material),
+                .eq(&self.non_auto_placement_material)
+                .then(|| self.non_auto_placement_material)
+                .or_else(|| Some(diff.non_auto_placement_material))
+                .unwrap(),
             non_enemy_search_player: diff.non_enemy_search_player
-                .or(self.non_enemy_search_player),
+                .eq(&self.non_enemy_search_player)
+                .then(|| self.non_enemy_search_player)
+                .or_else(|| Some(diff.non_enemy_search_player))
+                .unwrap(),
             not_use_for_stats: diff.not_use_for_stats
-                .or(self.not_use_for_stats),
+                .eq(&self.not_use_for_stats)
+                .then(|| self.not_use_for_stats)
+                .or_else(|| Some(diff.not_use_for_stats))
+                .unwrap(),
             rotate_y: diff.rotate_y
-                .or(self.rotate_y),
-            scale: self.scale.diff(&diff.scale),
+                .eq(&self.rotate_y)
+                .then(|| self.rotate_y)
+                .or_else(|| Some(diff.rotate_y))
+                .unwrap(),
+            scale: self.scale.merge(&diff.scale),
             shape: diff.shape
-                .or(self.shape),
-            translate: self.translate.diff(&diff.translate),
+                .eq(&self.shape)
+                .then(|| self.shape)
+                .or_else(|| Some(diff.shape))
+                .unwrap(),
+            translate: self.translate.merge(&diff.translate),
         }
     }
 }

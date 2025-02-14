@@ -126,18 +126,36 @@ impl Mergeable for CollabAnchor {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             collabo_shooting_star_direction: diff.collabo_shooting_star_direction
-                .or(self.collabo_shooting_star_direction),
+                .eq(&self.collabo_shooting_star_direction)
+                .then(|| self.collabo_shooting_star_direction)
+                .or_else(|| Some(diff.collabo_shooting_star_direction))
+                .unwrap(),
             collabo_shooting_star_end_hour: diff.collabo_shooting_star_end_hour
-                .or(self.collabo_shooting_star_end_hour),
+                .eq(&self.collabo_shooting_star_end_hour)
+                .then(|| self.collabo_shooting_star_end_hour)
+                .or_else(|| Some(diff.collabo_shooting_star_end_hour))
+                .unwrap(),
             collabo_shooting_star_start_hour: diff.collabo_shooting_star_start_hour
-                .or(self.collabo_shooting_star_start_hour),
-            translate: self.translate.diff(&diff.translate),
+                .eq(&self.collabo_shooting_star_start_hour)
+                .then(|| self.collabo_shooting_star_start_hour)
+                .or_else(|| Some(diff.collabo_shooting_star_start_hour))
+                .unwrap(),
+            translate: self.translate.merge(&diff.translate),
             collabo_ssfallout_flag_name: diff.collabo_ssfallout_flag_name.clone()
-                .or(self.collabo_ssfallout_flag_name.clone()),
+                .eq(&self.collabo_ssfallout_flag_name)
+                .then(|| self.collabo_ssfallout_flag_name.clone())
+                .or_else(|| Some(diff.collabo_ssfallout_flag_name.clone()))
+                .unwrap(),
             collabo_ssopen_flag_name: diff.collabo_ssopen_flag_name.clone()
-                .or(self.collabo_ssopen_flag_name.clone()),
+                .eq(&self.collabo_ssopen_flag_name)
+                .then(|| self.collabo_ssopen_flag_name.clone())
+                .or_else(|| Some(diff.collabo_ssopen_flag_name.clone()))
+                .unwrap(),
             collabo_ssquest_flag: diff.collabo_ssquest_flag.clone()
-                .or(self.collabo_ssquest_flag.clone()),
+                .eq(&self.collabo_ssquest_flag)
+                .then(|| self.collabo_ssquest_flag.clone())
+                .or_else(|| Some(diff.collabo_ssquest_flag.clone()))
+                .unwrap(),
         }
     }
 }

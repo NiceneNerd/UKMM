@@ -62,8 +62,11 @@ impl Mergeable for StaticGrudgeLocation {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             eyeball_hash_id: diff.eyeball_hash_id
-                .or(self.eyeball_hash_id),
-            translate: self.translate.diff(&diff.translate),
+                .eq(&self.eyeball_hash_id)
+                .then(|| self.eyeball_hash_id)
+                .or_else(|| Some(diff.eyeball_hash_id))
+                .unwrap(),
+            translate: self.translate.merge(&diff.translate),
         }
     }
 }

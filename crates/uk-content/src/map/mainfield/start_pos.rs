@@ -165,14 +165,23 @@ impl Mergeable for StartPos {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            map: diff.map.clone()
-                .or(self.map.clone()),
+            map: diff.map
+                .eq(&self.map)
+                .then(|| self.map.clone())
+                .or_else(|| Some(diff.map.clone()))
+                .unwrap(),
             player_state: diff.player_state
-                .or(self.player_state),
-            pos_name: diff.pos_name.clone()
-                .or(self.pos_name.clone()),
-            rotate: self.rotate.diff(&diff.rotate),
-            translate: self.translate.diff(&diff.translate),
+                .eq(&self.player_state)
+                .then(|| self.player_state)
+                .or_else(|| Some(diff.player_state))
+                .unwrap(),
+            pos_name: diff.pos_name
+                .eq(&self.pos_name)
+                .then(|| self.pos_name.clone())
+                .or_else(|| Some(diff.pos_name.clone()))
+                .unwrap(),
+            rotate: self.rotate.merge(&diff.rotate),
+            translate: self.translate.merge(&diff.translate),
         }
     }
 }

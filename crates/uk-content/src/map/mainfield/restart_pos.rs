@@ -77,10 +77,13 @@ impl Mergeable for RestartPos {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            scale: self.scale.diff(&diff.scale),
-            translate: self.translate.diff(&diff.translate),
-            unique_name: diff.unique_name.clone()
-                .or(self.unique_name.clone()),
+            scale: self.scale.merge(&diff.scale),
+            translate: self.translate.merge(&diff.translate),
+            unique_name: diff.unique_name
+                .eq(&self.unique_name)
+                .then(|| self.unique_name.clone())
+                .or_else(|| Some(diff.unique_name.clone()))
+                .unwrap(),
         }
     }
 }
