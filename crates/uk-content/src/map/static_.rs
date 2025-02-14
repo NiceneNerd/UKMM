@@ -286,7 +286,12 @@ impl TryFrom<&Byml> for MainStatic {
                     -> Result<DeleteMap<String, KorokLocation>> {
                         let entry: KorokLocation = entry.try_into()
                             .with_context(|| format!("Could not read KorokLocation {}", index))?;
-                        entry_map.insert(entry.flag.clone().unwrap(), entry);
+                        entry_map.insert(
+                            roead::aamp::hash_name(
+                                entry.flag.clone().unwrap().as_str()
+                            ).to_string(),
+                            entry
+                        );
                         Ok(entry_map)
                     },
                 )?,
@@ -305,11 +310,13 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: LocationMarker = entry.try_into()
                             .with_context(|| format!("Could not read LocationMarker {}", index))?;
                         entry_map.insert(
-                            format!(
-                                "{}{}",
-                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
-                                entry.message_id.clone().unwrap_or_default()
-                            ),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.message_id.clone().unwrap_or_default()
+                                )
+                            ).to_string(),
                             entry
                         );
                         Ok(entry_map)
@@ -330,11 +337,13 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: LocationPointer = entry.try_into()
                             .with_context(|| format!("Could not read LocationPointer {}", index))?;
                         entry_map.insert(
-                            format!(
-                                "{}{}",
-                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
-                                entry.message_id.clone().unwrap_or_default()
-                            ),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.message_id.clone().unwrap_or_default()
+                                )
+                            ).to_string(),
                             entry
                         );
                         Ok(entry_map)
@@ -355,12 +364,14 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: NonAutoGenArea = entry.try_into()
                             .with_context(|| format!("Could not read NonAutoGenArea {}", index))?;
                         entry_map.insert(
-                            format!(
-                                "{}{}{}",
-                                entry.scale.iter().map(|(_, v)| v.round()).join(""),
-                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
-                                entry.shape.unwrap(),
-                            ),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.scale.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.shape.unwrap(),
+                                )
+                            ).to_string(),
                             entry
                         );
                         Ok(entry_map)
@@ -381,12 +392,14 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: NonAutoPlacement = entry.try_into()
                             .with_context(|| format!("Could not read NonAutoPlacement {}", index))?;
                         entry_map.insert(
-                            format!(
-                                "{}{}{}",
-                                entry.scale.iter().map(|(_, v)| v.round()).join(""),
-                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
-                                entry.shape.unwrap(),
-                            ),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.scale.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.shape.unwrap(),
+                                )
+                            ).to_string(),
                             entry
                         );
                         Ok(entry_map)
@@ -407,10 +420,12 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: RoadNpcRestStation = entry.try_into()
                             .with_context(|| format!("Could not read RoadNpcRestStation {}", index))?;
                         entry_map.insert(
-                            entry.translate.clone()
-                                .iter()
-                                .map(|(_, v)| v.round())
-                                .join(""),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                )
+                            ).to_string(),
                             entry,
                         );
                         Ok(entry_map)
@@ -431,11 +446,13 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: StartPos = entry.try_into()
                             .with_context(|| format!("Could not read StartPos {}", index))?;
                         entry_map.insert(
-                            format!(
-                                "{}{}",
-                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
-                                entry.pos_name.clone().unwrap_or_default()
-                            ),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.pos_name.clone().unwrap_or_default()
+                                )
+                            ).to_string(),
                             entry
                         );
                         Ok(entry_map)
@@ -456,11 +473,13 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: StaticGrudgeLocation = entry.try_into()
                             .with_context(|| format!("Could not read StaticGrudgeLocation {}", index))?;
                         entry_map.insert(
-                            format!(
-                                "{}{}",
-                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
-                                entry.eyeball_hash_id.unwrap_or_default(),
-                            ),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.eyeball_hash_id.unwrap_or_default(),
+                                )
+                            ).to_string(),
                             entry,
                         );
                         Ok(entry_map)
@@ -481,11 +500,13 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: TargetPosMarker = entry.try_into()
                             .with_context(|| format!("Could not read TargetPosMarker {}", index))?;
                         entry_map.insert(
-                            format!(
-                                "{}{}",
-                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
-                                entry.unique_name.clone().unwrap_or_default(),
-                            ),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.unique_name.clone().unwrap_or_default(),
+                                )
+                            ).to_string(),
                             entry,
                         );
                         Ok(entry_map)
@@ -506,11 +527,13 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: ScaleTranslate = entry.try_into()
                             .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
                         entry_map.insert(
-                            format!(
-                                "{}{}",
-                                entry.scale.iter().map(|(_, v)| v.round()).join(""),
-                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
-                            ),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.scale.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                )
+                            ).to_string(),
                             entry,
                         );
                         Ok(entry_map)
@@ -531,11 +554,13 @@ impl TryFrom<&Byml> for MainStatic {
                         let entry: ScaleTranslate = entry.try_into()
                             .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
                         entry_map.insert(
-                            format!(
-                                "{}{}",
-                                entry.scale.iter().map(|(_, v)| v.round()).join(""),
-                                entry.translate.iter().map(|(_, v)| v.round()).join(""),
-                            ),
+                            roead::aamp::hash_name(
+                                &format!(
+                                    "{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.scale.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                )
+                            ).to_string(),
                             entry,
                         );
                         Ok(entry_map)
