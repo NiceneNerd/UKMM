@@ -116,10 +116,10 @@ impl Unpacked {
 #[typetag::serde]
 impl super::ResourceLoader for Unpacked {
     fn get_data(&self, name: &Path) -> Result<Vec<u8>> {
-        self.update_dir
+        self.aoc_dir
             .iter()
+            .chain(self.update_dir.iter())
             .chain(self.content_dir.iter())
-            .chain(self.aoc_dir.iter())
             .map(|dir| dir.join(name))
             .find(|path| path.exists())
             .map(fs::read)
