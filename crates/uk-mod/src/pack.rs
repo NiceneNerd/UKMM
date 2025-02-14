@@ -458,7 +458,8 @@ impl ModPacker {
         let reference = self
             .masters
             .iter()
-            .filter_map(|master| {
+            .rev()
+            .find_map(|master| {
                 master
                     .get_resource(canon.as_str())
                     .or_else(|err| {
@@ -482,8 +483,7 @@ impl ModPacker {
                         }
                     })
                     .ok()
-            })
-            .last();
+            });
         log::trace!("Resource {} has a master: {}", &canon, reference.is_some());
         if let (Some(res), Some(ref_res)) = (
             resource.as_mergeable(),
