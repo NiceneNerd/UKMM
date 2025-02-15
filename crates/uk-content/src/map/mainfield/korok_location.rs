@@ -2,7 +2,7 @@ use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::DeleteVec};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap}};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum PlacementType {
@@ -67,7 +67,7 @@ pub struct KorokLocation {
     pub placement_type:                 Option<PlacementType>,
     pub rail_move_speed:                Option<f32>,
     pub territory_area:                 Option<f32>,
-    pub translate:                      DeleteVec<(char, f32)>,
+    pub translate:                      DeleteMap<char, f32>,
 }
 
 impl TryFrom<&Byml> for KorokLocation {
@@ -126,21 +126,9 @@ impl TryFrom<&Byml> for KorokLocation {
                 .context("KorokLocation must have TerritoryArea")?
                 .as_float()
                 .context("KorokLocation TerritoryArea must be Float")?),
-            translate: map.get("Translate")
-                .context("KorokLocation must have Translate")?
-                .as_map()
-                .context("Invalid KorokLocation Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid KorokLocation Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid KorokLocation Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid KorokLocation Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("KorokLocation must have Translate")?)
+                .context("Invalid KorokLocation Translate")?,
         })
     }
 }

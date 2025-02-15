@@ -2,12 +2,12 @@ use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::{DeleteVec, HashMap}};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct TargetPosMarker {
-    pub rotate:         DeleteVec<(char, f32)>,
-    pub translate:      DeleteVec<(char, f32)>,
+    pub rotate:         DeleteMap<char, f32>,
+    pub translate:      DeleteMap<char, f32>,
     pub unique_name:    Option<String>,
 }
 
@@ -18,36 +18,12 @@ impl TryFrom<&Byml> for TargetPosMarker {
         let map = value.as_map()
             .context("TargetPosMarker node must be HashMap")?;
         Ok(Self {
-            rotate: map.get("Rotate")
-                .context("TargetPosMarker must have Rotate")?
-                .as_map()
-                .context("Invalid TargetPosMarker Rotate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid TargetPosMarker Rotate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid TargetPosMarker Rotate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid TargetPosMarker Rotate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
-            translate: map.get("Translate")
-                .context("TargetPosMarker must have Translate")?
-                .as_map()
-                .context("Invalid TargetPosMarker Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid TargetPosMarker Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid TargetPosMarker Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid TargetPosMarker Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            rotate: try_get_vecf(map.get("Rotate")
+                .context("TargetPosMarker must have Rotate")?)
+                .context("Invalid TargetPosMarker Rotate")?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("TargetPosMarker must have Translate")?)
+                .context("Invalid TargetPosMarker Translate")?,
             unique_name: map.get("UniqueName")
                 .map(|b| b.as_string()
                     .context("TargetPosMarker UniqueName must be String")

@@ -2,7 +2,7 @@ use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::{DeleteVec, HashMap}};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
 
 use super::AreaShape;
 
@@ -17,9 +17,9 @@ pub struct NonAutoPlacement {
     pub non_enemy_search_player:        Option<bool>,
     pub not_use_for_stats:              Option<bool>,
     pub rotate_y:                       Option<f32>,
-    pub scale:                          DeleteVec<(char, f32)>,
+    pub scale:                          DeleteMap<char, f32>,
     pub shape:                          Option<AreaShape>,
-    pub translate:                      DeleteVec<(char, f32)>,
+    pub translate:                      DeleteMap<char, f32>,
 }
 
 impl TryFrom<&Byml> for NonAutoPlacement {
@@ -66,40 +66,16 @@ impl TryFrom<&Byml> for NonAutoPlacement {
                 .context("NonAutoPlacement must have RotateY")?
                 .as_float()
                 .context("NonAutoPlacement RotateY must be Float")?),
-            scale: map.get("Scale")
-                .context("NonAutoPlacement must have Scale")?
-                .as_map()
-                .context("Invalid NonAutoPlacement Scale")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Scale with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Scale {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Scale index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            scale: try_get_vecf(map.get("Scale")
+                .context("NonAutoPlacement must have Scale")?)
+                .context("Invalid NonAutoPlacement Scale")?,
             shape: Some(map.get("Shape")
                 .context("NonAutoPlacement must have Shape")?
                 .try_into()
                 .context("NonAutoPlacement has invalid Shape")?),
-            translate: map.get("Translate")
-                .context("NonAutoPlacement must have Translate")?
-                .as_map()
-                .context("Invalid NonAutoPlacement Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoPlacement Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("NonAutoPlacement must have Translate")?)
+                .context("Invalid NonAutoPlacement Translate")?,
         })
     }
 }

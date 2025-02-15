@@ -2,7 +2,7 @@ use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::{DeleteVec, HashMap}};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
 
 use super::MapUnit;
 
@@ -70,8 +70,8 @@ pub struct StartPos {
     pub map:            Option<MapUnit>,
     pub player_state:   Option<PlayerState>,
     pub pos_name:       Option<String>,
-    pub rotate:         DeleteVec<(char, f32)>,
-    pub translate:      DeleteVec<(char, f32)>,
+    pub rotate:         DeleteMap<char, f32>,
+    pub translate:      DeleteMap<char, f32>,
 }
 
 impl TryFrom<&Byml> for StartPos {
@@ -96,36 +96,12 @@ impl TryFrom<&Byml> for StartPos {
                 )
                 .transpose()?
                 .map(|s| s.clone()),
-            rotate: map.get("Rotate")
-                .context("StartPos must have Rotate")?
-                .as_map()
-                .context("Invalid StartPos Rotate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid StartPos Rotate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid StartPos Rotate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid StartPos Rotate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
-            translate: map.get("Translate")
-                .context("StartPos must have Translate")?
-                .as_map()
-                .context("Invalid StartPos Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid StartPos Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid StartPos Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid StartPos Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            rotate: try_get_vecf(map.get("Rotate")
+                .context("StartPos must have Rotate")?)
+                .context("Invalid StartPos Rotate")?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("StartPos must have Translate")?)
+                .context("Invalid StartPos Translate")?,
         })
     }
 }

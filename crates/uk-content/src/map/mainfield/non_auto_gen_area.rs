@@ -2,7 +2,7 @@ use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::DeleteVec};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap}};
 
 use super::AreaShape;
 
@@ -10,9 +10,9 @@ use super::AreaShape;
 pub struct NonAutoGenArea {
     pub enable_auto_flower: Option<bool>,
     pub rotate_y:           Option<f32>,
-    pub scale:              DeleteVec<(char, f32)>,
+    pub scale:              DeleteMap<char, f32>,
     pub shape:              Option<AreaShape>,
-    pub translate:          DeleteVec<(char, f32)>,
+    pub translate:          DeleteMap<char, f32>,
 }
 
 impl TryFrom<&Byml> for NonAutoGenArea {
@@ -30,40 +30,16 @@ impl TryFrom<&Byml> for NonAutoGenArea {
                 .context("NonAutoGenArea must have RotateY")?
                 .as_float()
                 .context("NonAutoGenArea RotateY must be Float")?),
-            scale: map.get("Scale")
-                .context("NonAutoGenArea must have Scale")?
-                .as_map()
-                .context("Invalid NonAutoGenArea Scale")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Scale with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Scale {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Scale index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            scale: try_get_vecf(map.get("Scale")
+                .context("NonAutoGenArea must have Scale")?)
+                .context("Invalid NonAutoGenArea Scale")?,
             shape: Some(map.get("Shape")
                 .context("NonAutoGenArea must have Shape")?
                 .try_into()
                 .context("NonAutoGenArea has invalid Shape")?),
-            translate: map.get("Translate")
-                .context("NonAutoGenArea must have Translate")?
-                .as_map()
+            translate: try_get_vecf(map.get("Translate")
+                .context("NonAutoGenArea must have Translate")?)
                 .context("Invalid NonAutoGenArea Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid NonAutoGenArea Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
         })
     }
 }

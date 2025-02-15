@@ -2,7 +2,7 @@ use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::{DeleteVec, HashMap}};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct LocationPointer {
@@ -11,7 +11,7 @@ pub struct LocationPointer {
     pub pointer_type:       Option<i32>,
     pub save_flag:          Option<String>,
     pub show_level:         Option<i32>,
-    pub translate:          DeleteVec<(char, f32)>,
+    pub translate:          DeleteMap<char, f32>,
 }
 
 impl TryFrom<&Byml> for LocationPointer {
@@ -45,21 +45,9 @@ impl TryFrom<&Byml> for LocationPointer {
                 .context("LocationPointer must have ShowLevel")?
                 .as_i32()
                 .context("LocationPointer ShowLevel must be Int")?),
-            translate: map.get("Translate")
-                .context("LocationPointer must have Translate")?
-                .as_map()
-                .context("Invalid LocationPointer Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid LocationPointer Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid LocationPointer Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid LocationPointer Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("LocationPointer must have Translate")?)
+                .context("Invalid LocationPointer Translate")?,
         })
     }
 }

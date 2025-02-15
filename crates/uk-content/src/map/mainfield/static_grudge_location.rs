@@ -2,12 +2,12 @@ use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::{DeleteVec, HashMap}};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct StaticGrudgeLocation {
     pub eyeball_hash_id:    Option<u32>,
-    pub translate:          DeleteVec<(char, f32)>,
+    pub translate:          DeleteMap<char, f32>,
 }
 
 impl TryFrom<&Byml> for StaticGrudgeLocation {
@@ -20,21 +20,9 @@ impl TryFrom<&Byml> for StaticGrudgeLocation {
             eyeball_hash_id: map.get("EyeballHashId")
                 .map(|b| b.as_u32().context("EyeballHashId must be u32"))
                 .transpose()?,
-            translate: map.get("Translate")
-                .context("StaticGrudgeLocation must have Translate")?
-                .as_map()
-                .context("Invalid StaticGrudgeLocation Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid StaticGrudgeLocation Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid StaticGrudgeLocation Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid StaticGrudgeLocation Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("StaticGrudgeLocation must have Translate")?)
+                .context("Invalid StaticGrudgeLocation Translate")?,
         })
     }
 }

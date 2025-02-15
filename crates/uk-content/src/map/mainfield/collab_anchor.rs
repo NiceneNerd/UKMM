@@ -2,14 +2,14 @@ use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::DeleteVec};
+use crate::{util::parsers::try_get_vecf, prelude::Mergeable, util::DeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct CollabAnchor {
     pub collabo_shooting_star_direction:    Option<i32>,
     pub collabo_shooting_star_end_hour:     Option<i32>,
     pub collabo_shooting_star_start_hour:   Option<i32>,
-    pub translate:                          DeleteVec<(char, f32)>,
+    pub translate:                          DeleteMap<char, f32>,
     pub collabo_ssfallout_flag_name:        Option<String>,
     pub collabo_ssopen_flag_name:           Option<String>,
     pub collabo_ssquest_flag:               Option<String>,
@@ -34,21 +34,9 @@ impl TryFrom<&Byml> for CollabAnchor {
                 .context("CollabAnchor must have CollaboShootingStarStartHour")?
                 .as_i32()
                 .context("CollabAnchor CollaboShootingStarStartHour must be Int")?),
-            translate: map.get("Translate")
-                .context("CollabAnchor must have Translate")?
-                .as_map()
-                .context("Invalid CollabAnchor Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid CollabAnchor Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid CollabAnchor Translate {c}: {e}")),
-                        _ => Err(anyhow::anyhow!("Invalid CollabAnchor Translate index {i}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("CollabAnchor must have Translate")?)
+                .context("Invalid CollabAnchor Translate")?,
             collabo_ssfallout_flag_name: Some(map.get("collaboSSFalloutFlagName")
                 .context("CollabAnchor must have collaboSSFalloutFlagName")?
                 .as_string()

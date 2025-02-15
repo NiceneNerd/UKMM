@@ -2,7 +2,7 @@ use anyhow::Context;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::{DeleteVec, HashMap}};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
 
 use super::MapAndUnit;
 
@@ -105,7 +105,7 @@ pub struct LocationMarker {
     pub message_id:         Option<String>,
     pub priority:           Option<i32>,
     pub save_flag:          Option<String>,
-    pub translate:          DeleteVec<(char, f32)>,
+    pub translate:          DeleteMap<char, f32>,
     pub warp_dest_map_name: Option<MapAndUnit>,
     pub warp_dest_pos_name: Option<String>,
 }
@@ -137,21 +137,9 @@ impl TryFrom<&Byml> for LocationMarker {
                 .as_string()
                 .context("LocationMarker SaveFlag must be String")?
                 .clone()),
-            translate: map.get("Translate")
-                .context("LocationMarker must have Translate")?
-                .as_map()
-                .context("Invalid LocationMarker Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid LocationMarker Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid LocationMarker Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid LocationMarker Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("LocationMarker must have Translate")?)
+                .context("Invalid LocationMarker Translate")?,
             warp_dest_map_name: map.get("WarpDestMapName")
                 .map(|b| b.try_into()
                     .context("Invalid LocationMarker WarpDestMapName")

@@ -3,7 +3,7 @@ use itertools::Itertools;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::DeleteVec};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap}};
 
 pub mod collab_anchor;
 pub mod korok_location;
@@ -258,8 +258,8 @@ impl From<&AreaShape> for Byml {
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct ScaleTranslate {
-    pub scale:      DeleteVec<(char, f32)>,
-    pub translate:  DeleteVec<(char, f32)>,
+    pub scale:      DeleteMap<char, f32>,
+    pub translate:  DeleteMap<char, f32>,
 }
 
 impl TryFrom<&Byml> for ScaleTranslate {
@@ -268,36 +268,12 @@ impl TryFrom<&Byml> for ScaleTranslate {
     fn try_from(value: &Byml) -> anyhow::Result<Self> {
         let map = value.as_map().context("ScaleTranslate node must be HashMap")?;
         Ok(Self {
-            scale: map.get("Scale")
-                .context("ScaleTranslate must have Scale")?
-                .as_map()
-                .context("Invalid ScaleTranslate Scale")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Scale with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Scale {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Scale index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
-            translate: map.get("Translate")
-                .context("ScaleTranslate must have Translate")?
-                .as_map()
-                .context("Invalid ScaleTranslate Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid ScaleTranslate Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            scale: try_get_vecf(map.get("Scale")
+                .context("ScaleTranslate must have Scale")?)
+                .context("Invalid ScaleTranslate Scale")?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("ScaleTranslate must have Translate")?)
+                .context("Invalid ScaleTranslate Translate")?,
         })
     }
 }

@@ -2,12 +2,12 @@ use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::DeleteVec};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap}};
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct RestartPos {
-    pub scale:          DeleteVec<(char, f32)>,
-    pub translate:      DeleteVec<(char, f32)>,
+    pub scale:          DeleteMap<char, f32>,
+    pub translate:      DeleteMap<char, f32>,
     pub unique_name:    Option<String>,
 }
 
@@ -18,36 +18,12 @@ impl TryFrom<&Byml> for RestartPos {
         let map = value.as_map()
             .context("TargetPosMarker node must be HashMap")?;
         Ok(Self {
-            scale: map.get("Scale")
-                .context("RestartPos must have Scale")?
-                .as_map()
-                .context("Invalid RestartPos Scale")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid RestartPos Scale with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid RestartPos Scale {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid RestartPos Scale index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
-            translate: map.get("Translate")
-                .context("RestartPos must have Translate")?
-                .as_map()
-                .context("Invalid RestartPos Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid RestartPos Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid RestartPos Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid RestartPos Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            scale: try_get_vecf(map.get("Scale")
+                .context("RestartPos must have Scale")?)
+                .context("Invalid RestartPos Scale")?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("RestartPos must have Translate")?)
+                .context("Invalid RestartPos Translate")?,
             unique_name: Some(map.get("UniqueName")
                 .context("RestartPos must have UniqueName")?
                 .as_string()

@@ -1,5 +1,6 @@
 mod collections;
 pub mod converts;
+pub mod parsers;
 
 use std::{collections::BTreeMap, str::FromStr};
 

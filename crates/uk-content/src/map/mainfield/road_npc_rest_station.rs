@@ -2,7 +2,7 @@ use anyhow::Context;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::DeleteVec};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap}};
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct RoadNpcRestStation {
@@ -10,7 +10,7 @@ pub struct RoadNpcRestStation {
     pub rest_only_npc:      Option<bool>,
     pub rest_with_horse:    Option<bool>,
     pub rotate_y:           Option<f32>,
-    pub translate:          DeleteVec<(char, f32)>,
+    pub translate:          DeleteMap<char, f32>,
 }
 
 impl TryFrom<&Byml> for RoadNpcRestStation {
@@ -36,21 +36,9 @@ impl TryFrom<&Byml> for RoadNpcRestStation {
                 .context("RoadNpcRestStation must have RotateY")?
                 .as_float()
                 .context("RoadNpcRestStation RotateY must be Float")?),
-            translate: map.get("Translate")
-                .context("RoadNpcRestStation must have Translate")?
-                .as_map()
-                .context("Invalid RoadNpcRestStation Translate")?
-                .iter()
-                .enumerate()
-                .map(|(i, (k, v))| {
-                    match (k.chars().next(), v.as_float()) {
-                        (Some(c), Ok(f)) => Ok((c, f)),
-                        (None, Ok(f)) => Err(anyhow::anyhow!("Invalid RoadNpcRestStation Translate with value {f}")),
-                        (Some(c), Err(e)) => Err(anyhow::anyhow!("Invalid RoadNpcRestStation Translate {c}: {e}")),
-                        (None, Err(e)) => Err(anyhow::anyhow!("Invalid RoadNpcRestStation Translate index {i}: {e}")),
-                    }
-                })
-                .collect::<Result<DeleteVec<_>, _>>()?,
+            translate: try_get_vecf(map.get("Translate")
+                .context("RoadNpcRestStation must have Translate")?)
+                .context("Invalid RoadNpcRestStation Translate")?,
         })
     }
 }
