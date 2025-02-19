@@ -1,4 +1,5 @@
 use anyhow::Context;
+use itertools::Itertools;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
@@ -11,6 +12,19 @@ pub struct RoadNpcRestStation {
     pub rest_with_horse:    Option<bool>,
     pub rotate_y:           Option<f32>,
     pub translate:          DeleteMap<char, f32>,
+}
+
+impl RoadNpcRestStation {
+    pub fn id(&self) -> String {
+        roead::aamp::hash_name(
+            &format!(
+                "{}",
+                self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+            )
+        )
+        .to_string()
+        .into()
+    }
 }
 
 impl TryFrom<&Byml> for RoadNpcRestStation {

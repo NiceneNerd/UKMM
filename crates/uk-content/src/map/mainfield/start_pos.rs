@@ -1,4 +1,5 @@
 use anyhow::Context;
+use itertools::Itertools;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
@@ -72,6 +73,20 @@ pub struct StartPos {
     pub pos_name:       Option<String>,
     pub rotate:         DeleteMap<char, f32>,
     pub translate:      DeleteMap<char, f32>,
+}
+
+impl StartPos {
+    pub fn id(&self) -> String {
+        roead::aamp::hash_name(
+            &format!(
+                "{}{}",
+                self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+                self.pos_name.clone().unwrap_or_default()
+            )
+        )
+        .to_string()
+        .into()
+    }
 }
 
 impl TryFrom<&Byml> for StartPos {

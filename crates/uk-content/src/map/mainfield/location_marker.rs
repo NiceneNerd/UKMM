@@ -1,4 +1,5 @@
 use anyhow::Context;
+use itertools::Itertools;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
@@ -108,6 +109,20 @@ pub struct LocationMarker {
     pub translate:          DeleteMap<char, f32>,
     pub warp_dest_map_name: Option<MapAndUnit>,
     pub warp_dest_pos_name: Option<String>,
+}
+
+impl LocationMarker {
+    pub fn id(&self) -> String {
+        roead::aamp::hash_name(
+            &format!(
+                "{}{}",
+                self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+                self.message_id.clone().unwrap_or_default()
+            )
+        )
+        .to_string()
+        .into()
+    }
 }
 
 impl TryFrom<&Byml> for LocationMarker {

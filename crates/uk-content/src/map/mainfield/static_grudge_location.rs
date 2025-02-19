@@ -1,4 +1,5 @@
 use anyhow::Context;
+use itertools::Itertools;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
@@ -8,6 +9,20 @@ use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap
 pub struct StaticGrudgeLocation {
     pub eyeball_hash_id:    Option<u32>,
     pub translate:          DeleteMap<char, f32>,
+}
+
+impl StaticGrudgeLocation {
+    pub fn id(&self) -> String {
+        roead::aamp::hash_name(
+            &format!(
+                "{}{}",
+                self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+                self.eyeball_hash_id.unwrap_or_default(),
+            )
+        )
+        .to_string()
+        .into()
+    }
 }
 
 impl TryFrom<&Byml> for StaticGrudgeLocation {

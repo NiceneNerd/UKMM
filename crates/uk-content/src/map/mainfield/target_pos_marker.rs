@@ -1,4 +1,5 @@
 use anyhow::Context;
+use itertools::Itertools;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
@@ -9,6 +10,20 @@ pub struct TargetPosMarker {
     pub rotate:         DeleteMap<char, f32>,
     pub translate:      DeleteMap<char, f32>,
     pub unique_name:    Option<String>,
+}
+
+impl TargetPosMarker {
+    pub fn id(&self) -> String {
+        roead::aamp::hash_name(
+            &format!(
+                "{}{}",
+                self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+                self.unique_name.clone().unwrap_or_default(),
+            )
+        )
+        .to_string()
+        .into()
+    }
 }
 
 impl TryFrom<&Byml> for TargetPosMarker {

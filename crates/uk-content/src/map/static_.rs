@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
 use anyhow::Context;
-use itertools::Itertools;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
@@ -241,19 +240,16 @@ impl TryFrom<&Byml> for MainStatic {
                         .expect("Invalid DLCRestartPos")
                         .iter()
                         .enumerate()
-                        .try_fold(
-                            DeleteMap::new(),
-                            |mut entry_map, (index, entry)|
-                            -> Result<DeleteMap<String, RestartPos>> {
+                        .map(|(index, entry)| {
                                 let entry: RestartPos = entry.try_into()
                                     .with_context(|| format!("Could not read RestartPos {}", index))?;
-                                entry_map.insert(entry.unique_name.clone().unwrap(), entry);
-                                Ok(entry_map)
+                                Ok((entry.id(), entry))
                             },
                         )
-                        .expect("Invalid DLCRestartPos")
+                        .collect::<Result<DeleteMap<_, _>>>(),
                     )
-                }),
+                })
+                .transpose()?,
             collab_anchor: root_map
                 .get("FldObj_DLC_ShootingStarCollaborationAnchor")
                 .ok_or(UKError::MissingBymlKey(
@@ -262,16 +258,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, CollabAnchor>> {
+                .map(|(index, entry)| {
                         let entry: CollabAnchor = entry.try_into()
                             .with_context(|| format!("Could not read CollabAnchor {}", index))?;
-                        entry_map.insert(entry.collabo_ssopen_flag_name.clone().unwrap(), entry);
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             korok_location: root_map
                 .get("KorokLocation")
                 .ok_or(UKError::MissingBymlKey(
@@ -280,21 +273,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, KorokLocation>> {
+                .map(|(index, entry)| {
                         let entry: KorokLocation = entry.try_into()
                             .with_context(|| format!("Could not read KorokLocation {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                entry.flag.clone().unwrap().as_str()
-                            ).to_string(),
-                            entry
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             location_marker: root_map
                 .get("LocationMarker")
                 .ok_or(UKError::MissingBymlKey(
@@ -303,25 +288,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, LocationMarker>> {
+                .map(|(index, entry)| {
                         let entry: LocationMarker = entry.try_into()
                             .with_context(|| format!("Could not read LocationMarker {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.message_id.clone().unwrap_or_default()
-                                )
-                            ).to_string(),
-                            entry
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             location_pointer: root_map
                 .get("LocationPointer")
                 .ok_or(UKError::MissingBymlKey(
@@ -330,25 +303,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, LocationPointer>> {
+                .map(|(index, entry)| {
                         let entry: LocationPointer = entry.try_into()
                             .with_context(|| format!("Could not read LocationPointer {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.message_id.clone().unwrap_or_default()
-                                )
-                            ).to_string(),
-                            entry
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             non_auto_gen_area: root_map
                 .get("NonAutoGenArea")
                 .ok_or(UKError::MissingBymlKey(
@@ -357,27 +318,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, NonAutoGenArea>> {
+                .map(|(index, entry)| {
                         let entry: NonAutoGenArea = entry.try_into()
                             .with_context(|| format!("Could not read NonAutoGenArea {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}{}{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.scale.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.rotate_y.unwrap(),
-                                    entry.shape.unwrap(),
-                                )
-                            ).to_string(),
-                            entry
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             non_auto_placement: root_map
                 .get("NonAutoPlacement")
                 .ok_or(UKError::MissingBymlKey(
@@ -386,27 +333,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, NonAutoPlacement>> {
+                .map(|(index, entry)| {
                         let entry: NonAutoPlacement = entry.try_into()
                             .with_context(|| format!("Could not read NonAutoPlacement {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}{}{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.scale.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.rotate_y.unwrap(),
-                                    entry.shape.unwrap(),
-                                )
-                            ).to_string(),
-                            entry
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             road_npc_rest_station: root_map
                 .get("RoadNpcRestStation")
                 .ok_or(UKError::MissingBymlKey(
@@ -415,24 +348,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, RoadNpcRestStation>> {
+                .map(|(index, entry)| {
                         let entry: RoadNpcRestStation = entry.try_into()
                             .with_context(|| format!("Could not read RoadNpcRestStation {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                )
-                            ).to_string(),
-                            entry,
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             start_pos: root_map
                 .get("StartPos")
                 .ok_or(UKError::MissingBymlKey(
@@ -441,25 +363,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, StartPos>> {
+                .map(|(index, entry)| {
                         let entry: StartPos = entry.try_into()
                             .with_context(|| format!("Could not read StartPos {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.pos_name.clone().unwrap_or_default()
-                                )
-                            ).to_string(),
-                            entry
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             static_grudge_location: root_map
                 .get("StaticGrudgeLocation")
                 .ok_or(UKError::MissingBymlKey(
@@ -468,25 +378,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, StaticGrudgeLocation>> {
+                .map(|(index, entry)| {
                         let entry: StaticGrudgeLocation = entry.try_into()
                             .with_context(|| format!("Could not read StaticGrudgeLocation {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.eyeball_hash_id.unwrap_or_default(),
-                                )
-                            ).to_string(),
-                            entry,
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             target_pos_marker: root_map
                 .get("TargetPosMarker")
                 .ok_or(UKError::MissingBymlKey(
@@ -495,25 +393,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, TargetPosMarker>> {
+                .map(|(index, entry)| {
                         let entry: TargetPosMarker = entry.try_into()
                             .with_context(|| format!("Could not read TargetPosMarker {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.unique_name.clone().unwrap_or_default(),
-                                )
-                            ).to_string(),
-                            entry,
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             tera_water_disable: root_map
                 .get("TeraWaterDisable")
                 .ok_or(UKError::MissingBymlKey(
@@ -522,25 +408,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, ScaleTranslate>> {
+                .map(|(index, entry)| {
                         let entry: ScaleTranslate = entry.try_into()
                             .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.scale.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                )
-                            ).to_string(),
-                            entry,
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
             terrain_hide_center_tag: root_map
                 .get("TerrainHideCenterTag")
                 .ok_or(UKError::MissingBymlKey(
@@ -549,25 +423,13 @@ impl TryFrom<&Byml> for MainStatic {
                 .as_array()?
                 .iter()
                 .enumerate()
-                .try_fold(
-                    DeleteMap::new(),
-                    |mut entry_map, (index, entry)|
-                    -> Result<DeleteMap<String, ScaleTranslate>> {
+                .map(|(index, entry)| {
                         let entry: ScaleTranslate = entry.try_into()
                             .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
-                        entry_map.insert(
-                            roead::aamp::hash_name(
-                                &format!(
-                                    "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                    entry.scale.iter().map(|(_, v)| format!("{}", v)).join(""),
-                                )
-                            ).to_string(),
-                            entry,
-                        );
-                        Ok(entry_map)
+                        Ok((entry.id(), entry))
                     },
-                )?,
+                )
+                .collect::<Result<DeleteMap<_, _>>>()?,
         })
     }
 }

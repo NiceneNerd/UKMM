@@ -1,4 +1,5 @@
 use anyhow::Context;
+use itertools::Itertools;
 use roead::byml::{map, Byml};
 use smartstring::alias::String;
 
@@ -13,6 +14,20 @@ pub struct CollabAnchor {
     pub collabo_ssfallout_flag_name:        Option<String>,
     pub collabo_ssopen_flag_name:           Option<String>,
     pub collabo_ssquest_flag:               Option<String>,
+}
+
+impl CollabAnchor {
+    pub fn id(&self) -> String {
+        roead::aamp::hash_name(
+            &format!(
+                "{}{}",
+                self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+                self.collabo_ssopen_flag_name.clone().unwrap()
+            )
+        )
+        .to_string()
+        .into()
+    }
 }
 
 impl TryFrom<&Byml> for CollabAnchor {

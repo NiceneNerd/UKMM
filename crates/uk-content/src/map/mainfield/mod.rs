@@ -262,6 +262,20 @@ pub struct ScaleTranslate {
     pub translate:  DeleteMap<char, f32>,
 }
 
+impl ScaleTranslate {
+    pub fn id(&self) -> String {
+        roead::aamp::hash_name(
+            &format!(
+                "{}{}",
+                self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+                self.scale.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+            )
+        )
+        .to_string()
+        .into()
+    }
+}
+
 impl TryFrom<&Byml> for ScaleTranslate {
     type Error = anyhow::Error;
 

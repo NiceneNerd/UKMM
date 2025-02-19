@@ -1,4 +1,5 @@
 use anyhow::Context;
+use itertools::Itertools;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
@@ -20,6 +21,22 @@ pub struct NonAutoPlacement {
     pub scale:                          DeleteMap<char, f32>,
     pub shape:                          Option<AreaShape>,
     pub translate:                      DeleteMap<char, f32>,
+}
+
+impl NonAutoPlacement {
+    pub fn id(&self) -> String {
+        roead::aamp::hash_name(
+            &format!(
+                "{}{}{}{}",
+                self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+                self.scale.values().map(|v| (v * 100000.0f32).to_string()).join(""),
+                self.rotate_y.unwrap_or_default(),
+                self.shape.unwrap_or_default(),
+            )
+        )
+        .to_string()
+        .into()
+    }
 }
 
 impl TryFrom<&Byml> for NonAutoPlacement {
