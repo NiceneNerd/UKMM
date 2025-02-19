@@ -313,7 +313,7 @@ impl TryFrom<&Byml> for MainStatic {
                             roead::aamp::hash_name(
                                 &format!(
                                     "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
                                     entry.message_id.clone().unwrap_or_default()
                                 )
                             ).to_string(),
@@ -340,7 +340,7 @@ impl TryFrom<&Byml> for MainStatic {
                             roead::aamp::hash_name(
                                 &format!(
                                     "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
                                     entry.message_id.clone().unwrap_or_default()
                                 )
                             ).to_string(),
@@ -366,9 +366,10 @@ impl TryFrom<&Byml> for MainStatic {
                         entry_map.insert(
                             roead::aamp::hash_name(
                                 &format!(
-                                    "{}{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
-                                    entry.scale.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    "{}{}{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
+                                    entry.scale.iter().map(|(_, v)| format!("{}", v)).join(""),
+                                    entry.rotate_y.unwrap(),
                                     entry.shape.unwrap(),
                                 )
                             ).to_string(),
@@ -394,9 +395,10 @@ impl TryFrom<&Byml> for MainStatic {
                         entry_map.insert(
                             roead::aamp::hash_name(
                                 &format!(
-                                    "{}{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
-                                    entry.scale.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    "{}{}{}{}",
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
+                                    entry.scale.iter().map(|(_, v)| format!("{}", v)).join(""),
+                                    entry.rotate_y.unwrap(),
                                     entry.shape.unwrap(),
                                 )
                             ).to_string(),
@@ -423,7 +425,7 @@ impl TryFrom<&Byml> for MainStatic {
                             roead::aamp::hash_name(
                                 &format!(
                                     "{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
                                 )
                             ).to_string(),
                             entry,
@@ -449,7 +451,7 @@ impl TryFrom<&Byml> for MainStatic {
                             roead::aamp::hash_name(
                                 &format!(
                                     "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
                                     entry.pos_name.clone().unwrap_or_default()
                                 )
                             ).to_string(),
@@ -476,7 +478,7 @@ impl TryFrom<&Byml> for MainStatic {
                             roead::aamp::hash_name(
                                 &format!(
                                     "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
                                     entry.eyeball_hash_id.unwrap_or_default(),
                                 )
                             ).to_string(),
@@ -503,7 +505,7 @@ impl TryFrom<&Byml> for MainStatic {
                             roead::aamp::hash_name(
                                 &format!(
                                     "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
                                     entry.unique_name.clone().unwrap_or_default(),
                                 )
                             ).to_string(),
@@ -530,8 +532,8 @@ impl TryFrom<&Byml> for MainStatic {
                             roead::aamp::hash_name(
                                 &format!(
                                     "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
-                                    entry.scale.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
+                                    entry.scale.iter().map(|(_, v)| format!("{}", v)).join(""),
                                 )
                             ).to_string(),
                             entry,
@@ -557,8 +559,8 @@ impl TryFrom<&Byml> for MainStatic {
                             roead::aamp::hash_name(
                                 &format!(
                                     "{}{}",
-                                    entry.translate.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
-                                    entry.scale.iter().map(|(_, v)| format!("{:.5}", v)).join(""),
+                                    entry.translate.iter().map(|(_, v)| format!("{}", v)).join(""),
+                                    entry.scale.iter().map(|(_, v)| format!("{}", v)).join(""),
                                 )
                             ).to_string(),
                             entry,
