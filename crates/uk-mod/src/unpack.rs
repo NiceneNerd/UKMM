@@ -790,9 +790,9 @@ impl ModUnpacker {
                         &canon,
                         self.endian.into(),
                     ));
-                    if canon.ends_with("bphysics") || self.endian == Endian::Little {
-                        rstb_val = rstb_val.map(|v| v.map(|v| (v as f32 * 1.25) as u32));
-                    }
+                    // if canon.ends_with("bphysics") || self.endian == Endian::Little {
+                    //     rstb_val = rstb_val.map(|v| v.map(|v| (v as f32 * 1.25) as u32));
+                    // }
                 }
                 data
             }
