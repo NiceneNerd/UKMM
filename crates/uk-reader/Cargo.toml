@@ -8,8 +8,9 @@ anyhow = { workspace = true }
 anyhow_ext = { workspace = true }
 dashmap = { workspace = true, features = ["serde"] }
 fs-err = { workspace = true }
-log = { workspace = true }
+include-flate = { workspace = true }
 join_str = { workspace = true }
+log = { workspace = true }
 minicbor-ser = { workspace = true }
 parking_lot = { workspace = true, features = ["serde"] }
 roead = { workspace = true }
@@ -19,7 +20,6 @@ smartstring = { workspace = true, features = ["serde"] }
 thiserror = { workspace = true }
 typetag = { workspace = true }
 
-include-flate = "0.3.0"
 moka = { version = "0.12.8", features = ["sync"] }
 uk-content = { path = "../uk-content" }
 uk-util = { path = "../uk-util" }

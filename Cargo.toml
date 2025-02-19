@@ -96,6 +96,7 @@ dirs2 = "3"
 eframe = { version = "0.28", default-features = false }
 flume = "0.11.0"
 fs-err = "2.9"
+include-flate = "0.3.0"
 indexmap = { version = "2.2.6", features = ["serde"] }
 join_str = "0.1.0"
 jwalk = "0.8.1"

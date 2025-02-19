@@ -4,6 +4,7 @@ edition = "2021"
 version.workspace = true
 
 [dependencies]
+include-flate = { workspace = true }
 rfd = { workspace = true }
 rustc-hash = { workspace = true }
 serde = { workspace = true }

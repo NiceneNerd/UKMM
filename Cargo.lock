@@ -5773,6 +5773,7 @@ dependencies = [
  "egui_extras",
  "font-loader",
  "hex",
+ "include-flate",
  "rfd",
  "rustc-hash 2.1.0",
  "serde",
