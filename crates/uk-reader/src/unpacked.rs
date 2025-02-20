@@ -1,11 +1,10 @@
 use std::path::{Path, PathBuf};
 
-use fs_err as fs;
 use serde::{Deserialize, Serialize};
 
 use crate::{ROMError, Result};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct Unpacked {
     host_path:   PathBuf,
     content_dir: Option<PathBuf>,
@@ -115,18 +114,38 @@ impl Unpacked {
 
 #[typetag::serde]
 impl super::ResourceLoader for Unpacked {
-    fn get_data(&self, name: &Path) -> Result<Vec<u8>> {
-        self.aoc_dir
-            .iter()
-            .chain(self.update_dir.iter())
-            .chain(self.content_dir.iter())
-            .map(|dir| dir.join(name))
-            .find(|path| path.exists())
-            .map(fs::read)
-            .transpose()?
-            .ok_or_else(|| {
-                ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
+    fn get_base_file_data(&self, name: &Path) -> Result<Vec<u8>> {
+        self.content_dir
+            .as_ref()
+            .map(|dir| {
+                let dest_file = dir.join(name);
+                if dest_file.exists() {
+                    Ok(std::fs::read(dest_file)?)
+                } else {
+                    Err(ROMError::FileNotFound(
+                        name.to_string_lossy().into(),
+                        self.host_path.clone(),
+                    ))
+                }
             })
+            .unwrap_or_else(|| Err(ROMError::MissingDumpDir("Base", self.host_path.clone())))
+    }
+    
+    fn get_update_file_data(&self, name: &Path) -> Result<Vec<u8>> {
+        self.update_dir
+            .as_ref()
+            .map(|dir| {
+                let dest_file = dir.join(name);
+                if dest_file.exists() {
+                    Ok(std::fs::read(dest_file)?)
+                } else {
+                    Err(ROMError::FileNotFound(
+                        name.to_string_lossy().into(),
+                        self.host_path.clone(),
+                    ))
+                }
+            })
+            .unwrap_or_else(|| Err(ROMError::MissingDumpDir("Update", self.host_path.clone())))
     }
 
     fn get_aoc_file_data(&self, name: &Path) -> Result<Vec<u8>> {

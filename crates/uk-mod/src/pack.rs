@@ -438,7 +438,7 @@ impl ModPacker {
             return Ok(());
         }
         if canon.starts_with("Pack/Bootup_") {
-            log::trace!("{} must always contain the same single file, skipping", &canon);
+            log::trace!("{} must always contain the same single file, skipping direct processing", &canon);
             return Ok(());
         }
         if resource.as_binary().is_some() && self.meta.platform == ModPlatform::Universal {
@@ -461,13 +461,9 @@ impl ModPacker {
             .rev()
             .find_map(|master| {
                 master
-                    .get_resource(canon.as_str())
+                    .get_data(name.as_str())
                     .or_else(|err| {
                         log::trace!("{err}");
-                        master.get_data(ref_name)
-                    })
-                    .inspect_err(|err| log::trace!("{err}"))
-                    .or_else(|err| {
                         if let Some(lang) = canon
                             .starts_with("Message/Msg_")
                             .then(|| Language::from_message_path(ref_name.as_ref()))
@@ -519,11 +515,12 @@ impl ModPacker {
             }
             let name = file
                 .name()
-                .with_context(|| jstr!("File in SARC missing name"))?;
-            let mut canon = canonicalize(name);
-            if is_aoc {
-                canon.insert_str(0, "Aoc/0010/");
-            }
+                .with_context(|| jstr!("File in SARC missing name"))
+                .map(|n| match is_aoc {
+                    true => format!("Aoc/0010/{n}"),
+                    false => n.to_owned(),
+                })?;
+            let canon = canonicalize(&name);
             let file_data = decompress_if(file.data);
 
             if !self.hash_table.is_file_modded(&canon, &*file_data, true) && !is_new_sarc {
@@ -531,7 +528,7 @@ impl ModPacker {
                 continue;
             }
 
-            let resource = ResourceData::from_binary(name, &*file_data).with_context(|| {
+            let resource = ResourceData::from_binary(&name, &*file_data).with_context(|| {
                 jstr!("Failed to parse resource {&canon} in SARC {&path.display().to_string()}")
             })?;
             if let ResourceData::Mergeable(
@@ -544,7 +541,7 @@ impl ModPacker {
                     v.1
                 );
             }
-            self.process_resource(name.into(), canon.clone(), resource, is_new_sarc)?;
+            self.process_resource((&name).into(), canon.clone(), resource, is_new_sarc)?;
             if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                 log::trace!(
                     "Resource {} in SARC {} is a mergeable SARC, processing contents",

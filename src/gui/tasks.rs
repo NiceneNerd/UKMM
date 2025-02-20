@@ -460,8 +460,13 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         Arc::new(ResourceReader::from_zarchive(unsafe { wua.unwrap_unchecked() })
             .context("Failed to validate game dump")?)
     } else {
-        Arc::new(ResourceReader::from_unpacked_dirs(base.as_ref(), update, dlc)
-            .context("Failed to validate game dump")?)
+        Arc::new(ResourceReader::from_unpacked_dirs(
+            base.as_ref(),
+            update,
+            dlc,
+            uk_content::prelude::Endian::Big,
+        )
+        .context("Failed to validate game dump")?)
     };
     let exe = path
         .join("Cemu.exe")
@@ -599,6 +604,7 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
                     Some(game_dir),
                     Some(update_dir),
                     bcml_settings.dlc_dir,
+                    uk_content::prelude::Endian::Big,
                 )?),
             });
             settings.current_mode = Platform::WiiU;
@@ -628,6 +634,7 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
                     Some(game_dir),
                     None::<PathBuf>,
                     bcml_settings.dlc_dir_nx,
+                    uk_content::prelude::Endian::Little,
                 )?),
             });
             settings.current_mode = Platform::Switch;

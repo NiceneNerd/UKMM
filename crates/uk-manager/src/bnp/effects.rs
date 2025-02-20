@@ -11,7 +11,7 @@ impl BnpConverter {
             log::debug!("Processing status effect log");
             let mut base = Byml::from_binary(
                 self.dump
-                    .get_bytes_from_sarc("Pack/Bootup.pack//Ecosystem/StatusEffectList.sbyml")?,
+                    .get_bytes_from_sarc("Pack/Bootup.pack//Ecosystem/StatusEffectList.sbyml", false)?,
             )?
             .into_array()?
             .remove(0)

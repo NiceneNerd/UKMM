@@ -9,7 +9,7 @@ use anyhow::Result;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
-use uk_content::constants::Language;
+use uk_content::{constants::Language, prelude::Endian};
 use uk_manager::{localization::LocLang, settings::{DeployConfig, Platform, PlatformSettings}};
 use uk_reader::ResourceReader;
 use uk_ui::{
@@ -133,10 +133,24 @@ impl TryFrom<PlatformSettingsUI> for PlatformSettings {
                 aoc_dir,
                 ..
             } => {
+                let endian = content_dir
+                    .as_ref()
+                    .and_then(|p| p.to_string_lossy()
+                        .contains("content")
+                        .then_some(Endian::Big)
+                        .or(Some(Endian::Little))
+                    )
+                    .ok_or_else(||
+                        uk_reader::ROMError::MissingDumpDir(
+                            "Base",
+                            content_dir.clone().unwrap_or_default()
+                        )
+                    )?;
                 Arc::new(ResourceReader::from_unpacked_dirs(
                     content_dir,
                     update_dir,
                     aoc_dir,
+                    endian,
                 )?)
             }
             DumpType::ZArchive { host_path, .. } => {

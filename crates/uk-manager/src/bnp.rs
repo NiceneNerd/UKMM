@@ -156,15 +156,16 @@ impl BnpConverter {
         }
     }
 
-    fn get_master_aoc_bytes(&self, path: impl AsRef<Path>) -> Result<Vec<u8>> {
+    fn get_master_aoc_bytes(&self, path: &str) -> Result<Vec<u8>> {
+        let path: PathBuf = format!("Aoc/0010/{path}").into();
         if self.current_root == self.path {
             Ok(self.dump.get_aoc_bytes_uncached(path)?)
         } else {
-            let root_path = self.path.join(self.aoc).join(path.as_ref());
+            let root_path = self.path.join(self.aoc).join(&path);
             if root_path.exists() {
                 let data = self
                     .opt_master_cache
-                    .entry(path.as_ref().to_path_buf())
+                    .entry(path)
                     .or_try_insert_with(|| -> Result<Vec<u8>> { Ok(fs::read(root_path)?) })?;
                 Ok(data.to_vec())
             } else {
@@ -173,9 +174,11 @@ impl BnpConverter {
         }
     }
 
+    // This is only ever used to get from base game
+    // If it ever needs to be used for DLC, adjust get_bytes_from_sarc args
     fn get_from_master_sarc(&self, path: &str) -> Result<Vec<u8>> {
         if self.current_root == self.path {
-            Ok(self.dump.get_bytes_from_sarc(path)?)
+            Ok(self.dump.get_bytes_from_sarc(path, false)?)
         } else {
             let parts = path.split("//").collect::<Vec<_>>();
             let root_path = self.path.join(self.content).join(parts[0]);
@@ -208,7 +211,7 @@ impl BnpConverter {
                 )
                 .into())
             } else {
-                Ok(self.dump.get_bytes_from_sarc(path)?)
+                Ok(self.dump.get_bytes_from_sarc(path, false)?)
             }
         }
     }

@@ -159,7 +159,7 @@ pub fn init_decompressor() -> Arc<Mutex<zstd::bulk::Decompressor<'static>>> {
     ))
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct ModReader {
     pub path: PathBuf,
     options: Vec<ModOption>,
@@ -168,7 +168,7 @@ pub struct ModReader {
     #[serde(skip, default = "init_decompressor")]
     decompressor: Arc<Mutex<zstd::bulk::Decompressor<'static>>>,
     #[serde(skip_serializing)]
-    zip: Option<ParallelZipReader>,
+    zip: Arc<Option<ParallelZipReader>>,
 }
 
 impl std::fmt::Debug for ModReader {
@@ -192,7 +192,7 @@ impl ResourceLoader for ModReader {
             || self.manifest.aoc_files.contains(name.as_ref())
     }
 
-    fn get_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
+    fn get_base_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
         let canon = canonicalize(name);
         if let Some(zip) = self.zip.as_ref() {
             if let Ok(data) = zip.get_file(canon.as_str()) {
@@ -215,14 +215,43 @@ impl ResourceLoader for ModReader {
                 return Ok(fs::read(path)?);
             }
         }
-        self.get_aoc_file_data(name).map_err(|_| {
-            anyhow_ext::anyhow!(
-                "Failed to read file {} (canonical path {}) from mod",
-                name.display(),
-                canon
-            )
-            .into()
-        })
+        Err(anyhow_ext::anyhow!(
+            "Failed to read file {} (canonical path {}) from mod",
+            name.display(),
+            canon
+        )
+        .into())
+    }
+
+    fn get_update_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
+        let canon = canonicalize(name);
+        if let Some(zip) = self.zip.as_ref() {
+            if let Ok(data) = zip.get_file(canon.as_str()) {
+                return Ok(self
+                    .decompress(data.as_slice())
+                    .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+            }
+        } else if let Some(path) = self.path.join(canon.as_str()).exists_then() {
+            return Ok(fs::read(path)?);
+        }
+        for opt in &self.options {
+            let path = Path::new("options").join(&opt.path).join(canon.as_str());
+            if let Some(zip) = self.zip.as_ref() {
+                if let Ok(data) = zip.get_file(path) {
+                    return Ok(self
+                        .decompress(data.as_slice())
+                        .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+                }
+            } else if let Some(path) = self.path.join(path).exists_then() {
+                return Ok(fs::read(path)?);
+            }
+        }
+        Err(anyhow_ext::anyhow!(
+            "Failed to read file {} (canonical path {}) from mod",
+            name.display(),
+            canon
+        )
+        .into())
     }
 
     fn get_aoc_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
@@ -349,7 +378,7 @@ impl ModReader {
             options,
             meta,
             manifest,
-            zip: None,
+            zip: Arc::new(None),
         })
     }
 
@@ -411,7 +440,7 @@ impl ModReader {
             options,
             meta,
             manifest,
-            zip: Some(zip),
+            zip: Arc::new(Some(zip)),
         })
     }
 
@@ -675,12 +704,7 @@ impl ModUnpacker {
         let mut versions = std::collections::VecDeque::with_capacity(
             (self.mods.len() as f32 / 2.).ceil() as usize,
         );
-        let dump_file = if aoc {
-            jstr!("Aoc/0010/{file}")
-        } else {
-            file.to_string()
-        };
-        let canon = canonicalize(&dump_file);
+        let canon = canonicalize(file);
         let filename = Path::new(canon.as_str());
         let mut rstb_val = None;
         let can_rstb = !RSTB_EXCLUDE_EXTS.contains(
@@ -695,18 +719,9 @@ impl ModUnpacker {
                 .unwrap_or_default(),
         );
         let mut dump_error: Vec<anyhow_ext::Error> = vec![];
-        let res_result = self.dump.get_data(&dump_file).or_else(|e| {
-            log::trace!("{e:?}");
-            dump_error.push(e.into());
-            self.dump.get_data(file).or_else(|e| {
-                log::trace!("{e:?}");
-                dump_error.push(e.into());
-                self.dump.get_data(canon.as_str()).or_else(|e| {
-                    log::trace!("{e:?}");
-                    dump_error.push(e.into());
-                    self.dump.get_resource(canon.as_str())
-                })
-            })
+        let res_result = self.dump.get_data(match aoc {
+            true => jstr!("Aoc/0010/{file}"),
+            false => file.to_owned(),
         });
         match res_result {
             Ok(ref_res) => versions.push_back(ref_res),
@@ -719,7 +734,7 @@ impl ModUnpacker {
             .mods
             .iter()
             .filter_map(|mod_| {
-                mod_.get_versions(dump_file.as_ref())
+                mod_.get_versions(file.as_ref())
                     .ok()
                     .map(|d| d.into_iter().map(|d| (d, &mod_.meta.name)))
             })
@@ -748,10 +763,10 @@ impl ModUnpacker {
             .pop_front()
             .with_context(|| {
                 let mut err = anyhow_ext::anyhow!(
-                    "No copy of {} found in game dump or any mod. Sometimes this is a problem with the mod or\
-                    your game dump. However, it can also be a temporary cache error. If you know your dump and its\
+                    "No copy of {} found in game dump or any mod. Sometimes this is a problem with the mod or \
+                    your game dump. However, it can also be a temporary cache error. If you know your dump and its \
                     configuration are sound, try restarting UKMM. If it persists, copy the error details and post \
-                    as a comment to https://github.com/NiceneNerd/UKMM/issues/120.", &dump_file
+                    as a comment to https://github.com/NiceneNerd/UKMM/issues/120.", file
                 );
                 for e in dump_error {
                     err = e.context(err);
@@ -765,7 +780,7 @@ impl ModUnpacker {
                 if can_rstb && is_modded {
                     rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
                         res.as_binary().expect("Binary"),
-                        dump_file.as_ref(),
+                        file,
                         self.endian.into(),
                     ));
                 }

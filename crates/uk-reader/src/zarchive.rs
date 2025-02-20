@@ -1,13 +1,13 @@
-use std::path::{Path, PathBuf};
+use std::{path::{Path, PathBuf}, sync::Arc};
 
 use serde::Serialize;
 
 use crate::{ROMError, Result};
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub(crate) struct ZArchive {
     #[serde(skip_serializing)]
-    archive:     zarchive::reader::ZArchiveReader,
+    archive:     Arc<zarchive::reader::ZArchiveReader>,
     content_dir: PathBuf,
     update_dir:  PathBuf,
     aoc_dir:     Option<PathBuf>,
@@ -17,7 +17,7 @@ pub(crate) struct ZArchive {
 impl ZArchive {
     pub(crate) fn new(path: impl AsRef<Path>) -> Result<Self> {
         log::info!("Opening ZArchive at {}", path.as_ref().display());
-        let archive = zarchive::reader::ZArchiveReader::open(path.as_ref())?;
+        let archive = Arc::new(zarchive::reader::ZArchiveReader::open(path.as_ref())?);
         let mut content_dir: Option<PathBuf> = None;
         let mut update_dir: Option<PathBuf> = None;
         let mut aoc_dir: Option<PathBuf> = None;
@@ -48,18 +48,22 @@ impl ZArchive {
 
 #[typetag::serde]
 impl super::ResourceLoader for ZArchive {
-    fn get_data(&self, name: &Path) -> Result<Vec<u8>> {
-        self.archive
-            .read_file(self.update_dir.join(name))
-            .or_else(|| self.archive.read_file(self.content_dir.join(name)))
-            .or_else(|| {
-                self.aoc_dir
-                    .as_ref()
-                    .and_then(|aoc| self.archive.read_file(aoc.join(name)))
-            })
-            .ok_or_else(|| {
-                crate::ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
-            })
+    fn get_base_file_data(&self, name: &Path) -> Result<Vec<u8>> {
+        self.archive.read_file(self.content_dir.join(name)).ok_or_else(|| {
+            crate::ROMError::FileNotFound(
+                name.to_string_lossy().into(),
+                self.host_path.clone(),
+            )
+        })
+    }
+
+    fn get_update_file_data(&self, name: &Path) -> Result<Vec<u8>> {
+        self.archive.read_file(self.update_dir.join(name)).ok_or_else(|| {
+            crate::ROMError::FileNotFound(
+                name.to_string_lossy().into(),
+                self.host_path.clone(),
+            )
+        })
     }
 
     fn get_aoc_file_data(&self, name: &Path) -> Result<Vec<u8>> {
@@ -190,8 +194,8 @@ mod de {
                     let host_path =
                         host_path.ok_or_else(|| serde::de::Error::missing_field("host_path"))?;
                     Ok(ZArchive {
-                        archive: ::zarchive::reader::ZArchiveReader::open(&host_path)
-                            .map_err(serde::de::Error::custom)?,
+                        archive: Arc::new(::zarchive::reader::ZArchiveReader::open(&host_path)
+                            .map_err(serde::de::Error::custom)?),
                         content_dir,
                         update_dir,
                         aoc_dir,
@@ -219,7 +223,7 @@ mod tests {
         }
         assert_eq!(
             "0.9.0".to_string(),
-            String::from_utf8(arch.get_data("System/Version.txt".as_ref()).unwrap()).unwrap()
+            String::from_utf8(arch.get_update_file_data("System/Version.txt".as_ref()).unwrap()).unwrap()
         );
     }
 }
