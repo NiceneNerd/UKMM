@@ -204,7 +204,13 @@ impl Profile {
                             .or(Some(Platform::Switch))
                             .unwrap())
                         .join("mods")
-                        .join(v.path.file_name().expect("mod has no filename?"));
+                        .join(
+                            v.path
+                                .to_string_lossy()
+                                .split(|c| c == '/' || c == '\\')
+                                .last()
+                                .expect("mod has no filename?")
+                        );
                     if rel_path.exists() {
                         Some((*k, Mod {
                             meta: v.meta.clone(),
