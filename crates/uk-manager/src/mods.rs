@@ -48,8 +48,8 @@ impl std::fmt::Debug for Mod {
     }
 }
 
-impl std::hash::Hash for Mod {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl Hash for Mod {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_usize(self.hash)
     }
 }
@@ -612,9 +612,9 @@ pub fn convert_gfx(
         let find_rules = |path: &Path| -> Option<PathBuf> {
             jwalk::WalkDir::new(path)
                 .into_iter()
-                .filter_map(std::result::Result::ok)
+                .filter_map(Result::ok)
                 .find_map(|f| {
-                    ([Some("rules.txt"), Some("info.json")].contains(&f.file_name().to_str()))
+                    [Some("rules.txt"), Some("info.json")].contains(&f.file_name().to_str())
                         .then(|| f.parent_path().into())
                 })
         };
@@ -623,12 +623,12 @@ pub fn convert_gfx(
             let (content, dlc) = platform_prefixes(core.settings().current_mode.into());
             jwalk::WalkDir::new(path)
                 .into_iter()
-                .filter_map(std::result::Result::ok)
+                .filter_map(Result::ok)
                 .find_map(|f| {
                     (f.path().join(content).exists() || f.path().join(dlc).exists())
                         .then(|| f.path())
                         .or_else(|| {
-                            ([Some(content), Some(dlc)].contains(&f.file_name().to_str()))
+                            [Some(content), Some(dlc)].contains(&f.file_name().to_str())
                                 .then(|| f.parent_path().into())
                         })
                 })

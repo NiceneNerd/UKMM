@@ -293,7 +293,7 @@ impl ModPacker {
                 meta,
                 built_resources: Default::default(),
                 compressor: Arc::new(Mutex::new(
-                    zstd::bulk::Compressor::with_dictionary(8, super::DICTIONARY).unwrap(),
+                    zstd::bulk::Compressor::with_dictionary(8, super::DICTIONARY)?,
                 )),
                 _zip_opts: FileOptions::default()
                     .compression_method(zip::CompressionMethod::Stored),
@@ -309,8 +309,7 @@ impl ModPacker {
             .with_context(|| jstr!("Failed to serialize {canon}"))?;
         let zip_path = self
             .current_root
-            .strip_prefix(&self.source_dir)
-            .unwrap()
+            .strip_prefix(&self.source_dir)?
             .join(canon);
         {
             log::trace!("Writing {} to ZIP", canon);
@@ -469,8 +468,8 @@ impl ModPacker {
                             .then(|| Language::from_message_path(ref_name.as_ref()))
                             .flatten()
                         {
-                            let langs = master.languages();
-                            match langs.iter().find(|l| l.short() == lang.short()) {
+                            let languages = master.languages();
+                            match languages.iter().find(|l| l.short() == lang.short()) {
                                 Some(ref_lang) => master.get_data(ref_lang.message_path().as_str()),
                                 None => Err(err),
                             }
