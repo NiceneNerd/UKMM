@@ -704,25 +704,26 @@ impl ModUnpacker {
         let mut versions = std::collections::VecDeque::with_capacity(
             (self.mods.len() as f32 / 2.).ceil() as usize,
         );
-        let canon = canonicalize(file);
-        let filename = Path::new(canon.as_str());
+        let filepath = match (aoc, file.starts_with("Aoc/0010/")) {
+            (true, false) => jstr!("Aoc/0010/{file}"),
+            _ => file.to_owned(),
+        };
+        let canon = canonicalize(&filepath);
+        let canon_path = Path::new(canon.as_str());
         let mut rstb_val = None;
         let can_rstb = !RSTB_EXCLUDE_EXTS.contains(
-            &filename
+            &canon_path
                 .extension()
                 .and_then(|e| e.to_str())
                 .unwrap_or_default(),
         ) && !RSTB_EXCLUDE_NAMES.contains(
-            &filename
+            &canon_path
                 .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or_default(),
         );
         let mut dump_error: Vec<anyhow_ext::Error> = vec![];
-        let res_result = self.dump.get_data(match aoc {
-            true => jstr!("Aoc/0010/{file}"),
-            false => file.to_owned(),
-        });
+        let res_result = self.dump.get_data(&filepath);
         match res_result {
             Ok(ref_res) => versions.push_back(ref_res),
             Err(e) => {
@@ -734,7 +735,7 @@ impl ModUnpacker {
             .mods
             .iter()
             .filter_map(|mod_| {
-                mod_.get_versions(file.as_ref())
+                mod_.get_versions(filepath.as_ref())
                     .ok()
                     .map(|d| d.into_iter().map(|d| (d, &mod_.meta.name)))
             })
@@ -766,7 +767,7 @@ impl ModUnpacker {
                     "No copy of {} found in game dump or any mod. Sometimes this is a problem with the mod or \
                     your game dump. However, it can also be a temporary cache error. If you know your dump and its \
                     configuration are sound, try restarting UKMM. If it persists, copy the error details and post \
-                    as a comment to https://github.com/NiceneNerd/UKMM/issues/120.", file
+                    as a comment to https://github.com/NiceneNerd/UKMM/issues/120.", &filepath
                 );
                 for e in dump_error {
                     err = e.context(err);
@@ -780,7 +781,7 @@ impl ModUnpacker {
                 if can_rstb && is_modded {
                     rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
                         res.as_binary().expect("Binary"),
-                        file,
+                        &filepath,
                         self.endian.into(),
                     ));
                 }
