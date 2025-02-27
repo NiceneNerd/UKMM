@@ -15,7 +15,7 @@ be obvious from the Info tab.
 
 **Added**
 
-- MainField Static merger. Fixes various issues with installing bnp's that edit
+- MainField Static merger. Fixes various issues with installing bnps that edit
   the file, including the disappearance of safe zones around the game world
   - This is a breaking change. Any mod that edits Map/MainField/Static.smubin
     will need to be reinstalled from a loose file or bnp package.
@@ -23,7 +23,7 @@ be obvious from the Info tab.
 **Changed**
 
 - Changed cemu settings importer to populate the emulator executable path with
-  a path that will boot directly into botw, skipping the game list, if the dump
+  a path that will boot directly into BotW, skipping the game list, if the dump
   is in the unpacked format. Otherwise, it will populate it with a path that will
   open cemu to the game list. Also added quotes to it on Windows or when the path
   has spaces in it, to ensure that powershell doesn't vomit all over a completely
@@ -36,10 +36,10 @@ be obvious from the Info tab.
 
 **Fixed**
 
-- Fixed profile validation when dualbooting multiple operating systems, where
+- Fixed profile validation when dual-booting multiple operating systems, where
   both systems are reading from the same effective storage folder. For example,
   if Windows reads from %LocalAppData%/ukmm, and another operating system has
-  a symbolic link to read from that same folder, then ukmm will reconstruct mod
+  a symbolic link to read from that same folder, then UKMM will reconstruct mod
   paths on boot, to ensure that you can properly merge from both systems
 
 ## [0.16.0] - 2025-01-27
@@ -95,7 +95,7 @@ Special Mipha's Grace beta release edition
 
 - Fixed a crash that could occur if you loaded a profile that you had duplicated,
   and hadn't restarted ukmm since you'd done that duplication
-- Fixed an error with installing bnp's that had deepmerge logs so large that they
+- Fixed an error with installing bnps that had deepmerge logs so large that they
   had to be stored as text (looking at you, Miss Graceful Fish...)
 
 ## [0.15.2] - 2025-01-02
@@ -146,9 +146,9 @@ Special Mipha's Grace beta release edition
 ## [0.15.0] - 2024-08-29
 
 This release is fairly significant and includes *multiple breaking changes* to
-the UKMM mod format. This means there is a *high likehood* that you will need to
+the UKMM mod format. This means there is a *high likelihood* that you will need to
 reinstall and/or repackage existing UKMM mods to avoid errors. Ideally, this
-should be the last breaking release before stabilizaiton.
+should be the last breaking release before stabilization.
 
 **Added**
 
@@ -280,7 +280,7 @@ should be the last breaking release before stabilizaiton.
 - **Breaking change**: Updated to the newest version of roead, which supports
   BYML versions 5-7. This means *all mods that edit BYML files* may need to be
   reinstalled, which is perhaps a majority of mods. (The good news is this will
-  make TOTK support easier to add in the future.)
+  make TotK support easier to add in the future.)
 - Updated to work on the stable Rust compiler, nightly no longer required.
 
 **Fixed**
@@ -428,7 +428,7 @@ should be the last breaking release before stabilizaiton.
 - Ignore zero byte when processing mods
 - Further improved mod filename sanitation
 - Switched to safe error for potential issues with BNP text logs
-- Updated roead for MacOS support progress
+- Updated roead for macOS support progress
 - Various UI tweaks (courtesy of ArchLeaders)
 
 **Fixed**
