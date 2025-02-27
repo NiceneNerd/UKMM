@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+This release includes a *breaking change* to the UKMM mod format, specifically to
+the merging of the Map/MainField/Static.smubin file. This means that you will need
+to reinstall and/or repackage all existing UKMM mods that edit that file, to avoid
+errors. The file is located inside Bootup.pack or AocMainField.pack, so it may not
+be obvious from the Info tab.
+
+**Added**
+
+- MainField Static merger. Fixes various issues with installing bnp's that edit
+  the file, including the disappearance of safe zones around the game world
+  - This is a breaking change. Any mod that edits Map/MainField/Static.smubin
+    will need to be reinstalled from a loose file or bnp package.
+
 **Changed**
 
 - Changed cemu settings importer to populate the emulator executable path with
@@ -15,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   open cemu to the game list. Also added quotes to it on Windows or when the path
   has spaces in it, to ensure that powershell doesn't vomit all over a completely
   valid path
+- Rewrote the file subsystem. Files will now only be searched for once, in the
+  exact location they're supposed to be located at
+- Logs have been cleaned up considerably. Only one log file will be used, and it will
+  only store info from the current or most recent session. Various changes have been
+  made to reduce the amount of unnecessary log spam
 
 **Fixed**
 
