@@ -196,6 +196,11 @@ impl Profile {
             .filter_map(|(k, v)| if v.path.exists() {
                     Some((*k, v.clone()))
                 } else {
+                    log::trace!(
+                            "Could not load {}, does not exist at {}, trying to recreate path...",
+                            &v.meta.name,
+                            v.path.display()
+                        );
                     let rel_path = settings.read()
                         .get_platform_dir(v.path
                             .to_string_lossy()
@@ -212,6 +217,11 @@ impl Profile {
                                 .expect("mod has no filename?")
                         );
                     if rel_path.exists() {
+                        log::trace!(
+                            "Found {} at {}",
+                            &v.meta.name,
+                            rel_path.display()
+                        );
                         Some((*k, Mod {
                             meta: v.meta.clone(),
                             enabled_options: v.enabled_options.clone(),
@@ -220,6 +230,15 @@ impl Profile {
                             hash: v.hash,
                         }))
                     } else {
+                        log::trace!(
+                            "Could not load {}, does not exist at {}",
+                            &v.meta.name,
+                            rel_path.display()
+                        );
+                        log::warn!(
+                            "Could not load {}. Check the Trace level for more information",
+                            &v.meta.name
+                        );
                         None
                     }
                 })
