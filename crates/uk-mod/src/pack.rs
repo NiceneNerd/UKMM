@@ -501,6 +501,14 @@ impl ModPacker {
             }
             log::trace!("Diffing {}", &canon);
             resource = ResourceData::Sarc(ref_sarc.diff(sarc));
+        } else if let (Some(bin), Some(ref_bin)) = (
+            resource.as_binary(),
+            reference.as_ref().and_then(|rrd| rrd.as_binary()),
+        ) {
+            if ref_bin == bin {
+                log::trace!("{} not modded, skipping", &canon);
+                return Ok(());
+            }
         }
 
         self.write_resource(&canon, &resource)?;
