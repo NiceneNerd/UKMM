@@ -199,7 +199,7 @@ pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message>
     let Some(dump) = core.settings().dump() else {
         anyhow::bail!("No dump for current platform")
     };
-    uk_mod::pack::ModPacker::new(
+    ModPacker::new(
         builder.source,
         builder.dest,
         Some(builder.meta),
@@ -221,12 +221,12 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
             [("mod_name".to_string(), mod_.meta.name.to_string())]
         );
         if let Some(folder) = rfd::FileDialog::new()
-            .set_title(message.format(&vars).unwrap())
+            .set_title(message.format(&vars)?)
             .pick_folder()
         {
             dirty.extend(&mod_.manifest().unwrap_or_default());
             let hash = mod_.hash();
-            uk_mod::pack::ModPacker::new(
+            ModPacker::new(
                 folder,
                 &mod_.path,
                 None,
@@ -526,7 +526,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         deploy_config.layout = uk_manager::settings::DeployLayout::WithName;
     } else {
         settings.wiiu_config = Some(PlatformSettings {
-            language: uk_content::constants::Language::USen,
+            language: Language::USen,
             profile: "Default".into(),
             dump,
             deploy_config: Some(DeployConfig {
@@ -766,20 +766,20 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
         .find(|asset| asset.name == asset_name)
         .context("No matching platform for update")?;
     let data = response(asset.browser_download_url.as_str())?;
-    let tmpfile = get_temp_file();
-    dbg!(tmpfile.as_path());
-    fs::write(tmpfile.as_path(), data)?;
-    let exe = std::env::current_exe().unwrap();
+    let temp_file = get_temp_file();
+    dbg!(temp_file.as_path());
+    fs::write(temp_file.as_path(), data)?;
+    let exe = std::env::current_exe()?;
     if cfg!(windows) {
-        let mut arc = zip::ZipArchive::new(fs::File::open(tmpfile.as_path())?)?;
-        arc.extract(tmpfile.parent().context("Weird, no temp file parent")?)?;
+        let mut arc = zip::ZipArchive::new(fs::File::open(temp_file.as_path())?)?;
+        arc.extract(temp_file.parent().context("Weird, no temp file parent")?)?;
         fs::rename(&exe, exe.with_extension("bak"))?;
-        fs::copy(tmpfile.with_file_name("ukmm.exe"), exe)?;
+        fs::copy(temp_file.with_file_name("ukmm.exe"), exe)?;
     } else {
         fs::rename(&exe, exe.with_extension("bak"))?;
         let out = std::process::Command::new("tar")
             .arg("xf")
-            .arg(tmpfile.as_path())
+            .arg(temp_file.as_path())
             .arg("-C")
             .arg(exe.parent().context("Weird, no exe parent")?)
             .arg("--overwrite")
@@ -791,7 +791,7 @@ pub fn do_update(version: VersionResponse) -> Result<Message> {
     Ok(Message::Restart)
 }
 
-pub static ONECLICK_SENDER: std::sync::OnceLock<flume::Sender<super::Message>> =
+pub static ONECLICK_SENDER: std::sync::OnceLock<flume::Sender<Message>> =
     std::sync::OnceLock::new();
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
