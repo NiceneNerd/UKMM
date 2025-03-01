@@ -434,25 +434,27 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     };
     let gfx_folder = if let Some(path) = path.with_file_name("graphicPacks").exists_then() {
         path
-    } else if let Some(path) = dirs2::config_dir()
-        .expect("YIKES")
-        .join("Cemu")
-        .join("graphicPacks")
-        .exists_then()
-    {
-        path
-    } else if let Some(path) = dirs2::data_local_dir()
-        .expect("YIKES")
-        .join("Cemu")
-        .join("graphicPacks")
-        .exists_then()
-    {
-        path
-    } else if let Some(path) = settings_path.parent() {
-        log::warn!("Cemu graphic pack folder not found. Defaulting to settings.xml location");
-        path.to_path_buf().join("graphicPacks")
     } else {
-        anyhow::bail!("We lost our settings path somehow...");
+        #[cfg(windows)]
+        {
+            if let Some(path) = dirs2::config_dir()
+                .expect("YIKES")
+                .join("Cemu")
+                .join("graphicPacks")
+                .exists_then()
+            {
+                path
+            } else {
+                settings_path.join("graphicPacks")
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            dirs2::data_local_dir()
+                .expect("YIKES")
+                .join("Cemu")
+                .join("graphicPacks")
+        }
     };
     let mut settings = core.settings_mut();
     settings.current_mode = Platform::WiiU;
