@@ -8,7 +8,6 @@ use std::{
 
 use anyhow_ext::{Context, Result};
 use fs_err as fs;
-use glob::GlobResult;
 use join_str::jstr;
 use serde::Deserialize;
 use strfmt::Format;
@@ -92,12 +91,12 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
        path
         .join("info.json")
         .exists()
-    { // TODO
+    {
         let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKMM mod")?;
         return Ok(Message::HandleMod(Mod::from_reader(
             ModReader::open_peek(mod_, vec![]).context("Failed to open converted mod")?,
         )));
-    }
+    } // TODO: Handle types other than zip and bnp
     let mod_ = match ModReader::open_peek(path, vec![]) {
         Ok(reader) => Mod::from_reader(reader),
         Err(err) => {
@@ -378,7 +377,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     static REGIONS: &[&str] = &[
         "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
     ];
-    let (base, update, dlc, wua) = if let Some(cache) = dirs2::config_dir()
+    let (base, update, dlc, wua, encrypted) = if let Some(cache) = dirs2::config_dir()
         .expect("YIKES")
         .join("Cemu")
         .join("title_list_cache.xml")
@@ -439,17 +438,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                     _ => {},
                 }
             });
-        if base_folder.is_none() &&
-            update_folder.is_none() &&
-            wua_file.is_none()
-        {
-            return if encrypted {
-                Err("Encrypted game dumps are not supported".into())
-            } else {
-                Err("Could not find unpacked game dump from Cemu title cache".into())
-            }
-        }
-        (base_folder, update_folder, dlc_folder, wua_file)
+        (base_folder, update_folder, dlc_folder, wua_file, encrypted)
     } else {
         mlc_path
             .as_ref()
@@ -467,10 +456,17 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                     let path = title_path.join(jstr!("0005000c/{r}/content/0010"));
                     path.exists().then_some(path)
                 });
-                (base_folder, update_folder, dlc_folder, None)
+                (base_folder, update_folder, dlc_folder, None, false)
             })
             .context("Could not find unpacked game dump from Cemu settings.")?
     };
+    if (base.is_none() || update.is_none()) && wua.is_none() {
+        anyhow::bail!(if encrypted {
+            "UKMM does not support encrypted dumps."
+        } else {
+            "Could not find unpacked game dump from Cemu settings."
+        });
+    }
     let gfx_folder = if let Some(path) = portable
         .join("graphicPacks")
         .exists_then()
