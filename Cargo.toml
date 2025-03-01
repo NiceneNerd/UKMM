@@ -25,6 +25,7 @@ eframe = { workspace = true, features = ["glow"] }
 env_logger = "0.11.3"
 flume = { workspace = true }
 fs-err = { workspace = true }
+glob = { workspace = true }
 join_str = { workspace = true }
 jwalk = { workspace = true }
 lenient_semver = { workspace = true }
@@ -96,6 +97,7 @@ dirs2 = "3"
 eframe = { version = "0.28", default-features = false }
 flume = "0.11.0"
 fs-err = "2.9"
+glob = "0.3.2"
 include-flate = "0.3.0"
 indexmap = { version = "2.2.6", features = ["serde"] }
 join_str = "0.1.0"

@@ -8,6 +8,7 @@ use std::{
 
 use anyhow_ext::{Context, Result};
 use fs_err as fs;
+use glob::GlobResult;
 use join_str::jstr;
 use serde::Deserialize;
 use strfmt::Format;
@@ -299,26 +300,41 @@ pub fn parse_meta(file: PathBuf) -> Result<Message> {
 }
 
 pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
-    let settings_path = if let Some(path) = path.join("portable/settings.xml").exists_then() {
-        path
-    } else if let Some(path) = path.join("settings.xml").exists_then() {
-        path
-    } else if let Some(path) = dirs2::config_dir()
-        .expect("YIKES")
-        .join("Cemu/settings.xml")
-        .exists_then()
-    {
-        path
-    } else if let Some(path) = dirs2::data_local_dir()
-        .expect("DOUBLE YIKES")
-        .join("Cemu/settings.xml")
+    let portable = path.join("portable");
+    let settings_path = if let Some(path) = portable
+        .join("settings.xml")
         .exists_then()
     {
         path
     } else {
-        anyhow::bail!(
-            "Could not find Cemu settings file. Please run Cemu at least once to generate it."
-        )
+        #[cfg(windows)]
+        if let Some(path) = dirs2::config_dir()
+            .expect("YIKES")
+            .join("Cemu")
+            .join("settings.xml")
+            .exists_then()
+        {
+            path
+        } else if let Some(path) = path.join("settings.xml").exists_then() {
+            path
+        } else {
+            anyhow::bail!(
+                "Could not find Cemu settings file. Please run Cemu at least once to generate it."
+            )
+        }
+        #[cfg(not(windows))]
+        if let Some(path) = dirs2::config_dir()
+            .expect("YIKES")
+            .join("Cemu")
+            .join("settings.xml")
+            .exists_then()
+        {
+            path
+        } else {
+            anyhow::bail!(
+                "Could not find Cemu settings file. Please run Cemu at least once to generate it."
+            )
+        }
     };
     let text = fs::read_to_string(&settings_path).context("Failed to open Cemu settings file")?;
     let tree = roxmltree::Document::parse(&text)
@@ -334,21 +350,30 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 .flatten()
         })
         .or_else(|| {
-            path.with_file_name("mlc01").exists_then()
+            portable.join("mlc01").exists_then()
         })
         .or_else(|| {
-            dirs2::config_dir()
-                .expect("YIKES")
-                .join("Cemu")
-                .join("mlc01")
-                .exists_then()
-        })
-        .or_else(|| {
-            dirs2::data_local_dir()
-                .expect("DOUBLE YIKES")
-                .join("Cemu")
-                .join("mlc01")
-                .exists_then()
+            #[cfg(windows)]
+            {
+                if let Some(path) = dirs2::config_dir()
+                    .expect("YIKES")
+                    .join("Cemu")
+                    .join("mlc01")
+                    .exists_then()
+                {
+                    path
+                } else {
+                    path.join("mlc01").exists_then()
+                }
+            }
+            #[cfg(not(windows))]
+            {
+                dirs2::data_local_dir()
+                    .expect("DOUBLE YIKES")
+                    .join("Cemu")
+                    .join("mlc01")
+                    .exists_then()
+            }
         });
     static REGIONS: &[&str] = &[
         "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
@@ -373,6 +398,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         let mut update_folder: Option<PathBuf> = None;
         let mut dlc_folder: Option<PathBuf> = None;
         let mut wua_file: Option<PathBuf> = None;
+        let mut encrypted = false;
         title_tree.descendants()
             .filter_map(|n| {
                 if n.tag_name().name() == "title" {
@@ -406,10 +432,23 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                     ("00050000", 1) => base_folder = Some(path.join("content")),
                     ("0005000c", 1) => dlc_folder = Some(path.join("content").join("0010")),
                     ("0005000e", 1) => update_folder = Some(path.join("content")),
+                    ("00050000", 4) |
+                    ("0005000c", 4) |
+                    ("0005000e", 4) => encrypted = true,
                     ("00050000", 3) => wua_file = Some(path),
                     _ => {},
                 }
             });
+        if base_folder.is_none() &&
+            update_folder.is_none() &&
+            wua_file.is_none()
+        {
+            return if encrypted {
+                Err("Encrypted game dumps are not supported".into())
+            } else {
+                Err("Could not find unpacked game dump from Cemu title cache".into())
+            }
+        }
         (base_folder, update_folder, dlc_folder, wua_file)
     } else {
         mlc_path
@@ -430,9 +469,12 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 });
                 (base_folder, update_folder, dlc_folder, None)
             })
-            .expect("Could not find unpacked game dump from Cemu settings.")
+            .context("Could not find unpacked game dump from Cemu settings.")?
     };
-    let gfx_folder = if let Some(path) = path.with_file_name("graphicPacks").exists_then() {
+    let gfx_folder = if let Some(path) = portable
+        .join("graphicPacks")
+        .exists_then()
+    {
         path
     } else {
         #[cfg(windows)]
@@ -470,22 +512,28 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         )
         .context("Failed to validate game dump")?)
     };
+    #[cfg(windows)]
     let exe = path
         .join("Cemu.exe")
         .exists_then()
+        .map(|p| format!("\"{}\"", p.display().to_string()));
+    #[cfg(not(windows))]
+    let exe = path
+        .join("Cemu")
+        .exists_then()
+        .or_else(|| {
+            // glob lists in alphabetical order, so we can just return the last one
+            glob::glob(&path.join("Cemu-*-*.AppImage").to_string_lossy())
+                .ok()?
+                .filter_map(Result::ok)
+                .last()
+        })
         .map(|p| {
-            let str_ = p.display().to_string();
-            #[cfg(windows)]
-            {
+            let str_ = p.to_string_lossy();
+            if str_.contains(' ') {
                 format!("\"{str_}\"")
-            }
-            #[cfg(not(windows))]
-            {
-                if str_.contains(' ') {
-                    format!("\"{str_}\"")
-                } else {
-                    str_
-                }
+            } else {
+                str_.into()
             }
         });
     let exe_cmd = if exe.is_some() {
