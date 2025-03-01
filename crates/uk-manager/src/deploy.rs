@@ -196,7 +196,7 @@ impl Manager {
         log::debug!("Deployment config:\n{:#?}", &config);
 
         // Determine src and dest folders
-        let (content, aoc) = uk_content::platform_prefixes(settings.current_mode.into());
+        let (content, aoc) = platform_prefixes(settings.current_mode.into());
         let src_content  = settings.merged_dir().join(content);
         let src_aoc = settings.merged_dir().join(aoc);
         let (dest_content, dest_aoc) = config.final_output_paths(settings.current_mode.into());
@@ -376,7 +376,7 @@ impl Manager {
         let mut dels = self.pending_delete.write();
         dels.content_files.extend(orphans_content.iter().cloned());
         dels.aoc_files.extend(orphans_aoc.iter().cloned());
-        let (content, dlc) = uk_content::platform_prefixes(platform.into());
+        let (content, dlc) = platform_prefixes(platform.into());
         for (dir, orphans) in [(content, orphans_content), (dlc, orphans_aoc)] {
             let out_dir = out_dir.join(dir);
             orphans.into_par_iter().try_for_each(|f| -> Result<()> {

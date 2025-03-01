@@ -446,7 +446,7 @@ impl Mergeable for MergeableResource {
 
 impl MergeableResource {
     pub fn from_binary(name: &Path, data: &[u8]) -> Result<Option<MergeableResource>> {
-        let result: anyhow::Result<Option<MergeableResource>> = if ActorInfo::path_matches(name) {
+        let result: Result<Option<MergeableResource>> = if ActorInfo::path_matches(name) {
             Ok(Some(Self::ActorInfo(Box::new(ActorInfo::from_binary(
                 data,
             )?))))
@@ -612,7 +612,7 @@ impl MergeableResource {
             )?))))
         } else if data.len() > 4 && &data[0..4] == b"AAMP" {
             Ok(Some(Self::GenericAamp(Box::new(
-                roead::aamp::ParameterIO::from_binary(data)?,
+                ParameterIO::from_binary(data)?,
             ))))
         } else if data.len() > 2 && matches!(&data[..2], b"BY" | b"YB") {
             Ok(Some(Self::GenericByml(Box::new(Byml::from_binary(data)?))))
@@ -694,17 +694,17 @@ impl MergeableResource {
 
 pub trait ResourceRegister {
     fn contains_resource(&self, canon: &str) -> bool;
-    fn add_resource(&self, canon: &str, resource: ResourceData) -> anyhow::Result<()>;
+    fn add_resource(&self, canon: &str, resource: ResourceData) -> Result<()>;
 }
 
 impl ResourceRegister for std::cell::RefCell<BTreeMap<String, ResourceData>> {
-    fn add_resource(&self, canon: &str, resource: ResourceData) -> anyhow::Result<()> {
-        self.borrow_mut().insert(canon.into(), resource);
-        Ok(())
-    }
-
     fn contains_resource(&self, canon: &str) -> bool {
         self.borrow().contains_key(canon)
+    }
+
+    fn add_resource(&self, canon: &str, resource: ResourceData) -> Result<()> {
+        self.borrow_mut().insert(canon.into(), resource);
+        Ok(())
     }
 }
 

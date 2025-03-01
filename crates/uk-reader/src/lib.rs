@@ -52,10 +52,10 @@ impl From<ROMError> for uk_content::UKError {
 
 flate!(static MAP_SRC_U: str from "data/filemap_wiiu.json");
 const FILE_MAP_U: LazyLock<Arc<DashMap<String, [Arc<&'static str>;3]>>> =
-    std::sync::LazyLock::new(|| Arc::new(serde_json::from_str(MAP_SRC_U.as_ref()).unwrap()));
+    LazyLock::new(|| Arc::new(serde_json::from_str(MAP_SRC_U.as_ref()).unwrap()));
 flate!(static MAP_SRC_NX: str from "data/filemap_nx.json");
 const FILE_MAP_NX: LazyLock<Arc<DashMap<String, [Arc<&'static str>;3]>>> =
-    std::sync::LazyLock::new(|| Arc::new(serde_json::from_str(MAP_SRC_NX.as_ref()).unwrap()));
+    LazyLock::new(|| Arc::new(serde_json::from_str(MAP_SRC_NX.as_ref()).unwrap()));
 type ResourceCache = Cache<String, Arc<ResourceData>>;
 type SarcCache = Cache<String, Arc<Sarc<'static>>>;
 const CACHE_SIZE: usize = 10000;

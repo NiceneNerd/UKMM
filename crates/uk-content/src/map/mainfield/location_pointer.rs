@@ -84,7 +84,7 @@ impl From<LocationPointer> for Byml {
         map.insert("Translate".into(), Byml::Map(val.translate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-            .collect::<crate::util::HashMap<String, Byml>>()));
+            .collect::<HashMap<String, Byml>>()));
         Byml::Map(map)
     }
 }

@@ -186,7 +186,7 @@ impl From<LocationMarker> for Byml {
         map.insert("Translate".into(), Byml::Map(value.translate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-            .collect::<crate::util::HashMap<String, Byml>>()));
+            .collect::<HashMap<String, Byml>>()));
         match &value.warp_dest_map_name {
             Some(i) => map.insert("WarpDestMapName".into(), i.into()),
             None => None,
