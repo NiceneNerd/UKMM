@@ -296,8 +296,6 @@ impl App {
         let mods: Vec<_> = core.mod_manager().all_mods().collect();
         let (send, recv) = flume::unbounded();
         tasks::ONECLICK_SENDER.set(send.clone()).unwrap_or(());
-        crate::logger::LOGGER.set_file(Settings::config_dir().join("log.txt"));
-        log::info!("Logger initialized");
         let temp_settings = core.settings().clone();
         let platform = core.settings().current_mode;
         LOCALIZATION.write().update_language(&temp_settings.lang);

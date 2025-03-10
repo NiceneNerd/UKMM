@@ -7,6 +7,7 @@ use std::{
 
 use log::Record;
 use parking_lot::Mutex;
+use uk_manager::settings::Settings;
 
 pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
     Logger {
@@ -21,6 +22,7 @@ pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
 pub fn init() {
     if let Ok(_) = log::set_logger(LOGGER.deref()) {
         log::set_max_level(log::LevelFilter::max());
+        LOGGER.set_file(Settings::config_dir().join("log.txt"));
     }
 }
 

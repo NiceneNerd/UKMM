@@ -58,6 +58,7 @@ Info tab.
   when auto deploy is turned on, e.g. when switching profiles. Auto deploy still
   works as before, where you don't need to click the button unless it gives you a
   message telling you to.
+- Set logger file at program open, to avoid initializing it twice
 
 **Fixed**
 
