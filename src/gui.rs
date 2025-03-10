@@ -276,7 +276,8 @@ pub struct App {
 
 impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
-        if option_env!("UPDATE_PLATFORM").unwrap_or_default() == "steamdeck" {
+        #[cfg(not(windows))]
+        if std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "wayland" {
             cc.egui_ctx.set_pixels_per_point(
                 std::env::var("WINIT_X11_SCALE_FACTOR")
                     .ok()

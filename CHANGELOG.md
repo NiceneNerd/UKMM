@@ -41,6 +41,8 @@ be obvious from the Info tab.
   if Windows reads from %LocalAppData%/ukmm, and another operating system has
   a symbolic link to read from that same folder, then UKMM will reconstruct mod
   paths on boot, to ensure that you can properly merge from both systems
+- Fixed (or at least attempted to fix) the program displaying at the wrong DPI when
+  using Wayland, e.g. on steamOS
 
 ## [0.16.0] - 2025-01-27
 
