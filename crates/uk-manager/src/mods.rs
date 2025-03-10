@@ -19,7 +19,7 @@ use uk_content::platform_prefixes;
 use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
 
 use crate::{
-    settings::{Platform, Settings},
+    settings::Settings,
     util::{self, extract_7z, HashMap},
 };
 
@@ -189,72 +189,70 @@ impl Profile {
         }
     }
 
-    pub fn validated(&self, settings: &Arc<RwLock<Settings>>) -> Self {
-        // Forgive me for my sins
-        let mods = self.mods.read()
-            .iter()
-            .filter_map(|(k, v)| if v.path.exists() {
-                    Some((*k, v.clone()))
-                } else {
-                    log::trace!(
-                            "Could not load {}, does not exist at {}, trying to recreate path...",
-                            &v.meta.name,
-                            v.path.display()
-                        );
-                    let rel_path = settings.read()
-                        .get_platform_dir(v.path
-                            .to_string_lossy()
-                            .contains("wiiu")
-                            .then(|| Platform::WiiU)
-                            .or(Some(Platform::Switch))
-                            .unwrap())
-                        .join("mods")
-                        .join(
-                            v.path
-                                .to_string_lossy()
-                                .split(|c| c == '/' || c == '\\')
-                                .last()
-                                .expect("mod has no filename?")
-                        );
-                    if rel_path.exists() {
-                        log::trace!(
-                            "Found {} at {}",
-                            &v.meta.name,
-                            rel_path.display()
-                        );
-                        Some((*k, Mod {
-                            meta: v.meta.clone(),
-                            enabled_options: v.enabled_options.clone(),
-                            enabled: v.enabled,
-                            path: rel_path,
-                            hash: v.hash,
-                        }))
-                    } else {
-                        log::trace!(
-                            "Could not load {}, does not exist at {}",
-                            &v.meta.name,
-                            rel_path.display()
-                        );
+    pub fn validate(&mut self, all_mods: &HashMap<String, Mod>) -> () {
+        let mut mods = self.mods.write();
+        let mut mods_by_invalid_hash = HashMap::<usize, Mod>::default();
+        mods.retain(|h, m| {
+            match all_mods.get(&m.meta.name) {
+                None => {
+                    log::warn!(
+                        "{} not found at {}, removing from mod list...",
+                        m.meta.name,
+                        m.path.display()
+                    );
+                    false
+                },
+                Some(m_) => {
+                    if m.path != m_.path {
                         log::warn!(
-                            "Could not load {}. Check the Trace level for more information",
-                            &v.meta.name
+                            "{} not found at {}, loading from {} instead...",
+                            m.meta.name,
+                            m.path.display(),
+                            m_.path.display()
                         );
-                        None
+                        m.path = m_.path.clone();
                     }
-                })
-            .collect::<HashMap<_,_>>();
-        let load_order = self.load_order.read()
-            .iter()
-            .filter(|k| mods.contains_key(k))
-            .chain(
-                mods.keys().filter(|k| !self.load_order.read().contains(k))
-            )
-            .map(|k| *k)
-            .collect::<Vec<_>>();
-        Self {
-            mods: mods.into(),
-            load_order: load_order.into(),
+                    if *h != m_.hash {
+                        log::info!(
+                            "{} has a hash mismatch. Reassigning hash...",
+                            m.meta.name
+                        );
+                        m.hash = m_.hash;
+                        mods_by_invalid_hash.insert(*h, m.clone());
+                        false
+                    } else {
+                        true
+                    }
+                },
+            }
+        });
+        for m in mods_by_invalid_hash.values() {
+            mods.insert(m.hash, m.clone());
         }
+        let mut load_order = self.load_order.write();
+        for i in 0..load_order.len() {
+            if let Some(mod_) = mods_by_invalid_hash.get(&load_order[i]) {
+                load_order[i] = mod_.hash;
+            }
+        }
+        for h in load_order.iter() {
+            if !mods.contains_key(h) {
+                if let Some((_, m)) = all_mods.iter().find(|(_, m)| *h == m.hash) {
+                    log::warn!(
+                        "{} found in load order but not in profile mod list. Adding to profile \
+                        with no options selected. You will need to reselect mod options from the \
+                        Info tab if you want this mod to continue working.",
+                        m.meta.name
+                    );
+                    mods.insert(*h, m.clone());
+                }
+            }
+        }
+        load_order.retain(|k| mods.contains_key(k));
+        let keys_missing_from_order = mods.keys()
+            .filter(|&k| !load_order.contains(k))
+            .collect::<Vec<_>>();
+        load_order.extend(keys_missing_from_order);
     }
 }
 
@@ -348,6 +346,12 @@ impl Manager {
 
     pub fn init(settings: &Arc<RwLock<Settings>>) -> Result<Self> {
         log::info!("Initializing mod manager");
+        let all_mods = glob::glob(
+            &settings.read().mods_dir().join("*.zip").to_string_lossy()
+        )?.map(|p| {
+            let mod_ = Mod::from_reader(ModReader::open(p?, vec![])?);
+            Ok((mod_.meta.name.clone(), mod_))
+        }).collect::<Result<HashMap<String, Mod>>>()?;
         let current_profile = settings
             .read()
             .platform_config()
@@ -372,7 +376,10 @@ impl Manager {
                                 "Failed to parse profile data from {}",
                                 profile_path.to_string_lossy()
                             ))
-                            .and_then(|p| Ok(p.validated(settings)))
+                            .and_then(|mut p| {
+                                p.validate(&all_mods);
+                                Ok(p)
+                            })
                     )
                     .map(|v| (profile, v))
             })

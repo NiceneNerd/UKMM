@@ -10,6 +10,7 @@ anyhow_ext = { workspace = true }
 dashmap = { workspace = true, features = ["rayon"] }
 dirs2 = { workspace = true }
 fs-err = { workspace = true }
+glob = { workspace = true }
 join_str = { workspace = true }
 jwalk = { workspace = true }
 lenient_semver = { workspace = true }
