@@ -447,12 +447,13 @@ impl Manager {
         let mod_manager = self
             .mod_manager
             .upgrade()
-            .expect("YIKES, the mod manager system is gone");
+            .context("YIKES, the mod manager system is gone")?;
         let settings = self
             .settings
             .upgrade()
-            .expect("YIKES, the settings manager is gone");
-        let settings = settings.try_read().unwrap();
+            .context("YIKES, the settings manager is gone")?;
+        let settings = settings.try_read()
+            .context("Could not read settings")?;
         let dump = settings
             .dump()
             .context("No dump available for current platform")?;
@@ -481,7 +482,7 @@ impl Manager {
             ModUnpacker::new(
                 dump,
                 endian,
-                settings.platform_config().unwrap().language,
+                settings.platform_config().context("No config for platform")?.language,
                 mods,
                 out_dir.clone(),
             )
@@ -503,7 +504,7 @@ impl Manager {
             ModUnpacker::new(
                 dump,
                 endian,
-                settings.platform_config().unwrap().language,
+                settings.platform_config().context("No config for platform")?.language,
                 mods,
                 out_dir.clone(),
             )

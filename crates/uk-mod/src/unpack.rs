@@ -715,8 +715,10 @@ impl ModUnpacker {
                     ));
                 }
                 match Arc::try_unwrap(res) {
-                    Ok(res) => res.take_binary().unwrap(),
-                    Err(res) => res.as_binary().map(|b| b.to_vec()).unwrap(),
+                    Ok(res) => res.take_binary().context("No binary resource?")?,
+                    Err(res) => res.as_binary()
+                        .map(|b| b.to_vec())
+                        .context("No binary resource?")?,
                 }
             }
             ResourceData::Mergeable(base_res) => {

@@ -30,9 +30,10 @@ be obvious from the Info tab.
   valid path
 - Rewrote the file subsystem. Files will now only be searched for once, in the
   exact location they're supposed to be located at
-- Logs have been cleaned up considerably. Only one log file will be used, and it will
-  only store info from the current or most recent session. Various changes have been
-  made to reduce the amount of unnecessary log spam
+- Logs have been cleaned up considerably. Only one log file will be used, and it
+  will only store info from the current or most recent session. Various changes have
+  been made to reduce the amount of unnecessary log spam
+- Added context to unwraps during merging, in case they fail
 
 **Fixed**
 
@@ -114,7 +115,8 @@ Special Mipha's Grace beta release edition
 
 **Added**
 
-- Added Deploy Layout settings option, to give more control over deploy output location
+- Added Deploy Layout settings option, to give more control over deploy output
+  location
 - Added extra context to various BNP conversion errors
 - Added option to install unpacked loose file mods via rules.txt
 
@@ -142,7 +144,7 @@ Special Mipha's Grace beta release edition
   after deleting that profile
 - Fixed Cemu settings import
 - Fixed a bug where mods with text changes may not apply those changes, depending
-  on what language was chosen in the settings and what languages other mods contained
+  on the language chosen in the settings and what languages other mods contained
 - Fixed a bug where a different language than the one chosen in the settings would
   be used for the final merge, when mods contained too many languages
 
