@@ -79,8 +79,11 @@ impl BnpConverter {
         let maps_path = self.current_root.join("logs/map.yml");
         if maps_path.exists() {
             log::debug!("Processing maps log");
-            let diff = Byml::from_text(fs::read_to_string(maps_path)?)?.into_map()?;
-            let base_pack = Sarc::new(self.get_master_aoc_bytes("Pack/AocMainField.pack")?)?;
+            let diff = Byml::from_text(fs::read_to_string(maps_path)?)
+                .context("Could not parse maps log")?
+                .into_map()?;
+            let base_pack = Sarc::new(self.get_master_aoc_bytes("Pack/AocMainField.pack")?)
+                .context("Could not read Pack/AocMainField.pack")?;
             let mut merged_pack = SarcWriter::from_sarc(&base_pack);
             let (statics, dynamics) = diff
                 .into_par_iter()
@@ -101,7 +104,8 @@ impl BnpConverter {
                                     .with_context(|| jstr!("Game dump missing map {&path}"))
                             })?,
                     )?)?;
-                    merge_map(&mut base, diff)?;
+                    merge_map(&mut base, diff)
+                        .with_context(|| jstr!("Failed to rebuild {&section}"))?;
                     Ok((path.into(), compress(base.to_binary(self.platform.into()))))
                 })
                 .collect::<Result<BTreeMap<String, Vec<u8>>>>()?

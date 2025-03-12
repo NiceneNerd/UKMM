@@ -34,6 +34,7 @@ be obvious from the Info tab.
   will only store info from the current or most recent session. Various changes have
   been made to reduce the amount of unnecessary log spam
 - Added context to unwraps during merging, in case they fail
+- Added context to various bnp map rebuild operations, in case they fail
 
 **Fixed**
 
