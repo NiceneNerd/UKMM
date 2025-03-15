@@ -132,7 +132,7 @@ impl App {
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     ui.add_space(8.);
-                    ui.label(err.to_string());
+                    ui.label("An error has occurred. Check the details for more information.");
                     ui.add_space(8.);
                     egui::CollapsingHeader::new(loc.get("Error_Details")).show(ui, |ui| {
                         err.chain().enumerate().for_each(|(i, e)| {

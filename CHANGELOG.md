@@ -35,6 +35,9 @@ be obvious from the Info tab.
   been made to reduce the amount of unnecessary log spam
 - Added context to unwraps during merging, in case they fail
 - Added context to various bnp map rebuild operations, in case they fail
+- Set top-level error message to tell the user to expand the details, so that people
+  stop thinking that all errors are the same error just because the top-level message
+  is the same
 
 **Fixed**
 
