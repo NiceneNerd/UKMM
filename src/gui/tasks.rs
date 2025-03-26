@@ -444,10 +444,27 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             .as_ref()
             .map(|mlc_path| {
                 let title_path = mlc_path.join("usr/title");
-                let base_folder = REGIONS.iter().find_map(|r| {
-                    let path = title_path.join(jstr!("00050000/{r}/content"));
-                    path.exists().then_some(path)
-                });
+                let base_folder = if let Some(base_folder_path) = REGIONS
+                    .iter()
+                    .find_map(|r| {
+                        let path = title_path.join(jstr!("00050000/{r}/content"));
+                        path.exists().then_some(path)
+                    }
+                ) {
+                    Some(base_folder_path)
+                } else {
+                    std::fs::read_to_string(&settings_path)
+                        .expect("Cannot read settings file")
+                        .split('\n')
+                        .find_map(|line| {
+                            let line = line.trim();
+                            if line.starts_with("<path>") && line.contains("U-King.rpx") {
+                                Some(PathBuf::from(&line[6..line.len()-23]).join("content"))
+                            } else {
+                                None
+                            }
+                        })
+                };
                 let update_folder = REGIONS.iter().find_map(|r| {
                     let path = title_path.join(jstr!("0005000e/{r}/content"));
                     path.exists().then_some(path)
@@ -496,8 +513,8 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     };
     let mut settings = core.settings_mut();
     settings.current_mode = Platform::WiiU;
-    let dump = if wua.is_some() {
-        Arc::new(ResourceReader::from_zarchive(unsafe { wua.unwrap_unchecked() })
+    let dump = if let Some(path) = wua {
+        Arc::new(ResourceReader::from_zarchive(path)
             .context("Failed to validate game dump")?)
     } else {
         Arc::new(ResourceReader::from_unpacked_dirs(
