@@ -30,6 +30,14 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
                     .map(|h| (h, i))
             })
             .collect::<FxHashMap<u32, _>>();
+        if let Some(Byml::Map(mods)) = diff.remove("mod") {
+            for (hash, entry) in mods {
+                let hash: u32 = hash.parse()?;
+                if let Some(index) = hashes.get(&hash) {
+                    base[*index] = entry;
+                }
+            }
+        }
         if let Some(Byml::Array(dels)) = diff.remove("del") {
             base.retain(|obj| {
                 obj.as_map()
@@ -49,14 +57,6 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
                     })
                     .unwrap_or(false)
             }));
-        }
-        if let Some(Byml::Map(mods)) = diff.remove("mod") {
-            for (hash, entry) in mods {
-                let hash: u32 = hash.parse()?;
-                if let Some(index) = hashes.get(&hash) {
-                    base[*index] = entry;
-                }
-            }
         }
         Ok(())
     }
