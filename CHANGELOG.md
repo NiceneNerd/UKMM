@@ -48,7 +48,9 @@ be obvious from the Info tab.
   paths on boot, to ensure that you can properly merge from both systems
 - Fixed (or at least attempted to fix) the program displaying at the wrong DPI when
   using Wayland, e.g. on steamOS
-- Reordered bnp map conversions, so that modifications apply to the right map instances
+- Reordered bnp map conversions, so modifications apply to the right map instances
+- Made sure DeleteSets actually deleted the things marked for deletion. Whoops!
+  Fixes various merge errors in BoneControl, ActorLink, and other files
 
 ## [0.16.0] - 2025-01-27
 

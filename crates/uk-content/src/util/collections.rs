@@ -247,6 +247,7 @@ impl<T: DeleteKey> DeleteSet<T> {
         self.0.contains_key(item.borrow())
     }
 
+    /*
     pub fn diff(&self, other: &Self) -> Self {
         other
             .iter()
@@ -269,6 +270,7 @@ impl<T: DeleteKey> DeleteSet<T> {
                 .collect(),
         )
     }
+    */
 
     pub fn len(&self) -> usize {
         self.iter().count()
@@ -295,7 +297,7 @@ impl<T: DeleteKey> Mergeable for DeleteSet<T> {
 
     fn merge(&self, diff: &Self) -> Self {
         self.iter()
-            .interleave(diff.iter())
+            .chain(diff.iter())
             .cloned()
             .collect::<Self>()
             .and_delete()
@@ -397,8 +399,10 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
     pub fn insert(&mut self, item: T) {
         self.0.insert(item, false);
     }
+}
 
-    pub fn diff(&self, other: &Self) -> Self {
+impl<T: DeleteKey + Ord> Mergeable for SortedDeleteSet<T> {
+    fn diff(&self, other: &Self) -> Self {
         other
             .iter()
             .filter(|it| !self.contains(*it))
@@ -411,15 +415,14 @@ impl<T: DeleteKey + Ord> SortedDeleteSet<T> {
             .collect()
     }
 
-    pub fn merge(&self, other: &Self) -> Self {
+    fn merge(&self, other: &Self) -> Self {
         Self(
             self.0
                 .keys()
                 .chain(other.0.keys())
                 .map(|k| (k.clone(), other.0.get(k).copied().unwrap_or(false)))
                 .collect(),
-        )
-        .and_delete()
+        ).and_delete()
     }
 }
 
