@@ -437,7 +437,7 @@ impl TryFrom<&Byml> for MainStatic {
 impl From<MainStatic> for Byml {
     fn from(val: MainStatic) -> Self {
         val.dlc_restart_pos
-            .map_or(Vec::<(String, Byml)>::new(), |d| [(
+            .map_or_else(|| Vec::<(String, Byml)>::new(), |d| [(
                 String::from("DLCRestartPos"),
                 Byml::Array(d.into_iter()
                     .map(|(_, entry)| entry.into())
