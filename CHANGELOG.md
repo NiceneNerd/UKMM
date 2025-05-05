@@ -38,6 +38,10 @@ be obvious from the Info tab.
 - Set top-level error message to tell the user to expand the details, so that people
   stop thinking that all errors are the same error just because the top-level message
   is the same
+- Removed partial deployment. Copy/hardlink deployment now wipe the deploy directory
+  and write all files over again
+  - This is listed as a change and not a fix because it's a temporary hack, until I
+    can figure out why partial deployment fails 90% of the time
 
 **Fixed**
 

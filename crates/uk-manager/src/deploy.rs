@@ -257,6 +257,32 @@ impl Manager {
                 util::remove_symlink(&dest_aoc)
                     .context("Failed to remove symlink to old symlinked dlc")?;
             }
+            if dest_content.exists() {
+                util::remove_dir_all(&dest_content)
+                    .context("Failed to remove old content folder")?;
+            }
+            if dest_aoc.exists() {
+                util::remove_dir_all(&dest_aoc)
+                    .context("Failed to remove old dlc folder")?;
+            }
+            match config.method {
+                DeployMethod::Copy => {
+                    log::info!("Deploying by copy");
+                    util::copy_dir(&src_content, &dest_content)
+                        .context("Failed to copy content folder")?;
+                    util::copy_dir(&src_aoc, &dest_aoc)
+                        .context("Failed to copy dlc folder")?;
+                },
+                DeployMethod::HardLink => {
+                    log::info!("Deploying by hard links");
+                    util::hardlink_dir(&src_content, &dest_content)
+                        .context("Failed to copy content folder")?;
+                    util::hardlink_dir(&src_aoc, &dest_aoc)
+                        .context("Failed to copy dlc folder")?;
+                },
+                DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
+            };
+            /*
             let deletes = self.pending_delete.read();
             log::debug!("Deployed files to delete:\n{:#?}", &deletes);
             let syncs = self.pending_files.read();
@@ -324,6 +350,7 @@ impl Manager {
                 )?;
             }
             log::info!("Deployment complete");
+             */
         }
         let rules_path = dest_content.parent().unwrap().join("rules.txt");
         if settings.current_mode == Platform::WiiU
