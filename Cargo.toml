@@ -6,7 +6,7 @@ authors = ["Caleb Smith <c.smith@tuta.io>", "Ginger Chody <chodness@gmail.com>"]
 edition = "2021"
 license = "GPL-3.0-or-later"
 version = { workspace = true }
-rust-version = "1.80"
+rust-version = "1.85"
 
 [package.metadata.wix]
 upgrade-guid = "0EC50392-193E-4A2B-9322-3CF045D8FCAE"
@@ -21,7 +21,7 @@ product-icon = "assets/ukmm.ico"
 anyhow = { workspace = true }
 anyhow_ext = { workspace = true }
 dirs2 = { workspace = true }
-eframe = { workspace = true, features = ["glow"] }
+eframe = { workspace = true, features = ["glow", "x11", "wayland"] }
 env_logger = "0.11.3"
 flume = { workspace = true }
 fs-err = { workspace = true }
@@ -42,9 +42,9 @@ strfmt = { workspace = true }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 
 astrolabe = "0.5.1"
-egui_commonmark = { version = "0.17.0", features = ["svg", "fetch"] }
-egui-notify = "0.15.0"
-egui_logger = "0.5"
+egui_commonmark = { version = "0.21.0", features = ["svg", "fetch"] }
+egui-notify = "0.20.0"
+egui_logger = "0.8"
 http_req = { version = "^0.12", default-features = false, features = [
     "rust-tls",
 ] }
@@ -93,7 +93,7 @@ anyhow = "1"
 anyhow_ext = "0.2.1"
 dashmap = "6"
 dirs2 = "3"
-eframe = { version = "0.28", default-features = false }
+eframe = { version = "0.32", default-features = false }
 flume = "0.11.0"
 fs-err = "2.9"
 include-flate = "0.3.0"

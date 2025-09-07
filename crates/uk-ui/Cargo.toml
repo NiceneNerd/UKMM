@@ -10,18 +10,18 @@ rustc-hash = { workspace = true }
 serde = { workspace = true }
 
 color-hex = "0.2.0"
-catppuccin-egui = { version = "5.2", default-features = false, features = [
-    "egui28",
+catppuccin-egui = { version = "5.6", default-features = false, features = [
+    "egui32",
 ] }
 egui-aesthetix = { git = "https://github.com/NiceneNerd/egui-aesthetix", features = [
     "all_themes",
 ], rev = "77c0aa9ce200bb32cef5c3abc7232e7bacfc8072" }
-egui = { version = "0.28", default-features = false, features = [
+egui = { version = "0.32", default-features = false, features = [
     "color-hex",
     "persistence",
 ] }
-egui_dock = { version = "0.13.0", features = ["serde"] }
-egui_extras = { version = "0.28", features = ["image", "svg"] }
+egui_dock = { version = "0.17.0", features = ["serde"] }
+egui_extras = { version = "0.32", features = ["image", "svg"] }
 font-loader = "0.11.0"
 hex = "0.4.3"
 syntect = { version = "5", default-features = false, features = [

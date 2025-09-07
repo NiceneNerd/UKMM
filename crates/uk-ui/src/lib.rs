@@ -46,7 +46,7 @@ pub fn load_fonts(context: &egui::Context) {
     {
         fonts.font_data.insert(
             "System".to_owned(),
-            egui::FontData::from_owned(system_font.0),
+            egui::FontData::from_owned(system_font.0).into(),
         );
     }
     if let Some(system_font) = font_loader::system_fonts::get(
@@ -63,39 +63,39 @@ pub fn load_fonts(context: &egui::Context) {
     }) {
         fonts
             .font_data
-            .insert("Bold".to_owned(), egui::FontData::from_owned(system_font.0));
+            .insert("Bold".to_owned(), egui::FontData::from_owned(system_font.0).into());
     }
     fonts.font_data.insert(
         "Noto".to_owned(),
-        egui::FontData::from_static(&NOTOSANS_REG)
+        egui::FontData::from_static(&NOTOSANS_REG).into()
     );
     fonts.font_data.insert(
         "NotoBold".to_owned(),
-        egui::FontData::from_static(&NOTOSANS_BOLD)
+        egui::FontData::from_static(&NOTOSANS_BOLD).into()
     );
     fonts.font_data.insert(
         "NotoJP".to_owned(),
-        egui::FontData::from_static(&NOTOSANSJP_REG)
+        egui::FontData::from_static(&NOTOSANSJP_REG).into()
     );
     fonts.font_data.insert(
         "NotoJPBold".to_owned(),
-        egui::FontData::from_static(&NOTOSANSJP_BOLD)
+        egui::FontData::from_static(&NOTOSANSJP_BOLD).into()
     );
     fonts.font_data.insert(
         "NotoKR".to_owned(),
-        egui::FontData::from_static(&NOTOSANSKR_REG)
+        egui::FontData::from_static(&NOTOSANSKR_REG).into()
     );
     fonts.font_data.insert(
         "NotoKRBold".to_owned(),
-        egui::FontData::from_static(&NOTOSANSKR_BOLD)
+        egui::FontData::from_static(&NOTOSANSKR_BOLD).into()
     );
     fonts.font_data.insert(
         "NotoSC".to_owned(),
-        egui::FontData::from_static(&NOTOSANSSC_REG)
+        egui::FontData::from_static(&NOTOSANSSC_REG).into()
     );
     fonts.font_data.insert(
         "NotoSCBold".to_owned(),
-        egui::FontData::from_static(&NOTOSANSSC_BOLD)
+        egui::FontData::from_static(&NOTOSANSSC_BOLD).into()
     );
     if let Some(family) = fonts
         .families
