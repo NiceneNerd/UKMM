@@ -614,7 +614,8 @@ impl MergeableResource {
             Ok(Some(Self::GenericAamp(Box::new(
                 ParameterIO::from_binary(data)?,
             ))))
-        } else if data.len() > 2 && matches!(&data[..2], b"BY" | b"YB") {
+        } else if data.len() > 4 && matches!(&data[..2], b"BY" | b"YB") &&
+            (as_u16_be(&data[2..4]) < 8 || as_u16_le(&data[2..4]) < 8) {
             Ok(Some(Self::GenericByml(Box::new(Byml::from_binary(data)?))))
         } else {
             Ok(None)
@@ -690,6 +691,16 @@ impl MergeableResource {
             }
         }
     }
+}
+
+fn as_u16_be(array: &[u8; 2]) -> u16 {
+    ((array[2] as u16) <<  8) +
+    ((array[3] as u16) <<  0)
+}
+
+fn as_u16_le(array: &[u8; 2]) -> u16 {
+    ((array[0] as u16) <<  0) +
+    ((array[1] as u16) <<  8)
 }
 
 pub trait ResourceRegister {
