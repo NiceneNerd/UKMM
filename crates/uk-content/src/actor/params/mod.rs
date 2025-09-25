@@ -22,3 +22,4 @@ pub mod rgconfig;
 pub mod rgconfiglist;
 pub mod shop;
 pub mod umii;
+pub mod anim_seq;

@@ -1,0 +1,58 @@
+use anyhow::{anyhow, Context, Error, Result};
+use roead::aamp::ParameterList;
+use serde::{Deserialize, Serialize};
+use super::res_children::ResourceWithChildren;
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct BlenderResource {
+    base: Option<ResourceWithChildren>,
+    no_sync: Option<bool>,
+    judge_once: Option<bool>,
+    input_limit: Option<f32>,
+}
+
+impl TryFrom<&ParameterList> for BlenderResource {
+    type Error = Error;
+
+    fn try_from(value: &ParameterList) -> Result<Self> {
+        let parameters = value.objects
+            .get("Parameters")
+            .ok_or(anyhow!("Missing Parameters"))?;
+        Ok(Self {
+            base: Some(value.try_into()?),
+            no_sync: parameters
+                .get("NoSync")
+                .map(|p| p.as_bool().context("Invalid NoSync"))
+                .transpose()?,
+            judge_once: parameters
+                .get("JudgeOnce")
+                .map(|p| p.as_bool().context("Invalid JudgeOnce"))
+                .transpose()?,
+            input_limit: parameters
+                .get("InputLimit")
+                .map(|p| p.as_f32().context("Invalid InputLimit"))
+                .transpose()?,
+        })
+    }
+}
+
+impl From<BlenderResource> for ParameterList {
+    fn from(value: BlenderResource) -> Self {
+        let mut base: Self = value.base.unwrap().into();
+        let params = base.objects.get_mut("Parameters").unwrap();
+        value.no_sync.into_iter().for_each(|p| { params.insert("NoSync", p.into()) });
+        value.judge_once.into_iter().for_each(|p| { params.insert("JudgeOnce", p.into()) });
+        value.input_limit.into_iter().for_each(|p| { params.insert("InputLimit", p.into()) });
+        base
+    }
+}
+
+impl BlenderResource {
+    pub fn children(&self) -> Box<dyn Iterator<Item = &i32> + '_> {
+        if let Some(base) = &self.base {
+            Box::new(base.children.values())
+        } else {
+            Box::new(std::iter::empty::<&i32>())
+        }
+    }
+}

@@ -5642,6 +5642,7 @@ dependencies = [
  "lexical-core",
  "lighter",
  "log",
+ "minicbor-ser",
  "msyt",
  "roead 1.0.0",
  "rstb",
