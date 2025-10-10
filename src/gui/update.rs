@@ -469,6 +469,7 @@ impl App {
                     self.do_task(|core| {
                         log::info!("Resetting pending deployment data");
                         core.deploy_manager().reset_pending()?;
+                        core.deploy_manager().save()?;
                         Ok(Message::Noop)
                     })
                 }
