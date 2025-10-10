@@ -1,7 +1,10 @@
 #![allow(clippy::unwrap_used, unstable_name_collisions)]
 
+mod folder;
+mod file;
+mod pending_log;
+
 use std::{
-    collections::BTreeSet,
     path::{Path, PathBuf},
     sync::{Arc, Weak},
 };
@@ -11,7 +14,6 @@ use dashmap::DashMap;
 use fs_err as fs;
 use join_str::jstr;
 use parking_lot::RwLock;
-use path_slash::PathExt;
 use rayon::prelude::*;
 use roead::yaz0::{compress, decompress};
 use rstb::ResourceSizeTable;
@@ -28,9 +30,10 @@ use crate::{
     settings::{DeployMethod, Platform, Settings},
     util,
 };
+use pending_log::PendingLog;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-struct PendingLog {
+struct OldPendingLog {
     files:  Manifest,
     delete: Manifest,
 }
@@ -39,8 +42,9 @@ struct PendingLog {
 pub struct Manager {
     settings: Weak<RwLock<Settings>>,
     mod_manager: Weak<RwLock<mods::Manager>>,
-    pending_files: RwLock<Manifest>,
-    pending_delete: RwLock<Manifest>,
+    pending_log: RwLock<PendingLog>,
+    //pending_files: RwLock<Manifest>,
+    //pending_delete: RwLock<Manifest>,
 }
 
 impl Manager {
@@ -54,12 +58,12 @@ impl Manager {
         mod_manager: &Arc<RwLock<mods::Manager>>,
     ) -> Result<Self> {
         log::info!("Initializing deployment manager");
-        let pending = match fs::read_to_string(Self::log_path(&settings.read()))
-            .map_err(anyhow_ext::Error::from)
-            .and_then(|text| Ok(serde_yaml::from_str::<PendingLog>(&text)?))
+        let pending_text = fs::read_to_string(Self::log_path(&settings.read()))
+            .map_err(anyhow_ext::Error::from)?;
+        let pending = match serde_yaml::from_str::<PendingLog>(&pending_text)
         {
             Ok(log) => {
-                if !log.files.is_empty() || !log.delete.is_empty() {
+                if log.has_some() {
                     log::info!("Pending deployment data found");
                     log::debug!("{:#?}", &log);
                 } else {
@@ -67,112 +71,74 @@ impl Manager {
                 }
                 log
             }
-            Err(e) => {
-                log::warn!("Could not load pending deployment data:\n{}", &e);
-                log::info!("No files pending deployment");
-                Default::default()
+            Err(_) => {
+                let old_pending = match fs::read_to_string(
+                    &Self::log_path(&settings.read())
+                )
+                    .map_err(anyhow_ext::Error::from)
+                    .and_then(|text| Ok(serde_yaml::from_str::<OldPendingLog>(&text)?))
+                {
+                    Ok(old_log) => {
+                        if !old_log.files.is_empty() || !old_log.delete.is_empty() {
+                            log::info!("Pending deployment data found");
+                            log::debug!("{:#?}", &old_log);
+                        } else {
+                            log::info!("No files pending deployment");
+                        }
+                        old_log
+                    }
+                    Err(e) => {
+                        log::warn!("Could not load pending deployment data:\n{}", &e);
+                        log::info!("No files pending deployment");
+                        Default::default()
+                    }
+                };
+                old_pending.try_into()?
             }
         };
         Ok(Self {
             settings: Arc::downgrade(settings),
             mod_manager: Arc::downgrade(mod_manager),
-            pending_files: RwLock::new(pending.files),
-            pending_delete: RwLock::new(pending.delete),
+            pending_log: RwLock::new(pending),
         })
     }
 
     #[inline]
     pub fn pending(&self) -> bool {
-        !(self.pending_delete.read().is_empty() && self.pending_files.read().is_empty())
+        self.pending_log.read().has_some()
     }
 
     #[inline]
     pub fn pending_len(&self) -> usize {
-        let dels = self.pending_delete.read();
-        let files = self.pending_files.read();
-        dels.content_files.len()
-            + dels.aoc_files.len()
-            + files.content_files.len()
-            + files.aoc_files.len()
+        self.pending_log.read().len()
     }
 
     pub fn reset_pending(&self) -> Result<()> {
-        self.pending_delete.write().clear();
-        self.pending_files.write().clear();
+        self.pending_log.write().clear();
         let settings = self
             .settings
             .upgrade()
             .expect("YIKES the settings manager is gone");
         let settings = settings.read();
         let source = settings.merged_dir();
+        let (content, aoc) = platform_prefixes(settings.current_mode.into());
         let config = settings
             .platform_config()
             .and_then(|c| c.deploy_config.as_ref())
             .context("No deployment config for current platform")?;
-        let dest = &config.output;
-        let (content, aoc) = platform_prefixes(settings.current_mode.into());
+        let (dest_content, dest_aoc) = config.final_output_paths(settings.current_mode.into());
 
-        let collect_files = |root: &str| -> BTreeSet<String> {
-            let source = source.join(root);
-            let dest = dest.join(root);
-            jwalk::WalkDir::new(&source)
-                .into_iter()
-                .filter_map(|file| {
-                    file.ok().and_then(|file| {
-                        file.metadata().ok().and_then(|meta| {
-                            let path = file.path();
-                            let rel = path.strip_prefix(&source).unwrap();
-                            let dest = dest.join(rel);
-                            if !source.is_dir() && (!dest.exists()
-                                || dest.metadata().ok()?.modified().ok()? < meta.modified().ok()?)
-                            {
-                                Some(rel.to_slash_lossy().into())
-                            } else {
-                                None
-                            }
-                        })
-                    })
-                })
-                .collect()
-        };
-
-        *self.pending_files.write() = Manifest {
-            content_files: collect_files(content),
-            aoc_files:     collect_files(aoc),
-        };
-
-        let collect_deletes = |root: &str| -> BTreeSet<String> {
-            let source = source.join(root);
-            let dest = dest.join(root);
-            jwalk::WalkDir::new(&source)
-                .into_iter()
-                .filter_map(|file| {
-                    file.ok().and_then(|file| {
-                        let path = file.path();
-                        let rel = path.strip_prefix(&source).unwrap();
-                        let dest = dest.join(rel);
-                        (dest.exists() && !source.is_dir() && !path.exists())
-                            .then_some(rel.to_slash_lossy().into())
-                    })
-                })
-                .collect()
-        };
-
-        *self.pending_delete.write() = Manifest {
-            content_files: collect_deletes(content),
-            aoc_files:     collect_deletes(aoc),
-        };
+        *self.pending_log.write() = PendingLog::try_from((
+            source.join(content), source.join(aoc), dest_content, dest_aoc
+        ))?;
 
         Ok(())
     }
 
-    fn save(&self) -> Result<()> {
+    pub fn save(&self) -> Result<()> {
         fs::write(
             Self::log_path(&self.settings.upgrade().unwrap().read()),
-            serde_yaml::to_string(&PendingLog {
-                delete: self.pending_delete.read().clone(),
-                files:  self.pending_files.read().clone(),
-            })?,
+            serde_yaml::to_string(&self.pending_log.read().clone())?,
         )?;
         Ok(())
     }
@@ -253,40 +219,24 @@ impl Manager {
                 util::remove_symlink(&dest_content)
                     .context("Failed to remove symlink to old symlinked content")?;
             }
-            if util::is_symlink(&dest_aoc) {
+            if settings.current_mode == Platform::Switch && util::is_symlink(&dest_aoc) {
                 util::remove_symlink(&dest_aoc)
                     .context("Failed to remove symlink to old symlinked dlc")?;
             }
-            if dest_content.exists() {
-                util::remove_dir_all(&dest_content)
-                    .context("Failed to remove old content folder")?;
+            else if settings.current_mode == Platform::WiiU &&
+                util::is_symlink(&dest_aoc.parent().unwrap()) {
+                util::remove_symlink(&dest_aoc.parent().unwrap())
+                    .context("Failed to remove symlink to old symlinked dlc")?;
             }
-            if dest_aoc.exists() {
-                util::remove_dir_all(&dest_aoc)
-                    .context("Failed to remove old dlc folder")?;
+            if !dest_content.exists() {
+                std::fs::create_dir_all(&dest_content)?;
             }
-            match config.method {
-                DeployMethod::Copy => {
-                    log::info!("Deploying by copy");
-                    util::copy_dir(&src_content, &dest_content)
-                        .context("Failed to copy content folder")?;
-                    util::copy_dir(&src_aoc, &dest_aoc)
-                        .context("Failed to copy dlc folder")?;
-                },
-                DeployMethod::HardLink => {
-                    log::info!("Deploying by hard links");
-                    util::hardlink_dir(&src_content, &dest_content)
-                        .context("Failed to copy content folder")?;
-                    util::hardlink_dir(&src_aoc, &dest_aoc)
-                        .context("Failed to copy dlc folder")?;
-                },
-                DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
-            };
-            /*
-            let deletes = self.pending_delete.read();
-            log::debug!("Deployed files to delete:\n{:#?}", &deletes);
-            let syncs = self.pending_files.read();
-            log::debug!("Files to deploy\n{:#?}", &syncs);
+            if !dest_aoc.exists() {
+                std::fs::create_dir_all(&dest_aoc)?;
+            }
+
+            let log = self.pending_log.read();
+            log::debug!("Pending log:\n{:#?}", &log);
             log::info!("Deploying by {}", match config.method {
                 DeployMethod::Copy => "copy",
                 DeployMethod::HardLink => "hard links",
@@ -294,63 +244,22 @@ impl Manager {
             });
             log::info!("Deploy layout: {}", config.layout.name());
 
-            let filter_xbootup = |file: &&String| -> bool {
-                !file.starts_with("Pack/Bootup_") || **file == lang.bootup_path()
-            };
+            log.content_deletes.delete(&dest_content)?;
+            log.aoc_deletes.delete(&dest_aoc)?;
 
-            for (source, dest,  dels, syncs) in [
-                (src_content, dest_content.clone(), &deletes.content_files, &syncs.content_files),
-                (src_aoc, dest_aoc, &deletes.aoc_files, &syncs.aoc_files),
-            ] {
-                dels.par_iter()
-                    .filter(filter_xbootup)
-                    .try_for_each(|f| -> Result<()> {
-                        let file = dest.join(f.as_str());
-                        if file.exists() {
-                            fs::remove_file(file)?;
-                        }
-                        Ok(())
-                    })?;
-
-                syncs.par_iter().filter(filter_xbootup).try_for_each(
-                    |f: &String| -> Result<()> {
-                        let from = source.join(f.as_str());
-                        let out = dest.join(f.as_str());
-                        if out.exists() {
-                            fs::remove_file(&out)?;
-                        }
-                        if from.exists() {
-                            out.parent().map(fs::create_dir_all).transpose()?;
-                            match config.method {
-                                DeployMethod::Copy => fs::copy(from, &out).map(|_| ()),
-                                DeployMethod::HardLink => fs::hard_link(from, &out),
-                                DeployMethod::Symlink => unreachable!(),
-                            }
-                            .with_context(|| format!("Failed to deploy {} to {}", f, out.display()))
-                            .map_err(|e| {
-                                if e.root_cause().to_string().contains("os error 17") {
-                                    e.context(
-                                        "Hard linking failed because the output folder is on a \
-                                         different disk or partition than the storage folder.",
-                                    )
-                                } else {
-                                    e
-                                }
-                            })?;
-                            Ok(())
-                        } else {
-                            log::warn!(
-                                "Source file {} missing, we're assuming it was a deletion lost \
-                                 track of",
-                                from.display()
-                            );
-                            Ok(())
-                        }
-                    },
-                )?;
+            match config.method {
+                DeployMethod::Copy => {
+                    log.content_copies.copy(&src_content, &dest_content)?;
+                    log.aoc_copies.copy(&src_aoc, &dest_aoc)?;
+                },
+                DeployMethod::HardLink => {
+                    log.content_copies.hard_link(&src_content, &dest_content)?;
+                    log.aoc_copies.hard_link(&src_aoc, &dest_aoc)?;
+                },
+                DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
             }
+
             log::info!("Deployment complete");
-             */
         }
         let rules_path = dest_content.parent().unwrap().join("rules.txt");
         if settings.current_mode == Platform::WiiU
@@ -362,8 +271,7 @@ impl Manager {
         {
             fs::write(rules_path, include_str!("../../../assets/rules.txt"))?;
         }
-        self.pending_delete.write().clear();
-        self.pending_files.write().clear();
+        self.pending_log.write().clear();
         self.save()?;
         Ok(())
     }
@@ -400,9 +308,11 @@ impl Manager {
             .content_files
             .retain(|f| !orphans_content.contains(f));
         manifest.aoc_files.retain(|f| !orphans_aoc.contains(f));
-        let mut dels = self.pending_delete.write();
-        dels.content_files.extend(orphans_content.iter().cloned());
-        dels.aoc_files.extend(orphans_aoc.iter().cloned());
+        let mut log = self.pending_log.write();
+        log.extend_deletes(&Manifest {
+            content_files: orphans_content.iter().map(|s| s.clone()).collect(),
+            aoc_files: orphans_aoc.iter().map(|s| s.clone()).collect(),
+        })?;
         let (content, dlc) = platform_prefixes(platform.into());
         for (dir, orphans) in [(content, orphans_content), (dlc, orphans_aoc)] {
             let out_dir = out_dir.join(dir);
@@ -463,10 +373,7 @@ impl Manager {
         fs::create_dir_all(table_path.parent().unwrap())?;
         fs::write(table_path, compress(table.to_binary(platform.into())))
             .context("Failed to write merged RSTB")?;
-        self.pending_files
-            .write()
-            .content_files
-            .insert(RSTB_PATH.into());
+        self.pending_log.write().add_rstb()?;
         Ok(())
     }
 
@@ -505,7 +412,7 @@ impl Manager {
                 settings.current_mode,
             )?;
             log::debug!("Change manifest: {:#?}", &manifest);
-            self.pending_files.write().extend(&manifest);
+            self.pending_log.write().extend_copies(&manifest)?;
             ModUnpacker::new(
                 dump,
                 endian,
@@ -527,7 +434,7 @@ impl Manager {
                 })
                 .collect::<Result<Vec<_>>>()?;
             util::remove_dir_all(&out_dir).context("Failed to clear merged folder")?;
-            self.pending_files.write().extend(&total_manifest);
+            self.pending_log.write().extend_copies(&total_manifest)?;
             ModUnpacker::new(
                 dump,
                 endian,
