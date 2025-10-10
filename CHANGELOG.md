@@ -59,6 +59,7 @@ be obvious from the Info tab.
   Fixes various merge errors in BoneControl, ActorLink, and other files
 - Fixes a rare error where some files with no header in their format would be
   recognized as byml files instead of binary
+- Fixed various deployment errors, reimplemented partial deployment
 
 ## [0.16.0] - 2025-01-27
 
