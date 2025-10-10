@@ -109,7 +109,7 @@ pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
                 })
                 .chain(
                     base.keys()
-                        .filter(|&key| (!other.contains_key(key)))
+                        .filter(|&key| !other.contains_key(key))
                         .map(|key| (key.clone(), Byml::Null)),
                 )
                 .collect(),
@@ -141,7 +141,7 @@ pub fn simple_index_diff<T: Clone + PartialEq>(
 ) -> BTreeMap<usize, T> {
     other
         .iter()
-        .filter(|&(i, other_item)| (base.get(i) != Some(other_item)))
+        .filter(|&(i, other_item)| base.get(i) != Some(other_item))
         .map(|(i, other_item)| (*i, other_item.clone()))
         .collect()
 }

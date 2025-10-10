@@ -1,7 +1,5 @@
 use std::{borrow::Borrow, collections::BTreeMap, hash::Hash, vec};
 
-use itertools::Itertools;
-
 use crate::prelude::Mergeable;
 
 pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
@@ -69,8 +67,8 @@ impl<T: Clone + PartialEq> PartialEq for DeleteVec<T> {
 }
 
 impl<T: Clone + PartialEq> IntoIterator for DeleteVec<T> {
-    type IntoIter = DeleteIterator<vec::IntoIter<(T, bool)>, T>;
     type Item = T;
+    type IntoIter = DeleteIterator<vec::IntoIter<(T, bool)>, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         DeleteIterator {
@@ -154,7 +152,7 @@ impl<T: Clone + PartialEq> Mergeable for DeleteVec<T> {
             .map(|it| (it.clone(), false))
             .chain(
                 self.iter()
-                    .filter(|&it| (!other.contains(it)))
+                    .filter(|&it| !other.contains(it))
                     .map(|it| (it.clone(), true)),
             )
             .collect()
@@ -180,8 +178,8 @@ impl<T: Clone + PartialEq> Mergeable for DeleteVec<T> {
 pub struct DeleteSet<T: DeleteKey>(IndexMap<T, bool>);
 
 impl<T: DeleteKey> IntoIterator for DeleteSet<T> {
-    type IntoIter = DeleteIterator<indexmap::map::IntoIter<T, bool>, T>;
     type Item = T;
+    type IntoIter = DeleteIterator<indexmap::map::IntoIter<T, bool>, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         DeleteIterator {
@@ -289,7 +287,7 @@ impl<T: DeleteKey> Mergeable for DeleteSet<T> {
             .map(|it| (it.clone(), false))
             .chain(
                 self.iter()
-                    .filter(|&it| (!other.contains(it)))
+                    .filter(|&it| !other.contains(it))
                     .map(|it| (it.clone(), true)),
             )
             .collect()
@@ -308,8 +306,8 @@ impl<T: DeleteKey> Mergeable for DeleteSet<T> {
 pub struct SortedDeleteSet<T: DeleteKey + Ord>(BTreeMap<T, bool>);
 
 impl<T: DeleteKey + Ord> IntoIterator for SortedDeleteSet<T> {
-    type IntoIter = DeleteIterator<std::collections::btree_map::IntoIter<T, bool>, T>;
     type Item = T;
+    type IntoIter = DeleteIterator<std::collections::btree_map::IntoIter<T, bool>, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         DeleteIterator {
@@ -409,7 +407,7 @@ impl<T: DeleteKey + Ord> Mergeable for SortedDeleteSet<T> {
             .map(|it| (it.clone(), false))
             .chain(
                 self.iter()
-                    .filter(|&it| (!other.contains(it)))
+                    .filter(|&it| !other.contains(it))
                     .map(|it| (it.clone(), true)),
             )
             .collect()

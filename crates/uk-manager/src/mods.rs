@@ -165,20 +165,20 @@ impl Clone for Profile {
 }
 
 impl Profile {
-    pub fn mods(&self) -> RwLockReadGuard<HashMap<usize, Mod>> {
+    pub fn mods(&self) -> RwLockReadGuard<'_, HashMap<usize, Mod>> {
         self.mods.read()
     }
 
-    pub fn mods_mut(&self) -> RwLockWriteGuard<HashMap<usize, Mod>> {
+    pub fn mods_mut(&self) -> RwLockWriteGuard<'_, HashMap<usize, Mod>> {
         self.mods.write()
     }
 
     #[allow(unused)]
-    pub fn load_order(&self) -> RwLockReadGuard<Vec<usize>> {
+    pub fn load_order(&self) -> RwLockReadGuard<'_, Vec<usize>> {
         self.load_order.read()
     }
 
-    pub fn load_order_mut(&self) -> RwLockWriteGuard<Vec<usize>> {
+    pub fn load_order_mut(&self) -> RwLockWriteGuard<'_, Vec<usize>> {
         self.load_order.write()
     }
 

@@ -420,7 +420,7 @@ impl<'a> Parser<'a> {
                     .enumerate()
                     .map(|(i, v)| (i + self.action_offset, v, Category::Action)),
             )
-            .filter(|&(i, ..)| (!children.contains(&i)))
+            .filter(|&(i, ..)| !children.contains(&i))
             .map(|(_, list, category)| {
                 let entry = self.entry_from_list(list, category)?;
                 Ok((
@@ -517,7 +517,7 @@ impl Writer {
             } = entry;
             let mut list = ParameterList::new();
             if let Some(n) = def.name.as_ref() {
-                roead::aamp::get_default_name_table().add_name(n.to_string())
+                get_default_name_table().add_name(n.to_string())
             }
             list.set_object("Def", def.clone().into());
             if children.is_some() {
@@ -612,7 +612,7 @@ impl Writer {
         for root in roots.into_values() {
             self.entry_to_list(root);
         }
-        let name_table = roead::aamp::get_default_name_table();
+        let name_table = get_default_name_table();
         let demos = demos
             .into_iter()
             .map(|(k, entry)| (k, Parameter::I32(self.entry_to_list(entry) as i32)))
@@ -663,7 +663,7 @@ impl Mergeable for AIProgram {
             behaviors: other
                 .behaviors
                 .iter()
-                .filter(|&(k, v)| (Some(v) != self.behaviors.get(k)))
+                .filter(|&(k, v)| Some(v) != self.behaviors.get(k))
                 .map(|(k, v)| (*k, v.clone()))
                 .collect(),
             queries:   other
