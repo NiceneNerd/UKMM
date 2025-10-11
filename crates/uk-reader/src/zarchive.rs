@@ -223,7 +223,7 @@ mod tests {
         }
         assert_eq!(
             "0.9.0".to_string(),
-            String::from_utf8(arch.get_update_file_data("System/Version.txt".as_ref()).unwrap()).unwrap()
+            String::from_utf8(arch.get_base_file_data("System/Version.txt".as_ref()).unwrap()).unwrap()
         );
     }
 }
