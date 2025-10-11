@@ -693,12 +693,12 @@ impl MergeableResource {
     }
 }
 
-fn as_u16_be(array: &[u8; 2]) -> u16 {
-    ((array[2] as u16) <<  8) +
-    ((array[3] as u16) <<  0)
+fn as_u16_be(array: &[u8]) -> u16 {
+    ((array[1] as u16) <<  0) +
+    ((array[0] as u16) <<  8)
 }
 
-fn as_u16_le(array: &[u8; 2]) -> u16 {
+fn as_u16_le(array: &[u8]) -> u16 {
     ((array[0] as u16) <<  0) +
     ((array[1] as u16) <<  8)
 }
