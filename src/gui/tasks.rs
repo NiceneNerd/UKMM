@@ -360,7 +360,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                     .join("mlc01")
                     .exists_then()
                 {
-                    path
+                    Some(path)
                 } else {
                     path.join("mlc01").exists_then()
                 }
