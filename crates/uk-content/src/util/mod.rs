@@ -334,7 +334,7 @@ impl<'a, I> NamedEnumerate<'a, I> {
             count: 0,
             name,
             buffer: {
-                let mut vec = Vec::with_capacity(name.len() + 4);
+                let mut vec = Vec::with_capacity(name.len() + 5);
                 vec.extend(name.as_bytes());
                 vec
             },
@@ -345,7 +345,7 @@ impl<'a, I> NamedEnumerate<'a, I> {
     pub fn with_padding<const N: usize>(mut self) -> Self {
         self.padding = Some((
             unsafe { std::str::from_utf8_unchecked(&[b'0'; N]) },
-            Vec::with_capacity(N),
+            Vec::with_capacity(5),
         ));
         self
     }
@@ -372,10 +372,10 @@ where
         self.count += 1;
         let name_len = self.name.len();
         let name = unsafe {
-            self.buffer.set_len(u16::MAX as usize);
+            self.buffer.set_len(self.buffer.capacity());
             let written_len = {
                 let write_buffer = if let Some((_, ref mut buffer)) = self.padding {
-                    buffer.set_len(u16::MAX as usize);
+                    buffer.set_len(buffer.capacity());
                     buffer.as_mut_slice()
                 } else {
                     &mut self.buffer[name_len..]
