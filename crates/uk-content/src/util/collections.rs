@@ -295,6 +295,7 @@ impl<T: DeleteKey> Mergeable for DeleteSet<T> {
 
     fn merge(&self, diff: &Self) -> Self {
         self.iter()
+            .filter(|it| !diff.contains(*it))
             .chain(diff.iter())
             .cloned()
             .collect::<Self>()
