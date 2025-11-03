@@ -33,6 +33,11 @@ fn main() -> Result<()> {
         AttachConsole(-1);
     }
 
+    // I don't know why I need this and I hate it.
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .unwrap();
+
     match Ukmm::from_env() {
         Ok(command) => {
             cli::Runner::new(command).run()?;
@@ -54,10 +59,6 @@ fn main() -> Result<()> {
                     }
                 }
                 gui::tasks::wait_ipc();
-                // I don't know why I need this and I hate it.
-                rustls::crypto::aws_lc_rs::default_provider()
-                    .install_default()
-                    .unwrap();
                 if let Err(e) = std::panic::catch_unwind(gui::main) {
                     let error_msg = format!(
                         "An unrecoverable error occured. Error details: {}",
