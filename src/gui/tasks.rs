@@ -8,6 +8,7 @@ use std::{
 
 use anyhow_ext::{Context, Result};
 use fs_err as fs;
+use http_req::request::RedirectPolicy;
 use join_str::jstr;
 use serde::Deserialize;
 use strfmt::Format;
@@ -949,6 +950,7 @@ pub fn oneclick(url: &str) {
         let msg = http_req::request::Request::new(&url.as_str().try_into().unwrap())
             .method(http_req::request::Method::GET)
             .header("User-Agent", "UKMM")
+            .redirect_policy(RedirectPolicy::Limit(0))
             .send(&mut data)
             .with_context(|| format!("Failed to download mod from {url}"))
             .and_then(|res| {
