@@ -5,12 +5,13 @@ use serde::{Deserialize, Serialize};
 use uk_localization::string_ext::LocString;
 use uk_ui::{
     egui::{self, Button, Key, Ui, Vec2},
-    icons::{get_icon, Icon, IconButtonExt},
+    icons::{Icon, IconButtonExt, get_icon},
 };
 
 use super::{App, FocusedPane, Message};
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(from = "FilePickerStateDe")]
 pub struct FilePickerState {
     pub path: PathBuf,
     pub history: Vec<PathBuf>,
@@ -20,227 +21,23 @@ pub struct FilePickerState {
     pub entries: Vec<PathBuf>,
 }
 
-// Tweak the macro-generated `Deserialize` impl to load file entries afresh
-impl<'de> Deserialize<'de> for FilePickerState {
-    fn deserialize<__D>(__deserializer: __D) -> serde::__private::Result<Self, __D::Error>
-    where
-        __D: serde::Deserializer<'de>,
-    {
-        #[allow(non_camel_case_types)]
-        #[doc(hidden)]
-        enum __Field {
-            __field0,
-            __field1,
-            __field2,
-            __ignore,
+#[derive(Deserialize)]
+struct FilePickerStateDe {
+    pub path: PathBuf,
+    pub history: Vec<PathBuf>,
+    pub path_input: String,
+}
+
+impl From<FilePickerStateDe> for FilePickerState {
+    fn from(de: FilePickerStateDe) -> Self {
+        Self {
+            selected: None,
+            entries:  Self::load_entries(&de.path),
+
+            path: de.path,
+            history: de.history,
+            path_input: de.path_input,
         }
-        #[doc(hidden)]
-        struct __FieldVisitor;
-        impl<'de> serde::de::Visitor<'de> for __FieldVisitor {
-            type Value = __Field;
-
-            fn expecting(
-                &self,
-                __formatter: &mut serde::__private::Formatter,
-            ) -> serde::__private::fmt::Result {
-                serde::__private::Formatter::write_str(__formatter, "field identifier")
-            }
-
-            fn visit_u64<__E>(self, __value: u64) -> serde::__private::Result<Self::Value, __E>
-            where
-                __E: serde::de::Error,
-            {
-                match __value {
-                    0u64 => serde::__private::Ok(__Field::__field0),
-                    1u64 => serde::__private::Ok(__Field::__field1),
-                    2u64 => serde::__private::Ok(__Field::__field2),
-                    _ => serde::__private::Ok(__Field::__ignore),
-                }
-            }
-
-            fn visit_str<__E>(self, __value: &str) -> serde::__private::Result<Self::Value, __E>
-            where
-                __E: serde::de::Error,
-            {
-                match __value {
-                    "path" => serde::__private::Ok(__Field::__field0),
-                    "history" => serde::__private::Ok(__Field::__field1),
-                    "path_input" => serde::__private::Ok(__Field::__field2),
-                    _ => serde::__private::Ok(__Field::__ignore),
-                }
-            }
-
-            fn visit_bytes<__E>(self, __value: &[u8]) -> serde::__private::Result<Self::Value, __E>
-            where
-                __E: serde::de::Error,
-            {
-                match __value {
-                    b"path" => serde::__private::Ok(__Field::__field0),
-                    b"history" => serde::__private::Ok(__Field::__field1),
-                    b"path_input" => serde::__private::Ok(__Field::__field2),
-                    _ => serde::__private::Ok(__Field::__ignore),
-                }
-            }
-        }
-        impl<'de> serde::Deserialize<'de> for __Field {
-            #[inline]
-            fn deserialize<__D>(__deserializer: __D) -> serde::__private::Result<Self, __D::Error>
-            where
-                __D: serde::Deserializer<'de>,
-            {
-                serde::Deserializer::deserialize_identifier(__deserializer, __FieldVisitor)
-            }
-        }
-        #[doc(hidden)]
-        struct __Visitor<'de> {
-            marker:   serde::__private::PhantomData<FilePickerState>,
-            lifetime: serde::__private::PhantomData<&'de ()>,
-        }
-        impl<'de> serde::de::Visitor<'de> for __Visitor<'de> {
-            type Value = FilePickerState;
-
-            fn expecting(
-                &self,
-                __formatter: &mut serde::__private::Formatter,
-            ) -> serde::__private::fmt::Result {
-                serde::__private::Formatter::write_str(__formatter, "struct FilePickerState")
-            }
-
-            #[inline]
-            fn visit_seq<__A>(
-                self,
-                mut __seq: __A,
-            ) -> serde::__private::Result<Self::Value, __A::Error>
-            where
-                __A: serde::de::SeqAccess<'de>,
-            {
-                let __field0 = match serde::de::SeqAccess::next_element::<PathBuf>(&mut __seq)? {
-                    serde::__private::Some(__value) => __value,
-                    serde::__private::None => {
-                        return serde::__private::Err(serde::de::Error::invalid_length(
-                            0usize,
-                            &"struct FilePickerState with 3 elements",
-                        ));
-                    }
-                };
-                let __field1 = match serde::de::SeqAccess::next_element::<Vec<PathBuf>>(&mut __seq)?
-                {
-                    serde::__private::Some(__value) => __value,
-                    serde::__private::None => {
-                        return serde::__private::Err(serde::de::Error::invalid_length(
-                            1usize,
-                            &"struct FilePickerState with 3 elements",
-                        ));
-                    }
-                };
-                let __field2 = match serde::de::SeqAccess::next_element::<String>(&mut __seq)? {
-                    serde::__private::Some(__value) => __value,
-                    serde::__private::None => {
-                        return serde::__private::Err(serde::de::Error::invalid_length(
-                            2usize,
-                            &"struct FilePickerState with 3 elements",
-                        ));
-                    }
-                };
-                let __field3 = serde::__private::Default::default();
-                let __field4 = FilePickerState::load_entries(&__field0);
-                serde::__private::Ok(FilePickerState {
-                    path: __field0,
-                    history: __field1,
-                    path_input: __field2,
-                    selected: __field3,
-                    entries: __field4,
-                })
-            }
-
-            #[inline]
-            fn visit_map<__A>(
-                self,
-                mut __map: __A,
-            ) -> serde::__private::Result<Self::Value, __A::Error>
-            where
-                __A: serde::de::MapAccess<'de>,
-            {
-                let mut __field0: serde::__private::Option<PathBuf> = serde::__private::None;
-                let mut __field1: serde::__private::Option<Vec<PathBuf>> = serde::__private::None;
-                let mut __field2: serde::__private::Option<String> = serde::__private::None;
-                while let serde::__private::Some(__key) =
-                    serde::de::MapAccess::next_key::<__Field>(&mut __map)?
-                {
-                    match __key {
-                        __Field::__field0 => {
-                            if serde::__private::Option::is_some(&__field0) {
-                                return serde::__private::Err(
-                                    <__A::Error as serde::de::Error>::duplicate_field("path"),
-                                );
-                            }
-                            __field0 =
-                                serde::__private::Some(
-                                    serde::de::MapAccess::next_value::<PathBuf>(&mut __map)?,
-                                );
-                        }
-                        __Field::__field1 => {
-                            if serde::__private::Option::is_some(&__field1) {
-                                return serde::__private::Err(
-                                    <__A::Error as serde::de::Error>::duplicate_field("history"),
-                                );
-                            }
-                            __field1 = serde::__private::Some(serde::de::MapAccess::next_value::<
-                                Vec<PathBuf>,
-                            >(
-                                &mut __map
-                            )?);
-                        }
-                        __Field::__field2 => {
-                            if serde::__private::Option::is_some(&__field2) {
-                                return serde::__private::Err(
-                                    <__A::Error as serde::de::Error>::duplicate_field("path_input"),
-                                );
-                            }
-                            __field2 =
-                                serde::__private::Some(serde::de::MapAccess::next_value::<String>(
-                                    &mut __map,
-                                )?);
-                        }
-                        _ => {
-                            let _ = serde::de::MapAccess::next_value::<serde::de::IgnoredAny>(
-                                &mut __map,
-                            )?;
-                        }
-                    }
-                }
-                let __field0 = match __field0 {
-                    serde::__private::Some(__field0) => __field0,
-                    serde::__private::None => serde::__private::de::missing_field("path")?,
-                };
-                let __field1 = match __field1 {
-                    serde::__private::Some(__field1) => __field1,
-                    serde::__private::None => serde::__private::de::missing_field("history")?,
-                };
-                let __field2 = match __field2 {
-                    serde::__private::Some(__field2) => __field2,
-                    serde::__private::None => serde::__private::de::missing_field("path_input")?,
-                };
-                serde::__private::Ok(FilePickerState {
-                    entries: FilePickerState::load_entries(&__field0),
-                    path: __field0,
-                    history: __field1,
-                    path_input: __field2,
-                    selected: serde::__private::Default::default(),
-                })
-            }
-        }
-        #[doc(hidden)]
-        const FIELDS: &[&str] = &["path", "history", "path_input"];
-        serde::Deserializer::deserialize_struct(
-            __deserializer,
-            "FilePickerState",
-            FIELDS,
-            __Visitor {
-                marker:   serde::__private::PhantomData::<FilePickerState>,
-                lifetime: serde::__private::PhantomData,
-            },
-        )
     }
 }
 
