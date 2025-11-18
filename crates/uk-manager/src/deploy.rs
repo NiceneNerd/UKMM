@@ -72,11 +72,7 @@ impl Manager {
                 log
             }
             Err(_) => {
-                let old_pending = match fs::read_to_string(
-                    &Self::log_path(&settings.read())
-                )
-                    .map_err(anyhow_ext::Error::from)
-                    .and_then(|text| Ok(serde_yaml::from_str::<OldPendingLog>(&text)?))
+                let old_pending = match serde_yaml::from_str::<OldPendingLog>(&pending_text)
                 {
                     Ok(old_log) => {
                         if !old_log.files.is_empty() || !old_log.delete.is_empty() {
