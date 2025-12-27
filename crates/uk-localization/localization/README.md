@@ -23,6 +23,8 @@ of the localization key "Generic\_Yes" would be replaced with "Sí" and all usag
 would be replaced with "No" - their corresponding values in the `en.json` would be "Yes" and "No",
 obviously.
 
+Any keys missing from a language localization file will have the value pulled from English instead.
+
 ## Key Usage
 
 Each key is used in one or more specific places in the application. Those places are, as best as can
@@ -400,4 +402,12 @@ Short message shown in the changelog window
 
 ```
 Update_Available: The text inside the changelog window, informing the user an update is available 
+```
+
+#### Errors
+
+Messages shown when there are certain errors
+
+```
+To Be Completed
 ```

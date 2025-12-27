@@ -10,14 +10,14 @@ use font_loader::system_fonts::FontPropertyBuilder;
 use include_flate::flate;
 pub use paths::PathNode;
 
-flate!(static NOTOSANS_REG: [u8] from "../../fonts/NotoSans-Regular.ttf");
-flate!(static NOTOSANS_BOLD: [u8] from "../../fonts/NotoSans-Bold.ttf");
-flate!(static NOTOSANSJP_REG: [u8] from "../../fonts/NotoSansJP-Regular.ttf");
-flate!(static NOTOSANSJP_BOLD: [u8] from "../../fonts/NotoSansJP-Bold.ttf");
-flate!(static NOTOSANSKR_REG: [u8] from "../../fonts/NotoSansKR-Regular.ttf");
-flate!(static NOTOSANSKR_BOLD: [u8] from "../../fonts/NotoSansKR-Bold.ttf");
-flate!(static NOTOSANSSC_REG: [u8] from "../../fonts/NotoSansSC-Regular.ttf");
-flate!(static NOTOSANSSC_BOLD: [u8] from "../../fonts/NotoSansSC-Bold.ttf");
+flate!(static NOTOSANS_REG: [u8] from "fonts/NotoSans-Regular.ttf");
+flate!(static NOTOSANS_BOLD: [u8] from "fonts/NotoSans-Bold.ttf");
+flate!(static NOTOSANSJP_REG: [u8] from "fonts/NotoSansJP-Regular.ttf");
+flate!(static NOTOSANSJP_BOLD: [u8] from "fonts/NotoSansJP-Bold.ttf");
+flate!(static NOTOSANSKR_REG: [u8] from "fonts/NotoSansKR-Regular.ttf");
+flate!(static NOTOSANSKR_BOLD: [u8] from "fonts/NotoSansKR-Bold.ttf");
+flate!(static NOTOSANSSC_REG: [u8] from "fonts/NotoSansSC-Regular.ttf");
+flate!(static NOTOSANSSC_BOLD: [u8] from "fonts/NotoSansSC-Bold.ttf");
 
 pub fn load_fonts(context: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();

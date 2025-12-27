@@ -2,12 +2,13 @@ use std::path::{Path, PathBuf};
 
 use fs_err as fs;
 use serde::{Deserialize, Serialize};
+use uk_localization::string_ext::LocString;
 use uk_ui::{
     egui::{self, Button, Key, Ui, Vec2},
     icons::{get_icon, Icon, IconButtonExt},
 };
 
-use super::{App, FocusedPane, Message, LOCALIZATION};
+use super::{App, FocusedPane, Message};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct FilePickerState {
@@ -315,28 +316,27 @@ impl FilePickerState {
 
 impl App {
     pub fn render_file_picker(&mut self, ui: &mut Ui) {
-        let loc = LOCALIZATION.read();
         egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
             ui.horizontal(|ui| {
                 for (icon, tooltip, cb) in [
                     (
                         Icon::FolderOpen,
-                        loc.get("Menu_File_Open"),
+                        "Menu_File_Open".localize(),
                         Box::new(|| self.do_update(Message::SelectFile)) as Box<dyn FnOnce()>,
                     ),
                     (
                         Icon::ArrowUp,
-                        loc.get("FilePicker_Up"),
+                        "FilePicker_Up".localize(),
                         Box::new(|| self.do_update(Message::FilePickerUp)) as Box<dyn FnOnce()>,
                     ),
                     (
                         Icon::ArrowBack,
-                        loc.get("FilePicker_Back"),
+                        "FilePicker_Back".localize(),
                         Box::new(|| self.do_update(Message::FilePickerBack)) as Box<dyn FnOnce()>,
                     ),
                     (
                         Icon::Refresh,
-                        loc.get("FilePicker_Refresh"),
+                        "FilePicker_Refresh".localize(),
                         Box::new(|| {
                             self.do_update(Message::FilePickerSet(Some(
                                 self.picker_state.path.clone(),

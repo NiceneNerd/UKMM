@@ -19,7 +19,7 @@ use std::{
     ops::DerefMut,
     path::PathBuf,
     rc::Rc,
-    sync::{Arc, LazyLock},
+    sync::Arc,
     thread,
     time::Duration,
 };
@@ -40,9 +40,9 @@ use picker::FilePickerState;
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 use uk_content::util::HashMap;
+use uk_localization::*;
 use uk_manager::{
     core::Manager,
-    localization::*,
     mods::{LookupMod, Mod},
     settings::{Platform, Settings},
 };
@@ -61,8 +61,6 @@ use uk_util::OptionResultExt;
 
 use self::{package::ModPackerBuilder, tasks::VersionResponse};
 use crate::gui::modals::MetaInputModal;
-
-pub static LOCALIZATION: LazyLock<RwLock<Localization>> = std::sync::LazyLock::new(|| Localization::from(LocLang::English).into());
 
 pub trait Component {
     type Message;

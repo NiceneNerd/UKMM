@@ -20,7 +20,7 @@ pub const GREEN: Color32 = hex_color!("#528f24");
 pub const BLUE: Color32 = hex_color!("#38b6f1");
 pub const RED: Color32 = hex_color!("#F52331");
 pub const YELLOW: Color32 = hex_color!("#ffbc28");
-pub const ORGANGE: Color32 = hex_color!("#ff953f");
+pub const ORANGE: Color32 = hex_color!("#ff953f");
 
 #[inline(always)]
 pub fn error_bg(visuals: &Visuals) -> Color32 {
@@ -208,7 +208,7 @@ impl Theme {
                         faint_bg_color: hex_color!("#252729"),
                         extreme_bg_color: hex_color!("#030a0e"), // e.g. TextEdit background
                         code_bg_color: Color32::from_gray(32),
-                        warn_fg_color: ORGANGE, // orange
+                        warn_fg_color: ORANGE, // orange
                         error_fg_color: RED,    // red
                         window_rounding: Rounding::same(4.0),
                         window_shadow: Shadow {

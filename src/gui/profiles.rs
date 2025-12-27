@@ -4,13 +4,14 @@ use fs_err as fs;
 use smartstring::alias::String as SmartString;
 use strfmt::Format;
 use uk_content::util::{HashMap, HashSet};
+use uk_localization::string_ext::LocString;
 use uk_manager::mods::Profile as ProfileData;
 use uk_ui::{
     egui::{self, text::LayoutJob, Layout, TextStyle},
     icons::IconButtonExt,
 };
 
-use super::{App, Message, LOCALIZATION};
+use super::{App, Message};
 
 #[derive(Debug, Default)]
 pub struct ProfileManagerState {
@@ -57,7 +58,6 @@ impl ProfileManagerState {
     }
 
     fn render_selected_profile(&mut self, app: &App, ui: &mut egui::Ui) {
-        let loc = LOCALIZATION.read();
         let name = self
             .selected
             .as_ref()
@@ -92,7 +92,7 @@ impl ProfileManagerState {
                                     });
                             } else {
                                 ui.centered_and_justified(|ui| {
-                                    ui.label(loc.get("Profile_NoMods"));
+                                    ui.label("Profile_NoMods".localize());
                                 });
                             }
                             let available = ui.available_size();
@@ -104,7 +104,7 @@ impl ProfileManagerState {
                             ui.text_edit_singleline(new_name);
                             if ui
                                 .icon_button(uk_ui::icons::Icon::Check)
-                                .on_hover_text(loc.get("Generic_Save"))
+                                .on_hover_text("Generic_Save".localize())
                                 .clicked()
                             {
                                 app.do_update(Message::RenameProfile(
@@ -116,14 +116,14 @@ impl ProfileManagerState {
                     }
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
-                        if ui.button(loc.get("Profile_Rename")).clicked() {
+                        if ui.button("Profile_Rename".localize()).clicked() {
                             self.rename = Some(name.to_string());
                         }
-                        if ui.button(loc.get("Profile_Duplicate")).clicked() {
+                        if ui.button("Profile_Duplicate".localize()).clicked() {
                             app.do_update(Message::DuplicateProfile(name.to_string()));
                         }
-                        if ui.button(loc.get("Generic_Delete")).clicked() {
-                            let message = loc.get("Profile_Delete_Confirmation");
+                        if ui.button("Generic_Delete".localize()).clicked() {
+                            let message = "Profile_Delete_Confirmation".localize();
                             let vars = std::collections::HashMap::from(
                                 [("profile_name".to_string(), name.to_string())]
                             );
@@ -142,9 +142,8 @@ impl ProfileManagerState {
     }
 
     pub fn render(&mut self, app: &App, ctx: &egui::Context) {
-        let loc = LOCALIZATION.read();
         if self.show {
-            egui::Window::new(loc.get("Profile_Label"))
+            egui::Window::new("Profile_Label".localize())
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
                 .resizable(true)
                 .default_size([320.0, 240.0])
@@ -192,7 +191,7 @@ impl ProfileManagerState {
                     ui.add_space(4.0);
                     ui.horizontal(|ui| {
                         ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button(loc.get("Generic_Close")).clicked() {
+                            if ui.button("Generic_Close".localize()).clicked() {
                                 app.do_update(Message::CloseProfiles);
                             }
                         });

@@ -1,4 +1,5 @@
 #![allow(unstable_name_collisions)]
+use uk_localization::string_ext::LocString;
 use std::{
     ops::Deref,
     path::{Path, PathBuf},
@@ -10,7 +11,8 @@ use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
 use uk_content::{constants::Language, prelude::Endian};
-use uk_manager::{localization::LocLang, settings::{DeployConfig, Platform, PlatformSettings}};
+use uk_localization::LocLang;
+use uk_manager::{settings::{DeployConfig, Platform, PlatformSettings}};
 use uk_reader::ResourceReader;
 use uk_ui::{
     egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
@@ -20,7 +22,7 @@ use uk_ui::{
 };
 use uk_util::OptionResultExt;
 
-use super::{App, Message, LOCALIZATION};
+use super::{App, Message};
 
 fn render_setting<R>(
     name: &str,
@@ -193,14 +195,13 @@ pub static CONFIG: LazyLock<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
     LazyLock::new(|| RwLock::new(Default::default()));
 
 fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut Ui) -> bool {
-    let loc = LOCALIZATION.read();
-    ui.label(loc.get("Settings_Platform_Deploy"));
+    ui.label("Settings_Platform_Deploy".localize());
     let mut changed = false;
     ui.group(|ui| {
         let width = ui.available_width().max(0.0);
         ui.allocate_space([width, 0.0].into());
-        let mut name = loc.get("Settings_Platform_Deploy_Method");
-        let mut description = loc.get("Settings_Platform_Deploy_Method_Desc");
+        let mut name = "Settings_Platform_Deploy_Method".localize();
+        let mut description = "Settings_Platform_Deploy_Method_Desc".localize();
         render_setting(
             &name,
             &description,
@@ -210,29 +211,29 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                     .radio_value(
                         &mut config.method,
                         uk_manager::settings::DeployMethod::Copy,
-                        loc.get("Settings_Platform_Deploy_Method_Copy"),
+                        "Settings_Platform_Deploy_Method_Copy".localize(),
                     )
                     .changed();
                 changed |= ui
                     .radio_value(
                         &mut config.method,
                         uk_manager::settings::DeployMethod::HardLink,
-                        loc.get("Settings_Platform_Deploy_Method_HardLink"),
+                        "Settings_Platform_Deploy_Method_HardLink".localize(),
                     )
                     .changed();
                 changed |= ui
                     .radio_value(
                         &mut config.method,
                         uk_manager::settings::DeployMethod::Symlink,
-                        loc.get("Settings_Platform_Deploy_Method_Symlink"),
+                        "Settings_Platform_Deploy_Method_Symlink".localize(),
                     )
                     .changed();
             },
         );
-        name = loc.get("Settings_Platform_Deploy_Layout");
+        name = "Settings_Platform_Deploy_Layout".localize();
         description = match platform {
-            Platform::WiiU => loc.get("Settings_Platform_Deploy_Layout_WiiU_Desc"),
-            Platform::Switch => loc.get("Settings_Platform_Deploy_Layout_NX_Desc"),
+            Platform::WiiU => "Settings_Platform_Deploy_Layout_WiiU_Desc".localize(),
+            Platform::Switch => "Settings_Platform_Deploy_Layout_NX_Desc".localize(),
         };
         render_setting(
             &name,
@@ -245,9 +246,9 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                         uk_manager::settings::DeployLayout::WithoutName,
                         match platform {
                             Platform::WiiU =>
-                                loc.get("Settings_Platform_Deploy_Layout_WiiU_WithoutName"),
+                                "Settings_Platform_Deploy_Layout_WiiU_WithoutName".localize(),
                             Platform::Switch =>
-                                loc.get("Settings_Platform_Deploy_Layout_NX_WithoutName"),
+                                "Settings_Platform_Deploy_Layout_NX_WithoutName".localize(),
                         },
                     )
                     .changed();
@@ -257,16 +258,16 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                         uk_manager::settings::DeployLayout::WithName,
                         match platform {
                             Platform::WiiU =>
-                                loc.get("Settings_Platform_Deploy_Layout_WiiU_WithName"),
+                                "Settings_Platform_Deploy_Layout_WiiU_WithName".localize(),
                             Platform::Switch =>
-                                loc.get("Settings_Platform_Deploy_Layout_NX_WithName"),
+                                "Settings_Platform_Deploy_Layout_NX_WithName".localize(),
                         },
                     )
                     .changed();
             }
         );
-        name = loc.get("Settings_Platform_Deploy_Auto");
-        description = loc.get("Settings_Platform_Deploy_Auto_Desc");
+        name = "Settings_Platform_Deploy_Auto".localize();
+        description = "Settings_Platform_Deploy_Auto_Desc".localize();
         render_setting(
             &name,
             &description,
@@ -276,8 +277,8 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             },
         );
         if platform == Platform::WiiU {
-            name = loc.get("Settings_Platform_Deploy_Rules");
-            description = loc.get("Settings_Platform_Deploy_Rules_Desc");
+            name = "Settings_Platform_Deploy_Rules".localize();
+            description = "Settings_Platform_Deploy_Rules_Desc".localize();
             render_setting(
                 &name,
                 &description,
@@ -288,8 +289,8 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             );
             ui.add_space(8.0);
         }
-        name = loc.get("Settings_Platform_Deploy_Output");
-        description = loc.get("Settings_Platform_Deploy_Output_Desc");
+        name = "Settings_Platform_Deploy_Output".localize();
+        description = "Settings_Platform_Deploy_Output_Desc".localize();
         render_setting(
             &name,
             &description,
@@ -298,8 +299,8 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                 changed |= ui.folder_picker(&mut config.output).changed();
             },
         );
-        name = loc.get("Settings_Platform_Deploy_Emu");
-        description = loc.get("Settings_Platform_Deploy_Emu_Desc");
+        name = "Settings_Platform_Deploy_Emu".localize();
+        description = "Settings_Platform_Deploy_Emu_Desc".localize();
         render_setting(
             &name,
             &description,
@@ -324,9 +325,8 @@ fn render_platform_config(
     let config = conf_lock
         .entry(platform)
         .or_insert_with(|| config.as_ref().map(|c| c.into()).unwrap_or_default());
-    let loc = LOCALIZATION.read();
-    let mut name = loc.get("Settings_Platform_Language");
-    let mut description = loc.get("Settings_Platform_Language_Desc");
+    let mut name = "Settings_Platform_Language".localize();
+    let mut description = "Settings_Platform_Language_Desc".localize();
     render_setting(
         &name,
         &description,
@@ -344,13 +344,13 @@ fn render_platform_config(
         },
     );
     ui.add_space(8.0);
-    ui.label(loc.get("Settings_Platform_Dump"));
+    ui.label("Settings_Platform_Dump".localize());
     ui.group(|ui| {
         let width = ui.available_width().max(0.0);
         ui.allocate_space([width, 0.0].into());
         if platform == Platform::WiiU {
-            name = loc.get("Settings_Platform_Dump_Type");
-            description = loc.get("Settings_Platform_Dump_Type_Desc");
+            name = "Settings_Platform_Dump_Type".localize();
+            description = "Settings_Platform_Dump_Type_Desc".localize();
             render_setting(
                 &name,
                 &description,
@@ -359,7 +359,7 @@ fn render_platform_config(
                     if ui
                         .radio(
                             matches!(config.dump, DumpType::Unpacked { .. }),
-                            loc.get("Settings_Platform_Dump_Type_Unpacked")
+                            "Settings_Platform_Dump_Type_Unpacked".localize()
                         )
                         .clicked()
                     {
@@ -374,7 +374,7 @@ fn render_platform_config(
                     if ui
                         .radio(
                             matches!(config.dump, DumpType::ZArchive { .. }),
-                            loc.get("Settings_Platform_Dump_Type_WUA")
+                            "Settings_Platform_Dump_Type_WUA".localize()
                         )
                         .clicked()
                     {
@@ -398,12 +398,12 @@ fn render_platform_config(
             } => {
                 (name, description) = match platform {
                     Platform::WiiU => (
-                        loc.get("Settings_Platform_Dump_WiiU_Base"),
-                        loc.get("Settings_Platform_Dump_WiiU_Base_Desc")
+                        "Settings_Platform_Dump_WiiU_Base".localize(),
+                        "Settings_Platform_Dump_WiiU_Base_Desc".localize()
                     ),
                     Platform::Switch => (
-                        loc.get("Settings_Platform_Dump_NX_Base"),
-                        loc.get("Settings_Platform_Dump_NX_Base_Desc")
+                        "Settings_Platform_Dump_NX_Base".localize(),
+                        "Settings_Platform_Dump_NX_Base_Desc".localize()
                     ),
                 };
                 render_setting(
@@ -421,8 +421,8 @@ fn render_platform_config(
                     },
                 );
                 if platform == Platform::WiiU {
-                    name = loc.get("Settings_Platform_Dump_Update");
-                    description = loc.get("Settings_Platform_Dump_Update_Desc");
+                    name = "Settings_Platform_Dump_Update".localize();
+                    description = "Settings_Platform_Dump_Update_Desc".localize();
                     render_setting(
                         &name,
                         &description,
@@ -438,10 +438,10 @@ fn render_platform_config(
                         },
                     );
                 }
-                name = loc.get("Settings_Platform_Dump_DLC");
+                name = "Settings_Platform_Dump_DLC".localize();
                 description = match platform {
-                    Platform::WiiU => loc.get("Settings_Platform_Dump_DLC_WiiU_Desc"),
-                    Platform::Switch => loc.get("Settings_Platform_Dump_DLC_NX_Desc"),
+                    Platform::WiiU => "Settings_Platform_Dump_DLC_WiiU_Desc".localize(),
+                    Platform::Switch => "Settings_Platform_Dump_DLC_NX_Desc".localize(),
                 };
                 render_setting(
                     &name,
@@ -461,8 +461,8 @@ fn render_platform_config(
                 aoc_dir: _,
                 host_path,
             } => {
-                name = loc.get("Settings_Platform_Dump_WUA");
-                description = loc.get("Settings_Platform_Dump_WUA_Desc");
+                name = "Settings_Platform_Dump_WUA".localize();
+                description = "Settings_Platform_Dump_WUA_Desc".localize();
                 render_setting(
                     &name,
                     &description,
@@ -480,7 +480,6 @@ fn render_platform_config(
 
 impl App {
     pub fn render_settings(&mut self, ui: &mut Ui) {
-        let loc = LOCALIZATION.read();
         egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
             let mut wiiu_changed = false;
             let mut switch_changed = false;
@@ -491,7 +490,7 @@ impl App {
                 ui.add_enabled_ui(platform_config_changed, |ui| {
                     if ui
                         .icon_button(icons::Icon::Save)
-                        .on_hover_text(loc.get("Generic_Save"))
+                        .on_hover_text("Generic_Save".localize())
                         .clicked()
                     {
                         if wiiu_changed {
@@ -528,7 +527,7 @@ impl App {
                     }
                     if ui
                         .icon_button(icons::Icon::Reset)
-                        .on_hover_text(loc.get("Generic_Reset"))
+                        .on_hover_text("Generic_Reset".localize())
                         .clicked()
                     {
                         self.do_update(Message::SetLanguage(self.core.settings().lang));
@@ -542,11 +541,11 @@ impl App {
                 let settings = &mut self.temp_settings;
                 let mut theme_change: Option<Theme> = None;
                 let mut lang_change: Option<LocLang> = None;
-                egui::CollapsingHeader::new(loc.get("Settings_General"))
+                egui::CollapsingHeader::new("Settings_General".localize())
                     .default_open(true)
                     .show(ui, |ui| {
                         if ui
-                            .icon_text_button(loc.get("Settings_Migrate"), icons::Icon::Import)
+                            .icon_text_button("Settings_Migrate".localize(), icons::Icon::Import)
                             .clicked()
                         {
                             self.channel
@@ -556,8 +555,8 @@ impl App {
                                 .expect("Broken channel");
                         }
                         if ui
-                            .button(loc.get("Settings_OneClick"))
-                            .on_hover_text(loc.get("Settings_OneClick_Desc"))
+                            .button("Settings_OneClick".localize())
+                            .on_hover_text("Settings_OneClick_Desc".localize())
                             .clicked()
                         {
                             match crate::gui::tasks::register_handlers() {
@@ -571,8 +570,8 @@ impl App {
                                 }
                             }
                         }
-                        let mut name = loc.get("Settings_Theme");
-                        let mut description = loc.get("Settings_Theme_Desc");
+                        let mut name = "Settings_Theme".localize();
+                        let mut description = "Settings_Theme_Desc".localize();
                         render_setting(
                             &name,
                             &description,
@@ -597,8 +596,8 @@ impl App {
                                     });
                             }
                         );
-                        name = loc.get("Settings_Language");
-                        description = loc.get("Settings_Language_Desc");
+                        name = "Settings_Language".localize();
+                        description = "Settings_Language_Desc".localize();
                         render_setting(
                             &name,
                             &description,
@@ -622,8 +621,8 @@ impl App {
                                     });
                             },
                         );
-                        name = loc.get("Settings_Mode");
-                        description = loc.get("Settings_Mode_Desc");
+                        name = "Settings_Mode".localize();
+                        description = "Settings_Mode_Desc".localize();
                         render_setting(
                             &name,
                             &description,
@@ -632,17 +631,17 @@ impl App {
                                 ui.radio_value(
                                     &mut settings.current_mode,
                                     Platform::WiiU,
-                                    loc.get("Settings_Mode_WiiU"),
+                                    "Settings_Mode_WiiU".localize(),
                                 );
                                 ui.radio_value(
                                     &mut settings.current_mode,
                                     Platform::Switch,
-                                    loc.get("Settings_Mode_Switch"),
+                                    "Settings_Mode_Switch".localize(),
                                 );
                             },
                         );
-                        name = loc.get("Settings_Storage");
-                        description = loc.get("Settings_Storage_Desc");
+                        name = "Settings_Storage".localize();
+                        description = "Settings_Storage_Desc".localize();
                         render_setting(
                             &name,
                             &description,
@@ -651,16 +650,16 @@ impl App {
                                 ui.folder_picker(&mut settings.storage_dir);
                             },
                         );
-                        name = loc.get("Settings_Sys7z");
-                        description = loc.get("Settings_Sys7z_Desc");
+                        name = "Settings_Sys7z".localize();
+                        description = "Settings_Sys7z_Desc".localize();
                         render_setting(
                             &name,
                             &description,
                             ui,
                             |ui| ui.checkbox(&mut settings.system_7z, ""),
                         );
-                        name = loc.get("Settings_Changelog");
-                        description = loc.get("Settings_Changelog_Desc");
+                        name = "Settings_Changelog".localize();
+                        description = "Settings_Changelog_Desc".localize();
                         render_setting(
                             &name,
                             &description,
@@ -668,10 +667,10 @@ impl App {
                             |ui| ui.add(Checkbox::new(&mut settings.show_changelog, "")),
                         );
                     });
-                egui::CollapsingHeader::new(loc.get("Settings_Config_WiiU")).show(ui, |ui| {
+                egui::CollapsingHeader::new("Settings_Config_WiiU".localize()).show(ui, |ui| {
                     if ui
                         .icon_text_button(
-                            loc.get("Settings_Config_WiiU_ImportCemu"),
+                            "Settings_Config_WiiU_ImportCemu".localize(),
                             icons::Icon::Import
                         )
                         .clicked()
@@ -685,7 +684,7 @@ impl App {
                     wiiu_changed =
                         render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
                 });
-                egui::CollapsingHeader::new(loc.get("Settings_Config_NX")).show(ui, |ui| {
+                egui::CollapsingHeader::new("Settings_Config_NX".localize()).show(ui, |ui| {
                     switch_changed =
                         render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
                 });
@@ -730,7 +729,7 @@ impl App {
                             || wiiu_changed
                             || switch_changed;
                     ui.add_enabled_ui(platform_config_changed, |ui| {
-                        if ui.button(loc.get("Generic_Save")).clicked() {
+                        if ui.button("Generic_Save".localize()).clicked() {
                             if wiiu_changed {
                                 let wiiu_config_ui =
                                     CONFIG.write().get(&Platform::WiiU).unwrap().clone();
@@ -763,7 +762,7 @@ impl App {
                             }
                             self.do_update(Message::SaveSettings);
                         }
-                        if ui.button(loc.get("Generic_Reset")).clicked() {
+                        if ui.button("Generic_Reset".localize()).clicked() {
                             self.do_update(Message::SetLanguage(self.core.settings().lang));
                             CONFIG.write().clear();
                             self.do_update(Message::ResetSettings);

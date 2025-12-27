@@ -23,4 +23,5 @@ lexical-core = "0.8.5"
 lighter = "0.1.0"
 msyt = { git = "https://github.com/NiceneNerd/msyt", rev = "12e4d95fb6480f445284f37706db7bfa8351dc06" }
 uk-content-derive = { path = "../uk-content-derive" }
+uk-localization = { path = "../uk-localization" }
 uk-util = { path = "../uk-util" }

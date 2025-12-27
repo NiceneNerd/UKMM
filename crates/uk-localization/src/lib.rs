@@ -1,20 +1,24 @@
-use std::borrow::Cow;
+pub mod string_ext;
 
+use std::borrow::Cow;
+use std::sync::LazyLock;
 use dashmap::DashMap;
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use uk_content::constants::Language;
 
-static DE: &'static str = include_str!("../../../localization/de.json");
-static EN: &'static str = include_str!("../../../localization/en.json");
-static ES: &'static str = include_str!("../../../localization/es.json");
-static FR: &'static str = include_str!("../../../localization/fr.json");
-static IT: &'static str = include_str!("../../../localization/it.json");
-static JA: &'static str = include_str!("../../../localization/ja.json");
-static KO: &'static str = include_str!("../../../localization/ko.json");
-static RU: &'static str = include_str!("../../../localization/ru.json");
-static NL: &'static str = include_str!("../../../localization/nl.json");
-static ZH: &'static str = include_str!("../../../localization/zh.json");
+pub static LOCALIZATION: LazyLock<RwLock<Localization>> = LazyLock::new(|| Localization::from(LocLang::English).into());
+
+static DE: &'static str = include_str!("../localization/de.json");
+static EN: &'static str = include_str!("../localization/en.json");
+static ES: &'static str = include_str!("../localization/es.json");
+static FR: &'static str = include_str!("../localization/fr.json");
+static IT: &'static str = include_str!("../localization/it.json");
+static JA: &'static str = include_str!("../localization/ja.json");
+static KO: &'static str = include_str!("../localization/ko.json");
+static RU: &'static str = include_str!("../localization/ru.json");
+static NL: &'static str = include_str!("../localization/nl.json");
+static ZH: &'static str = include_str!("../localization/zh.json");
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum LocLang {
@@ -28,23 +32,6 @@ pub enum LocLang {
     Russian,
     SimpleChinese,
     Spanish,
-}
-
-impl From<Language> for LocLang {
-    fn from(value: Language) -> Self {
-        match value {
-            Language::CNzh | Language::TWzh => Self::SimpleChinese,
-            Language::EUde => Self::German,
-            Language::EUen | Language::USen => Self::English,
-            Language::EUes | Language::USes => Self::Spanish,
-            Language::EUfr | Language::USfr => Self::French,
-            Language::EUit => Self::Italian,
-            Language::EUnl => Self::Dutch,
-            Language::EUru => Self::Russian,
-            Language::JPja => Self::Japanese,
-            Language::KRko => Self::Korean,
-        }
-    }
 }
 
 impl From<LocLang> for &str {
@@ -84,7 +71,7 @@ impl LocLang {
             Self::SimpleChinese,
             Self::Spanish,
         ]
-        .iter()
+            .iter()
     }
 
     #[inline(always)]
@@ -93,12 +80,13 @@ impl LocLang {
     }
 }
 
-pub struct Localization<'a> {
+pub struct Localization {
     pub language: LocLang,
-    strings: DashMap<&'a str, Cow<'a, str>>
+    strings: DashMap<&'static str, Cow<'static, str>>,
+    strings_default: DashMap<&'static str, Cow<'static, str>>,
 }
 
-impl<'a> From<LocLang> for Localization<'a> {
+impl<'a> From<LocLang> for Localization {
     fn from(value: LocLang) -> Self {
         Self {
             strings: match value {
@@ -113,16 +101,19 @@ impl<'a> From<LocLang> for Localization<'a> {
                 LocLang::SimpleChinese => serde_json::from_str(&ZH).expect("Invalid SimpleChinese localization"),
                 LocLang::Spanish => serde_json::from_str(&ES).expect("Invalid Spanish localization")
             },
-            language: value
+            language: value,
+            strings_default: serde_json::from_str(&EN).expect("Invalid English localization")
         }
     }
 }
 
-impl<'a> Localization<'a> {
-    pub fn get(&self, key: &'a str) -> Cow<'a, str> {
+impl Localization {
+    pub fn get(&self, key: &'static str) -> Cow<'static, str> {
         self.strings.get(&key)
             .map(|v| v.clone())
-            .unwrap_or(key.into())
+            .unwrap_or_else(|| self.strings_default.get(&key)
+                .map(|v| v.clone())
+                .unwrap_or(key.into()))
     }
 
     pub fn update_language(&mut self, lang: &LocLang) {

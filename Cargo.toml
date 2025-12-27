@@ -58,6 +58,7 @@ roxmltree = "0.20.0"
 rustls = "0.23.12"
 shlex = "1.3.0"
 uk-content = { path = "crates/uk-content" }
+uk-localization = { path = "crates/uk-localization" }
 uk-manager = { path = "crates/uk-manager" }
 uk-mod = { path = "crates/uk-mod" }
 uk-reader = { path = "crates/uk-reader" }
@@ -80,6 +81,7 @@ winres = "0.1.12"
 members = [
     "crates/uk-content",
     "crates/uk-content-derive",
+    "crates/uk-localization",
     "crates/uk-manager",
     "crates/uk-mod",
     "crates/uk-reader",

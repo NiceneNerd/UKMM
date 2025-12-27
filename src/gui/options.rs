@@ -1,11 +1,12 @@
 use eframe::egui::Button;
+use uk_localization::string_ext::LocString;
 use uk_mod::ModOptionGroup;
 use uk_ui::{
     egui::{self, Align, Checkbox, Context, Layout, Vec2},
     visuals,
 };
 
-use super::{App, Message, LOCALIZATION};
+use super::{App, Message};
 
 impl App {
     pub fn render_option_picker(&mut self, ctx: &Context) {
@@ -13,8 +14,7 @@ impl App {
         if !is_opt_mod {
             return;
         }
-        let loc = LOCALIZATION.read();
-        egui::Window::new(loc.get("Options_Select"))
+        egui::Window::new("Options_Select".localize())
             .collapsible(false)
             .scroll([false, true])
             .anchor(egui::Align2::CENTER_CENTER, Vec2::default())
@@ -38,7 +38,7 @@ impl App {
                                                     !group.options.iter().any(|opt| {
                                                         mod_.enabled_options.contains(opt)
                                                     }),
-                                                    loc.get("Options_None"),
+                                                    "Options_None".localize(),
                                                 )
                                                 .clicked()
                                         {
@@ -93,12 +93,12 @@ impl App {
                     }
                 });
                 if !done {
-                    ui.colored_label(visuals::RED, loc.get("Options_Required"));
+                    ui.colored_label(visuals::RED, "Options_Required".localize());
                 }
                 ui.horizontal(|ui| {
                     ui.add_space(2.);
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if ui.add_enabled(done, Button::new(loc.get("Generic_OK"))).clicked() {
+                        if ui.add_enabled(done, Button::new("Generic_OK".localize())).clicked() {
                             let (mod_, update) = self.options_mod.take().unwrap();
                             if update {
                                 self.do_update(Message::UpdateOptions(mod_));
@@ -106,7 +106,7 @@ impl App {
                                 self.do_update(Message::InstallMod(mod_));
                             }
                         }
-                        if ui.button(loc.get("Generic_Cancel")).clicked() {
+                        if ui.button("Generic_Cancel".localize()).clicked() {
                             self.options_mod = None;
                         }
                     });

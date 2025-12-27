@@ -4,6 +4,8 @@ use join_str::jstr;
 use lighter::lighter;
 use serde::{Deserialize, Serialize};
 
+use uk_localization::LocLang;
+
 use crate::UKError;
 
 #[derive(Debug, Clone, Default, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -28,6 +30,23 @@ pub enum Language {
 impl fmt::Display for Language {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.to_str())
+    }
+}
+
+impl From<Language> for LocLang {
+    fn from(value: Language) -> Self {
+        match value {
+            Language::CNzh | Language::TWzh => Self::SimpleChinese,
+            Language::EUde => Self::German,
+            Language::EUen | Language::USen => Self::English,
+            Language::EUes | Language::USes => Self::Spanish,
+            Language::EUfr | Language::USfr => Self::French,
+            Language::EUit => Self::Italian,
+            Language::EUnl => Self::Dutch,
+            Language::EUru => Self::Russian,
+            Language::JPja => Self::Japanese,
+            Language::KRko => Self::Korean,
+        }
     }
 }
 

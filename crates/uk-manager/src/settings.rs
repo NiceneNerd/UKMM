@@ -12,9 +12,10 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DefaultOnError};
 use smartstring::alias::String;
 use uk_content::{constants::Language, prelude::Endian};
+use uk_localization::LocLang;
 use uk_reader::ResourceReader;
 
-use crate::{localization::*, util};
+use crate::util;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Platform {

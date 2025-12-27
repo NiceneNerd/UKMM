@@ -28,11 +28,12 @@ use uk_reader::ResourceReader;
 use uk_util::PathExt;
 
 use super::{package::ModPackerBuilder, util::response, Message};
-use crate::{gui::LOCALIZATION, INTERFACE};
+use crate::INTERFACE;
 
 mod handlers;
 
 pub use handlers::register_handlers;
+use uk_localization::string_ext::LocString;
 
 fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
     if path
@@ -264,8 +265,7 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
     let mut dirty = Manifest::default();
     for mod_ in mods {
         log::info!("Updating {}…", mod_.meta.name.as_str());
-        let loc = LOCALIZATION.read();
-        let message = loc.get("Mod_Update_Folder");
+        let message = "Mod_Update_Folder".localize();
         let vars = std::collections::HashMap::from(
             [("mod_name".to_string(), mod_.meta.name.to_string())]
         );
@@ -297,9 +297,8 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
 
 pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
     let mut errors = vec![];
-    let loc = LOCALIZATION.read();
     if let Some(folder) = rfd::FileDialog::new()
-        .set_title(loc.get("Mod_Unpack_Folder"))
+        .set_title("Mod_Unpack_Folder".localize())
         .pick_folder()
     {
         let settings = core.settings();

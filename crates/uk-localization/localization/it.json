@@ -173,7 +173,7 @@
     "Settings_Saved": "Impostazioni salvate",
     "Settings_SelectFolder_Cemu": "Scegli cartella Cemu",
     "Settings_Storage": "Cartella di immagazzinamento",
-    "Settings_Storage_Desc": "UKMM immagazzinerà qui informazioni riguardanti i profili, le mod e altro.
+    "Settings_Storage_Desc": "UKMM immagazzinerà qui informazioni riguardanti i profili, le mod e altro.",
     "Settings_Sys7z": "Usa 7z di sistema",
     "Settings_Sys7z_Desc": "Da impostazione predefinita, UKMM tenterà di usare il 7z del tuo sistema per estrarre i file 7-zip (come i BNPs). Altrimenti, cercherà di utilizzare un sistema di estrazione pre-installato ma più lento. Se hai errori relativi a 7z, disabilita questa opzione.",
     "Settings_Theme": "Tema",
@@ -185,7 +185,7 @@
     "Tab_Mods": "Mods",
     "Tab_Package": "Impacchettamento Mod",
     "Tab_Settings": "Impostazioni",
-    "Update_Available": "Un nuovo aggiornamento è disponibile!"
+    "Update_Available": "Un nuovo aggiornamento è disponibile!",
     "Mod_Category_Animations": "Animazioni",
     "Mod_Category_Balance": "Bilanciamento",
     "Mod_Category_Crafting": "Crafting",

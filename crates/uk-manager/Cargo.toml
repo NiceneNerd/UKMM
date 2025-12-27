@@ -34,6 +34,7 @@ zip = { workspace = true, default-features = false, features = ["deflate"] }
 split-iter = "0.1.0"
 tempfile = "3.3"
 uk-content = { path = "../uk-content" }
+uk-localization = { path = "../uk-localization" }
 uk-mod = { path = "../uk-mod" }
 uk-reader = { path = "../uk-reader" }
 uk-util = { path = "../uk-util" }

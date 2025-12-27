@@ -5651,6 +5651,7 @@ dependencies = [
  "smartstring",
  "thiserror 1.0.69",
  "uk-content-derive",
+ "uk-localization",
  "uk-util",
 ]
 
@@ -5661,6 +5662,16 @@ dependencies = [
  "proc-macro2 1.0.93",
  "quote 1.0.38",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "uk-localization"
+version = "0.16.0"
+dependencies = [
+ "dashmap",
+ "parking_lot",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -5695,6 +5706,7 @@ dependencies = [
  "split-iter",
  "tempfile",
  "uk-content",
+ "uk-localization",
  "uk-mod",
  "uk-reader",
  "uk-util",
@@ -5833,6 +5845,7 @@ dependencies = [
  "ssilide",
  "strfmt",
  "uk-content",
+ "uk-localization",
  "uk-manager",
  "uk-mod",
  "uk-reader",
