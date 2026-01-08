@@ -95,7 +95,8 @@ impl ProfileManagerState {
                                     ui.label(loc.get("Profile_NoMods"));
                                 });
                             }
-                            ui.allocate_space(ui.available_size());
+                            let available = ui.available_size();
+                            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
                         });
                     ui.add_space(8.0);
                     if let Some(new_name) = self.rename.as_mut() {
@@ -135,7 +136,8 @@ impl ProfileManagerState {
                 });
             });
             ui.end_row();
-            ui.allocate_space(ui.available_size());
+            let available = ui.available_size();
+            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
         }
     }
 
@@ -182,7 +184,8 @@ impl ProfileManagerState {
                                         }
                                     });
                                 });
-                                ui.allocate_space(ui.available_size());
+                                let available = ui.available_size();
+                            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
                             });
                             self.render_selected_profile(app, ui);
                         });

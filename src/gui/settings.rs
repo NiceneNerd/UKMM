@@ -197,7 +197,8 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
     ui.label(loc.get("Settings_Platform_Deploy"));
     let mut changed = false;
     ui.group(|ui| {
-        ui.allocate_space([ui.available_width(), -8.0].into());
+        let width = ui.available_width().max(0.0);
+        ui.allocate_space([width, 0.0].into());
         let mut name = loc.get("Settings_Platform_Deploy_Method");
         let mut description = loc.get("Settings_Platform_Deploy_Method_Desc");
         render_setting(
@@ -345,7 +346,8 @@ fn render_platform_config(
     ui.add_space(8.0);
     ui.label(loc.get("Settings_Platform_Dump"));
     ui.group(|ui| {
-        ui.allocate_space([ui.available_width(), -8.0].into());
+        let width = ui.available_width().max(0.0);
+        ui.allocate_space([width, 0.0].into());
         if platform == Platform::WiiU {
             name = loc.get("Settings_Platform_Dump_Type");
             description = loc.get("Settings_Platform_Dump_Type_Desc");

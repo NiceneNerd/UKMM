@@ -72,7 +72,8 @@ impl Component for ModInfo<'_> {
             ui.spacing_mut().item_spacing.y = 8.;
             ui.add_space(8.);
             if let Some(preview) = self.preview() {
-                preview.show_max_size(ui, ui.available_size());
+                let available = ui.available_size();
+                preview.show_max_size(ui, [available.x.max(0.0), available.y.max(0.0)].into());
                 ui.add_space(8.);
             }
             let ver = mod_.meta.version.to_string();

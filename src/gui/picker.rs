@@ -384,7 +384,8 @@ impl App {
                     entries.clone().iter().for_each(|path| {
                         self.render_picker_dir_entry(path, ui);
                     });
-                    ui.allocate_space(ui.available_size());
+                    let available = ui.available_size();
+                    ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
                 });
         });
     }
