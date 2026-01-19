@@ -1,16 +1,16 @@
+use uk_localization::string_ext::LocString;
 use super::*;
 
 impl App {
     pub fn render_menu(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        let loc = LOCALIZATION.read();
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             ui.style_mut().visuals.button_frame = false;
             ui.add_enabled_ui(!self.modal_open(), |ui| {
                 ui.horizontal(|ui| {
-                    ui.menu_button(loc.get("Menu_File"), |ui| self.file_menu(ui, frame));
-                    ui.menu_button(loc.get("Menu_Tools"), |ui| self.tool_menu(ui));
-                    ui.menu_button(loc.get("Menu_Window"), |ui| self.window_menu(ui));
-                    ui.menu_button(loc.get("Menu_Help"), |ui| self.help_menu(ui));
+                    ui.menu_button("Menu_File".localize(), |ui| self.file_menu(ui, frame));
+                    ui.menu_button("Menu_Tools".localize(), |ui| self.tool_menu(ui));
+                    ui.menu_button("Menu_Window".localize(), |ui| self.window_menu(ui));
+                    ui.menu_button("Menu_Help".localize(), |ui| self.help_menu(ui));
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         ui.label(
                             RichText::new(self.platform().to_string().to_uppercase())
@@ -23,32 +23,30 @@ impl App {
     }
 
     pub fn file_menu(&self, ui: &mut Ui, _frame: &mut eframe::Frame) {
-        let loc = LOCALIZATION.read();
-        if ui.button(loc.get("Menu_File_Open")).clicked() {
+        if ui.button("Menu_File_Open".localize()).clicked() {
             ui.close_menu();
             self.do_update(Message::SelectFile);
         }
-        if ui.button(loc.get("Generic_Exit")).clicked() {
+        if ui.button("Generic_Exit".localize()).clicked() {
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
         }
     }
 
     pub fn tool_menu(&mut self, ui: &mut Ui) {
-        let loc = LOCALIZATION.read();
-        if ui.button(loc.get("Menu_Tools_RefreshMerge")).clicked() {
+        if ui.button("Menu_Tools_RefreshMerge".localize()).clicked() {
             ui.close_menu();
             self.do_update(Message::Remerge);
         }
-        if ui.button(loc.get("Menu_Tools_ResetPending")).clicked() {
+        if ui.button("Menu_Tools_ResetPending".localize()).clicked() {
             ui.close_menu();
             self.do_update(Message::ResetPending);
         }
-        if ui.button(loc.get("Menu_Tools_ConfigFolder")).clicked() {
+        if ui.button("Menu_Tools_ConfigFolder".localize()).clicked() {
             ui.close_menu();
             open::that(Settings::config_dir()).unwrap_or(());
         }
         let settings = self.core.settings();
-        if ui.button(loc.get("Menu_Tools_StorageFolder")).clicked() {
+        if ui.button("Menu_Tools_StorageFolder".localize()).clicked() {
             ui.close_menu();
             open::that(&settings.storage_dir).unwrap_or(());
         }
@@ -56,7 +54,7 @@ impl App {
         if ui
             .add_enabled(
                 deploy_dir.is_some(),
-                egui::Button::new(loc.get("Menu_Tools_DeployFolder")),
+                egui::Button::new("Menu_Tools_DeployFolder".localize()),
             )
             .clicked()
         {
@@ -66,8 +64,7 @@ impl App {
     }
 
     pub fn window_menu(&mut self, ui: &mut Ui) {
-        let loc = LOCALIZATION.read();
-        if ui.button(loc.get("Menu_Window_Reset")).clicked() {
+        if ui.button("Menu_Window_Reset".localize()).clicked() {
             ui.close_menu();
             *self.tree.borrow_mut() = tabs::default_ui();
         }
@@ -117,12 +114,11 @@ impl App {
     }
 
     pub fn help_menu(&self, ui: &mut Ui) {
-        let loc = LOCALIZATION.read();
-        if ui.button(loc.get("Menu_Help")).clicked() {
+        if ui.button("Menu_Help".localize()).clicked() {
             ui.close_menu();
             open::that("https://nicenenerd.github.io/UKMM").unwrap_or(());
         }
-        if ui.button(loc.get("Menu_Help_About")).clicked() {
+        if ui.button("Menu_Help_About".localize()).clicked() {
             ui.close_menu();
             self.do_update(Message::ShowAbout);
         }

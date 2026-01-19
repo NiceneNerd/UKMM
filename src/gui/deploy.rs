@@ -1,3 +1,4 @@
+use uk_localization::string_ext::LocString;
 use super::*;
 
 impl App {
@@ -12,36 +13,35 @@ impl App {
                 egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
                     ui.spacing_mut().item_spacing.y = 8.0;
                     ui.with_layout(Layout::top_down(Align::Center), |ui| {
-                        let loc = LOCALIZATION.read();
                         ui.horizontal(|ui| {
                             ui.label(
-                                RichText::new(loc.get("Settings_Platform_Deploy_Method"))
+                                RichText::new("Settings_Platform_Deploy_Method".localize())
                                     .family(egui::FontFamily::Name("Bold".into())),
                             );
                             // ui.add_space(8.);
                             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                                ui.label(loc.get(config.method.name()));
+                                ui.label(config.method.name().localize());
                             })
                         });
                         ui.horizontal(|ui| {
                             ui.label(
-                                RichText::new(loc.get("Settings_Platform_Deploy_Auto"))
+                                RichText::new("Settings_Platform_Deploy_Auto".localize())
                                     .family(egui::FontFamily::Name("Bold".into())),
                             );
                             // ui.add_space(8.);
                             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                                 ui.label(if config.auto {
-                                    RichText::new(loc.get("Generic_Yes"))
+                                    RichText::new("Generic_Yes".localize())
                                         .color(visuals::GREEN)
                                 } else {
-                                    RichText::new(loc.get("Generic_No"))
+                                    RichText::new("Generic_No".localize())
                                         .color(visuals::RED)
                                 });
                             })
                         });
                         ui.vertical(|ui| {
                             ui.label(
-                                RichText::new(loc.get("Settings_Platform_Deploy_Output"))
+                                RichText::new("Settings_Platform_Deploy_Output".localize())
                                     .family(egui::FontFamily::Name("Bold".into())),
                             );
                             let mut job = LayoutJob::simple_singleline(
@@ -82,7 +82,7 @@ impl App {
                                 egui::Frame::none().show(ui, |ui| {
                                     if let Some(ref exe) = config.executable {
                                         ui.add_space(4.);
-                                        if ui.button(loc.get("Deploy_OpenEmu")).clicked() {
+                                        if ui.button("Deploy_OpenEmu".localize()).clicked() {
                                             let cmd = util::default_shell();
                                             #[cfg(windows)]
                                             let user_arg = shlex::split(exe)
@@ -106,7 +106,7 @@ impl App {
                                         }
                                     }
                                     if ui
-                                        .add(egui::Button::new(loc.get("Tab_Deploy")))
+                                        .add(egui::Button::new("Tab_Deploy".localize()))
                                         .clicked()
                                     {
                                         self.do_update(super::Message::Deploy);
@@ -114,7 +114,7 @@ impl App {
                                     if config.auto && self.core.deploy_manager().pending() {
                                         ui.label(
                                             RichText::new(
-                                                loc.get("Deploy_Auto_Failed")
+                                                "Deploy_Auto_Failed".localize()
                                             )
                                             .color(visuals::RED),
                                         );
@@ -127,7 +127,7 @@ impl App {
             }
             None => {
                 ui.centered_and_justified(|ui| {
-                    ui.label(LOCALIZATION.read().get("Deploy_NoConfig"));
+                    ui.label("Deploy_NoConfig".localize());
                 });
             }
         }

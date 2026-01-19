@@ -41,6 +41,7 @@ use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 use uk_content::util::HashMap;
 use uk_localization::*;
+use uk_localization::string_ext::LocString;
 use uk_manager::{
     core::Manager,
     mods::{LookupMod, Mod},
@@ -80,15 +81,14 @@ pub enum Tabs {
 
 impl std::fmt::Display for Tabs {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let loc = LOCALIZATION.read();
         let string = match self {
-            Self::Info => loc.get("Tab_Info"),
-            Self::Install => loc.get("Tab_Install"),
-            Self::Deploy => loc.get("Tab_Deploy"),
-            Self::Mods => loc.get("Tab_Mods"),
-            Self::Log => loc.get("Tab_Log"),
-            Self::Settings => loc.get("Tab_Settings"),
-            Self::Package => loc.get("Tab_Package"),
+            Self::Info => "Tab_Info".localize(),
+            Self::Install => "Tab_Install".localize(),
+            Self::Deploy => "Tab_Deploy".localize(),
+            Self::Mods => "Tab_Mods".localize(),
+            Self::Log => "Tab_Log".localize(),
+            Self::Settings => "Tab_Settings".localize(),
+            Self::Package => "Tab_Package".localize(),
         };
         write!(f, "{}", string)
     }

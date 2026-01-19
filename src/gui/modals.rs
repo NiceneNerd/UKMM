@@ -1,3 +1,4 @@
+use uk_localization::string_ext::LocString;
 use uk_manager::settings::Platform;
 use uk_mod::{Meta, ModCategory};
 use util::SmartStringWrapper;
@@ -55,31 +56,30 @@ impl MetaInputModal {
     }
 
     pub fn ui(&mut self, ctx: &egui::Context) {
-        let loc = LOCALIZATION.read();
         let mut should_clear = false;
         if let Some(meta) = self.meta.as_mut() {
-            egui::Window::new(loc.get("Info_Provide_Label"))
+            egui::Window::new("Info_Provide_Label".localize())
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     ui.spacing_mut().item_spacing.y = 8.0;
-                    ui.label(loc.get("Info_Provide_Message"));
-                    ui.label(loc.get("Info_Name"));
+                    ui.label("Info_Provide_Message".localize());
+                    ui.label("Info_Name".localize());
                     ui.text_edit_singleline(&mut SmartStringWrapper(&mut meta.name));
-                    egui::ComboBox::new("mod-meta-cat", loc.get("Info_Category"))
-                        .selected_text(loc.get(meta.category.to_loc_str()))
+                    egui::ComboBox::new("mod-meta-cat", "Info_Category".localize())
+                        .selected_text(meta.category.to_loc_str().localize())
                         .show_ui(ui, |ui| {
                             ModCategory::iter().for_each(|cat| {
                                 ui.selectable_value(
                                     &mut meta.category,
                                     *cat,
-                                    loc.get(cat.to_loc_str())
+                                    cat.to_loc_str().localize()
                                 );
                             });
                         });
-                    ui.label(loc.get("Info_Description"));
-                    ui.small(loc.get("Generic_MarkdownSupported"));
+                    ui.label("Info_Description".localize());
+                    ui.small("Generic_MarkdownSupported".localize());
                     let string = ui.create_temp_string(
                         "mod-meta-desc",
                         Some(meta.description.as_str().into()),
@@ -97,7 +97,7 @@ impl MetaInputModal {
                             Vec2::new(ui.available_width(), ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button(loc.get("Generic_OK")).clicked() {
+                                if ui.button("Generic_OK".localize()).clicked() {
                                     self.sender
                                         .send(Message::OpenMod(
                                             self.path
@@ -106,7 +106,7 @@ impl MetaInputModal {
                                         ))
                                         .expect("Broken channel");
                                 }
-                                if ui.button(loc.get("Generic_Close")).clicked() {
+                                if ui.button("Generic_Close".localize()).clicked() {
                                     should_clear = true;
                                 }
                                 ui.shrink_width_to_current();
@@ -123,9 +123,8 @@ impl MetaInputModal {
 
 impl App {
     pub fn render_error(&mut self, ctx: &egui::Context) {
-        let loc = LOCALIZATION.read();
         if let Some(err) = self.error.as_ref() {
-            egui::Window::new(loc.get("Error_Label"))
+            egui::Window::new("Error_Label".localize())
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .auto_sized()
@@ -134,7 +133,7 @@ impl App {
                     ui.add_space(8.);
                     ui.label("An error has occurred. Check the details for more information.");
                     ui.add_space(8.);
-                    egui::CollapsingHeader::new(loc.get("Error_Details")).show(ui, |ui| {
+                    egui::CollapsingHeader::new("Error_Details".localize()).show(ui, |ui| {
                         err.chain().enumerate().for_each(|(i, e)| {
                             ui.label(RichText::new(format!("{i}. {e}")).code());
                         });
@@ -144,7 +143,7 @@ impl App {
                         e.downcast_ref::<uk_content::UKError>()
                             .and_then(|e| e.context_data())
                     }) {
-                        egui::CollapsingHeader::new(loc.get("Error_Context")).show(ui, |ui| {
+                        egui::CollapsingHeader::new("Error_Context".localize()).show(ui, |ui| {
                             ui.label(format!("{:#?}", context));
                         });
                     }
@@ -155,16 +154,16 @@ impl App {
                             Vec2::new(width, ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button(loc.get("Generic_OK")).clicked() {
+                                if ui.button("Generic_OK".localize()).clicked() {
                                     self.do_update(Message::CloseError);
                                 }
-                                if ui.button(loc.get("Generic_Copy")).clicked() {
+                                if ui.button("Generic_Copy".localize()).clicked() {
                                     ui.output_mut(|o| o.copied_text = format!("{:?}", &err));
                                     egui::popup::show_tooltip(
                                         ctx,
                                         ui.layer_id(),
                                         Id::new("copied"),
-                                        |ui| ui.label(loc.get("Generic_Copied")),
+                                        |ui| ui.label("Generic_Copied".localize()),
                                     );
                                 }
                                 ui.shrink_width_to_current();
@@ -176,10 +175,9 @@ impl App {
     }
 
     pub fn render_confirm(&mut self, ctx: &egui::Context) {
-        let loc = LOCALIZATION.read();
         let is_confirm = self.confirm.is_some();
         if is_confirm {
-            egui::Window::new(loc.get("Generic_Confirm"))
+            egui::Window::new("Generic_Confirm".localize())
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .auto_sized()
@@ -194,12 +192,12 @@ impl App {
                             Vec2::new(width, ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button(loc.get("Generic_OK")).clicked() {
+                                if ui.button("Generic_OK".localize()).clicked() {
                                     let msg = self.confirm.take().unwrap().0;
                                     self.do_update(msg);
                                     self.do_update(Message::CloseConfirm);
                                 }
-                                if ui.button(loc.get("Generic_Close")).clicked() {
+                                if ui.button("Generic_Close".localize()).clicked() {
                                     self.do_update(Message::CloseConfirm);
                                 }
                                 ui.shrink_width_to_current();
@@ -211,17 +209,16 @@ impl App {
     }
 
     pub fn render_new_profile(&mut self, ctx: &egui::Context) {
-        let loc = LOCALIZATION.read();
         let is_open = self.new_profile.is_some();
         if is_open {
-            egui::Window::new(loc.get("Profile_New"))
+            egui::Window::new("Profile_New".localize())
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .auto_sized()
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     ui.add_space(8.);
-                    ui.label(loc.get("Profile_New_Label"));
+                    ui.label("Profile_New_Label".localize());
                     ui.add_space(8.);
                     ui.text_edit_singleline(self.new_profile.as_mut().unwrap());
                     let width = ui.min_size().x;
@@ -233,13 +230,13 @@ impl App {
                                 if ui
                                     .add_enabled(
                                         !self.new_profile.contains(&String::default()),
-                                        egui::Button::new(loc.get("Generic_OK")),
+                                        egui::Button::new("Generic_OK".localize()),
                                     )
                                     .clicked()
                                 {
                                     self.do_update(Message::AddProfile);
                                 }
-                                if ui.button(loc.get("Generic_Close")).clicked() {
+                                if ui.button("Generic_Close".localize()).clicked() {
                                     self.new_profile = None;
                                 }
                                 ui.shrink_width_to_current();
@@ -251,9 +248,8 @@ impl App {
     }
 
     pub fn render_busy(&self, ctx: &egui::Context, _frame: &eframe::Frame) {
-        let loc = LOCALIZATION.read();
         if self.busy.get() {
-            egui::Window::new(loc.get("Busy_Working"))
+            egui::Window::new("Busy_Working".localize())
                 .default_size([240., 80.])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .collapsible(false)
@@ -270,7 +266,7 @@ impl App {
                             ui.add(Spinner::new().size(text_height));
                             ui.add_space(8.);
                             ui.vertical(|ui| {
-                                ui.label(loc.get("Busy_Processing"));
+                                ui.label("Busy_Processing".localize());
                                 if let Some(progress) = crate::logger::LOGGER.get_progress() {
                                     ui.add(
                                         Label::new(progress)
@@ -287,9 +283,8 @@ impl App {
     }
 
     pub fn render_about(&self, ctx: &egui::Context) {
-        let loc = LOCALIZATION.read();
         if self.show_about {
-            egui::Window::new(loc.get("Menu_Help_About"))
+            egui::Window::new("Menu_Help_About".localize())
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .fixed_size([360.0, 240.0])
@@ -299,7 +294,7 @@ impl App {
                     ui.vertical_centered(|ui| {
                         ui.strong_heading("U-King Mod Manager");
                         ui.label(crate::COPYRIGHT);
-                        let ver = loc.get("Info_Version");
+                        let ver = "Info_Version".localize();
                         let ver_no = env!("CARGO_PKG_VERSION");
                         ui.label(format!("{ver} {ver_no}"));
                     });
@@ -309,7 +304,7 @@ impl App {
                             open::that("https://github.com/GingerAvalanche/UKMM").unwrap_or(());
                         }
                         ui.end_row();
-                        ui.label(loc.get("Menu_Help_About_GUI"));
+                        ui.label("Menu_Help_About_GUI".localize());
                         if ui.link("egui").clicked() {
                             open::that("https://github.com/emilk/egui").unwrap_or(());
                         }
@@ -321,7 +316,7 @@ impl App {
                             Vec2::new(width, ui.min_size().y),
                             Layout::right_to_left(Align::Center),
                             |ui| {
-                                if ui.button(loc.get("Generic_OK")).clicked() {
+                                if ui.button("Generic_OK".localize()).clicked() {
                                     self.do_update(Message::CloseAbout);
                                 }
                                 ui.shrink_width_to_current();
@@ -333,7 +328,6 @@ impl App {
     }
 
     pub fn render_profile_menu(&mut self, ui: &mut Ui) {
-        let loc = LOCALIZATION.read();
         egui::Frame::none()
             .inner_margin(Margin {
                 left: 2.0,
@@ -364,17 +358,17 @@ impl App {
                             });
                         })
                         .response
-                        .on_hover_text(loc.get("Profile_Select"));
+                        .on_hover_text("Profile_Select".localize());
                     if ui
                         .icon_button(Icon::Add)
-                        .on_hover_text(loc.get("Profile_New"))
+                        .on_hover_text("Profile_New".localize())
                         .clicked()
                     {
                         self.do_update(Message::NewProfile);
                     };
                     if ui
                         .icon_button(Icon::Menu)
-                        .on_hover_text(loc.get("Profile_Manage"))
+                        .on_hover_text("Profile_Manage".localize())
                         .clicked()
                     {
                         self.profiles_state.borrow_mut().show = true;
@@ -385,9 +379,9 @@ impl App {
                             RichText::new(format!(
                                 "{} {} / {} {}",
                                 self.mods.len(),
-                                loc.get("Profile_ActiveMods_1"),
+                                "Profile_ActiveMods_1".localize(),
                                 self.mods.iter().filter(|m| m.enabled).count(),
-                                loc.get("Profile_ActiveMods_2")
+                                "Profile_ActiveMods_2".localize()
                             ))
                             .strong(),
                         );
@@ -398,8 +392,7 @@ impl App {
 
     pub fn render_pending(&self, ui: &mut Ui) {
         if !self.dirty().is_empty() {
-            let loc = LOCALIZATION.read();
-            egui::Window::new(loc.get("Pending_Changes"))
+            egui::Window::new("Pending_Changes".localize())
                 .anchor(Align2::RIGHT_BOTTOM, [-32.0, -32.0])
                 .collapsible(true)
                 .show(ui.ctx(), |ui| {
@@ -409,7 +402,7 @@ impl App {
                             .auto_shrink([true, true])
                             .max_height(200.)
                             .show(ui, |ui| {
-                                egui::CollapsingHeader::new(loc.get("Pending_Files")).show(
+                                egui::CollapsingHeader::new("Pending_Files".localize()).show(
                                     ui,
                                     |ui| {
                                         info::render_manifest(&self.dirty(), ui);
@@ -420,13 +413,13 @@ impl App {
                         ui.horizontal(|ui| {
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 if ui.icon_text_button(
-                                    loc.get("Generic_Apply"),
+                                    "Generic_Apply".localize(),
                                     Icon::Check
                                 ).clicked() {
                                     self.do_update(Message::Apply);
                                 }
                                 if ui.icon_text_button(
-                                    loc.get("Generic_Cancel"),
+                                    "Generic_Cancel".localize(),
                                     Icon::Cancel
                                 ).clicked() {
                                     self.do_update(Message::ResetMods(None));
@@ -440,8 +433,7 @@ impl App {
 
     pub fn render_changelog(&self, ctx: &egui::Context) {
         if let Some(ref last_version) = self.changelog {
-            let loc = LOCALIZATION.read();
-            egui::Window::new(loc.get("Changelog_New"))
+            egui::Window::new("Changelog_New".localize())
                 .collapsible(false)
                 .scroll([false, true])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
@@ -461,22 +453,22 @@ impl App {
                     ui.separator();
                     ui.horizontal(|ui| {
                         if ui
-                            .icon_text_button(loc.get("Changelog_Subscribe"), Icon::Patreon)
+                            .icon_text_button("Changelog_Subscribe".localize(), Icon::Patreon)
                             .on_hover_text("https://www.patreon.com/nicenenerd")
                             .clicked()
                         {
                             open::that("https://www.patreon.com/nicenenerd").unwrap_or(());
                         }
                         if ui
-                            .icon_text_button(loc.get("Changelog_Bitcoin"), Icon::Bitcoin)
-                            .on_hover_text(loc.get("Changelog_Bitcoin_Copy"))
+                            .icon_text_button("Changelog_Bitcoin".localize(), Icon::Bitcoin)
+                            .on_hover_text("Changelog_Bitcoin_Copy".localize())
                             .clicked()
                         {
                             ui.output_mut(|o| {
                                 o.copied_text = "392YEGQ8WybkRSg4oyeLf7Pj2gQNhPcWoa".into()
                             });
                             self.do_update(Message::Toast(
-                                loc.get("Changelog_Bitcoin_Copied").into(),
+                                "Changelog_Bitcoin_Copied".localize().into(),
                             ));
                         }
                     });
@@ -487,13 +479,13 @@ impl App {
                             Layout::right_to_left(Align::Center),
                             |ui| {
                                 if self.new_version.is_some() {
-                                    if ui.button(loc.get("Generic_Update")).clicked() {
+                                    if ui.button("Generic_Update".localize()).clicked() {
                                         self.do_update(Message::DoUpdate);
                                     }
-                                    if ui.button(loc.get("Generic_Cancel")).clicked() {
+                                    if ui.button("Generic_Cancel".localize()).clicked() {
                                         self.do_update(Message::CloseChangelog);
                                     }
-                                } else if ui.button(loc.get("Generic_OK")).clicked() {
+                                } else if ui.button("Generic_OK".localize()).clicked() {
                                     self.do_update(Message::CloseChangelog);
                                 }
                                 ui.shrink_width_to_current();
