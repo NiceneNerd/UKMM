@@ -1,6 +1,7 @@
 pub mod string_ext;
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::sync::LazyLock;
 use dashmap::DashMap;
 use parking_lot::RwLock;
@@ -90,19 +91,52 @@ impl<'a> From<LocLang> for Localization {
     fn from(value: LocLang) -> Self {
         Self {
             strings: match value {
-                LocLang::English => serde_json::from_str(&EN).expect("Invalid English localization"),
-                LocLang::Dutch => serde_json::from_str(&NL).expect("Invalid Dutch localization"),
-                LocLang::French => serde_json::from_str(&FR).expect("Invalid French localization"),
-                LocLang::German => serde_json::from_str(&DE).expect("Invalid German localization"),
-                LocLang::Italian => serde_json::from_str(&IT).expect("Invalid Italian localization"),
-                LocLang::Japanese => serde_json::from_str(&JA).expect("Invalid Japanese localization"),
-                LocLang::Korean => serde_json::from_str(&KO).expect("Invalid Korean localization"),
-                LocLang::Russian => serde_json::from_str(&RU).expect("Invalid Russian localization"),
-                LocLang::SimpleChinese => serde_json::from_str(&ZH).expect("Invalid SimpleChinese localization"),
-                LocLang::Spanish => serde_json::from_str(&ES).expect("Invalid Spanish localization")
+                LocLang::English => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&EN)
+                    .expect("Invalid English localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::Dutch => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&NL)
+                    .expect("Invalid Dutch localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::French => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&FR)
+                    .expect("Invalid French localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::German => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&DE)
+                    .expect("Invalid German localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::Italian => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&IT)
+                    .expect("Invalid Italian localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::Japanese => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&JA)
+                    .expect("Invalid Japanese localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::Korean => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&KO)
+                    .expect("Invalid Korean localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::Russian => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&RU)
+                    .expect("Invalid Russian localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::SimpleChinese => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&ZH)
+                    .expect("Invalid SimpleChinese localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::Spanish => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&ES)
+                    .expect("Invalid Spanish localization")
+                    .into_iter()
+                    .collect(),
             },
             language: value,
-            strings_default: serde_json::from_str(&EN).expect("Invalid English localization")
+            strings_default: serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&EN)
+                .expect("Invalid English localization")
+                .into_iter()
+                .collect()
         }
     }
 }
@@ -118,16 +152,46 @@ impl Localization {
 
     pub fn update_language(&mut self, lang: &LocLang) {
         self.strings = match lang {
-            LocLang::English => serde_json::from_str(&EN).expect("Invalid English localization"),
-            LocLang::Dutch => serde_json::from_str(&NL).expect("Invalid Dutch localization"),
-            LocLang::French => serde_json::from_str(&FR).expect("Invalid French localization"),
-            LocLang::German => serde_json::from_str(&DE).expect("Invalid German localization"),
-            LocLang::Italian => serde_json::from_str(&IT).expect("Invalid Italian localization"),
-            LocLang::Japanese => serde_json::from_str(&JA).expect("Invalid Japanese localization"),
-            LocLang::Korean => serde_json::from_str(&KO).expect("Invalid Korean localization"),
-            LocLang::Russian => serde_json::from_str(&RU).expect("Invalid Russian localization"),
-            LocLang::SimpleChinese => serde_json::from_str(&ZH).expect("Invalid SimpleChinese localization"),
-            LocLang::Spanish => serde_json::from_str(&ES).expect("Invalid Spanish localization")
+            LocLang::English => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&EN)
+                .expect("Invalid English localization")
+                .into_iter()
+                .collect(),
+            LocLang::Dutch => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&NL)
+                .expect("Invalid Dutch localization")
+                .into_iter()
+                .collect(),
+            LocLang::French => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&FR)
+                .expect("Invalid French localization")
+                .into_iter()
+                .collect(),
+            LocLang::German => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&DE)
+                .expect("Invalid German localization")
+                .into_iter()
+                .collect(),
+            LocLang::Italian => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&IT)
+                .expect("Invalid Italian localization")
+                .into_iter()
+                .collect(),
+            LocLang::Japanese => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&JA)
+                .expect("Invalid Japanese localization")
+                .into_iter()
+                .collect(),
+            LocLang::Korean => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&KO)
+                .expect("Invalid Korean localization")
+                .into_iter()
+                .collect(),
+            LocLang::Russian => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&RU)
+                .expect("Invalid Russian localization")
+                .into_iter()
+                .collect(),
+            LocLang::SimpleChinese => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&ZH)
+                .expect("Invalid SimpleChinese localization")
+                .into_iter()
+                .collect(),
+            LocLang::Spanish => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&ES)
+                .expect("Invalid Spanish localization")
+                .into_iter()
+                .collect(),
         };
         self.language = *lang;
     }
