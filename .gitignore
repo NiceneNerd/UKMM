@@ -6,5 +6,6 @@ tmp.txt
 jsconfig.json
 sciter.d.ts
 dump.bin
+nest_map.json
 /.cargo/
 /.idea
