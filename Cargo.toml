@@ -37,9 +37,11 @@ rustc-hash = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
+sevenz-rust = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
 ssilide = "0.2.0"
 strfmt = { workspace = true }
+unrar = { workspace = true }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 
 astrolabe = "0.5.1"
@@ -117,10 +119,12 @@ serde = "1"
 serde_json = "1"
 serde_yaml = "0.9.13"
 serde_with = "3"
+sevenz-rust = "0.6.0"
 smartstring = "1"
 strfmt = "0.2.4"
 thiserror = "1"
 typetag = "0.2.1"
+unrar = "0.5.8"
 zip = { version = "2.1", default-features = false }
 zstd = { version = "0.13.1", features = ["experimental"] }
 

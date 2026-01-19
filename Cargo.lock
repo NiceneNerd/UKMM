@@ -5698,6 +5698,7 @@ dependencies = [
  "uk-mod",
  "uk-reader",
  "uk-util",
+ "unrar",
  "zip",
 ]
 
@@ -5826,6 +5827,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
+ "sevenz-rust",
  "shlex",
  "smartstring",
  "ssilide",
@@ -5836,6 +5838,7 @@ dependencies = [
  "uk-reader",
  "uk-ui",
  "uk-util",
+ "unrar",
  "which 6.0.3",
  "winreg",
  "winres",
@@ -5872,6 +5875,29 @@ name = "unicode-xid"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
+
+[[package]]
+name = "unrar"
+version = "0.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92ec61343a630d2b50d13216dea5125e157d3fc180a7d3f447d22fe146b648fc"
+dependencies = [
+ "bitflags 2.8.0",
+ "regex",
+ "unrar_sys",
+ "widestring",
+]
+
+[[package]]
+name = "unrar_sys"
+version = "0.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b77675b883cfbe6bf41e6b7a5cd6008e0a83ba497de3d96e41a064bbeead765"
+dependencies = [
+ "cc",
+ "libc",
+ "winapi",
+]
 
 [[package]]
 name = "unsafe-libyaml"

@@ -271,13 +271,22 @@ impl FilePickerState {
             let mut entries = dir_entries
                 .filter_map(|e| {
                     let path = e.path();
+                    let filename = e.file_name()
+                        .to_str()
+                        .unwrap_or("")
+                        .to_lowercase();
                     let ext = path
                         .extension()
                         .and_then(|e| e.to_str())
                         .unwrap_or("")
                         .to_lowercase();
-                    ((matches!(ext.as_str(), "zip" | "7z" | "bnp") || path.is_dir())
-                        && !e.file_name().to_str().unwrap_or("").starts_with('.'))
+                    (
+                        (
+                            matches!(ext.as_str(), "zip" | "rar" | "7z" | "bnp") ||
+                            matches!(filename.as_str(), "rules.txt" | "info.json") ||
+                            path.is_dir()
+                        )
+                        && !filename.starts_with('.'))
                     .then_some(path)
                 })
                 .collect::<Vec<_>>();

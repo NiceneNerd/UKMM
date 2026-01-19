@@ -664,6 +664,28 @@ pub fn convert_gfx(
                 find_root(&tmpdir)
                     .context("Could not find base or DLC content folder in extracted mod")?
             }
+        } else if ext == "RAR" {
+            log::info!("Extracting RAR file...");
+            let tmpdir = util::get_temp_folder();
+            let mut archive = unrar::Archive::new(path)
+                .open_for_processing()
+                .context("Failed to open RAR for extraction")?;
+            while let Some(header) = archive.read_header()
+                .context("Failed to read header")? {
+                archive = if header.entry().is_file() {
+                    log::info!("Extracting {}...", header.entry().filename.to_string_lossy());
+                    header.extract_with_base::<&Path>(tmpdir.as_ref())
+                        .context("Failed to extract file")?
+                } else {
+                    header.skip().context("Failed to skip folder")?
+                };
+            }
+            if meta.is_none() {
+                find_rules(&tmpdir).context("Could not find rules.txt in extracted mod")?
+            } else {
+                find_root(&tmpdir)
+                    .context("Could not find base or DLC content folder in extracted mod")?
+            }
         } else if path.file_name().context("No file name")?.to_str() == Some("rules.txt") {
             path.parent()
                 .expect("Parent path gotta' exist, right?")

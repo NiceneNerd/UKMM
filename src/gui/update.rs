@@ -256,10 +256,10 @@ impl App {
                     let loc = LOCALIZATION.read();
                     if let Some(mut paths) = rfd::FileDialog::new()
                         .set_title(loc.get("Mod_Select_Title"))
-                        .add_filter("Any mod (*.zip, *.7z, *.bnp, rules.txt)", &["zip", "bnp", "7z", "txt"])
+                        .add_filter("Any mod (*.zip, *.rar, *.7z, *.bnp, rules.txt)", &["zip", "rar", "7z", "bnp", "txt"])
                         .add_filter("UKMM Mod (*.zip)", &["zip"])
                         .add_filter("BCML Mod (*.bnp)", &["bnp"])
-                        .add_filter("Legacy Mod (*.zip, *.7z, rules.txt)", &["zip", "7z", "txt"])
+                        .add_filter("Legacy Mod (*.zip, *.rar, *.7z, rules.txt)", &["zip", "rar", "7z", "txt"])
                         .add_filter("All files (*.*)", &["*"])
                         .pick_files()
                         .filter(|p| !p.is_empty())

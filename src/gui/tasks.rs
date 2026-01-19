@@ -48,10 +48,59 @@ fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
         .extension()
         .and_then(|e| e.to_str().map(|e| e.to_lowercase()))
         .unwrap_or_default();
-    if ext != "zip" && ext != "7z" {
+    if ext != "zip" && ext != "7z" && ext != "rar" {
         (false, false)
+    } else if ext == "rar" {
+        match unrar::Archive::new(path).open_for_listing() {
+            Ok(mut rar) => {
+                let mut is_a_mod = false;
+                let mut has_meta = false;
+                while let Ok(Some(header)) = rar.read_header() {
+                    let filename = &header.entry().filename;
+                    is_a_mod = is_a_mod || [
+                        "content",
+                        "aoc",
+                        "01007EF00011E000",
+                        "01007EF00011F001",
+                    ]
+                        .into_iter()
+                        .any(|root| filename.ends_with(root));
+                    has_meta = has_meta || filename.ends_with("rules.txt");
+                    if is_a_mod && has_meta {
+                        break;
+                    }
+                    rar = match header.skip() {
+                        Ok(header) => header,
+                        Err(_) => break,
+                    }
+                }
+                (is_a_mod, has_meta)
+            },
+            Err(_) => (false, false)
+        }
     } else if ext == "7z" {
-        (true, false)
+        match sevenz_rust::Archive::open(path) {
+            Ok(sz) => {
+                let mut is_a_mod = false;
+                let mut has_meta = false;
+                for entry in sz.files.iter() {
+                    is_a_mod = is_a_mod || [
+                        "content",
+                        "aoc",
+                        "01007EF00011E000",
+                        "01007EF00011F001",
+                    ]
+                        .into_iter()
+                        .any(|root| entry.name.ends_with(root));
+                    has_meta = has_meta || entry.name.ends_with("rules.txt");
+                    if is_a_mod && has_meta {
+                        break;
+                    }
+                }
+                (is_a_mod, has_meta)
+            },
+            Err(_) => (false, false)
+        }
     } else {
         match fs::File::open(path)
             .context("")
@@ -96,7 +145,7 @@ pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Messa
         return Ok(Message::HandleMod(Mod::from_reader(
             ModReader::open_peek(mod_, vec![]).context("Failed to open converted mod")?,
         )));
-    } // TODO: Handle types other than zip and bnp
+    }
     let mod_ = match ModReader::open_peek(path, vec![]) {
         Ok(reader) => Mod::from_reader(reader),
         Err(err) => {

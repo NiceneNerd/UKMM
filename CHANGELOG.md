@@ -19,6 +19,7 @@ be obvious from the Info tab.
   the file, including the disappearance of safe zones around the game world
   - This is a breaking change. Any mod that edits Map/MainField/Static.smubin
     will need to be reinstalled from a loose file or bnp package.
+- Support for mods packaged as rar files
 
 **Changed**
 
@@ -42,6 +43,7 @@ be obvious from the Info tab.
   and write all files over again
   - This is listed as a change and not a fix because it's a temporary hack, until I
     can figure out why partial deployment fails 90% of the time
+- Better support for detecting meta information for 7z and rar packaged mods
 
 **Fixed**
 
