@@ -44,6 +44,7 @@ be obvious from the Info tab.
   - This is listed as a change and not a fix because it's a temporary hack, until I
     can figure out why partial deployment fails 90% of the time
 - Better support for detecting meta information for 7z and rar packaged mods
+- Better support for detecting mod root directories for zip, 7z, and rar mods
 - Made missing loc keys pull from English instead of displaying the loc key, itself.
   - This will become more important as I try to replace further messages, like error
     messages, with localized strings. ETA on that is TBD.
