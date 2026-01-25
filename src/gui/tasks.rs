@@ -110,19 +110,15 @@ fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
         {
             Ok(zip) => {
                 let is_a_mod = zip.file_names().any(|n| {
+                    log::info!("Checking file: {}", n);
                     [
-                        "content",
-                        "aoc",
-                        "romfs",
-                        "RomFS",
-                        "atmosphere",
-                        "contents",
-                        "01007EF00011E000",
-                        "01007EF00011F001",
-                        "BreathOfTheWild",
+                        "content/",
+                        "aoc/",
+                        "01007EF00011E000/",
+                        "01007EF00011F001/"
                     ]
                     .into_iter()
-                    .any(|root| n.starts_with(root))
+                    .any(|root| n.ends_with(root))
                 });
                 let has_meta = zip.file_names().any(|n| n.ends_with("rules.txt"));
                 (is_a_mod, has_meta)
