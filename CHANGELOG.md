@@ -26,9 +26,9 @@ be obvious from the Info tab.
 - Changed cemu settings importer to populate the emulator executable path with
   a path that will boot directly into BotW, skipping the game list, if the dump
   is in the unpacked format. Otherwise, it will populate it with a path that will
-  open cemu to the game list. Also added quotes to it on Windows or when the path
-  has spaces in it, to ensure that powershell doesn't vomit all over a completely
-  valid path
+  open cemu to the game list
+- Added quotes to the executable command on Windows or when the path has spaces in
+  it, to ensure that Powershell doesn't vomit all over a completely valid path
 - Rewrote the file subsystem. Files will now only be searched for once, in the
   exact location they're supposed to be located at
 - Logs have been cleaned up considerably. Only one log file will be used, and it
@@ -39,10 +39,6 @@ be obvious from the Info tab.
 - Set top-level error message to tell the user to expand the details, so that people
   stop thinking that all errors are the same error just because the top-level message
   is the same
-- Removed partial deployment. Copy/hardlink deployment now wipe the deploy directory
-  and write all files over again
-  - This is listed as a change and not a fix because it's a temporary hack, until I
-    can figure out why partial deployment fails 90% of the time
 - Better support for detecting meta information for 7z and rar packaged mods
 - Better support for detecting mod root directories for zip, 7z, and rar mods
 - Made missing loc keys pull from English instead of displaying the loc key, itself.
@@ -56,11 +52,14 @@ be obvious from the Info tab.
   if Windows reads from %LocalAppData%/ukmm, and another operating system has
   a symbolic link to read from that same folder, then UKMM will reconstruct mod
   paths on boot, to ensure that you can properly merge from both systems
-- Fixed (or at least attempted to fix) the program displaying at the wrong DPI when
-  using Wayland, e.g. on steamOS
+- Fixed the program displaying at the wrong DPI when using Wayland, e.g. on steamOS
 - Reordered bnp map conversions, so modifications apply to the right map instances
 - Made sure DeleteSets actually deleted the things marked for deletion. Whoops!
   Fixes various merge errors in BoneControl, ActorLink, and other files
+- Fixed copy mode trying to copy folders using code for copying files
+- Fixed hard link mode trying to hard link folders
+- Fixed how partial deployment determines if a file is changed, so that only files
+  that were actually changed are updated
 - Fixes a rare error where some files with no header in their format would be
   recognized as byml files instead of binary
 - Fixed various deployment errors, reimplemented partial deployment
