@@ -58,38 +58,46 @@ impl Manager {
         mod_manager: &Arc<RwLock<mods::Manager>>,
     ) -> Result<Self> {
         log::info!("Initializing deployment manager");
-        let pending_text = fs::read_to_string(Self::log_path(&settings.read()))
-            .map_err(anyhow_ext::Error::from)?;
-        let pending = match serde_yaml::from_str::<PendingLog>(&pending_text)
-        {
-            Ok(log) => {
-                if log.has_some() {
-                    log::info!("Pending deployment data found");
-                    log::debug!("{:#?}", &log);
-                } else {
-                    log::info!("No files pending deployment");
-                }
-                log
-            }
-            Err(_) => {
-                let old_pending = match serde_yaml::from_str::<OldPendingLog>(&pending_text)
+        let pending = match fs::read_to_string(Self::log_path(&settings.read()))
+            .map_err(anyhow_ext::Error::from) {
+            Ok(text) => {
+                match serde_yaml::from_str::<PendingLog>(&text)
                 {
-                    Ok(old_log) => {
-                        if !old_log.files.is_empty() || !old_log.delete.is_empty() {
+                    Ok(log) => {
+                        if log.has_some() {
                             log::info!("Pending deployment data found");
-                            log::debug!("{:#?}", &old_log);
+                            log::debug!("{:#?}", &log);
                         } else {
                             log::info!("No files pending deployment");
                         }
-                        old_log
+                        log
                     }
-                    Err(e) => {
-                        log::warn!("Could not load pending deployment data:\n{}", &e);
-                        log::info!("No files pending deployment");
-                        Default::default()
+                    Err(_) => {
+                        let old_pending = match serde_yaml::from_str::<OldPendingLog>(&text)
+                        {
+                            Ok(old_log) => {
+                                if !old_log.files.is_empty() || !old_log.delete.is_empty() {
+                                    log::info!("Pending deployment data found");
+                                    log::debug!("{:#?}", &old_log);
+                                } else {
+                                    log::info!("No files pending deployment");
+                                }
+                                old_log
+                            }
+                            Err(e) => {
+                                log::warn!("Could not load pending deployment data:\n{}", &e);
+                                log::info!("No files pending deployment");
+                                Default::default()
+                            }
+                        };
+                        old_pending.try_into()?
                     }
-                };
-                old_pending.try_into()?
+                }
+            }
+            Err(e) => {
+                log::warn!("Could not load pending deployment data:\n{}", &e);
+                log::info!("No files pending deployment");
+                Default::default()
             }
         };
         Ok(Self {
