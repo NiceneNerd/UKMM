@@ -20,6 +20,8 @@ static KO: &'static str = include_str!("../localization/ko.json");
 static RU: &'static str = include_str!("../localization/ru.json");
 static NL: &'static str = include_str!("../localization/nl.json");
 static ZH: &'static str = include_str!("../localization/zh.json");
+static AR: &'static str = include_str!("../localization/ar.json");
+static VI: &'static str = include_str!("../localization/vi.json");
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum LocLang {
@@ -33,6 +35,8 @@ pub enum LocLang {
     Russian,
     SimpleChinese,
     Spanish,
+    Arabic,
+    Vietnamese,
 }
 
 impl From<LocLang> for &str {
@@ -48,6 +52,8 @@ impl From<LocLang> for &str {
             LocLang::Russian => "Русский язык",
             LocLang::SimpleChinese => "中文",
             LocLang::Spanish => "Español",
+            LocLang::Arabic => "العربية",
+            LocLang::Vietnamese => "Tiếng Việt",
         }
     }
 }
@@ -71,6 +77,8 @@ impl LocLang {
             Self::Russian,
             Self::SimpleChinese,
             Self::Spanish,
+            Self::Arabic,
+            Self::Vietnamese,
         ]
             .iter()
     }
@@ -129,6 +137,14 @@ impl<'a> From<LocLang> for Localization {
                     .collect(),
                 LocLang::Spanish => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&ES)
                     .expect("Invalid Spanish localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::Arabic => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&AR)
+                    .expect("Invalid Arabic localization")
+                    .into_iter()
+                    .collect(),
+                LocLang::Vietnamese => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&VI)
+                    .expect("Invalid Vietnamese localization")
                     .into_iter()
                     .collect(),
             },
@@ -190,6 +206,14 @@ impl Localization {
                 .collect(),
             LocLang::Spanish => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&ES)
                 .expect("Invalid Spanish localization")
+                .into_iter()
+                .collect(),
+            LocLang::Arabic => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&AR)
+                .expect("Invalid Arabic localization")
+                .into_iter()
+                .collect(),
+            LocLang::Vietnamese => serde_json::from_str::<HashMap<&'static str, Cow<'static, str>>>(&VI)
+                .expect("Invalid Vietnamese localization")
                 .into_iter()
                 .collect(),
         };
