@@ -437,8 +437,11 @@ impl App {
                 .collapsible(false)
                 .scroll([false, true])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
-                .frame(Frame::window(&ctx.style()).inner_margin(8.))
+                .frame(Frame::window(&ctx.style()).inner_margin(6.))
+                .default_width(600.0)
+                .default_height(500.0)
                 .show(ctx, |ui| {
+                    ui.spacing_mut().item_spacing.y = 6.0;
                     let md_cache = ui.data_mut(|d| {
                         d.get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
                             egui::Id::new("md_cache_changelog"),

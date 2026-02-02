@@ -309,14 +309,14 @@ impl App {
             mods,
             temp_settings,
             changelog: {
-                let last_version = core
-                    .settings()
-                    .last_version
-                    .as_ref()
-                    .map(|v| v.to_string())
-                    .unwrap_or_else(|| "0.0.0".into());
-                if last_version == "0.0.0" {
-                    Some(include_str!("../assets/intro.md").into())
+                let settings = core.settings();
+                let is_first_run = settings.last_version.is_none();
+                let needs_config = settings.platform_config().is_none();
+                drop(settings);
+                
+                // Show intro if first run OR if platform not configured
+                if is_first_run || needs_config {
+                    Some("Intro_Message".localize().to_string())
                 } else {
                     tasks::get_releases(core.clone(), send.clone());
                     None

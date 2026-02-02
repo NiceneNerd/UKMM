@@ -48,6 +48,57 @@ impl App {
             .x
         });
         static CATEGORY_WIDTH: OnceLock<f32> = OnceLock::new();
+        
+        // Show helper message if no mods installed
+        if self.displayed_mods.is_empty() {
+            egui::Frame::none()
+                .inner_margin(Margin::same(40.0))
+                .show(ui, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(80.0);
+                        
+                        let has_config = self.core.settings().platform_config().is_some();
+                        
+                        // Main message
+                        if !has_config {
+                            let message = "Helper_Modlist_NoConfig".localize();
+                            let vars = HashMap::from(
+                                [("platform".to_string(), self.core.settings().current_mode.to_string())]
+                            );
+                            let prompt = message.format(&vars).unwrap();
+                            
+                            ui.label(
+                                egui::RichText::new(prompt)
+                                    .size(16.0)
+                                    .color(ui.style().visuals.text_color())
+                            );
+                        } else {
+                            ui.label(
+                                egui::RichText::new("Helper_Modlist_NoMods".localize())
+                                    .size(16.0)
+                                    .color(ui.style().visuals.text_color())
+                            );
+                        }
+                        
+                        ui.add_space(8.0);
+                        
+                        // Hint text
+                        let hint = if !has_config {
+                            "Helper_Modlist_NoConfig_Hint".localize()
+                        } else {
+                            "Helper_Modlist_NoMods_Hint".localize()
+                        };
+                        
+                        ui.label(
+                            egui::RichText::new(hint)
+                                .size(13.0)
+                                .color(ui.style().visuals.weak_text_color())
+                        );
+                    });
+                });
+            return;
+        }
+        
         egui::Frame::none()
             .inner_margin(Margin {
                 bottom: 4.0,
