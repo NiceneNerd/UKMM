@@ -23,6 +23,7 @@ be obvious from the Info tab.
 - Thanks @Clonephaze for 2 new features:
   - Russian, Japanese, Korean, Arabic, Viet localization. All of these were done
     with AI, so if you don't like the translations, feel free to open a PR
+    - Note: Localization is the only thing AI will ever be used for in this project
   - UI breadcrumbs, for pointing the user toward the settings tab, if they somehow
     miss the intro dialog popup
 
