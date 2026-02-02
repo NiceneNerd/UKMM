@@ -20,6 +20,11 @@ be obvious from the Info tab.
   - This is a breaking change. Any mod that edits Map/MainField/Static.smubin
     will need to be reinstalled from a loose file or bnp package.
 - Support for mods packaged as rar files
+- Thanks @Clonephaze for 2 new features:
+  - Russian, Japanese, Korean, Arabic, Viet localization. All of these were done
+    with AI, so if you don't like the translations, feel free to open a PR
+  - UI breadcrumbs, for pointing the user toward the settings tab, if they somehow
+    miss the intro dialog popup
 
 **Changed**
 
@@ -44,6 +49,9 @@ be obvious from the Info tab.
 - Made missing loc keys pull from English instead of displaying the loc key, itself.
   - This will become more important as I try to replace further messages, like error
     messages, with localized strings. ETA on that is TBD.
+- Changed intro dialog window write-up, for more clarity on first usage or when
+  settings have not yet been set
+  - Thanks @Clonephaze
 
 **Fixed**
 
