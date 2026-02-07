@@ -53,6 +53,8 @@ be obvious from the Info tab.
 - Changed intro dialog window write-up, for more clarity on first usage or when
   settings have not yet been set
   - Thanks @Clonephaze
+- Gracefully handle IPC socket claim errors. Allows multiple instances of UKMM to
+  run at the same time, though I'm not sure why you'd ever want to do that
 
 **Fixed**
 

@@ -1000,27 +1000,38 @@ pub fn oneclick(url: &str) {
 
 pub fn wait_ipc() {
     std::thread::spawn(|| {
-        let sock = INTERFACE
-            .claim()
-            .expect("Failed to claim single instance interface. Is UKMM already open?");
-        let mut buf = [0; 1024];
-        loop {
-            match sock.recv(&mut buf) {
-                Ok(len) => {
-                    log::debug!("Received 1-click install message");
-                    let msg: IpcMessage = serde_json::from_slice(&buf[..len])
-                        .with_context(|| String::from_utf8(buf.to_vec()).unwrap_or_default())
-                        .expect("Broken IPC message");
-                    log::trace!("{:?}", &msg);
-                    let mut sender = ONECLICK_SENDER.get();
-                    while sender.is_none() {
-                        sender = ONECLICK_SENDER.get();
+        match INTERFACE.claim() {
+            Ok(sock) => {
+                let mut buf = [0; 1024];
+                loop {
+                    match sock.recv(&mut buf) {
+                        Ok(len) => {
+                            log::debug!("Received 1-click install message");
+                            let msg: IpcMessage = serde_json::from_slice(&buf[..len])
+                                .with_context(|| String::from_utf8(buf.to_vec()).unwrap_or_default())
+                                .expect("Broken IPC message");
+                            log::trace!("{:?}", &msg);
+                            let mut sender = ONECLICK_SENDER.get();
+                            while sender.is_none() {
+                                sender = ONECLICK_SENDER.get();
+                            }
+                            sender.unwrap().send(msg.into()).expect("Broken channel");
+                        }
+                        Err(e) => {
+                            log::error!("IPC error: {}", e);
+                        }
                     }
-                    sender.unwrap().send(msg.into()).expect("Broken channel");
                 }
-                Err(e) => {
-                    log::error!("IPC error: {}", e);
-                }
+            },
+            Err(e) => {
+                crate::display_error(
+                    Box::new(
+                        format!(
+                            "One-Click listener failed to initialize. Is UKMM already open?\n{}",
+                            e.to_string()
+                        )
+                    )
+                )
             }
         }
     });
