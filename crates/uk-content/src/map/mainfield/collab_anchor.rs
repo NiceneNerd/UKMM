@@ -22,7 +22,7 @@ impl CollabAnchor {
             &format!(
                 "{}{}",
                 self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
-                self.collabo_ssopen_flag_name.clone().unwrap()
+                self.collabo_ssopen_flag_name.clone().expect("collaboSSOpenFlagName should have been read on diff")
             )
         )
         .to_string()
@@ -75,26 +75,26 @@ impl From<CollabAnchor> for Byml {
     fn from(val: CollabAnchor) -> Self {
         map!(
             "CollaboShootingStarDirection" => val.collabo_shooting_star_direction
-                .unwrap()
+                .expect("CollaboShootingStarDirection should have been read on diff")
                 .into(),
             "CollaboShootingStarEndHour" => val.collabo_shooting_star_end_hour
-                .unwrap()
+                .expect("CollaboShootingStarEndHour should have been read on diff")
                 .into(),
             "CollaboShootingStarStartHour" => val.collabo_shooting_star_start_hour
-                .unwrap()
+                .expect("CollaboShootingStarStartHour should have been read on diff")
                 .into(),
             "Translate" => Byml::Map(val.translate
                 .iter()
                 .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
                 .collect::<crate::util::HashMap<String, Byml>>()),
             "collaboSSFalloutFlagName" => val.collabo_ssfallout_flag_name
-                .unwrap()
+                .expect("collaboSSFalloutFlagName should have been read on diff")
                 .into(),
             "collaboSSOpenFlagName" => val.collabo_ssopen_flag_name
-                .unwrap()
+                .expect("collaboSSOpenFlagName should have been read on diff")
                 .into(),
             "collaboSSQuestFlag" => val.collabo_ssquest_flag
-                .unwrap()
+                .expect("collaboSSQuestFlag should have been read on diff")
                 .into(),
         )
     }
@@ -105,29 +105,29 @@ impl Mergeable for CollabAnchor {
         Self {
             collabo_shooting_star_direction: other.collabo_shooting_star_direction
                 .ne(&self.collabo_shooting_star_direction)
-                .then(|| other.collabo_shooting_star_direction)
-                .unwrap(),
+                .then_some(other.collabo_shooting_star_direction)
+                .expect("CollaboShootingStarDirection must exist in at least one of these files"),
             collabo_shooting_star_end_hour: other.collabo_shooting_star_end_hour
                 .ne(&self.collabo_shooting_star_end_hour)
-                .then(|| other.collabo_shooting_star_end_hour)
-                .unwrap(),
+                .then_some(other.collabo_shooting_star_end_hour)
+                .expect("CollaboShootingStarEndHour must exist in at least one of these files"),
             collabo_shooting_star_start_hour: other.collabo_shooting_star_start_hour
                 .ne(&self.collabo_shooting_star_start_hour)
-                .then(|| other.collabo_shooting_star_start_hour)
-                .unwrap(),
+                .then_some(other.collabo_shooting_star_start_hour)
+                .expect("CollaboShootingStarStartHour must exist in at least one of these files"),
             translate: self.translate.diff(&other.translate),
             collabo_ssfallout_flag_name: other.collabo_ssfallout_flag_name
                 .ne(&self.collabo_ssfallout_flag_name)
                 .then(|| other.collabo_ssfallout_flag_name.clone())
-                .unwrap(),
+                .expect("collaboSSFalloutFlagName must exist in at least one of these files"),
             collabo_ssopen_flag_name: other.collabo_ssopen_flag_name
                 .ne(&self.collabo_ssopen_flag_name)
                 .then(|| other.collabo_ssopen_flag_name.clone())
-                .unwrap(),
+                .expect("collaboSSOpenFlagName must exist in at least one of these files"),
             collabo_ssquest_flag: other.collabo_ssquest_flag
                 .ne(&self.collabo_ssquest_flag)
                 .then(|| other.collabo_ssquest_flag.clone())
-                .unwrap(),
+                .expect("collaboSSQuestFlag must exist in at least one of these files"),
         }
     }
 
@@ -135,35 +135,35 @@ impl Mergeable for CollabAnchor {
         Self {
             collabo_shooting_star_direction: diff.collabo_shooting_star_direction
                 .eq(&self.collabo_shooting_star_direction)
-                .then(|| self.collabo_shooting_star_direction)
-                .or_else(|| Some(diff.collabo_shooting_star_direction))
-                .unwrap(),
+                .then_some(self.collabo_shooting_star_direction)
+                .or(Some(diff.collabo_shooting_star_direction))
+                .expect("CollaboShootingStarDirection must exist in at least one of these files"),
             collabo_shooting_star_end_hour: diff.collabo_shooting_star_end_hour
                 .eq(&self.collabo_shooting_star_end_hour)
-                .then(|| self.collabo_shooting_star_end_hour)
-                .or_else(|| Some(diff.collabo_shooting_star_end_hour))
-                .unwrap(),
+                .then_some(self.collabo_shooting_star_end_hour)
+                .or(Some(diff.collabo_shooting_star_end_hour))
+                .expect("CollaboShootingStarEndHour must exist in at least one of these files"),
             collabo_shooting_star_start_hour: diff.collabo_shooting_star_start_hour
                 .eq(&self.collabo_shooting_star_start_hour)
-                .then(|| self.collabo_shooting_star_start_hour)
-                .or_else(|| Some(diff.collabo_shooting_star_start_hour))
-                .unwrap(),
+                .then_some(self.collabo_shooting_star_start_hour)
+                .or(Some(diff.collabo_shooting_star_start_hour))
+                .expect("CollaboShootingStarStartHour must exist in at least one of these files"),
             translate: self.translate.merge(&diff.translate),
             collabo_ssfallout_flag_name: diff.collabo_ssfallout_flag_name.clone()
                 .eq(&self.collabo_ssfallout_flag_name)
                 .then(|| self.collabo_ssfallout_flag_name.clone())
                 .or_else(|| Some(diff.collabo_ssfallout_flag_name.clone()))
-                .unwrap(),
+                .expect("collaboSSFalloutFlagName must exist in at least one of these files"),
             collabo_ssopen_flag_name: diff.collabo_ssopen_flag_name.clone()
                 .eq(&self.collabo_ssopen_flag_name)
                 .then(|| self.collabo_ssopen_flag_name.clone())
                 .or_else(|| Some(diff.collabo_ssopen_flag_name.clone()))
-                .unwrap(),
+                .expect("collaboSSOpenFlagName must exist in at least one of these files"),
             collabo_ssquest_flag: diff.collabo_ssquest_flag.clone()
                 .eq(&self.collabo_ssquest_flag)
                 .then(|| self.collabo_ssquest_flag.clone())
                 .or_else(|| Some(diff.collabo_ssquest_flag.clone()))
-                .unwrap(),
+                .expect("collaboSSQuestFlag must exist in at least one of these files"),
         }
     }
 }

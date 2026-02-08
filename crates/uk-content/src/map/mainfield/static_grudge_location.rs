@@ -52,7 +52,7 @@ impl From<StaticGrudgeLocation> for Byml {
         map.insert("Translate".into(), Byml::Map(value.translate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-            .collect::<crate::util::HashMap<String, Byml>>()));
+            .collect::<HashMap<String, Byml>>()));
         Byml::Map(map)
     }
 }
@@ -60,10 +60,8 @@ impl From<StaticGrudgeLocation> for Byml {
 impl Mergeable for StaticGrudgeLocation {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            eyeball_hash_id: other.eyeball_hash_id
-                .ne(&self.eyeball_hash_id)
-                .then(|| other.eyeball_hash_id)
-                .unwrap_or_default(),
+            eyeball_hash_id: if other.eyeball_hash_id
+                .ne(&self.eyeball_hash_id) { other.eyeball_hash_id } else { Default::default() },
             translate: self.translate.diff(&other.translate),
         }
     }
@@ -72,9 +70,9 @@ impl Mergeable for StaticGrudgeLocation {
         Self {
             eyeball_hash_id: diff.eyeball_hash_id
                 .eq(&self.eyeball_hash_id)
-                .then(|| self.eyeball_hash_id)
-                .or_else(|| Some(diff.eyeball_hash_id))
-                .unwrap(),
+                .then_some(self.eyeball_hash_id)
+                .or(Some(diff.eyeball_hash_id))
+                .expect("EyeballHashId should be in at least one of these files"),
             translate: self.translate.merge(&diff.translate),
         }
     }

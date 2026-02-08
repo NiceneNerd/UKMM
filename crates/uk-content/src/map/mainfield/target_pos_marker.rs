@@ -44,7 +44,7 @@ impl TryFrom<&Byml> for TargetPosMarker {
                     .context("TargetPosMarker UniqueName must be String")
                 )
                 .transpose()?
-                .map(|s| s.clone()),
+                .cloned(),
         })
     }
 }
@@ -73,10 +73,8 @@ impl Mergeable for TargetPosMarker {
         Self {
             rotate: self.rotate.diff(&other.rotate),
             translate: self.translate.diff(&other.translate),
-            unique_name: other.unique_name
-                .ne(&self.unique_name)
-                .then(|| other.unique_name.clone())
-                .unwrap_or_default(),
+            unique_name: if other.unique_name
+                .ne(&self.unique_name) { other.unique_name.clone() } else { Default::default() },
         }
     }
 
@@ -88,7 +86,7 @@ impl Mergeable for TargetPosMarker {
                 .eq(&self.unique_name)
                 .then(|| self.unique_name.clone())
                 .or_else(|| Some(diff.unique_name.clone()))
-                .unwrap(),
+                .expect("UniqueName should be in at least one of these files"),
         }
     }
 }

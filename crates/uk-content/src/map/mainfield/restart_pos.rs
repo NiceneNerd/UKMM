@@ -59,7 +59,7 @@ impl From<RestartPos> for Byml {
                 .iter()
                 .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
                 .collect::<crate::util::HashMap<String, Byml>>()),
-            "UniqueName" => val.unique_name.unwrap().into(),
+            "UniqueName" => val.unique_name.expect("UniqueName should have been read on diff").into(),
         }
     }
 }
@@ -72,7 +72,7 @@ impl Mergeable for RestartPos {
             unique_name: other.unique_name
                 .ne(&self.unique_name)
                 .then(|| other.unique_name.clone())
-                .unwrap(),
+                .expect("UniqueName should be in at least one of these files"),
         }
     }
 
@@ -84,7 +84,7 @@ impl Mergeable for RestartPos {
                 .eq(&self.unique_name)
                 .then(|| self.unique_name.clone())
                 .or_else(|| Some(diff.unique_name.clone()))
-                .unwrap(),
+                .expect("UniqueName should be in at least one of these files"),
         }
     }
 }

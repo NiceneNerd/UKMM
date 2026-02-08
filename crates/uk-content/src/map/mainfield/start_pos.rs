@@ -44,7 +44,7 @@ impl TryFrom<&Byml> for PlayerState {
     }
 }
 
-impl<'a> From<&PlayerState> for &'a str {
+impl From<&PlayerState> for &str {
     fn from(value: &PlayerState) -> Self {
         match value {
             PlayerState::Guard => "Guard",
@@ -110,7 +110,7 @@ impl TryFrom<&Byml> for StartPos {
                     .context("StartPos PosName must be String")
                 )
                 .transpose()?
-                .map(|s| s.clone()),
+                .cloned(),
             rotate: try_get_vecf(map.get("Rotate")
                 .context("StartPos must have Rotate")?)
                 .context("Invalid StartPos Rotate")?,
@@ -124,7 +124,7 @@ impl TryFrom<&Byml> for StartPos {
 impl From<StartPos> for Byml {
     fn from(value: StartPos) -> Self {
         let mut map: HashMap<String, Byml> = Default::default();
-        map.insert("Map".into(), (&value.map.unwrap()).into());
+        map.insert("Map".into(), (&value.map.expect("Map should have been read on diff")).into());
         match &value.player_state {
             Some(p) => map.insert("PlayerState".into(), p.into()),
             None => None,
@@ -136,11 +136,11 @@ impl From<StartPos> for Byml {
         map.insert("Rotate".into(), Byml::Map(value.rotate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-            .collect::<crate::util::HashMap<String, Byml>>()));
+            .collect::<HashMap<String, Byml>>()));
         map.insert("Translate".into(), Byml::Map(value.translate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-            .collect::<crate::util::HashMap<String, Byml>>()));
+            .collect::<HashMap<String, Byml>>()));
         Byml::Map(map)
     }
 }
@@ -151,15 +151,15 @@ impl Mergeable for StartPos {
             map: other.map
                 .ne(&self.map)
                 .then(|| other.map.clone())
-                .unwrap(),
+                .expect("Map should be in at least one of these files"),
             player_state: other.player_state
                 .ne(&self.player_state)
-                .then(|| other.player_state)
-                .unwrap(),
+                .then_some(other.player_state)
+                .expect("PlayerState should be in at least one of these files"),
             pos_name: other.pos_name
                 .ne(&self.pos_name)
                 .then(|| other.pos_name.clone())
-                .unwrap(),
+                .expect("PosName should be in at least one of these files"),
             rotate: self.rotate.diff(&other.rotate),
             translate: self.translate.diff(&other.translate),
         }
@@ -171,17 +171,17 @@ impl Mergeable for StartPos {
                 .eq(&self.map)
                 .then(|| self.map.clone())
                 .or_else(|| Some(diff.map.clone()))
-                .unwrap(),
+                .expect("Map should be in at least one of these files"),
             player_state: diff.player_state
                 .eq(&self.player_state)
-                .then(|| self.player_state)
-                .or_else(|| Some(diff.player_state))
-                .unwrap(),
+                .then_some(self.player_state)
+                .or(Some(diff.player_state))
+                .expect("PlayerState should be in at least one of these files"),
             pos_name: diff.pos_name
                 .eq(&self.pos_name)
                 .then(|| self.pos_name.clone())
                 .or_else(|| Some(diff.pos_name.clone()))
-                .unwrap(),
+                .expect("PosName should be in at least one of these files"),
             rotate: self.rotate.merge(&diff.rotate),
             translate: self.translate.merge(&diff.translate),
         }

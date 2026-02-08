@@ -118,7 +118,7 @@ impl TryFrom<&Byml> for Map {
     }
 }
 
-impl<'a> From<&Map> for &'a str {
+impl From<&Map> for & str {
     fn from(value: &Map) -> Self {
         match value {
             Map::AocField => "AocField",
@@ -157,8 +157,7 @@ impl<'a> FromIterator<&'a str> for MapAndUnit {
             .expect("MapAndUnit first part must be Map");
         let unit = it.next()
             .expect("iter must have 2 elements")
-            .try_into()
-            .expect("MapAndUnit second part must be MapUnit");
+            .into();
         Self {
             map,
             unit,
@@ -171,9 +170,18 @@ impl TryFrom<&str> for MapAndUnit {
 
     fn try_from(value: &str) -> anyhow::Result<Self> {
         let parts = value.split('/');
-        match parts.try_len().unwrap() {
-            2 => Ok(parts.collect()),
-            _ => Err(anyhow::anyhow!("MapAndUnit must contain 2 parts: {}", parts.try_len().unwrap())),
+        match parts.try_len() {
+            Ok(size) => match size {
+                2 => Ok(parts.collect()),
+                _ => Err(anyhow::anyhow!("MapAndUnit size must contain 2 parts: {}", size)),
+            }
+            Err(size) => Err(
+                anyhow::anyhow!(
+                    "MapAndUnit must contain 2 parts, but could not be sized. Maybe it's {} or {}?",
+                    size.0,
+                    size.1.unwrap_or(0)
+                )
+            ),
         }
     }
 }
@@ -233,7 +241,7 @@ impl TryFrom<&Byml> for AreaShape {
     }
 }
 
-impl<'a> From<&AreaShape> for &'a str {
+impl From<&AreaShape> for &str {
     fn from(value: &AreaShape) -> Self {
         match value {
             AreaShape::Box => "Box",

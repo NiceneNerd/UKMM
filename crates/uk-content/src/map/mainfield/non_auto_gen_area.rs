@@ -64,13 +64,13 @@ impl TryFrom<&Byml> for NonAutoGenArea {
 impl From<NonAutoGenArea> for Byml {
     fn from(val: NonAutoGenArea) -> Self {
         map!(
-            "EnableAutoFlower" => val.enable_auto_flower.unwrap().into(),
-            "RotateY" => val.rotate_y.unwrap().into(),
+            "EnableAutoFlower" => val.enable_auto_flower.expect("EnableAutoFlower should have been read on diff").into(),
+            "RotateY" => val.rotate_y.expect("RotateY should have been read on diff").into(),
             "Scale" => Byml::Map(val.scale
                 .iter()
                 .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
                 .collect::<crate::util::HashMap<String, Byml>>()),
-            "Shape" => (&val.shape.unwrap()).into(),
+            "Shape" => (&val.shape.expect("Shape should have been read on diff")).into(),
             "Translate" => Byml::Map(val.translate
                 .iter()
                 .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
@@ -84,17 +84,17 @@ impl Mergeable for NonAutoGenArea {
         Self {
             enable_auto_flower: other.enable_auto_flower
                 .ne(&self.enable_auto_flower)
-                .then(|| other.enable_auto_flower)
-                .unwrap(),
+                .then_some(other.enable_auto_flower)
+                .expect("EnableAutoFlower should be in at least one of these files"),
             rotate_y: other.rotate_y
                 .ne(&self.rotate_y)
-                .then(|| other.rotate_y)
-                .unwrap(),
+                .then_some(other.rotate_y)
+                .expect("RotateY should be in at least one of these files"),
             scale: self.scale.diff(&other.scale),
             shape: other.shape
                 .ne(&self.shape)
-                .then(|| other.shape)
-                .unwrap(),
+                .then_some(other.shape)
+                .expect("Shape should be in at least one of these files"),
             translate: self.translate.diff(&other.translate),
         }
     }
@@ -103,20 +103,20 @@ impl Mergeable for NonAutoGenArea {
         Self {
             enable_auto_flower: diff.enable_auto_flower
                 .eq(&self.enable_auto_flower)
-                .then(|| self.enable_auto_flower)
-                .or_else(|| Some(diff.enable_auto_flower))
-                .unwrap(),
+                .then_some(self.enable_auto_flower)
+                .or(Some(diff.enable_auto_flower))
+                .expect("EnableAutoFlower should be in at least one of these files"),
             rotate_y: diff.rotate_y
                 .eq(&self.rotate_y)
-                .then(|| self.rotate_y)
-                .or_else(|| Some(diff.rotate_y))
-                .unwrap(),
+                .then_some(self.rotate_y)
+                .or(Some(diff.rotate_y))
+                .expect("RotateY should be in at least one of these files"),
             scale: self.scale.merge(&diff.scale),
             shape: diff.shape
                 .eq(&self.shape)
-                .then(|| self.shape)
-                .or_else(|| Some(diff.shape))
-                .unwrap(),
+                .then_some(self.shape)
+                .or(Some(diff.shape))
+                .expect("Shape should be in at least one of these files"),
             translate: self.translate.merge(&diff.translate),
         }
     }

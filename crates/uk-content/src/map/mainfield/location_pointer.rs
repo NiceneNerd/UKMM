@@ -45,7 +45,7 @@ impl TryFrom<&Byml> for LocationPointer {
                     .context("LocationPointer MessageID must be String")
                 )
                 .transpose()?
-                .map(|s| s.clone()),
+                .cloned(),
             pointer_type: Some(map.get("PointerType")
                 .context("LocationPointer must have PointerType")?
                 .as_i32()
@@ -55,7 +55,7 @@ impl TryFrom<&Byml> for LocationPointer {
                     .context("LocationPointer SaveFlag must be String")
                 )
                 .transpose()?
-                .map(|s| s.clone()),
+                .cloned(),
             show_level: Some(map.get("ShowLevel")
                 .context("LocationPointer must have ShowLevel")?
                 .as_i32()
@@ -70,17 +70,17 @@ impl TryFrom<&Byml> for LocationPointer {
 impl From<LocationPointer> for Byml {
     fn from(val: LocationPointer) -> Self {
         let mut map: HashMap<String, Byml> = Default::default();
-        map.insert("LocationPriority".into(), val.location_priority.unwrap().into());
+        map.insert("LocationPriority".into(), val.location_priority.expect("LocationPriority should have been read on diff").into());
         match &val.message_id {
             Some(i) => map.insert("MessageID".into(), i.into()),
             None => None,
         };
-        map.insert("PointerType".into(), val.pointer_type.unwrap().into());
+        map.insert("PointerType".into(), val.pointer_type.expect("PointerType should have been read on diff").into());
         match &val.save_flag {
             Some(i) => map.insert("SaveFlag".into(), i.into()),
             None => None,
         };
-        map.insert("ShowLevel".into(), val.show_level.unwrap().into());
+        map.insert("ShowLevel".into(), val.show_level.expect("ShowLevel should have been read on diff").into());
         map.insert("Translate".into(), Byml::Map(val.translate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
@@ -94,24 +94,24 @@ impl Mergeable for LocationPointer {
         Self {
             location_priority: other.location_priority
                 .ne(&self.location_priority)
-                .then(|| other.location_priority)
-                .unwrap(),
+                .then_some(other.location_priority)
+                .expect("LocationPriority should be present in at least one of these files"),
             message_id: other.message_id
                 .ne(&self.message_id)
                 .then(|| other.message_id.clone())
-                .unwrap(),
+                .expect("MessageID should be present in at least one of these files"),
             pointer_type: other.pointer_type
                 .ne(&self.pointer_type)
-                .then(|| other.pointer_type)
-                .unwrap(),
+                .then_some(other.pointer_type)
+                .expect("PointerType should be present in at least one of these files"),
             save_flag: other.save_flag
                 .ne(&self.save_flag)
                 .then(|| other.save_flag.clone())
-                .unwrap(),
+                .expect("SaveFlag should be present in at least one of these files"),
             show_level: other.show_level
                 .ne(&self.show_level)
-                .then(|| other.show_level)
-                .unwrap(),
+                .then_some(other.show_level)
+                .expect("ShowLevel should be present in at least one of these files"),
             translate: self.translate.diff(&other.translate),
         }
     }
@@ -120,29 +120,29 @@ impl Mergeable for LocationPointer {
         Self {
             location_priority: diff.location_priority
                 .eq(&self.location_priority)
-                .then(|| self.location_priority)
-                .or_else(|| Some(diff.location_priority))
-                .unwrap(),
+                .then_some(self.location_priority)
+                .or(Some(diff.location_priority))
+                .expect("LocationPriority should be present in at least one of these files"),
             message_id: diff.message_id
                 .eq(&self.message_id)
                 .then(|| self.message_id.clone())
                 .or_else(|| Some(diff.message_id.clone()))
-                .unwrap(),
+                .expect("MessageID should be present in at least one of these files"),
             pointer_type: diff.pointer_type
                 .eq(&self.pointer_type)
-                .then(|| self.pointer_type)
-                .or_else(|| Some(diff.pointer_type))
-                .unwrap(),
+                .then_some(self.pointer_type)
+                .or(Some(diff.pointer_type))
+                .expect("PointerType should be present in at least one of these files"),
             save_flag: diff.save_flag
                 .eq(&self.save_flag)
                 .then(|| self.save_flag.clone())
                 .or_else(|| Some(diff.save_flag.clone()))
-                .unwrap(),
+                .expect("SaveFlag should be present in at least one of these files"),
             show_level: diff.show_level
                 .eq(&self.show_level)
-                .then(|| self.show_level)
-                .or_else(|| Some(diff.show_level))
-                .unwrap(),
+                .then_some(self.show_level)
+                .or(Some(diff.show_level))
+                .expect("ShowLevel should be present in at least one of these files"),
             translate: self.translate.merge(&diff.translate),
         }
     }

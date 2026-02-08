@@ -64,7 +64,7 @@ impl TryFrom<&Byml> for LocationIcon {
     }
 }
 
-impl<'a> From<&LocationIcon> for &'a str {
+impl From<&LocationIcon> for &str {
     fn from(value: &LocationIcon) -> Self {
         match value {
             LocationIcon::Castle => "Castle",
@@ -142,7 +142,7 @@ impl TryFrom<&Byml> for LocationMarker {
                     .context("LocationMarker MessageID must be String")
                 )
                 .transpose()?
-                .map(|s| s.clone()),
+                .cloned(),
             priority: Some(map.get("Priority")
                 .context("LocationMarker must have Priority")?
                 .as_i32()
@@ -165,7 +165,7 @@ impl TryFrom<&Byml> for LocationMarker {
                     .context("LocationMarker WarpDestPosName must be String")
                 )
                 .transpose()?
-                .map(|s| s.clone()),
+                .cloned(),
         })
     }
 }
@@ -181,8 +181,8 @@ impl From<LocationMarker> for Byml {
             Some(i) => map.insert("MessageID".into(), i.into()),
             None => None,
         };
-        map.insert("Priority".into(), value.priority.unwrap().into());
-        map.insert("SaveFlag".into(), value.save_flag.unwrap().into());
+        map.insert("Priority".into(), value.priority.expect("Priority should have been read on diff").into());
+        map.insert("SaveFlag".into(), value.save_flag.expect("SaveFlag should have been read on diff").into());
         map.insert("Translate".into(), Byml::Map(value.translate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
@@ -204,29 +204,29 @@ impl Mergeable for LocationMarker {
         Self {
             icon: other.icon
                 .ne(&self.icon)
-                .then(|| other.icon)
-                .unwrap(),
+                .then_some(other.icon)
+                .expect("Icon should be present in at least one of these files"),
             message_id: other.message_id
                 .ne(&self.message_id)
                 .then(|| other.message_id.clone())
-                .unwrap(),
+                .expect("MessageID should be present in at least one of these files"),
             priority: other.priority
                 .ne(&self.priority)
-                .then(|| other.priority)
-                .unwrap(),
+                .then_some(other.priority)
+                .expect("Priority should be present in at least one of these files"),
             save_flag: other.save_flag
                 .ne(&self.save_flag)
                 .then(|| other.save_flag.clone())
-                .unwrap(),
+                .expect("SaveFlag should be present in at least one of these files"),
             translate: self.translate.diff(&other.translate),
             warp_dest_map_name: other.warp_dest_map_name
                 .ne(&self.warp_dest_map_name)
                 .then(|| other.warp_dest_map_name.clone())
-                .unwrap(),
+                .expect("WarpDestMapName should be present in at least one of these files"),
             warp_dest_pos_name: other.warp_dest_pos_name
                 .ne(&self.warp_dest_pos_name)
                 .then(|| other.warp_dest_pos_name.clone())
-                .unwrap(),
+                .expect("WarpDestPosName should be present in at least one of these files"),
         }
     }
 
@@ -234,35 +234,35 @@ impl Mergeable for LocationMarker {
         Self {
             icon: diff.icon
                 .eq(&self.icon)
-                .then(|| self.icon)
-                .or_else(|| Some(diff.icon))
-                .unwrap(),
+                .then_some(self.icon)
+                .or(Some(diff.icon))
+                .expect("Icon should be present in at least one of these files"),
             message_id: diff.message_id
                 .eq(&self.message_id)
                 .then(|| self.message_id.clone())
                 .or_else(|| Some(diff.message_id.clone()))
-                .unwrap(),
+                .expect("MessageID should be present in at least one of these files"),
             priority: diff.priority
                 .eq(&self.priority)
-                .then(|| self.priority)
-                .or_else(|| Some(diff.priority))
-                .unwrap(),
+                .then_some(self.priority)
+                .or(Some(diff.priority))
+                .expect("Priority should be present in at least one of these files"),
             save_flag: diff.save_flag
                 .eq(&self.save_flag)
                 .then(|| self.save_flag.clone())
                 .or_else(|| Some(diff.save_flag.clone()))
-                .unwrap(),
+                .expect("SaveFlag should be present in at least one of these files"),
             translate: self.translate.merge(&diff.translate),
             warp_dest_map_name: diff.warp_dest_map_name
                 .eq(&self.warp_dest_map_name)
                 .then(|| self.warp_dest_map_name.clone())
                 .or_else(|| Some(diff.warp_dest_map_name.clone()))
-                .unwrap(),
+                .expect("WarpDestMapName should be present in at least one of these files"),
             warp_dest_pos_name: diff.warp_dest_pos_name
                 .eq(&self.warp_dest_pos_name)
                 .then(|| self.warp_dest_pos_name.clone())
                 .or_else(|| Some(diff.warp_dest_pos_name.clone()))
-                .unwrap(),
+                .expect("WarpDestPosName should be present in at least one of these files"),
         }
     }
 }
