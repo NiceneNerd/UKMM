@@ -61,11 +61,11 @@ impl From<TargetPosMarker> for Byml {
         map.insert("Rotate".into(), Byml::Map(val.rotate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-            .collect::<crate::util::HashMap<String, Byml>>()));
+            .collect::<HashMap<String, Byml>>()));
         map.insert("Translate".into(), Byml::Map(val.translate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-            .collect::<crate::util::HashMap<String, Byml>>()));
+            .collect::<HashMap<String, Byml>>()));
         match &val.unique_name {
             Some(p) => map.insert("UniqueName".into(), p.into()),
             None => None,

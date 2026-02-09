@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use anyhow::{Context, Result};
 
 pub fn response(url: &str) -> Result<Vec<u8>> {
@@ -25,13 +26,13 @@ pub fn response(url: &str) -> Result<Vec<u8>> {
 pub struct SmartStringWrapper<'a>(pub &'a mut smartstring::alias::String);
 
 impl uk_ui::egui::TextBuffer for SmartStringWrapper<'_> {
+    fn is_mutable(&self) -> bool {
+        true
+    }
+
     #[inline]
     fn as_str(&self) -> &str {
         self.0.as_str()
-    }
-
-    fn is_mutable(&self) -> bool {
-        true
     }
 
     #[inline]
@@ -47,5 +48,10 @@ impl uk_ui::egui::TextBuffer for SmartStringWrapper<'_> {
         let start = self.byte_index_from_char_index(char_range.start);
         let end = self.byte_index_from_char_index(char_range.end);
         self.0.drain(start..end);
+    }
+
+    #[inline]
+    fn type_id(&self) -> TypeId {
+        TypeId::of::<Self>()
     }
 }

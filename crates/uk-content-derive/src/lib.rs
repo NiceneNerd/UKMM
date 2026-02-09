@@ -5,17 +5,20 @@ use quote::quote;
 use syn::*;
 
 fn get_name(field: &Field) -> String {
-    if let Some(Meta::NameValue(MetaNameValue {
-        path: _,
-        eq_token: _,
-        lit: Lit::Str(lit),
-    })) = field
+    let throwaway = Lit::Int(LitInt::from(proc_macro2::Literal::i32_unsuffixed(0)));
+    if let Some(Lit::Str(lit_str)) = field
         .attrs
         .iter()
-        .find(|at| at.path.is_ident("name"))
-        .and_then(|at| at.parse_meta().ok())
+        .find(|at| at.path().is_ident("name"))
+        .map(|at| match &at.meta {
+            Meta::NameValue(meta) => match &meta.value {
+                Expr::Lit(expr_lit) => &expr_lit.lit,
+                _ => &throwaway,
+            },
+            _ => &throwaway,
+        })
     {
-        lit.value()
+        lit_str.value()
     } else {
         field
             .ident

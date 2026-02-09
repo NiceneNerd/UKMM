@@ -274,7 +274,7 @@ impl Mergeable for SaveDataPack {
 }
 
 impl Resource for SaveDataPack {
-    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
         Self::from_sarc(&Sarc::new(data.as_ref())?)
     }
 

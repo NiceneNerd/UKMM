@@ -34,7 +34,7 @@ impl From<GeneralParamList> for ParameterIO {
 impl_simple_aamp!(GeneralParamList, 0);
 
 impl InfoSource for GeneralParamList {
-    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
         if let Some(obj) = self.0.object("AnimalUnit") {
             crate::actor::info_params!(obj, info, {
                 ("animalUnitBasePlayRate", "BasePlayRate", f32),
@@ -43,7 +43,7 @@ impl InfoSource for GeneralParamList {
         if let Some(obj) = self.0.object("Armor") {
             crate::actor::info_params!(obj, info, {
                 ("armorDefenceAddLevel", "DefenceAddLevel", i32),
-                ("armorNextRankName", "NextRankName", smartstring::alias::String),
+                ("armorNextRankName", "NextRankName", String),
                 ("armorStarNum", "StarNum", i32),
             });
         };
@@ -51,7 +51,7 @@ impl InfoSource for GeneralParamList {
             crate::actor::info_params!(obj, info, {
                 ("armorEffectAncientPowUp", "AncientPowUp", bool),
                 ("armorEffectEffectLevel", "EffectLevel", i32),
-                ("armorEffectEffectType", "EffectType", smartstring::alias::String),
+                ("armorEffectEffectType", "EffectType", String),
                 ("armorEffectEnableClimbWaterfall", "EnableClimbWaterfall", bool),
                 ("armorEffectEnableSpinAttack", "EnableSpinAttack", bool),
             });
@@ -81,7 +81,7 @@ impl InfoSource for GeneralParamList {
         };
         if let Some(obj) = self.0.object("Bow") {
             crate::actor::info_params!(obj, info, {
-                ("bowArrowName", "ArrowName", smartstring::alias::String),
+                ("bowArrowName", "ArrowName", String),
                 ("bowIsLeadShot", "IsLeadShot", bool),
                 ("bowIsRapidFire", "IsRapidFire", bool),
                 ("bowLeadShotNum", "LeadShotNum", i32),
@@ -118,7 +118,7 @@ impl InfoSource for GeneralParamList {
         };
         if let Some(obj) = self.0.object("Horse") {
             crate::actor::info_params!(obj, info, {
-                ("horseASVariation", "ASVariation", smartstring::alias::String),
+                ("horseASVariation", "ASVariation", String),
                 ("horseGearTopChargeNum", "GearTopChargeNum", i32),
                 ("horseNature", "Nature", i32),
             });
@@ -135,14 +135,14 @@ impl InfoSource for GeneralParamList {
                 ("itemSaleRevivalCount", "SaleRevivalCount", i32),
                 ("itemSellingPrice", "SellingPrice", i32),
                 ("itemStainColor", "StainColor", i32),
-                ("itemUseIconActorName", "UseIconActorName", smartstring::alias::String),
+                ("itemUseIconActorName", "UseIconActorName", String),
             });
         };
         if let Some(obj) = self.0.object("MasterSword") {
             crate::actor::info_params!(obj, info, {
                 ("masterSwordSearchEvilDist", "SearchEvilDist", f32),
-                ("masterSwordSleepActorName", "SleepActorName", smartstring::alias::String),
-                ("masterSwordTrueFormActorName", "TrueFormActorName", smartstring::alias::String),
+                ("masterSwordSleepActorName", "SleepActorName", String),
+                ("masterSwordTrueFormActorName", "TrueFormActorName", String),
                 ("masterSwordTrueFormAttackPower", "TrueFormAttackPower", i32),
             });
         };
@@ -167,13 +167,13 @@ impl InfoSource for GeneralParamList {
         if let Some(obj) = self.0.object("SeriesArmor") {
             crate::actor::info_params!(obj, info, {
                 ("seriesArmorEnableCompBonus", "EnableCompBonus", bool),
-                ("seriesArmorSeriesType", "SeriesType", smartstring::alias::String),
+                ("seriesArmorSeriesType", "SeriesType", String),
             });
         };
         if let Some(obj) = self.0.object("System") {
             crate::actor::info_params!(obj, info, {
                 ("systemIsGetItemSelf", "IsGetItemSelf", bool),
-                ("systemSameGroupActorName", "SameGroupActorName", smartstring::alias::String),
+                ("systemSameGroupActorName", "SameGroupActorName", String),
             });
         };
         if let Some(obj) = self.0.object("Traveler") {
@@ -186,7 +186,7 @@ impl InfoSource for GeneralParamList {
             .into_iter()
             .chain((0..30).map(|i| format!("RoutePoint{}Name", i)))
             .try_for_each(|param| -> Result<()> {
-                if let Some(val) = extract_info_param::<smartstring::alias::String>(obj, &param)?
+                if let Some(val) = extract_info_param::<String>(obj, &param)?
                     .filter(|v| v.as_string().map(|v| !v.is_empty()).unwrap_or_default())
                 {
                     info.insert(jstr!("traveler{&param}").into(), val);

@@ -15,7 +15,7 @@ use uk_localization::LocLang;
 use uk_manager::{settings::{DeployConfig, Platform, PlatformSettings}};
 use uk_reader::ResourceReader;
 use uk_ui::{
-    egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
+    egui::{self, Align, Checkbox, Button, InnerResponse, Layout, RichText, TextStyle, Ui},
     ext::UiExt,
     icons::{self, IconButtonExt},
     visuals::Theme,
@@ -34,9 +34,9 @@ fn render_setting<R>(
     ui.horizontal(|ui| {
         ui.label(RichText::new(name).family(egui::FontFamily::Name("Bold".into())));
         ui.add(
-            ImageButton::new(icons::get_icon(ui.ctx(), icons::Icon::Info))
+            Button::image(icons::get_icon(ui.ctx(), icons::Icon::Info))
                 .frame(false)
-                .tint(ui.visuals().text_color()),
+                .image_tint_follows_text_color(true),
         )
         .on_hover_text(description);
     });
@@ -480,7 +480,7 @@ fn render_platform_config(
 
 impl App {
     pub fn render_settings(&mut self, ui: &mut Ui) {
-        egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
+        egui::Frame::NONE.inner_margin(4.0).show(ui, |ui| {
             let mut wiiu_changed = false;
             let mut switch_changed = false;
             let scroll_height = ui.available_height() - 37.0_f32;

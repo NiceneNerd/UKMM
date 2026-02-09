@@ -1,6 +1,6 @@
 [package]
 name = "uk-mod"
-edition = "2021"
+edition = "2024"
 version.workspace = true
 
 [dependencies]
@@ -32,7 +32,7 @@ zstd = { workspace = true }
 botw-utils = { git = "https://github.com/GingerAvalanche/botw-utils-rust.git" }
 configparser = "3.0.1"
 enum_dispatch = "0.3.8"
-mmap-rs = "0.6.1"
+mmap-rs = "0.7.0"
 ouroboros = "0.18.4"
 piz = "0.5.1"
 uk-content = { path = "../uk-content" }

@@ -380,7 +380,8 @@ where
                 } else {
                     &mut self.buffer[name_len..]
                 };
-                lexical_core::write_unchecked(i as u16, write_buffer).len()
+                lexical_core::write(i as u16, write_buffer).len()
+                //lexical_core::write_unchecked(i as u16, write_buffer).len()
             };
             let len = if let Some((padding, ref buffer)) = self.padding {
                 let padding_len = padding.len();

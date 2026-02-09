@@ -11,7 +11,6 @@ use uk_localization::string_ext::LocString;
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
 #[allow(deprecated)]
-use uk_ui::egui_extras::RetainedImage;
 use uk_ui::{
     egui::{self, Align, Label, Layout, RichText, Ui},
     icons::IconButtonExt,
@@ -29,34 +28,31 @@ pub struct ModInfo<'a>(pub &'a Mod);
 
 impl ModInfo<'_> {
     #[allow(deprecated)]
-    pub fn preview(&self) -> Option<Arc<RetainedImage>> {
-        fn load_preview(mod_: &Mod) -> Result<Option<Arc<RetainedImage>>> {
+    pub fn preview(&self, ctx: &egui::Context) -> Option<Arc<egui::TextureHandle>> {
+        fn load_preview(mod_: &Mod, ctx: &egui::Context) -> Result<Option<Arc<egui::TextureHandle>>> {
             let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
             for ext in ["jpg", "jpeg", "png", "svg"] {
                 if let Ok(mut file) = zip.by_name(&format!("thumb.{}", ext)) {
                     let mut vec = vec![0; file.size() as usize];
                     file.read_exact(&mut vec)?;
                     return Ok(Some(Arc::new(
-                        RetainedImage::from_image_bytes(mod_.meta.name.as_str(), &vec)
+                        ctx.load_texture(mod_.meta.name.as_str(), &vec, Default::default())
                             .map_err(|e| anyhow::anyhow!("{}", e))?,
                     )));
                 }
             }
             Ok(None)
         }
-        static PREVIEW: LazyLock<RwLock<FxHashMap<usize, Option<Arc<RetainedImage>>>>> =
+        static PREVIEW: LazyLock<RwLock<FxHashMap<usize, Option<Arc<egui::TextureHandle>>>>> =
             LazyLock::new(|| RwLock::new(FxHashMap::default()));
         let mut preview = PREVIEW.write();
         preview
             .entry(self.0.hash())
             .or_insert_with(|| {
-                match load_preview(self.0) {
-                    Ok(pre) => pre,
-                    Err(e) => {
-                        log::error!("Error loading mod preview: {}", e);
-                        None
-                    }
-                }
+                load_preview(self.0, ctx).unwrap_or_else(|e| {
+                    log::error!("Error loading mod preview: {}", e);
+                    None
+                })
             })
             .clone()
     }
@@ -68,12 +64,15 @@ impl Component for ModInfo<'_> {
     fn show(&self, ui: &mut Ui) -> egui::InnerResponse<Option<Self::Message>> {
         let mut msg = None;
         let mod_ = self.0;
-        egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
+        egui::Frame::NONE.inner_margin(2.0).show(ui, |ui| {
             ui.spacing_mut().item_spacing.y = 8.;
             ui.add_space(8.);
-            if let Some(preview) = self.preview() {
+            if let Some(preview) = self.preview(ui.ctx()) {
                 let available = ui.available_size();
-                preview.show_max_size(ui, [available.x.max(0.0), available.y.max(0.0)].into());
+                ui.add(egui::Image::from_texture(
+                    egui::load::SizedTexture::new(preview.id(), available)
+                ));
+                //preview.show_max_size(ui, [available.x.max(0.0), available.y.max(0.0)].into());
                 ui.add_space(8.);
             }
             let ver = mod_.meta.version.to_string();
@@ -103,7 +102,7 @@ impl Component for ModInfo<'_> {
                 )
                 .clone()
             });
-            egui_commonmark::CommonMarkViewer::new("mod_description").show(
+            egui_commonmark::CommonMarkViewer::new(/* "mod_description" */).show(
                 ui,
                 &mut md_cache.lock(),
                 &mod_.meta.description,

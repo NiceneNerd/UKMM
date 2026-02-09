@@ -64,7 +64,7 @@ impl FilePickerState {
 
     fn load_entries(path: &Path) -> Vec<PathBuf> {
         if let Ok(dir_entries) =
-            fs::read_dir(path).map(|entries| entries.filter_map(std::result::Result::ok))
+            fs::read_dir(path).map(|entries| entries.filter_map(Result::ok))
         {
             let mut entries = dir_entries
                 .filter_map(|e| {
@@ -113,7 +113,7 @@ impl FilePickerState {
 
 impl App {
     pub fn render_file_picker(&mut self, ui: &mut Ui) {
-        egui::Frame::none().inner_margin(2.0).show(ui, |ui| {
+        egui::Frame::NONE.inner_margin(2.0).show(ui, |ui| {
             ui.horizontal(|ui| {
                 for (icon, tooltip, cb) in [
                     (
@@ -151,7 +151,7 @@ impl App {
                 }
             });
             egui::ScrollArea::both()
-                .id_source("file_picker")
+                .id_salt("file_picker")
                 .show(ui, |ui| {
                     ui.add_space(8.);
                     ui.style_mut().spacing.item_spacing.y = 4.;

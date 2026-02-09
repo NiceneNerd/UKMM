@@ -712,7 +712,7 @@ impl Mergeable for Physics {
 }
 
 impl InfoSource for Physics {
-    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
         if let Some(Parameter::Vec3(center)) = self.rigid_body_set.as_ref().and_then(|body_set| {
             body_set.values().next().and_then(|list| {
                 list.lists.0.values().next().and_then(|list| {

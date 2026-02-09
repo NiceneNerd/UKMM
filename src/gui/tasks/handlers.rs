@@ -37,7 +37,7 @@ Comment=Starts U-King Mod Manager
 Exec={} %u
 StartupNotify=false
 MimeType=x-scheme-handler/bcml;",
-        std::env::current_exe().unwrap().display()
+        env::current_exe()?.display()
     );
 
     fs::create_dir_all(schema_file.parent().unwrap()).context("Failed to create directories")?;

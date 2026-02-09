@@ -10,7 +10,7 @@ where
 impl<T, E> FromByml for T
 where
     T: for<'a> TryFrom<&'a Byml, Error = E>,
-    crate::UKError: std::convert::From<E>,
+    crate::UKError: From<E>,
 {
     #[inline(always)]
     fn from_byml(byml: &Byml) -> crate::Result<Self> {

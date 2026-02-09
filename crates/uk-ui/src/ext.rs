@@ -124,7 +124,7 @@ impl UiExt for Ui {
             max_width,
             ..Default::default()
         };
-        let gallery = self.fonts(|f| f.layout(text.clone(), font, color, f32::INFINITY));
+        let gallery = self.fonts_mut(|f| f.layout(text.clone(), font, color, f32::INFINITY));
         let width = gallery.size().x;
         let res = self.label(job);
         if width > self.available_width() {

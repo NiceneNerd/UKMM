@@ -513,7 +513,7 @@ impl Mergeable for GameDataPack {
 }
 
 impl Resource for GameDataPack {
-    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
         Self::from_sarc(&Sarc::new(data.as_ref())?)
     }
 
@@ -584,7 +584,7 @@ mod tests {
         let gamedata = super::GameDataPack::from_sarc(&gs).unwrap();
         let gs2 = gamedata
             .clone()
-            .into_sarc_writer(crate::prelude::Endian::Big);
+            .into_sarc_writer(Endian::Big);
         let gamedata2 = super::GameDataPack::from_sarc_writer(&gs2).unwrap();
         assert_eq!(gamedata, gamedata2);
     }

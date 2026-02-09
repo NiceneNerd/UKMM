@@ -205,7 +205,7 @@ pub enum Message {
     SetDownloading(String),
     SetFocus(FocusedPane),
     SetLanguage(LocLang),
-    SetTheme(uk_ui::visuals::Theme),
+    SetTheme(visuals::Theme),
     ShowAbout,
     ShowPackagingOptions(FxHashSet<PathBuf>),
     ShowPackagingDependencies,
@@ -221,7 +221,7 @@ pub enum Message {
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 struct UiState {
-    theme: uk_ui::visuals::Theme,
+    theme: visuals::Theme,
     list_state: ModListState,
     picker_state: FilePickerState,
     #[serde(default = "tabs::default_ui")]
@@ -254,7 +254,7 @@ pub struct App {
     list_state: ModListState,
     picker_state: FilePickerState,
     profiles_state: RefCell<profiles::ProfileManagerState>,
-    meta_input: modals::MetaInputModal,
+    meta_input: MetaInputModal,
     closed_tabs: HashMap<Tabs, NodeIndex>,
     tree: Rc<RefCell<DockState<Tabs>>>,
     focused: FocusedPane,
@@ -270,7 +270,7 @@ pub struct App {
     options_mod: Option<(Mod, bool)>,
     temp_settings: Settings,
     toasts: egui_notify::Toasts,
-    theme: uk_ui::visuals::Theme,
+    theme: visuals::Theme,
     dock_style: uk_ui::egui_dock::Style,
     changelog: Option<String>,
     new_version: Option<VersionResponse>,
@@ -287,7 +287,7 @@ impl App {
                     .unwrap_or(1.0),
             );
         }
-        uk_ui::icons::load_icons();
+        uk_ui::icons::load_icons(&cc.egui_ctx);
         uk_ui::load_fonts(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
         let ui_state: UiState = fs::read_to_string(core.settings().state_file())
@@ -358,7 +358,7 @@ impl App {
             tree: Rc::new(RefCell::new(ui_state.tree)),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
-            dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
+            dock_style: visuals::style_dock(&cc.egui_ctx.style()),
             install_queue: Default::default(),
             update_mod: Default::default(),
             error_queue: Default::default(),
@@ -373,7 +373,7 @@ impl App {
     }
 
     #[inline(always)]
-    fn dirty(&self) -> MappedRwLockReadGuard<'_, uk_mod::Manifest> {
+    fn dirty(&self) -> MappedRwLockReadGuard<'_, Manifest> {
         let dirty = self.dirty.read();
         RwLockReadGuard::map(dirty, |dirty| {
             dirty
@@ -384,7 +384,7 @@ impl App {
     }
 
     #[inline(always)]
-    fn dirty_mut(&self) -> MappedRwLockWriteGuard<'_, uk_mod::Manifest> {
+    fn dirty_mut(&self) -> MappedRwLockWriteGuard<'_, Manifest> {
         let dirty = self.dirty.write();
         RwLockWriteGuard::map(dirty, |dirty| {
             dirty.get_mut(self.core.mod_manager().profile().key().as_str())
@@ -447,7 +447,7 @@ impl App {
         });
     }
 
-    fn handle_drops(&mut self, ctx: &eframe::egui::Context) {
+    fn handle_drops(&mut self, ctx: &egui::Context) {
         let files = ctx.input(|i| i.raw.dropped_files.clone());
         if !(self.modal_open() || files.is_empty()) {
             let first = files.first().and_then(|f| f.path.clone()).unwrap();
@@ -473,7 +473,7 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.handle_update(ctx, frame);
         self.render_menu(ctx, frame);
         self.render_error(ctx);
@@ -484,17 +484,18 @@ impl eframe::App for App {
         self.profiles_state.borrow_mut().render(self, ctx);
         self.render_changelog(ctx);
         self.meta_input.ui(ctx);
-        let layer_id = LayerId::background();
-        let max_rect = ctx.available_rect();
-        let clip_rect = ctx.available_rect();
+        // let layer_id = LayerId::background();
+        // let max_rect = ctx.available_rect();
+        //let clip_rect = ctx.available_rect();
         let id = Id::new("egui_dock::DockArea");
+        let mut ui_builder = egui::UiBuilder::new();
+        ui_builder.layer_id = Some(LayerId::background());
+        ui_builder.max_rect = Some(ctx.available_rect());
+        ui_builder.ui_stack_info = UiStackInfo::new(egui::UiKind::CentralPanel);
         let mut ui = Ui::new(
             ctx.clone(),
-            layer_id,
             id,
-            max_rect,
-            clip_rect,
-            UiStackInfo::new(egui::UiKind::CentralPanel),
+            ui_builder,
         );
         ui.spacing_mut().item_spacing = [8.0, 8.0].into();
         DockArea::new(&mut Rc::clone(&self.tree).borrow_mut())
@@ -542,8 +543,8 @@ pub fn main() -> Result<(), eframe::Error> {
                     }
                     .into(),
                 ),
-                min_inner_size: Some(egui::Vec2::new(850.0, 500.0)),
-                inner_size: Some(egui::Vec2::new(1200.0, 800.0)),
+                min_inner_size: Some(Vec2::new(850.0, 500.0)),
+                inner_size: Some(Vec2::new(1200.0, 800.0)),
                 ..Default::default()
             },
             ..Default::default()

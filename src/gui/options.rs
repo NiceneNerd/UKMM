@@ -1,6 +1,6 @@
 use eframe::egui::Button;
 use uk_localization::string_ext::LocString;
-use uk_mod::ModOptionGroup;
+use uk_mod::{ModOptionGroup, OptionGroup};
 use uk_ui::{
     egui::{self, Align, Checkbox, Context, Layout, Vec2},
     visuals,
@@ -27,11 +27,15 @@ impl App {
                         .show(ui, |ui| {
                             ui.vertical(|ui| {
                                 ui.spacing_mut().item_spacing.y = 8.0;
-                                if !group.description().is_empty() {
-                                    ui.label(group.description());
+                                let desc = match group {
+                                    OptionGroup::Multiple(g) => g.description(),
+                                    OptionGroup::Exclusive(g) => g.description(),
+                                };
+                                if !desc.is_empty() {
+                                    ui.label(desc);
                                 }
                                 match group {
-                                    uk_mod::OptionGroup::Exclusive(group) => {
+                                    OptionGroup::Exclusive(group) => {
                                         if !group.required
                                             && ui
                                                 .radio(
@@ -62,7 +66,7 @@ impl App {
                                             }
                                         });
                                     }
-                                    uk_mod::OptionGroup::Multiple(group) => {
+                                    OptionGroup::Multiple(group) => {
                                         group.options.iter().for_each(|opt| {
                                             let mut checked = mod_.enabled_options.contains(opt);
                                             if ui

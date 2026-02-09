@@ -162,10 +162,10 @@ impl InfoSource for ActorLink {
             info,
             {
                 ("actorScale", "ActorScale",  f32),
-                ("elink", "ElinkUser", smartstring::alias::String),
-                ("profile", "ProfileUser", smartstring::alias::String),
-                ("slink", "SlinkUser", smartstring::alias::String),
-                ("xlink", "XlinkUser", smartstring::alias::String),
+                ("elink", "ElinkUser", String),
+                ("profile", "ProfileUser", String),
+                ("slink", "SlinkUser", String),
+                ("xlink", "XlinkUser", String),
             }
         );
         if self.targets.get("SlinkUser") != Some(&Parameter::StringRef("Dummy".into())) {
@@ -176,7 +176,7 @@ impl InfoSource for ActorLink {
                 "tags".into(),
                 tags.iter()
                     .map(|tag| -> (std::string::String, Byml) {
-                        let hash = roead::aamp::hash_name(tag.as_str());
+                        let hash = hash_name(tag.as_str());
                         (
                             format!("tag{:08x}", hash),
                             if hash > 2147483647 {

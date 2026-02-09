@@ -1,6 +1,7 @@
 use uk_localization::string_ext::LocString;
 use uk_manager::settings::Platform;
 use uk_mod::{Meta, ModCategory};
+use uk_ui::egui::OutputCommand;
 use util::SmartStringWrapper;
 
 use super::*;
@@ -44,7 +45,7 @@ impl MetaInputModal {
             author: Default::default(),
             masters: Default::default(),
             options: Default::default(),
-            platform: uk_mod::ModPlatform::Specific(platform.into()),
+            platform: ModPlatform::Specific(platform.into()),
             url: Default::default(),
             version: "1.0.0".into(),
         });
@@ -67,7 +68,7 @@ impl MetaInputModal {
                     ui.label("Info_Provide_Message".localize());
                     ui.label("Info_Name".localize());
                     ui.text_edit_singleline(&mut SmartStringWrapper(&mut meta.name));
-                    egui::ComboBox::new("mod-meta-cat", "Info_Category".localize())
+                    ComboBox::new("mod-meta-cat", "Info_Category".localize())
                         .selected_text(meta.category.to_loc_str().localize())
                         .show_ui(ui, |ui| {
                             ModCategory::iter().for_each(|cat| {
@@ -170,8 +171,9 @@ impl App {
                                     self.do_update(Message::CloseError);
                                 }
                                 if ui.button("Generic_Copy".localize()).clicked() {
-                                    ui.output_mut(|o| o.copied_text = format!("{:?}", &err));
-                                    egui::popup::show_tooltip(
+                                    ui.output_mut(|o| o.commands
+                                        .push(OutputCommand::CopyText(format!("{:?}", &err))));
+                                    egui::Tooltip::always_open(
                                         ctx,
                                         ui.layer_id(),
                                         Id::new("copied"),
@@ -268,7 +270,7 @@ impl App {
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     let max_width =
-                        (ui.available_width() / 2.).min(ctx.screen_rect().size().x - 64.0).max(0.0);
+                        (ui.available_width() / 2.).min(ctx.content_rect().size().x - 64.0).max(0.0);
                     ui.vertical_centered(|ui| {
                         let text_height = ui.text_style_height(&TextStyle::Body) * 2.;
                         let padding = (80. - text_height - 8.).max(0.0);
@@ -340,9 +342,9 @@ impl App {
     }
 
     pub fn render_profile_menu(&mut self, ui: &mut Ui) {
-        egui::Frame::none()
+        Frame::NONE
             .inner_margin(Margin {
-                left: 2.0,
+                left: 2,
                 ..Default::default()
             })
             .show(ui, |ui| {
@@ -353,7 +355,7 @@ impl App {
                         .platform_config()
                         .map(|c| c.profile.to_string())
                         .unwrap_or_else(|| "Default".to_owned());
-                    ComboBox::from_id_source("profiles")
+                    ComboBox::from_id_salt("profiles")
                         .selected_text(&current_profile)
                         .show_ui(ui, |ui| {
                             self.core.settings().profiles().for_each(|profile| {
@@ -418,7 +420,7 @@ impl App {
                 .show(ui.ctx(), |ui| {
                     ui.with_layout(Layout::top_down(Align::Center), |ui| {
                         egui::ScrollArea::new([false, true])
-                            .id_source("pending_files")
+                            .id_salt("pending_files")
                             .auto_shrink([true, true])
                             .max_height(200.)
                             .show(ui, |ui| {
@@ -464,11 +466,11 @@ impl App {
                     ui.spacing_mut().item_spacing.y = 6.0;
                     let md_cache = ui.data_mut(|d| {
                         d.get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
-                            egui::Id::new("md_cache_changelog"),
+                            Id::new("md_cache_changelog"),
                         )
                         .clone()
                     });
-                    egui_commonmark::CommonMarkViewer::new("changelog").show(
+                    egui_commonmark::CommonMarkViewer::new(/* "changelog" */).show(
                         ui,
                         &mut md_cache.lock(),
                         last_version,
@@ -487,9 +489,11 @@ impl App {
                             .on_hover_text("Changelog_Bitcoin_Copy".localize())
                             .clicked()
                         {
-                            ui.output_mut(|o| {
-                                o.copied_text = "392YEGQ8WybkRSg4oyeLf7Pj2gQNhPcWoa".into()
-                            });
+                            ui.output_mut(|o| o.commands
+                                .push(OutputCommand::CopyText(
+                                    "392YEGQ8WybkRSg4oyeLf7Pj2gQNhPcWoa".into()
+                                ))
+                            );
                             self.do_update(Message::Toast(
                                 "Changelog_Bitcoin_Copied".localize().into(),
                             ));

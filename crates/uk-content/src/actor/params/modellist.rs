@@ -259,7 +259,7 @@ impl Mergeable for ModelList {
 }
 
 impl InfoSource for ModelList {
-    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
         info_params_filtered!(&self.attention, info, {
             ("cursorOffsetY", "CursorOffsetY", f32)
         });

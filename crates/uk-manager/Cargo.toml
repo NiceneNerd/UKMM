@@ -16,7 +16,7 @@ jwalk = { workspace = true }
 lenient_semver = { workspace = true }
 log = { workspace = true }
 parking_lot = { workspace = true, features = ["serde"] }
-path-slash = { workspace = true }
+#path-slash = { workspace = true }
 rayon = { workspace = true }
 roead = { workspace = true, features = ["yaml"] }
 rstb = { workspace = true }

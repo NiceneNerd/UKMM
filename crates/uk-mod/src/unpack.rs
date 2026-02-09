@@ -199,9 +199,9 @@ impl ResourceLoader for ModReader {
     }
 
     fn file_exists(&self, name: &Path) -> bool {
-        let name = name.to_slash_lossy();
-        self.manifest.content_files.contains(name.as_ref())
-            || self.manifest.aoc_files.contains(name.as_ref())
+        let name: String = name.to_slash_lossy().into();
+        self.manifest.content_files.contains(&name)
+            || self.manifest.aoc_files.contains(&name)
     }
 
     fn host_path(&self) -> &Path {
@@ -779,7 +779,7 @@ impl ModUnpacker {
                 .with_context(|| jstr!("Failed to build file {&file} for SARC"))?;
             writer.add_file(
                 file.as_str(),
-                compress_if(data.as_ref(), file.as_str()).as_ref(),
+                compress_if(data.as_ref(), file.as_str()),
             );
         }
         Ok(writer.to_binary())

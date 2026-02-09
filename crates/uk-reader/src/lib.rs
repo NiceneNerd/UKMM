@@ -51,10 +51,10 @@ impl From<ROMError> for uk_content::UKError {
 }
 
 flate!(static MAP_SRC_U: str from "data/filemap_wiiu.json");
-const FILE_MAP_U: LazyLock<Arc<DashMap<String, [Arc<&'static str>;3]>>> =
+const FILE_MAP_U: LazyLock<Arc<DashMap<String, [&'static str;3]>>> =
     LazyLock::new(|| Arc::new(serde_json::from_str(MAP_SRC_U.as_ref()).unwrap()));
 flate!(static MAP_SRC_NX: str from "data/filemap_nx.json");
-const FILE_MAP_NX: LazyLock<Arc<DashMap<String, [Arc<&'static str>;3]>>> =
+const FILE_MAP_NX: LazyLock<Arc<DashMap<String, [&'static str;3]>>> =
     LazyLock::new(|| Arc::new(serde_json::from_str(MAP_SRC_NX.as_ref()).unwrap()));
 type ResourceCache = Cache<String, Arc<ResourceData>>;
 type SarcCache = Cache<String, Arc<Sarc<'static>>>;
@@ -142,7 +142,7 @@ pub struct ResourceReader {
     source: Box<dyn ResourceLoader>,
     cache: ResourceCache,
     sarc_cache: SarcCache,
-    file_map: Arc<DashMap<String, [Arc<&'static str>; 3]>>,
+    file_map: Arc<DashMap<String, [&'static str; 3]>>,
 }
 
 impl PartialEq for ResourceReader {
@@ -359,13 +359,7 @@ impl ResourceReader {
         .into())
     }
 
-    pub fn languages(
-        &self,
-    ) -> dashmap::mapref::one::RefMut<
-        '_,
-        std::path::PathBuf,
-        std::vec::Vec<uk_content::constants::Language>,
-    > {
+    pub fn languages(&self) -> dashmap::mapref::one::RefMut<'_, PathBuf, Vec<Language>> {
         static LANGS: LazyLock<DashMap<PathBuf, Vec<Language>>> = LazyLock::new(Default::default);
         LANGS
             .entry(self.source().host_path().to_path_buf())

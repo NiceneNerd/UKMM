@@ -77,14 +77,14 @@ impl TryFrom<&ParameterIO> for Chemical {
                 .map(|i| -> Result<(usize, ChemicalBody)> {
                     Ok((i, ChemicalBody {
                         rigid_c: chemical_body
-                            .object(&format!("rigid_c_{:02}", i))
+                            .object(format!("rigid_c_{:02}", i))
                             .ok_or(UKError::MissingAampKey(
                                 "Chemical missing rigid_c entry",
                                 Box::from(None),
                             ))
                             .cloned()?,
                         shape:   chemical_body
-                            .object(&format!("shape_{:02}", i))
+                            .object(format!("shape_{:02}", i))
                             .ok_or(UKError::MissingAampKey(
                                 "Chemical missing shape entry",
                                 Box::from(None),
@@ -163,7 +163,7 @@ impl Mergeable for Chemical {
 }
 
 impl InfoSource for Chemical {
-    fn update_info(&self, info: &mut Map) -> crate::Result<()> {
+    fn update_info(&self, info: &mut Map) -> Result<()> {
         let mut chem_info = Map::default();
         if self
             .body

@@ -1,11 +1,8 @@
 use std::sync::LazyLock;
 
 use color_hex::color_from_hex;
-use egui::{
-    epaint::{Margin, RectShape, Shadow, Tessellator},
-    style::{Selection, Spacing, TextCursorStyle, WidgetVisuals, Widgets},
-    vec2, Color32, FontFamily, LayerId, Mesh, Rect, Rounding, Stroke, Style, Ui, Visuals,
-};
+use eframe::epaint::StrokeKind;
+use egui::{epaint::{Margin, RectShape, Shadow, Tessellator}, style::{Selection, Spacing, TextCursorStyle, WidgetVisuals, Widgets}, vec2, Color32, CornerRadius, FontFamily, LayerId, Mesh, Rect, Stroke, Style, Ui, Visuals};
 use egui_aesthetix::Aesthetix;
 use serde::{Deserialize, Serialize};
 
@@ -29,11 +26,11 @@ pub fn error_bg(visuals: &Visuals) -> Color32 {
     color.into()
 }
 
-pub fn style_dock(style: &egui::Style) -> egui_dock::Style {
+pub fn style_dock(style: &Style) -> egui_dock::Style {
     let mut dock_style = egui_dock::Style::from_egui(style);
-    dock_style.tab.tab_body.rounding = Rounding {
-        ne: 2.0,
-        nw: 2.0,
+    dock_style.tab.tab_body.corner_radius = CornerRadius {
+        ne: 2,
+        nw: 2,
         ..Default::default()
     };
     dock_style.tab.focused.text_color = style.visuals.strong_text_color();
@@ -49,7 +46,7 @@ pub fn style_dock(style: &egui::Style) -> egui_dock::Style {
 }
 
 pub fn slate_grid(ui: &mut Ui) {
-    ui.with_layer_id(LayerId::background(), |ui| {
+    ui.scope_builder(egui::UiBuilder::new().layer_id(LayerId::background()), |ui| {
         let cursor = ui.cursor();
         let width = ui.available_width();
         let height = ui.available_height() * 1.5;
@@ -57,12 +54,12 @@ pub fn slate_grid(ui: &mut Ui) {
         const GRID_OFFSET: f32 = 16.0;
         let bg_rect = Rect::from_min_size(ui.cursor().min, ui.available_size()); //.shrink(4.0);
         ui.painter()
-            .rect_filled(bg_rect, Rounding::ZERO, ui.style().visuals.extreme_bg_color);
+            .rect_filled(bg_rect, CornerRadius::ZERO, ui.style().visuals.extreme_bg_color);
         ui.set_clip_rect(bg_rect);
         ui.painter().add({
             let mut mesh = Mesh::default();
             let mut tesselator = Tessellator::new(
-                ui.fonts(|f| f.pixels_per_point()),
+                ui.pixels_per_point(),
                 egui::epaint::TessellationOptions {
                     feathering: true,
                     feathering_size_in_pixels: 32.0,
@@ -76,6 +73,7 @@ pub fn slate_grid(ui: &mut Ui) {
                     bg_rect.expand2([64.0, 0.0].into()),
                     0.0,
                     Stroke::new(2.0_f32, ui.style().visuals.widgets.inactive.bg_fill),
+                    StrokeKind::Inside
                 ),
                 &mut mesh,
             );
@@ -163,7 +161,7 @@ impl Theme {
                                 bg_fill: hex_color!("#1C1E1F"),
                                 bg_stroke: Stroke::new(1.0_f32, hex_color!("#2F2E2A")),
                                 fg_stroke: Stroke::new(1.0_f32, hex_color!("#BCCAD1")),
-                                rounding: Rounding::same(0.0),
+                                corner_radius: CornerRadius::same(0),
                                 expansion: 0.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
                             },
@@ -171,15 +169,15 @@ impl Theme {
                                 bg_fill: hex_color!("#1d4e77"),
                                 bg_stroke: Stroke::new(1.0_f32, hex_color!("#237ba3")),
                                 fg_stroke: Stroke::new(1.0_f32, hex_color!("#f0f0f0")),
-                                rounding: Rounding::same(2.0),
+                                corner_radius: CornerRadius::same(2),
                                 expansion: 0.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
                             },
                             hovered: WidgetVisuals {
                                 bg_fill: hex_color!("#237ba3"),
-                                bg_stroke: Stroke::new(1.0_f32, hex_color!("#1d649a")),
-                                fg_stroke: Stroke::new(1.5_f32, hex_color!("#f0f0f0")),
-                                rounding: Rounding::same(2.0),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#1d649a")),
+                                fg_stroke: Stroke::new(1.5, hex_color!("#f0f0f0")),
+                                corner_radius: CornerRadius::same(2),
                                 expansion: 1.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
                             },
@@ -187,7 +185,7 @@ impl Theme {
                                 bg_fill: hex_color!("#12384f"),
                                 bg_stroke: Stroke::new(1.0_f32, hex_color!("#237ba3")),
                                 fg_stroke: Stroke::new(1.5_f32, hex_color!("#D9EEFF")),
-                                rounding: Rounding::same(2.0),
+                                corner_radius: CornerRadius::same(2),
                                 expansion: 1.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
                             },
@@ -195,7 +193,7 @@ impl Theme {
                                 bg_fill: hex_color!("#1C1E1F"),
                                 bg_stroke: Stroke::new(1.0_f32, hex_color!("#2F2E2A")),
                                 fg_stroke: Stroke::new(1.0_f32, hex_color!("#D9EEFF")),
-                                rounding: Rounding::same(2.0),
+                                corner_radius: CornerRadius::same(2),
                                 expansion: 0.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
                             },
@@ -210,17 +208,17 @@ impl Theme {
                         code_bg_color: Color32::from_gray(32),
                         warn_fg_color: ORANGE, // orange
                         error_fg_color: RED,    // red
-                        window_rounding: Rounding::same(4.0),
+                        window_corner_radius: CornerRadius::same(4),
                         window_shadow: Shadow {
-                            offset: egui::Vec2::new(0., 0.),
-                            blur:   5.,
-                            spread: 5.,
+                            offset: [0, 0],
+                            blur:   5,
+                            spread: 5,
                             color:  Color32::from_black_alpha(45),
                         },
                         popup_shadow: Shadow {
-                            offset: egui::Vec2::new(0., 0.),
-                            blur:   5.,
-                            spread: 5.,
+                            offset: [0, 0],
+                            blur:   5,
+                            spread: 5,
                             color:  Color32::from_black_alpha(45),
                         },
                         window_fill: hex_color!("#1C1E1F"),
@@ -241,7 +239,7 @@ impl Theme {
                     spacing: Spacing {
                         button_padding: [4.0, 2.0].into(),
                         icon_spacing: 4.0,
-                        menu_margin: Margin::same(4.0),
+                        menu_margin: Margin::same(4),
                         indent_ends_with_horizontal_line: false,
                         ..Default::default()
                     },
@@ -255,10 +253,10 @@ impl Theme {
                 });
             }
             Self::Egui => {
-                ctx.set_visuals(egui::style::Visuals::dark());
+                ctx.set_visuals(Visuals::dark());
             }
             Self::EguiLight => {
-                ctx.set_visuals(egui::style::Visuals::light());
+                ctx.set_visuals(Visuals::light());
             }
             Self::Frappe => {
                 catppuccin_egui::set_theme(ctx, catppuccin_egui::FRAPPE);
@@ -285,14 +283,17 @@ impl Theme {
                 ctx.set_style(Style {
                     visuals: Visuals {
                         dark_mode: true,
+                        text_alpha_from_coverage: Default::default(),
                         override_text_color: None,
+                        weak_text_alpha: 0.0,
+                        weak_text_color: None,
                         widgets: Widgets {
                             noninteractive: WidgetVisuals {
                                 weak_bg_fill: hex_color!("#181B28"),
                                 bg_fill: hex_color!("#181B28"),
                                 bg_stroke: Stroke::new(1.0_f32, hex_color!("#2F3B51")), // separators, indentation lines
                                 fg_stroke: Stroke::new(1.0_f32, hex_color!("#EEEEEE")), // normal text color
-                                rounding: Rounding::same(2.0),
+                                corner_radius: CornerRadius::same(2),
                                 expansion: 0.0,
                             },
                             inactive: WidgetVisuals {
@@ -303,7 +304,7 @@ impl Theme {
                                     width: 1.0,
                                 },
                                 fg_stroke: Stroke::new(1.0_f32, hex_color!("#fefefe")), // button text
-                                rounding: Rounding::same(2.0),
+                                corner_radius: CornerRadius::same(2),
                                 expansion: 0.0,
                             },
                             hovered: WidgetVisuals {
@@ -311,7 +312,7 @@ impl Theme {
                                 bg_fill: hex_color!("#262C45"),
                                 bg_stroke: Stroke::new(1.0_f32, hex_color!("#71f79f")), // e.g. hover over window edge or button
                                 fg_stroke: Stroke::new(1.5_f32, Color32::from_gray(240)),
-                                rounding: Rounding::same(3.0),
+                                corner_radius: CornerRadius::same(2),
                                 expansion: 0.5,
                             },
                             active: WidgetVisuals {
@@ -319,7 +320,7 @@ impl Theme {
                                 bg_fill: hex_color!("#31363D"),
                                 bg_stroke: Stroke::new(1.0_f32, Color32::WHITE),
                                 fg_stroke: Stroke::new(2.0_f32, Color32::WHITE),
-                                rounding: Rounding::same(2.0),
+                                corner_radius: CornerRadius::same(2),
                                 expansion: 0.5,
                             },
                             open: WidgetVisuals {
@@ -327,7 +328,7 @@ impl Theme {
                                 bg_fill: hex_color!("#c74ded"),
                                 bg_stroke: Stroke::new(1.0_f32, Color32::from_gray(60)),
                                 fg_stroke: Stroke::new(1.0_f32, Color32::from_gray(210)),
-                                rounding: Rounding::same(2.0),
+                                corner_radius: CornerRadius::same(2),
                                 expansion: 0.0,
                             },
                         },
@@ -341,25 +342,26 @@ impl Theme {
                         hyperlink_color: hex_color!("#c74ded"),
                         faint_bg_color: hex_color!("#161925"), // visible, but barely so
                         extreme_bg_color: hex_color!("#181B21"), // e.g. TextEdit background
+                        text_edit_bg_color: None,
                         code_bg_color: hex_color!("#0C0E15"),
                         warn_fg_color: hex_color!("#ff6a00"), // orange
                         error_fg_color: hex_color!("#ed254e"), // red
-                        window_rounding: Rounding::same(4.0),
+                        window_corner_radius: CornerRadius::same(4),
                         window_shadow: Shadow {
-                            offset: vec2(10.0, 20.0),
-                            blur: 15.0,
-                            spread: 0.0,
+                            offset: [10, 20],
+                            blur: 15,
+                            spread: 0,
                             color: Color32::from_black_alpha(96),
                         },
                         window_fill: hex_color!("#181B28"),
                         window_stroke: Stroke::new(1.0_f32, Color32::from_gray(60)),
                         window_highlight_topmost: true,
-                        menu_rounding: Rounding::same(6.0),
+                        menu_corner_radius: CornerRadius::same(6),
                         panel_fill: hex_color!("#181B28"),
                         popup_shadow: Shadow {
-                            offset: vec2(6.0, 10.0),
-                            blur: 8.0,
-                            spread: 0.0,
+                            offset: [6, 10],
+                            blur: 8,
+                            spread: 0,
                             color: Color32::from_black_alpha(96),
                         },
                         resize_corner_size: 12.0,
@@ -378,11 +380,12 @@ impl Theme {
                         interact_cursor: None,
                         image_loading_spinners: true,
                         numeric_color_space: egui::style::NumericColorSpace::GammaByte,
+                        disabled_alpha: 0.0,
                     },
                     spacing: Spacing {
                         item_spacing: vec2(8.0, 4.0),
-                        window_margin: Margin::same(8.0),
-                        menu_margin: Margin::same(8.0),
+                        window_margin: Margin::same(8),
+                        menu_margin: Margin::same(8),
                         button_padding: vec2(8.0, 4.0),
                         indent: 28.0, // match checkbox/radio-button with `button_padding.x + icon_width + icon_spacing`
                         interact_size: vec2(48.0, 20.0),

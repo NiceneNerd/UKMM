@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use anyhow::anyhow;
 use anyhow_ext::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -41,16 +41,14 @@ impl File {
         self.name.as_str()
     }
 
-    pub fn should_move(&self, from: &PathBuf, to: &PathBuf) -> Result<bool> {
+    pub fn should_move(&self, from: &Path, to: &Path) -> Result<bool> {
         let old = from.join(self.name.as_str());
         let new = to.join(self.name.as_str());
-        if !old.exists() {
+        let result = if !old.exists() {
             Ok(false)
-        }
-        else if !new.exists() {
+        } else if !new.exists() {
             Ok(true)
-        }
-        else if old.metadata()?.modified()? != new.metadata()?.modified()? {
+        } else if old.metadata()?.modified()? != new.metadata()?.modified()? {
             Ok(true)
         }
         //else if old.metadata()?.created()? > new.metadata()?.created()? {
@@ -58,15 +56,16 @@ impl File {
         //}
         else {
             Ok(false)
-        }
+        };
+        result
     }
 
     #[inline(always)]
-    pub fn should_delete(&self, from: &PathBuf, based_on: &PathBuf) -> Result<bool> {
+    pub fn should_delete(&self, from: &Path, based_on: &Path) -> Result<bool> {
         Ok(from.join(self.name.as_str()).exists() && !based_on.join(self.name.as_str()).exists())
     }
 
-    pub fn copy(&self, from: &PathBuf, to: &PathBuf) -> Result<()> {
+    pub fn copy(&self, from: &Path, to: &Path) -> Result<()> {
         let old = from.join(self.name.as_str());
         let new = to.join(self.name.as_str());
         if old.exists() {
@@ -88,7 +87,7 @@ impl File {
         Ok(())
     }
 
-    pub fn hard_link(&self, from: &PathBuf, to: &PathBuf) -> Result<()> {
+    pub fn hard_link(&self, from: &Path, to: &Path) -> Result<()> {
         let old = from.join(self.name.as_str());
         let new = to.join(self.name.as_str());
         if new.exists() {

@@ -89,11 +89,11 @@ impl<'de> Deserialize<'de> for ModReader {
                     manifest.ok_or_else(|| serde::de::Error::missing_field("manifest"))?;
                 Ok(ModReader {
                     meta,
-                    decompressor: super::init_decompressor(),
+                    decompressor: init_decompressor(),
                     manifest,
                     options,
                     zip: Arc::new(Some(
-                        super::ParallelZipReader::open(&path, false)
+                        ParallelZipReader::open(&path, false)
                             .map_err(serde::de::Error::custom)?,
                     )),
                     path,

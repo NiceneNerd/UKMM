@@ -68,7 +68,7 @@ impl ProfileManagerState {
                 ui.vertical(|ui| {
                     egui::ScrollArea::new([true, true])
                         .min_scrolled_height(128.0)
-                        .id_source("mods_scroll")
+                        .id_salt("mods_scroll")
                         .show(ui, |ui| {
                             let mods = profile.mods();
                             if !mods.is_empty() {
@@ -163,7 +163,7 @@ impl ProfileManagerState {
                                             .expect("Body style is real, bro")
                                             .clone();
                                         let color = ui.style().visuals.text_color();
-                                        let label = ui.fonts(|f| {
+                                        let label = ui.fonts(|mut f| {
                                             f.layout_no_wrap(p.as_str().into(), font, color)
                                         });
                                         if ui
