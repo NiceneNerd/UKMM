@@ -48,7 +48,7 @@ impl App {
             ICON_WIDTH.get_or_init(|| ui.spacing().icon_width + ui.spacing().button_padding.x);
         static NUMERIC_COL_WIDTH: OnceLock<f32> = OnceLock::new();
         let numeric_col_width = NUMERIC_COL_WIDTH.get_or_init(|| {
-            ui.fonts(|f| {
+            ui.fonts(|mut f| {
                 f.layout_job(LayoutJob::simple_singleline(
                     "PriorityWW".to_owned(),
                     ui.style()
@@ -66,8 +66,8 @@ impl App {
         
         // Show helper message if no mods installed
         if self.displayed_mods.is_empty() {
-            egui::Frame::none()
-                .inner_margin(Margin::same(40.0))
+            egui::Frame::NONE
+                .inner_margin(Margin::same(40))
                 .show(ui, |ui| {
                     ui.vertical_centered(|ui| {
                         ui.add_space(80.0);
@@ -114,12 +114,12 @@ impl App {
             return;
         }
         
-        egui::Frame::none()
+        egui::Frame::NONE
             .inner_margin(Margin {
-                bottom: 4.0,
-                top:    4.0,
-                left:   4.0,
-                right:  -12.0,
+                bottom: 4,
+                top:    4,
+                left:   4,
+                right:  -12,
             })
             .show(ui, |ui| {
                 ui.style_mut()
@@ -308,8 +308,10 @@ impl App {
                 ui.output_mut(|o| o.cursor_icon = CursorIcon::Grabbing);
                 let layer_id =
                     LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
-                let res = ui
-                    .with_layer_id(layer_id, |ui| {
+                let res =
+                    ui.scope_builder(
+                        egui::UiBuilder::new().layer_id(layer_id),
+                        |ui| {
                         TableBuilder::new(ui)
                             .column(Column::exact(icon_width))
                             .column(Column::remainder())
@@ -480,20 +482,20 @@ impl App {
             {
                 if ui.button(profile.as_str()).clicked() {
                     result = Some(ContextMenuMessage::CopyToProfile(profile));
-                    ui.close_menu();
+                    ui.close_kind(egui::UiKind::Menu)
                 }
             }
         });
         if ui.button("Generic_Update".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Update);
         }
         if ui.button("Mod_Dev_Update".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::DevUpdate);
         }
         if ui.button("Mod_Uninstall".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Uninstall);
         }
         if ui
@@ -504,11 +506,11 @@ impl App {
             })
             .clicked()
         {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Toggle(!mod_.enabled));
         }
         if ui.button("Mod_View".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             let _ = Command::new(if cfg!(windows) {
                 "explorer"
             } else {
@@ -522,15 +524,15 @@ impl App {
             .output();
         }
         if ui.button("Mod_Extract".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Extract);
         }
         if ui.button("Mod_Move_Start".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Move(0));
         }
         if ui.button("Mod_Move_End".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Move(9999));
         }
         result

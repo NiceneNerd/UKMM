@@ -24,7 +24,7 @@ impl App {
 
     pub fn file_menu(&self, ui: &mut Ui, _frame: &mut eframe::Frame) {
         if ui.button("Menu_File_Open".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             self.do_update(Message::SelectFile);
         }
         if ui.button("Generic_Exit".localize()).clicked() {
@@ -34,20 +34,20 @@ impl App {
 
     pub fn tool_menu(&mut self, ui: &mut Ui) {
         if ui.button("Menu_Tools_RefreshMerge".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             self.do_update(Message::Remerge);
         }
         if ui.button("Menu_Tools_ResetPending".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             self.do_update(Message::ResetPending);
         }
         if ui.button("Menu_Tools_ConfigFolder".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             open::that(Settings::config_dir()).unwrap_or(());
         }
         let settings = self.core.settings();
         if ui.button("Menu_Tools_StorageFolder".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             open::that(&settings.storage_dir).unwrap_or(());
         }
         let deploy_dir = settings.deploy_dir();
@@ -58,14 +58,14 @@ impl App {
             )
             .clicked()
         {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             open::that(deploy_dir.unwrap()).unwrap_or(());
         }
     }
 
     pub fn window_menu(&mut self, ui: &mut Ui) {
         if ui.button("Menu_Window_Reset".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             *self.tree.borrow_mut() = tabs::default_ui();
         }
         ui.separator();
@@ -86,7 +86,7 @@ impl App {
                 )
                 .clicked()
             {
-                ui.close_menu();
+                ui.close_kind(egui::UiKind::Menu);
                 if let Some(parent) = self.closed_tabs.remove(&tab) {
                     let mut tree = self.tree.borrow_mut();
                     let mut has_parent = false;
@@ -115,11 +115,11 @@ impl App {
 
     pub fn help_menu(&self, ui: &mut Ui) {
         if ui.button("Menu_Help".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             open::that("https://nicenenerd.github.io/UKMM").unwrap_or(());
         }
         if ui.button("Menu_Help_About".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             self.do_update(Message::ShowAbout);
         }
     }

@@ -174,7 +174,7 @@ impl super::ResourceLoader for Unpacked {
             .any(|path| path.exists())
     }
 
-    fn host_path(&self) -> &std::path::Path {
+    fn host_path(&self) -> &Path {
         &self.host_path
     }
 }

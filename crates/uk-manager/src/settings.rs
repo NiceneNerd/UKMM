@@ -64,16 +64,16 @@ impl From<Platform> for roead::Endian {
     }
 }
 
-impl From<uk_content::prelude::Endian> for Platform {
-    fn from(e: uk_content::prelude::Endian) -> Self {
+impl From<Endian> for Platform {
+    fn from(e: Endian) -> Self {
         match e {
-            uk_content::prelude::Endian::Big => Self::WiiU,
-            uk_content::prelude::Endian::Little => Self::Switch,
+            Endian::Big => Self::WiiU,
+            Endian::Little => Self::Switch,
         }
     }
 }
 
-impl From<Platform> for uk_content::prelude::Endian {
+impl From<Platform> for Endian {
     fn from(p: Platform) -> Self {
         match p {
             Platform::WiiU => Self::Big,
@@ -284,7 +284,7 @@ impl Settings {
         Arc::new(RwLock::new(match Settings::read(Self::path()) {
             Ok(settings) => {
                 log::debug!("{:#?}", settings);
-                crate::util::USE_SZ.store(settings.system_7z, std::sync::atomic::Ordering::Release);
+                util::USE_SZ.store(settings.system_7z, std::sync::atomic::Ordering::Release);
                 settings
             }
             Err(e) => {
@@ -324,7 +324,7 @@ impl Settings {
             fs::create_dir_all(Self::path().parent().unwrap())?;
         }
         log::debug!("Saving settings:\n{:#?}", self);
-        let _ = crate::util::USE_SZ.compare_exchange_weak(
+        let _ = util::USE_SZ.compare_exchange_weak(
             !self.system_7z,
             self.system_7z,
             std::sync::atomic::Ordering::Relaxed,
@@ -398,7 +398,7 @@ impl Settings {
             .into_iter()
             .flat_map(|entries| {
                 entries
-                    .filter_map(std::result::Result::ok)
+                    .filter_map(Result::ok)
                     .filter_map(|entry| {
                         entry
                             .path()

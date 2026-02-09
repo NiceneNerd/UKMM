@@ -255,10 +255,10 @@ impl<'a> Bnp2xConverter<'a> {
             ];
             for job in jobs {
                 match job.join() {
-                    Ok(Err(e)) => anyhow_ext::bail!(e),
+                    Ok(Err(e)) => bail!(e),
                     Ok(Ok(_)) => (),
                     Err(e) => {
-                        anyhow::bail!(
+                        bail!(
                             e.downcast::<String>()
                                 .or_else(|e| {
                                     e.downcast::<&'static str>().map(|s| Box::new((*s).into()))

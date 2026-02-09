@@ -10,7 +10,7 @@ impl App {
             .and_then(|c| c.deploy_config.as_ref())
         {
             Some(config) => {
-                egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
+                Frame::NONE.inner_margin(4.0).show(ui, |ui| {
                     ui.spacing_mut().item_spacing.y = 8.0;
                     ui.with_layout(Layout::top_down(Align::Center), |ui| {
                         ui.horizontal(|ui| {
@@ -48,7 +48,7 @@ impl App {
                                 config.output.to_string_lossy().into(),
                                 ui.style()
                                     .text_styles
-                                    .get(&egui::TextStyle::Body)
+                                    .get(&TextStyle::Body)
                                     .unwrap()
                                     .clone(),
                                 ui.visuals().text_color(),
@@ -63,7 +63,7 @@ impl App {
                                 .on_hover_text(config.output.to_string_lossy())
                                 .clicked()
                             {
-                                ui.close_menu();
+                                ui.close_kind(egui::UiKind::Menu);
                                 open::that(if config.output.is_dir() {
                                     &config.output
                                 } else {
@@ -79,7 +79,7 @@ impl App {
                                 Align::Center,
                             ),
                             |ui| {
-                                egui::Frame::none().show(ui, |ui| {
+                                Frame::NONE.show(ui, |ui| {
                                     if let Some(ref exe) = config.executable {
                                         ui.add_space(4.);
                                         if ui.button("Deploy_OpenEmu".localize()).clicked() {
@@ -122,7 +122,7 @@ impl App {
                                         .add(egui::Button::new("Tab_Deploy".localize()))
                                         .clicked()
                                     {
-                                        self.do_update(super::Message::Deploy);
+                                        self.do_update(Message::Deploy);
                                     }
                                     if config.auto && self.core.deploy_manager().pending() {
                                         ui.label(

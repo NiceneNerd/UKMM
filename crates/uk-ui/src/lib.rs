@@ -46,7 +46,7 @@ pub fn load_fonts(context: &egui::Context) {
     {
         fonts.font_data.insert(
             "System".to_owned(),
-            egui::FontData::from_owned(system_font.0),
+            std::sync::Arc::new(egui::FontData::from_owned(system_font.0)),
         );
     }
     if let Some(system_font) = font_loader::system_fonts::get(
@@ -61,41 +61,42 @@ pub fn load_fonts(context: &egui::Context) {
             .build();
         font_loader::system_fonts::get(&property)
     }) {
-        fonts
-            .font_data
-            .insert("Bold".to_owned(), egui::FontData::from_owned(system_font.0));
+        fonts.font_data.insert(
+            "Bold".to_owned(),
+            std::sync::Arc::new(egui::FontData::from_owned(system_font.0)),
+        );
     }
     fonts.font_data.insert(
         "Noto".to_owned(),
-        egui::FontData::from_static(&NOTOSANS_REG)
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANS_REG))
     );
     fonts.font_data.insert(
         "NotoBold".to_owned(),
-        egui::FontData::from_static(&NOTOSANS_BOLD)
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANS_BOLD))
     );
     fonts.font_data.insert(
         "NotoJP".to_owned(),
-        egui::FontData::from_static(&NOTOSANSJP_REG)
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSJP_REG))
     );
     fonts.font_data.insert(
         "NotoJPBold".to_owned(),
-        egui::FontData::from_static(&NOTOSANSJP_BOLD)
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSJP_BOLD))
     );
     fonts.font_data.insert(
         "NotoKR".to_owned(),
-        egui::FontData::from_static(&NOTOSANSKR_REG)
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSKR_REG))
     );
     fonts.font_data.insert(
         "NotoKRBold".to_owned(),
-        egui::FontData::from_static(&NOTOSANSKR_BOLD)
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSKR_BOLD))
     );
     fonts.font_data.insert(
         "NotoSC".to_owned(),
-        egui::FontData::from_static(&NOTOSANSSC_REG)
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSSC_REG))
     );
     fonts.font_data.insert(
         "NotoSCBold".to_owned(),
-        egui::FontData::from_static(&NOTOSANSSC_BOLD)
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSSC_BOLD))
     );
     if let Some(family) = fonts
         .families

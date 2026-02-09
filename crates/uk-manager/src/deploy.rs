@@ -318,8 +318,8 @@ impl Manager {
         manifest.aoc_files.retain(|f| !orphans_aoc.contains(f));
         let mut log = self.pending_log.write();
         log.extend_deletes(&Manifest {
-            content_files: orphans_content.iter().map(|s| s.clone()).collect(),
-            aoc_files: orphans_aoc.iter().map(|s| s.clone()).collect(),
+            content_files: orphans_content.iter().cloned().collect(),
+            aoc_files: orphans_aoc.iter().cloned().collect(),
         })?;
         let (content, dlc) = platform_prefixes(platform.into());
         for (dir, orphans) in [(content, orphans_content), (dlc, orphans_aoc)] {

@@ -206,7 +206,7 @@ impl BnpConverter {
                 };
 
                 let parent = nested_parent.as_ref().unwrap_or(&root_sarc);
-                Ok(roead::yaz0::decompress_if(
+                Ok(decompress_if(
                     parent
                         .get_data(parts.last().expect("There is more than one part here"))
                         .with_context(|| format!("Could not get nested file at {path}"))?,

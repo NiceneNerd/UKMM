@@ -74,7 +74,10 @@ impl super::ResourceLoader for ZArchive {
         self.archive
             .read_file(self.content_dir.join(name))
             .ok_or_else(|| {
-                crate::ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
+                ROMError::FileNotFound(
+                    name.to_string_lossy().into(),
+                    self.host_path.clone()
+                )
             })
     }
 
@@ -82,7 +85,10 @@ impl super::ResourceLoader for ZArchive {
         self.archive
             .read_file(self.update_dir.join(name))
             .ok_or_else(|| {
-                crate::ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
+                ROMError::FileNotFound(
+                    name.to_string_lossy().into(),
+                    self.host_path.clone(),
+                )
             })
     }
 

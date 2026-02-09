@@ -57,11 +57,11 @@ impl Mergeable for BarslistInfo {
 }
 
 impl Resource for BarslistInfo {
-    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 
-    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
+    fn into_binary(self, endian: Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

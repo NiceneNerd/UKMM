@@ -2,10 +2,10 @@
 use std::sync::OnceLock;
 
 use egui::{Button, ImageButton, Response, Ui, WidgetText};
-use egui_extras::RetainedImage;
+use egui_extras::image;
 use rustc_hash::FxHashMap;
 
-static ICONS: OnceLock<FxHashMap<Icon, RetainedImage>> = OnceLock::new();
+static ICONS: OnceLock<FxHashMap<Icon, egui::TextureHandle>> = OnceLock::new();
 
 static ADD: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path stroke="white" fill="white" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>"#;
 static ARROW_BACK: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path stroke="white" fill="white" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>"#;
@@ -57,103 +57,305 @@ pub enum Icon {
     Tune,
 }
 
-pub fn load_icons() {
+pub fn load_icons(context: &egui::Context) {
+    let load_options = Default::default();
+    let texture_options = Default::default();
     let mut map = FxHashMap::default();
     map.insert(
         Icon::Delete,
-        RetainedImage::from_svg_str("delete", DELETE).unwrap(),
+        context.load_texture(
+            "delete",
+            image::load_svg_bytes(DELETE.as_bytes(), &load_options)
+                .expect("Could not load DELETE image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Delete,
+    //     RetainedImage::from_svg_str("delete", DELETE).unwrap(),
+    // );
     map.insert(
         Icon::Cancel,
-        RetainedImage::from_svg_str("cancel", CANCEL).unwrap(),
+        context.load_texture(
+            "cancel",
+            image::load_svg_bytes(CANCEL.as_bytes(), &load_options)
+                .expect("Could not load CANCEL image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Cancel,
+    //     RetainedImage::from_svg_str("cancel", CANCEL).unwrap(),
+    // );
     map.insert(
         Icon::List,
-        RetainedImage::from_svg_str("list", LIST).unwrap(),
+        context.load_texture(
+            "list",
+            image::load_svg_bytes(LIST.as_bytes(), &load_options)
+                .expect("Could not load LIST image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::List,
+    //     RetainedImage::from_svg_str("list", LIST).unwrap(),
+    // );
     map.insert(
         Icon::Menu,
-        RetainedImage::from_svg_str("menu", MENU).unwrap(),
+        context.load_texture(
+            "menu",
+            image::load_svg_bytes(MENU.as_bytes(), &load_options)
+                .expect("Could not load MENU image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Menu,
+    //     RetainedImage::from_svg_str("menu", MENU).unwrap(),
+    // );
     map.insert(
         Icon::Check,
-        RetainedImage::from_svg_str("check", CHECK).unwrap(),
+        context.load_texture(
+            "check",
+            image::load_svg_bytes(CHECK.as_bytes(), &load_options)
+                .expect("Could not load CHECK image"),
+            texture_options
+        )
     );
-    map.insert(Icon::Add, RetainedImage::from_svg_str("add", ADD).unwrap());
+    // map.insert(
+    //     Icon::Check,
+    //     RetainedImage::from_svg_str("check", CHECK).unwrap(),
+    // );
+    map.insert(
+        Icon::Add,
+        context.load_texture(
+            "add",
+            image::load_svg_bytes(ADD.as_bytes(), &load_options)
+                .expect("Could not load ADD image"),
+            texture_options
+        )
+    );
+    // map.insert(
+    //     Icon::Add,
+    //     RetainedImage::from_svg_str("add", ADD).unwrap()
+    // );
     map.insert(
         Icon::Import,
-        RetainedImage::from_svg_str("import", IMPORT).unwrap(),
+        context.load_texture(
+            "import",
+            image::load_svg_bytes(IMPORT.as_bytes(), &load_options)
+                .expect("Could not load IMPORT image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Import,
+    //     RetainedImage::from_svg_str("import", IMPORT).unwrap(),
+    // );
     map.insert(
         Icon::Info,
-        RetainedImage::from_svg_str("info", INFO).unwrap(),
+        context.load_texture(
+            "info",
+            image::load_svg_bytes(INFO.as_bytes(), &load_options)
+                .expect("Could not load INFO image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Info,
+    //     RetainedImage::from_svg_str("info", INFO).unwrap(),
+    // );
     map.insert(
         Icon::Help,
-        RetainedImage::from_svg_str("help", HELP).unwrap(),
+        context.load_texture(
+            "help",
+            image::load_svg_bytes(HELP.as_bytes(), &load_options)
+                .expect("Could not load HELP image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Help,
+    //     RetainedImage::from_svg_str("help", HELP).unwrap(),
+    // );
     map.insert(
         Icon::Blank,
-        RetainedImage::from_svg_str("blank", BLANK).unwrap(),
+        context.load_texture(
+            "blank",
+            image::load_svg_bytes(BLANK.as_bytes(), &load_options)
+                .expect("Could not load BLANK image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Blank,
+    //     RetainedImage::from_svg_str("blank", BLANK).unwrap(),
+    // );
     map.insert(
         Icon::Folder,
-        RetainedImage::from_svg_str("folder", FOLDER).unwrap(),
+        context.load_texture(
+            "folder",
+            image::load_svg_bytes(FOLDER.as_bytes(), &load_options)
+                .expect("Could not load FOLDER image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Folder,
+    //     RetainedImage::from_svg_str("folder", FOLDER).unwrap(),
+    // );
     map.insert(
         Icon::FolderZip,
-        RetainedImage::from_svg_str("archive", FOLDER_ZIP).unwrap(),
+        context.load_texture(
+            "archive",
+            image::load_svg_bytes(FOLDER_ZIP.as_bytes(), &load_options)
+                .expect("Could not load FOLDER_ZIP image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::FolderZip,
+    //     RetainedImage::from_svg_str("archive", FOLDER_ZIP).unwrap(),
+    // );
     map.insert(
         Icon::FolderOpen,
-        RetainedImage::from_svg_str("folder-open", FOLDER_OPEN).unwrap(),
+        context.load_texture(
+            "folder-open",
+            image::load_svg_bytes(FOLDER_OPEN.as_bytes(), &load_options)
+                .expect("Could not load FOLDER_OPEN image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::FolderOpen,
+    //     RetainedImage::from_svg_str("folder-open", FOLDER_OPEN).unwrap(),
+    // );
     map.insert(
         Icon::ArrowUp,
-        RetainedImage::from_svg_str("up", ARROW_UP).unwrap(),
+        context.load_texture(
+            "up",
+            image::load_svg_bytes(ARROW_UP.as_bytes(), &load_options)
+                .expect("Could not load ARROW_UP image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::ArrowUp,
+    //     RetainedImage::from_svg_str("up", ARROW_UP).unwrap(),
+    // );
     map.insert(
         Icon::ArrowBack,
-        RetainedImage::from_svg_str("back", ARROW_BACK).unwrap(),
+        context.load_texture(
+            "back",
+            image::load_svg_bytes(ARROW_BACK.as_bytes(), &load_options)
+                .expect("Could not load ARROW_BACK image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::ArrowBack,
+    //     RetainedImage::from_svg_str("back", ARROW_BACK).unwrap(),
+    // );
     map.insert(
         Icon::Reset,
-        RetainedImage::from_svg_str("reset", RESET).unwrap(),
+        context.load_texture(
+            "reset",
+            image::load_svg_bytes(RESET.as_bytes(), &load_options)
+                .expect("Could not load RESET image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Reset,
+    //     RetainedImage::from_svg_str("reset", RESET).unwrap(),
+    // );
     map.insert(
         Icon::Refresh,
-        RetainedImage::from_svg_str("refresh", REFRESH).unwrap(),
+        context.load_texture(
+            "refresh",
+            image::load_svg_bytes(REFRESH.as_bytes(), &load_options)
+                .expect("Could not load REFRESH image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Refresh,
+    //     RetainedImage::from_svg_str("refresh", REFRESH).unwrap(),
+    // );
     map.insert(
         Icon::Save,
-        RetainedImage::from_svg_str("save", SAVE).unwrap(),
+        context.load_texture(
+            "save",
+            image::load_svg_bytes(SAVE.as_bytes(), &load_options)
+                .expect("Could not load SAVE image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Save,
+    //     RetainedImage::from_svg_str("save", SAVE).unwrap(),
+    // );
     map.insert(
         Icon::Settings,
-        RetainedImage::from_svg_str("settings", SETTINGS).unwrap(),
+        context.load_texture(
+            "settings",
+            image::load_svg_bytes(SETTINGS.as_bytes(), &load_options)
+                .expect("Could not load SETTINGS image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Settings,
+    //     RetainedImage::from_svg_str("settings", SETTINGS).unwrap(),
+    // );
     map.insert(
         Icon::Tune,
-        RetainedImage::from_svg_str("tune", TUNE).unwrap(),
+        context.load_texture(
+            "tune",
+            image::load_svg_bytes(TUNE.as_bytes(), &load_options)
+                .expect("Could not load TUNE image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Tune,
+    //     RetainedImage::from_svg_str("tune", TUNE).unwrap(),
+    // );
     map.insert(
         Icon::Patreon,
-        RetainedImage::from_svg_str("patreon", PATREON).unwrap(),
+        context.load_texture(
+            "patreon",
+            image::load_svg_bytes(PATREON.as_bytes(), &load_options)
+                .expect("Could not load PATREON image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Patreon,
+    //     RetainedImage::from_svg_str("patreon", PATREON).unwrap(),
+    // );
     map.insert(
         Icon::Bitcoin,
-        RetainedImage::from_svg_str("btc", BITCOIN).unwrap(),
+        context.load_texture(
+            "btc",
+            image::load_svg_bytes(BITCOIN.as_bytes(), &load_options)
+                .expect("Could not load BITCOIN image"),
+            texture_options
+        )
     );
+    // map.insert(
+    //     Icon::Bitcoin,
+    //     RetainedImage::from_svg_str("btc", BITCOIN).unwrap(),
+    // );
     unsafe { ICONS.set(map).unwrap_unchecked() }
 }
 
 #[inline(always)]
 pub fn get_icon(ctx: &egui::Context, icon: Icon) -> egui::load::SizedTexture {
     let width = ctx.style().spacing.icon_width;
-    egui::load::SizedTexture::new(
-        unsafe { ICONS.get().unwrap_unchecked().get(&icon).unwrap_unchecked() }.texture_id(ctx),
-        egui::Vec2::new(width, width),
-    )
+    let handle = unsafe { ICONS.get().unwrap_unchecked().get(&icon).unwrap_unchecked() };
+    //let width = handle.size_vec2();
+    egui::load::SizedTexture::new(handle.id(), egui::Vec2::new(width, width))
 }
 
 pub trait IconButtonExt {

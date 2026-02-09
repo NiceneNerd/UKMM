@@ -106,7 +106,7 @@ impl Mergeable for DropTable {
 }
 
 impl InfoSource for DropTable {
-    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
         info.insert(
             "drops".into(),
             self.0

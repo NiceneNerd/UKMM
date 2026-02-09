@@ -118,7 +118,7 @@ impl Mergeable for ShopGameDataInfo {
 }
 
 impl Resource for ShopGameDataInfo {
-    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 

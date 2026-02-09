@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{atomic::AtomicUsize, Arc, LazyLock},
 };
-
+use std::borrow::Cow;
 use anyhow_ext::{Context, Result};
 use botw_utils::hashes::StockHashTable;
 use fs_err as fs;
@@ -316,10 +316,13 @@ impl ModPacker {
             let mut zip = self.zip.lock();
             match zip.start_file(zip_path.to_slash_lossy(), self._zip_opts) {
                 Ok(_) => zip.write_all(&self.compressor.lock().compress(&data)?)?,
-                Err(zip::result::ZipError::InvalidArchive("Duplicate filename")) => {
+                Err(e) => if let zip::result::ZipError::InvalidArchive(message) = &e
+                    && message == "Duplicate filename" {
                     log::warn!("Attempted to duplicate resource {}, skipping", canon);
                 }
-                e => return Err(e.unwrap_err().into()),
+                else {
+                    return Err(e.into());
+                }
             }
         }
         self.built_resources.insert(canon.into());
@@ -389,13 +392,13 @@ impl ModPacker {
                 }
                 self.process_resource(name.clone(), canon.clone(), resource, false)
                     .with_context(|| jstr!("Failed to process resource {&canon}"))?;
-                if !is_mergeable && is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
+                if !is_mergeable && is_mergeable_sarc(canon.as_str(), &file_data) {
                     log::trace!(
                         "Resource {} is a mergeable SARC, processing contents",
                         &canon
                     );
                     self.process_sarc(
-                        Sarc::new(file_data.as_ref())?,
+                        Sarc::new(file_data)?,
                         name.as_str().as_ref(),
                         self.hash_table.is_file_new(&canon),
                         canon.starts_with("Aoc"),
@@ -503,11 +506,9 @@ impl ModPacker {
         } else if let (Some(bin), Some(ref_bin)) = (
             resource.as_binary(),
             reference.as_ref().and_then(|rrd| rrd.as_binary()),
-        ) {
-            if ref_bin == bin {
-                log::trace!("{} not modded, skipping", &canon);
-                return Ok(());
-            }
+        ) && ref_bin == bin {
+            log::trace!("{} not modded, skipping", &canon);
+            return Ok(());
         }
 
         self.write_resource(&canon, &resource)?;
@@ -549,14 +550,14 @@ impl ModPacker {
                 );
             }
             self.process_resource((&name).into(), canon.clone(), resource, is_new_sarc)?;
-            if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
+            if is_mergeable_sarc(canon.as_str(), &file_data) {
                 log::trace!(
                     "Resource {} in SARC {} is a mergeable SARC, processing contents",
                     &canon,
                     path.display()
                 );
                 self.process_sarc(
-                    Sarc::new(file_data.as_ref())?,
+                    Sarc::new(file_data)?,
                     name.as_ref(),
                     is_new_sarc,
                     is_aoc,
