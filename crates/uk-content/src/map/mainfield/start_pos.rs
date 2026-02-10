@@ -146,20 +146,21 @@ impl From<StartPos> for Byml {
 }
 
 impl Mergeable for StartPos {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             map: other.map
                 .ne(&self.map)
                 .then(|| other.map.clone())
-                .expect("Map should be in at least one of these files"),
+                .unwrap_or_default(),
             player_state: other.player_state
                 .ne(&self.player_state)
                 .then_some(other.player_state)
-                .expect("PlayerState should be in at least one of these files"),
+                .unwrap_or_default(),
             pos_name: other.pos_name
                 .ne(&self.pos_name)
                 .then(|| other.pos_name.clone())
-                .expect("PosName should be in at least one of these files"),
+                .unwrap_or_default(),
             rotate: self.rotate.diff(&other.rotate),
             translate: self.translate.diff(&other.translate),
         }

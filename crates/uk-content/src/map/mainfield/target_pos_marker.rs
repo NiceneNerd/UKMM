@@ -69,12 +69,15 @@ impl From<TargetPosMarker> for Byml {
 }
 
 impl Mergeable for TargetPosMarker {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             rotate: self.rotate.diff(&other.rotate),
             translate: self.translate.diff(&other.translate),
-            unique_name: if other.unique_name
-                .ne(&self.unique_name) { other.unique_name.clone() } else { Default::default() },
+            unique_name: other.unique_name
+                .ne(&self.unique_name)
+                .then(|| other.unique_name.clone())
+                .unwrap_or_default(),
         }
     }
 

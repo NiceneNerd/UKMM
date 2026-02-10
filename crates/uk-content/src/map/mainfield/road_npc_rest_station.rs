@@ -70,24 +70,25 @@ impl From<RoadNpcRestStation> for Byml {
 }
 
 impl Mergeable for RoadNpcRestStation {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             rest_horse_left: other.rest_horse_left
                 .ne(&self.rest_horse_left)
                 .then_some(other.rest_horse_left)
-                .expect("RestHorseLeft should be in at least one of these files"),
+                .unwrap_or_default(),
             rest_only_npc: other.rest_only_npc
                 .ne(&self.rest_only_npc)
                 .then_some(other.rest_only_npc)
-                .expect("RestOnlyNpc should be in at least one of these files"),
+                .unwrap_or_default(),
             rest_with_horse: other.rest_with_horse
                 .ne(&self.rest_with_horse)
                 .then_some(other.rest_with_horse)
-                .expect("RestWithHorse should be in at least one of these files"),
+                .unwrap_or_default(),
             rotate_y: other.rotate_y
                 .ne(&self.rotate_y)
                 .then_some(other.rotate_y)
-                .expect("RotateY should be in at least one of these files"),
+                .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
         }
     }

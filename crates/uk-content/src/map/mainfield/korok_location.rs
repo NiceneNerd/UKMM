@@ -172,56 +172,57 @@ impl From<KorokLocation> for Byml {
 }
 
 impl Mergeable for KorokLocation {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             flag: other.flag
                 .ne(&self.flag)
                 .then(|| other.flag.clone())
-                .expect("Flag should be present in at least one of these files"),
+                .unwrap_or_default(),
             hidden_korok_body_color: other.hidden_korok_body_color
                 .ne(&self.hidden_korok_body_color)
                 .then_some(other.hidden_korok_body_color)
-                .expect("HiddenKorokBodyColor should be present in at least one of these files"),
+                .unwrap_or_default(),
             hidden_korok_left_plant_type: other.hidden_korok_left_plant_type
                 .ne(&self.hidden_korok_left_plant_type)
                 .then_some(other.hidden_korok_left_plant_type)
-                .expect("HiddenKorokLeftPlantType should be present in at least one of these files"),
+                .unwrap_or_default(),
             hidden_korok_mask_type: other.hidden_korok_mask_type
                 .ne(&self.hidden_korok_mask_type)
                 .then_some(other.hidden_korok_mask_type)
-                .expect("HiddenKorokMaskType should be present in at least one of these files"),
+                .unwrap_or_default(),
             hidden_korok_right_plant_type: other.hidden_korok_right_plant_type
                 .ne(&self.hidden_korok_right_plant_type)
                 .then_some(other.hidden_korok_right_plant_type)
-                .expect("HiddenKorokRightPlantType should be present in at least one of these files"),
+                .unwrap_or_default(),
             is_appear_check: other.is_appear_check
                 .ne(&self.is_appear_check)
                 .then_some(other.is_appear_check)
-                .expect("IsAppearCheck should be present in at least one of these files"),
+                .unwrap_or_default(),
             is_hidden_korok_lift_appear: other.is_hidden_korok_lift_appear
                 .ne(&self.is_hidden_korok_lift_appear)
                 .then_some(other.is_hidden_korok_lift_appear)
-                .expect("IsHiddenKorokLiftAppear should be present in at least one of these files"),
+                .unwrap_or_default(),
             is_invisible_korok: other.is_invisible_korok
                 .ne(&self.is_invisible_korok)
                 .then_some(other.is_invisible_korok)
-                .expect("IsInvisibleKorok should be present in at least one of these files"),
+                .unwrap_or_default(),
             korok_event_start_wait_frame: other.korok_event_start_wait_frame
                 .ne(&self.korok_event_start_wait_frame)
                 .then_some(other.korok_event_start_wait_frame)
-                .expect("KorokEventStartWaitFrame should be present in at least one of these files"),
+                .unwrap_or_default(),
             placement_type: other.placement_type
                 .ne(&self.placement_type)
                 .then_some(other.placement_type)
-                .expect("PlacementType should be present in at least one of these files"),
+                .unwrap_or_default(),
             rail_move_speed: other.rail_move_speed
                 .ne(&self.rail_move_speed)
                 .then_some(other.rail_move_speed)
-                .expect("RailMoveSpeed should be present in at least one of these files"),
+                .unwrap_or_default(),
             territory_area: other.territory_area
                 .ne(&self.territory_area)
                 .then_some(other.territory_area)
-                .expect("TerritoryArea should be present in at least one of these files"),
+                .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
         }
     }

@@ -90,28 +90,29 @@ impl From<LocationPointer> for Byml {
 }
 
 impl Mergeable for LocationPointer {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             location_priority: other.location_priority
                 .ne(&self.location_priority)
                 .then_some(other.location_priority)
-                .expect("LocationPriority should be present in at least one of these files"),
+                .unwrap_or_default(),
             message_id: other.message_id
                 .ne(&self.message_id)
                 .then(|| other.message_id.clone())
-                .expect("MessageID should be present in at least one of these files"),
+                .unwrap_or_default(),
             pointer_type: other.pointer_type
                 .ne(&self.pointer_type)
                 .then_some(other.pointer_type)
-                .expect("PointerType should be present in at least one of these files"),
+                .unwrap_or_default(),
             save_flag: other.save_flag
                 .ne(&self.save_flag)
                 .then(|| other.save_flag.clone())
-                .expect("SaveFlag should be present in at least one of these files"),
+                .unwrap_or_default(),
             show_level: other.show_level
                 .ne(&self.show_level)
                 .then_some(other.show_level)
-                .expect("ShowLevel should be present in at least one of these files"),
+                .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
         }
     }

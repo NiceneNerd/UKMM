@@ -65,6 +65,7 @@ impl From<RestartPos> for Byml {
 }
 
 impl Mergeable for RestartPos {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             scale: self.scale.diff(&other.scale),
@@ -72,7 +73,7 @@ impl Mergeable for RestartPos {
             unique_name: other.unique_name
                 .ne(&self.unique_name)
                 .then(|| other.unique_name.clone())
-                .expect("UniqueName should be in at least one of these files"),
+                .unwrap_or_default(),
         }
     }
 

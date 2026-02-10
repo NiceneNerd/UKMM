@@ -58,10 +58,13 @@ impl From<StaticGrudgeLocation> for Byml {
 }
 
 impl Mergeable for StaticGrudgeLocation {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
-            eyeball_hash_id: if other.eyeball_hash_id
-                .ne(&self.eyeball_hash_id) { other.eyeball_hash_id } else { Default::default() },
+            eyeball_hash_id: other.eyeball_hash_id
+                .ne(&self.eyeball_hash_id)
+                .then_some(other.eyeball_hash_id)
+                .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
         }
     }

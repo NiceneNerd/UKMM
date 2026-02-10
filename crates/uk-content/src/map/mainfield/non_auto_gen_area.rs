@@ -80,21 +80,22 @@ impl From<NonAutoGenArea> for Byml {
 }
 
 impl Mergeable for NonAutoGenArea {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             enable_auto_flower: other.enable_auto_flower
                 .ne(&self.enable_auto_flower)
                 .then_some(other.enable_auto_flower)
-                .expect("EnableAutoFlower should be in at least one of these files"),
+                .unwrap_or_default(),
             rotate_y: other.rotate_y
                 .ne(&self.rotate_y)
                 .then_some(other.rotate_y)
-                .expect("RotateY should be in at least one of these files"),
+                .unwrap_or_default(),
             scale: self.scale.diff(&other.scale),
             shape: other.shape
                 .ne(&self.shape)
                 .then_some(other.shape)
-                .expect("Shape should be in at least one of these files"),
+                .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
         }
     }

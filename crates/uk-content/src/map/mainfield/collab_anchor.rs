@@ -101,33 +101,34 @@ impl From<CollabAnchor> for Byml {
 }
 
 impl Mergeable for CollabAnchor {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             collabo_shooting_star_direction: other.collabo_shooting_star_direction
                 .ne(&self.collabo_shooting_star_direction)
                 .then_some(other.collabo_shooting_star_direction)
-                .expect("CollaboShootingStarDirection must exist in at least one of these files"),
+                .unwrap_or_default(),
             collabo_shooting_star_end_hour: other.collabo_shooting_star_end_hour
                 .ne(&self.collabo_shooting_star_end_hour)
                 .then_some(other.collabo_shooting_star_end_hour)
-                .expect("CollaboShootingStarEndHour must exist in at least one of these files"),
+                .unwrap_or_default(),
             collabo_shooting_star_start_hour: other.collabo_shooting_star_start_hour
                 .ne(&self.collabo_shooting_star_start_hour)
                 .then_some(other.collabo_shooting_star_start_hour)
-                .expect("CollaboShootingStarStartHour must exist in at least one of these files"),
+                .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
             collabo_ssfallout_flag_name: other.collabo_ssfallout_flag_name
                 .ne(&self.collabo_ssfallout_flag_name)
                 .then(|| other.collabo_ssfallout_flag_name.clone())
-                .expect("collaboSSFalloutFlagName must exist in at least one of these files"),
+                .unwrap_or_default(),
             collabo_ssopen_flag_name: other.collabo_ssopen_flag_name
                 .ne(&self.collabo_ssopen_flag_name)
                 .then(|| other.collabo_ssopen_flag_name.clone())
-                .expect("collaboSSOpenFlagName must exist in at least one of these files"),
+                .unwrap_or_default(),
             collabo_ssquest_flag: other.collabo_ssquest_flag
                 .ne(&self.collabo_ssquest_flag)
                 .then(|| other.collabo_ssquest_flag.clone())
-                .expect("collaboSSQuestFlag must exist in at least one of these files"),
+                .unwrap_or_default(),
         }
     }
 

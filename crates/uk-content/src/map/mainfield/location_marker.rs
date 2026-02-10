@@ -200,33 +200,34 @@ impl From<LocationMarker> for Byml {
 }
 
 impl Mergeable for LocationMarker {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             icon: other.icon
                 .ne(&self.icon)
                 .then_some(other.icon)
-                .expect("Icon should be present in at least one of these files"),
+                .unwrap_or_default(),
             message_id: other.message_id
                 .ne(&self.message_id)
                 .then(|| other.message_id.clone())
-                .expect("MessageID should be present in at least one of these files"),
+                .unwrap_or_default(),
             priority: other.priority
                 .ne(&self.priority)
                 .then_some(other.priority)
-                .expect("Priority should be present in at least one of these files"),
+                .unwrap_or_default(),
             save_flag: other.save_flag
                 .ne(&self.save_flag)
                 .then(|| other.save_flag.clone())
-                .expect("SaveFlag should be present in at least one of these files"),
+                .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
             warp_dest_map_name: other.warp_dest_map_name
                 .ne(&self.warp_dest_map_name)
                 .then(|| other.warp_dest_map_name.clone())
-                .expect("WarpDestMapName should be present in at least one of these files"),
+                .unwrap_or_default(),
             warp_dest_pos_name: other.warp_dest_pos_name
                 .ne(&self.warp_dest_pos_name)
                 .then(|| other.warp_dest_pos_name.clone())
-                .expect("WarpDestPosName should be present in at least one of these files"),
+                .unwrap_or_default(),
         }
     }
 

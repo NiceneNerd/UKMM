@@ -126,47 +126,50 @@ impl From<NonAutoPlacement> for Byml {
 }
 
 impl Mergeable for NonAutoPlacement {
+    #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
             non_auto_placement_animal: other.non_auto_placement_animal
                 .ne(&self.non_auto_placement_animal)
                 .then_some(other.non_auto_placement_animal)
-                .expect("NonAutoPlacementAnimal should be in at least one of these files"),
+                .unwrap_or_default(),
             non_auto_placement_bird: other.non_auto_placement_bird
                 .ne(&self.non_auto_placement_bird)
                 .then_some(other.non_auto_placement_bird)
-                .expect("NonAutoPlacementBird should be in at least one of these files"),
+                .unwrap_or_default(),
             non_auto_placement_enemy: other.non_auto_placement_enemy
                 .ne(&self.non_auto_placement_enemy)
                 .then_some(other.non_auto_placement_enemy)
-                .expect("NonAutoPlacementEnemy should be in at least one of these files"),
+                .unwrap_or_default(),
             non_auto_placement_fish: other.non_auto_placement_fish
                 .ne(&self.non_auto_placement_fish)
                 .then_some(other.non_auto_placement_fish)
-                .expect("NonAutoPlacementFish should be in at least one of these files"),
+                .unwrap_or_default(),
             non_auto_placement_insect: other.non_auto_placement_insect
                 .ne(&self.non_auto_placement_insect)
                 .then_some(other.non_auto_placement_insect)
-                .expect("NonAutoPlacementInsect should be in at least one of these files"),
+                .unwrap_or_default(),
             non_auto_placement_material: other.non_auto_placement_material
                 .ne(&self.non_auto_placement_material)
                 .then_some(other.non_auto_placement_material)
-                .expect("NonAutoPlacementMaterial should be in at least one of these files"),
+                .unwrap_or_default(),
             non_enemy_search_player: other.non_enemy_search_player
                 .ne(&self.non_enemy_search_player)
                 .then_some(other.non_enemy_search_player)
-                .expect("NonEnemySearchPlayer should be in at least one of these files"),
-            not_use_for_stats: if other.not_use_for_stats
-                .ne(&self.not_use_for_stats) { other.not_use_for_stats } else { Default::default() },
+                .unwrap_or_default(),
+            not_use_for_stats: other.not_use_for_stats
+                .ne(&self.not_use_for_stats)
+                .then_some(other.not_use_for_stats)
+                .unwrap_or_default(),
             rotate_y: other.rotate_y
                 .ne(&self.rotate_y)
                 .then_some(other.rotate_y)
-                .expect("RotateY should be in at least one of these files"),
+                .unwrap_or_default(),
             scale: self.scale.diff(&other.scale),
             shape: other.shape
                 .ne(&self.shape)
                 .then_some(other.shape)
-                .expect("Shape should be in at least one of these files"),
+                .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
         }
     }
