@@ -170,15 +170,15 @@ impl App {
                                 if ui.button("Generic_OK".localize()).clicked() {
                                     self.do_update(Message::CloseError);
                                 }
+                                let response = ui.button("Generic_Copy".localize());
+                                egui::Tooltip::for_widget(&response)
+                                    .at_pointer()
+                                    .popup
+                                    .sense(egui::Sense::click())
+                                    .show(|ui| ui.label("Generic_Copied".localize()));
                                 if ui.button("Generic_Copy".localize()).clicked() {
                                     ui.output_mut(|o| o.commands
                                         .push(OutputCommand::CopyText(format!("{:?}", &err))));
-                                    egui::Tooltip::always_open(
-                                        ctx,
-                                        ui.layer_id(),
-                                        Id::new("copied"),
-                                        |ui| ui.label("Generic_Copied".localize()),
-                                    );
                                 }
                                 ui.shrink_width_to_current();
                             },

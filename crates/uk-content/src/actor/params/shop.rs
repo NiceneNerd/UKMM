@@ -73,7 +73,7 @@ impl TryFrom<&ParameterIO> for ShopData {
                 (1..=column_num)
                     .map(|i| -> Result<(String64, ShopItem)> {
                         let item_name = table_obj
-                            .get(&format!("ItemName{:03}", i))
+                            .get(format!("ItemName{:03}", i))
                             .ok_or(UKError::MissingAampKey(
                                 "Shop table missing item name",
                                 Box::from(None),
@@ -81,35 +81,35 @@ impl TryFrom<&ParameterIO> for ShopData {
                             .as_safe_string()?;
                         Ok((item_name, ShopItem {
                             sort: table_obj
-                                .get(&format!("ItemSort{:03}", i))
+                                .get(format!("ItemSort{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing item name",
                                     Box::from(None),
                                 ))?
                                 .as_int()?,
                             num: table_obj
-                                .get(&format!("ItemNum{:03}", i))
+                                .get(format!("ItemNum{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing item num",
                                     Box::from(None),
                                 ))?
                                 .as_int()?,
                             adjust_price: table_obj
-                                .get(&format!("ItemAdjustPrice{:03}", i))
+                                .get(format!("ItemAdjustPrice{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing adjust price",
                                     Box::from(None),
                                 ))?
                                 .as_int()?,
                             look_get_flag: table_obj
-                                .get(&format!("ItemLookGetFlg{:03}", i))
+                                .get(format!("ItemLookGetFlg{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing look get flag",
                                     Box::from(None),
                                 ))?
                                 .as_bool()?,
                             amount: table_obj
-                                .get(&format!("ItemAmount{:03}", i))
+                                .get(format!("ItemAmount{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing item amount",
                                     Box::from(None),

@@ -13,10 +13,10 @@ use uk_mod::Manifest;
 #[allow(deprecated)]
 use uk_ui::{
     egui::{self, Align, Label, Layout, RichText, Ui},
+    egui_extras::image,
     icons::IconButtonExt,
     PathNode,
 };
-
 use super::Component;
 
 pub enum Message {
@@ -35,9 +35,10 @@ impl ModInfo<'_> {
                 if let Ok(mut file) = zip.by_name(&format!("thumb.{}", ext)) {
                     let mut vec = vec![0; file.size() as usize];
                     file.read_exact(&mut vec)?;
+                    let image = image::load_image_bytes(&vec)
+                        .map_err(|e| anyhow::anyhow!("{}", e))?;
                     return Ok(Some(Arc::new(
-                        ctx.load_texture(mod_.meta.name.as_str(), &vec, Default::default())
-                            .map_err(|e| anyhow::anyhow!("{}", e))?,
+                        ctx.load_texture(mod_.meta.name.as_str(), image, Default::default()),
                     )));
                 }
             }

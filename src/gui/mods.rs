@@ -6,7 +6,7 @@ use uk_manager::mods::Mod;
 use uk_ui::{
     egui::{
         self, epaint::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key,
-        LayerId, Layout, Response, Sense, TextStyle, Ui, Vec2,
+        LayerId, Layout, Response, Sense, TextStyle, Ui, Vec2, emath::TSTransform
     },
     egui_extras::{Column, TableBuilder, TableRow},
     ext::UiExt,
@@ -48,7 +48,7 @@ impl App {
             ICON_WIDTH.get_or_init(|| ui.spacing().icon_width + ui.spacing().button_padding.x);
         static NUMERIC_COL_WIDTH: OnceLock<f32> = OnceLock::new();
         let numeric_col_width = NUMERIC_COL_WIDTH.get_or_init(|| {
-            ui.fonts(|mut f| {
+            ui.fonts_mut(|f| {
                 f.layout_job(LayoutJob::simple_singleline(
                     "PriorityWW".to_owned(),
                     ui.style()
@@ -347,7 +347,10 @@ impl App {
                 if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
                     let delta = pointer_pos.y - res.rect.center().y;
                     #[allow(deprecated)]
-                    ui.ctx().translate_layer(layer_id, Vec2::new(0.0, delta));
+                    ui.ctx().transform_layer_shapes(
+                        layer_id,
+                        TSTransform::from_translation(Vec2::new(0.0, delta))
+                    );
                 }
             }
         } else {

@@ -1,7 +1,7 @@
 use uk_localization::string_ext::LocString;
 use uk_ui::{
     egui::{self, Ui, WidgetText},
-    egui_dock::{DockState, Node, NodeIndex, TabViewer},
+    egui_dock::{DockState, Node, NodeIndex, TabViewer, tab_viewer::OnCloseResponse},
     visuals::Theme,
 };
 
@@ -96,8 +96,8 @@ impl TabViewer for super::App {
         });
     }
 
-    fn on_close(&mut self, tab: &mut Self::Tab) -> bool {
+    fn on_close(&mut self, tab: &mut Self::Tab) -> OnCloseResponse {
         self.closed_tabs.insert(*tab, NodeIndex::root());
-        true
+        OnCloseResponse::Close
     }
 }
