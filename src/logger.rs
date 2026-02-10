@@ -14,7 +14,7 @@ pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
         text: Default::default(),
         record_buf: Arc::new(Mutex::new(String::with_capacity(512))),
         msg: Default::default(),
-        inner: &egui_logger::EguiLogger,
+        inner: egui_logger::builder().max_level(log::LevelFilter::max()).build(),
         file: OnceLock::new(),
     }
 });
@@ -30,7 +30,7 @@ pub struct Logger {
     text: Arc<Mutex<String>>,
     record_buf: Arc<Mutex<String>>,
     msg: Arc<Mutex<Option<String>>>,
-    inner: &'static egui_logger::EguiLogger,
+    inner: egui_logger::EguiLogger,
     file: OnceLock<PathBuf>,
 }
 

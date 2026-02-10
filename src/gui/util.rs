@@ -52,6 +52,6 @@ impl uk_ui::egui::TextBuffer for SmartStringWrapper<'_> {
 
     #[inline]
     fn type_id(&self) -> TypeId {
-        TypeId::of::<Self>()
+        TypeId::of::<smartstring::alias::String>()
     }
 }

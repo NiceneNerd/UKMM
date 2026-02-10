@@ -163,7 +163,7 @@ impl ProfileManagerState {
                                             .expect("Body style is real, bro")
                                             .clone();
                                         let color = ui.style().visuals.text_color();
-                                        let label = ui.fonts(|mut f| {
+                                        let label = ui.fonts_mut(|f| {
                                             f.layout_no_wrap(p.as_str().into(), font, color)
                                         });
                                         if ui

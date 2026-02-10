@@ -4,7 +4,6 @@ use std::{
     path::{Path, PathBuf},
     sync::{atomic::AtomicUsize, Arc, LazyLock},
 };
-use std::borrow::Cow;
 use anyhow_ext::{Context, Result};
 use botw_utils::hashes::StockHashTable;
 use fs_err as fs;
