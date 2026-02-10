@@ -135,36 +135,18 @@ impl Mergeable for CollabAnchor {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             collabo_shooting_star_direction: diff.collabo_shooting_star_direction
-                .eq(&self.collabo_shooting_star_direction)
-                .then_some(self.collabo_shooting_star_direction)
-                .or(Some(diff.collabo_shooting_star_direction))
-                .expect("CollaboShootingStarDirection must exist in at least one of these files"),
+                .or(self.collabo_shooting_star_direction),
             collabo_shooting_star_end_hour: diff.collabo_shooting_star_end_hour
-                .eq(&self.collabo_shooting_star_end_hour)
-                .then_some(self.collabo_shooting_star_end_hour)
-                .or(Some(diff.collabo_shooting_star_end_hour))
-                .expect("CollaboShootingStarEndHour must exist in at least one of these files"),
+                .or(self.collabo_shooting_star_end_hour),
             collabo_shooting_star_start_hour: diff.collabo_shooting_star_start_hour
-                .eq(&self.collabo_shooting_star_start_hour)
-                .then_some(self.collabo_shooting_star_start_hour)
-                .or(Some(diff.collabo_shooting_star_start_hour))
-                .expect("CollaboShootingStarStartHour must exist in at least one of these files"),
+                .or(self.collabo_shooting_star_start_hour),
             translate: self.translate.merge(&diff.translate),
             collabo_ssfallout_flag_name: diff.collabo_ssfallout_flag_name.clone()
-                .eq(&self.collabo_ssfallout_flag_name)
-                .then(|| self.collabo_ssfallout_flag_name.clone())
-                .or_else(|| Some(diff.collabo_ssfallout_flag_name.clone()))
-                .expect("collaboSSFalloutFlagName must exist in at least one of these files"),
+                .or_else(|| self.collabo_ssfallout_flag_name.clone()),
             collabo_ssopen_flag_name: diff.collabo_ssopen_flag_name.clone()
-                .eq(&self.collabo_ssopen_flag_name)
-                .then(|| self.collabo_ssopen_flag_name.clone())
-                .or_else(|| Some(diff.collabo_ssopen_flag_name.clone()))
-                .expect("collaboSSOpenFlagName must exist in at least one of these files"),
+                .or_else(|| self.collabo_ssopen_flag_name.clone()),
             collabo_ssquest_flag: diff.collabo_ssquest_flag.clone()
-                .eq(&self.collabo_ssquest_flag)
-                .then(|| self.collabo_ssquest_flag.clone())
-                .or_else(|| Some(diff.collabo_ssquest_flag.clone()))
-                .expect("collaboSSQuestFlag must exist in at least one of these files"),
+                .or_else(|| self.collabo_ssquest_flag.clone()),
         }
     }
 }

@@ -234,36 +234,18 @@ impl Mergeable for LocationMarker {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             icon: diff.icon
-                .eq(&self.icon)
-                .then_some(self.icon)
-                .or(Some(diff.icon))
-                .expect("Icon should be present in at least one of these files"),
-            message_id: diff.message_id
-                .eq(&self.message_id)
-                .then(|| self.message_id.clone())
-                .or_else(|| Some(diff.message_id.clone()))
-                .expect("MessageID should be present in at least one of these files"),
+                .or(self.icon),
+            message_id: diff.message_id.clone()
+                .or_else(|| self.message_id.clone()),
             priority: diff.priority
-                .eq(&self.priority)
-                .then_some(self.priority)
-                .or(Some(diff.priority))
-                .expect("Priority should be present in at least one of these files"),
-            save_flag: diff.save_flag
-                .eq(&self.save_flag)
-                .then(|| self.save_flag.clone())
-                .or_else(|| Some(diff.save_flag.clone()))
-                .expect("SaveFlag should be present in at least one of these files"),
+                .or(self.priority),
+            save_flag: diff.save_flag.clone()
+                .or_else(|| self.save_flag.clone()),
             translate: self.translate.merge(&diff.translate),
-            warp_dest_map_name: diff.warp_dest_map_name
-                .eq(&self.warp_dest_map_name)
-                .then(|| self.warp_dest_map_name.clone())
-                .or_else(|| Some(diff.warp_dest_map_name.clone()))
-                .expect("WarpDestMapName should be present in at least one of these files"),
-            warp_dest_pos_name: diff.warp_dest_pos_name
-                .eq(&self.warp_dest_pos_name)
-                .then(|| self.warp_dest_pos_name.clone())
-                .or_else(|| Some(diff.warp_dest_pos_name.clone()))
-                .expect("WarpDestPosName should be present in at least one of these files"),
+            warp_dest_map_name: diff.warp_dest_map_name.clone()
+                .or_else(|| self.warp_dest_map_name.clone()),
+            warp_dest_pos_name: diff.warp_dest_pos_name.clone()
+                .or_else(|| self.warp_dest_pos_name.clone()),
         }
     }
 }

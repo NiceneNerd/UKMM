@@ -177,56 +177,26 @@ impl Mergeable for NonAutoPlacement {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             non_auto_placement_animal: diff.non_auto_placement_animal
-                .eq(&self.non_auto_placement_animal)
-                .then_some(self.non_auto_placement_animal)
-                .or(Some(diff.non_auto_placement_animal))
-                .expect("NonAutoPlacementAnimal should be in at least one of these files"),
+                .or(self.non_auto_placement_animal),
             non_auto_placement_bird: diff.non_auto_placement_bird
-                .eq(&self.non_auto_placement_bird)
-                .then_some(self.non_auto_placement_bird)
-                .or(Some(diff.non_auto_placement_bird))
-                .expect("NonAutoPlacementBird should be in at least one of these files"),
+                .or(self.non_auto_placement_bird),
             non_auto_placement_enemy: diff.non_auto_placement_enemy
-                .eq(&self.non_auto_placement_enemy)
-                .then_some(self.non_auto_placement_enemy)
-                .or(Some(diff.non_auto_placement_enemy))
-                .expect("NonAutoPlacementEnemy should be in at least one of these files"),
+                .or(self.non_auto_placement_enemy),
             non_auto_placement_fish: diff.non_auto_placement_fish
-                .eq(&self.non_auto_placement_fish)
-                .then_some(self.non_auto_placement_fish)
-                .or(Some(diff.non_auto_placement_fish))
-                .expect("NonAutoPlacementFish should be in at least one of these files"),
+                .or(self.non_auto_placement_fish),
             non_auto_placement_insect: diff.non_auto_placement_insect
-                .eq(&self.non_auto_placement_insect)
-                .then_some(self.non_auto_placement_insect)
-                .or(Some(diff.non_auto_placement_insect))
-                .expect("NonAutoPlacementInsect should be in at least one of these files"),
+                .or(self.non_auto_placement_insect),
             non_auto_placement_material: diff.non_auto_placement_material
-                .eq(&self.non_auto_placement_material)
-                .then_some(self.non_auto_placement_material)
-                .or(Some(diff.non_auto_placement_material))
-                .expect("NonAutoPlacementMaterial should be in at least one of these files"),
+                .or(self.non_auto_placement_material),
             non_enemy_search_player: diff.non_enemy_search_player
-                .eq(&self.non_enemy_search_player)
-                .then_some(self.non_enemy_search_player)
-                .or(Some(diff.non_enemy_search_player))
-                .expect("NonEnemySearchPlayer should be in at least one of these files"),
+                .or(self.non_enemy_search_player),
             not_use_for_stats: diff.not_use_for_stats
-                .eq(&self.not_use_for_stats)
-                .then_some(self.not_use_for_stats)
-                .or(Some(diff.not_use_for_stats))
-                .expect("NotUseForStats should be in at least one of these files"),
+                .or(self.not_use_for_stats),
             rotate_y: diff.rotate_y
-                .eq(&self.rotate_y)
-                .then_some(self.rotate_y)
-                .or(Some(diff.rotate_y))
-                .expect("RotateY should be in at least one of these files"),
+                .or(self.rotate_y),
             scale: self.scale.merge(&diff.scale),
             shape: diff.shape
-                .eq(&self.shape)
-                .then_some(self.shape)
-                .or(Some(diff.shape))
-                .expect("Shape should be in at least one of these files"),
+                .or(self.shape),
             translate: self.translate.merge(&diff.translate),
         }
     }

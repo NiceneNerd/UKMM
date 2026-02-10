@@ -120,30 +120,15 @@ impl Mergeable for LocationPointer {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             location_priority: diff.location_priority
-                .eq(&self.location_priority)
-                .then_some(self.location_priority)
-                .or(Some(diff.location_priority))
-                .expect("LocationPriority should be present in at least one of these files"),
-            message_id: diff.message_id
-                .eq(&self.message_id)
-                .then(|| self.message_id.clone())
-                .or_else(|| Some(diff.message_id.clone()))
-                .expect("MessageID should be present in at least one of these files"),
+                .or(self.location_priority),
+            message_id: diff.message_id.clone()
+                .or_else(|| self.message_id.clone()),
             pointer_type: diff.pointer_type
-                .eq(&self.pointer_type)
-                .then_some(self.pointer_type)
-                .or(Some(diff.pointer_type))
-                .expect("PointerType should be present in at least one of these files"),
-            save_flag: diff.save_flag
-                .eq(&self.save_flag)
-                .then(|| self.save_flag.clone())
-                .or_else(|| Some(diff.save_flag.clone()))
-                .expect("SaveFlag should be present in at least one of these files"),
+                .or(self.pointer_type),
+            save_flag: diff.save_flag.clone()
+                .or_else(|| self.save_flag.clone()),
             show_level: diff.show_level
-                .eq(&self.show_level)
-                .then_some(self.show_level)
-                .or(Some(diff.show_level))
-                .expect("ShowLevel should be present in at least one of these files"),
+                .or(self.show_level),
             translate: self.translate.merge(&diff.translate),
         }
     }

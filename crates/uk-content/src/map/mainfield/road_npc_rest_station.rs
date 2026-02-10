@@ -96,25 +96,13 @@ impl Mergeable for RoadNpcRestStation {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             rest_horse_left: diff.rest_horse_left
-                .eq(&self.rest_horse_left)
-                .then_some(self.rest_horse_left)
-                .or(Some(diff.rest_horse_left))
-                .expect("RestHorseLeft should be in at least one of these files"),
+                .or(self.rest_horse_left),
             rest_only_npc: diff.rest_only_npc
-                .eq(&self.rest_only_npc)
-                .then_some(self.rest_only_npc)
-                .or(Some(diff.rest_only_npc))
-                .expect("RestOnlyNpc should be in at least one of these files"),
+                .or(self.rest_only_npc),
             rest_with_horse: diff.rest_with_horse
-                .eq(&self.rest_with_horse)
-                .then_some(self.rest_with_horse)
-                .or(Some(diff.rest_with_horse))
-                .expect("RestWithHorse should be in at least one of these files"),
+                .or(self.rest_with_horse),
             rotate_y: diff.rotate_y
-                .eq(&self.rotate_y)
-                .then_some(self.rotate_y)
-                .or(Some(diff.rotate_y))
-                .expect("RotateY should be in at least one of these files"),
+                .or(self.rotate_y),
             translate: self.translate.merge(&diff.translate),
         }
     }

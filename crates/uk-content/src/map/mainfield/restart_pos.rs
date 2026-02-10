@@ -81,11 +81,8 @@ impl Mergeable for RestartPos {
         Self {
             scale: self.scale.merge(&diff.scale),
             translate: self.translate.merge(&diff.translate),
-            unique_name: diff.unique_name
-                .eq(&self.unique_name)
-                .then(|| self.unique_name.clone())
-                .or_else(|| Some(diff.unique_name.clone()))
-                .expect("UniqueName should be in at least one of these files"),
+            unique_name: diff.unique_name.clone()
+                .or_else(|| self.unique_name.clone()),
         }
     }
 }

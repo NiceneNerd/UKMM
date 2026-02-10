@@ -229,66 +229,30 @@ impl Mergeable for KorokLocation {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            flag: diff.flag
-                .eq(&self.flag)
-                .then(|| self.flag.clone())
-                .or_else(|| Some(diff.flag.clone()))
-                .expect("Flag should be present in at least one of these files"),
+            flag: diff.flag.clone()
+                .or_else(|| self.flag.clone()),
             hidden_korok_body_color: diff.hidden_korok_body_color
-                .eq(&self.hidden_korok_body_color)
-                .then_some(self.hidden_korok_body_color)
-                .or(Some(diff.hidden_korok_body_color))
-                .expect("HiddenKorokBodyColor should be present in at least one of these files"),
+                .or(self.hidden_korok_body_color),
             hidden_korok_left_plant_type: diff.hidden_korok_left_plant_type
-                .eq(&self.hidden_korok_left_plant_type)
-                .then_some(self.hidden_korok_left_plant_type)
-                .or(Some(diff.hidden_korok_left_plant_type))
-                .expect("HiddenKorokLeftPlantType should be present in at least one of these files"),
+                .or(self.hidden_korok_left_plant_type),
             hidden_korok_mask_type: diff.hidden_korok_mask_type
-                .eq(&self.hidden_korok_mask_type)
-                .then_some(self.hidden_korok_mask_type)
-                .or(Some(diff.hidden_korok_mask_type))
-                .expect("HiddenKorokMaskType should be present in at least one of these files"),
+                .or(self.hidden_korok_mask_type),
             hidden_korok_right_plant_type: diff.hidden_korok_right_plant_type
-                .eq(&self.hidden_korok_right_plant_type)
-                .then_some(self.hidden_korok_right_plant_type)
-                .or(Some(diff.hidden_korok_right_plant_type))
-                .expect("HiddenKorokRightPlantType should be present in at least one of these files"),
+                .or(self.hidden_korok_right_plant_type),
             is_appear_check: diff.is_appear_check
-                .eq(&self.is_appear_check)
-                .then_some(self.is_appear_check)
-                .or(Some(diff.is_appear_check))
-                .expect("IsAppearCheck should be present in at least one of these files"),
+                .or(self.is_appear_check),
             is_hidden_korok_lift_appear: diff.is_hidden_korok_lift_appear
-                .eq(&self.is_hidden_korok_lift_appear)
-                .then_some(self.is_hidden_korok_lift_appear)
-                .or(Some(diff.is_hidden_korok_lift_appear))
-                .expect("IsHiddenKorokLiftAppear should be present in at least one of these files"),
+                .or(self.is_hidden_korok_lift_appear),
             is_invisible_korok: diff.is_invisible_korok
-                .eq(&self.is_invisible_korok)
-                .then_some(self.is_invisible_korok)
-                .or(Some(diff.is_invisible_korok))
-                .expect("IsInvisibleKorok should be present in at least one of these files"),
+                .or(self.is_invisible_korok),
             korok_event_start_wait_frame: diff.korok_event_start_wait_frame
-                .eq(&self.korok_event_start_wait_frame)
-                .then_some(self.korok_event_start_wait_frame)
-                .or(Some(diff.korok_event_start_wait_frame))
-                .expect("KorokEventStartWaitFrame should be present in at least one of these files"),
+                .or(self.korok_event_start_wait_frame),
             placement_type: diff.placement_type
-                .eq(&self.placement_type)
-                .then_some(self.placement_type)
-                .or(Some(diff.placement_type))
-                .expect("PlacementType should be present in at least one of these files"),
+                .or(self.placement_type),
             rail_move_speed: diff.rail_move_speed
-                .eq(&self.rail_move_speed)
-                .then_some(self.rail_move_speed)
-                .or(Some(diff.rail_move_speed))
-                .expect("RailMoveSpeed should be present in at least one of these files"),
+                .or(self.rail_move_speed),
             territory_area: diff.territory_area
-                .eq(&self.territory_area)
-                .then_some(self.territory_area)
-                .or(Some(diff.territory_area))
-                .expect("TerritoryArea should be present in at least one of these files"),
+                .or(self.territory_area),
             translate: self.translate.merge(&diff.translate),
         }
     }

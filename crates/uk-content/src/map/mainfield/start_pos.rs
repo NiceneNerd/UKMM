@@ -168,21 +168,12 @@ impl Mergeable for StartPos {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            map: diff.map
-                .eq(&self.map)
-                .then(|| self.map.clone())
-                .or_else(|| Some(diff.map.clone()))
-                .expect("Map should be in at least one of these files"),
+            map: diff.map.clone()
+                .or_else(|| self.map.clone()),
             player_state: diff.player_state
-                .eq(&self.player_state)
-                .then_some(self.player_state)
-                .or(Some(diff.player_state))
-                .expect("PlayerState should be in at least one of these files"),
-            pos_name: diff.pos_name
-                .eq(&self.pos_name)
-                .then(|| self.pos_name.clone())
-                .or_else(|| Some(diff.pos_name.clone()))
-                .expect("PosName should be in at least one of these files"),
+                .or(self.player_state),
+            pos_name: diff.pos_name.clone()
+                .or_else(|| self.pos_name.clone()),
             rotate: self.rotate.merge(&diff.rotate),
             translate: self.translate.merge(&diff.translate),
         }

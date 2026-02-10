@@ -103,21 +103,12 @@ impl Mergeable for NonAutoGenArea {
     fn merge(&self, diff: &Self) -> Self {
         Self {
             enable_auto_flower: diff.enable_auto_flower
-                .eq(&self.enable_auto_flower)
-                .then_some(self.enable_auto_flower)
-                .or(Some(diff.enable_auto_flower))
-                .expect("EnableAutoFlower should be in at least one of these files"),
+                .or(self.enable_auto_flower),
             rotate_y: diff.rotate_y
-                .eq(&self.rotate_y)
-                .then_some(self.rotate_y)
-                .or(Some(diff.rotate_y))
-                .expect("RotateY should be in at least one of these files"),
+                .or(self.rotate_y),
             scale: self.scale.merge(&diff.scale),
             shape: diff.shape
-                .eq(&self.shape)
-                .then_some(self.shape)
-                .or(Some(diff.shape))
-                .expect("Shape should be in at least one of these files"),
+                .or(self.shape),
             translate: self.translate.merge(&diff.translate),
         }
     }
