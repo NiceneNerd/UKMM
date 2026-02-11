@@ -346,7 +346,6 @@ impl App {
                     .response;
                 if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
                     let delta = pointer_pos.y - res.rect.center().y;
-                    #[allow(deprecated)]
                     ui.ctx().transform_layer_shapes(
                         layer_id,
                         TSTransform::from_translation(Vec2::new(0.0, delta))
