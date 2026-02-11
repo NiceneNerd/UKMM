@@ -308,10 +308,9 @@ impl App {
                 ui.output_mut(|o| o.cursor_icon = CursorIcon::Grabbing);
                 let layer_id =
                     LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
-                let res =
-                    ui.scope_builder(
-                        egui::UiBuilder::new().layer_id(layer_id),
-                        |ui| {
+                let res = ui.scope_builder(
+                    egui::UiBuilder::new().layer_id(layer_id),
+                    |ui| {
                         TableBuilder::new(ui)
                             .column(Column::exact(icon_width))
                             .column(Column::remainder())
