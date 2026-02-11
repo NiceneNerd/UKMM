@@ -316,7 +316,7 @@ impl ModPacker {
             match zip.start_file(zip_path.to_slash_lossy(), self._zip_opts) {
                 Ok(_) => zip.write_all(&self.compressor.lock().compress(&data)?)?,
                 Err(e) => if let zip::result::ZipError::InvalidArchive(message) = &e
-                    && message == "Duplicate filename" {
+                    && message.starts_with("Duplicate filename") {
                     log::warn!("Attempted to duplicate resource {}, skipping", canon);
                 }
                 else {
