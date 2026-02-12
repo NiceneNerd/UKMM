@@ -116,7 +116,7 @@ impl App {
         
         egui::Frame::NONE
             .inner_margin(Margin {
-                bottom: 4,
+                bottom: 12,
                 top:    4,
                 left:   4,
                 right:  -12,

@@ -71,8 +71,8 @@ impl TabViewer for super::App {
                                 visuals::slate_grid(ui);
                             }
                             self.render_modlist(ui);
-                            let available = ui.available_size();
-                            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
+                            // let available = ui.available_size();
+                            // ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
                             self.render_pending(ui);
                         });
                 }
