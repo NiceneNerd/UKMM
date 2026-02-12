@@ -21,7 +21,7 @@ product-icon = "assets/ukmm.ico"
 anyhow = { workspace = true }
 anyhow_ext = { workspace = true }
 dirs2 = { workspace = true }
-eframe = { workspace = true, features = ["glow"] }
+eframe = { workspace = true, features = ["glow", "x11", "wayland"] }
 env_logger = "0.11.8"
 flume = { workspace = true }
 fs-err = { workspace = true }
