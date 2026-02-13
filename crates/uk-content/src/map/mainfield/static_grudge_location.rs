@@ -25,8 +25,9 @@ impl StaticGrudgeLocation {
     }
 
     pub fn is_complete(&self) -> bool {
-        self.eyeball_hash_id.is_some() &&
-            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+        // Some of these are optional
+        //self.eyeball_hash_id.is_some() &&
+        self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
     }
 }
 
