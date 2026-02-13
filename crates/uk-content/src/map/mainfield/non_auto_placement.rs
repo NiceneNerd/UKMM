@@ -115,12 +115,12 @@ impl From<NonAutoPlacement> for Byml {
         map.insert("Scale".into(), Byml::Map(value.scale
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-            .collect::<crate::util::HashMap<String, Byml>>()));
+            .collect::<HashMap<String, Byml>>()));
         map.insert("Shape".into(), (&value.shape.expect("Shape should have been read on diff")).into());
         map.insert("Translate".into(), Byml::Map(value.translate
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
-            .collect::<crate::util::HashMap<String, Byml>>()));
+            .collect::<HashMap<String, Byml>>()));
         Byml::Map(map)
     }
 }

@@ -235,20 +235,16 @@ impl TryFrom<&Byml> for MainStatic {
         Ok(Self {
             dlc_restart_pos: root_map
                 .get("DLCRestartPos")
-                .map_or(None, |b| {
-                    Some(b.as_array()
-                        .expect("Invalid DLCRestartPos")
-                        .iter()
-                        .enumerate()
-                        .map(|(index, entry)| {
-                                let entry: RestartPos = entry.try_into()
-                                    .with_context(|| format!("Could not read RestartPos {}", index))?;
-                                Ok((entry.id(), entry))
-                            },
-                        )
-                        .collect::<Result<DeleteMap<_, _>>>(),
-                    )
-                })
+                .map(|b| b.as_array()
+                    .expect("Invalid DLCRestartPos")
+                    .iter()
+                    .enumerate()
+                    .map(|(index, entry)| {
+                        let entry: RestartPos = entry.try_into()
+                            .with_context(|| format!("Could not read RestartPos {}", index))?;
+                        Ok((entry.id(), entry))
+                    })
+                    .collect::<Result<DeleteMap<_, _>>>())
                 .transpose()?,
             collab_anchor: root_map
                 .get("FldObj_DLC_ShootingStarCollaborationAnchor")
@@ -259,11 +255,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: CollabAnchor = entry.try_into()
-                            .with_context(|| format!("Could not read CollabAnchor {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: CollabAnchor = entry.try_into()
+                        .with_context(|| format!("Could not read CollabAnchor {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             korok_location: root_map
                 .get("KorokLocation")
@@ -274,11 +269,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: KorokLocation = entry.try_into()
-                            .with_context(|| format!("Could not read KorokLocation {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: KorokLocation = entry.try_into()
+                        .with_context(|| format!("Could not read KorokLocation {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             location_marker: root_map
                 .get("LocationMarker")
@@ -289,11 +283,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: LocationMarker = entry.try_into()
-                            .with_context(|| format!("Could not read LocationMarker {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: LocationMarker = entry.try_into()
+                        .with_context(|| format!("Could not read LocationMarker {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             location_pointer: root_map
                 .get("LocationPointer")
@@ -304,11 +297,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: LocationPointer = entry.try_into()
-                            .with_context(|| format!("Could not read LocationPointer {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: LocationPointer = entry.try_into()
+                        .with_context(|| format!("Could not read LocationPointer {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             non_auto_gen_area: root_map
                 .get("NonAutoGenArea")
@@ -319,11 +311,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: NonAutoGenArea = entry.try_into()
-                            .with_context(|| format!("Could not read NonAutoGenArea {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: NonAutoGenArea = entry.try_into()
+                        .with_context(|| format!("Could not read NonAutoGenArea {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             non_auto_placement: root_map
                 .get("NonAutoPlacement")
@@ -334,11 +325,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: NonAutoPlacement = entry.try_into()
-                            .with_context(|| format!("Could not read NonAutoPlacement {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: NonAutoPlacement = entry.try_into()
+                        .with_context(|| format!("Could not read NonAutoPlacement {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             road_npc_rest_station: root_map
                 .get("RoadNpcRestStation")
@@ -349,11 +339,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: RoadNpcRestStation = entry.try_into()
-                            .with_context(|| format!("Could not read RoadNpcRestStation {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: RoadNpcRestStation = entry.try_into()
+                        .with_context(|| format!("Could not read RoadNpcRestStation {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             start_pos: root_map
                 .get("StartPos")
@@ -364,11 +353,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: StartPos = entry.try_into()
-                            .with_context(|| format!("Could not read StartPos {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: StartPos = entry.try_into()
+                        .with_context(|| format!("Could not read StartPos {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             static_grudge_location: root_map
                 .get("StaticGrudgeLocation")
@@ -379,11 +367,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: StaticGrudgeLocation = entry.try_into()
-                            .with_context(|| format!("Could not read StaticGrudgeLocation {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: StaticGrudgeLocation = entry.try_into()
+                        .with_context(|| format!("Could not read StaticGrudgeLocation {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             target_pos_marker: root_map
                 .get("TargetPosMarker")
@@ -394,11 +381,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: TargetPosMarker = entry.try_into()
-                            .with_context(|| format!("Could not read TargetPosMarker {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: TargetPosMarker = entry.try_into()
+                        .with_context(|| format!("Could not read TargetPosMarker {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             tera_water_disable: root_map
                 .get("TeraWaterDisable")
@@ -409,11 +395,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: ScaleTranslate = entry.try_into()
-                            .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: ScaleTranslate = entry.try_into()
+                        .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             terrain_hide_center_tag: root_map
                 .get("TerrainHideCenterTag")
@@ -424,11 +409,10 @@ impl TryFrom<&Byml> for MainStatic {
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                        let entry: ScaleTranslate = entry.try_into()
-                            .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
-                        Ok((entry.id(), entry))
-                    },
-                )
+                    let entry: ScaleTranslate = entry.try_into()
+                        .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
+                    Ok((entry.id(), entry))
+                })
                 .collect::<Result<DeleteMap<_, _>>>()?,
         })
     }
@@ -437,7 +421,7 @@ impl TryFrom<&Byml> for MainStatic {
 impl From<MainStatic> for Byml {
     fn from(val: MainStatic) -> Self {
         val.dlc_restart_pos
-            .map_or_else(|| Vec::<(String, Byml)>::new(), |d| [(
+            .map_or_else(Vec::<(String, Byml)>::new, |d| [(
                 String::from("DLCRestartPos"),
                 Byml::Array(d.into_iter()
                     .map(|(_, entry)| entry.into())
