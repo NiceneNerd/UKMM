@@ -27,6 +27,16 @@ impl LocationPointer {
         .to_string()
         .into()
     }
+
+    pub fn is_complete(&self) -> bool {
+        // Some of these are optional
+        self.location_priority.is_some() &&
+            //self.message_id.is_some() &&
+            self.pointer_type.is_some() &&
+            //self.save_flag.is_some() &&
+            self.show_level.is_some() &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for LocationPointer {

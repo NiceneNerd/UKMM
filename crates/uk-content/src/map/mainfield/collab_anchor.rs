@@ -28,6 +28,16 @@ impl CollabAnchor {
         .to_string()
         .into()
     }
+    
+    pub fn is_complete(&self) -> bool {
+        self.collabo_shooting_star_direction.is_some() &&
+            self.collabo_shooting_star_end_hour.is_some() &&
+            self.collabo_shooting_star_start_hour.is_some() &&
+            self.collabo_ssfallout_flag_name.is_some() &&
+            self.collabo_ssopen_flag_name.is_some() &&
+            self.collabo_ssquest_flag.is_some() &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for CollabAnchor {

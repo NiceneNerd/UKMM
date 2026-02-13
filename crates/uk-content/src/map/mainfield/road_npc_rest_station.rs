@@ -22,6 +22,14 @@ impl RoadNpcRestStation {
         .to_string()
         .into()
     }
+
+    pub fn is_complete(&self) -> bool {
+        self.rest_horse_left.is_some() &&
+            self.rest_only_npc.is_some() &&
+            self.rest_with_horse.is_some() &&
+            self.rotate_y.is_some() &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for RoadNpcRestStation {

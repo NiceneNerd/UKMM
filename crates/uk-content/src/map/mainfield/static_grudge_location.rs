@@ -23,6 +23,11 @@ impl StaticGrudgeLocation {
         .to_string()
         .into()
     }
+
+    pub fn is_complete(&self) -> bool {
+        self.eyeball_hash_id.is_some() &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for StaticGrudgeLocation {

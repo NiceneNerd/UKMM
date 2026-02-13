@@ -123,6 +123,17 @@ impl LocationMarker {
         .to_string()
         .into()
     }
+
+    pub fn is_complete(&self) -> bool {
+        // Some of these are optional to the game
+        //self.icon.is_some() &&
+            //self.message_id.is_some() &&
+            self.priority.is_some() &&
+            self.save_flag.is_some() &&
+            //self.warp_dest_map_name.is_some() &&
+            //self.warp_dest_pos_name.is_some() &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for LocationMarker {

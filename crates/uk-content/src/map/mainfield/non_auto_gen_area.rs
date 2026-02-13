@@ -30,6 +30,14 @@ impl NonAutoGenArea {
         .to_string()
         .into()
     }
+
+    pub fn is_complete(&self) -> bool {
+        self.enable_auto_flower.is_some() &&
+            self.rotate_y.is_some() &&
+            self.shape.is_some() &&
+            self.scale.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z') &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for NonAutoGenArea {

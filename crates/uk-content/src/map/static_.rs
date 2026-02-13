@@ -433,6 +433,7 @@ impl From<MainStatic> for Byml {
                     "FldObj_DLC_ShootingStarCollaborationAnchor".into(),
                     val.collab_anchor
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -443,6 +444,7 @@ impl From<MainStatic> for Byml {
                     "KorokLocation".into(),
                     val.korok_location
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -453,6 +455,7 @@ impl From<MainStatic> for Byml {
                     "LocationMarker".into(),
                     val.location_marker
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -463,6 +466,7 @@ impl From<MainStatic> for Byml {
                     "LocationPointer".into(),
                     val.location_pointer
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -473,6 +477,7 @@ impl From<MainStatic> for Byml {
                     "NonAutoGenArea".into(),
                     val.non_auto_gen_area
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -483,6 +488,7 @@ impl From<MainStatic> for Byml {
                     "NonAutoPlacement".into(),
                     val.non_auto_placement
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -493,6 +499,7 @@ impl From<MainStatic> for Byml {
                     "RoadNpcRestStation".into(),
                     val.road_npc_rest_station
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -503,6 +510,7 @@ impl From<MainStatic> for Byml {
                     "StartPos".into(),
                     val.start_pos
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -513,6 +521,7 @@ impl From<MainStatic> for Byml {
                     "StaticGrudgeLocation".into(),
                     val.static_grudge_location
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -523,6 +532,7 @@ impl From<MainStatic> for Byml {
                     "TargetPosMarker".into(),
                     val.target_pos_marker
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -533,6 +543,7 @@ impl From<MainStatic> for Byml {
                     "TeraWaterDisable".into(),
                     val.tera_water_disable
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),
@@ -543,6 +554,7 @@ impl From<MainStatic> for Byml {
                     "TerrainHideCenterTag".into(),
                     val.terrain_hide_center_tag
                         .into_iter()
+                        .filter(|(_, entry)| entry.is_complete())
                         .map(|(_, entry)| entry.into())
                         .collect::<Vec<_>>()
                         .into(),

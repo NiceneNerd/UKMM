@@ -83,6 +83,22 @@ impl KorokLocation {
         .to_string()
         .into()
     }
+
+    pub fn is_complete(&self) -> bool {
+        self.flag.is_some() &&
+            self.hidden_korok_body_color.is_some() &&
+            self.hidden_korok_left_plant_type.is_some() &&
+            self.hidden_korok_mask_type.is_some() &&
+            self.hidden_korok_right_plant_type.is_some() &&
+            self.is_appear_check.is_some() &&
+            self.is_hidden_korok_lift_appear.is_some() &&
+            self.is_invisible_korok.is_some() &&
+            self.korok_event_start_wait_frame.is_some() &&
+            self.placement_type.is_some() &&
+            self.rail_move_speed.is_some() &&
+            self.territory_area.is_some() &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for KorokLocation {

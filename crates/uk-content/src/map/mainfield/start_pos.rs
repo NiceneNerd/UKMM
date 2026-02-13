@@ -87,6 +87,15 @@ impl StartPos {
         .to_string()
         .into()
     }
+
+    pub fn is_complete(&self) -> bool {
+        // Some of these are optional
+        self.map.is_some() &&
+            //self.player_state.is_some() &&
+            self.pos_name.is_some() &&
+            self.rotate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z') &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for StartPos {

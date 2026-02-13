@@ -24,6 +24,12 @@ impl RestartPos {
         .to_string()
         .into()
     }
+
+    pub fn is_complete(&self) -> bool {
+        self.unique_name.is_some() &&
+            self.scale.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z') &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for RestartPos {

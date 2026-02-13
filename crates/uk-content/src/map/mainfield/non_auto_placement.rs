@@ -37,6 +37,22 @@ impl NonAutoPlacement {
         .to_string()
         .into()
     }
+
+    pub fn is_complete(&self) -> bool {
+        // Some of these are optional
+        self.non_auto_placement_animal.is_some() &&
+            self.non_auto_placement_bird.is_some() &&
+            self.non_auto_placement_enemy.is_some() &&
+            self.non_auto_placement_fish.is_some() &&
+            self.non_auto_placement_insect.is_some() &&
+            self.non_auto_placement_material.is_some() &&
+            self.non_enemy_search_player.is_some() &&
+            //self.not_use_for_stats.is_some() &&
+            self.rotate_y.is_some() &&
+            self.shape.is_some() &&
+            self.scale.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z') &&
+            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+    }
 }
 
 impl TryFrom<&Byml> for NonAutoPlacement {
