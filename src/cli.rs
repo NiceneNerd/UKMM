@@ -1,4 +1,5 @@
 use std::{
+    ffi::OsString,
     io::{stdin, stdout, Write},
     option::Option,
     path::{Path, PathBuf},
@@ -7,7 +8,7 @@ use std::{
 use anyhow_ext::{Context, Result};
 use smartstring::alias::String;
 use uk_manager::{core, mods::LookupMod, settings::Platform};
-use uk_mod::{unpack::ModReader, Manifest, Meta};
+use uk_mod::{unpack::ModReader, Manifest, Meta, ModOptionGroup, OptionGroup};
 
 use crate::gui::{package, tasks};
 
@@ -28,6 +29,10 @@ xflags::xflags! {
             required path: PathBuf
             /// The profile to install the mod in
             optional profile: String
+            /// Use default options for mods with configuration
+            optional --default-options
+            /// Comma-separated list of option names to enable
+            optional --options options_list: OsString
         }
         /// Package a mod
         cmd package {
@@ -54,6 +59,11 @@ xflags::xflags! {
             /// Mode to activate (Switch or Wii U)
             required platform: Platform
         }
+        /// Show info about a mod (including available options)
+        cmd info {
+            /// Path to the mod to inspect
+            required path: PathBuf
+        }
     }
 }
 // generated start
@@ -62,9 +72,6 @@ xflags::xflags! {
 #[derive(Debug)]
 pub struct Ukmm {
     pub debug: bool,
-    /// While the `portable` flag needs to be recognized by xflags, it is
-    /// handled by [std::env::args] in the static Settings methods
-    #[allow(dead_code)]
     pub portable: bool,
     pub deploy: bool,
     pub subcommand: UkmmCmd,
@@ -73,29 +80,33 @@ pub struct Ukmm {
 #[derive(Debug)]
 pub enum UkmmCmd {
     Install(Install),
-    Uninstall(Uninstall),
     Package(Package),
+    Uninstall(Uninstall),
     Remerge(Remerge),
     Deploy(Deploy),
     Mode(Mode),
+    Info(Info),
 }
 
 #[derive(Debug)]
 pub struct Install {
-    pub path:    PathBuf,
+    pub path: PathBuf,
     pub profile: Option<String>,
+
+    pub default_options: bool,
+    pub options: Option<OsString>,
 }
 
 #[derive(Debug)]
 pub struct Package {
-    pub path:   PathBuf,
+    pub path: PathBuf,
     pub output: PathBuf,
-    pub meta:   PathBuf,
+    pub meta: PathBuf,
 }
 
 #[derive(Debug)]
 pub struct Uninstall {
-    pub index:   Option<usize>,
+    pub index: Option<usize>,
     pub profile: Option<String>,
 }
 
@@ -108,6 +119,11 @@ pub struct Deploy;
 #[derive(Debug)]
 pub struct Mode {
     pub platform: Platform,
+}
+
+#[derive(Debug)]
+pub struct Info {
+    pub path: PathBuf,
 }
 
 impl Ukmm {
@@ -151,7 +167,7 @@ impl Runner {
         }
     }
 
-    fn check_mod(&self, path: &Path) -> Result<Option<PathBuf>> {
+    fn check_mod(&self, path: &Path) -> Result<Option<(PathBuf, Meta)>> {
         let (mod_, path) = match ModReader::open(path, vec![]) {
             Ok(mod_) => (mod_, path.to_path_buf()),
             Err(e) => {
@@ -175,13 +191,184 @@ impl Runner {
                 }
             }
         };
-        if !mod_.meta.options.is_empty() {
+        println!("Installing {}...", mod_.meta.name);
+        Ok(Some((path, mod_.meta)))
+    }
+
+    fn resolve_options(
+        meta: &Meta,
+        default_options: bool,
+        options_list: &Option<std::ffi::OsString>,
+    ) -> Result<Vec<uk_mod::ModOption>> {
+        if meta.options.is_empty() {
+            return Ok(vec![]);
+        }
+
+        if !default_options && options_list.is_none() {
             anyhow_ext::bail!(
-                "This mod contains configuration options and should be installed via the GUI."
+                "This mod contains configuration options. Use --default-options to select \
+                 defaults, or --options \"Option1,Option2\" to select specific options.\n\
+                 Run `ukmm info <path>` to see available options."
             );
         }
-        println!("Installing {}...", mod_.meta.name);
-        Ok(Some(path))
+
+        let requested_names: Option<Vec<std::string::String>> =
+            options_list.as_ref().map(|list| {
+                list.to_string_lossy()
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .collect()
+            });
+
+        let mut selected = Vec::new();
+        for group in &meta.options {
+            match group {
+                OptionGroup::Exclusive(g) => {
+                    if let Some(ref names) = requested_names {
+                        if let Some(opt) = g
+                            .options
+                            .iter()
+                            .find(|o| names.iter().any(|n| n == o.name.as_str()))
+                        {
+                            selected.push(opt.clone());
+                        } else if g.required {
+                            if let Some(ref default_path) = g.default {
+                                if let Some(opt) =
+                                    g.options.iter().find(|o| &o.path == default_path)
+                                {
+                                    selected.push(opt.clone());
+                                }
+                            }
+                        }
+                    } else if default_options {
+                        if let Some(ref default_path) = g.default {
+                            if let Some(opt) =
+                                g.options.iter().find(|o| &o.path == default_path)
+                            {
+                                selected.push(opt.clone());
+                            }
+                        }
+                    }
+                }
+                OptionGroup::Multiple(g) => {
+                    if let Some(ref names) = requested_names {
+                        for opt in &g.options {
+                            if names.iter().any(|n| n == opt.name.as_str()) {
+                                selected.push(opt.clone());
+                            }
+                        }
+                        // If none explicitly matched but defaults exist, fall back
+                        if selected.is_empty() && default_options {
+                            for opt in &g.options {
+                                if g.defaults.contains(&opt.path) {
+                                    selected.push(opt.clone());
+                                }
+                            }
+                        }
+                    } else if default_options {
+                        for opt in &g.options {
+                            if g.defaults.contains(&opt.path) {
+                                selected.push(opt.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if !selected.is_empty() {
+            println!("Selected options:");
+            for opt in &selected {
+                println!("  - {}", opt.name);
+            }
+        }
+
+        Ok(selected)
+    }
+
+    fn print_mod_info(path: &Path) -> Result<()> {
+        let mod_ = match ModReader::open(path, vec![]) {
+            Ok(m) => m,
+            Err(_) => {
+                let meta = Meta::parse(path.join("meta.yml"))
+                    .or_else(|_| Meta::from_mod(path))
+                    .context("Could not read mod metadata")?;
+                println!("Name:        {}", meta.name);
+                println!("Version:     {}", meta.version);
+                println!("Author:      {}", meta.author);
+                println!("Category:    {}", meta.category);
+                println!("Description: {}", meta.description);
+                if !meta.options.is_empty() {
+                    Self::print_options(&meta);
+                }
+                return Ok(());
+            }
+        };
+        println!("Name:        {}", mod_.meta.name);
+        println!("Version:     {}", mod_.meta.version);
+        println!("Author:      {}", mod_.meta.author);
+        println!("Category:    {}", mod_.meta.category);
+        println!("Description: {}", mod_.meta.description);
+        if !mod_.meta.options.is_empty() {
+            Self::print_options(&mod_.meta);
+        } else {
+            println!("\nThis mod has no configuration options.");
+        }
+        Ok(())
+    }
+
+    fn print_options(meta: &Meta) {
+        println!("\nAvailable options:");
+        for group in &meta.options {
+            match group {
+                OptionGroup::Exclusive(g) => {
+                    println!(
+                        "\n  [Exclusive] {} {}",
+                        g.name(),
+                        if g.required() { "(required)" } else { "" }
+                    );
+                    if !g.description().is_empty() {
+                        println!("  {}", g.description());
+                    }
+                    for opt in g.options() {
+                        let is_default = g
+                            .default
+                            .as_ref()
+                            .map(|d| d == &opt.path)
+                            .unwrap_or(false);
+                        println!(
+                            "    - {} {}",
+                            opt.name,
+                            if is_default { "(default)" } else { "" }
+                        );
+                        if !opt.description.is_empty() {
+                            println!("      {}", opt.description);
+                        }
+                    }
+                }
+                OptionGroup::Multiple(g) => {
+                    println!(
+                        "\n  [Multiple] {} {}",
+                        g.name(),
+                        if g.required() { "(required)" } else { "" }
+                    );
+                    if !g.description().is_empty() {
+                        println!("  {}", g.description());
+                    }
+                    for opt in g.options() {
+                        let is_default = g.defaults.contains(&opt.path);
+                        println!(
+                            "    - {} {}",
+                            opt.name,
+                            if is_default { "(default)" } else { "" }
+                        );
+                        if !opt.description.is_empty() {
+                            println!("      {}", opt.description);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fn deploy(&self) -> Result<()> {
@@ -213,15 +400,33 @@ impl Runner {
                 }
                 println!("Done!");
             }
-            UkmmCmd::Install(Install { path, profile }) => {
-                if let Some(path) = self.check_mod(path)? {
+            UkmmCmd::Info(Info { path }) => {
+                Self::print_mod_info(path)?;
+            }
+            UkmmCmd::Install(Install {
+                path,
+                profile,
+                default_options,
+                options,
+            }) => {
+                if let Some((path, meta)) = self.check_mod(path)? {
+                    let selected_options =
+                        Self::resolve_options(&meta, *default_options, options)?;
                     let mods = self.core.mod_manager();
                     let mod_ = mods.add(&path, profile.as_ref())?;
-                    mods.set_enabled(mod_.as_map_id(), true, profile.as_ref())?;
+                    let hash = mod_.as_map_id();
+                    mods.set_enabled(hash, true, profile.as_ref())?;
+                    if !selected_options.is_empty() {
+                        mods.set_enabled_options(hash, selected_options)?;
+                    }
                     mods.save()?;
                     println!("Applying mod to load order...");
                     let deployer = self.core.deploy_manager();
-                    deployer.apply(Some(mod_.manifest()?.as_ref().clone()))?;
+                    let installed_mod = mods
+                        .mods()
+                        .find(|m| m.hash() == hash)
+                        .context("Failed to find installed mod")?;
+                    deployer.apply(Some(installed_mod.manifest()?.as_ref().clone()))?;
                     if self.cli.deploy {
                         self.deploy()?;
                     }

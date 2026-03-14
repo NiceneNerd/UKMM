@@ -52,7 +52,7 @@ impl From<ROMError> for uk_content::UKError {
 flate!(static NEST_MAP: str from "data/nest_map.json");
 type ResourceCache = Cache<String, Arc<ResourceData>>;
 type SarcCache = Cache<String, Arc<Sarc<'static>>>;
-const CACHE_SIZE: usize = 10000;
+const CACHE_SIZE: usize = 100000;
 pub type Result<T> = std::result::Result<T, ROMError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -311,23 +311,65 @@ impl ResourceReader {
                     Some(parent) => {
                         log::trace!("Full path found at {}", parent.as_ref());
                         match self.get_from_sarc(&canon, &parent) {
+                            Ok(v) => Ok(v),
                             Err(e) => {
                                 log::warn!("Failed to get {canon} from {}: {e:?}", parent.as_ref());
-                                Err(e)
+                                // Try to find the file in an alternative actor pack
+                                self.try_find_in_actor_packs(&canon)
+                                    .unwrap_or(Err(e))
                             }
-                            Ok(v) => Ok(v),
                         }
                     }
                     None => {
-                        Err(ROMError::FileNotFound(
-                            path.to_string_lossy().into(),
-                            self.source.host_path().to_path_buf(),
-                        )
-                        .into())
+                        // Try to find the file in an actor pack before giving up
+                        self.try_find_in_actor_packs(&canon)
+                            .unwrap_or_else(|| {
+                                Err(ROMError::FileNotFound(
+                                    path.to_string_lossy().into(),
+                                    self.source.host_path().to_path_buf(),
+                                )
+                                .into())
+                            })
                     }
                 }
             }
         }
+    }
+
+    /// When a nested file can't be found through its primary nest map entry
+    /// (e.g. because it points to missing DLC content), try to find it in
+    /// an actor pack in the dump that shares the same file stem.
+    fn try_find_in_actor_packs(
+        &self,
+        canon: &str,
+    ) -> Option<uk_content::Result<Arc<ResourceData>>> {
+        let filename = Path::new(canon).file_stem()?.to_str()?;
+        let pack_dir = Path::new("Actor/Pack");
+        // Try actor packs with the same base name plus common suffixes
+        let suffixes = [
+            "", "_Field_Iron", "_Field_Stone", "_Field_Wood", "_Field_Enemy",
+            "_Dungeon_Iron", "_Dungeon_Wood", "_Dungeon_Stone", "_Dungeon",
+            "_Field", "_NoReaction",
+        ];
+        for suffix in &suffixes {
+            let pack_name = format!("{}{}.sbactorpack", filename, suffix);
+            let pack_path = pack_dir.join(&pack_name);
+            if self.source.file_exists(&pack_path) {
+                log::info!("Trying to find {} in actor pack {}", canon, pack_path.display());
+                if let Ok(data) = self.source.get_data(&pack_path) {
+                    let data = roead::yaz0::decompress_if(data.as_slice());
+                    if let Ok(sarc) = Sarc::new(data.as_ref()) {
+                        let _ = self.process_sarc(sarc, pack_path.to_str().unwrap_or_default());
+                    }
+                }
+                if let Some(resource) = self.cache.get(&String::from(canon)) {
+                    log::info!("Found {} in {}", canon, pack_path.display());
+                    return Some(Ok(resource));
+                }
+            }
+        }
+        log::trace!("Could not find {} in any actor pack", canon);
+        None
     }
 
     fn process_sarc(&self, sarc: roead::sarc::Sarc, _sarc_path: &str) -> uk_content::Result<()> {

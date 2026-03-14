@@ -757,17 +757,32 @@ impl ModUnpacker {
         let data = match base_version.as_ref() {
             ResourceData::Binary(_) => {
                 let res = versions.pop_back().unwrap_or(base_version);
+                // The mod version may be Mergeable even though the base is Binary.
+                // Convert to binary bytes regardless of the actual variant.
+                let binary_data = match Arc::try_unwrap(res) {
+                    Ok(ResourceData::Binary(data)) => data,
+                    Ok(ResourceData::Mergeable(m)) => m.into_binary(self.endian),
+                    Ok(ResourceData::Sarc(s)) => {
+                        self.build_sarc(s, aoc)
+                            .with_context(|| jstr!("Failed to build SARC file {&file}"))?
+                    }
+                    Err(res) => match res.as_ref() {
+                        ResourceData::Binary(data) => data.to_vec(),
+                        ResourceData::Mergeable(m) => m.clone().into_binary(self.endian),
+                        ResourceData::Sarc(s) => {
+                            self.build_sarc(s.clone(), aoc)
+                                .with_context(|| jstr!("Failed to build SARC file {&file}"))?
+                        }
+                    },
+                };
                 if can_rstb && is_modded {
                     rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
-                        res.as_binary().expect("Binary"),
+                        &binary_data,
                         file,
                         self.endian.into(),
                     ));
                 }
-                match Arc::try_unwrap(res) {
-                    Ok(res) => res.take_binary().unwrap(),
-                    Err(res) => res.as_binary().map(|b| b.to_vec()).unwrap(),
-                }
+                binary_data
             }
             ResourceData::Mergeable(base_res) => {
                 let merged = versions
@@ -820,7 +835,12 @@ impl ModUnpacker {
     }
 
     fn build_sarc(&self, sarc: SarcMap, aoc: bool) -> Result<Vec<u8>> {
-        let mut writer = SarcWriter::new(self.endian.into()).with_min_alignment(sarc.alignment);
+        let alignment = if sarc.alignment == 0 || (sarc.alignment & (sarc.alignment - 1)) != 0 {
+            4 // default to 4-byte alignment if invalid
+        } else {
+            sarc.alignment
+        };
+        let mut writer = SarcWriter::new(self.endian.into()).with_min_alignment(alignment);
         for file in sarc.files.into_iter() {
             let data = self
                 .build_file(&file, aoc)
