@@ -25,9 +25,40 @@ pub fn convert_to_switch(bfres: &mut BfresFile) {
     // with name suffixes
     combine_material_anims(bfres);
 
+    // Convert textures: build BNTX container and add as external file
+    if !bfres.textures.is_empty() {
+        convert_textures(bfres);
+    }
+
     // Update version to Switch format
     bfres.version = (0, 5, 0, 3);
     bfres.alignment = 0x0C; // log2(4096)
+}
+
+/// Convert Wii U textures to Switch format and embed as a BNTX external file.
+///
+/// Builds a BNTX container from the Wii U textures (deswizzle GX2 → linear →
+/// re-swizzle TegraX1) and adds it as an external file entry in the BFRES.
+/// The textures are then cleared from the BfresFile since Switch BFRES stores
+/// them in the external BNTX, not inline.
+fn convert_textures(bfres: &mut BfresFile) {
+    use crate::switch::bntx;
+
+    let bntx_data = bntx::build_bntx(&bfres.textures);
+    if bntx_data.is_empty() {
+        return;
+    }
+
+    // The BNTX external file name is the BFRES name + ".bntx"
+    let bntx_name = format!("{}.bntx", bfres.name);
+
+    bfres.external_files.push(ExternalFile {
+        name: bntx_name,
+        data: bntx_data,
+    });
+
+    // Clear textures from the BFRES since they're now in the BNTX
+    bfres.textures.clear();
 }
 
 /// Convert a BotW Wii U material to Switch format.

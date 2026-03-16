@@ -6,6 +6,7 @@ pub mod string_table;
 pub mod dict;
 pub mod reloc;
 pub mod model;
+pub mod bntx;
 
 use crate::binary::LittleEndianWriter;
 use crate::error::Result;

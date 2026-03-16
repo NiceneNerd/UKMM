@@ -11,3 +11,4 @@ log = { workspace = true }
 indexmap = { workspace = true }
 
 [dev-dependencies]
+roead = { workspace = true }
