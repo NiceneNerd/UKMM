@@ -82,7 +82,7 @@ members = [
     "crates/uk-reader",
     "crates/uk-ui",
     "crates/uk-util",
-
+    "crates/uk-bfres",
 ]
 
 [workspace.package]

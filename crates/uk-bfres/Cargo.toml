@@ -1,0 +1,13 @@
+[package]
+name = "uk-bfres"
+description = "BFRES platform converter for Breath of the Wild (Wii U ↔ Switch)"
+version = { workspace = true }
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+thiserror = { workspace = true }
+log = { workspace = true }
+indexmap = { workspace = true }
+
+[dev-dependencies]
