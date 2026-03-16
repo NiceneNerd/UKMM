@@ -775,6 +775,15 @@ impl ModUnpacker {
                         }
                     },
                 };
+                // Convert Wii U BFRES files to Switch format when deploying for Switch
+                let binary_data = if self.endian == Endian::Little && uk_bfres::is_wiiu_bfres(&binary_data) {
+                    uk_bfres::convert_wiiu_to_switch(&binary_data).unwrap_or_else(|e| {
+                        log::warn!("Failed to convert BFRES {}: {}", file, e);
+                        binary_data
+                    })
+                } else {
+                    binary_data
+                };
                 if can_rstb && is_modded {
                     rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
                         &binary_data,
@@ -794,6 +803,15 @@ impl ModUnpacker {
                         res
                     });
                 let data = merged.into_binary(self.endian);
+                // Convert Wii U BFRES files to Switch format when deploying for Switch
+                let data = if self.endian == Endian::Little && uk_bfres::is_wiiu_bfres(&data) {
+                    uk_bfres::convert_wiiu_to_switch(&data).unwrap_or_else(|e| {
+                        log::warn!("Failed to convert BFRES {}: {}", file, e);
+                        data
+                    })
+                } else {
+                    data
+                };
                 if can_rstb && (is_modded || self.hashes.is_file_modded(&canon, &data, true)) {
                     rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
                         &data,

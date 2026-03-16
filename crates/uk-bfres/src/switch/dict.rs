@@ -85,8 +85,8 @@ struct TrieNode {
 /// A constructed trie that can build the final BFRES dictionary nodes.
 struct Trie {
     nodes: Vec<TrieNode>,
-    /// Maps data -> (insertion_order_index, node_index)
-    entries: Vec<(u128, usize)>,
+    /// Entries: (u128 key data, node_index, original key string)
+    entries: Vec<(u128, usize, String)>,
 }
 
 impl Trie {
@@ -102,12 +102,12 @@ impl Trie {
             nodes: vec![root],
             entries: Vec::new(),
         };
-        trie.entries.push((0, 0));
+        trie.entries.push((0, 0, String::new()));
         trie
     }
 
     fn entry_index_for_data(&self, data: u128) -> Option<usize> {
-        self.entries.iter().position(|(d, _)| *d == data)
+        self.entries.iter().position(|(d, _, _)| *d == data)
     }
 
     fn search(&self, data: u128, want_prev: bool) -> usize {
@@ -135,6 +135,7 @@ impl Trie {
 
     fn insert(&mut self, name: &str) {
         let data = string_to_bigint(name);
+        let original_key = name.to_string();
         let current_idx = self.search(data, true);
         let current_data = self.nodes[current_idx].data;
         let bit_idx = bit_mismatch(current_data, data);
@@ -174,7 +175,7 @@ impl Trie {
             // Update cur's parent.
             self.nodes[cur].parent = new_idx;
 
-            self.entries.push((data, new_idx));
+            self.entries.push((data, new_idx, original_key));
         } else if bit_idx > cur_bit_idx {
             // Insert as a child of `cur`.
             let new_idx = self.nodes.len();
@@ -199,7 +200,7 @@ impl Trie {
             let child_side = bit(data, cur_bit_idx);
             self.nodes[cur].child[child_side] = new_idx;
 
-            self.entries.push((data, new_idx));
+            self.entries.push((data, new_idx, original_key));
         } else {
             // bit_idx == cur_bit_idx — same level, different subtree.
             let child_side = bit(data, bit_idx);
@@ -226,7 +227,7 @@ impl Trie {
             self.nodes.push(new_node);
             self.nodes[cur].child[child_side] = new_idx;
 
-            self.entries.push((data, new_idx));
+            self.entries.push((data, new_idx, original_key));
         }
     }
 }
@@ -260,8 +261,8 @@ fn build_dict_nodes(keys: &[String]) -> Vec<DictNode> {
 
     let mut result = Vec::with_capacity(trie.entries.len());
 
-    for &(entry_data, node_idx) in &trie.entries {
-        let node = &trie.nodes[node_idx];
+    for (entry_data, node_idx, original_key) in &trie.entries {
+        let node = &trie.nodes[*node_idx];
         let reference = compact_bit_idx(node.bit_idx) & 0xFFFFFFFF;
 
         let left_data = trie.nodes[node.child[0]].data;
@@ -274,20 +275,12 @@ fn build_dict_nodes(keys: &[String]) -> Vec<DictNode> {
             .entry_index_for_data(right_data)
             .expect("right child data not in entries") as u16;
 
-        // Reconstruct the key name from the data. For the root (entry_data == 0),
-        // the key is empty.
-        let key = if entry_data == 0 {
+        // Use the original key string (not reconstructed from u128, which
+        // truncates strings longer than 16 bytes).
+        let key = if *entry_data == 0 {
             String::new()
         } else {
-            // Convert the big-endian integer back to a string.
-            let mut bytes = Vec::new();
-            let mut val = entry_data;
-            while val > 0 {
-                bytes.push((val & 0xFF) as u8);
-                val >>= 8;
-            }
-            bytes.reverse();
-            String::from_utf8(bytes).unwrap_or_default()
+            original_key.clone()
         };
 
         result.push(DictNode {

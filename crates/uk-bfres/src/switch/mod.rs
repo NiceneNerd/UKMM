@@ -220,13 +220,18 @@ fn write_fmdl_header(w: &mut LittleEndianWriter, model: &Model) -> FmdlOffsets {
     }
 }
 
-/// Write an FVTX (vertex buffer) block.
+/// Positions of offset placeholders within an FVTX block that need deferred fixup.
+struct FvtxDictOffsets {
+    attr_dict_off: usize,
+}
+
+/// Write an FVTX (vertex buffer) block. Returns dict offsets for deferred fixup.
 fn write_fvtx(
     w: &mut LittleEndianWriter,
     vb: &VertexBuffer,
     string_fixups: &mut Vec<StringFixup>,
     reloc: &mut RelocationTable,
-) {
+) -> FvtxDictOffsets {
     // Magic "FVTX"
     w.write_magic(b"FVTX");
     w.write_u32(0); // block offset
@@ -238,7 +243,7 @@ fn write_fvtx(
     reloc.add(0, attr_array_off as u32, 1, 1, 0);
 
     // Attribute dict offset (i64)
-    let _attr_dict_off = w.write_offset_placeholder_64();
+    let attr_dict_off = w.write_offset_placeholder_64();
 
     // Memory pool pointer (i64)
     let _mem_pool_off = w.write_offset_placeholder_64();
@@ -293,15 +298,23 @@ fn write_fvtx(
         w.write_u16(buf.stride);
         w.write_u16(0); // padding
     }
+
+    FvtxDictOffsets { attr_dict_off }
 }
 
-/// Write skeleton (FSKL) block.
+/// Positions of offset placeholders within an FSKL block that need deferred fixup.
+struct FsklDictOffsets {
+    bone_dict_off: usize,
+    start: usize,
+}
+
+/// Write skeleton (FSKL) block. Returns (start_pos, dict offsets).
 fn write_fskl(
     w: &mut LittleEndianWriter,
     skeleton: &Skeleton,
     string_fixups: &mut Vec<StringFixup>,
     reloc: &mut RelocationTable,
-) -> usize {
+) -> FsklDictOffsets {
     let start = w.pos();
 
     w.write_magic(b"FSKL");
@@ -383,7 +396,10 @@ fn write_fskl(
         }
     }
 
-    start
+    FsklDictOffsets {
+        bone_dict_off,
+        start,
+    }
 }
 
 /// Write a single bone entry.
@@ -594,13 +610,21 @@ fn write_mesh(w: &mut LittleEndianWriter, mesh: &Mesh) {
     }
 }
 
-/// Write FMAT (material) block.
+/// Positions of offset placeholders within an FMAT block that need deferred fixup.
+struct FmatDictOffsets {
+    ri_dict_off: usize,
+    samp_dict_off: usize,
+    shader_assign_dicts: Option<ShaderAssignDictOffsets>,
+    start: usize,
+}
+
+/// Write FMAT (material) block. Returns (start_pos, dict offsets).
 fn write_fmat(
     w: &mut LittleEndianWriter,
     mat: &Material,
     string_fixups: &mut Vec<StringFixup>,
     reloc: &mut RelocationTable,
-) -> usize {
+) -> FmatDictOffsets {
     let start = w.pos();
 
     w.write_magic(b"FMAT");
@@ -623,7 +647,7 @@ fn write_fmat(
     }
 
     // Render info dict offset (i64)
-    let _ri_dict_off = w.write_offset_placeholder_64();
+    let ri_dict_off = w.write_offset_placeholder_64();
 
     // Shader assign offset (i64)
     let sa_off = w.write_offset_placeholder_64();
@@ -650,7 +674,7 @@ fn write_fmat(
     }
 
     // Sampler dict offset (i64)
-    let _samp_dict_off = w.write_offset_placeholder_64();
+    let samp_dict_off = w.write_offset_placeholder_64();
 
     // Shader param array offset (i64)
     let sp_off = w.write_offset_placeholder_64();
@@ -761,11 +785,13 @@ fn write_fmat(
     }
 
     // -- Write shader assign --
-    if let Some(sa) = &mat.shader_assign {
+    let shader_assign_dicts = if let Some(sa) = &mat.shader_assign {
         let sa_start = w.pos();
         w.fixup_offset_64(sa_off, sa_start);
-        write_shader_assign(w, sa, string_fixups, reloc);
-    }
+        Some(write_shader_assign(w, sa, string_fixups, reloc))
+    } else {
+        None
+    };
 
     // -- Write volatile flags --
     if !mat.volatile_flags.is_empty() {
@@ -776,7 +802,12 @@ fn write_fmat(
         w.align(8);
     }
 
-    start
+    FmatDictOffsets {
+        ri_dict_off,
+        samp_dict_off,
+        shader_assign_dicts,
+        start,
+    }
 }
 
 /// Write a render info entry.
@@ -871,13 +902,20 @@ fn write_shader_param(
     w.write_i16(sp.depend_count);
 }
 
-/// Write a shader assign block.
+/// Positions of offset placeholders within a ShaderAssign that need deferred fixup.
+struct ShaderAssignDictOffsets {
+    aa_dict_off: usize,
+    sam_dict_off: usize,
+    opt_dict_off: usize,
+}
+
+/// Write a shader assign block. Returns dict offsets for deferred fixup.
 fn write_shader_assign(
     w: &mut LittleEndianWriter,
     sa: &ShaderAssign,
     string_fixups: &mut Vec<StringFixup>,
     reloc: &mut RelocationTable,
-) {
+) -> ShaderAssignDictOffsets {
     // Shader archive name (i64)
     let arch_ph = w.write_offset_placeholder_64();
     string_fixups.push(StringFixup {
@@ -899,21 +937,21 @@ fn write_shader_assign(
     if !sa.attrib_assigns.is_empty() {
         reloc.add(0, aa_off as u32, 1, 1, 0);
     }
-    let _aa_dict_off = w.write_offset_placeholder_64();
+    let aa_dict_off = w.write_offset_placeholder_64();
 
     // Sampler assign array + dict (i64 each)
     let sam_off = w.write_offset_placeholder_64();
     if !sa.sampler_assigns.is_empty() {
         reloc.add(0, sam_off as u32, 1, 1, 0);
     }
-    let _sam_dict_off = w.write_offset_placeholder_64();
+    let sam_dict_off = w.write_offset_placeholder_64();
 
     // Shader option array + dict (i64 each)
     let opt_off = w.write_offset_placeholder_64();
     if !sa.shader_options.is_empty() {
         reloc.add(0, opt_off as u32, 1, 1, 0);
     }
-    let _opt_dict_off = w.write_offset_placeholder_64();
+    let opt_dict_off = w.write_offset_placeholder_64();
 
     // Revision
     w.write_u32(sa.revision);
@@ -984,6 +1022,32 @@ fn write_shader_assign(
             reloc.add(0, vph as u32, 1, 1, 0);
         }
     }
+
+    ShaderAssignDictOffsets {
+        aa_dict_off,
+        sam_dict_off,
+        opt_dict_off,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Deferred dict fixup tracking for the orchestrator
+// ---------------------------------------------------------------------------
+
+/// All deferred dict offset placeholders for a single model's sub-files.
+struct ModelDictFixups {
+    /// FMDL shape dict placeholder
+    fshp_dict_off: usize,
+    /// FMDL material dict placeholder
+    fmat_dict_off: usize,
+    /// FSKL bone dict placeholder
+    fskl_bone_dict_off: usize,
+    /// Per-FVTX attribute dict placeholders
+    fvtx_attr_dict_offs: Vec<usize>,
+    /// Per-FMAT render info dict + sampler dict placeholders
+    fmat_dict_offs: Vec<(usize, usize)>, // (ri_dict_off, samp_dict_off)
+    /// Per-FMAT shader assign dict placeholders (if shader assign exists)
+    shader_assign_dict_offs: Vec<Option<ShaderAssignDictOffsets>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -1147,8 +1211,9 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
     w.set_u16_at(block_offset_pos, fres_header_end as u16);
 
     let mut model_positions: Vec<usize> = Vec::new();
+    let mut model_dict_fixups: Vec<ModelDictFixups> = Vec::new();
 
-    for model in &bfres.models {
+    for (mdl_idx, model) in bfres.models.iter().enumerate() {
         w.align(8);
         let mdl_start = w.pos();
         model_positions.push(mdl_start);
@@ -1169,11 +1234,13 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
 
         // Write FVTX blocks
         let mut fvtx_positions: Vec<usize> = Vec::new();
+        let mut fvtx_attr_dict_offs: Vec<usize> = Vec::new();
         for vb in &model.vertex_buffers {
             w.align(8);
             let vpos = w.pos();
-            write_fvtx(&mut w, vb, &mut string_fixups, &mut reloc);
+            let fvtx_dicts = write_fvtx(&mut w, vb, &mut string_fixups, &mut reloc);
             fvtx_positions.push(vpos);
+            fvtx_attr_dict_offs.push(fvtx_dicts.attr_dict_off);
         }
         if let Some(&first_vpos) = fvtx_positions.first() {
             w.fixup_offset_64(fmdl.fvtx_array_off, first_vpos);
@@ -1181,8 +1248,8 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
 
         // Write FSKL
         w.align(8);
-        let fskl_start = write_fskl(&mut w, &model.skeleton, &mut string_fixups, &mut reloc);
-        w.fixup_offset_64(fmdl.fskl_off, fskl_start);
+        let fskl = write_fskl(&mut w, &model.skeleton, &mut string_fixups, &mut reloc);
+        w.fixup_offset_64(fmdl.fskl_off, fskl.start);
 
         // Write FSHP blocks
         let mut fshp_positions: Vec<usize> = Vec::new();
@@ -1197,18 +1264,27 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
 
         // Write FMAT blocks
         let mut fmat_positions: Vec<usize> = Vec::new();
+        let mut fmat_ri_samp_dict_offs: Vec<(usize, usize)> = Vec::new();
+        let mut sa_dict_offs: Vec<Option<ShaderAssignDictOffsets>> = Vec::new();
         for mat in &model.materials {
             w.align(8);
-            let mpos = write_fmat(&mut w, mat, &mut string_fixups, &mut reloc);
-            fmat_positions.push(mpos);
+            let fmat = write_fmat(&mut w, mat, &mut string_fixups, &mut reloc);
+            fmat_positions.push(fmat.start);
+            fmat_ri_samp_dict_offs.push((fmat.ri_dict_off, fmat.samp_dict_off));
+            sa_dict_offs.push(fmat.shader_assign_dicts);
         }
         if let Some(&first_mpos) = fmat_positions.first() {
             w.fixup_offset_64(fmdl.fmat_off, first_mpos);
         }
 
-        // Shape and material dict offsets in FMDL will be fixed up in phase 5
-        let _ = fmdl.fshp_dict_off;
-        let _ = fmdl.fmat_dict_off;
+        model_dict_fixups.push(ModelDictFixups {
+            fshp_dict_off: fmdl.fshp_dict_off,
+            fmat_dict_off: fmdl.fmat_dict_off,
+            fskl_bone_dict_off: fskl.bone_dict_off,
+            fvtx_attr_dict_offs,
+            fmat_dict_offs: fmat_ri_samp_dict_offs,
+            shader_assign_dict_offs: sa_dict_offs,
+        });
     }
 
     // Fix up model values offset
@@ -1293,6 +1369,129 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
         }
         let dict_pos = model_dict.write(&mut w, &st, pool_start);
         w.fixup_offset_64(model_dict_off, dict_pos);
+    }
+
+    // Sub-file dicts (bone, shape, material, attribute, render info, sampler, shader assign)
+    for (mdl_idx, model) in bfres.models.iter().enumerate() {
+        let fixups = &model_dict_fixups[mdl_idx];
+
+        // Bone dict (in FSKL)
+        if !model.skeleton.bones.is_empty() {
+            w.align(8);
+            let mut bone_dict = DictBuilder::new();
+            for bone in &model.skeleton.bones {
+                bone_dict.add(&bone.name);
+            }
+            let dict_pos = bone_dict.write(&mut w, &st, pool_start);
+            w.fixup_offset_64(fixups.fskl_bone_dict_off, dict_pos);
+            reloc.add(0, fixups.fskl_bone_dict_off as u32, 1, 1, 0);
+        }
+
+        // Shape dict (in FMDL)
+        if !model.shapes.is_empty() {
+            w.align(8);
+            let mut shape_dict = DictBuilder::new();
+            for shape in &model.shapes {
+                shape_dict.add(&shape.name);
+            }
+            let dict_pos = shape_dict.write(&mut w, &st, pool_start);
+            w.fixup_offset_64(fixups.fshp_dict_off, dict_pos);
+            reloc.add(0, fixups.fshp_dict_off as u32, 1, 1, 0);
+        }
+
+        // Material dict (in FMDL)
+        if !model.materials.is_empty() {
+            w.align(8);
+            let mut mat_dict = DictBuilder::new();
+            for mat in &model.materials {
+                mat_dict.add(&mat.name);
+            }
+            let dict_pos = mat_dict.write(&mut w, &st, pool_start);
+            w.fixup_offset_64(fixups.fmat_dict_off, dict_pos);
+            reloc.add(0, fixups.fmat_dict_off as u32, 1, 1, 0);
+        }
+
+        // Per-FVTX attribute dicts
+        for (vb_idx, vb) in model.vertex_buffers.iter().enumerate() {
+            if !vb.attributes.is_empty() {
+                w.align(8);
+                let mut attr_dict = DictBuilder::new();
+                for attr in &vb.attributes {
+                    attr_dict.add(&attr.name);
+                }
+                let dict_pos = attr_dict.write(&mut w, &st, pool_start);
+                let off = fixups.fvtx_attr_dict_offs[vb_idx];
+                w.fixup_offset_64(off, dict_pos);
+                reloc.add(0, off as u32, 1, 1, 0);
+            }
+        }
+
+        // Per-FMAT render info dicts, sampler dicts, and shader assign dicts
+        for (mat_idx, mat) in model.materials.iter().enumerate() {
+            let (ri_dict_off, samp_dict_off) = fixups.fmat_dict_offs[mat_idx];
+
+            // Render info dict
+            if !mat.render_infos.is_empty() {
+                w.align(8);
+                let mut ri_dict = DictBuilder::new();
+                for ri in &mat.render_infos {
+                    ri_dict.add(&ri.name);
+                }
+                let dict_pos = ri_dict.write(&mut w, &st, pool_start);
+                w.fixup_offset_64(ri_dict_off, dict_pos);
+                reloc.add(0, ri_dict_off as u32, 1, 1, 0);
+            }
+
+            // Sampler dict
+            if !mat.samplers.is_empty() {
+                w.align(8);
+                let mut samp_dict = DictBuilder::new();
+                for s in &mat.samplers {
+                    samp_dict.add(&s.name);
+                }
+                let dict_pos = samp_dict.write(&mut w, &st, pool_start);
+                w.fixup_offset_64(samp_dict_off, dict_pos);
+                reloc.add(0, samp_dict_off as u32, 1, 1, 0);
+            }
+
+            // Shader assign sub-dicts (attrib assign, sampler assign, shader options)
+            if let Some(sa_dicts) = &fixups.shader_assign_dict_offs[mat_idx] {
+                if let Some(sa) = &mat.shader_assign {
+                    if !sa.attrib_assigns.is_empty() {
+                        w.align(8);
+                        let mut aa_dict = DictBuilder::new();
+                        for (k, _) in &sa.attrib_assigns {
+                            aa_dict.add(k);
+                        }
+                        let dict_pos = aa_dict.write(&mut w, &st, pool_start);
+                        w.fixup_offset_64(sa_dicts.aa_dict_off, dict_pos);
+                        reloc.add(0, sa_dicts.aa_dict_off as u32, 1, 1, 0);
+                    }
+
+                    if !sa.sampler_assigns.is_empty() {
+                        w.align(8);
+                        let mut sam_dict = DictBuilder::new();
+                        for (k, _) in &sa.sampler_assigns {
+                            sam_dict.add(k);
+                        }
+                        let dict_pos = sam_dict.write(&mut w, &st, pool_start);
+                        w.fixup_offset_64(sa_dicts.sam_dict_off, dict_pos);
+                        reloc.add(0, sa_dicts.sam_dict_off as u32, 1, 1, 0);
+                    }
+
+                    if !sa.shader_options.is_empty() {
+                        w.align(8);
+                        let mut opt_dict = DictBuilder::new();
+                        for (k, _) in &sa.shader_options {
+                            opt_dict.add(k);
+                        }
+                        let dict_pos = opt_dict.write(&mut w, &st, pool_start);
+                        w.fixup_offset_64(sa_dicts.opt_dict_off, dict_pos);
+                        reloc.add(0, sa_dicts.opt_dict_off as u32, 1, 1, 0);
+                    }
+                }
+            }
+        }
     }
 
     // External file dict
