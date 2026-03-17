@@ -224,49 +224,85 @@ fn write_fmdl_header(w: &mut LittleEndianWriter, model: &Model) -> FmdlOffsets {
 /// Positions of offset placeholders within an FVTX block that need deferred fixup.
 struct FvtxDictOffsets {
     attr_dict_off: usize,
+    /// Position of the u32 BufferOffset field (offset from buffer data section start
+    /// to this FVTX's first vertex buffer data).
+    buf_offset_pos: usize,
+    /// Position of the i64 memory pool pointer placeholder.
+    mem_pool_off: usize,
+    /// Start position of this FVTX block.
+    start: usize,
 }
 
 /// Write an FVTX (vertex buffer) block. Returns dict offsets for deferred fixup.
+///
+/// v5 layout (96 bytes):
+///   +0x00  magic "FVTX" (4) + block offsets (12)
+///   +0x10  attr_array_offset (i64)
+///   +0x18  attr_dict_offset (i64)
+///   +0x20  memory_pool_ptr (i64)
+///   +0x28  runtime_buf_ptrs (i64) — runtime-filled, serialize as pointer to zero array
+///   +0x30  buf_info_array (i64) — runtime-filled zero array (sizes)
+///   +0x38  buf_stride_array (i64) — runtime-filled zero array (strides)
+///   +0x40  buf_data_off_array (i64) — runtime-filled zero array (data offsets)
+///   +0x48  padding (i64) = 0
+///   +0x50  buffer_offset (u32)
+///   +0x54  attr_count (u8), buf_count (u8), index (u16)
+///   +0x58  vertex_count (u32)
+///   +0x5C  vertex_skin_count (u16), alignment (u16)
 fn write_fvtx(
     w: &mut LittleEndianWriter,
     vb: &VertexBuffer,
     string_fixups: &mut Vec<StringFixup>,
     reloc: &mut RelocationTable,
 ) -> FvtxDictOffsets {
+    let start = w.pos();
+
     // Magic "FVTX"
     w.write_magic(b"FVTX");
     w.write_u32(0); // block offset
     w.write_u32(0); // block offset 2
     w.write_u32(0); // padding
 
-    // Attribute array offset (i64)
+    // +0x10: Attribute array offset (i64)
     let attr_array_off = w.write_offset_placeholder_64();
     reloc.add(0, attr_array_off as u32, 1, 1, 0);
 
-    // Attribute dict offset (i64)
+    // +0x18: Attribute dict offset (i64)
     let attr_dict_off = w.write_offset_placeholder_64();
 
-    // Memory pool pointer (i64)
-    let _mem_pool_off = w.write_offset_placeholder_64();
+    // +0x20: Memory pool pointer (i64) — points to memory pool section
+    let mem_pool_off = w.write_offset_placeholder_64();
 
-    // Runtime area (i64)
-    w.write_u64(0);
+    // +0x28: Runtime buffer pointers (i64) — points to zero array, runtime-filled
+    let runtime_buf_ptrs_off = w.write_offset_placeholder_64();
+    reloc.add(0, runtime_buf_ptrs_off as u32, 1, 1, 0);
 
-    // Buffer size array offset (i64)
-    let buf_size_off = w.write_offset_placeholder_64();
-    reloc.add(0, buf_size_off as u32, 1, 1, 0);
+    // +0x30: Buffer info array (i64) — runtime-filled zero array
+    let buf_info_off = w.write_offset_placeholder_64();
+    reloc.add(0, buf_info_off as u32, 1, 1, 0);
 
-    // Buffer stride array offset (i64)
+    // +0x38: Buffer stride array (i64) — runtime-filled zero array
     let buf_stride_off = w.write_offset_placeholder_64();
     reloc.add(0, buf_stride_off as u32, 1, 1, 0);
 
-    // Counts and index
+    // +0x40: Buffer data offset array (i64) — runtime-filled zero array
+    let buf_data_off_arr = w.write_offset_placeholder_64();
+    reloc.add(0, buf_data_off_arr as u32, 1, 1, 0);
+
+    // +0x48: Padding (i64)
+    w.write_u64(0);
+
+    // +0x50: BufferOffset (u32) — offset from buffer data section start
+    let buf_offset_pos = w.pos();
+    w.write_u32(0); // patched later by orchestrator
+
+    // +0x54: Counts
     w.write_u8(vb.attributes.len() as u8);
     w.write_u8(vb.buffers.len() as u8);
     w.write_u16(vb.index);
     w.write_u32(vb.vertex_count);
-    w.write_u8(vb.vertex_skin_count);
-    w.write_zeros(3); // padding
+    w.write_u16(vb.vertex_skin_count as u16);
+    w.write_u16(8); // GPU buffer alignment
 
     // Write attribute entries
     let attr_start = w.pos();
@@ -284,23 +320,36 @@ fn write_fvtx(
         w.write_u8(0); // padding
     }
 
-    // Write buffer size info
-    let buf_size_start = w.pos();
-    w.fixup_offset_64(buf_size_off, buf_size_start);
-    for buf in &vb.buffers {
-        w.write_u32(buf.data.len() as u32);
-        w.write_u32(0); // padding/flags
-    }
+    // Write runtime buffer pointer array (zeros, one i64 per buffer — runtime-filled)
+    w.align(8);
+    let runtime_ptrs_start = w.pos();
+    w.fixup_offset_64(runtime_buf_ptrs_off, runtime_ptrs_start);
+    w.write_zeros(vb.buffers.len() * 8);
 
-    // Write buffer stride info
+    // Write buffer info array (zeros, one entry of 8 bytes per buffer — runtime-filled)
+    w.align(8);
+    let buf_info_start = w.pos();
+    w.fixup_offset_64(buf_info_off, buf_info_start);
+    w.write_zeros(vb.buffers.len() * 8);
+
+    // Write buffer stride array (zeros, one entry of 4 bytes per buffer — runtime-filled)
+    w.align(8);
     let buf_stride_start = w.pos();
     w.fixup_offset_64(buf_stride_off, buf_stride_start);
-    for buf in &vb.buffers {
-        w.write_u16(buf.stride);
-        w.write_u16(0); // padding
-    }
+    w.write_zeros(vb.buffers.len() * 4);
+    w.align(8);
 
-    FvtxDictOffsets { attr_dict_off }
+    // Write buffer data offset array (zeros, one i64 per buffer — runtime-filled)
+    let buf_data_off_start = w.pos();
+    w.fixup_offset_64(buf_data_off_arr, buf_data_off_start);
+    w.write_zeros(vb.buffers.len() * 8);
+
+    FvtxDictOffsets {
+        attr_dict_off,
+        buf_offset_pos,
+        mem_pool_off,
+        start,
+    }
 }
 
 /// Positions of offset placeholders within an FSKL block that need deferred fixup.
@@ -448,13 +497,38 @@ fn write_bone(
     }
 }
 
+/// Offsets returned from write_fshp for deferred fixup.
+struct FshpFixups {
+    start: usize,
+    /// Placeholder for the vertex buffer pointer (points to the FVTX block).
+    vb_ptr_off: usize,
+    /// Per-mesh index buffer data pointer placeholders.
+    mesh_idx_buf_offs: Vec<usize>,
+    /// Per-mesh memory pool offset u32 positions.
+    mesh_mem_pool_offset_positions: Vec<usize>,
+}
+
 /// Write FSHP (shape) block.
+///
+/// v5 layout:
+///   +0x10  name (i64)
+///   +0x18  vertex_buffer_ptr (i64) — points to this shape's FVTX block
+///   +0x20  mesh_array (i64)
+///   +0x28  skin_bone_idx_array (i64)
+///   +0x30  key_shape_array (i64)
+///   +0x38  key_shape_dict (i64)
+///   +0x40  bbox_array (i64)
+///   +0x48  brad_array (i64)
+///   +0x50  user_pointer (i64) = 0
+///   +0x58  flags (u32), index (u16), mat_idx (u16)
+///   +0x60  bone_idx (u16), vb_idx (u16), skin_count (u16), vtx_skin (u8), mesh_count (u8)
+///   +0x68  key_count (u8), target_attrib (u8), padding (u16)
 fn write_fshp(
     w: &mut LittleEndianWriter,
     shape: &Shape,
     string_fixups: &mut Vec<StringFixup>,
     reloc: &mut RelocationTable,
-) -> usize {
+) -> FshpFixups {
     let start = w.pos();
 
     w.write_magic(b"FSHP");
@@ -462,7 +536,7 @@ fn write_fshp(
     w.write_u32(0); // block offset 2
     w.write_u32(0); // padding
 
-    // Name offset (i64)
+    // +0x10: Name offset (i64)
     let name_ph = w.write_offset_placeholder_64();
     string_fixups.push(StringFixup {
         placeholder_pos: name_ph,
@@ -470,41 +544,45 @@ fn write_fshp(
     });
     reloc.add(0, name_ph as u32, 1, 1, 0);
 
-    // Mesh array offset (i64)
+    // +0x18: Vertex buffer pointer (i64) — points to FVTX block, fixed up by orchestrator
+    let vb_ptr_off = w.write_offset_placeholder_64();
+    reloc.add(0, vb_ptr_off as u32, 1, 1, 0);
+
+    // +0x20: Mesh array offset (i64)
     let mesh_off = w.write_offset_placeholder_64();
     reloc.add(0, mesh_off as u32, 1, 1, 0);
 
-    // Skin bone index array offset (i64)
+    // +0x28: Skin bone index array offset (i64)
     let skin_off = w.write_offset_placeholder_64();
     if !shape.skin_bone_indices.is_empty() {
         reloc.add(0, skin_off as u32, 1, 1, 0);
     }
 
-    // Key shape array offset (i64)
+    // +0x30: Key shape array offset (i64)
     let key_shape_off = w.write_offset_placeholder_64();
     if !shape.key_shapes.is_empty() {
         reloc.add(0, key_shape_off as u32, 1, 1, 0);
     }
 
-    // Key shape dict offset (i64) - null
+    // +0x38: Key shape dict offset (i64) - null
     w.write_u64(0);
 
-    // Bounding box array offset (i64)
+    // +0x40: Bounding box array offset (i64)
     let bbox_off = w.write_offset_placeholder_64();
     if !shape.bounding_boxes.is_empty() {
         reloc.add(0, bbox_off as u32, 1, 1, 0);
     }
 
-    // Bounding radius array offset (i64)
+    // +0x48: Bounding radius array offset (i64)
     let brad_off = w.write_offset_placeholder_64();
     if !shape.bounding_radius.is_empty() {
         reloc.add(0, brad_off as u32, 1, 1, 0);
     }
 
-    // Bounding node array offset (i64) - null
+    // +0x50: User pointer (i64) - null (runtime)
     w.write_u64(0);
 
-    // Flags, index, counts
+    // +0x58: Flags, index, counts
     w.write_u32(shape.flags);
     w.write_u16(shape.index);
     w.write_u16(shape.material_index);
@@ -515,15 +593,19 @@ fn write_fshp(
     w.write_u8(shape.meshes.len() as u8);
     w.write_u8(shape.key_shapes.len() as u8);
     w.write_u8(0); // target_attrib_count
-    w.write_u16(shape.bounding_boxes.len() as u16);
+    w.write_u16(0); // padding
 
     w.align(8);
 
     // Write mesh array
     let mesh_start = w.pos();
     w.fixup_offset_64(mesh_off, mesh_start);
+    let mut per_mesh_idx_buf_offs: Vec<usize> = Vec::new();
+    let mut per_mesh_mem_pool_positions: Vec<usize> = Vec::new();
     for mesh in &shape.meshes {
-        write_mesh(w, mesh);
+        let mf = write_mesh(w, mesh);
+        per_mesh_idx_buf_offs.push(mf.idx_buf_data_off);
+        per_mesh_mem_pool_positions.push(mf.mem_pool_offset_pos);
     }
 
     // Write skin bone indices
@@ -575,27 +657,60 @@ fn write_fshp(
         w.align(8);
     }
 
-    start
+    FshpFixups {
+        start,
+        vb_ptr_off,
+        mesh_idx_buf_offs: per_mesh_idx_buf_offs,
+        mesh_mem_pool_offset_positions: per_mesh_mem_pool_positions,
+    }
+}
+
+/// Position of a mesh's buffer offset placeholder for deferred fixup.
+struct MeshFixups {
+    /// Position of the i64 index buffer data pointer placeholder.
+    idx_buf_data_off: usize,
+    /// Position of the u32 memory pool offset placeholder.
+    mem_pool_offset_pos: usize,
 }
 
 /// Write a mesh entry.
-fn write_mesh(w: &mut LittleEndianWriter, mesh: &Mesh) {
-    // Sub-mesh array offset (i64)
+///
+/// v5 layout (0x38 = 56 bytes per entry):
+///   +0x00  sub_mesh_array (i64)
+///   +0x08  memory_pool_ptr (i64) — runtime, zeroed
+///   +0x10  index_buffer_data (i64) — points to index data in buffer section
+///   +0x18  index_buffer_info (i64) — runtime, zeroed
+///   +0x20  memory_pool_offset (u32) — offset into buffer data section
+///   +0x24  primitive_type (u32)
+///   +0x28  index_format (u32)
+///   +0x2C  index_count (u32)
+///   +0x30  first_vertex (u32)
+///   +0x34  sub_mesh_count (u16)
+///   +0x36  padding (u16)
+fn write_mesh(w: &mut LittleEndianWriter, mesh: &Mesh) -> MeshFixups {
+    // +0x00: Sub-mesh array offset (i64)
     let sub_mesh_off = w.write_offset_placeholder_64();
 
-    // Memory pool offset (i64) - null placeholder
+    // +0x08: Memory pool pointer (i64) - runtime, zeroed
     w.write_u64(0);
 
-    // Index buffer offset/ptr (i64) - null placeholder (buffer data written later)
+    // +0x10: Index buffer data offset (i64) — fixed up later by orchestrator
+    let idx_buf_data_off = w.write_offset_placeholder_64();
+
+    // +0x18: Index buffer info (i64) - runtime, zeroed
     w.write_u64(0);
 
-    // Fields
+    // +0x20: Memory pool offset (u32) — offset into buffer data section
+    let mem_pool_offset_pos = w.pos();
+    w.write_u32(0); // patched later
+
+    // +0x24: Fields
     w.write_u32(mesh.primitive_type);
     w.write_u32(mesh.index_format);
     w.write_u32(mesh.index_count);
     w.write_u32(mesh.first_vertex);
 
-    // Sub-mesh count
+    // +0x34: Sub-mesh count
     w.write_u16(mesh.sub_meshes.len() as u16);
     w.write_u16(0); // padding
 
@@ -608,6 +723,11 @@ fn write_mesh(w: &mut LittleEndianWriter, mesh: &Mesh) {
             w.write_u32(sm.offset);
             w.write_u32(sm.count);
         }
+    }
+
+    MeshFixups {
+        idx_buf_data_off,
+        mem_pool_offset_pos,
     }
 }
 
@@ -1045,6 +1165,20 @@ struct ModelDictFixups {
     fskl_bone_dict_off: usize,
     /// Per-FVTX attribute dict placeholders
     fvtx_attr_dict_offs: Vec<usize>,
+    /// Per-FVTX buffer offset u32 positions (patched with buffer data offsets)
+    fvtx_buf_offset_positions: Vec<usize>,
+    /// Per-FVTX memory pool i64 placeholder positions
+    fvtx_mem_pool_offs: Vec<usize>,
+    /// Per-FVTX start positions (for FSHP vertex_buffer_ptr fixup)
+    fvtx_starts: Vec<usize>,
+    /// Per-FSHP vertex buffer pointer placeholder positions
+    fshp_vb_ptr_offs: Vec<usize>,
+    /// Per-FSHP shape vertex_buffer_index (to look up the right FVTX)
+    fshp_vb_indices: Vec<u16>,
+    /// Per-mesh index buffer data pointer placeholder positions, grouped by shape
+    mesh_idx_buf_offs: Vec<Vec<usize>>,
+    /// Per-mesh memory pool offset u32 positions, grouped by shape
+    mesh_mem_pool_offset_positions: Vec<Vec<usize>>,
     /// Per-FMAT render info dict + sampler dict placeholders
     fmat_dict_offs: Vec<(usize, usize)>, // (ri_dict_off, samp_dict_off)
     /// Per-FMAT shader assign dict placeholders (if shader assign exists)
@@ -1084,8 +1218,8 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
     // Version (u32)
     w.write_u32(version_u32);
 
-    // BOM (little-endian marker)
-    w.write_u16(0xFFFE);
+    // BOM (little-endian marker): bytes FF FE in file = 0xFEFF as LE u16
+    w.write_u16(0xFEFF);
 
     // Alignment
     w.write_u8(bfres.alignment as u8);
@@ -1236,12 +1370,18 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
         // Write FVTX blocks
         let mut fvtx_positions: Vec<usize> = Vec::new();
         let mut fvtx_attr_dict_offs: Vec<usize> = Vec::new();
+        let mut fvtx_buf_offset_positions: Vec<usize> = Vec::new();
+        let mut fvtx_mem_pool_offs: Vec<usize> = Vec::new();
+        let mut fvtx_starts: Vec<usize> = Vec::new();
         for vb in &model.vertex_buffers {
             w.align(8);
             let vpos = w.pos();
             let fvtx_dicts = write_fvtx(&mut w, vb, &mut string_fixups, &mut reloc);
             fvtx_positions.push(vpos);
             fvtx_attr_dict_offs.push(fvtx_dicts.attr_dict_off);
+            fvtx_buf_offset_positions.push(fvtx_dicts.buf_offset_pos);
+            fvtx_mem_pool_offs.push(fvtx_dicts.mem_pool_off);
+            fvtx_starts.push(fvtx_dicts.start);
         }
         if let Some(&first_vpos) = fvtx_positions.first() {
             w.fixup_offset_64(fmdl.fvtx_array_off, first_vpos);
@@ -1254,10 +1394,18 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
 
         // Write FSHP blocks
         let mut fshp_positions: Vec<usize> = Vec::new();
+        let mut fshp_vb_ptr_offs: Vec<usize> = Vec::new();
+        let mut fshp_vb_indices: Vec<u16> = Vec::new();
+        let mut per_shape_mesh_idx_buf_offs: Vec<Vec<usize>> = Vec::new();
+        let mut per_shape_mesh_mem_pool_positions: Vec<Vec<usize>> = Vec::new();
         for shape in &model.shapes {
             w.align(8);
-            let spos = write_fshp(&mut w, shape, &mut string_fixups, &mut reloc);
-            fshp_positions.push(spos);
+            let fshp = write_fshp(&mut w, shape, &mut string_fixups, &mut reloc);
+            fshp_positions.push(fshp.start);
+            fshp_vb_ptr_offs.push(fshp.vb_ptr_off);
+            fshp_vb_indices.push(shape.vertex_buffer_index);
+            per_shape_mesh_idx_buf_offs.push(fshp.mesh_idx_buf_offs);
+            per_shape_mesh_mem_pool_positions.push(fshp.mesh_mem_pool_offset_positions);
         }
         if let Some(&first_spos) = fshp_positions.first() {
             w.fixup_offset_64(fmdl.fshp_off, first_spos);
@@ -1283,6 +1431,13 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
             fmat_dict_off: fmdl.fmat_dict_off,
             fskl_bone_dict_off: fskl.bone_dict_off,
             fvtx_attr_dict_offs,
+            fvtx_buf_offset_positions,
+            fvtx_mem_pool_offs,
+            fvtx_starts,
+            fshp_vb_ptr_offs,
+            fshp_vb_indices,
+            mesh_idx_buf_offs: per_shape_mesh_idx_buf_offs,
+            mesh_mem_pool_offset_positions: per_shape_mesh_mem_pool_positions,
             fmat_dict_offs: fmat_ri_samp_dict_offs,
             shader_assign_dict_offs: sa_dict_offs,
         });
@@ -1515,39 +1670,124 @@ pub fn write(bfres: &BfresFile) -> Result<Vec<u8>> {
     w.write_zeros(272);
 
     // -----------------------------------------------------------------------
+    // Phase 7.5: Fix up FVTX memory pool pointers and FSHP vertex buffer pointers
+    // -----------------------------------------------------------------------
+    for (mdl_idx, model) in bfres.models.iter().enumerate() {
+        let fixups = &model_dict_fixups[mdl_idx];
+
+        // Fix up FVTX memory pool pointers → point to memory pool section
+        for &mp_off in &fixups.fvtx_mem_pool_offs {
+            w.fixup_offset_64(mp_off, memory_pool_start);
+            reloc.add(0, mp_off as u32, 1, 1, 0);
+        }
+
+        // Fix up FSHP vertex buffer pointers → point to the correct FVTX block
+        for (shp_idx, &vb_ptr_off) in fixups.fshp_vb_ptr_offs.iter().enumerate() {
+            let vb_idx = fixups.fshp_vb_indices[shp_idx] as usize;
+            if vb_idx < fixups.fvtx_starts.len() {
+                let fvtx_pos = fixups.fvtx_starts[vb_idx];
+                w.fixup_offset_64(vb_ptr_off, fvtx_pos);
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Phase 8: Buffer data (index buffers then vertex buffers, 8-byte aligned)
+    //          Track positions for fixup.
     // -----------------------------------------------------------------------
     w.align(8);
     let buffer_data_start = w.pos();
     w.fixup_offset_64(buf_data_off_ph, buffer_data_start);
 
     // Write index buffer data: for each model, for each shape, for each mesh
-    for model in &bfres.models {
+    // Track positions for mesh index buffer pointer fixups.
+    let mut idx_buf_positions: Vec<Vec<Vec<usize>>> = Vec::new(); // [model][shape][mesh]
+    for (mdl_idx, model) in bfres.models.iter().enumerate() {
+        let mut per_shape: Vec<Vec<usize>> = Vec::new();
         for shape in &model.shapes {
+            let mut per_mesh: Vec<usize> = Vec::new();
             for mesh in &shape.meshes {
                 if !mesh.index_data.is_empty() {
                     w.align(8);
+                    let pos = w.pos();
+                    per_mesh.push(pos);
                     w.write_bytes(&mesh.index_data);
+                } else {
+                    per_mesh.push(0);
                 }
             }
+            per_shape.push(per_mesh);
         }
+        idx_buf_positions.push(per_shape);
     }
 
     // Write vertex buffer data: for each model, for each vertex buffer, for each buffer
+    // Track the start position of each FVTX's first buffer for BufferOffset fixup.
+    let mut vb_first_buf_positions: Vec<Vec<usize>> = Vec::new(); // [model][vb]
     for model in &bfres.models {
+        let mut per_vb: Vec<usize> = Vec::new();
         for vb in &model.vertex_buffers {
-            for buf in &vb.buffers {
+            let mut first_pos = 0usize;
+            for (buf_idx, buf) in vb.buffers.iter().enumerate() {
                 if !buf.data.is_empty() {
                     w.align(8);
+                    let pos = w.pos();
+                    if buf_idx == 0 {
+                        first_pos = pos;
+                    }
                     w.write_bytes(&buf.data);
                 }
             }
+            per_vb.push(first_pos);
         }
+        vb_first_buf_positions.push(per_vb);
     }
 
     let buffer_data_end = w.pos();
     let total_buffer_size = (buffer_data_end - buffer_data_start) as u32;
     w.set_u32_at(buf_size_field_pos, total_buffer_size);
+
+    // -----------------------------------------------------------------------
+    // Phase 8.5: Fix up buffer data pointers now that we know positions
+    // -----------------------------------------------------------------------
+    for (mdl_idx, model) in bfres.models.iter().enumerate() {
+        let fixups = &model_dict_fixups[mdl_idx];
+
+        // Fix up FVTX BufferOffset (u32) — offset from buffer_data_start
+        for (vb_idx, &buf_off_pos) in fixups.fvtx_buf_offset_positions.iter().enumerate() {
+            if vb_idx < vb_first_buf_positions[mdl_idx].len() {
+                let first_buf = vb_first_buf_positions[mdl_idx][vb_idx];
+                if first_buf > 0 {
+                    let offset = (first_buf - buffer_data_start) as u32;
+                    w.set_u32_at(buf_off_pos, offset);
+                }
+            }
+        }
+
+        // Fix up mesh index buffer data pointers and memory pool offsets
+        for (shp_idx, shape) in model.shapes.iter().enumerate() {
+            if shp_idx >= fixups.mesh_idx_buf_offs.len() {
+                break;
+            }
+            for (mesh_idx, _mesh) in shape.meshes.iter().enumerate() {
+                if mesh_idx >= fixups.mesh_idx_buf_offs[shp_idx].len() {
+                    break;
+                }
+                let idx_pos = idx_buf_positions[mdl_idx][shp_idx][mesh_idx];
+                if idx_pos > 0 {
+                    // Fix up i64 index buffer data pointer
+                    let placeholder = fixups.mesh_idx_buf_offs[shp_idx][mesh_idx];
+                    w.fixup_offset_64(placeholder, idx_pos);
+                    reloc.add(0, placeholder as u32, 1, 1, 0);
+
+                    // Fix up u32 memory pool offset (offset from buffer_data_start)
+                    let mpo_pos = fixups.mesh_mem_pool_offset_positions[shp_idx][mesh_idx];
+                    let offset = (idx_pos - buffer_data_start) as u32;
+                    w.set_u32_at(mpo_pos, offset);
+                }
+            }
+        }
+    }
 
     // -----------------------------------------------------------------------
     // Phase 9: Write relocation table
@@ -1603,9 +1843,9 @@ mod tests {
         // Verify padding spaces
         assert_eq!(&output[4..8], b"    ", "should have space padding");
 
-        // Verify BOM is 0xFFFE (little-endian)
+        // Verify BOM is 0xFEFF (little-endian: bytes FF FE in file)
         let bom = u16::from_le_bytes([output[12], output[13]]);
-        assert_eq!(bom, 0xFFFE, "BOM should be 0xFFFE for little-endian");
+        assert_eq!(bom, 0xFEFF, "BOM should be 0xFEFF for little-endian");
 
         // Verify version matches (0, 5, 0, 3)
         let version = u32::from_le_bytes([output[8], output[9], output[10], output[11]]);
@@ -1727,7 +1967,7 @@ mod tests {
 
         assert_eq!(&output[0..4], b"FRES");
         let bom = u16::from_le_bytes([output[12], output[13]]);
-        assert_eq!(bom, 0xFFFE);
+        assert_eq!(bom, 0xFEFF);
 
         let stored_size =
             u32::from_le_bytes([output[0x1C], output[0x1D], output[0x1E], output[0x1F]]);
