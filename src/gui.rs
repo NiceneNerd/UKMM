@@ -24,7 +24,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow_ext::{Context, Result};
+use anyhow::{Context, Result};
 use eframe::{
     egui::{IconData, InnerResponse},
     epaint::text::TextWrapping,

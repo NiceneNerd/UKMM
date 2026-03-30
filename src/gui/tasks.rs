@@ -6,7 +6,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow_ext::{Context, Result};
+use anyhow::{Context, Result};
 use fs_err as fs;
 use http_req::request::RedirectPolicy;
 use join_str::jstr;

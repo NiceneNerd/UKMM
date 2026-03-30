@@ -124,6 +124,18 @@ impl MetaInputModal {
 impl App {
     pub fn render_error(&mut self, ctx: &egui::Context) {
         if let Some(err) = self.error.as_ref() {
+            let mut chain = err.chain();
+            let label = match chain.len() {
+                0 | 1 => "An error has occurred. Check the details for more information.".into(),
+                _ => unsafe {
+                    format!(
+                        "{}: {}",
+                        // We know these exist because this arm is for when there are 2 or more
+                        chain.next().unwrap_unchecked(),
+                        chain.next_back().unwrap_unchecked()
+                    )
+                },
+            };
             egui::Window::new("Error_Label".localize())
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
@@ -131,7 +143,7 @@ impl App {
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
                     ui.add_space(8.);
-                    ui.label("An error has occurred. Check the details for more information.");
+                    ui.label(label);
                     ui.add_space(8.);
                     egui::CollapsingHeader::new("Error_Details".localize()).show(ui, |ui| {
                         err.chain().enumerate().for_each(|(i, e)| {
