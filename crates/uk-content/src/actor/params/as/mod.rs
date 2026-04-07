@@ -24,7 +24,7 @@ use res_type::ResType;
 use crate::prelude::Mergeable;
 use crate::util::HashMap;
 
-mod anim_seq;
+pub(crate) mod anim_seq;
 mod ext_bit_index;
 mod ext_blender_bone;
 mod ext_float_array;

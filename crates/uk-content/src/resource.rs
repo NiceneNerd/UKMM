@@ -8,7 +8,7 @@ pub use crate::{
     actor::{
         info::ActorInfo,
         params::{
-            aiprog::AIProgram, aischedule::AISchedule, animinfo::AnimationInfo, r#as::AS,
+            aiprog::AIProgram, aischedule::AISchedule, animinfo::AnimationInfo, r#as::anim_seq::AnimSeq,
             aslist::ASList, atcl::AttClient, atcllist::AttClientList, aware::Awareness,
             bonectrl::BoneControl, chemical::Chemical, damage::DamageParam, drop::DropTable,
             general::GeneralParamList, life::LifeCondition, link::ActorLink, lod::Lod,
@@ -45,8 +45,8 @@ pub enum MergeableResource {
     AIProgram(Box<AIProgram>),
     AISchedule(Box<AISchedule>),
     AnimationInfo(Box<AnimationInfo>),
+    AnimSeq(Box<AnimSeq>),
     AreaData(Box<AreaData>),
-    AS(Box<AS>),
     ASList(Box<ASList>),
     AttClient(Box<AttClient>),
     AttClientList(Box<AttClientList>),
@@ -103,8 +103,8 @@ impl std::fmt::Display for MergeableResource {
             Self::AIProgram(_) => "AIProgram",
             Self::AISchedule(_) => "AISchedule",
             Self::AnimationInfo(_) => "AnimationInfo",
+            Self::AnimSeq(_) => "AnimSeq",
             Self::AreaData(_) => "AreaData",
-            Self::AS(_) => "AS",
             Self::ASList(_) => "ASList",
             Self::AttClient(_) => "AttClient",
             Self::AttClientList(_) => "AttClientList",
@@ -199,8 +199,8 @@ impl_from_res!(ActorLink);
 impl_from_res!(AIProgram);
 impl_from_res!(AISchedule);
 impl_from_res!(AnimationInfo);
+impl_from_res!(AnimSeq);
 impl_from_res!(AreaData);
-impl_from_res!(AS);
 impl_from_res!(ASList);
 impl_from_res!(AttClient);
 impl_from_res!(AttClientList);
@@ -255,8 +255,8 @@ impl Mergeable for MergeableResource {
             (Self::AnimationInfo(a), Self::AnimationInfo(b)) => {
                 Self::AnimationInfo(Box::new(a.diff(b)))
             }
+            (Self::AnimSeq(a), Self::AnimSeq(b)) => Self::AnimSeq(Box::new(a.diff(b))),
             (Self::AreaData(a), Self::AreaData(b)) => Self::AreaData(Box::new(a.diff(b))),
-            (Self::AS(a), Self::AS(b)) => Self::AS(Box::new(a.diff(b))),
             (Self::ASList(a), Self::ASList(b)) => Self::ASList(Box::new(a.diff(b))),
             (Self::AttClient(a), Self::AttClient(b)) => Self::AttClient(Box::new(a.diff(b))),
             (Self::AttClientList(a), Self::AttClientList(b)) => {
@@ -354,8 +354,8 @@ impl Mergeable for MergeableResource {
             (Self::AnimationInfo(a), Self::AnimationInfo(b)) => {
                 Self::AnimationInfo(Box::new(a.merge(b)))
             }
+            (Self::AnimSeq(a), Self::AnimSeq(b)) => Self::AnimSeq(Box::new(a.merge(b))),
             (Self::AreaData(a), Self::AreaData(b)) => Self::AreaData(Box::new(a.merge(b))),
-            (Self::AS(a), Self::AS(b)) => Self::AS(Box::new(a.merge(b))),
             (Self::ASList(a), Self::ASList(b)) => Self::ASList(Box::new(a.merge(b))),
             (Self::AttClient(a), Self::AttClient(b)) => Self::AttClient(Box::new(a.merge(b))),
             (Self::AttClientList(a), Self::AttClientList(b)) => {
@@ -466,10 +466,10 @@ impl MergeableResource {
             Ok(Some(Self::AnimationInfo(Box::new(
                 AnimationInfo::from_binary(data)?,
             ))))
+        } else if AnimSeq::path_matches(name) {
+            Ok(Some(Self::AnimSeq(Box::new(AnimSeq::from_binary(data)?))))
         } else if AreaData::path_matches(name) {
             Ok(Some(Self::AreaData(Box::new(AreaData::from_binary(data)?))))
-        } else if AS::path_matches(name) {
-            Ok(Some(Self::AS(Box::new(AS::from_binary(data)?))))
         } else if ASList::path_matches(name) {
             Ok(Some(Self::ASList(Box::new(ASList::from_binary(data)?))))
         } else if AttClient::path_matches(name) {
@@ -639,8 +639,8 @@ impl MergeableResource {
             Self::AIProgram(v) => v.into_binary(endian),
             Self::AISchedule(v) => v.into_binary(endian),
             Self::AnimationInfo(v) => v.into_binary(endian),
+            Self::AnimSeq(v) => v.into_binary(endian),
             Self::AreaData(v) => v.into_binary(endian),
-            Self::AS(v) => v.into_binary(endian),
             Self::ASList(v) => v.into_binary(endian),
             Self::AttClient(v) => v.into_binary(endian),
             Self::AttClientList(v) => v.into_binary(endian),

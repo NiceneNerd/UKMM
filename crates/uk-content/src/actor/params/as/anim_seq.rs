@@ -1,10 +1,16 @@
-use anyhow::{Context, Error, Result};
+use anyhow::Context;
+use join_str::jstr;
 use roead::aamp::{Parameter, ParameterIO, ParameterList};
 use serde::{Deserialize, Serialize};
-use crate::actor::params::anim_seq::traverser::Traverser;
-use crate::prelude::Mergeable;
-use crate::util::{SortedDeleteMap, DeleteMap};
-use super::Element;
+use uk_util::OptionResultExt;
+use crate::{
+    prelude::{Endian, Mergeable, Resource},
+    util::{SortedDeleteMap, DeleteMap},
+    actor::ParameterResource,
+    Result,
+    UKError
+};
+use super::{Element, traverser::Traverser};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AnimSeq {
@@ -13,14 +19,14 @@ pub struct AnimSeq {
 }
 
 impl TryFrom<&ParameterIO> for AnimSeq {
-    type Error = Error;
+    type Error = UKError;
 
-    fn try_from(value: &ParameterIO) -> Result<Self> {
+    fn try_from(value: &ParameterIO) -> Result<AnimSeq> {
         let res = Self {
             elements: value.param_root
                 .lists
                 .get("Elements")
-                .ok_or(anyhow::anyhow!("Missing Elements"))?
+                .ok_or(UKError::MissingAampKey("Missing Elements", None))?
                 .lists
                 .iter()
                 .map(|(n, l)| -> Result<(i32, Element)> {
@@ -68,7 +74,30 @@ impl Mergeable for AnimSeq {
 }
 
 impl AnimSeq {
-    pub fn traverse(&self) -> Result<()> {
+    pub fn traverse(&self) -> anyhow::Result<()> {
         Traverser::new(&self.elements.values().collect()).traverse(0).context("Failed to traverse AnimSeq")
+    }
+}
+
+impl ParameterResource for AnimSeq {
+    fn path(name: &str) -> String {
+        jstr!("Actor/AS/{name}.bas")
+    }
+}
+
+impl Resource for AnimSeq {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+        (&ParameterIO::from_binary(data.as_ref())?).try_into()
+    }
+
+    fn into_binary(self, _endian: Endian) -> Vec<u8> {
+        ParameterIO::from(self).to_binary()
+    }
+
+    fn path_matches(path: impl AsRef<std::path::Path>) -> bool {
+        path.as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .contains(&"bas")
     }
 }
