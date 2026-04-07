@@ -21,6 +21,7 @@ use res_selector::SelectorResource;
 use res_seq_play::SequencePlayContainerResource;
 use res_skel_asset::SkeletalAssetResource;
 use res_type::ResType;
+use crate::prelude::Mergeable;
 use crate::util::HashMap;
 
 mod anim_seq;
@@ -309,6 +310,56 @@ impl From<Extension> for (Name, ParameterList) {
             Extension::IntArray(e) => (Name::from_str("IntArray"), e.into()),
             Extension::BitIndex(e) => (Name::from_str("BitIndex"), e.into()),
             Extension::BlenderBone(e) => (Name::from_str("BlenderBone"), e.into()),
+        }
+    }
+}
+
+impl Mergeable for Extension {
+    fn diff(&self, other: &Self) -> Self {
+        match (self, other) {
+            (Extension::FrameCtrl(a), Extension::FrameCtrl(b)) =>
+                Extension::FrameCtrl(a.diff(b)),
+            (Extension::TriggerEvents(a), Extension::TriggerEvents(b)) =>
+                Extension::TriggerEvents(a.diff(b)),
+            (Extension::HoldEvents(a), Extension::HoldEvents(b)) =>
+                Extension::HoldEvents(a.diff(b)),
+            (Extension::StringArray(a), Extension::StringArray(b)) =>
+                Extension::StringArray(a.diff(b)),
+            (Extension::Ranges(a), Extension::Ranges(b)) =>
+                Extension::Ranges(a.diff(b)),
+            (Extension::FloatArray(a), Extension::FloatArray(b)) =>
+                Extension::FloatArray(a.diff(b)),
+            (Extension::IntArray(a), Extension::IntArray(b)) =>
+                Extension::IntArray(a.diff(b)),
+            (Extension::BitIndex(a), Extension::BitIndex(b)) =>
+                Extension::BitIndex(a.diff(b)),
+            (Extension::BlenderBone(a), Extension::BlenderBone(b)) =>
+                Extension::BlenderBone(a.diff(b)),
+            _ => panic!("Attempted to diff invalid Extensions!"),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        match (self, diff) {
+            (Extension::FrameCtrl(a), Extension::FrameCtrl(b)) =>
+                Extension::FrameCtrl(a.merge(b)),
+            (Extension::TriggerEvents(a), Extension::TriggerEvents(b)) =>
+                Extension::TriggerEvents(a.merge(b)),
+            (Extension::HoldEvents(a), Extension::HoldEvents(b)) =>
+                Extension::HoldEvents(a.merge(b)),
+            (Extension::StringArray(a), Extension::StringArray(b)) =>
+                Extension::StringArray(a.merge(b)),
+            (Extension::Ranges(a), Extension::Ranges(b)) =>
+                Extension::Ranges(a.merge(b)),
+            (Extension::FloatArray(a), Extension::FloatArray(b)) =>
+                Extension::FloatArray(a.merge(b)),
+            (Extension::IntArray(a), Extension::IntArray(b)) =>
+                Extension::IntArray(a.merge(b)),
+            (Extension::BitIndex(a), Extension::BitIndex(b)) =>
+                Extension::BitIndex(a.merge(b)),
+            (Extension::BlenderBone(a), Extension::BlenderBone(b)) =>
+                Extension::BlenderBone(a.merge(b)),
+            _ => panic!("Attempted to merge invalid Extensions!"),
         }
     }
 }
