@@ -86,7 +86,7 @@ impl ParameterResource for AnimSeq {
 }
 
 impl Resource for AnimSeq {
-    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
         (&ParameterIO::from_binary(data.as_ref())?).try_into()
     }
 
