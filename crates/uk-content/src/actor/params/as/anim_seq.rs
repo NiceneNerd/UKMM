@@ -26,7 +26,7 @@ impl TryFrom<&ParameterIO> for AnimSeq {
             elements: value.param_root
                 .lists
                 .get("Elements")
-                .ok_or(UKError::MissingAampKey("Missing Elements", None))?
+                .ok_or(UKError::MissingAampKey("Missing Elements", Box::from(None)))?
                 .lists
                 .iter()
                 .map(|(n, l)| -> Result<(i32, Element)> {

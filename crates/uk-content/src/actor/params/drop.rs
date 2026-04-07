@@ -58,7 +58,7 @@ impl TryFrom<&ParameterIO> for DropTable {
     fn try_from(list: &ParameterIO) -> Result<Self> {
         let header = list
             .object("Header")
-            .ok_or(UKError::MissingAampKey("Drop table missing header", None))?;
+            .ok_or(UKError::MissingAampKey("Drop table missing header", Box::from(None)))?;
         Ok(Self(
             header
                 .iter()
@@ -117,7 +117,7 @@ impl InfoSource for DropTable {
                             .get("ColumnNum")
                             .ok_or(UKError::MissingAampKey(
                                 "Drop table missing column count",
-                                None,
+                                Box::from(None),
                             ))?
                             .as_int()?;
                         let process = |count| -> Result<_> {
@@ -131,7 +131,7 @@ impl InfoSource for DropTable {
                                             .get(&name)
                                             .ok_or(UKError::MissingAampKey(
                                                 "Drop table missing item name",
-                                                None,
+                                                Box::from(None),
                                             ))?
                                             .as_str()?
                                             .into(),
@@ -149,7 +149,7 @@ impl InfoSource for DropTable {
                                                     .get(&name)
                                                     .ok_or(UKError::MissingAampKey(
                                                         "Drop table missing item name",
-                                                        None,
+                                                        Box::from(None),
                                                     ))?
                                                     .as_str()?
                                                     .into(),

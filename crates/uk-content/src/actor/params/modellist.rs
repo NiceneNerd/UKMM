@@ -26,9 +26,9 @@ impl TryFrom<&ParameterList> for ModelData {
     fn try_from(list: &ParameterList) -> std::result::Result<Self, Self::Error> {
         let folder = list
             .object("Base")
-            .ok_or_else(|| UKError::MissingAampKey("Model data missing Base object", None))?
+            .ok_or_else(|| UKError::MissingAampKey("Model data missing Base object", Box::from(None)))?
             .get("Folder")
-            .ok_or_else(|| UKError::MissingAampKey("Model data missing Folder", None))?
+            .ok_or_else(|| UKError::MissingAampKey("Model data missing Folder", Box::from(None)))?
             .as_safe_string()?;
         let units = list
             .list("Unit")
@@ -42,7 +42,7 @@ impl TryFrom<&ParameterList> for ModelData {
                             .ok_or_else(|| {
                                 UKError::MissingAampKey(
                                     "Model data unit missing name",
-                                    Some(obj.into()),
+                                    Box::from(Some(obj.into())),
                                 )
                             })?
                             .as_safe_string()?;
@@ -51,7 +51,7 @@ impl TryFrom<&ParameterList> for ModelData {
                             .ok_or_else(|| {
                                 UKError::MissingAampKey(
                                     "Model data unit missing bind bone",
-                                    Some(obj.into()),
+                                    Box::from(Some(obj.into())),
                                 )
                             })?
                             .as_safe_string()?;
@@ -126,21 +126,21 @@ impl TryFrom<&ParameterIO> for ModelList {
                 .object("ControllerInfo")
                 .ok_or(UKError::MissingAampKey(
                     "Model list missing controller info",
-                    None,
+                    Box::from(None),
                 ))?
                 .clone(),
             attention: pio
                 .object("Attention")
                 .ok_or(UKError::MissingAampKey(
                     "Model list missing attention",
-                    None,
+                    Box::from(None),
                 ))?
                 .clone(),
             model_data: pio
                 .list("ModelData")
                 .ok_or(UKError::MissingAampKey(
                     "Model list missing model data",
-                    None,
+                    Box::from(None),
                 ))?
                 .lists
                 .0
@@ -152,7 +152,7 @@ impl TryFrom<&ParameterIO> for ModelList {
                 .list("AnmTarget")
                 .ok_or(UKError::MissingAampKey(
                     "Model list missing animation target",
-                    None,
+                    Box::from(None),
                 ))?
                 .lists
                 .0

@@ -54,7 +54,7 @@ impl TryFrom<&ParameterIO> for ShopData {
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         let header = pio
             .object("Header")
-            .ok_or(UKError::MissingAampKey("Shop data missing header", None))?;
+            .ok_or(UKError::MissingAampKey("Shop data missing header", Box::from(None)))?;
         let tables: Vec<_> = header.iter().filter_map(|(_, v)| v.as_str().ok()).collect();
         let mut shop_tables = IndexMap::default();
         shop_tables.reserve(tables.len());
@@ -66,7 +66,7 @@ impl TryFrom<&ParameterIO> for ShopData {
                 .get("ColumnNum")
                 .ok_or(UKError::MissingAampKey(
                     "Shop data table missing column count",
-                    None,
+                    Box::from(None),
                 ))?
                 .as_int()?;
             let process = |column_num| -> Result<_> {
@@ -76,7 +76,7 @@ impl TryFrom<&ParameterIO> for ShopData {
                             .get(&format!("ItemName{:03}", i))
                             .ok_or(UKError::MissingAampKey(
                                 "Shop table missing item name",
-                                None,
+                                Box::from(None),
                             ))?
                             .as_safe_string()?;
                         Ok((item_name, ShopItem {
@@ -84,35 +84,35 @@ impl TryFrom<&ParameterIO> for ShopData {
                                 .get(&format!("ItemSort{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing item name",
-                                    None,
+                                    Box::from(None),
                                 ))?
                                 .as_int()?,
                             num: table_obj
                                 .get(&format!("ItemNum{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing item num",
-                                    None,
+                                    Box::from(None),
                                 ))?
                                 .as_int()?,
                             adjust_price: table_obj
                                 .get(&format!("ItemAdjustPrice{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing adjust price",
-                                    None,
+                                    Box::from(None),
                                 ))?
                                 .as_int()?,
                             look_get_flag: table_obj
                                 .get(&format!("ItemLookGetFlg{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing look get flag",
-                                    None,
+                                    Box::from(None),
                                 ))?
                                 .as_bool()?,
                             amount: table_obj
                                 .get(&format!("ItemAmount{:03}", i))
                                 .ok_or(UKError::MissingAampKey(
                                     "Shop table missing item amount",
-                                    None,
+                                    Box::from(None),
                                 ))?
                                 .as_int()?,
                             delete: false,

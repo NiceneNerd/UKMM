@@ -39,21 +39,21 @@ impl TryFrom<&ParameterIO> for RagdollConfigList {
                 .object("CommonData")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll config list missing common data",
-                    None,
+                    Box::from(None),
                 ))?
                 .clone(),
             impulse_params:  pio
                 .list("ImpulseParamList")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll config list missing impulse param list",
-                    None,
+                    Box::from(None),
                 ))?
                 .clone(),
             body_param_list: pio
                 .list("BodyParamList")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll config list missing body param list",
-                    None,
+                    Box::from(None),
                 ))?
                 .objects
                 .0
@@ -64,7 +64,7 @@ impl TryFrom<&ParameterIO> for RagdollConfigList {
                             .get("RigidName")
                             .ok_or(UKError::MissingAampKey(
                                 "Ragdoll config list missing body param name",
-                                None,
+                                Box::from(None),
                             ))?
                             .as_safe_string()?,
                         BodyParam::try_from(body_param)?,

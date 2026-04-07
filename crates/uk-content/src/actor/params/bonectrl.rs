@@ -37,7 +37,7 @@ impl TryFrom<&ParameterIO> for BoneControl {
                 .list("BoneGroups")
                 .ok_or(UKError::MissingAampKey(
                     "Bone control missing BoneGroups",
-                    None,
+                    Box::from(None),
                 ))?
                 .lists
                 .0
@@ -47,18 +47,18 @@ impl TryFrom<&ParameterIO> for BoneControl {
                         list.object("Param")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing param",
-                                None,
+                                Box::from(None),
                             ))?
                             .get("GroupName")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing group name",
-                                None,
+                                Box::from(None),
                             ))?
                             .as_safe_string()?,
                         list.object("Bones")
                             .ok_or(UKError::MissingAampKey(
                                 "Bone control group missing bone list",
-                                None,
+                                Box::from(None),
                             ))?
                             .0
                             .values()

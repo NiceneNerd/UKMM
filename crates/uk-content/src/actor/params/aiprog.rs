@@ -203,25 +203,25 @@ impl<'a> Parser<'a> {
             .object("DemoAIActionIdx")
             .ok_or(UKError::MissingAampKey(
                 "AI program missing DemoAIActionIdx",
-                None,
+                Box::from(None),
             ))?;
         let ais = pio
             .list("AI")
-            .ok_or(UKError::MissingAampKey("AI program missing AI list", None))?;
+            .ok_or(UKError::MissingAampKey("AI program missing AI list", Box::from(None)))?;
         let action_offset = ais.lists.len();
         let actions = pio.list("Action").ok_or(UKError::MissingAampKey(
             "AI program missing Action list",
-            None,
+            Box::from(None),
         ))?;
         let behavior_offset = action_offset + actions.lists.len();
         let behaviors = pio.list("Behavior").ok_or(UKError::MissingAampKey(
             "AI program missing Behavior list",
-            None,
+            Box::from(None),
         ))?;
         let query_offset = behavior_offset + behaviors.lists.len();
         let queries = pio.list("Query").ok_or(UKError::MissingAampKey(
             "AI program missing Query list",
-            None,
+            Box::from(None),
         ))?;
         Ok(Self {
             demos,
@@ -274,7 +274,7 @@ impl<'a> Parser<'a> {
         let def = list
             .object("Def")
             .ok_or_else(|| {
-                UKError::MissingAampKey("AI entry missing Def object", Some(list.into()))
+                UKError::MissingAampKey("AI entry missing Def object", Box::from(Some(list.into())))
             })
             .and_then(AIDef::try_from)
             .context("Failed to parse AI def")?;
@@ -429,7 +429,7 @@ impl<'a> Parser<'a> {
                         .name
                         .as_ref()
                         .ok_or_else(|| {
-                            UKError::MissingAampKey("AI entry def missing name", Some(list.into()))
+                            UKError::MissingAampKey("AI entry def missing name", Box::from(Some(list.into())))
                         })?
                         .clone(),
                     entry,

@@ -20,14 +20,14 @@ impl TryFrom<&ParameterIO> for RagdollConfig {
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         let root = pio.list("ConfigRoot").ok_or(UKError::MissingAampKey(
             "Ragdoll config missing config root list",
-            None,
+            Box::from(None),
         ))?;
         Ok(Self {
             attack_type_impulse_data: root
                 .object("AttackTypeImpulseData")
                 .ok_or(UKError::MissingAampKey(
                     "Ragdoll config missing attack type impulse data",
-                    None,
+                    Box::from(None),
                 ))?
                 .clone(),
             impact_impulse_info: root.lists.0.values().cloned().enumerate().collect(),

@@ -45,13 +45,13 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
                         list.object("Setting")
                             .ok_or(UKError::MissingAampKey(
                                 "Ragdoll blend weight state missing header",
-                                None,
+                                Box::from(None),
                             ))?
                             .try_into()?,
                         list.list("InputWeightList")
                             .ok_or(UKError::MissingAampKey(
                                 "Ragdoll blend weight state missing input weight list",
-                                None,
+                                Box::from(None),
                             ))?
                             .objects
                             .0
@@ -61,13 +61,13 @@ impl TryFrom<&ParameterIO> for RagdollBlendWeight {
                                     obj.get("RigidName")
                                         .ok_or(UKError::MissingAampKey(
                                             "Ragdoll blend weight state input missing rigid name",
-                                            None,
+                                            Box::from(None),
                                         ))?
                                         .as_safe_string()?,
                                     obj.get("BlendRate")
                                         .ok_or(UKError::MissingAampKey(
                                             "Ragdoll blend weight state input missing blend rate",
-                                            None,
+                                            Box::from(None),
                                         ))?
                                         .as_f32()?,
                                 ))
