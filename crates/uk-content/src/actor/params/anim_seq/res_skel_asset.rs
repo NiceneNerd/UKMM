@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Context, Error, Result};
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
-use crate::actor::params::anim_seq::res_blender::BlenderResource;
 use crate::prelude::Mergeable;
 use super::res_asset::AssetResource;
 

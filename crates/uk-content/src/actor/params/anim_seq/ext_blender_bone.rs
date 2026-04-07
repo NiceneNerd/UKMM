@@ -2,7 +2,6 @@ use anyhow::{anyhow, Context, Error, Result};
 use roead::{objs, params, aamp::{ParameterList, Parameter::String32}};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use crate::actor::params::anim_seq::ext_bit_index::BitIndex;
 use crate::prelude::Mergeable;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

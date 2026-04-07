@@ -1,5 +1,4 @@
 use anyhow::{Context, Error, Result};
-use itertools::Itertools;
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
