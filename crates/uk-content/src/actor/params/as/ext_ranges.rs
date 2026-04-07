@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::{params, aamp::{ParameterList, ParameterObject}};
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use crate::util::DeleteMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -11,18 +12,18 @@ struct Range {
 }
 
 impl TryFrom<&ParameterObject> for Range {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterObject) -> Result<Self> {
         Ok(Self {
             start: Some(value
                 .get("Start")
-                .ok_or(anyhow!("Missing Start"))?
+                .ok_or(UKError::Other("AnimSeq Element Range missing Start"))?
                 .as_f32()
                 .context("Invalid Start")?),
             end: Some(value
                 .get("End")
-                .ok_or(anyhow!("Missing End"))?
+                .ok_or(UKError::Other("AnimSeq Element Range missing End"))?
                 .as_f32()
                 .context("Invalid End")?),
         })
@@ -69,7 +70,7 @@ pub struct Ranges {
 }
 
 impl TryFrom<&ParameterList> for Ranges {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {

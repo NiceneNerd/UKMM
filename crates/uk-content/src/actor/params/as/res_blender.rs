@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use super::res_children::ResourceWithChildren;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -13,25 +14,25 @@ pub struct BlenderResource {
 }
 
 impl TryFrom<&ParameterList> for BlenderResource {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         let parameters = value.objects
             .get("Parameters")
-            .ok_or(anyhow!("Missing Parameters"))?;
+            .ok_or(UKError::Other("BlenderResource missing Parameters"))?;
         Ok(Self {
-            base: Some(value.try_into()?),
+            base: Some(value.try_into().context("BlenderResource has invalid ResourceWithChildren")?),
             no_sync: parameters
                 .get("NoSync")
-                .map(|p| p.as_bool().context("Invalid NoSync"))
+                .map(|p| p.as_bool().context("BlenderResource has invalid NoSync"))
                 .transpose()?,
             judge_once: parameters
                 .get("JudgeOnce")
-                .map(|p| p.as_bool().context("Invalid JudgeOnce"))
+                .map(|p| p.as_bool().context("BlenderResource has invalid JudgeOnce"))
                 .transpose()?,
             input_limit: parameters
                 .get("InputLimit")
-                .map(|p| p.as_f32().context("Invalid InputLimit"))
+                .map(|p| p.as_f32().context("BlenderResource has invalid InputLimit"))
                 .transpose()?,
         })
     }

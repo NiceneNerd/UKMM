@@ -1,7 +1,8 @@
-use anyhow::{Context, Error, Result};
+use anyhow::Context;
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use super::res_asset::AssetResource;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -10,11 +11,11 @@ pub struct AssetExResource {
 }
 
 impl TryFrom<&ParameterList> for AssetExResource {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            base: Some(value.try_into().context("Invalid AssetResource")?),
+            base: Some(value.try_into().context("AssetExResource has invalid AssetResource")?),
         })
     }
 }

@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::{objs, aamp::ParameterList};
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use crate::util::DeleteMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -10,13 +11,13 @@ pub struct IntArray {
 }
 
 impl TryFrom<&ParameterList> for IntArray {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
             values: value.objects
                 .get("IntArray0")
-                .ok_or(anyhow!("Missing IntArray0"))?
+                .ok_or(UKError::Other("AnimSeq Element IntArray missing IntArray0"))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, i32)> {
                     Ok((

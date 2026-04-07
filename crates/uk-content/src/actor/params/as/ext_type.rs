@@ -1,6 +1,6 @@
-use anyhow::{anyhow, Error};
 use roead::aamp::Name;
 use serde::{Deserialize, Serialize};
+use crate::{UKError, Result};
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum ExtType {
@@ -16,9 +16,9 @@ pub enum ExtType {
 }
 
 impl TryFrom<&Name> for ExtType {
-    type Error = Error;
+    type Error = UKError;
 
-    fn try_from(value: &Name) -> anyhow::Result<Self> {
+    fn try_from(value: &Name) -> Result<Self> {
         match value.hash() {
             4007221886 => Ok(Self::FrameCtrl),
             679723989 => Ok(Self::TriggerEvents),
@@ -29,7 +29,7 @@ impl TryFrom<&Name> for ExtType {
             3190114414 => Ok(Self::IntArray),
             127394560 => Ok(Self::BitIndex),
             3977185723 => Ok(Self::BlenderBone),
-            _ => Err(anyhow!("Invalid Extend hash")),
+            _ => Err(UKError::Other("AnimSeq Element Extend contains invalid Extension key")),
         }
     }
 }

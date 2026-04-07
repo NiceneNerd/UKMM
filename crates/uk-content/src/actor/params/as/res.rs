@@ -1,9 +1,10 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::{objs, params, aamp::ParameterList};
 use roead::aamp::Name;
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
 use crate::util::DeleteMap;
+use crate::{UKError, Result};
 use super::{ExtType, ResType, Extension};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -13,7 +14,7 @@ pub struct Resource {
 }
 
 impl TryFrom<&ParameterList> for Resource {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
@@ -29,12 +30,12 @@ impl TryFrom<&ParameterList> for Resource {
                 .into() }),
             extensions: value.lists
                 .get("Extend")
-                .ok_or(anyhow!("Missing Extend"))?
+                .ok_or(UKError::Other("Resource missing Extend"))?
                 .lists
                 .iter()
                 .map(|(k, v)| { Ok((k.try_into()?, (k, v).try_into()?)) })
                 .collect::<Result<_>>()
-                .context("Invalid Extend")?,
+                .context("Resource has invalid Extend")?,
         })
     }
 }

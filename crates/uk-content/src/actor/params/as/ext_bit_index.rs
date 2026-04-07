@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::{objs, params, aamp::ParameterList};
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct BitIndex {
@@ -9,15 +10,15 @@ pub struct BitIndex {
 }
 
 impl TryFrom<&ParameterList> for BitIndex {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
             type_index: Some(value.objects
                 .get("BitIndex0")
-                .ok_or(anyhow!("Missing BitIndex0"))?
+                .ok_or(UKError::Other("AnimSeq Element BitIndex missing BitIndex0"))?
                 .get("TypeIndex")
-                .ok_or(anyhow!("Missing TypeIndex"))?
+                .ok_or(UKError::Other("AnimSeq Element BitIndex0 missing TypeIndex"))?
                 .as_i32()
                 .context("Invalid TypeIndex")?),
         })

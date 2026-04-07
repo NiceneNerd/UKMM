@@ -1,8 +1,9 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::{objs, aamp::{ParameterList, Parameter::String64}};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use crate::util::DeleteMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -11,13 +12,13 @@ pub struct StringArray {
 }
 
 impl TryFrom<&ParameterList> for StringArray {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
             values: value.objects
                 .get("StringArray0")
-                .ok_or(anyhow!("Missing StringArray0"))?
+                .ok_or(UKError::Other("AnimSeq Element StringArray missing StringArray0"))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, String)> {
                     Ok((

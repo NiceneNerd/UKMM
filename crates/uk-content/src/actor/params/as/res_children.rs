@@ -1,8 +1,8 @@
-use anyhow::{anyhow, Context, Error, Result};
-use itertools::Itertools;
+use anyhow::Context;
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use crate::util::DeleteMap;
 use super::{get_child_index};
 use super::res::Resource;
@@ -14,20 +14,20 @@ pub struct ResourceWithChildren {
 }
 
 impl TryFrom<&ParameterList> for ResourceWithChildren {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         let children = value.objects
             .get("Children")
-            .ok_or(anyhow!("Missing Children"))?;
+            .ok_or(UKError::Other("ResourceWithChildren missing Children"))?;
         Ok(Self {
-            base: Some(value.try_into()?),
+            base: Some(value.try_into().context("ResourceWithChildren has invalid Resource")?),
             children: children
                 .iter()
                 .map(|(n, p)| -> Result<(i32, i32)> {
                     Ok((
                         get_child_index(n.hash())?,
-                        p.as_i32().context("Invalid Child Index")?
+                        p.as_i32().context("ResourceWithChildren has invalid Child Index")?
                     ))
                 })
                 .collect::<Result<_>>()?,

@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use super::res_children::ResourceWithChildren;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -11,18 +12,18 @@ pub struct SequencePlayContainerResource {
 }
 
 impl TryFrom<&ParameterList> for SequencePlayContainerResource {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            base: Some(value.try_into()?),
+            base: Some(value.try_into().context("SequencePlayContainerResource has invalid ResourceWithChildren")?),
             sequence_loop: Some(value.objects
                 .get("Parameters")
-                .ok_or(anyhow!("Missing Parameters"))?
+                .ok_or(UKError::Other("SequencePlayContainerResource missing Parameters"))?
                 .get("SequenceLoop")
-                .ok_or(anyhow!("Missing SequenceLoop"))?
+                .ok_or(UKError::Other("SequencePlayContainerResource missing SequenceLoop"))?
                 .as_bool()
-                .context("Invalid SequenceLoop")?),
+                .context("SequencePlayContainerResource has invalid SequenceLoop")?),
         })
     }
 }

@@ -1,8 +1,9 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::{params, aamp::{ParameterList, ParameterObject, Parameter::String32}};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use crate::util::DeleteMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -13,23 +14,23 @@ pub struct TriggerEvent {
 }
 
 impl TryFrom<&ParameterObject> for TriggerEvent {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterObject) -> Result<Self> {
         Ok(Self {
             type_index: Some(value
                 .get("TypeIndex")
-                .ok_or(anyhow!("Missing TypeIndex"))?
+                .ok_or(UKError::Other("AnimSeq Element TriggerEvent missing TypeIndex"))?
                 .as_i32()
                 .context("Invalid TypeIndex")?),
             frame: Some(value
                 .get("Frame")
-                .ok_or(anyhow!("Missing Frame"))?
+                .ok_or(UKError::Other("AnimSeq Element TriggerEvent missing Frame"))?
                 .as_f32()
                 .context("Invalid Frame")?),
             value: Some(value
                 .get("Value")
-                .ok_or(anyhow!("Missing Value"))?
+                .ok_or(UKError::Other("AnimSeq Element TriggerEvent missing Value"))?
                 .as_str()
                 .context("Invalid Value")?
                 .into()),
@@ -90,7 +91,7 @@ pub struct TriggerEvents {
 }
 
 impl TryFrom<&ParameterList> for TriggerEvents {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {

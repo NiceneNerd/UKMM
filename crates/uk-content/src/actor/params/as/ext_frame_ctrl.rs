@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::{objs, aamp::{ParameterList, ParameterObject}};
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FrameCtrl {
@@ -18,12 +19,12 @@ pub struct FrameCtrl {
 }
 
 impl TryFrom<&ParameterList> for FrameCtrl {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         let obj = value.objects
             .get("FrameCtrl0")
-            .ok_or(anyhow!("Missing FrameCtrl0"))?;
+            .ok_or(UKError::Other("AnimSeq Element FrameCtrl missing FrameCtrl0"))?;
         Ok(Self {
             rate: obj.get("Rate")
                 .map(|p| p.as_f32().context("Invalid Rate"))

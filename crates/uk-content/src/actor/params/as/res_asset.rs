@@ -1,8 +1,9 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::aamp::{ParameterList, Parameter::String64};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use super::res::Resource;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -12,18 +13,18 @@ pub struct AssetResource {
 }
 
 impl TryFrom<&ParameterList> for AssetResource {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            base: Some(value.try_into()?),
+            base: Some(value.try_into().context("AssetResource has invalid Resource")?),
             file_name: Some(value.objects
                 .get("Parameters")
-                .ok_or(anyhow!("Missing Parameters"))?
+                .ok_or(UKError::Other("AssetResource missing Parameters"))?
                 .get("FileName")
-                .ok_or(anyhow!("Missing FileName"))?
+                .ok_or(UKError::Other("AssetResource missing FileName"))?
                 .as_str()
-                .context("Invalid FileName")?
+                .context("AssetResource has invalid FileName")?
                 .into()),
         })
     }

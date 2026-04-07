@@ -1,8 +1,9 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::{params, aamp::{ParameterList, ParameterObject, Parameter::String32}};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use crate::util::DeleteMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -14,28 +15,28 @@ pub struct HoldEvent {
 }
 
 impl TryFrom<&ParameterObject> for HoldEvent {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterObject) -> Result<Self> {
         Ok(Self {
             type_index: Some(value
                 .get("TypeIndex")
-                .ok_or(anyhow!("Missing TypeIndex"))?
+                .ok_or(UKError::Other("AnimSeq Element HoldEvent missing TypeIndex"))?
                 .as_i32()
                 .context("Invalid TypeIndex")?),
             start_frame: Some(value
                 .get("StartFrame")
-                .ok_or(anyhow!("Missing StartFrame"))?
+                .ok_or(UKError::Other("AnimSeq Element HoldEvent missing StartFrame"))?
                 .as_f32()
                 .context("Invalid StartFrame")?),
             end_frame: Some(value
                 .get("EndFrame")
-                .ok_or(anyhow!("Missing EndFrame"))?
+                .ok_or(UKError::Other("AnimSeq Element HoldEvent missing EndFrame"))?
                 .as_f32()
                 .context("Invalid EndFrame")?),
             value: Some(value
                 .get("Value")
-                .ok_or(anyhow!("Missing Value"))?
+                .ok_or(UKError::Other("AnimSeq Element HoldEvent missing Value"))?
                 .as_str()
                 .context("Invalid Value")?
                 .into()),
@@ -105,7 +106,7 @@ pub struct HoldEvents {
 }
 
 impl TryFrom<&ParameterList> for HoldEvents {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {

@@ -1,5 +1,5 @@
 use std::sync::LazyLock;
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::aamp::{Name, ParameterList};
 use serde::{Deserialize, Serialize};
 use ext_bit_index::BitIndex;
@@ -23,6 +23,7 @@ use res_skel_asset::SkeletalAssetResource;
 use res_type::ResType;
 use crate::prelude::Mergeable;
 use crate::util::HashMap;
+use crate::{UKError, Result};
 
 pub(crate) mod anim_seq;
 mod ext_bit_index;
@@ -51,7 +52,7 @@ pub(crate) fn get_child_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/child_hashes.bin"))
             .expect("child_hashes should not be broken")
     );
-    CHILD_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Child hash"))
+    CHILD_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Child hash"))
 }
 
 pub(crate) fn get_element_index(hash: u32) -> Result<i32> {
@@ -59,7 +60,7 @@ pub(crate) fn get_element_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/element_hashes.bin"))
             .expect("element_hashes should not be broken")
     );
-    ELEMENT_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Element hash"))
+    ELEMENT_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Element hash"))
 }
 
 pub(crate) fn get_event_index(hash: u32) -> Result<i32> {
@@ -67,7 +68,7 @@ pub(crate) fn get_event_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/event_hashes.bin"))
             .expect("event_hashes should not be broken")
     );
-    EVENT_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Event hash"))
+    EVENT_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Event hash"))
 }
 
 pub(crate) fn get_range_index(hash: u32) -> Result<i32> {
@@ -75,7 +76,7 @@ pub(crate) fn get_range_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/range_hashes.bin"))
             .expect("range_hashes should not be broken")
     );
-    RANGE_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Range hash"))
+    RANGE_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Range hash"))
 }
 
 pub(crate) fn get_value_index(hash: u32) -> Result<i32> {
@@ -83,7 +84,7 @@ pub(crate) fn get_value_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/value_hashes.bin"))
             .expect("value_hashes should not be broken")
     );
-    VALUE_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Value hash"))
+    VALUE_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Value hash"))
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -99,7 +100,7 @@ enum Element {
 }
 
 impl TryFrom<&ParameterList> for Element {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         let type_index = value.objects
@@ -232,7 +233,7 @@ impl TryFrom<&ParameterList> for Element {
             ResType::SyncPlayContainer => Ok(Element::ResourceWithChildren(
                 value.try_into().context("Invalid ResourceWithChildren")?
             )),
-            ResType::Invalid => Err(anyhow!("Invalid Element TypeIndex")),
+            ResType::Invalid => Err(UKError::Other("Invalid Element TypeIndex")),
         }
     }
 }
@@ -279,7 +280,7 @@ enum Extension {
 }
 
 impl TryFrom<(&Name, &ParameterList)> for Extension {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: (&Name, &ParameterList)) -> Result<Self> {
         let (n, l) = value;
@@ -293,7 +294,7 @@ impl TryFrom<(&Name, &ParameterList)> for Extension {
             3190114414 => Ok(Extension::IntArray(l.try_into().context("Invalid IntArray")?)),
             127394560 => Ok(Extension::BitIndex(l.try_into().context("Invalid BitIndex")?)),
             3977185723 => Ok(Extension::BlenderBone(l.try_into().context("Invalid BlenderBone")?)),
-            _ => Err(anyhow!("Invalid Extend hash")),
+            _ => Err(UKError::Other("Invalid Extend hash")),
         }
     }
 }

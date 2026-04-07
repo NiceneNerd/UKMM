@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::Context;
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use super::res_asset::AssetResource;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -13,25 +14,25 @@ pub struct SkeletalAssetResource {
 }
 
 impl TryFrom<&ParameterList> for SkeletalAssetResource {
-    type Error = Error;
+    type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         let parameters = value.objects
             .get("Parameters")
-            .ok_or(anyhow!("Missing Parameters"))?;
+            .ok_or(UKError::Other("SkeletalAssetResource missing Parameters"))?;
         Ok(Self {
-            base: Some(value.try_into()?),
+            base: Some(value.try_into().context("SkeletalAssetResource has invalid AssetResource")?),
             init_anm_driven: parameters
                 .get("InitAnmDriven")
-                .map(|p| p.as_i32().context("Invalid InitAnmDriven"))
+                .map(|p| p.as_i32().context("SkeletalAssetResource has invalid InitAnmDriven"))
                 .transpose()?,
             morph: parameters
                 .get("Morph")
-                .map(|p| p.as_f32().context("Invalid Morph"))
+                .map(|p| p.as_f32().context("SkeletalAssetResource has invalid Morph"))
                 .transpose()?,
             reset_morph: parameters
                 .get("ResetMorph")
-                .map(|p| p.as_f32().context("Invalid ResetMorph"))
+                .map(|p| p.as_f32().context("SkeletalAssetResource has invalid ResetMorph"))
                 .transpose()?,
         })
     }

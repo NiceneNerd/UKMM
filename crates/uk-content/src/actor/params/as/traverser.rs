@@ -1,5 +1,6 @@
 use super::Element;
-use anyhow::{anyhow, Result};
+use anyhow::anyhow;
+use crate::{UKError, Result};
 
 pub struct Traverser<'a> {
     elements: &'a Vec<&'a Element>,
@@ -28,7 +29,7 @@ impl<'a> Traverser<'a> {
             .children()
         {
             if self.traversed.contains(idx) {
-                return Err(anyhow!("Traversal loop found! {:?} -> {}", self.traversed, *idx));
+                return Err(UKError::Any(anyhow!("Traversal loop found! {:?} -> {}", self.traversed, *idx)));
             }
             let mut traversed = self.traversed.clone();
             traversed.push(*idx);
