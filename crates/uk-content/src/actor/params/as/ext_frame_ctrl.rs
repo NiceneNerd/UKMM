@@ -24,37 +24,37 @@ impl TryFrom<&ParameterList> for FrameCtrl {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let obj = value.objects
             .get("FrameCtrl0")
-            .ok_or(UKError::Other("AnimSeq Element FrameCtrl missing FrameCtrl0"))?;
+            .ok_or(UKError::MissingAampKey("FrameCtrl missing FrameCtrl0", Box::from(None)))?;
         Ok(Self {
             rate: obj.get("Rate")
-                .map(|p| p.as_f32().context("Invalid Rate"))
+                .map(|p| p.as_f32().context("FrameCtrl has invalid Rate"))
                 .transpose()?,
             start_frame: obj.get("StartFrame")
-                .map(|p| p.as_f32().context("Invalid StartFrame"))
+                .map(|p| p.as_f32().context("FrameCtrl has invalid StartFrame"))
                 .transpose()?,
             end_frame: obj.get("EndFrame")
-                .map(|p| p.as_f32().context("Invalid EndFrame"))
+                .map(|p| p.as_f32().context("FrameCtrl has invalid EndFrame"))
                 .transpose()?,
             loop_stop_count: obj.get("LoopStopCount")
-                .map(|p| p.as_f32().context("Invalid LoopStopCount"))
+                .map(|p| p.as_f32().context("FrameCtrl has invalid LoopStopCount"))
                 .transpose()?,
             loop_stop_count_random: obj.get("LoopStopCountRandom")
-                .map(|p| p.as_f32().context("Invalid LoopStopCountRandom"))
+                .map(|p| p.as_f32().context("FrameCtrl has invalid LoopStopCountRandom"))
                 .transpose()?,
             reverse_play: obj.get("ReversePlay")
-                .map(|p| p.as_bool().context("Invalid ReversePlay"))
+                .map(|p| p.as_bool().context("FrameCtrl has invalid ReversePlay"))
                 .transpose()?,
             use_global_frame: obj.get("UseGlobalFrame")
-                .map(|p| p.as_bool().context("Invalid UseGlobalFrame"))
+                .map(|p| p.as_bool().context("FrameCtrl has invalid UseGlobalFrame"))
                 .transpose()?,
             connect: obj.get("Connect")
-                .map(|p| p.as_i32().context("Invalid Connect"))
+                .map(|p| p.as_i32().context("FrameCtrl has invalid Connect"))
                 .transpose()?,
             foot_type: obj.get("FootType")
-                .map(|p| p.as_i32().context("Invalid FootType"))
+                .map(|p| p.as_i32().context("FrameCtrl has invalid FootType"))
                 .transpose()?,
             anm_loop: obj.get("AnmLoop")
-                .map(|p| p.as_i32().context("Invalid AnmLoop"))
+                .map(|p| p.as_i32().context("FrameCtrl has invalid AnmLoop"))
                 .transpose()?,
         })
     }

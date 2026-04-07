@@ -18,7 +18,7 @@ impl TryFrom<&ParameterList> for StringArray {
         Ok(Self {
             values: value.objects
                 .get("StringArray0")
-                .ok_or(UKError::Other("AnimSeq Element StringArray missing StringArray0"))?
+                .ok_or(UKError::MissingAampKey("StringArray missing StringArray0", Box::from(None)))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, String)> {
                     Ok((

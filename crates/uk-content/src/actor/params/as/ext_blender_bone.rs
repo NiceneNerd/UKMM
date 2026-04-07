@@ -17,11 +17,11 @@ impl TryFrom<&ParameterList> for BlenderBone {
         Ok(Self {
             value: Some(value.objects
                 .get("BlenderBone0")
-                .ok_or(UKError::Other("AnimSeq Element BlenderBone missing BlenderBone0"))?
+                .ok_or(UKError::MissingAampKey("BlenderBone missing BlenderBone0", Box::from(None)))?
                 .get("Value0")
-                .ok_or(UKError::Other("AnimSeq Element BlenderBone0 missing Value0"))?
+                .ok_or(UKError::MissingAampKey("BlenderBone0 missing Value0", Box::from(None)))?
                 .as_str()
-                .context("Invalid Value0")?
+                .context("BlenderBone0 has invalid Value0")?
                 .into()),
         })
     }

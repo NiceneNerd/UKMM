@@ -18,14 +18,14 @@ impl TryFrom<&ParameterObject> for Range {
         Ok(Self {
             start: Some(value
                 .get("Start")
-                .ok_or(UKError::Other("AnimSeq Element Range missing Start"))?
+                .ok_or(UKError::MissingAampKey("Range missing Start", Box::from(None)))?
                 .as_f32()
-                .context("Invalid Start")?),
+                .context("Range has invalid Start")?),
             end: Some(value
                 .get("End")
-                .ok_or(UKError::Other("AnimSeq Element Range missing End"))?
+                .ok_or(UKError::MissingAampKey("Range missing End", Box::from(None)))?
                 .as_f32()
-                .context("Invalid End")?),
+                .context("Range has invalid End")?),
         })
     }
 }
@@ -78,7 +78,7 @@ impl TryFrom<&ParameterList> for Ranges {
                 .map(|(n, v)| -> Result<(i32, Range)> {
                     Ok((
                         super::get_range_index(n.hash())?,
-                        v.try_into().context("Invalid Range")?
+                        v.try_into().context("Ranges has invalid Range")?
                     ))
                 })
                 .collect::<Result<_>>()?,

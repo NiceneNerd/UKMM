@@ -20,19 +20,19 @@ impl TryFrom<&ParameterObject> for TriggerEvent {
         Ok(Self {
             type_index: Some(value
                 .get("TypeIndex")
-                .ok_or(UKError::Other("AnimSeq Element TriggerEvent missing TypeIndex"))?
+                .ok_or(UKError::MissingAampKey("TriggerEvent missing TypeIndex", Box::from(None)))?
                 .as_i32()
-                .context("Invalid TypeIndex")?),
+                .context("TriggerEvent has invalid TypeIndex")?),
             frame: Some(value
                 .get("Frame")
-                .ok_or(UKError::Other("AnimSeq Element TriggerEvent missing Frame"))?
+                .ok_or(UKError::MissingAampKey("TriggerEvent missing Frame", Box::from(None)))?
                 .as_f32()
-                .context("Invalid Frame")?),
+                .context("TriggerEvent has invalid Frame")?),
             value: Some(value
                 .get("Value")
-                .ok_or(UKError::Other("AnimSeq Element TriggerEvent missing Value"))?
+                .ok_or(UKError::MissingAampKey("TriggerEvent missing Value", Box::from(None)))?
                 .as_str()
-                .context("Invalid Value")?
+                .context("TriggerEvent has invalid Value")?
                 .into()),
         })
     }
@@ -100,7 +100,7 @@ impl TryFrom<&ParameterList> for TriggerEvents {
                 .map(|(n, v)| -> Result<(i32, TriggerEvent)> {
                     Ok((
                         super::get_event_index(n.hash())?,
-                        v.try_into().context("Invalid TriggerEvent")?
+                        v.try_into().context("TriggerEvents contains invalid TriggerEvent")?
                     ))
                 })
                 .collect::<Result<_>>()?,

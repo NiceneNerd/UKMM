@@ -19,7 +19,7 @@ impl TryFrom<&ParameterList> for BlenderResource {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let parameters = value.objects
             .get("Parameters")
-            .ok_or(UKError::Other("BlenderResource missing Parameters"))?;
+            .ok_or(UKError::MissingAampKey("BlenderResource missing Parameters", Box::from(None)))?;
         Ok(Self {
             base: Some(value.try_into().context("BlenderResource has invalid ResourceWithChildren")?),
             no_sync: parameters

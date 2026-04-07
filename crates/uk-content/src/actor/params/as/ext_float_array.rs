@@ -17,7 +17,7 @@ impl TryFrom<&ParameterList> for FloatArray {
         Ok(Self {
             values: value.objects
                 .get("FloatArray0")
-                .ok_or(UKError::Other("AnimSeq Element FloatArray missing FloatArray0"))?
+                .ok_or(UKError::MissingAampKey("FloatArray missing FloatArray0", Box::from(None)))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, f32)> {
                     Ok((

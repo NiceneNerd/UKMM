@@ -19,7 +19,10 @@ impl TryFrom<&ParameterList> for SkeletalAssetResource {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let parameters = value.objects
             .get("Parameters")
-            .ok_or(UKError::Other("SkeletalAssetResource missing Parameters"))?;
+            .ok_or(UKError::MissingAampKey(
+                "SkeletalAssetResource missing Parameters",
+                Box::from(None)
+            ))?;
         Ok(Self {
             base: Some(value.try_into().context("SkeletalAssetResource has invalid AssetResource")?),
             init_anm_driven: parameters

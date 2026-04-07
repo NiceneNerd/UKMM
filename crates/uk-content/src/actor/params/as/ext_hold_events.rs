@@ -21,24 +21,24 @@ impl TryFrom<&ParameterObject> for HoldEvent {
         Ok(Self {
             type_index: Some(value
                 .get("TypeIndex")
-                .ok_or(UKError::Other("AnimSeq Element HoldEvent missing TypeIndex"))?
+                .ok_or(UKError::MissingAampKey("HoldEvent missing TypeIndex", Box::from(None)))?
                 .as_i32()
-                .context("Invalid TypeIndex")?),
+                .context("HoldEvent has invalid TypeIndex")?),
             start_frame: Some(value
                 .get("StartFrame")
-                .ok_or(UKError::Other("AnimSeq Element HoldEvent missing StartFrame"))?
+                .ok_or(UKError::MissingAampKey("HoldEvent missing StartFrame", Box::from(None)))?
                 .as_f32()
-                .context("Invalid StartFrame")?),
+                .context("HoldEvent has invalid StartFrame")?),
             end_frame: Some(value
                 .get("EndFrame")
-                .ok_or(UKError::Other("AnimSeq Element HoldEvent missing EndFrame"))?
+                .ok_or(UKError::MissingAampKey("HoldEvent missing EndFrame", Box::from(None)))?
                 .as_f32()
-                .context("Invalid EndFrame")?),
+                .context("HoldEvent has invalid EndFrame")?),
             value: Some(value
                 .get("Value")
-                .ok_or(UKError::Other("AnimSeq Element HoldEvent missing Value"))?
+                .ok_or(UKError::MissingAampKey("HoldEvent missing Value", Box::from(None)))?
                 .as_str()
-                .context("Invalid Value")?
+                .context("HoldEvent has invalid Value")?
                 .into()),
         })
     }
@@ -115,7 +115,7 @@ impl TryFrom<&ParameterList> for HoldEvents {
                 .map(|(n, v)| -> Result<(i32, HoldEvent)> {
                     Ok((
                         super::get_event_index(n.hash())?,
-                        v.try_into().context("Invalid HoldEvent")?
+                        v.try_into().context("HoldEvents contains invalid HoldEvent")?
                     ))
                 })
                 .collect::<Result<_>>()?,

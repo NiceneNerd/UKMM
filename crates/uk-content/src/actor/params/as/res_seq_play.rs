@@ -19,9 +19,15 @@ impl TryFrom<&ParameterList> for SequencePlayContainerResource {
             base: Some(value.try_into().context("SequencePlayContainerResource has invalid ResourceWithChildren")?),
             sequence_loop: Some(value.objects
                 .get("Parameters")
-                .ok_or(UKError::Other("SequencePlayContainerResource missing Parameters"))?
+                .ok_or(UKError::MissingAampKey(
+                    "SequencePlayContainerResource missing Parameters",
+                    Box::from(None)
+                ))?
                 .get("SequenceLoop")
-                .ok_or(UKError::Other("SequencePlayContainerResource missing SequenceLoop"))?
+                .ok_or(UKError::MissingAampKey(
+                    "SequencePlayContainerResource missing SequenceLoop",
+                    Box::from(None)
+                ))?
                 .as_bool()
                 .context("SequencePlayContainerResource has invalid SequenceLoop")?),
         })

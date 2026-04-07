@@ -30,7 +30,7 @@ impl TryFrom<&ParameterList> for Resource {
                 .into() }),
             extensions: value.lists
                 .get("Extend")
-                .ok_or(UKError::Other("Resource missing Extend"))?
+                .ok_or(UKError::MissingAampKey("Resource missing Extend", Box::from(None)))?
                 .lists
                 .iter()
                 .map(|(k, v)| { Ok((k.try_into()?, (k, v).try_into()?)) })

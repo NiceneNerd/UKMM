@@ -16,11 +16,11 @@ impl TryFrom<&ParameterList> for BitIndex {
         Ok(Self {
             type_index: Some(value.objects
                 .get("BitIndex0")
-                .ok_or(UKError::Other("AnimSeq Element BitIndex missing BitIndex0"))?
+                .ok_or(UKError::MissingAampKey("BitIndex missing BitIndex0", Box::from(None)))?
                 .get("TypeIndex")
-                .ok_or(UKError::Other("AnimSeq Element BitIndex0 missing TypeIndex"))?
+                .ok_or(UKError::MissingAampKey("BitIndex0 missing TypeIndex", Box::from(None)))?
                 .as_i32()
-                .context("Invalid TypeIndex")?),
+                .context("BitIndex0 has invalid TypeIndex")?),
         })
     }
 }

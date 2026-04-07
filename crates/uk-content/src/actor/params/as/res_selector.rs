@@ -18,7 +18,7 @@ impl TryFrom<&ParameterList> for SelectorResource {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let parameters = value.objects
             .get("Parameters")
-            .ok_or(UKError::Other("SelectorResource missing Parameters"))?;
+            .ok_or(UKError::MissingAampKey("SelectorResource missing Parameters", Box::from(None)))?;
         Ok(Self {
             base: Some(value.try_into().context("SelectorResource has invalid ResourceWithChildren")?),
             no_sync: parameters

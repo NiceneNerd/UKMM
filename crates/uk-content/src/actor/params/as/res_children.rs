@@ -19,7 +19,7 @@ impl TryFrom<&ParameterList> for ResourceWithChildren {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let children = value.objects
             .get("Children")
-            .ok_or(UKError::Other("ResourceWithChildren missing Children"))?;
+            .ok_or(UKError::MissingAampKey("ResourceWithChildren missing Children", Box::from(None)))?;
         Ok(Self {
             base: Some(value.try_into().context("ResourceWithChildren has invalid Resource")?),
             children: children
