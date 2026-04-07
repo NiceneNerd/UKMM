@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Error, Result};
 use roead::{objs, aamp::ParameterList};
 use serde::{Deserialize, Serialize};
+use crate::prelude::Mergeable;
 use crate::util::DeleteMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -38,6 +39,20 @@ impl From<IntArray> for ParameterList {
                     .collect()
             ),
             lists: Default::default(),
+        }
+    }
+}
+
+impl Mergeable for IntArray {
+    fn diff(&self, other: &Self) -> Self {
+        Self {
+            values: self.values.diff(&other.values),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self {
+            values: self.values.merge(&diff.values),
         }
     }
 }

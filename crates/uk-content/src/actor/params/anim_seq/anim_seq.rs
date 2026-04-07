@@ -2,6 +2,7 @@ use anyhow::{Context, Error, Result};
 use roead::aamp::{Parameter, ParameterIO, ParameterList};
 use serde::{Deserialize, Serialize};
 use crate::actor::params::anim_seq::traverser::Traverser;
+use crate::prelude::Mergeable;
 use crate::util::{SortedDeleteMap, DeleteMap};
 use super::Element;
 
@@ -15,7 +16,7 @@ impl TryFrom<&ParameterIO> for AnimSeq {
     type Error = Error;
 
     fn try_from(value: &ParameterIO) -> Result<Self> {
-        Ok(AnimSeq {
+        let res = Self {
             elements: value.param_root
                 .lists
                 .get("Elements")
@@ -35,13 +36,15 @@ impl TryFrom<&ParameterIO> for AnimSeq {
                         .map(|(n, p)| (n.hash(), p.clone()))
                         .collect::<DeleteMap<u32, Parameter>>()
                 })
-        })
+        };
+        res.traverse()?;
+        Ok(res)
     }
 }
 
 impl From<AnimSeq> for ParameterIO {
     fn from(anim_seq: AnimSeq) -> Self {
-        ParameterIO::new()
+        Self::new()
             .with_objects(anim_seq.common_params.into_iter().map(|m|
                 ("CommonParams", m.into_iter().collect())
             ))
@@ -54,8 +57,18 @@ impl From<AnimSeq> for ParameterIO {
     }
 }
 
+impl Mergeable for AnimSeq {
+    fn diff(&self, other: &Self) -> Self {
+        other.clone()
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        diff.clone()
+    }
+}
+
 impl AnimSeq {
     pub fn traverse(&self) -> Result<()> {
-        Traverser::new(&self.elements.values().collect(), Default::default()).traverse(0).context("Failed to traverse anim")
+        Traverser::new(&self.elements.values().collect()).traverse(0).context("Failed to traverse AnimSeq")
     }
 }

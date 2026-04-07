@@ -2,13 +2,16 @@ use std::sync::LazyLock;
 use anyhow::{anyhow, Context, Error, Result};
 use roead::aamp::{Name, ParameterList};
 use serde::{Deserialize, Serialize};
-use bit_index::BitIndex;
-use blender_bone::BlenderBone;
-use float_array::FloatArray;
-use frame_ctrl::FrameCtrl;
-use hold_events::HoldEvents;
-use int_array::IntArray;
-use ranges::Ranges;
+use ext_bit_index::BitIndex;
+use ext_blender_bone::BlenderBone;
+use ext_float_array::FloatArray;
+use ext_frame_ctrl::FrameCtrl;
+use ext_hold_events::HoldEvents;
+use ext_int_array::IntArray;
+use ext_ranges::Ranges;
+use ext_string_array::StringArray;
+use ext_trigger_events::TriggerEvents;
+use ext_type::ExtType;
 use res::Resource;
 //use res_asset::AssetResource;
 use res_asset_ex::AssetExResource;
@@ -17,18 +20,19 @@ use res_children::ResourceWithChildren;
 use res_selector::SelectorResource;
 use res_seq_play::SequencePlayContainerResource;
 use res_skel_asset::SkeletalAssetResource;
-use string_array::StringArray;
-use trigger_events::TriggerEvents;
+use res_type::ResType;
 use crate::util::HashMap;
 
 mod anim_seq;
-mod bit_index;
-mod blender_bone;
-mod float_array;
-mod frame_ctrl;
-mod hold_events;
-mod int_array;
-mod ranges;
+mod ext_bit_index;
+mod ext_blender_bone;
+mod ext_float_array;
+mod ext_frame_ctrl;
+mod ext_hold_events;
+mod ext_int_array;
+mod ext_ranges;
+mod ext_string_array;
+mod ext_trigger_events;
 mod res;
 mod res_asset;
 mod res_asset_ex;
@@ -37,58 +41,48 @@ mod res_children;
 mod res_selector;
 mod res_seq_play;
 mod res_skel_asset;
-mod string_array;
-mod trigger_events;
+mod res_type;
 mod traverser;
+mod ext_type;
 
 pub(crate) fn get_child_index(hash: u32) -> Result<i32> {
-    const CHILD_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
-        minicbor_ser::from_slice(include_bytes!("../../../../data/child_hashes.bin")).unwrap()
+    static CHILD_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+        minicbor_ser::from_slice(include_bytes!("../../../../data/child_hashes.bin"))
+            .expect("child_hashes should not be broken")
     );
-    CHILD_HASHES
-        .get(&hash)
-        .map(|s| *s)
-        .ok_or(anyhow!("Invalid Child hash"))
+    CHILD_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Child hash"))
 }
 
 pub(crate) fn get_element_index(hash: u32) -> Result<i32> {
-    const ELEMENT_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
-        minicbor_ser::from_slice(include_bytes!("../../../../data/element_hashes.bin")).unwrap()
+    static ELEMENT_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+        minicbor_ser::from_slice(include_bytes!("../../../../data/element_hashes.bin"))
+            .expect("element_hashes should not be broken")
     );
-    ELEMENT_HASHES
-        .get(&hash)
-        .map(|s| *s)
-        .ok_or(anyhow!("Invalid Element hash"))
+    ELEMENT_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Element hash"))
 }
 
 pub(crate) fn get_event_index(hash: u32) -> Result<i32> {
-    const EVENT_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
-        minicbor_ser::from_slice(include_bytes!("../../../../data/event_hashes.bin")).unwrap()
+    static EVENT_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+        minicbor_ser::from_slice(include_bytes!("../../../../data/event_hashes.bin"))
+            .expect("event_hashes should not be broken")
     );
-    EVENT_HASHES
-        .get(&hash)
-        .map(|s| *s)
-        .ok_or(anyhow!("Invalid Event hash"))
+    EVENT_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Event hash"))
 }
 
 pub(crate) fn get_range_index(hash: u32) -> Result<i32> {
-    const RANGE_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
-        minicbor_ser::from_slice(include_bytes!("../../../../data/range_hashes.bin")).unwrap()
+    static RANGE_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+        minicbor_ser::from_slice(include_bytes!("../../../../data/range_hashes.bin"))
+            .expect("range_hashes should not be broken")
     );
-    RANGE_HASHES
-        .get(&hash)
-        .map(|s| *s)
-        .ok_or(anyhow!("Invalid Range hash"))
+    RANGE_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Range hash"))
 }
 
 pub(crate) fn get_value_index(hash: u32) -> Result<i32> {
-    const VALUE_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
-        minicbor_ser::from_slice(include_bytes!("../../../../data/value_hashes.bin")).unwrap()
+    static VALUE_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+        minicbor_ser::from_slice(include_bytes!("../../../../data/value_hashes.bin"))
+            .expect("value_hashes should not be broken")
     );
-    VALUE_HASHES
-        .get(&hash)
-        .map(|s| *s)
-        .ok_or(anyhow!("Invalid Value hash"))
+    VALUE_HASHES.get(&hash).copied().ok_or(anyhow!("Invalid Value hash"))
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -109,39 +103,135 @@ impl TryFrom<&ParameterList> for Element {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let type_index = value.objects
             .get("Parameters")
-            .ok_or(anyhow!("Missing Parameters"))?
+            .context("Missing Parameters")?
             .get("TypeIndex")
-            .ok_or(anyhow!("Missing TypeIndex"))?
+            .context("Missing TypeIndex")?
             .as_i32()
-            .context("Invalid TypeIndex")?;
+            .context("TypeIndex not i32")?
+            .into();
         match type_index {
-            0|5|12|14|16|29|34|36|42|51|53|55|57|65|68|70|
-            72|74|76|78|81|85|88|90|92|95|100|102|103|105 => Ok(Element::Blender(
+            ResType::AbsTemperatureBlender |
+            ResType::BoneBlender |
+            ResType::DiffAngleYBlender |
+            ResType::DirectionAngleBlender |
+            ResType::DistanceBlender |
+            ResType::ForwardBentBlender |
+            ResType::GroundNormalBlender |
+            ResType::GroundNormalSideBlender |
+            ResType::NoLoopStickAngleBlender |
+            ResType::RightStickAngleBlender |
+            ResType::RightStickValueBlender |
+            ResType::RightStickXBlender |
+            ResType::RightStickYBlender |
+            ResType::SizeBlender |
+            ResType::SpeedBlender |
+            ResType::StickAngleBlender |
+            ResType::StickValueBlender |
+            ResType::StickXBlender |
+            ResType::StickYBlender |
+            ResType::StressBlender |
+            ResType::TemperatureBlender |
+            ResType::TiredBlender |
+            ResType::UserAngle2Blender |
+            ResType::UserAngleBlender |
+            ResType::UserSpeedBlender |
+            ResType::WallAngleBlender |
+            ResType::WeightBlender |
+            ResType::WindVelocityBlender |
+            ResType::YSpeedBlender |
+            ResType::ZEx00ExposureBlender => Ok(Element::Blender(
                 value.try_into().context("Invalid Blender")?
             )),
-            1|2|3|4|7|8|9|11|13|15|17|18|19|20|21|22|23|
-            24|25|26|27|28|30|31|32|33|35|37|38|40|43|44|
-            45|46|47|48|49|50|52|54|56|58|59|60|66|69|71|
-            73|75|77|79|82|84|86|87|89|91|93|94|96|97|98|
-            99|101|104|106 => Ok(Element::Selector(
+            ResType::AbsTemperatureSelector |
+            ResType::ArmorSelector |
+            ResType::ArrowSelector |
+            ResType::AttentionSelector |
+            ResType::BoolSelector |
+            ResType::ButtonSelector |
+            ResType::ChargeSelector |
+            ResType::ComboSelector |
+            ResType::DiffAngleYSelector |
+            ResType::DirectionAngleSelector |
+            ResType::DistanceSelector |
+            ResType::DungeonClearSelector |
+            ResType::DungeonNumberSelector |
+            ResType::EmotionSelector |
+            ResType::EventFlagSelector |
+            ResType::EyeSelector |
+            ResType::EyebrowSelector |
+            ResType::FaceEmotionSelector |
+            ResType::FootBLLifeSelector |
+            ResType::FootBRLifeSelector |
+            ResType::FootFLLifeSelector |
+            ResType::FootFRLifeSelector |
+            ResType::ForwardBentSelector |
+            ResType::GearSelector |
+            ResType::GenerationSelector |
+            ResType::GrabTypeSelector |
+            ResType::GroundNormalSelector |
+            ResType::GroundNormalSideSelector |
+            ResType::MaskSelector |
+            ResType::MouthSelector |
+            ResType::NoLoopStickAngleSelector |
+            ResType::NodePosSelector |
+            ResType::PersonalitySelector |
+            ResType::PostureSelector |
+            ResType::PreASSelector |
+            ResType::PreExclusionRandomSelector |
+            ResType::RandomSelector |
+            ResType::RideSelector |
+            ResType::RightStickAngleSelector |
+            ResType::RightStickValueSelector |
+            ResType::RightStickXSelector |
+            ResType::RightStickYSelector |
+            ResType::SelfHeightSelector |
+            ResType::SelfWeightSelector |
+            ResType::SizeSelector |
+            ResType::SpeedSelector |
+            ResType::StickAngleSelector |
+            ResType::StickValueSelector |
+            ResType::StickXSelector |
+            ResType::StickYSelector |
+            ResType::StressSelector |
+            ResType::TemperatureSelector |
+            ResType::TimeSelector |
+            ResType::TiredSelector |
+            ResType::UseItemSelector |
+            ResType::UserAngle2Selector |
+            ResType::UserAngleSelector |
+            ResType::UserSpeedSelector |
+            ResType::VariationSelector |
+            ResType::WallAngleSelector |
+            ResType::WeaponDetailSelector |
+            ResType::WeaponSelector |
+            ResType::WeatherSelector |
+            ResType::WeightSelector |
+            ResType::YSpeedSelector |
+            ResType::ZEx00ExposureSelector => Ok(Element::Selector(
                 value.try_into().context("Invalid Selector")?
             )),
-            6|39|62|63|64|83 => Ok(Element::AssetEx(
+            ResType::BoneVisibilityAsset |
+            ResType::MatVisibilityAsset |
+            ResType::ShaderParamAsset |
+            ResType::ShaderParamColorAsset |
+            ResType::ShaderParamTexSRTAsset |
+            ResType::TexturePatternAsset => Ok(Element::AssetEx(
                 value.try_into().context("Invalid AssetEx")?
             )),
-            10|41 => Ok(Element::Resource(
+            ResType::ClearMatAnmAsset |
+            ResType::NoAnmAsset => Ok(Element::Resource(
                 value.try_into().context("Invalid Resource")?
             )),
-            61 => Ok(Element::SequencePlayContainer(
+            ResType::SequencePlayContainer => Ok(Element::SequencePlayContainer(
                 value.try_into().context("Invalid SequencePlayContainer")?
             )),
-            67 => Ok(Element::SkeletalAsset(
+            ResType::SkeletalAsset => Ok(Element::SkeletalAsset(
                 value.try_into().context("Invalid SkeletalAsset")?
             )),
-            80 => Ok(Element::ResourceWithChildren(
+            ResType::SyncPlayContainer => Ok(Element::ResourceWithChildren(
                 value.try_into().context("Invalid ResourceWithChildren")?
             )),
-            _ => Err(anyhow!("Invalid Element TypeIndex {}", type_index)),
+            ResType::Invalid => Err(anyhow!("Invalid Element TypeIndex")),
         }
     }
 }

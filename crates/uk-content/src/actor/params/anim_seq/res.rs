@@ -2,13 +2,14 @@ use anyhow::{anyhow, Context, Error, Result};
 use roead::{objs, params, aamp::ParameterList};
 use roead::aamp::Name;
 use serde::{Deserialize, Serialize};
-use crate::util::DeleteVec;
-use super::Extension;
+use crate::prelude::Mergeable;
+use crate::util::DeleteMap;
+use super::{ExtType, ResType, Extension};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Resource {
-    type_index: Option<i32>,
-    extensions: DeleteVec<Extension>,
+    type_index: Option<ResType>,
+    extensions: DeleteMap<ExtType, Extension>,
 }
 
 impl TryFrom<&ParameterList> for Resource {
@@ -24,13 +25,14 @@ impl TryFrom<&ParameterList> for Resource {
                 .get("TypeIndex")
                 .unwrap_unchecked()
                 .as_i32()
-                .unwrap_unchecked() }),
+                .unwrap_unchecked()
+                .into() }),
             extensions: value.lists
                 .get("Extend")
                 .ok_or(anyhow!("Missing Extend"))?
                 .lists
                 .iter()
-                .map(Extension::try_from)
+                .map(|(k, v)| { Ok((k.try_into()?, (k, v).try_into()?)) })
                 .collect::<Result<_>>()
                 .context("Invalid Extend")?,
         })
@@ -42,13 +44,36 @@ impl From<Resource> for ParameterList {
         Self {
             objects: objs!(
                 "Parameters" => params!(
-                    "TypeIndex" => value.type_index.unwrap().into(),
+                    "TypeIndex" => value.type_index
+                        .expect("Resource TypeIndex should have been read on import")
+                        .into(),
                 )
             ),
             lists: value.extensions
                 .into_iter()
-                .map(<(Name, ParameterList)>::from)
+                .map(|(_, v)| -> (Name, ParameterList) { v.into() })
                 .collect(),
+        }
+    }
+}
+
+impl Mergeable for Resource {
+    #[allow(clippy::obfuscated_if_else)]
+    fn diff(&self, other: &Self) -> Self {
+        Self {
+            type_index: other.type_index
+                .ne(&self.type_index)
+                .then_some(other.type_index)
+                .unwrap_or_default(),
+            extensions: self.extensions.diff(&other.extensions),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self {
+            type_index: diff.type_index
+                .or(self.type_index),
+            extensions: self.extensions.merge(&diff.extensions),
         }
     }
 }

@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Error, Result};
 use roead::{objs, aamp::{ParameterList, ParameterObject}};
 use serde::{Deserialize, Serialize};
+use crate::prelude::Mergeable;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FrameCtrl {
@@ -86,6 +87,79 @@ impl From<FrameCtrl> for ParameterList {
                 "FrameCtrl0" => params,
             ),
             lists: Default::default(),
+        }
+    }
+}
+
+impl Mergeable for FrameCtrl {
+    #[allow(clippy::obfuscated_if_else)]
+    fn diff(&self, other: &Self) -> Self {
+        Self {
+            rate: other.rate
+                .ne(&self.rate)
+                .then_some(other.rate)
+                .unwrap_or_default(),
+            start_frame: other.start_frame
+                .ne(&self.start_frame)
+                .then_some(other.start_frame)
+                .unwrap_or_default(),
+            end_frame: other.end_frame
+                .ne(&self.end_frame)
+                .then_some(other.end_frame)
+                .unwrap_or_default(),
+            loop_stop_count: other.loop_stop_count
+                .ne(&self.loop_stop_count)
+                .then_some(other.loop_stop_count)
+                .unwrap_or_default(),
+            loop_stop_count_random: other.loop_stop_count_random
+                .ne(&self.loop_stop_count_random)
+                .then_some(other.loop_stop_count_random)
+                .unwrap_or_default(),
+            reverse_play: other.reverse_play
+                .ne(&self.reverse_play)
+                .then_some(other.reverse_play)
+                .unwrap_or_default(),
+            use_global_frame: other.use_global_frame
+                .ne(&self.use_global_frame)
+                .then_some(other.use_global_frame)
+                .unwrap_or_default(),
+            connect: other.connect
+                .ne(&self.connect)
+                .then_some(other.connect)
+                .unwrap_or_default(),
+            foot_type: other.foot_type
+                .ne(&self.foot_type)
+                .then_some(other.foot_type)
+                .unwrap_or_default(),
+            anm_loop: other.anm_loop
+                .ne(&self.anm_loop)
+                .then_some(other.anm_loop)
+                .unwrap_or_default(),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self {
+            rate: diff.rate
+                .or(self.rate),
+            start_frame: diff.start_frame
+                .or(self.start_frame),
+            end_frame: diff.end_frame
+                .or(self.end_frame),
+            loop_stop_count: diff.loop_stop_count
+                .or(self.loop_stop_count),
+            loop_stop_count_random: diff.loop_stop_count_random
+                .or(self.loop_stop_count_random),
+            reverse_play: diff.reverse_play
+                .or(self.reverse_play),
+            use_global_frame: diff.use_global_frame
+                .or(self.use_global_frame),
+            connect: diff.connect
+                .or(self.connect),
+            foot_type: diff.foot_type
+                .or(self.foot_type),
+            anm_loop: diff.anm_loop
+                .or(self.anm_loop),
         }
     }
 }

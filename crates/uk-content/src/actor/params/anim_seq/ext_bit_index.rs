@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Error, Result};
 use roead::{objs, params, aamp::ParameterList};
 use serde::{Deserialize, Serialize};
+use crate::prelude::Mergeable;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct BitIndex {
@@ -28,10 +29,31 @@ impl From<BitIndex> for ParameterList {
         Self {
             objects: objs!(
                 "BitIndex0" => params!(
-                    "TypeIndex" => value.type_index.unwrap().into()
+                    "TypeIndex" => value.type_index
+                        .expect("BitIndex0 should have been read on import")
+                        .into()
                 )
             ),
             lists: Default::default(),
+        }
+    }
+}
+
+impl Mergeable for BitIndex {
+    #[allow(clippy::obfuscated_if_else)]
+    fn diff(&self, other: &Self) -> Self {
+        Self {
+            type_index: other.type_index
+                .ne(&self.type_index)
+                .then_some(other.type_index)
+                .unwrap_or_default(),
+        }
+    }
+    
+    fn merge(&self, diff: &Self) -> Self {
+        Self {
+            type_index: diff.type_index
+                .or(self.type_index),
         }
     }
 }

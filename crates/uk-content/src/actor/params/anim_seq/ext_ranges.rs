@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Error, Result};
 use roead::{params, aamp::{ParameterList, ParameterObject}};
 use serde::{Deserialize, Serialize};
+use crate::prelude::Mergeable;
 use crate::util::DeleteMap;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -31,9 +32,34 @@ impl TryFrom<&ParameterObject> for Range {
 impl From<Range> for ParameterObject {
     fn from(value: Range) -> Self {
         params!(
-            "Start" => value.start.unwrap().into(),
-            "End" => value.end.unwrap().into(),
+            "Start" => value.start.expect("Range Start should have been read on import").into(),
+            "End" => value.end.expect("Range End should have been read on import").into(),
         )
+    }
+}
+
+impl Mergeable for Range {
+    #[allow(clippy::obfuscated_if_else)]
+    fn diff(&self, other: &Self) -> Self {
+        Self {
+            start: other.start
+                .ne(&self.start)
+                .then_some(other.start)
+                .unwrap_or_default(),
+            end: other.end
+                .ne(&self.end)
+                .then_some(other.end)
+                .unwrap_or_default(),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self {
+            start: diff.start
+                .or(self.start),
+            end: diff.end
+                .or(self.end),
+        }
     }
 }
 
@@ -67,6 +93,20 @@ impl From<Ranges> for ParameterList {
                 .map(|(i, r)| (format!("Range{}", i), r.into()))
                 .collect(),
             lists: Default::default(),
+        }
+    }
+}
+
+impl Mergeable for Ranges {
+    fn diff(&self, other: &Self) -> Self {
+        Self {
+            ranges: self.ranges.diff(&other.ranges),
+        }
+    }
+
+    fn merge(&self, diff: &Self) -> Self {
+        Self {
+            ranges: self.ranges.merge(&diff.ranges),
         }
     }
 }
