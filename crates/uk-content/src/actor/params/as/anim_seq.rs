@@ -22,7 +22,7 @@ impl TryFrom<&ParameterIO> for AnimSeq {
     type Error = UKError;
 
     fn try_from(value: &ParameterIO) -> Result<AnimSeq> {
-        let res = Self {
+        let anim_seq = Self {
             elements: value.param_root
                 .lists
                 .get("Elements")
@@ -43,8 +43,10 @@ impl TryFrom<&ParameterIO> for AnimSeq {
                         .collect::<DeleteMap<u32, Parameter>>()
                 })
         };
-        res.traverse()?;
-        Ok(res)
+        if !anim_seq.elements.is_empty() {
+            anim_seq.traverse()?;
+        }
+        Ok(anim_seq)
     }
 }
 
