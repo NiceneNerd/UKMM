@@ -77,7 +77,7 @@ impl Mergeable for AnimSeq {
 
 impl AnimSeq {
     pub fn traverse(&self) -> anyhow::Result<()> {
-        Traverser::new(&self.elements.values().collect()).traverse(0).context("Failed to traverse AnimSeq")
+        Traverser::new(&self.elements.values().collect()).traverse(0).context("Failed to validate AnimSeq")
     }
 }
 
