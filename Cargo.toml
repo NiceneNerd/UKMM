@@ -27,11 +27,11 @@ flume = { workspace = true }
 fs-err = { workspace = true }
 glob = { workspace = true }
 join_str = { workspace = true }
-jwalk = { workspace = true }
+#jwalk = { workspace = true }
 lenient_semver = { workspace = true }
 log = { workspace = true }
 parking_lot = { workspace = true, features = ["serde"] }
-rayon = { workspace = true }
+#rayon = { workspace = true }
 rfd = { workspace = true }
 rustc-hash = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
