@@ -1,11 +1,3 @@
-# Temporary notice: UKMM download moved until v0.17.0
-
-Due to repo collaborator status timing, v0.16.0 was released on [this fork](
-https://github.com/GingerAvalanche/ukmm). Plans are underway to move the
-downloads back to this repo as the official location again for v0.17.0 and
-beyond. When that happens, the automatic updater included in both that repo
-and this one will point back to this repo for further updates.
-
 # UKMM: U-King Mod Manager
 
 U-King Mod Manager is a tool for managing and merging mods for *The Legend of
