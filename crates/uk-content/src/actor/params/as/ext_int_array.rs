@@ -21,7 +21,8 @@ impl TryFrom<&ParameterList> for IntArray {
                 .iter()
                 .map(|(n, v)| -> Result<(i32, i32)> {
                     Ok((
-                        super::get_value_index(n.hash())?,
+                        super::get_value_index(n.hash())
+                            .context(format!("IntArray has invalid key: {}", n))?,
                         v.as_i32().context("IntArray contains non-integer")?
                     ))
                 })

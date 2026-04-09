@@ -52,7 +52,7 @@ pub(crate) fn get_child_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/child_hashes.bin"))
             .expect("child_hashes should not be broken")
     );
-    CHILD_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Child hash"))
+    CHILD_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Child# format or # is above 255"))
 }
 
 pub(crate) fn get_element_index(hash: u32) -> Result<i32> {
@@ -60,7 +60,7 @@ pub(crate) fn get_element_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/element_hashes.bin"))
             .expect("element_hashes should not be broken")
     );
-    ELEMENT_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Element hash"))
+    ELEMENT_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Element# format or # is above 511"))
 }
 
 pub(crate) fn get_event_index(hash: u32) -> Result<i32> {
@@ -68,7 +68,7 @@ pub(crate) fn get_event_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/event_hashes.bin"))
             .expect("event_hashes should not be broken")
     );
-    EVENT_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Event hash"))
+    EVENT_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Event# format or # is above 255"))
 }
 
 pub(crate) fn get_range_index(hash: u32) -> Result<i32> {
@@ -76,7 +76,7 @@ pub(crate) fn get_range_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/range_hashes.bin"))
             .expect("range_hashes should not be broken")
     );
-    RANGE_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Range hash"))
+    RANGE_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Range# format or # is above 255"))
 }
 
 pub(crate) fn get_value_index(hash: u32) -> Result<i32> {
@@ -84,7 +84,7 @@ pub(crate) fn get_value_index(hash: u32) -> Result<i32> {
         minicbor_ser::from_slice(include_bytes!("../../../../data/value_hashes.bin"))
             .expect("value_hashes should not be broken")
     );
-    VALUE_HASHES.get(&hash).copied().ok_or(UKError::Other("Invalid Value hash"))
+    VALUE_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Value# format or # is above 255"))
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -287,16 +287,20 @@ impl TryFrom<(&Name, &ParameterList)> for Extension {
     fn try_from(value: (&Name, &ParameterList)) -> Result<Self> {
         let (n, l) = value;
         match n.hash() {
-            4007221886 => Ok(Extension::FrameCtrl(l.try_into().context("Invalid FrameCtrl")?)),
-            679723989 => Ok(Extension::TriggerEvents(l.try_into().context("Invalid TriggerEvents")?)),
-            4033433482 => Ok(Extension::HoldEvents(l.try_into().context("Invalid HoldEvents")?)),
-            203374876 => Ok(Extension::StringArray(l.try_into().context("Invalid StringArray")?)),
-            322024531 => Ok(Extension::Ranges(l.try_into().context("Invalid Ranges")?)),
-            3627016478 => Ok(Extension::FloatArray(l.try_into().context("Invalid FloatArray")?)),
-            3190114414 => Ok(Extension::IntArray(l.try_into().context("Invalid IntArray")?)),
-            127394560 => Ok(Extension::BitIndex(l.try_into().context("Invalid BitIndex")?)),
-            3977185723 => Ok(Extension::BlenderBone(l.try_into().context("Invalid BlenderBone")?)),
-            _ => Err(UKError::Other("Invalid Extend hash")),
+            4007221886 => Ok(Extension::FrameCtrl(l.try_into().context("Extension has invalid FrameCtrl")?)),
+            679723989 => Ok(Extension::TriggerEvents(l.try_into().context("Extension has invalid TriggerEvents")?)),
+            4033433482 => Ok(Extension::HoldEvents(l.try_into().context("Extension has invalid HoldEvents")?)),
+            203374876 => Ok(Extension::StringArray(l.try_into().context("Extension has invalid StringArray")?)),
+            322024531 => Ok(Extension::Ranges(l.try_into().context("Extension has invalid Ranges")?)),
+            3627016478 => Ok(Extension::FloatArray(l.try_into().context("Extension has invalid FloatArray")?)),
+            3190114414 => Ok(Extension::IntArray(l.try_into().context("Extension has invalid IntArray")?)),
+            127394560 => Ok(Extension::BitIndex(l.try_into().context("Extension has invalid BitIndex")?)),
+            3977185723 => Ok(Extension::BlenderBone(l.try_into().context("Extension has invalid BlenderBone")?)),
+            _ => Err(UKError::Any(anyhow!(
+                "Extension has invalid key: {}, hash: {}",
+                n,
+                n.hash()
+            ))),
         }
     }
 }

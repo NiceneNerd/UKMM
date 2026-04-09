@@ -21,7 +21,8 @@ impl TryFrom<&ParameterList> for FloatArray {
                 .iter()
                 .map(|(n, v)| -> Result<(i32, f32)> {
                     Ok((
-                        super::get_value_index(n.hash())?,
+                        super::get_value_index(n.hash())
+                            .context(format!("FloatArray has invalid key: {}", n))?,
                         v.as_f32().context("FloatArray contains non-float")?
                     ))
                 })
