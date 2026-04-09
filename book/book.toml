@@ -1,6 +1,6 @@
 [book]
 authors = ["Caleb Smith"]
 language = "en"
-multilingual = false
+#multilingual = false
 src = "src"
 title = "U-King Mod Manager"
