@@ -1,5 +1,5 @@
 use std::sync::LazyLock;
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use roead::aamp::{Name, ParameterList};
 use serde::{Deserialize, Serialize};
 use ext_bit_index::BitIndex;
@@ -109,9 +109,8 @@ impl TryFrom<&ParameterList> for Element {
             .get("TypeIndex")
             .context("Missing TypeIndex")?
             .as_i32()
-            .context("TypeIndex not i32")?
-            .into();
-        match type_index {
+            .context("TypeIndex not i32")?;
+        match type_index.into() {
             ResType::AbsTemperatureBlender |
             ResType::BoneBlender |
             ResType::DiffAngleYBlender |
@@ -142,7 +141,7 @@ impl TryFrom<&ParameterList> for Element {
             ResType::WindVelocityBlender |
             ResType::YSpeedBlender |
             ResType::ZEx00ExposureBlender => Ok(Element::Blender(
-                value.try_into().context("Invalid Blender")?
+                value.try_into().context("Bas file has invalid Blender")?
             )),
             ResType::AbsTemperatureSelector |
             ResType::ArmorSelector |
@@ -210,7 +209,7 @@ impl TryFrom<&ParameterList> for Element {
             ResType::WeightSelector |
             ResType::YSpeedSelector |
             ResType::ZEx00ExposureSelector => Ok(Element::Selector(
-                value.try_into().context("Invalid Selector")?
+                value.try_into().context("Bas file has invalid Selector")?
             )),
             ResType::BoneVisibilityAsset |
             ResType::MatVisibilityAsset |
@@ -218,22 +217,25 @@ impl TryFrom<&ParameterList> for Element {
             ResType::ShaderParamColorAsset |
             ResType::ShaderParamTexSRTAsset |
             ResType::TexturePatternAsset => Ok(Element::AssetEx(
-                value.try_into().context("Invalid AssetEx")?
+                value.try_into().context("Bas file has invalid AssetEx")?
             )),
             ResType::ClearMatAnmAsset |
             ResType::NoAnmAsset => Ok(Element::Resource(
-                value.try_into().context("Invalid Resource")?
+                value.try_into().context("Bas file has invalid Resource")?
             )),
             ResType::SequencePlayContainer => Ok(Element::SequencePlayContainer(
-                value.try_into().context("Invalid SequencePlayContainer")?
+                value.try_into().context("Bas file has invalid SequencePlayContainer")?
             )),
             ResType::SkeletalAsset => Ok(Element::SkeletalAsset(
-                value.try_into().context("Invalid SkeletalAsset")?
+                value.try_into().context("Bas file has invalid SkeletalAsset")?
             )),
             ResType::SyncPlayContainer => Ok(Element::ResourceWithChildren(
-                value.try_into().context("Invalid ResourceWithChildren")?
+                value.try_into().context("Bas file has invalid ResourceWithChildren")?
             )),
-            ResType::Invalid => Err(UKError::Other("Invalid Element TypeIndex")),
+            ResType::Invalid => Err(UKError::Any(anyhow!(
+                "Bas file has invalid Element (TypeIndex: {})",
+                type_index
+            ))),
         }
     }
 }
