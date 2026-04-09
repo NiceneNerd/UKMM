@@ -1,6 +1,5 @@
 use anyhow::Context;
-use roead::{objs, params, aamp::ParameterList};
-use roead::aamp::Name;
+use roead::{objs, params, aamp::ParameterList, lists};
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
 use crate::util::DeleteMap;
@@ -52,10 +51,11 @@ impl From<Resource> for ParameterList {
                 )
             ),
             lists: value.extensions
-                .map(|m| m.into_iter()
-                    .map(|(_, v)| -> (Name, ParameterList) { v.into() })
-                    .collect()
-                )
+                .map(|m| lists!(
+                    "Extend" => ParameterList::new().with_lists(
+                        m.into_iter().map(|(_, v)| v.into())
+                    )
+                ))
                 .unwrap_or_default(),
         }
     }

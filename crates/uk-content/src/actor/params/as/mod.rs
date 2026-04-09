@@ -305,18 +305,18 @@ impl TryFrom<(&Name, &ParameterList)> for Extension {
     }
 }
 
-impl From<Extension> for (Name, ParameterList) {
+impl From<Extension> for (&str, ParameterList) {
     fn from(value: Extension) -> Self {
         match value {
-            Extension::FrameCtrl(e) => (Name::from_str("FrameCtrl"), e.into()),
-            Extension::TriggerEvents(e) => (Name::from_str("TriggerEvents"), e.into()),
-            Extension::HoldEvents(e) => (Name::from_str("HoldEvents"), e.into()),
-            Extension::StringArray(e) => (Name::from_str("StringArray"), e.into()),
-            Extension::Ranges(e) => (Name::from_str("Ranges"), e.into()),
-            Extension::FloatArray(e) => (Name::from_str("FloatArray"), e.into()),
-            Extension::IntArray(e) => (Name::from_str("IntArray"), e.into()),
-            Extension::BitIndex(e) => (Name::from_str("BitIndex"), e.into()),
-            Extension::BlenderBone(e) => (Name::from_str("BlenderBone"), e.into()),
+            Extension::FrameCtrl(e) => ("FrameCtrl", e.into()),
+            Extension::TriggerEvents(e) => ("TriggerEvents", e.into()),
+            Extension::HoldEvents(e) => ("HoldEvents", e.into()),
+            Extension::StringArray(e) => ("StringArray", e.into()),
+            Extension::Ranges(e) => ("Ranges", e.into()),
+            Extension::FloatArray(e) => ("FloatArray", e.into()),
+            Extension::IntArray(e) => ("IntArray", e.into()),
+            Extension::BitIndex(e) => ("BitIndex", e.into()),
+            Extension::BlenderBone(e) => ("BlenderBone", e.into()),
         }
     }
 }
