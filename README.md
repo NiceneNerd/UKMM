@@ -45,7 +45,7 @@ Requirements:
 
 - Recent Rust toolchain (MSRV 1.80)
 - A compiler that supports C++17
-- Modern CMake (3.12+)
+- CMake (3.12+ and <4.0)
 
 Nothing else special is required. Generate a release build by running `cargo
 build --release` in the root repo folder. It may take a while.
