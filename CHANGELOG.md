@@ -5,19 +5,23 @@ All notable changes to UKMM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.17.0] - 2026-04-09
 
-This release includes a *breaking change* to the UKMM mod format, specifically to
-the merging of the Map/MainField/Static.smubin file. This means that you will need
-to reinstall and/or repackage all existing UKMM mods that edit that file, to avoid
-errors. The file is located inside Bootup.pack or AocMainField.pack, so it may not
-be obvious from the Info tab.
+This release includes multiple *breaking changes* to the UKMM mod format. This means
+that you will need to reinstall and/or repackage all existing UKMM mods that edit
+map files or AnimSeq ("animation sequence," or bas) files, to avoid errors.
 
 **Added**
 
 - MainField Static merger. Fixes various issues with installing bnps that edit
   the file, including the disappearance of safe zones around the game world
   - This is a breaking change. Any mod that edits Map/MainField/Static.smubin
+    will need to be reinstalled from a loose file or bnp package.
+- New AnimSeq merger. Runs on highest-priority-wins rules, to avoid as many issues
+  as possible. Compatibility patches should be made for animation-changing mods.
+  Also contains several checks for AnimSeq files to ensure they are not missing data
+  or crash due to cyclic or index-out-of-bounds errors.
+  - This is a breaking change. Any mod that edits any Actor/AS/<some_name>.bas file
     will need to be reinstalled from a loose file or bnp package.
 - Support for mods packaged as rar files
 - Thanks @Clonephaze for 2 new features:
