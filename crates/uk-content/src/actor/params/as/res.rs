@@ -10,7 +10,7 @@ use super::{ExtType, ResType, Extension};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Resource {
     type_index: Option<ResType>,
-    extensions: DeleteMap<ExtType, Extension>,
+    extensions: Option<DeleteMap<ExtType, Extension>>,
 }
 
 impl TryFrom<&ParameterList> for Resource {
@@ -30,11 +30,12 @@ impl TryFrom<&ParameterList> for Resource {
                 .into() }),
             extensions: value.lists
                 .get("Extend")
-                .ok_or(UKError::MissingAampKey("Resource missing Extend", Box::from(None)))?
-                .lists
-                .iter()
-                .map(|(k, v)| { Ok((k.try_into()?, (k, v).try_into()?)) })
-                .collect::<Result<_>>()
+                .map(|pl| pl.lists
+                    .iter()
+                    .map(|(k, v)| { Ok((k.try_into()?, (k, v).try_into()?)) })
+                    .collect::<Result<_>>()
+                )
+                .transpose()
                 .context("Resource has invalid Extend")?,
         })
     }
@@ -51,9 +52,11 @@ impl From<Resource> for ParameterList {
                 )
             ),
             lists: value.extensions
-                .into_iter()
-                .map(|(_, v)| -> (Name, ParameterList) { v.into() })
-                .collect(),
+                .map(|m| m.into_iter()
+                    .map(|(_, v)| -> (Name, ParameterList) { v.into() })
+                    .collect()
+                )
+                .unwrap_or_default(),
         }
     }
 }
@@ -66,7 +69,13 @@ impl Mergeable for Resource {
                 .ne(&self.type_index)
                 .then_some(other.type_index)
                 .unwrap_or_default(),
-            extensions: self.extensions.diff(&other.extensions),
+            extensions: other.extensions
+                .as_ref()
+                .map(|o| self.extensions
+                    .as_ref()
+                    .map(|s| s.diff(o))
+                    .unwrap_or_else(|| o.clone())
+                ),
         }
     }
 
@@ -74,7 +83,13 @@ impl Mergeable for Resource {
         Self {
             type_index: diff.type_index
                 .or(self.type_index),
-            extensions: self.extensions.merge(&diff.extensions),
+            extensions: diff.extensions
+                .as_ref()
+                .map(|d| self.extensions
+                    .as_ref()
+                    .map(|s| s.merge(d))
+                    .unwrap_or_else(|| d.clone())
+                ),
         }
     }
 }
