@@ -3,10 +3,35 @@ use std::{
     sync::{atomic::AtomicBool, LazyLock},
 };
 
-#[cfg(windows)]
 use anyhow_ext::Context;
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard};
 pub use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
+
+pub fn copy_dir<T: AsRef<Path>, U: AsRef<Path>>(src: T, dst: U) -> anyhow_ext::Result<()> {
+    for p in jwalk::WalkDir::new(&src) {
+        let from = p?.path();
+        let to = dst.as_ref().join(from.strip_prefix(&src)?);
+        if from.is_dir() && !to.exists() {
+            std::fs::create_dir(to)?;
+        } else if from.is_file() {
+            std::fs::copy(from, to)?;
+        }
+    }
+    Ok(())
+}
+
+pub fn hardlink_dir<T: AsRef<Path>, U: AsRef<Path>>(src: T, dst: U) -> anyhow_ext::Result<()> {
+    for p in jwalk::WalkDir::new(&src) {
+        let from = p?.path();
+        let to = dst.as_ref().join(from.strip_prefix(&src)?);
+        if from.is_dir() && !to.exists() {
+            std::fs::create_dir(to)?;
+        } else if from.is_file() {
+            std::fs::hard_link(from, to)?;
+        }
+    }
+    Ok(())
+}
 
 pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
     fn inner(dir: &Path) -> anyhow_ext::Result<()> {
@@ -19,6 +44,48 @@ pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()
     inner(dir.as_ref())
 }
 
+#[inline(always)]
+pub fn is_symlink(link: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        junction::exists(link).unwrap_or(false) || link.is_symlink()
+    }
+    #[cfg(unix)]
+    {
+        link.is_symlink()
+    }
+}
+
+#[inline(always)]
+pub fn is_symlink_to(link: &Path, dest: &Path) -> bool {
+    #[cfg(windows)]
+    {
+        (junction::exists(link).unwrap_or(false)
+            && junction::get_target(link).expect("Path does not exist") == dest)
+            || (link.is_symlink() && link.read_link().expect("Path does not exist") == dest)
+    }
+    #[cfg(unix)]
+    {
+        link.is_symlink() && link.read_link().expect("Path does not exist") == dest
+    }
+}
+
+#[inline(always)]
+pub fn create_symlink(link: &Path, target: &Path) -> anyhow_ext::Result<()> {
+    #[cfg(windows)]
+    junction::create(target, link).or_else(|_| std::os::windows::fs::symlink_dir(target, link))?;
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(target, link).with_context(|| {
+        format!(
+            "Failed to symlink {} to {}",
+            target.display(),
+            link.display()
+        )
+    })?;
+    Ok(())
+}
+
+#[inline(always)]
 pub fn remove_symlink(link: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
     fn inner(link: &Path) -> anyhow_ext::Result<()> {
         #[cfg(windows)]

@@ -2,7 +2,9 @@ use std::path::PathBuf;
 
 use fs_err as fs;
 use smartstring::alias::String as SmartString;
-use uk_content::util::HashMap;
+use strfmt::Format;
+use uk_content::util::{HashMap, HashSet};
+use uk_localization::string_ext::LocString;
 use uk_manager::mods::Profile as ProfileData;
 use uk_ui::{
     egui::{self, text::LayoutJob, Layout, TextStyle},
@@ -90,10 +92,11 @@ impl ProfileManagerState {
                                     });
                             } else {
                                 ui.centered_and_justified(|ui| {
-                                    ui.label("No mods in profile");
+                                    ui.label("Profile_NoMods".localize());
                                 });
                             }
-                            ui.allocate_space(ui.available_size());
+                            let available = ui.available_size();
+                            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
                         });
                     ui.add_space(8.0);
                     if let Some(new_name) = self.rename.as_mut() {
@@ -101,7 +104,7 @@ impl ProfileManagerState {
                             ui.text_edit_singleline(new_name);
                             if ui
                                 .icon_button(uk_ui::icons::Icon::Check)
-                                .on_hover_text("Save")
+                                .on_hover_text("Generic_Save".localize())
                                 .clicked()
                             {
                                 app.do_update(Message::RenameProfile(
@@ -113,29 +116,34 @@ impl ProfileManagerState {
                     }
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
-                        if ui.button("Rename").clicked() {
+                        if ui.button("Profile_Rename".localize()).clicked() {
                             self.rename = Some(name.to_string());
                         }
-                        if ui.button("Duplicate").clicked() {
+                        if ui.button("Profile_Duplicate".localize()).clicked() {
                             app.do_update(Message::DuplicateProfile(name.to_string()));
                         }
-                        if ui.button("Delete").clicked() {
+                        if ui.button("Generic_Delete".localize()).clicked() {
+                            let message = "Profile_Delete_Confirmation".localize();
+                            let vars = std::collections::HashMap::from(
+                                [("profile_name".to_string(), name.to_string())]
+                            );
                             app.do_update(Message::Confirm(
                                 Message::DeleteProfile(name.to_string()).into(),
-                                format!("Are you sure you want to delete the profile {}?", name),
+                                message.format(&vars).unwrap(),
                             ));
                         }
                     });
                 });
             });
             ui.end_row();
-            ui.allocate_space(ui.available_size());
+            let available = ui.available_size();
+            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
         }
     }
 
     pub fn render(&mut self, app: &App, ctx: &egui::Context) {
         if self.show {
-            egui::Window::new("Profiles")
+            egui::Window::new("Profile_Label".localize())
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
                 .resizable(true)
                 .default_size([320.0, 240.0])
@@ -175,19 +183,33 @@ impl ProfileManagerState {
                                         }
                                     });
                                 });
-                                ui.allocate_space(ui.available_size());
+                                let available = ui.available_size();
+                            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
                             });
                             self.render_selected_profile(app, ui);
                         });
                     ui.add_space(4.0);
                     ui.horizontal(|ui| {
                         ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("Close").clicked() {
+                            if ui.button("Generic_Close".localize()).clicked() {
                                 app.do_update(Message::CloseProfiles);
                             }
                         });
                     });
                 });
         }
+    }
+
+    #[inline]
+    pub fn all_assigned_mod_hashes(&self) -> HashSet<usize> {
+        self.profiles
+            .values()
+            .map(|m| m.mods()
+                .keys()
+                .copied()
+                .collect::<Vec<_>>()
+            )
+            .flatten()
+            .collect()
     }
 }

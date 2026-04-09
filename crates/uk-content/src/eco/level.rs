@@ -1,9 +1,10 @@
+use itertools::Itertools;
 use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 
 use crate::{prelude::*, util::DeleteMap, Result, UKError};
 
-type Series = DeleteMap<String, f32>;
+type Series = DeleteMap<String, (f32, usize)>;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 
@@ -67,22 +68,26 @@ impl TryFrom<&Byml> for LevelSensor {
                             ))?
                             .as_array()?
                             .iter()
-                            .map(|actor| -> Result<(String, f32)> {
+                            .enumerate()
+                            .map(|(idx, actor)| -> Result<(String, (f32, usize))> {
                                 let actor = actor.as_map()?;
                                 Ok((
                                     actor
                                         .get("name")
                                         .ok_or(UKError::MissingBymlKey(
-                                            "Leven sensor enemy entry actor missing name",
+                                            "Level sensor enemy entry actor missing name",
                                         ))?
                                         .as_string()?
                                         .clone(),
-                                    actor
-                                        .get("value")
-                                        .ok_or(UKError::MissingBymlKey(
-                                            "Leven sensor enemy entry actor missing value",
-                                        ))?
-                                        .as_float()?,
+                                    (
+                                        actor
+                                            .get("value")
+                                            .ok_or(UKError::MissingBymlKey(
+                                                "Level sensor enemy entry actor missing value",
+                                            ))?
+                                            .as_float()?,
+                                        idx,
+                                    )
                                 ))
                             })
                             .collect::<Result<_>>()?,
@@ -94,7 +99,8 @@ impl TryFrom<&Byml> for LevelSensor {
                 .ok_or(UKError::MissingBymlKey("Level sensor missing flag section"))?
                 .as_array()?
                 .iter()
-                .map(|flag| -> Result<(String, f32)> {
+                .enumerate()
+                .map(|(idx, flag)| -> Result<(String, (f32, usize))> {
                     let flag = flag.as_map()?;
                     Ok((
                         flag.get("name")
@@ -103,11 +109,14 @@ impl TryFrom<&Byml> for LevelSensor {
                             ))?
                             .as_string()?
                             .clone(),
-                        flag.get("point")
-                            .ok_or(UKError::MissingBymlKey(
-                                "Leven sensor flag entry missing point",
-                            ))?
-                            .as_float()?,
+                        (
+                            flag.get("point")
+                                .ok_or(UKError::MissingBymlKey(
+                                    "Leven sensor flag entry missing point",
+                                ))?
+                                .as_float()?,
+                            idx,
+                        )
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -118,7 +127,16 @@ impl TryFrom<&Byml> for LevelSensor {
                 ))?
                 .as_map()?
                 .iter()
-                .map(|(k, v)| -> Result<(String, f32)> { Ok((k.clone(), v.as_float()?)) })
+                .enumerate()
+                .map(|(i, (k, v))| -> Result<(String, (f32, usize))> {
+                    Ok((
+                        k.clone(),
+                        (
+                            v.as_float()?,
+                            i,
+                        )
+                    ))
+                })
                 .collect::<Result<_>>()?,
             weapon:  hash
                 .get("weapon")
@@ -204,10 +222,11 @@ impl From<LevelSensor> for Byml {
                     map!(
                         "actors" =>  actors
                             .into_iter()
+                            .sorted_by_key(|x| x.1.1)
                             .map(|(actor, value)| -> Byml {
                                 map!(
                                     "name" => Byml::String(actor),
-                                    "value" => Byml::Float(value),
+                                    "value" => Byml::Float(value.0),
                                 )
                             })
                             .collect(),
@@ -217,16 +236,18 @@ impl From<LevelSensor> for Byml {
                 .collect(),
             "flag" => val.flag
                 .into_iter()
+                .sorted_by_key(|x| x.1.1)
                 .map(|(flag, point)| -> Byml {
                     map!(
                         "name" => Byml::String(flag),
-                        "point" => Byml::Float(point)
+                        "point" => Byml::Float(point.0)
                     )
                 })
                 .collect(),
             "setting" => val.setting
                 .into_iter()
-                .map(|(setting, value)| (setting.to_string(), Byml::Float(value)))
+                .sorted_by_key(|x| x.1.1)
+                .map(|(setting, value)| (setting.to_string(), Byml::Float(value.0)))
                 .collect(),
             "weapon" => val.weapon
                 .into_iter()

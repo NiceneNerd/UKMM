@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
 use roead::{
@@ -15,9 +15,10 @@ fn handle_diff_entry(
     nest_root: &str,
     contents: &AampDiffEntry,
 ) -> Result<()> {
+    let empty = ParameterIO::new().to_binary();
     let nested_bytes = sarc
         .get_file(nest_root)
-        .with_context(|| format!("SARC missing file at {nest_root}"))?;
+        .unwrap_or(&empty);
     match contents {
         AampDiffEntry::Sarc(nest_map) => {
             let mut nest_sarc = SarcWriter::from_sarc(&Sarc::new(nested_bytes)?);
@@ -45,7 +46,11 @@ impl BnpConverter {
         let deepmerge_path = self.current_root.join("logs/deepmerge.aamp");
         if deepmerge_path.exists() {
             log::debug!("Processing deepmerge log");
-            let pio = ParameterIO::from_binary(fs::read(deepmerge_path)?)?;
+            let data = fs::read(&deepmerge_path)?;
+            let pio  = match &data[0..4] {
+                b"AAMP" => ParameterIO::from_binary(data),
+                _ => ParameterIO::from_text(fs::read_to_string(&deepmerge_path)?),
+            }?;
             let diff = parse_aamp_diff("FileTable", &pio)?;
             diff.into_par_iter()
                 .try_for_each(|(root, contents)| -> Result<()> {

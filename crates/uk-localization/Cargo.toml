@@ -1,0 +1,11 @@
+[package]
+name = "uk-localization"
+authors = ["Ginger Chody <chodness@gmail.com>"]
+edition = "2024"
+version.workspace = true
+
+[dependencies]
+dashmap = { workspace = true, features = ["rayon"] }
+parking_lot = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }

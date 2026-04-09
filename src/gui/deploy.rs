@@ -1,3 +1,4 @@
+use uk_localization::string_ext::LocString;
 use super::*;
 
 impl App {
@@ -12,34 +13,35 @@ impl App {
                 egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
                     ui.spacing_mut().item_spacing.y = 8.0;
                     ui.with_layout(Layout::top_down(Align::Center), |ui| {
-                        let pending = self.core.deploy_manager().pending();
                         ui.horizontal(|ui| {
                             ui.label(
-                                RichText::new("Method")
+                                RichText::new("Settings_Platform_Deploy_Method".localize())
                                     .family(egui::FontFamily::Name("Bold".into())),
                             );
                             // ui.add_space(8.);
                             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                                ui.label(config.method.name());
+                                ui.label(config.method.name().localize());
                             })
                         });
                         ui.horizontal(|ui| {
                             ui.label(
-                                RichText::new("Auto Deploy")
+                                RichText::new("Settings_Platform_Deploy_Auto".localize())
                                     .family(egui::FontFamily::Name("Bold".into())),
                             );
                             // ui.add_space(8.);
                             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                                 ui.label(if config.auto {
-                                    RichText::new("Yes").color(visuals::GREEN)
+                                    RichText::new("Generic_Yes".localize())
+                                        .color(visuals::GREEN)
                                 } else {
-                                    RichText::new("No").color(visuals::RED)
+                                    RichText::new("Generic_No".localize())
+                                        .color(visuals::RED)
                                 });
                             })
                         });
                         ui.vertical(|ui| {
                             ui.label(
-                                RichText::new("Target Folder")
+                                RichText::new("Settings_Platform_Deploy_Output".localize())
                                     .family(egui::FontFamily::Name("Bold".into())),
                             );
                             let mut job = LayoutJob::simple_singleline(
@@ -80,31 +82,42 @@ impl App {
                                 egui::Frame::none().show(ui, |ui| {
                                     if let Some(ref exe) = config.executable {
                                         ui.add_space(4.);
-                                        if ui.button("Open Emulator").clicked() {
+                                        if ui.button("Deploy_OpenEmu".localize()).clicked() {
                                             let cmd = util::default_shell();
+                                            #[cfg(windows)]
+                                            let user_arg = shlex::split(exe)
+                                                    .map(|v| {
+                                                        [
+                                                            "&".to_string(),
+                                                            v.iter()
+                                                                .map(|s| format!("'{}'", s))
+                                                                .collect::<Vec<_>>()
+                                                                .join(" "),
+                                                        ].join(" ")
+                                                    })
+                                                    .unwrap_or_default();
+                                            #[cfg(not(windows))]
+                                            let user_arg = exe;
                                             let (shell, arg) = (&cmd.0, &cmd.1);
                                             let _ = std::process::Command::new(shell)
                                                 .args(arg.iter())
-                                                .arg(exe)
+                                                .arg(user_arg)
                                                 .spawn();
                                         }
                                     }
-                                    if !config.auto || self.core.deploy_manager().pending() {
-                                        if ui
-                                            .add_enabled(pending, egui::Button::new("Deploy"))
-                                            .clicked()
-                                        {
-                                            self.do_update(super::Message::Deploy);
-                                        }
-                                        if config.auto {
-                                            ui.label(
-                                                RichText::new(
-                                                    "Auto deploy incomplete, please deploy \
-                                                     manually",
-                                                )
-                                                .color(visuals::RED),
-                                            );
-                                        }
+                                    if ui
+                                        .add(egui::Button::new("Tab_Deploy".localize()))
+                                        .clicked()
+                                    {
+                                        self.do_update(super::Message::Deploy);
+                                    }
+                                    if config.auto && self.core.deploy_manager().pending() {
+                                        ui.label(
+                                            RichText::new(
+                                                "Deploy_Auto_Failed".localize()
+                                            )
+                                            .color(visuals::RED),
+                                        );
                                     }
                                 });
                             },
@@ -114,7 +127,7 @@ impl App {
             }
             None => {
                 ui.centered_and_justified(|ui| {
-                    ui.label("No deployment config for current platform");
+                    ui.label("Deploy_NoConfig".localize());
                 });
             }
         }

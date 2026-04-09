@@ -1,3 +1,6 @@
+use strfmt::Format;
+use uk_content::prelude::Endian;
+use uk_localization::string_ext::LocString;
 use super::*;
 
 impl App {
@@ -185,18 +188,20 @@ impl App {
                 }
                 Message::DeleteProfile(profile) => {
                     self.do_task(move |core| {
-                        let path = core.settings().profiles_dir().join(profile);
+                        let path = core.settings().profiles_dir().join(profile.as_str());
                         fs::remove_dir_all(path)?;
-                        Ok(Message::ReloadProfiles)
+                        Ok(Message::CleanProfile(profile))
                     })
                 }
                 Message::DuplicateProfile(profile) => {
                     self.do_task(move |core| {
                         let profiles_dir = core.settings().profiles_dir();
-                        dircpy::copy_dir(
-                            profiles_dir.join(&profile),
-                            profiles_dir.join(profile + "_copy"),
+                        let new_profile = format!("{profile}_copy");
+                        uk_manager::util::copy_dir(
+                            profiles_dir.join(profile),
+                            profiles_dir.join(&new_profile),
                         )?;
+                        core.mod_manager().add_profile(new_profile.into());
                         Ok(Message::ReloadProfiles)
                     });
                 }
@@ -206,6 +211,23 @@ impl App {
                         fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
                         Ok(Message::ReloadProfiles)
                     })
+                }
+                Message::CleanProfile(profile) => {
+                    let mut state = self.profiles_state.borrow_mut();
+                    let mods = state
+                        .profiles
+                        .get(profile.as_str())
+                        .unwrap()
+                        .mods()
+                        .iter()
+                        .map(|(h, m)| (*h, m.path.clone()))
+                        .collect::<HashMap<_,_>>();
+                    state.reload(&self.core);
+                    let assigned = state.all_assigned_mod_hashes();
+                    mods.iter()
+                        .filter(|(h, _)| !assigned.contains(h))
+                        .for_each(|(_, p)| fs::remove_file(p).unwrap_or_default());
+                    self.busy.set(false);
                 }
                 Message::ReloadProfiles => {
                     self.profiles_state.borrow_mut().reload(&self.core);
@@ -227,13 +249,16 @@ impl App {
                     self.theme = theme;
                     self.dock_style = uk_ui::visuals::style_dock(&ctx.style());
                 }
+                Message::SetLanguage(lang) => {
+                    LOCALIZATION.write().update_language(&lang);
+                }
                 Message::SelectFile => {
                     if let Some(mut paths) = rfd::FileDialog::new()
-                        .set_title("Select a Mod")
-                        .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
+                        .set_title("Mod_Select_Title".localize())
+                        .add_filter("Any mod (*.zip, *.rar, *.7z, *.bnp, rules.txt)", &["zip", "rar", "7z", "bnp", "txt"])
                         .add_filter("UKMM Mod (*.zip)", &["zip"])
                         .add_filter("BCML Mod (*.bnp)", &["bnp"])
-                        .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
+                        .add_filter("Legacy Mod (*.zip, *.rar, *.7z, rules.txt)", &["zip", "rar", "7z", "txt"])
                         .add_filter("All files (*.*)", &["*"])
                         .pick_files()
                         .filter(|p| !p.is_empty())
@@ -267,7 +292,11 @@ impl App {
                     {
                         self.do_update(Message::Error(anyhow_ext::anyhow!(
                             "Mod is for {:?}, current mode is {}",
-                            mod_.meta.platform,
+                            match mod_.meta.platform {
+                                ModPlatform::Specific(Endian::Little) => "Switch",
+                                ModPlatform::Specific(Endian::Big) => "Wii U",
+                                ModPlatform::Universal => "any console",
+                            },
                             self.platform()
                         )));
                     } else if !mod_.meta.options.is_empty() {
@@ -315,11 +344,11 @@ impl App {
                 }
                 Message::ModUpdate => {
                     if let Some(file) = rfd::FileDialog::new()
-                        .set_title("Select a Mod")
-                        .add_filter("Any mod (*.zip, *.7z, *.bnp)", &["zip", "bnp", "7z"])
+                        .set_title("Mod_Select_Title".localize())
+                        .add_filter("Any mod (*.zip, *.rar, *.7z, *.bnp, rules.txt)", &["zip", "rar", "7z", "bnp", "txt"])
                         .add_filter("UKMM Mod (*.zip)", &["zip"])
                         .add_filter("BCML Mod (*.bnp)", &["bnp"])
-                        .add_filter("Legacy Mod (*.zip, *.7z)", &["zip", "7z"])
+                        .add_filter("Legacy Mod (*.zip, *.rar, *.7z, rules.txt)", &["zip", "rar", "7z", "txt"])
                         .add_filter("All files (*.*)", &["*"])
                         .pick_file()
                     {
@@ -400,8 +429,11 @@ impl App {
                     }
                     if !err {
                         self.toasts.add({
-                            let mut toast =
-                                Toast::success(format!("Mod(s) added to profile {}", profile));
+                            let message = "Profile_Added".localize();
+                            let vars = std::collections::HashMap::from(
+                                [("profile_name".to_string(), profile.to_string())]
+                            );
+                            let mut toast = Toast::success(message.format(&vars).unwrap());
                             toast.set_duration(Some(Duration::new(2, 0)));
                             toast
                         });
@@ -434,6 +466,7 @@ impl App {
                     self.do_task(|core| {
                         log::info!("Resetting pending deployment data");
                         core.deploy_manager().reset_pending()?;
+                        core.deploy_manager().save()?;
                         Ok(Message::Noop)
                     })
                 }
@@ -446,6 +479,23 @@ impl App {
                     settings::CONFIG.write().clear();
                 }
                 Message::SaveSettings => {
+                    let mut needs_reset = false;
+                    self.core.settings().platform_config().map(|old_plat| {
+                        old_plat.deploy_config.as_ref().map(|old_dep| {
+                            if let Some(new_plat) = &self.temp_settings.platform_config() {
+                                new_plat.deploy_config.as_ref().map(|new_dep| {
+                                    if old_dep.layout != new_dep.layout ||
+                                        old_dep.method != new_dep.method ||
+                                        old_dep.output != new_dep.output {
+                                        if let Ok(_) = self.core.settings()
+                                            .wipe_output(self.core.settings().current_mode.into()) {
+                                            needs_reset = true;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    });
                     let save_res = self.temp_settings.save().and_then(|_| {
                         self.core.reload()?;
                         Ok(())
@@ -453,7 +503,7 @@ impl App {
                     match save_res {
                         Ok(()) => {
                             self.toasts.add({
-                                let mut toast = Toast::success("Settings saved");
+                                let mut toast = Toast::success("Settings_Saved".localize());
                                 toast.set_duration(Some(Duration::new(2, 0)));
                                 toast
                             });
@@ -463,6 +513,9 @@ impl App {
                             self.package_builder.borrow_mut().reset(self.platform());
                             self.do_update(Message::ClearSelect);
                             self.do_update(Message::ResetMods(None));
+                            if needs_reset {
+                                self.do_update(Message::ResetPending);
+                            }
                         }
                         Err(e) => self.do_update(Message::Error(e)),
                     };
@@ -470,7 +523,7 @@ impl App {
                 Message::HandleSettings => {
                     self.temp_settings = self.core.settings().clone();
                     self.toasts.add({
-                        let mut toast = Toast::success("Settings saved");
+                        let mut toast = Toast::success("Settings_Saved".localize());
                         toast.set_duration(Some(Duration::new(2, 0)));
                         toast
                     });
@@ -563,7 +616,7 @@ impl App {
                     let default_name = sanitise(&builder.meta.name) + ".zip";
                     if let Some(dest) = rfd::FileDialog::new()
                         .add_filter("UKMM Mod", &["zip"])
-                        .set_title("Save Mod Package")
+                        .set_title("Package_Save_Title".localize())
                         .set_file_name(default_name)
                         .save_file()
                     {
@@ -577,7 +630,7 @@ impl App {
                 }
                 Message::ImportCemu => {
                     if let Some(path) = rfd::FileDialog::new()
-                        .set_title("Select Cemu Directory")
+                        .set_title("Settings_SelectFolder_Cemu".localize())
                         .pick_folder()
                     {
                         self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
@@ -592,8 +645,10 @@ impl App {
                 Message::SetChangelog(msg) => self.changelog = Some(msg),
                 Message::CloseChangelog => self.changelog = None,
                 Message::OfferUpdate(version) => {
+                    let message = "Update_Available".localize();
                     self.changelog = Some(format!(
-                        "A new update is available!\n\n{}",
+                        "{}\n\n{}",
+                        message,
                         version.description()
                     ));
                     self.new_version = Some(version);

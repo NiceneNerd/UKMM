@@ -2,6 +2,8 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+
+use std::any::Any;
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -33,6 +35,11 @@ fn main() -> Result<()> {
         AttachConsole(-1);
     }
 
+    // I don't know why I need this and I hate it.
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .unwrap();
+
     match Ukmm::from_env() {
         Ok(command) => {
             cli::Runner::new(command).run()?;
@@ -54,37 +61,8 @@ fn main() -> Result<()> {
                     }
                 }
                 gui::tasks::wait_ipc();
-                // I don't know why I need this and I hate it.
-                rustls::crypto::aws_lc_rs::default_provider()
-                    .install_default()
-                    .unwrap();
                 if let Err(e) = std::panic::catch_unwind(gui::main) {
-                    let error_msg = format!(
-                        "An unrecoverable error occured. Error details: {}",
-                        e.downcast::<String>()
-                            .or_else(|e| {
-                                e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
-                            })
-                            .unwrap_or_else(|_| {
-                                Box::new(
-                                    "An unknown error occured, check the log for possible details."
-                                        .to_string(),
-                                )
-                            })
-                    );
-                    #[cfg(windows)]
-                    unsafe {
-                        let error_msg = error_msg.encode_utf16().collect::<Vec<u16>>();
-                        let title = "Error".encode_utf16().collect::<Vec<u16>>();
-                        MessageBoxW(
-                            0,
-                            error_msg.as_ptr() as *const i8,
-                            title.as_ptr() as *const i8,
-                            0x0 | 0x10,
-                        );
-                    }
-                    #[cfg(not(windows))]
-                    println!("{}", error_msg);
+                    display_error(e);
                     if let Some(file) = logger::LOGGER.log_path() {
                         logger::LOGGER.save_log();
                         println!(
@@ -100,4 +78,33 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn display_error(e: Box<dyn Any + Send>) {
+    let error_msg = format!(
+        "An unrecoverable error occurred. Error details: {}",
+        e.downcast::<String>()
+            .or_else(|e| {
+                e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
+            })
+            .unwrap_or_else(|_| {
+                Box::new(
+                    "An unknown error occurred, check the log for possible details."
+                        .to_string(),
+                )
+            })
+    );
+    #[cfg(windows)]
+    unsafe {
+        let error_msg = error_msg.encode_utf16().collect::<Vec<u16>>();
+        let title = "Error".encode_utf16().collect::<Vec<u16>>();
+        MessageBoxW(
+            0,
+            error_msg.as_ptr() as *const i8,
+            title.as_ptr() as *const i8,
+            0x0 | 0x10,
+        );
+    }
+    #[cfg(not(windows))]
+    println!("{}", error_msg);
 }

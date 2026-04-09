@@ -180,7 +180,7 @@ impl ModPacker {
                 .context("rules.txt missing mod description")?
                 .trim_matches('"')
                 .into(),
-            category: Default::default(),
+            category: crate::ModCategory::Other,
             author: Default::default(),
             masters: Default::default(),
             options: vec![],
@@ -200,7 +200,7 @@ impl ModPacker {
             api: env!("CARGO_PKG_VERSION").into(),
             name: info.name,
             description: info.desc,
-            category: Default::default(),
+            category: crate::ModCategory::Other,
             author: Default::default(),
             masters: Default::default(),
             options: (!info.options.multi.is_empty())
@@ -293,7 +293,7 @@ impl ModPacker {
                 meta,
                 built_resources: Default::default(),
                 compressor: Arc::new(Mutex::new(
-                    zstd::bulk::Compressor::with_dictionary(8, super::DICTIONARY).unwrap(),
+                    zstd::bulk::Compressor::with_dictionary(8, super::DICTIONARY)?,
                 )),
                 _zip_opts: FileOptions::default()
                     .compression_method(zip::CompressionMethod::Stored),
@@ -309,8 +309,7 @@ impl ModPacker {
             .with_context(|| jstr!("Failed to serialize {canon}"))?;
         let zip_path = self
             .current_root
-            .strip_prefix(&self.source_dir)
-            .unwrap()
+            .strip_prefix(&self.source_dir)?
             .join(canon);
         {
             log::trace!("Writing {} to ZIP", canon);
@@ -437,6 +436,10 @@ impl ModPacker {
             log::trace!("Already processed {}, skipping", &canon);
             return Ok(());
         }
+        if canon.starts_with("Pack/Bootup_") {
+            log::trace!("{} must always contain the same single file, skipping direct processing", &canon);
+            return Ok(());
+        }
         if resource.as_binary().is_some() && self.meta.platform == ModPlatform::Universal {
             anyhow_ext::bail!(
                 "The resource {} is not a mergeable asset. Cross-platform mods must consist only \
@@ -454,23 +457,20 @@ impl ModPacker {
         let reference = self
             .masters
             .iter()
-            .filter_map(|master| {
+            .rev()
+            .find_map(|master| {
                 master
-                    .get_resource(canon.as_str())
+                    .get_data(name.as_str())
                     .or_else(|err| {
                         log::trace!("{err}");
-                        master.get_data(ref_name)
-                    })
-                    .inspect_err(|err| log::trace!("{err}"))
-                    .or_else(|err| {
                         if let Some(lang) = canon
-                            .starts_with("Pack/Bootup_")
-                            .then(|| Language::from_path(ref_name.as_ref()))
+                            .starts_with("Message/Msg_")
+                            .then(|| Language::from_message_path(ref_name.as_ref()))
                             .flatten()
                         {
-                            let langs = master.languages();
-                            match langs.iter().find(|l| l.short() == lang.short()) {
-                                Some(ref_lang) => master.get_data(ref_lang.bootup_path().as_str()),
+                            let languages = master.languages();
+                            match languages.iter().find(|l| l.short() == lang.short()) {
+                                Some(ref_lang) => master.get_data(ref_lang.message_path().as_str()),
                                 None => Err(err),
                             }
                         } else {
@@ -478,8 +478,7 @@ impl ModPacker {
                         }
                     })
                     .ok()
-            })
-            .last();
+            });
         log::trace!("Resource {} has a master: {}", &canon, reference.is_some());
         if let (Some(res), Some(ref_res)) = (
             resource.as_mergeable(),
@@ -501,6 +500,14 @@ impl ModPacker {
             }
             log::trace!("Diffing {}", &canon);
             resource = ResourceData::Sarc(ref_sarc.diff(sarc));
+        } else if let (Some(bin), Some(ref_bin)) = (
+            resource.as_binary(),
+            reference.as_ref().and_then(|rrd| rrd.as_binary()),
+        ) {
+            if ref_bin == bin {
+                log::trace!("{} not modded, skipping", &canon);
+                return Ok(());
+            }
         }
 
         self.write_resource(&canon, &resource)?;
@@ -515,11 +522,12 @@ impl ModPacker {
             }
             let name = file
                 .name()
-                .with_context(|| jstr!("File in SARC missing name"))?;
-            let mut canon = canonicalize(name);
-            if is_aoc {
-                canon.insert_str(0, "Aoc/0010/");
-            }
+                .with_context(|| jstr!("File in SARC missing name"))
+                .map(|n| match is_aoc {
+                    true => format!("Aoc/0010/{n}"),
+                    false => n.to_owned(),
+                })?;
+            let canon = canonicalize(&name);
             let file_data = decompress_if(file.data);
 
             if !self.hash_table.is_file_modded(&canon, &*file_data, true) && !is_new_sarc {
@@ -527,7 +535,7 @@ impl ModPacker {
                 continue;
             }
 
-            let resource = ResourceData::from_binary(name, &*file_data).with_context(|| {
+            let resource = ResourceData::from_binary(&name, &*file_data).with_context(|| {
                 jstr!("Failed to parse resource {&canon} in SARC {&path.display().to_string()}")
             })?;
             if let ResourceData::Mergeable(
@@ -540,7 +548,7 @@ impl ModPacker {
                     v.1
                 );
             }
-            self.process_resource(name.into(), canon.clone(), resource, is_new_sarc)?;
+            self.process_resource((&name).into(), canon.clone(), resource, is_new_sarc)?;
             if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                 log::trace!(
                     "Resource {} in SARC {} is a mergeable SARC, processing contents",
@@ -724,7 +732,7 @@ mod tests {
                 platform: ModPlatform::Specific(Endian::Big),
                 name: "Test Mod".into(),
                 version: "0.1.0".into(),
-                category: "Overhaul".into(),
+                category: crate::ModCategory::Overhaul,
                 author: "Lord Caleb".into(),
                 description: "A test mod".into(),
                 masters: IndexMap::default(),

@@ -19,7 +19,7 @@ impl Mergeable for Msyt {
             entries: other
                 .entries
                 .iter()
-                .filter(|&(k, v)| (self.entries.get(k) != Some(v)))
+                .filter(|&(k, v)| self.entries.get(k) != Some(v))
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect(),
         }

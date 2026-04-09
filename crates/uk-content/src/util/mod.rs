@@ -1,5 +1,6 @@
 mod collections;
 pub mod converts;
+pub mod parsers;
 
 use std::{collections::BTreeMap, str::FromStr};
 
@@ -108,7 +109,7 @@ pub fn diff_byml_shallow(base: &Byml, other: &Byml) -> Byml {
                 })
                 .chain(
                     base.keys()
-                        .filter(|&key| (!other.contains_key(key)))
+                        .filter(|&key| !other.contains_key(key))
                         .map(|key| (key.clone(), Byml::Null)),
                 )
                 .collect(),
@@ -140,7 +141,7 @@ pub fn simple_index_diff<T: Clone + PartialEq>(
 ) -> BTreeMap<usize, T> {
     other
         .iter()
-        .filter(|&(i, other_item)| (base.get(i) != Some(other_item)))
+        .filter(|&(i, other_item)| base.get(i) != Some(other_item))
         .map(|(i, other_item)| (*i, other_item.clone()))
         .collect()
 }
@@ -333,7 +334,7 @@ impl<'a, I> NamedEnumerate<'a, I> {
             count: 0,
             name,
             buffer: {
-                let mut vec = Vec::with_capacity(name.len() + 4);
+                let mut vec = Vec::with_capacity(name.len() + 5);
                 vec.extend(name.as_bytes());
                 vec
             },
@@ -344,7 +345,7 @@ impl<'a, I> NamedEnumerate<'a, I> {
     pub fn with_padding<const N: usize>(mut self) -> Self {
         self.padding = Some((
             unsafe { std::str::from_utf8_unchecked(&[b'0'; N]) },
-            Vec::with_capacity(N),
+            Vec::with_capacity(5),
         ));
         self
     }
@@ -371,10 +372,10 @@ where
         self.count += 1;
         let name_len = self.name.len();
         let name = unsafe {
-            self.buffer.set_len(u16::MAX as usize);
+            self.buffer.set_len(self.buffer.capacity());
             let written_len = {
                 let write_buffer = if let Some((_, ref mut buffer)) = self.padding {
-                    buffer.set_len(u16::MAX as usize);
+                    buffer.set_len(buffer.capacity());
                     buffer.as_mut_slice()
                 } else {
                     &mut self.buffer[name_len..]

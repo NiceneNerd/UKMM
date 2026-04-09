@@ -29,7 +29,7 @@ impl Mergeable for FontArchive {
             other
                 .0
                 .iter()
-                .filter(|&(n, d)| (self.0.get(n) != Some(d)))
+                .filter(|&(n, d)| self.0.get(n) != Some(d))
                 .map(|(n, d)| (n.clone(), d.clone()))
                 .collect(),
         )
@@ -55,7 +55,7 @@ impl Mergeable for FontArchive {
 }
 
 impl Resource for FontArchive {
-    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
         let sarc = Sarc::new(data.as_ref())?;
         Self::try_from(&sarc)
     }

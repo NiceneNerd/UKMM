@@ -7,6 +7,7 @@ use std::{
 use anyhow::Result;
 use parking_lot::{Mutex, RwLock};
 use rustc_hash::{FxHashMap, FxHasher};
+use uk_localization::string_ext::LocString;
 use uk_manager::mods::Mod;
 use uk_mod::Manifest;
 #[allow(deprecated)]
@@ -71,15 +72,16 @@ impl Component for ModInfo<'_> {
             ui.spacing_mut().item_spacing.y = 8.;
             ui.add_space(8.);
             if let Some(preview) = self.preview() {
-                preview.show_max_size(ui, ui.available_size());
+                let available = ui.available_size();
+                preview.show_max_size(ui, [available.x.max(0.0), available.y.max(0.0)].into());
                 ui.add_space(8.);
             }
             let ver = mod_.meta.version.to_string();
             [
-                ("Name", mod_.meta.name.as_str()),
-                ("Version", ver.as_str()),
-                ("Category", mod_.meta.category.as_str()),
-                ("Author", mod_.meta.author.as_str()),
+                ("Info_Name".localize(), mod_.meta.name.as_str()),
+                ("Info_Version".localize(), ver.as_str()),
+                ("Info_Category".localize(), mod_.meta.category.into()),
+                ("Info_Author".localize(), mod_.meta.author.as_str()),
             ]
             .into_iter()
             .filter(|(_, v)| !v.is_empty())
@@ -92,7 +94,8 @@ impl Component for ModInfo<'_> {
                     })
                 });
             });
-            ui.label(RichText::new("Description").family(egui::FontFamily::Name("Bold".into())));
+            ui.label(RichText::new("Info_Description".localize())
+                .family(egui::FontFamily::Name("Bold".into())));
             ui.add_space(4.);
             let md_cache = ui.data_mut(|d| {
                 d.get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
@@ -109,7 +112,7 @@ impl Component for ModInfo<'_> {
             if !mod_.meta.options.is_empty() {
                 ui.horizontal(|ui| {
                     ui.label(
-                        RichText::new("Enabled Options")
+                        RichText::new("Info_Options".localize())
                             .family(egui::FontFamily::Name("Bold".into())),
                     );
                     ui.add_space(8.);
@@ -127,11 +130,12 @@ impl Component for ModInfo<'_> {
                         });
                     });
                 } else {
-                    ui.label("No options enabled");
+                    ui.label("Info_Options_None".localize());
                 }
                 ui.add_space(4.0);
             }
-            ui.label(RichText::new("Manifest").family(egui::FontFamily::Name("Bold".into())));
+            ui.label(RichText::new("Info_Manifest".localize())
+                .family(egui::FontFamily::Name("Bold".into())));
             match mod_.manifest() {
                 Ok(manifest) => render_manifest(&manifest, ui),
                 Err(e) => {
@@ -157,7 +161,8 @@ pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
             manifest.content_files.hash(&mut hasher);
             let mut roots = ROOTS.write();
             let content_root = roots.entry(hasher.finish()).or_insert_with(|| {
-                let mut root = PathNode::dir("Base Files");
+                let val = "Info_Manifest_BaseFiles".localize();
+                let mut root = PathNode::dir(&val);
                 manifest.content_files.iter().for_each(|file| {
                     root.build_tree(&file.split('/').map(|s| s.to_owned()).collect(), 0);
                 });
@@ -170,7 +175,8 @@ pub fn render_manifest(manifest: &Manifest, ui: &mut Ui) {
             manifest.aoc_files.hash(&mut hasher);
             let mut roots = ROOTS.write();
             let aoc_root = roots.entry(hasher.finish()).or_insert_with(|| {
-                let mut root = PathNode::dir("DLC Files");
+                let val = "Info_Manifest_DLCFiles".localize();
+                let mut root = PathNode::dir(&val);
                 manifest.aoc_files.iter().for_each(|file| {
                     root.build_tree(&file.split('/').map(|s| s.to_owned()).collect(), 0);
                 });

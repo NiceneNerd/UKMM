@@ -1,4 +1,5 @@
 #![allow(unstable_name_collisions)]
+use uk_localization::string_ext::LocString;
 use std::{
     ops::Deref,
     path::{Path, PathBuf},
@@ -9,8 +10,9 @@ use anyhow::Result;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
-use uk_content::constants::Language;
-use uk_manager::settings::{DeployConfig, Platform, PlatformSettings};
+use uk_content::{constants::Language, prelude::Endian};
+use uk_localization::LocLang;
+use uk_manager::{settings::{DeployConfig, Platform, PlatformSettings}};
 use uk_reader::ResourceReader;
 use uk_ui::{
     egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
@@ -18,7 +20,7 @@ use uk_ui::{
     icons::{self, IconButtonExt},
     visuals::Theme,
 };
-use uk_util::{OptionExt, OptionResultExt};
+use uk_util::OptionResultExt;
 
 use super::{App, Message};
 
@@ -133,10 +135,24 @@ impl TryFrom<PlatformSettingsUI> for PlatformSettings {
                 aoc_dir,
                 ..
             } => {
+                let endian = content_dir
+                    .as_ref()
+                    .and_then(|p| p.to_string_lossy()
+                        .contains("content")
+                        .then_some(Endian::Big)
+                        .or(Some(Endian::Little))
+                    )
+                    .ok_or_else(||
+                        uk_reader::ROMError::MissingDumpDir(
+                            "Base",
+                            content_dir.clone().unwrap_or_default()
+                        )
+                    )?;
                 Arc::new(ResourceReader::from_unpacked_dirs(
                     content_dir,
                     update_dir,
                     aoc_dir,
+                    endian,
                 )?)
             }
             DumpType::ZArchive { host_path, .. } => {
@@ -179,53 +195,93 @@ pub static CONFIG: LazyLock<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
     LazyLock::new(|| RwLock::new(Default::default()));
 
 fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut Ui) -> bool {
-    ui.label("Deployment");
+    ui.label("Settings_Platform_Deploy".localize());
     let mut changed = false;
     ui.group(|ui| {
-        ui.allocate_space([ui.available_width(), -8.0].into());
+        let width = ui.available_width().max(0.0);
+        ui.allocate_space([width, 0.0].into());
+        let mut name = "Settings_Platform_Deploy_Method".localize();
+        let mut description = "Settings_Platform_Deploy_Method_Desc".localize();
         render_setting(
-            "Deploy Method",
-            "There are three methods of deployment: copying, hard linking, and symlinking. \
-             Generally copying is slow and should be avoided if possible. For more on this, \
-             consult the docs.",
+            &name,
+            &description,
             ui,
             |ui| {
                 changed |= ui
                     .radio_value(
                         &mut config.method,
                         uk_manager::settings::DeployMethod::Copy,
-                        "Copy",
+                        "Settings_Platform_Deploy_Method_Copy".localize(),
                     )
                     .changed();
                 changed |= ui
                     .radio_value(
                         &mut config.method,
                         uk_manager::settings::DeployMethod::HardLink,
-                        "Hard Links",
+                        "Settings_Platform_Deploy_Method_HardLink".localize(),
                     )
                     .changed();
                 changed |= ui
                     .radio_value(
                         &mut config.method,
                         uk_manager::settings::DeployMethod::Symlink,
-                        "Symlink",
+                        "Settings_Platform_Deploy_Method_Symlink".localize(),
                     )
                     .changed();
             },
         );
+        name = "Settings_Platform_Deploy_Layout".localize();
+        description = match platform {
+            Platform::WiiU => "Settings_Platform_Deploy_Layout_WiiU_Desc".localize(),
+            Platform::Switch => "Settings_Platform_Deploy_Layout_NX_Desc".localize(),
+        };
         render_setting(
-            "Auto Deploy",
-            "Whether to automatically deploy changes to the mod configuration every time they are \
-             applied.",
+            &name,
+            &description,
+            ui,
+            |ui| {
+                changed |= ui
+                    .radio_value(
+                        &mut config.layout,
+                        uk_manager::settings::DeployLayout::WithoutName,
+                        match platform {
+                            Platform::WiiU =>
+                                "Settings_Platform_Deploy_Layout_WiiU_WithoutName".localize(),
+                            Platform::Switch =>
+                                "Settings_Platform_Deploy_Layout_NX_WithoutName".localize(),
+                        },
+                    )
+                    .changed();
+                changed |= ui
+                    .radio_value(
+                        &mut config.layout,
+                        uk_manager::settings::DeployLayout::WithName,
+                        match platform {
+                            Platform::WiiU =>
+                                "Settings_Platform_Deploy_Layout_WiiU_WithName".localize(),
+                            Platform::Switch =>
+                                "Settings_Platform_Deploy_Layout_NX_WithName".localize(),
+                        },
+                    )
+                    .changed();
+            }
+        );
+        name = "Settings_Platform_Deploy_Auto".localize();
+        description = "Settings_Platform_Deploy_Auto_Desc".localize();
+        render_setting(
+            &name,
+            &description,
             ui,
             |ui| {
                 changed |= ui.checkbox(&mut config.auto, "").changed();
             },
         );
         if platform == Platform::WiiU {
+            name = "Settings_Platform_Deploy_Rules".localize();
+            description = "Settings_Platform_Deploy_Rules_Desc".localize();
             render_setting(
-                "Deploy rules.txt",
-                "Automatically adds a rules.txt file when deploying for Cemu integration.",
+                &name,
+                &description,
                 ui,
                 |ui| {
                     changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
@@ -233,18 +289,21 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             );
             ui.add_space(8.0);
         }
+        name = "Settings_Platform_Deploy_Output".localize();
+        description = "Settings_Platform_Deploy_Output_Desc".localize();
         render_setting(
-            "Output Folder",
-            "Where to deploy the final merged mod pack.",
+            &name,
+            &description,
             ui,
             |ui| {
                 changed |= ui.folder_picker(&mut config.output).changed();
             },
         );
+        name = "Settings_Platform_Deploy_Emu".localize();
+        description = "Settings_Platform_Deploy_Emu_Desc".localize();
         render_setting(
-            "Emulator Executable",
-            "Command line for the emulator to run for playing the game. This can be an \
-             arbitrarily complex command which will be passed to your default shell.",
+            &name,
+            &description,
             ui,
             |ui| {
                 changed |= ui
@@ -266,9 +325,11 @@ fn render_platform_config(
     let config = conf_lock
         .entry(platform)
         .or_insert_with(|| config.as_ref().map(|c| c.into()).unwrap_or_default());
+    let mut name = "Settings_Platform_Language".localize();
+    let mut description = "Settings_Platform_Language_Desc".localize();
     render_setting(
-        "Language",
-        "Select the language and region corresponding to your game version and settings.",
+        &name,
+        &description,
         ui,
         |ui| {
             egui::ComboBox::new(format!("lang-{platform}"), "")
@@ -283,18 +344,23 @@ fn render_platform_config(
         },
     );
     ui.add_space(8.0);
-    ui.label("Game Dump");
+    ui.label("Settings_Platform_Dump".localize());
     ui.group(|ui| {
-        ui.allocate_space([ui.available_width(), -8.0].into());
+        let width = ui.available_width().max(0.0);
+        ui.allocate_space([width, 0.0].into());
         if platform == Platform::WiiU {
+            name = "Settings_Platform_Dump_Type".localize();
+            description = "Settings_Platform_Dump_Type_Desc".localize();
             render_setting(
-                "Dump Type",
-                "For Wii U, you have two supported dump options: unpacked MLC files (most common) \
-                 or a .wua file (Cemu-specific format).",
+                &name,
+                &description,
                 ui,
                 |ui| {
                     if ui
-                        .radio(matches!(config.dump, DumpType::Unpacked { .. }), "Unpacked")
+                        .radio(
+                            matches!(config.dump, DumpType::Unpacked { .. }),
+                            "Settings_Platform_Dump_Type_Unpacked".localize()
+                        )
                         .clicked()
                     {
                         config.dump = DumpType::Unpacked {
@@ -306,7 +372,10 @@ fn render_platform_config(
                         changed = true;
                     }
                     if ui
-                        .radio(matches!(config.dump, DumpType::ZArchive { .. }), "WUA")
+                        .radio(
+                            matches!(config.dump, DumpType::ZArchive { .. }),
+                            "Settings_Platform_Dump_Type_WUA".localize()
+                        )
                         .clicked()
                     {
                         config.dump = DumpType::ZArchive {
@@ -327,51 +396,36 @@ fn render_platform_config(
                 update_dir,
                 aoc_dir,
             } => {
+                (name, description) = match platform {
+                    Platform::WiiU => (
+                        "Settings_Platform_Dump_WiiU_Base".localize(),
+                        "Settings_Platform_Dump_WiiU_Base_Desc".localize()
+                    ),
+                    Platform::Switch => (
+                        "Settings_Platform_Dump_NX_Base".localize(),
+                        "Settings_Platform_Dump_NX_Base_Desc".localize()
+                    ),
+                };
+                render_setting(
+                    &name,
+                    &description,
+                    ui,
+                    |ui| {
+                        if ui
+                            .folder_picker(content_dir.get_or_insert_default())
+                            .changed()
+                        {
+                            changed = true;
+                            *host_path = "/".into();
+                        }
+                    },
+                );
                 if platform == Platform::WiiU {
+                    name = "Settings_Platform_Dump_Update".localize();
+                    description = "Settings_Platform_Dump_Update_Desc".localize();
                     render_setting(
-                        "Base Folder",
-                        "This folder is the root of the plain, v1.0 BOTW assets which were \
-                         included on the disk. If you are using Cemu, it will usually be in your \
-                         MLC folder, with a path such as this (part of the title ID will be \
-                         different for the EU or JP versions): \
-                         mlc01/usr/title/00050000/101C9400/content",
-                        ui,
-                        |ui| {
-                            if ui
-                                .folder_picker(content_dir.get_or_insert_default())
-                                .changed()
-                            {
-                                changed = true;
-                                *host_path = "/".into();
-                            }
-                        },
-                    );
-                }
-                if platform == Platform::Switch {
-                    render_setting(
-                        "Base with Update Folder",
-                        "Following the usual guides with nxdumptool, this will usually be the \
-                         combined base game and v1.6.0 update files. The path will probably \
-                         contain the title ID of 01007EF00011E800 and end in romfs.",
-                        ui,
-                        |ui| {
-                            if ui
-                                .folder_picker(content_dir.get_or_insert_default())
-                                .changed()
-                            {
-                                changed = true;
-                                *host_path = "/".into();
-                            }
-                        },
-                    );
-                }
-                if platform == Platform::WiiU {
-                    render_setting(
-                        "Update Folder",
-                        "The contains the BOTW v1.5.0 update data. It is absolutely necessary for \
-                         the game to even run. If you are using Cemu, it will usually have a \
-                         similar path to the base folder, but with an E at the end of the first \
-                         half of the title ID: mlc01/usr/title/0005000E/101C9400/content",
+                        &name,
+                        &description,
                         ui,
                         |ui| {
                             if ui
@@ -384,38 +438,22 @@ fn render_platform_config(
                         },
                     );
                 }
-                if platform == Platform::WiiU {
-                    render_setting(
-                        "DLC Folder",
-                        "This contains most of the assets for the BOTW DLC. This one does not \
-                         usually end in content, but must go one level further into a 0010 folder \
-                         because of the way multiple kinds of add-on content are handled. If you \
-                         are using Cemu, it will usually have a similar path to the base folder, \
-                         but with a C at the end of the first half of the title ID: \
-                         mlc01/usr/title/0005000C/101C9400/content/0010",
-                        ui,
-                        |ui| {
-                            if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
-                                changed = true;
-                                *host_path = "/".into();
-                            }
-                        },
-                    );
-                }
-                if platform == Platform::Switch {
-                    render_setting(
-                        "DLC Folder",
-                        "This contains most of the assets for the BOTW DLC. The path will \
-                         probably contain a title ID like 01007EF00011F001 and end in romfs.",
-                        ui,
-                        |ui| {
-                            if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
-                                changed = true;
-                                *host_path = "/".into();
-                            }
-                        },
-                    );
-                }
+                name = "Settings_Platform_Dump_DLC".localize();
+                description = match platform {
+                    Platform::WiiU => "Settings_Platform_Dump_DLC_WiiU_Desc".localize(),
+                    Platform::Switch => "Settings_Platform_Dump_DLC_NX_Desc".localize(),
+                };
+                render_setting(
+                    &name,
+                    &description,
+                    ui,
+                    |ui| {
+                        if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
+                            changed = true;
+                            *host_path = "/".into();
+                        }
+                    },
+                );
             }
             DumpType::ZArchive {
                 content_dir: _,
@@ -423,10 +461,11 @@ fn render_platform_config(
                 aoc_dir: _,
                 host_path,
             } => {
+                name = "Settings_Platform_Dump_WUA".localize();
+                description = "Settings_Platform_Dump_WUA_Desc".localize();
                 render_setting(
-                    "WUA Path",
-                    "This should contain the entire BOTW game with the Base, Update, and DLC and \
-                     should have a file extension of .wua",
+                    &name,
+                    &description,
                     ui,
                     |ui| {
                         changed |= ui.file_picker(host_path).changed();
@@ -451,7 +490,7 @@ impl App {
                 ui.add_enabled_ui(platform_config_changed, |ui| {
                     if ui
                         .icon_button(icons::Icon::Save)
-                        .on_hover_text("Save")
+                        .on_hover_text("Generic_Save".localize())
                         .clicked()
                     {
                         if wiiu_changed {
@@ -488,9 +527,10 @@ impl App {
                     }
                     if ui
                         .icon_button(icons::Icon::Reset)
-                        .on_hover_text("Reset")
+                        .on_hover_text("Generic_Reset".localize())
                         .clicked()
                     {
+                        self.do_update(Message::SetLanguage(self.core.settings().lang));
                         CONFIG.write().clear();
                         self.do_update(Message::ResetSettings);
                     }
@@ -500,11 +540,12 @@ impl App {
             ui.vertical(|ui| {
                 let settings = &mut self.temp_settings;
                 let mut theme_change: Option<Theme> = None;
-                egui::CollapsingHeader::new("General")
+                let mut lang_change: Option<LocLang> = None;
+                egui::CollapsingHeader::new("Settings_General".localize())
                     .default_open(true)
                     .show(ui, |ui| {
                         if ui
-                            .icon_text_button("Migrate from BCML", icons::Icon::Import)
+                            .icon_text_button("Settings_Migrate".localize(), icons::Icon::Import)
                             .clicked()
                         {
                             self.channel
@@ -514,10 +555,8 @@ impl App {
                                 .expect("Broken channel");
                         }
                         if ui
-                            .button("Register 1-Click Handler")
-                            .on_hover_text(
-                                "Sets up UKMM on your system to handle GameBanana 1-click links",
-                            )
+                            .button("Settings_OneClick".localize())
+                            .on_hover_text("Settings_OneClick_Desc".localize())
                             .clicked()
                         {
                             match crate::gui::tasks::register_handlers() {
@@ -531,65 +570,109 @@ impl App {
                                 }
                             }
                         }
-                        render_setting("Theme", "User interface theme", ui, |ui| {
-                            egui::ComboBox::new("ui-theme", "")
-                                .selected_text(self.theme.name())
-                                .show_ui(ui, |ui| {
-                                    let mut current_theme = self.theme;
-                                    for theme in uk_ui::visuals::Theme::iter() {
-                                        if ui
-                                            .selectable_value(
-                                                &mut current_theme,
-                                                theme,
-                                                theme.name(),
-                                            )
-                                            .clicked()
-                                        {
-                                            theme_change = Some(theme);
-                                        }
-                                    }
-                                });
-                        });
+                        let mut name = "Settings_Theme".localize();
+                        let mut description = "Settings_Theme_Desc".localize();
                         render_setting(
-                            "Current Mode",
-                            "Select whether to manage the Wii U or Switch version of the game",
+                            &name,
+                            &description,
                             ui,
                             |ui| {
-                                ui.radio_value(&mut settings.current_mode, Platform::WiiU, "Wii U");
+                                egui::ComboBox::new("ui-theme", "")
+                                    .selected_text(self.theme.name())
+                                    .show_ui(ui, |ui| {
+                                        let mut current_theme = self.theme;
+                                        for theme in uk_ui::visuals::Theme::iter() {
+                                            if ui
+                                                .selectable_value(
+                                                    &mut current_theme,
+                                                    theme,
+                                                    theme.name(),
+                                                )
+                                                .clicked()
+                                            {
+                                                theme_change = Some(theme);
+                                            }
+                                        }
+                                    });
+                            }
+                        );
+                        name = "Settings_Language".localize();
+                        description = "Settings_Language_Desc".localize();
+                        render_setting(
+                            &name,
+                            &description,
+                            ui,
+                            |ui| {
+                                egui::ComboBox::new("lang-ukmm", "")
+                                    .selected_text(settings.lang.to_str())
+                                    .show_ui(ui, |ui| {
+                                        for lang in LocLang::iter() {
+                                            if ui
+                                                .selectable_value(
+                                                    &mut settings.lang,
+                                                    *lang,
+                                                    lang.to_str()
+                                                )
+                                                .changed()
+                                            {
+                                                lang_change = Some(*lang);
+                                            }
+                                        };
+                                    });
+                            },
+                        );
+                        name = "Settings_Mode".localize();
+                        description = "Settings_Mode_Desc".localize();
+                        render_setting(
+                            &name,
+                            &description,
+                            ui,
+                            |ui| {
+                                ui.radio_value(
+                                    &mut settings.current_mode,
+                                    Platform::WiiU,
+                                    "Settings_Mode_WiiU".localize(),
+                                );
                                 ui.radio_value(
                                     &mut settings.current_mode,
                                     Platform::Switch,
-                                    "Switch",
+                                    "Settings_Mode_Switch".localize(),
                                 );
                             },
                         );
+                        name = "Settings_Storage".localize();
+                        description = "Settings_Storage_Desc".localize();
                         render_setting(
-                            "Storage Folder",
-                            "UKMM will store mods, profiles, and similar data here.",
+                            &name,
+                            &description,
                             ui,
                             |ui| {
                                 ui.folder_picker(&mut settings.storage_dir);
                             },
                         );
+                        name = "Settings_Sys7z".localize();
+                        description = "Settings_Sys7z_Desc".localize();
                         render_setting(
-                            "Use System 7z",
-                            "By default UKMM will attempt to use 7z from your system PATH to \
-                             extract 7-Zip files (like BNPs). Otherwise it will fall back to a \
-                             slower built-in 7z extraction library. If you have 7z-related \
-                             errors, try disabling this option.",
+                            &name,
+                            &description,
                             ui,
                             |ui| ui.checkbox(&mut settings.system_7z, ""),
                         );
+                        name = "Settings_Changelog".localize();
+                        description = "Settings_Changelog_Desc".localize();
                         render_setting(
-                            "Show Changelog",
-                            "Show a summary of recent changes after UKMM updates.",
+                            &name,
+                            &description,
                             ui,
                             |ui| ui.add(Checkbox::new(&mut settings.show_changelog, "")),
                         );
                     });
-                egui::CollapsingHeader::new("Wii U Config").show(ui, |ui| {
+                egui::CollapsingHeader::new("Settings_Config_WiiU".localize()).show(ui, |ui| {
                     if ui
-                        .icon_text_button("Import Cemu Settings", icons::Icon::Import)
+                        .icon_text_button(
+                            "Settings_Config_WiiU_ImportCemu".localize(),
+                            icons::Icon::Import
+                        )
                         .clicked()
                     {
                         self.channel
@@ -601,12 +684,15 @@ impl App {
                     wiiu_changed =
                         render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
                 });
-                egui::CollapsingHeader::new("Switch Config").show(ui, |ui| {
+                egui::CollapsingHeader::new("Settings_Config_NX".localize()).show(ui, |ui| {
                     switch_changed =
                         render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
                 });
                 if let Some(theme) = theme_change {
                     self.do_update(Message::SetTheme(theme));
+                }
+                if let Some(lang) = lang_change {
+                    self.do_update(Message::SetLanguage(lang));
                 }
             });
             switch_changed |= {
@@ -643,7 +729,7 @@ impl App {
                             || wiiu_changed
                             || switch_changed;
                     ui.add_enabled_ui(platform_config_changed, |ui| {
-                        if ui.button("Save").clicked() {
+                        if ui.button("Generic_Save".localize()).clicked() {
                             if wiiu_changed {
                                 let wiiu_config_ui =
                                     CONFIG.write().get(&Platform::WiiU).unwrap().clone();
@@ -676,7 +762,8 @@ impl App {
                             }
                             self.do_update(Message::SaveSettings);
                         }
-                        if ui.button("Reset").clicked() {
+                        if ui.button("Generic_Reset".localize()).clicked() {
+                            self.do_update(Message::SetLanguage(self.core.settings().lang));
                             CONFIG.write().clear();
                             self.do_update(Message::ResetSettings);
                         }

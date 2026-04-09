@@ -26,14 +26,14 @@ impl TryFrom<&ParameterIO> for AttClientList {
                 .object("AttPos")
                 .ok_or(UKError::MissingAampKey(
                     "Attention client list missing AttPos",
-                    None,
+                    Box::from(None),
                 ))?
                 .clone(),
             att_clients: pio
                 .list("AttClients")
                 .ok_or(UKError::MissingAampKey(
                     "Attention client list missing attention lists",
-                    None,
+                    Box::from(None),
                 ))?
                 .objects
                 .0
@@ -43,13 +43,13 @@ impl TryFrom<&ParameterIO> for AttClientList {
                         obj.get("Name")
                             .ok_or(UKError::MissingAampKey(
                                 "Attention client list client missing name",
-                                None,
+                                Box::from(None),
                             ))?
                             .as_safe_string()?,
                         obj.get("FileName")
                             .ok_or(UKError::MissingAampKey(
                                 "Attention client list client missing filename",
-                                None,
+                                Box::from(None),
                             ))?
                             .as_safe_string()?,
                     ))

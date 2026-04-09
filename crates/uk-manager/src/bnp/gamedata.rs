@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use roead::byml::{Byml, Map};
 use uk_content::{
@@ -80,6 +80,7 @@ impl BnpConverter {
                                     .or_else(|e| {
                                         let mut flag = flag.clone();
                                         flag.as_mut_map()?.insert("DataName".into(), name.into());
+                                        flag.as_mut_map()?.insert("DeleteRev".into(), Byml::I32(-1));
                                         (&flag).try_into().context(e)
                                     })
                                     .with_context(|| {

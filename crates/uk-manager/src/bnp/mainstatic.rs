@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use roead::{
     byml::{Byml, Map},
@@ -12,7 +12,7 @@ use super::BnpConverter;
 fn get_id(item: &Map) -> Result<String> {
     #[inline]
     fn key_from_coords(x: f32, y: f32, z: f32) -> String {
-        format!("{}{}{}", x.ceil(), y.ceil(), z.ceil()).into()
+        format!("{}{}{}", (x * 100000.0f32), (y * 100000.0f32), (z * 100000.0f32)).into()
     }
 
     #[inline]

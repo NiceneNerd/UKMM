@@ -70,7 +70,7 @@
         <Package Id='*'
             Keywords='Installer'
             Description='A new mod manager for The Legend of Zelda: Breath of the Wild. Successor to BCML.'
-            Manufacturer='Caleb Smith'
+            Manufacturer='Caleb Smith, Ginger Chody'
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'

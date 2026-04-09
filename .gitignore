@@ -1,8 +1,11 @@
 /target
+/windows_build
 /.vscode
 tmp.txt
 /crates/uk-mod/test
 jsconfig.json
 sciter.d.ts
 dump.bin
+nest_map.json
 /.cargo/
+/.idea

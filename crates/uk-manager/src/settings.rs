@@ -11,8 +11,11 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DefaultOnError};
 use smartstring::alias::String;
-use uk_content::constants::Language;
+use uk_content::{constants::Language, prelude::Endian};
+use uk_localization::LocLang;
 use uk_reader::ResourceReader;
+
+use crate::util;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Platform {
@@ -105,6 +108,48 @@ pub struct DeployConfig {
     pub cemu_rules: bool,
     #[serde(default)]
     pub executable: Option<std::string::String>,
+    #[serde(default)]
+    pub layout: DeployLayout,
+}
+
+impl DeployConfig {
+    pub fn final_output_paths(&self, endian: Endian) -> (PathBuf, PathBuf) {
+        match endian {
+            Endian::Little => {
+                match self.layout {
+                    DeployLayout::WithoutName => (
+                        self.output.join("01007EF00011E000").join("romfs"),
+                        self.output.join("01007EF00011F001").join("romfs"),
+                    ),
+                    DeployLayout::WithName => (
+                        self.output
+                            .join("01007EF00011E000")
+                            .join("BreathOfTheWild_UKMM")
+                            .join("romfs"),
+                        self.output
+                            .join("01007EF00011F001")
+                            .join("BreathOfTheWild_UKMM")
+                            .join("romfs"),
+                    ),
+                }
+            }
+            Endian::Big => {
+                match self.layout {
+                    DeployLayout::WithoutName => (
+                        self.output.join("content"),
+                        self.output.join("aoc").join("0010"),
+                    ),
+                    DeployLayout::WithName => (
+                        self.output.join("BreathOfTheWild_UKMM").join("content"),
+                        self.output
+                            .join("BreathOfTheWild_UKMM")
+                            .join("aoc")
+                            .join("0010"),
+                    ),
+                }
+            }
+        }
+    }
 }
 
 impl Default for DeployConfig {
@@ -115,6 +160,7 @@ impl Default for DeployConfig {
             auto: false,
             cemu_rules: false,
             executable: None,
+            layout: DeployLayout::WithoutName,
         }
     }
 }
@@ -128,11 +174,28 @@ pub enum DeployMethod {
 
 impl DeployMethod {
     #[inline(always)]
+    pub fn name(&self) -> &'static str {
+        match self {
+            DeployMethod::Copy => "Settings_Platform_Deploy_Method_Copy",
+            DeployMethod::HardLink => "Settings_Platform_Deploy_Method_HardLink",
+            DeployMethod::Symlink => "Settings_Platform_Deploy_Method_Symlink",
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum DeployLayout {
+    #[default]
+    WithoutName,
+    WithName
+}
+
+impl DeployLayout {
+    #[inline(always)]
     pub fn name(&self) -> &str {
         match self {
-            DeployMethod::Copy => "Copy",
-            DeployMethod::HardLink => "Hard Links",
-            DeployMethod::Symlink => "Symlink",
+            DeployLayout::WithoutName => "SD Card",
+            DeployLayout::WithName => "Emulator",
         }
     }
 }
@@ -176,6 +239,7 @@ pub struct Settings {
     pub last_version: Option<String>,
     pub wiiu_config: Option<PlatformSettings>,
     pub switch_config: Option<PlatformSettings>,
+    pub lang: LocLang,
 }
 
 impl Default for Settings {
@@ -189,6 +253,7 @@ impl Default for Settings {
             check_updates: UpdatePreference::Stable,
             show_changelog: true,
             last_version: None,
+            lang: LocLang::English,
         }
     }
 }
@@ -267,6 +332,36 @@ impl Settings {
         );
         fs::write(Self::path(), serde_yaml::to_string(self)?)?;
         log::info!("Settings saved");
+        Ok(())
+    }
+
+    pub fn wipe_output(&self, endian: Endian) -> Result<()> {
+        let (content, aoc) = match endian {
+            Endian::Big => self.wiiu_config
+                .as_ref()
+                .unwrap()
+                .deploy_config
+                .as_ref()
+                .unwrap()
+                .final_output_paths(endian),
+            Endian::Little => self.switch_config
+                .as_ref()
+                .unwrap()
+                .deploy_config
+                .as_ref()
+                .unwrap()
+                .final_output_paths(endian),
+        };
+        if util::is_symlink(content.as_ref()) {
+            util::remove_symlink(content)?;
+        } else if content.exists() {
+            util::remove_dir_all(content)?;
+        }
+        if util::is_symlink(aoc.as_ref()) {
+            util::remove_symlink(aoc)?;
+        } else if aoc.exists() {
+            util::remove_dir_all(aoc)?;
+        }
         Ok(())
     }
 

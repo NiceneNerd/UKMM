@@ -2,7 +2,7 @@
 name = "ukmm"
 description = "A new mod manager for The Legend of Zelda: Breath of the Wild. Successor to BCML."
 repository = "https://github.com/NiceneNerd/ukmm"
-authors = ["Caleb Smith <c.smith@tuta.io>"]
+authors = ["Caleb Smith <c.smith@tuta.io>", "Ginger Chody <chodness@gmail.com>"]
 edition = "2021"
 license = "GPL-3.0-or-later"
 version = { workspace = true }
@@ -20,25 +20,28 @@ product-icon = "assets/ukmm.ico"
 [dependencies]
 anyhow = { workspace = true }
 anyhow_ext = { workspace = true }
-dircpy = { workspace = true }
 dirs2 = { workspace = true }
 eframe = { workspace = true, features = ["glow"] }
 env_logger = "0.11.3"
 flume = { workspace = true }
 fs-err = { workspace = true }
+glob = { workspace = true }
 join_str = { workspace = true }
-jwalk = { workspace = true }
+#jwalk = { workspace = true }
 lenient_semver = { workspace = true }
 log = { workspace = true }
 parking_lot = { workspace = true, features = ["serde"] }
-rayon = { workspace = true }
+#rayon = { workspace = true }
 rfd = { workspace = true }
 rustc-hash = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
+sevenz-rust = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
 ssilide = "0.2.0"
+strfmt = { workspace = true }
+unrar = { workspace = true }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 
 astrolabe = "0.5.1"
@@ -55,6 +58,7 @@ roxmltree = "0.20.0"
 rustls = "0.23.12"
 shlex = "1.3.0"
 uk-content = { path = "crates/uk-content" }
+uk-localization = { path = "crates/uk-localization" }
 uk-manager = { path = "crates/uk-manager" }
 uk-mod = { path = "crates/uk-mod" }
 uk-reader = { path = "crates/uk-reader" }
@@ -77,6 +81,7 @@ winres = "0.1.12"
 members = [
     "crates/uk-content",
     "crates/uk-content-derive",
+    "crates/uk-localization",
     "crates/uk-manager",
     "crates/uk-mod",
     "crates/uk-reader",
@@ -86,17 +91,18 @@ members = [
 ]
 
 [workspace.package]
-version = "0.15.0"
+version = "0.17.0"
 
 [workspace.dependencies]
 anyhow = "1"
 anyhow_ext = "0.2.1"
 dashmap = "6"
-dircpy = "0.3.12"
 dirs2 = "3"
 eframe = { version = "0.28", default-features = false }
 flume = "0.11.0"
 fs-err = "2.9"
+glob = "0.3.2"
+include-flate = "0.3.0"
 indexmap = { version = "2.2.6", features = ["serde"] }
 join_str = "0.1.0"
 jwalk = "0.8.1"
@@ -108,16 +114,19 @@ path-slash = "0.2.1"
 rayon = "1.6"
 rfd = "0.14.1"
 roead = "1"
-rstb = { version = "1", features = ["complex"] }
+rstb = { git = "https://github.com/GingerAvalanche/rstb-rust.git", branch = "chemical", features = ["complex", "botw-data"] }
 rustc-hash = "2"
 sanitise-file-name = "1"
 serde = "1"
 serde_json = "1"
 serde_yaml = "0.9.13"
 serde_with = "3"
+sevenz-rust = "0.6.0"
 smartstring = "1"
+strfmt = "0.2.4"
 thiserror = "1"
 typetag = "0.2.1"
+unrar = "0.5.8"
 zip = { version = "2.1", default-features = false }
 zstd = { version = "0.13.1", features = ["experimental"] }
 
@@ -142,6 +151,8 @@ pr-run-mode = "plan"
 # Whether to install an updater program
 install-updater = true
 [workspace.metadata.dist.github-custom-runners]
+aarch64-apple-darwin = "macos-13"
+x86_64-apple-darwin = "macos-13"
 x86_64-unknown-linux-gnu = "ubuntu-22.04"
 
 # The profile that 'cargo dist' will build with

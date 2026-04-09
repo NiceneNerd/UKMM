@@ -203,25 +203,25 @@ impl<'a> Parser<'a> {
             .object("DemoAIActionIdx")
             .ok_or(UKError::MissingAampKey(
                 "AI program missing DemoAIActionIdx",
-                None,
+                Box::from(None),
             ))?;
         let ais = pio
             .list("AI")
-            .ok_or(UKError::MissingAampKey("AI program missing AI list", None))?;
+            .ok_or(UKError::MissingAampKey("AI program missing AI list", Box::from(None)))?;
         let action_offset = ais.lists.len();
         let actions = pio.list("Action").ok_or(UKError::MissingAampKey(
             "AI program missing Action list",
-            None,
+            Box::from(None),
         ))?;
         let behavior_offset = action_offset + actions.lists.len();
         let behaviors = pio.list("Behavior").ok_or(UKError::MissingAampKey(
             "AI program missing Behavior list",
-            None,
+            Box::from(None),
         ))?;
         let query_offset = behavior_offset + behaviors.lists.len();
         let queries = pio.list("Query").ok_or(UKError::MissingAampKey(
             "AI program missing Query list",
-            None,
+            Box::from(None),
         ))?;
         Ok(Self {
             demos,
@@ -274,7 +274,7 @@ impl<'a> Parser<'a> {
         let def = list
             .object("Def")
             .ok_or_else(|| {
-                UKError::MissingAampKey("AI entry missing Def object", Some(list.into()))
+                UKError::MissingAampKey("AI entry missing Def object", Box::from(Some(list.into())))
             })
             .and_then(AIDef::try_from)
             .context("Failed to parse AI def")?;
@@ -420,7 +420,7 @@ impl<'a> Parser<'a> {
                     .enumerate()
                     .map(|(i, v)| (i + self.action_offset, v, Category::Action)),
             )
-            .filter(|&(i, ..)| (!children.contains(&i)))
+            .filter(|&(i, ..)| !children.contains(&i))
             .map(|(_, list, category)| {
                 let entry = self.entry_from_list(list, category)?;
                 Ok((
@@ -429,7 +429,7 @@ impl<'a> Parser<'a> {
                         .name
                         .as_ref()
                         .ok_or_else(|| {
-                            UKError::MissingAampKey("AI entry def missing name", Some(list.into()))
+                            UKError::MissingAampKey("AI entry def missing name", Box::from(Some(list.into())))
                         })?
                         .clone(),
                     entry,
@@ -517,7 +517,7 @@ impl Writer {
             } = entry;
             let mut list = ParameterList::new();
             if let Some(n) = def.name.as_ref() {
-                roead::aamp::get_default_name_table().add_name(n.to_string())
+                get_default_name_table().add_name(n.to_string())
             }
             list.set_object("Def", def.clone().into());
             if children.is_some() {
@@ -612,7 +612,7 @@ impl Writer {
         for root in roots.into_values() {
             self.entry_to_list(root);
         }
-        let name_table = roead::aamp::get_default_name_table();
+        let name_table = get_default_name_table();
         let demos = demos
             .into_iter()
             .map(|(k, entry)| (k, Parameter::I32(self.entry_to_list(entry) as i32)))
@@ -663,7 +663,7 @@ impl Mergeable for AIProgram {
             behaviors: other
                 .behaviors
                 .iter()
-                .filter(|&(k, v)| (Some(v) != self.behaviors.get(k)))
+                .filter(|&(k, v)| Some(v) != self.behaviors.get(k))
                 .map(|(k, v)| (*k, v.clone()))
                 .collect(),
             queries:   other

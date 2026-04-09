@@ -7,7 +7,17 @@ pub use egui;
 pub use egui_dock;
 pub use egui_extras;
 use font_loader::system_fonts::FontPropertyBuilder;
+use include_flate::flate;
 pub use paths::PathNode;
+
+flate!(static NOTOSANS_REG: [u8] from "fonts/NotoSans-Regular.ttf");
+flate!(static NOTOSANS_BOLD: [u8] from "fonts/NotoSans-Bold.ttf");
+flate!(static NOTOSANSJP_REG: [u8] from "fonts/NotoSansJP-Regular.ttf");
+flate!(static NOTOSANSJP_BOLD: [u8] from "fonts/NotoSansJP-Bold.ttf");
+flate!(static NOTOSANSKR_REG: [u8] from "fonts/NotoSansKR-Regular.ttf");
+flate!(static NOTOSANSKR_BOLD: [u8] from "fonts/NotoSansKR-Bold.ttf");
+flate!(static NOTOSANSSC_REG: [u8] from "fonts/NotoSansSC-Regular.ttf");
+flate!(static NOTOSANSSC_BOLD: [u8] from "fonts/NotoSansSC-Bold.ttf");
 
 pub fn load_fonts(context: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
@@ -55,15 +65,56 @@ pub fn load_fonts(context: &egui::Context) {
             .font_data
             .insert("Bold".to_owned(), egui::FontData::from_owned(system_font.0));
     }
+    fonts.font_data.insert(
+        "Noto".to_owned(),
+        egui::FontData::from_static(&NOTOSANS_REG)
+    );
+    fonts.font_data.insert(
+        "NotoBold".to_owned(),
+        egui::FontData::from_static(&NOTOSANS_BOLD)
+    );
+    fonts.font_data.insert(
+        "NotoJP".to_owned(),
+        egui::FontData::from_static(&NOTOSANSJP_REG)
+    );
+    fonts.font_data.insert(
+        "NotoJPBold".to_owned(),
+        egui::FontData::from_static(&NOTOSANSJP_BOLD)
+    );
+    fonts.font_data.insert(
+        "NotoKR".to_owned(),
+        egui::FontData::from_static(&NOTOSANSKR_REG)
+    );
+    fonts.font_data.insert(
+        "NotoKRBold".to_owned(),
+        egui::FontData::from_static(&NOTOSANSKR_BOLD)
+    );
+    fonts.font_data.insert(
+        "NotoSC".to_owned(),
+        egui::FontData::from_static(&NOTOSANSSC_REG)
+    );
+    fonts.font_data.insert(
+        "NotoSCBold".to_owned(),
+        egui::FontData::from_static(&NOTOSANSSC_BOLD)
+    );
+    if let Some(family) = fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional) {
+        ["NotoSC", "NotoKR", "NotoJP", "Noto", "System"].iter().for_each(|s| {
+            family.insert(0, s.to_string());
+        });
+    }
     fonts
         .families
-        .get_mut(&egui::FontFamily::Proportional)
-        .unwrap()
-        .insert(0, "System".to_owned());
-    fonts
-        .families
-        .insert(egui::FontFamily::Name("Bold".into()), vec![
-            "Bold".to_owned(),
-        ]);
+        .insert(
+            egui::FontFamily::Name("Bold".into()),
+            vec![
+                "Bold".to_owned(),
+                "NotoBold".to_owned(),
+                "NotoJPBold".to_owned(),
+                "NotoKRBold".to_owned(),
+                "NotoSCBold".to_owned(),
+            ]
+        );
     context.set_fonts(fonts);
 }

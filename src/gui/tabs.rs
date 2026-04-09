@@ -1,3 +1,4 @@
+use uk_localization::string_ext::LocString;
 use uk_ui::{
     egui::{self, Ui, WidgetText},
     egui_dock::{DockState, Node, NodeIndex, TabViewer},
@@ -54,7 +55,7 @@ impl TabViewer for super::App {
                         }
                     } else {
                         ui.centered_and_justified(|ui| {
-                            ui.label("No mod selected");
+                            ui.label("Mod_Selected_None".localize());
                         });
                     }
                 }
@@ -75,7 +76,8 @@ impl TabViewer for super::App {
                                 visuals::slate_grid(ui);
                             }
                             self.render_modlist(ui);
-                            ui.allocate_space(ui.available_size());
+                            let available = ui.available_size();
+                            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
                             self.render_pending(ui);
                         });
                 }

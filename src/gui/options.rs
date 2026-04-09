@@ -1,4 +1,5 @@
 use eframe::egui::Button;
+use uk_localization::string_ext::LocString;
 use uk_mod::ModOptionGroup;
 use uk_ui::{
     egui::{self, Align, Checkbox, Context, Layout, Vec2},
@@ -13,7 +14,7 @@ impl App {
         if !is_opt_mod {
             return;
         }
-        egui::Window::new("Select Mod Options")
+        egui::Window::new("Options_Select".localize())
             .collapsible(false)
             .scroll([false, true])
             .anchor(egui::Align2::CENTER_CENTER, Vec2::default())
@@ -37,7 +38,7 @@ impl App {
                                                     !group.options.iter().any(|opt| {
                                                         mod_.enabled_options.contains(opt)
                                                     }),
-                                                    "None",
+                                                    "Options_None".localize(),
                                                 )
                                                 .clicked()
                                         {
@@ -92,12 +93,12 @@ impl App {
                     }
                 });
                 if !done {
-                    ui.colored_label(visuals::RED, "You must set all required option groups");
+                    ui.colored_label(visuals::RED, "Options_Required".localize());
                 }
                 ui.horizontal(|ui| {
                     ui.add_space(2.);
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if ui.add_enabled(done, Button::new("OK")).clicked() {
+                        if ui.add_enabled(done, Button::new("Generic_OK".localize())).clicked() {
                             let (mod_, update) = self.options_mod.take().unwrap();
                             if update {
                                 self.do_update(Message::UpdateOptions(mod_));
@@ -105,7 +106,7 @@ impl App {
                                 self.do_update(Message::InstallMod(mod_));
                             }
                         }
-                        if ui.button("Cancel").clicked() {
+                        if ui.button("Generic_Cancel".localize()).clicked() {
                             self.options_mod = None;
                         }
                     });

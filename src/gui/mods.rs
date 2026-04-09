@@ -1,6 +1,7 @@
-use std::{process::Command, sync::OnceLock};
+use std::{collections::HashMap, process::Command, sync::OnceLock};
 
-use join_str::jstr;
+use strfmt::Format;
+use uk_localization::string_ext::LocString;
 use uk_manager::mods::Mod;
 use uk_ui::{
     egui::{
@@ -47,6 +48,57 @@ impl App {
             .x
         });
         static CATEGORY_WIDTH: OnceLock<f32> = OnceLock::new();
+        
+        // Show helper message if no mods installed
+        if self.displayed_mods.is_empty() {
+            egui::Frame::none()
+                .inner_margin(Margin::same(40.0))
+                .show(ui, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(80.0);
+                        
+                        let has_config = self.core.settings().platform_config().is_some();
+                        
+                        // Main message
+                        if !has_config {
+                            let message = "Helper_Modlist_NoConfig".localize();
+                            let vars = HashMap::from(
+                                [("platform".to_string(), self.core.settings().current_mode.to_string())]
+                            );
+                            let prompt = message.format(&vars).unwrap();
+                            
+                            ui.label(
+                                egui::RichText::new(prompt)
+                                    .size(16.0)
+                                    .color(ui.style().visuals.text_color())
+                            );
+                        } else {
+                            ui.label(
+                                egui::RichText::new("Helper_Modlist_NoMods".localize())
+                                    .size(16.0)
+                                    .color(ui.style().visuals.text_color())
+                            );
+                        }
+                        
+                        ui.add_space(8.0);
+                        
+                        // Hint text
+                        let hint = if !has_config {
+                            "Helper_Modlist_NoConfig_Hint".localize()
+                        } else {
+                            "Helper_Modlist_NoMods_Hint".localize()
+                        };
+                        
+                        ui.label(
+                            egui::RichText::new(hint)
+                                .size(13.0)
+                                .color(ui.style().visuals.weak_text_color())
+                        );
+                    });
+                });
+            return;
+        }
+        
         egui::Frame::none()
             .inner_margin(Margin {
                 bottom: 4.0,
@@ -111,10 +163,10 @@ impl App {
                             }
                         });
                         [
-                            ("Mod Name", Sort::Name),
-                            ("Category", Sort::Category),
-                            ("Version", Sort::Version),
-                            ("Priority", Sort::Priority),
+                            ("Info_Name".localize(), Sort::Name),
+                            ("Info_Category".localize(), Sort::Category),
+                            ("Info_Version".localize(), Sort::Version),
+                            ("Info_Priority".localize(), Sort::Priority),
                         ]
                         .into_iter()
                         .for_each(|(label, sort)| {
@@ -155,7 +207,7 @@ impl App {
                                 })
                                 .0
                                 .width();
-                            if CATEGORY_WIDTH.get().is_none() && label == "Category" {
+                            if CATEGORY_WIDTH.get().is_none() && sort == Sort::Category {
                                 CATEGORY_WIDTH.set(width).unwrap();
                             }
                         });
@@ -254,7 +306,7 @@ impl App {
                                     });
                                     for label in [
                                         mod_.meta.name.as_str(),
-                                        mod_.meta.category.as_str(),
+                                        mod_.meta.category.to_loc_str().localize().as_ref(),
                                         mod_.meta.version.to_string().as_str(),
                                         self.mods
                                             .iter()
@@ -328,7 +380,7 @@ impl App {
                 .1,
             );
             for label in [
-                mod_.meta.category.as_str(),
+                mod_.meta.category.to_loc_str().localize().as_ref(),
                 mod_.meta.version.to_string().as_str(),
                 index.to_string().as_str(),
             ] {
@@ -354,7 +406,11 @@ impl App {
                         self.do_update(Message::DevUpdate);
                     }
                     ContextMenuMessage::Uninstall => {
-                        let prompt = jstr!("Are you sure you want to uninstall {&mod_.meta.name}?");
+                        let message = "Mod_Uninstall_Confirmation".localize();
+                        let vars = HashMap::from(
+                            [("mod_name".to_string(), mod_.meta.name.to_string())]
+                        );
+                        let prompt = message.format(&vars).unwrap();
                         self.do_update(Message::Confirm(
                             Message::UninstallMods(None).into(),
                             prompt,
@@ -397,7 +453,7 @@ impl App {
         ui: &mut Ui,
     ) -> Option<ContextMenuMessage> {
         let mut result = None;
-        ui.menu_button("Send to profile", |ui| {
+        ui.menu_button("Mod_Send".localize(), |ui| {
             for profile in core
                 .settings()
                 .profiles()
@@ -409,26 +465,30 @@ impl App {
                 }
             }
         });
-        if ui.button("Update").clicked() {
+        if ui.button("Generic_Update".localize()).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Update);
         }
-        if ui.button("Dev Update").clicked() {
+        if ui.button("Mod_Dev_Update".localize()).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::DevUpdate);
         }
-        if ui.button("Uninstall").clicked() {
+        if ui.button("Mod_Uninstall".localize()).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Uninstall);
         }
         if ui
-            .button(if mod_.enabled { "Disable" } else { "Enable" })
+            .button(if mod_.enabled {
+                "Mod_Disable".localize()
+            } else {
+                "Mod_Enable".localize()
+            })
             .clicked()
         {
             ui.close_menu();
             result = Some(ContextMenuMessage::Toggle(!mod_.enabled));
         }
-        if ui.button("View folder").clicked() {
+        if ui.button("Mod_View".localize()).clicked() {
             ui.close_menu();
             let _ = Command::new(if cfg!(windows) {
                 "explorer"
@@ -442,15 +502,15 @@ impl App {
             })
             .output();
         }
-        if ui.button("Extract").clicked() {
+        if ui.button("Mod_Extract".localize()).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Extract);
         }
-        if ui.button("Move to start").clicked() {
+        if ui.button("Mod_Move_Start".localize()).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Move(0));
         }
-        if ui.button("Move to end").clicked() {
+        if ui.button("Mod_Move_End".localize()).clicked() {
             ui.close_menu();
             result = Some(ContextMenuMessage::Move(9999));
         }

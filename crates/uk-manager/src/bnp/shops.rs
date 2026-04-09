@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
 use roead::{
@@ -11,7 +11,6 @@ use uk_content::{
     prelude::{Resource, String64},
     util::merge_plist,
 };
-use uk_util::OptionExt;
 
 use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
 

@@ -46,7 +46,7 @@ pub enum ZipData {
     Memory(Mmap),
 }
 
-impl std::ops::Deref for ZipData {
+impl Deref for ZipData {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -126,7 +126,7 @@ impl ParallelZipReader {
         inner(path.as_ref(), peek)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &&std::path::Path> {
+    pub fn iter(&self) -> impl Iterator<Item = &&Path> {
         self.borrow_files().iter().map(|(f, _)| f)
     }
 
@@ -159,7 +159,7 @@ pub fn init_decompressor() -> Arc<Mutex<zstd::bulk::Decompressor<'static>>> {
     ))
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct ModReader {
     pub path: PathBuf,
     options: Vec<ModOption>,
@@ -168,7 +168,7 @@ pub struct ModReader {
     #[serde(skip, default = "init_decompressor")]
     decompressor: Arc<Mutex<zstd::bulk::Decompressor<'static>>>,
     #[serde(skip_serializing)]
-    zip: Option<ParallelZipReader>,
+    zip: Arc<Option<ParallelZipReader>>,
 }
 
 impl std::fmt::Debug for ModReader {
@@ -186,74 +186,22 @@ impl std::fmt::Debug for ModReader {
 
 #[typetag::serde]
 impl ResourceLoader for ModReader {
+    fn get_base_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
+        self.get_file_data(name)
+    }
+
+    fn get_update_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
+        self.get_file_data(name)
+    }
+
+    fn get_aoc_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
+        self.get_file_data(format!("Aoc/0010/{}", name.to_string_lossy()))
+    }
+
     fn file_exists(&self, name: &Path) -> bool {
         let name = name.to_slash_lossy();
         self.manifest.content_files.contains(name.as_ref())
             || self.manifest.aoc_files.contains(name.as_ref())
-    }
-
-    fn get_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
-        let canon = canonicalize(name);
-        if let Some(zip) = self.zip.as_ref() {
-            if let Ok(data) = zip.get_file(canon.as_str()) {
-                return Ok(self
-                    .decompress(data.as_slice())
-                    .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
-            }
-        } else if let Some(path) = self.path.join(canon.as_str()).exists_then() {
-            return Ok(fs::read(path)?);
-        }
-        for opt in &self.options {
-            let path = Path::new("options").join(&opt.path).join(canon.as_str());
-            if let Some(zip) = self.zip.as_ref() {
-                if let Ok(data) = zip.get_file(path) {
-                    return Ok(self
-                        .decompress(data.as_slice())
-                        .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
-                }
-            } else if let Some(path) = self.path.join(path).exists_then() {
-                return Ok(fs::read(path)?);
-            }
-        }
-        self.get_aoc_file_data(name).map_err(|_| {
-            anyhow_ext::anyhow!(
-                "Failed to read file {} (canonical path {}) from mod",
-                name.display(),
-                canon
-            )
-            .into()
-        })
-    }
-
-    fn get_aoc_file_data(&self, name: &Path) -> uk_reader::Result<Vec<u8>> {
-        let canon = canonicalize(jstr!("Aoc/0010/{name.to_str().unwrap_or_default()}"));
-        if let Some(zip) = self.zip.as_ref() {
-            if let Ok(data) = zip.get_file(canon.as_str()) {
-                return Ok(self
-                    .decompress(data.as_slice())
-                    .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
-            }
-        } else if let Some(path) = self.path.join(canon.as_str()).exists_then() {
-            return Ok(fs::read(path)?);
-        }
-        for opt in &self.options {
-            let path = Path::new("options").join(&opt.path).join(canon.as_str());
-            if let Some(zip) = self.zip.as_ref() {
-                if let Ok(data) = zip.get_file(path) {
-                    return Ok(self
-                        .decompress(data.as_slice())
-                        .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
-                }
-            } else if let Some(path) = self.path.join(path).exists_then() {
-                return Ok(fs::read(path)?);
-            }
-        }
-        Err(anyhow_ext::anyhow!(
-            "Failed to read file {} (canonical path {}) from mod",
-            name.display(),
-            canon
-        )
-        .into())
     }
 
     fn host_path(&self) -> &Path {
@@ -262,6 +210,39 @@ impl ResourceLoader for ModReader {
 }
 
 impl ModReader {
+    fn get_file_data(&self, name: impl AsRef<Path>) -> uk_reader::Result<Vec<u8>> {
+        fn inner(self_: &ModReader, name: &Path) -> uk_reader::Result<Vec<u8>> {
+            let canon = canonicalize(name);
+            if let Some(zip) = self_.zip.as_ref() {
+                if let Ok(data) = zip.get_file(canon.as_str()) {
+                    return Ok(self_
+                        .decompress(data.as_slice())
+                        .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+                }
+            } else if let Some(path) = self_.path.join(canon.as_str()).exists_then() {
+                return Ok(fs::read(path)?);
+            }
+            for opt in &self_.options {
+                let path = Path::new("options").join(&opt.path).join(canon.as_str());
+                if let Some(zip) = self_.zip.as_ref() {
+                    if let Ok(data) = zip.get_file(path) {
+                        return Ok(self_
+                            .decompress(data.as_slice())
+                            .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+                    }
+                } else if let Some(path) = self_.path.join(path).exists_then() {
+                    return Ok(fs::read(path)?);
+                }
+            }
+            Err(anyhow_ext::anyhow!(
+                "Failed to read file {} (canonical path {}) from mod",
+                name.display(),
+                canon
+            ).into())
+        }
+        inner(self, name.as_ref())
+    }
+
     #[inline]
     fn decompress(&self, data: &[u8]) -> Result<Vec<u8>> {
         let mut decomp = self.decompressor.lock();
@@ -271,66 +252,43 @@ impl ModReader {
             .or_else(|e| zstd::decode_all(data).context(e))
     }
 
-    pub fn open(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
-        fn inner(path: &Path, options: Vec<ModOption>) -> Result<ModReader> {
-            let path = path.to_path_buf();
-            let result = if path.is_file() {
-                ModReader::open_zipped(path, options)
-            } else {
-                ModReader::open_unzipped(path, options)
-            }?;
-            let name = result.meta.name.as_str();
-            let mod_api = Version::parse(&result.meta.api)
-                .map_err(|e| anyhow_ext::anyhow!("{e}"))
-                .context("Invalid API version for mod")?;
-            let current_api = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
-            if current_api.major != mod_api.major {
-                anyhow_ext::bail!("{name} build with unsupported UKMM version: {mod_api}")
-            } else if current_api.minor > mod_api.minor && current_api.major == 0 {
-                log::warn!(
-                    "{name} is from an older UKMM prerelease (v{mod_api}), compatibility not \
-                     guaranteed"
-                )
-            } else if current_api.minor < mod_api.minor {
-                log::warn!(
-                    "{name} was made with a newer UKMM version (v{mod_api}), might contain \
-                     incompatible features"
-                )
+    fn open_inner(path: &Path, options: Vec<ModOption>, peek: bool) -> Result<Self> {
+        let path = path.to_path_buf();
+        let result = if path.is_file() {
+            match peek {
+                true => ModReader::open_zipped_peek(path, options),
+                false => ModReader::open_zipped(path, options)
             }
-            Ok(result)
+        } else {
+            ModReader::open_unzipped(path, options)
+        }?;
+        let name = result.meta.name.as_str();
+        let mod_api = Version::parse(&result.meta.api)
+            .map_err(|e| anyhow_ext::anyhow!("{e}"))
+            .context("Invalid API version for mod")?;
+        let current_api = Version::parse(env!("CARGO_PKG_VERSION"))?;
+        if current_api.major != mod_api.major {
+            bail!("{name} build with unsupported UKMM version: {mod_api}")
+        } else if current_api.minor > mod_api.minor && current_api.major == 0 {
+            log::warn!(
+                "{name} is from an older UKMM prerelease (v{mod_api}), compatibility not \
+                 guaranteed"
+            )
+        } else if current_api.minor < mod_api.minor {
+            log::warn!(
+                "{name} was made with a newer UKMM version (v{mod_api}), might contain \
+                 incompatible features"
+            )
         }
-        inner(path.as_ref(), options.into())
+        Ok(result)
+    }
+
+    pub fn open(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
+        Self::open_inner(path.as_ref(), options.into(), false)
     }
 
     pub fn open_peek(path: impl AsRef<Path>, options: impl Into<Vec<ModOption>>) -> Result<Self> {
-        fn inner(path: &Path, options: Vec<ModOption>) -> Result<ModReader> {
-            let path = path.to_path_buf();
-            let result = if path.is_file() {
-                ModReader::open_zipped_peek(path, options)
-            } else {
-                ModReader::open_unzipped(path, options)
-            }?;
-            let name = result.meta.name.as_str();
-            let mod_api = Version::parse(&result.meta.api)
-                .map_err(|e| anyhow_ext::anyhow!("{e}"))
-                .context("Invalid API version for mod")?;
-            let current_api = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
-            if current_api.major != mod_api.major {
-                anyhow_ext::bail!("{name} build with unsupported UKMM version: {mod_api}")
-            } else if current_api.minor > mod_api.minor && current_api.major == 0 {
-                log::warn!(
-                    "{name} is from an older UKMM prerelease (v{mod_api}), compatibility not \
-                     guaranteed"
-                )
-            } else if current_api.minor < mod_api.minor {
-                log::warn!(
-                    "{name} was made with a newer UKMM version (v{mod_api}), might contain \
-                     incompatible features"
-                )
-            }
-            Ok(result)
-        }
-        inner(path.as_ref(), options.into())
+        Self::open_inner(path.as_ref(), options.into(), true)
     }
 
     fn open_unzipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
@@ -349,7 +307,7 @@ impl ModReader {
             options,
             meta,
             manifest,
-            zip: None,
+            zip: Arc::new(None),
         })
     }
 
@@ -370,7 +328,7 @@ impl ModReader {
             let mut reader = zip.borrow_zip().read(meta)?;
             read = reader.read(&mut buffer)?;
             if read != size {
-                anyhow_ext::bail!("Failed to read meta file from mod {}", path.display());
+                bail!("Failed to read meta file from mod {}", path.display());
             }
             serde_yaml::from_slice(&buffer[..read]).context("Failed to parse meta file from mod")?
         };
@@ -383,7 +341,7 @@ impl ModReader {
             let mut reader = zip.borrow_zip().read(manifest)?;
             read = reader.read(&mut buffer)?;
             if read != size {
-                anyhow_ext::bail!("Failed to read manifest file from mod")
+                bail!("Failed to read manifest file from mod")
             }
             serde_yaml::from_str::<Manifest>(std::str::from_utf8(&buffer[..read])?)
                 .context("Failed to parse manifest file")?
@@ -397,7 +355,7 @@ impl ModReader {
             let mut reader = zip.borrow_zip().read(opt_manifest)?;
             read = reader.read(&mut buffer)?;
             if read != size {
-                anyhow_ext::bail!("Failed to read option manifest file from mod")
+                bail!("Failed to read option manifest file from mod")
             }
             let opt_manifest =
                 serde_yaml::from_str::<Manifest>(std::str::from_utf8(&buffer[..read])?)
@@ -411,7 +369,7 @@ impl ModReader {
             options,
             meta,
             manifest,
-            zip: Some(zip),
+            zip: Arc::new(Some(zip)),
         })
     }
 
@@ -460,7 +418,7 @@ impl ModReader {
             versions.push(data);
         }
         if versions.is_empty() {
-            anyhow_ext::bail!(
+            bail!(
                 "Failed to find file {} (canonical path {}) from mod",
                 name.display(),
                 canon
@@ -569,10 +527,10 @@ impl ModUnpacker {
             ];
             for job in jobs {
                 match job.join() {
-                    Ok(Err(e)) => anyhow_ext::bail!(e),
+                    Ok(Err(e)) => bail!(e),
                     Ok(Ok(what)) => log::info!("Finished unpacking {what}"),
                     Err(e) => {
-                        anyhow::bail!(
+                        bail!(
                             e.downcast::<std::string::String>()
                                 .or_else(|e| {
                                     e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
@@ -606,8 +564,8 @@ impl ModUnpacker {
                 bail!("Broken stock language pack for {}", self.lang);
             };
             langs.sort_unstable_by(|l1, l2| {
-                (*l1 == self.lang).cmp(&(*l2 == self.lang)).then_with(|| {
-                    (l1.short() == self.lang.short()).cmp(&(l2.short() == self.lang.short()))
+                (*l2 == self.lang).cmp(&(*l1 == self.lang)).then_with(|| {
+                    (l2.short() == self.lang.short()).cmp(&(l1.short() == self.lang.short()))
                 })
             });
             for mod_ in self.mods.iter() {
@@ -675,34 +633,26 @@ impl ModUnpacker {
         let mut versions = std::collections::VecDeque::with_capacity(
             (self.mods.len() as f32 / 2.).ceil() as usize,
         );
-        let canon = if aoc {
-            canonicalize(jstr!("Aoc/0010/{file}"))
-        } else {
-            canonicalize(file)
+        let filepath = match (aoc, file.starts_with("Aoc/0010/")) {
+            (true, false) => jstr!("Aoc/0010/{file}"),
+            _ => file.to_owned(),
         };
-        let filename = Path::new(canon.as_str());
+        let canon = canonicalize(&filepath);
+        let canon_path = Path::new(canon.as_str());
         let mut rstb_val = None;
         let can_rstb = !RSTB_EXCLUDE_EXTS.contains(
-            &filename
+            &canon_path
                 .extension()
                 .and_then(|e| e.to_str())
                 .unwrap_or_default(),
         ) && !RSTB_EXCLUDE_NAMES.contains(
-            &filename
+            &canon_path
                 .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or_default(),
         );
         let mut dump_error: Vec<anyhow_ext::Error> = vec![];
-        let res_result = self.dump.get_data(file).or_else(|e| {
-            log::trace!("{e:?}");
-            dump_error.push(e.into());
-            self.dump.get_data(canon.as_str()).or_else(|e| {
-                log::trace!("{e:?}");
-                dump_error.push(e.into());
-                self.dump.get_resource(canon.as_str())
-            })
-        });
+        let res_result = self.dump.get_data(&filepath);
         match res_result {
             Ok(ref_res) => versions.push_back(ref_res),
             Err(e) => {
@@ -714,7 +664,7 @@ impl ModUnpacker {
             .mods
             .iter()
             .filter_map(|mod_| {
-                mod_.get_versions(file.as_ref())
+                mod_.get_versions(filepath.as_ref())
                     .ok()
                     .map(|d| d.into_iter().map(|d| (d, &mod_.meta.name)))
             })
@@ -726,13 +676,13 @@ impl ModUnpacker {
                 Err(e) => {
                     let msg = format!("{}", e);
                     if msg.contains("unknown variant") {
-                        anyhow::bail!(
+                        bail!(
                             "Error deserializing resource {canon} from mod {mod_}. This is \
                              probably because this mod was built with an old, incompatible beta \
                              of UKMM."
                         );
                     } else {
-                        anyhow::bail!(
+                        bail!(
                             "Error deserializing resource {canon} from mod {mod_}. Error: {e}"
                         );
                     }
@@ -743,10 +693,10 @@ impl ModUnpacker {
             .pop_front()
             .with_context(|| {
                 let mut err = anyhow_ext::anyhow!(
-                    "No copy of {} found in game dump or any mod. Sometimes this is a problem with the mod or\
-                    your game dump. However, it can also be a temporary cache error. If you know your dump and its\
+                    "No copy of {} found in game dump or any mod. Sometimes this is a problem with the mod or \
+                    your game dump. However, it can also be a temporary cache error. If you know your dump and its \
                     configuration are sound, try restarting UKMM. If it persists, copy the error details and post \
-                    as a comment to https://github.com/NiceneNerd/UKMM/issues/120.", &file
+                    as a comment to https://github.com/NiceneNerd/UKMM/issues/120.", &filepath
                 );
                 for e in dump_error {
                     err = e.context(err);
@@ -760,13 +710,15 @@ impl ModUnpacker {
                 if can_rstb && is_modded {
                     rstb_val = Some(rstb::calc::estimate_from_slice_and_name(
                         res.as_binary().expect("Binary"),
-                        file,
+                        &filepath,
                         self.endian.into(),
                     ));
                 }
                 match Arc::try_unwrap(res) {
-                    Ok(res) => res.take_binary().unwrap(),
-                    Err(res) => res.as_binary().map(|b| b.to_vec()).unwrap(),
+                    Ok(res) => res.take_binary().context("No binary resource?")?,
+                    Err(res) => res.as_binary()
+                        .map(|b| b.to_vec())
+                        .context("No binary resource?")?,
                 }
             }
             ResourceData::Mergeable(base_res) => {
@@ -785,9 +737,9 @@ impl ModUnpacker {
                         &canon,
                         self.endian.into(),
                     ));
-                    if canon.ends_with("bphysics") || self.endian == Endian::Little {
-                        rstb_val = rstb_val.map(|v| v.map(|v| (v as f32 * 1.25) as u32));
-                    }
+                    // if canon.ends_with("bphysics") || self.endian == Endian::Little {
+                    //     rstb_val = rstb_val.map(|v| v.map(|v| (v as f32 * 1.25) as u32));
+                    // }
                 }
                 data
             }
@@ -836,13 +788,13 @@ impl ModUnpacker {
 
 /// Extract a zipped mod, decompressing the binary files, but otherwise
 /// leaving the format intact.
-pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow_ext::Result<()> {
+pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> Result<()> {
     let mut zip = zip::ZipArchive::new(BufReader::new(fs::File::open(mod_path)?))
         .context("Failed to open mod ZIP")?;
     zip.extract(out_path)?;
     WalkDir::new(out_path)
         .into_iter()
-        .filter_map(std::result::Result::ok)
+        .filter_map(Result::ok)
         .filter(|f| {
             f.file_type.is_file() && {
                 f.file_name()
@@ -852,7 +804,7 @@ pub fn unzip_mod(mod_path: &Path, out_path: &Path) -> anyhow_ext::Result<()> {
             }
         })
         .par_bridge()
-        .try_for_each(|f| -> anyhow_ext::Result<()> {
+        .try_for_each(|f| -> Result<()> {
             let f = f.path();
             let data = zstd::decode_all(
                 fs::read(&f)
@@ -906,7 +858,7 @@ mod tests {
 #[cfg(test)]
 mod bonus {
     use std::{
-        path::Path,
+        path::{Path, PathBuf},
         sync::{Arc, Mutex},
     };
 
@@ -915,6 +867,16 @@ mod bonus {
     use roead::sarc::Sarc;
     use smartstring::alias::String;
     use uk_content::{resource::MergeableResource, util::HashMap};
+
+    fn filter(p: &PathBuf) -> bool {
+        let ext = p
+            .extension()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default();
+        botw_utils::extensions::SARC_EXTS.contains(&ext)
+            && !matches!(ext, "ssarc" | "sstera" | "sstats")
+    }
 
     #[test]
     fn nest_map() {
@@ -964,20 +926,12 @@ mod bonus {
             });
         }
 
-        for root in [base, update] {
+        for root in [base, update, dlc] {
             jwalk::WalkDir::new(root)
                 .into_iter()
                 .par_bridge()
                 .filter_map(|e| e.ok().map(|e| e.path()))
-                .filter(|p| {
-                    let ext = p
-                        .extension()
-                        .unwrap_or_default()
-                        .to_str()
-                        .unwrap_or_default();
-                    botw_utils::extensions::SARC_EXTS.contains(&ext)
-                        && !matches!(ext, "ssarc" | "sstera" | "sstats")
-                })
+                .filter(filter)
                 .for_each(|path| {
                     let sarc = Sarc::new(fs_err::read(&path).unwrap()).unwrap();
                     get_sarc_paths(
@@ -987,27 +941,6 @@ mod bonus {
                     );
                 });
         }
-        jwalk::WalkDir::new(dlc)
-            .into_iter()
-            .par_bridge()
-            .filter_map(|e| e.ok().map(|e| e.path()))
-            .filter(|p| {
-                let ext = p
-                    .extension()
-                    .unwrap_or_default()
-                    .to_str()
-                    .unwrap_or_default();
-                botw_utils::extensions::SARC_EXTS.contains(&ext)
-                    && !matches!(ext, "ssarc" | "sstera" | "sstats")
-            })
-            .for_each(|path| {
-                let sarc = Sarc::new(fs_err::read(&path).unwrap()).unwrap();
-                get_sarc_paths(
-                    &sarc,
-                    &path.strip_prefix(dlc).unwrap().to_slash_lossy(),
-                    nest_map.clone(),
-                );
-            });
 
         fs_err::write(
             "nest_map.json",
@@ -1069,21 +1002,13 @@ mod bonus {
             });
         }
 
-        for root in [base, update] {
+        for root in [base, update, dlc] {
             jwalk::WalkDir::new(root)
                 .into_iter()
                 .collect::<Vec<_>>()
                 .into_par_iter()
                 .filter_map(|e| e.ok().map(|e| e.path()))
-                .filter(|p| {
-                    let ext = p
-                        .extension()
-                        .unwrap_or_default()
-                        .to_str()
-                        .unwrap_or_default();
-                    botw_utils::extensions::SARC_EXTS.contains(&ext)
-                        && !matches!(ext, "ssarc" | "sstera" | "sstats")
-                })
+                .filter(filter)
                 .for_each(|path| {
                     let sarc = Sarc::new(fs_err::read(&path).unwrap()).unwrap();
                     process_sarc_resources(
@@ -1093,28 +1018,6 @@ mod bonus {
                     );
                 });
         }
-        jwalk::WalkDir::new(dlc)
-            .into_iter()
-            .collect::<Vec<_>>()
-            .into_par_iter()
-            .filter_map(|e| e.ok().map(|e| e.path()))
-            .filter(|p| {
-                let ext = p
-                    .extension()
-                    .unwrap_or_default()
-                    .to_str()
-                    .unwrap_or_default();
-                botw_utils::extensions::SARC_EXTS.contains(&ext)
-                    && !matches!(ext, "ssarc" | "sstera" | "sstats")
-            })
-            .for_each(|path| {
-                let sarc = Sarc::new(fs_err::read(&path).unwrap()).unwrap();
-                process_sarc_resources(
-                    &sarc,
-                    &path.strip_prefix(dlc).unwrap().to_slash_lossy(),
-                    res_map.clone(),
-                );
-            });
 
         fs_err::write(
             "dump.bin",

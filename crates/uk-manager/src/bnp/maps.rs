@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use anyhow::{Context, Result};
+use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use join_str::jstr;
 use rayon::prelude::*;
@@ -30,6 +30,14 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
                     .map(|h| (h, i))
             })
             .collect::<FxHashMap<u32, _>>();
+        if let Some(Byml::Map(mods)) = diff.remove("mod") {
+            for (hash, entry) in mods {
+                let hash: u32 = hash.parse()?;
+                if let Some(index) = hashes.get(&hash) {
+                    base[*index] = entry;
+                }
+            }
+        }
         if let Some(Byml::Array(dels)) = diff.remove("del") {
             base.retain(|obj| {
                 obj.as_map()
@@ -49,14 +57,6 @@ fn merge_map(base: &mut Byml, diff: Byml) -> Result<()> {
                     })
                     .unwrap_or(false)
             }));
-        }
-        if let Some(Byml::Map(mods)) = diff.remove("mod") {
-            for (hash, entry) in mods {
-                let hash: u32 = hash.parse()?;
-                if let Some(index) = hashes.get(&hash) {
-                    base[*index] = entry;
-                }
-            }
         }
         Ok(())
     }
@@ -79,8 +79,11 @@ impl BnpConverter {
         let maps_path = self.current_root.join("logs/map.yml");
         if maps_path.exists() {
             log::debug!("Processing maps log");
-            let diff = Byml::from_text(fs::read_to_string(maps_path)?)?.into_map()?;
-            let base_pack = Sarc::new(self.get_master_aoc_bytes("Pack/AocMainField.pack")?)?;
+            let diff = Byml::from_text(fs::read_to_string(maps_path)?)
+                .context("Could not parse maps log")?
+                .into_map()?;
+            let base_pack = Sarc::new(self.get_master_aoc_bytes("Pack/AocMainField.pack")?)
+                .context("Could not read Pack/AocMainField.pack")?;
             let mut merged_pack = SarcWriter::from_sarc(&base_pack);
             let (statics, dynamics) = diff
                 .into_par_iter()
@@ -101,7 +104,8 @@ impl BnpConverter {
                                     .with_context(|| jstr!("Game dump missing map {&path}"))
                             })?,
                     )?)?;
-                    merge_map(&mut base, diff)?;
+                    merge_map(&mut base, diff)
+                        .with_context(|| jstr!("Failed to rebuild {&section}"))?;
                     Ok((path.into(), compress(base.to_binary(self.platform.into()))))
                 })
                 .collect::<Result<BTreeMap<String, Vec<u8>>>>()?

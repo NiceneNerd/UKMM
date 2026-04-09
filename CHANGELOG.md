@@ -5,14 +5,192 @@ All notable changes to UKMM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.17.0] - 2026-04-09
+
+This release includes multiple *breaking changes* to the UKMM mod format. This means
+that you will need to reinstall and/or repackage all existing UKMM mods that edit
+map files or AnimSeq ("animation sequence," or bas) files, to avoid errors.
+
+**Added**
+
+- MainField Static merger. Fixes various issues with installing bnps that edit
+  the file, including the disappearance of safe zones around the game world
+  - This is a breaking change. Any mod that edits Map/MainField/Static.smubin
+    will need to be reinstalled from a loose file or bnp package.
+- New AnimSeq merger. Runs on highest-priority-wins rules, to avoid as many issues
+  as possible. Compatibility patches should be made for animation-changing mods.
+  Also contains several checks for AnimSeq files to ensure they are not missing data
+  or crash due to cyclic or index-out-of-bounds errors.
+  - This is a breaking change. Any mod that edits any Actor/AS/<some_name>.bas file
+    will need to be reinstalled from a loose file or bnp package.
+- Support for mods packaged as rar files
+- Thanks @Clonephaze for 2 new features:
+  - Russian, Japanese, Korean, Arabic, Viet localization. All of these were done
+    with AI, so if you don't like the translations, feel free to open a PR
+    - Note: Localization is the only thing AI will ever be used for in this project
+  - UI breadcrumbs, for pointing the user toward the settings tab, if they somehow
+    miss the intro dialog popup
+
+**Changed**
+
+- Changed cemu settings importer to populate the emulator executable path with
+  a path that will boot directly into BotW, skipping the game list, if the dump
+  is in the unpacked format. Otherwise, it will populate it with a path that will
+  open cemu to the game list
+- Added quotes to the executable command on Windows or when the path has spaces in
+  it, to ensure that Powershell doesn't vomit all over a completely valid path
+- Rewrote the file subsystem. Files will now only be searched for once, in the
+  exact location they're supposed to be located at
+- Logs have been cleaned up considerably. Only one log file will be used, and it
+  will only store info from the current or most recent session. Various changes have
+  been made to reduce the amount of unnecessary log spam
+- Added context to unwraps during merging, in case they fail
+- Added context to various bnp map rebuild operations, in case they fail
+- Set top-level error message to tell the user to expand the details, so that people
+  stop thinking that all errors are the same error just because the top-level message
+  is the same
+- Better support for detecting meta information for 7z and rar packaged mods
+- Better support for detecting mod root directories for zip, 7z, and rar mods
+- Made missing loc keys pull from English instead of displaying the loc key, itself.
+  - This will become more important as I try to replace further messages, like error
+    messages, with localized strings. ETA on that is TBD.
+- Changed intro dialog window write-up, for more clarity on first usage or when
+  settings have not yet been set
+  - Thanks @Clonephaze
+- Gracefully handle IPC socket claim errors. Allows multiple instances of UKMM to
+  run at the same time, though I'm not sure why you'd ever want to do that
+
+**Fixed**
+
+- Fixed profile validation when dual-booting multiple operating systems, where
+  both systems are reading from the same effective storage folder. For example,
+  if Windows reads from %LocalAppData%/ukmm, and another operating system has
+  a symbolic link to read from that same folder, then UKMM will reconstruct mod
+  paths on boot, to ensure that you can properly merge from both systems
+- Fixed the program displaying at the wrong DPI when using Wayland, e.g. on steamOS
+- Reordered bnp map conversions, so modifications apply to the right map instances
+- Made sure DeleteSets actually deleted the things marked for deletion. Whoops!
+  Fixes various merge errors in BoneControl, ActorLink, and other files
+- Fixed copy mode trying to copy folders using code for copying files
+- Fixed hard link mode trying to hard link folders
+- Fixed how partial deployment determines if a file is changed, so that only files
+  that were actually changed are updated
+- Fixes a rare error where some files with no header in their format would be
+  recognized as byml files instead of binary
+- Fixed various deployment errors, reimplemented partial deployment
+- Fixed egui assertion failures in debug mode caused by invalid widget sizes
+  (NaN or negative values). All size values passed to egui are now validated
+  to ensure they are finite and non-negative
+
+## [0.16.0] - 2025-01-27
+
+This release includes a *breaking change* to the UKMM mod format, specifically to
+the merging of the LevelSensor.sbyml file. This means that you will need to
+reinstall and/or repackage all existing UKMM mods that edit that file, to avoid
+errors. The file is located inside Bootup.pack, so it may not be obvious from the
+Info tab.
+
+**Changed**
+
+- Made the Deploy button always visible, so that you don't need to remerge to deploy
+  when auto deploy is turned on, e.g. when switching profiles. Auto deploy still
+  works as before, where you don't need to click the button unless it gives you a
+  message telling you to.
+- Set logger file at program open, to avoid initializing it twice
+
+**Fixed**
+
+- Fixed an error with the --debug switch that would cause the app to crash. If you
+  want to view debug strings, you still need to use the Log Levels dropdown in the
+  Log tab
+- Fixed an error with merging LevelSensor.sbyml which would cause scaled enemies
+  to spawn out of order if new enemy actors were added to an existing species
+  - This is a breaking change to the format of LevelSensor.byml inside Bootup.pack,
+  and any mods that edit this file will need to be reinstalled
+- Fixed the Open Emulator button on Windows. Again. Fourth time, now? Please kill me
+- Fixed multiple errors that would cause UKMM to fail to boot if the storage folders
+  were tampered with since the last time UKMM booted. It's still a bad idea to do so
+  because your load order may remove some mods, or have some mods out of order, but
+  at least UKMM will boot under those conditions
+
+## [0.15.3] - 2025-01-17
+
+Special Mipha's Grace beta release edition
+
+**Added**
+
+- Added extra context to profile initialization errors
+- Multiple language localization! Currently supported languages are: English,
+  Dutch, French, German, Italian, and Simplified Chinese. Spanish and Russian
+  are on the way.
+  - Looking for translators to translate: Japanese, Korean
+
+**Changed**
+
+- When a mod is installed in the wrong mode (i.e. a WiiU mod in Switch mode or
+  a Switch mod in WiiU mode) the error message will now be more straightforward
+- When installing a mod with no metadata, the message will be more clear, and the
+  archive name will be put in the mod name field by default
+
+**Fixed**
+
+- Fixed a crash that could occur if you loaded a profile that you had duplicated,
+  and hadn't restarted ukmm since you'd done that duplication
+- Fixed an error with installing bnps that had deepmerge logs so large that they
+  had to be stored as text (looking at you, Miss Graceful Fish...)
+
+## [0.15.2] - 2025-01-02
+
+**Fixed**
+
+- Fixed Cemu settings importer on Linux
+- Fixed Copy mode deployment sometimes attempting to use file copier to copy folders
+- Fixed a regression that caused bnps that added new actors to crash
+- Fixed Open Emulator button not opening emulator properly on Windows
+
+## [0.15.1] - 2024-12-01
+
+**Added**
+
+- Added Deploy Layout settings option, to give more control over deploy output
+  location
+- Added extra context to various BNP conversion errors
+- Added option to install unpacked loose file mods via rules.txt
+
+**Changed**
+
+- Reworked RSTB calculation, for more efficient file sizes and fewer panic moons
+- Reworked deployment, to better support Switch emulators
+- Reworked deployment config validation, to ensure you don't accidentally leave
+  behind a bunch of useless links or files when the effective output location changes
+- Updated tooltip for deploy method, to give more clarity inside the app
+- Enabled vertical scrolling in package dependency window, for long mod lists
+
+**Fixed**
+
+- Fixed mods that include multiple occurrences of the same option in their bnp
+  throwing errors on trying to add those options to the UKMM zip
+- Fixed merging CDungeon/Static.smubin, fixes warping in over a chasm and
+  repeatedly dying in one of the DLC shrines
+- Fixed a bug where Copy mode on Windows did not copy files
+- Fixed various (but not all) errors when importing improperly-made BCML mods,
+  related to mod authors adding diff logs for files with no vanilla counterpart
+- Fixed various bugs related to BCML migration
+- Fixed a rare bug where a mod might not be properly marked for merging
+- Fixed a bug where some mods that were part of a profile could not be reinstalled
+  after deleting that profile
+- Fixed Cemu settings import
+- Fixed a bug where mods with text changes may not apply those changes, depending
+  on the language chosen in the settings and what languages other mods contained
+- Fixed a bug where a different language than the one chosen in the settings would
+  be used for the final merge, when mods contained too many languages
 
 ## [0.15.0] - 2024-08-29
 
 This release is fairly significant and includes *multiple breaking changes* to
-the UKMM mod format. This means there is a *high likehood* that you will need to
+the UKMM mod format. This means there is a *high likelihood* that you will need to
 reinstall and/or repackage existing UKMM mods to avoid errors. Ideally, this
-should be the last breaking release before stabilizaiton.
+should be the last breaking release before stabilization.
 
 **Added**
 
@@ -144,7 +322,7 @@ should be the last breaking release before stabilizaiton.
 - **Breaking change**: Updated to the newest version of roead, which supports
   BYML versions 5-7. This means *all mods that edit BYML files* may need to be
   reinstalled, which is perhaps a majority of mods. (The good news is this will
-  make TOTK support easier to add in the future.)
+  make TotK support easier to add in the future.)
 - Updated to work on the stable Rust compiler, nightly no longer required.
 
 **Fixed**
@@ -292,7 +470,7 @@ should be the last breaking release before stabilizaiton.
 - Ignore zero byte when processing mods
 - Further improved mod filename sanitation
 - Switched to safe error for potential issues with BNP text logs
-- Updated roead for MacOS support progress
+- Updated roead for macOS support progress
 - Various UI tweaks (courtesy of ArchLeaders)
 
 **Fixed**

@@ -7,6 +7,7 @@ use std::{
 
 use log::Record;
 use parking_lot::Mutex;
+use uk_manager::settings::Settings;
 
 pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
     Logger {
@@ -19,8 +20,10 @@ pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
 });
 
 pub fn init() {
-    log::set_logger(LOGGER.deref()).unwrap();
-    log::set_max_level(log::LevelFilter::max());
+    if let Ok(_) = log::set_logger(LOGGER.deref()) {
+        log::set_max_level(log::LevelFilter::max());
+        LOGGER.set_file(Settings::config_dir().join("log.txt"));
+    }
 }
 
 pub struct Logger {
@@ -55,23 +58,9 @@ impl Logger {
         }
     }
 
-    pub fn set_file(&self, mut file: PathBuf) {
-        if file
-            .metadata()
-            .map(|m| m.len() > 1_048_576)
-            .unwrap_or_default()
-        {
-            let file_num = file
-                .file_stem()
-                .expect("Bad log file stem")
-                .to_str()
-                .expect("Bad log file stem")
-                .trim_start_matches("log")
-                .trim_start_matches('.')
-                .parse::<u8>()
-                .unwrap_or_default()
-                + 1;
-            file.set_file_name(&format!("log.{}.txt", file_num));
+    pub fn set_file(&self, file: PathBuf) {
+        if file.exists() {
+            std::fs::remove_file(&file).unwrap();
         }
         self.file.set(file).unwrap_or(());
     }

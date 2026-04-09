@@ -23,12 +23,12 @@ impl TryFrom<&ParameterIO> for Recipe {
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         let header = pio
             .object("Header")
-            .ok_or(UKError::MissingAampKey("Recipe missing header", None))?;
+            .ok_or(UKError::MissingAampKey("Recipe missing header", Box::from(None)))?;
         let table_count = header
             .get("TableNum")
             .ok_or(UKError::MissingAampKey(
                 "Recipe header missing table count",
-                None,
+                Box::from(None),
             ))?
             .as_int()?;
         let table_names = (0..table_count)
@@ -55,7 +55,7 @@ impl TryFrom<&ParameterIO> for Recipe {
                         .get("ColumnNum")
                         .ok_or(UKError::MissingAampKey(
                             "Recipe table missing column count",
-                            None,
+                            Box::from(None),
                         ))?
                         .as_int()?;
                     let process = |count| -> Result<_> {
@@ -72,14 +72,14 @@ impl TryFrom<&ParameterIO> for Recipe {
                                         .get(&name)
                                         .ok_or(UKError::MissingAampKey(
                                             "Recipe missing item name",
-                                            None,
+                                            Box::from(None),
                                         ))?
                                         .as_safe_string()?,
                                     table
                                         .get(&num)
                                         .ok_or(UKError::MissingAampKey(
                                             "Recipe missing item count",
-                                            None,
+                                            Box::from(None),
                                         ))?
                                         .as_int()?,
                                 ))
@@ -99,14 +99,14 @@ impl TryFrom<&ParameterIO> for Recipe {
                                                 .get(&name)
                                                 .ok_or(UKError::MissingAampKey(
                                                     "Recipe missing item name",
-                                                    None,
+                                                    Box::from(None),
                                                 ))?
                                                 .as_safe_string()?,
                                             table
                                                 .get(&num)
                                                 .ok_or(UKError::MissingAampKey(
                                                     "Recipe missing item count",
-                                                    None,
+                                                    Box::from(None),
                                                 ))?
                                                 .as_int()?,
                                         ))

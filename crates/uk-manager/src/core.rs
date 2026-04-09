@@ -48,27 +48,27 @@ impl Manager {
     }
 
     #[inline(always)]
-    pub fn settings(&self) -> RwLockReadGuard<Settings> {
+    pub fn settings(&self) -> RwLockReadGuard<'_, Settings> {
         self.settings.read()
     }
 
     #[inline(always)]
-    pub fn settings_mut(&self) -> RwLockWriteGuard<Settings> {
+    pub fn settings_mut(&self) -> RwLockWriteGuard<'_, Settings> {
         self.settings.write()
     }
 
     #[inline(always)]
-    pub fn mod_manager(&self) -> RwLockReadGuard<mods::Manager> {
+    pub fn mod_manager(&self) -> RwLockReadGuard<'_, mods::Manager> {
         self.mod_manager.read()
     }
 
     #[inline(always)]
-    pub fn mod_manager_mut(&self) -> RwLockWriteGuard<mods::Manager> {
+    pub fn mod_manager_mut(&self) -> RwLockWriteGuard<'_, mods::Manager> {
         self.mod_manager.write()
     }
 
     #[inline(always)]
-    pub fn deploy_manager(&self) -> RwLockReadGuard<deploy::Manager> {
+    pub fn deploy_manager(&self) -> RwLockReadGuard<'_, deploy::Manager> {
         self.deploy_manager.read()
     }
 }

@@ -8,7 +8,7 @@ pub use crate::{
     actor::{
         info::ActorInfo,
         params::{
-            aiprog::AIProgram, aischedule::AISchedule, animinfo::AnimationInfo, r#as::AS,
+            aiprog::AIProgram, aischedule::AISchedule, animinfo::AnimationInfo, r#as::anim_seq::AnimSeq,
             aslist::ASList, atcl::AttClient, atcllist::AttClientList, aware::Awareness,
             bonectrl::BoneControl, chemical::Chemical, damage::DamageParam, drop::DropTable,
             general::GeneralParamList, life::LifeCondition, link::ActorLink, lod::Lod,
@@ -26,7 +26,7 @@ pub use crate::{
     event::{info::EventInfo, residents::ResidentEvents},
     font::FontArchive,
     layout::LayoutArchive,
-    map::{lazy::LazyTraverseList, mainfield::location::Location, static_::Static, unit::MapUnit},
+    map::{lazy::LazyTraverseList, mainfield::location::Location, static_::{MainStatic, Static}, unit::MapUnit},
     message::MessagePack,
     quest::product::QuestProduct,
     sound::barslist::BarslistInfo,
@@ -45,8 +45,8 @@ pub enum MergeableResource {
     AIProgram(Box<AIProgram>),
     AISchedule(Box<AISchedule>),
     AnimationInfo(Box<AnimationInfo>),
+    AnimSeq(Box<AnimSeq>),
     AreaData(Box<AreaData>),
-    AS(Box<AS>),
     ASList(Box<ASList>),
     AttClient(Box<AttClient>),
     AttClientList(Box<AttClientList>),
@@ -69,6 +69,7 @@ pub enum MergeableResource {
     LifeCondition(Box<LifeCondition>),
     Location(Box<Location>),
     Lod(Box<Lod>),
+    MainStatic(Box<MainStatic>),
     MapUnit(Box<MapUnit>),
     MessagePack(Box<MessagePack>),
     ModelList(Box<ModelList>),
@@ -102,8 +103,8 @@ impl std::fmt::Display for MergeableResource {
             Self::AIProgram(_) => "AIProgram",
             Self::AISchedule(_) => "AISchedule",
             Self::AnimationInfo(_) => "AnimationInfo",
+            Self::AnimSeq(_) => "AnimSeq",
             Self::AreaData(_) => "AreaData",
-            Self::AS(_) => "AS",
             Self::ASList(_) => "ASList",
             Self::AttClient(_) => "AttClient",
             Self::AttClientList(_) => "AttClientList",
@@ -126,6 +127,7 @@ impl std::fmt::Display for MergeableResource {
             Self::LifeCondition(_) => "LifeCondition",
             Self::Location(_) => "Location",
             Self::Lod(_) => "Lod",
+            Self::MainStatic(_) => "MainStatic",
             Self::MapUnit(_) => "MapUnit",
             Self::MessagePack(_) => "MessagePack",
             Self::ModelList(_) => "ModelList",
@@ -197,8 +199,8 @@ impl_from_res!(ActorLink);
 impl_from_res!(AIProgram);
 impl_from_res!(AISchedule);
 impl_from_res!(AnimationInfo);
+impl_from_res!(AnimSeq);
 impl_from_res!(AreaData);
-impl_from_res!(AS);
 impl_from_res!(ASList);
 impl_from_res!(AttClient);
 impl_from_res!(AttClientList);
@@ -221,6 +223,7 @@ impl_from_res!(LevelSensor);
 impl_from_res!(LifeCondition);
 impl_from_res!(Location);
 impl_from_res!(Lod);
+impl_from_res!(MainStatic);
 impl_from_res!(MapUnit);
 impl_from_res!(MessagePack);
 impl_from_res!(ModelList);
@@ -252,8 +255,8 @@ impl Mergeable for MergeableResource {
             (Self::AnimationInfo(a), Self::AnimationInfo(b)) => {
                 Self::AnimationInfo(Box::new(a.diff(b)))
             }
+            (Self::AnimSeq(a), Self::AnimSeq(b)) => Self::AnimSeq(Box::new(a.diff(b))),
             (Self::AreaData(a), Self::AreaData(b)) => Self::AreaData(Box::new(a.diff(b))),
-            (Self::AS(a), Self::AS(b)) => Self::AS(Box::new(a.diff(b))),
             (Self::ASList(a), Self::ASList(b)) => Self::ASList(Box::new(a.diff(b))),
             (Self::AttClient(a), Self::AttClient(b)) => Self::AttClient(Box::new(a.diff(b))),
             (Self::AttClientList(a), Self::AttClientList(b)) => {
@@ -290,6 +293,7 @@ impl Mergeable for MergeableResource {
             }
             (Self::Location(a), Self::Location(b)) => Self::Location(Box::new(a.diff(b))),
             (Self::Lod(a), Self::Lod(b)) => Self::Lod(Box::new(a.diff(b))),
+            (Self::MainStatic(a), Self::MainStatic(b)) => Self::MainStatic(Box::new(a.diff(b))),
             (Self::MapUnit(a), Self::MapUnit(b)) => Self::MapUnit(Box::new(a.diff(b))),
             (Self::MessagePack(a), Self::MessagePack(b)) => Self::MessagePack(Box::new(a.diff(b))),
             (Self::ModelList(a), Self::ModelList(b)) => Self::ModelList(Box::new(a.diff(b))),
@@ -350,8 +354,8 @@ impl Mergeable for MergeableResource {
             (Self::AnimationInfo(a), Self::AnimationInfo(b)) => {
                 Self::AnimationInfo(Box::new(a.merge(b)))
             }
+            (Self::AnimSeq(a), Self::AnimSeq(b)) => Self::AnimSeq(Box::new(a.merge(b))),
             (Self::AreaData(a), Self::AreaData(b)) => Self::AreaData(Box::new(a.merge(b))),
-            (Self::AS(a), Self::AS(b)) => Self::AS(Box::new(a.merge(b))),
             (Self::ASList(a), Self::ASList(b)) => Self::ASList(Box::new(a.merge(b))),
             (Self::AttClient(a), Self::AttClient(b)) => Self::AttClient(Box::new(a.merge(b))),
             (Self::AttClientList(a), Self::AttClientList(b)) => {
@@ -388,6 +392,7 @@ impl Mergeable for MergeableResource {
             }
             (Self::Location(a), Self::Location(b)) => Self::Location(Box::new(a.merge(b))),
             (Self::Lod(a), Self::Lod(b)) => Self::Lod(Box::new(a.merge(b))),
+            (Self::MainStatic(a), Self::MainStatic(b)) => Self::MainStatic(Box::new(a.merge(b))),
             (Self::MapUnit(a), Self::MapUnit(b)) => Self::MapUnit(Box::new(a.merge(b))),
             (Self::MessagePack(a), Self::MessagePack(b)) => Self::MessagePack(Box::new(a.merge(b))),
             (Self::ModelList(a), Self::ModelList(b)) => Self::ModelList(Box::new(a.merge(b))),
@@ -441,7 +446,7 @@ impl Mergeable for MergeableResource {
 
 impl MergeableResource {
     pub fn from_binary(name: &Path, data: &[u8]) -> Result<Option<MergeableResource>> {
-        let result: anyhow::Result<Option<MergeableResource>> = if ActorInfo::path_matches(name) {
+        let result: Result<Option<MergeableResource>> = if ActorInfo::path_matches(name) {
             Ok(Some(Self::ActorInfo(Box::new(ActorInfo::from_binary(
                 data,
             )?))))
@@ -461,10 +466,10 @@ impl MergeableResource {
             Ok(Some(Self::AnimationInfo(Box::new(
                 AnimationInfo::from_binary(data)?,
             ))))
+        } else if AnimSeq::path_matches(name) {
+            Ok(Some(Self::AnimSeq(Box::new(AnimSeq::from_binary(data)?))))
         } else if AreaData::path_matches(name) {
             Ok(Some(Self::AreaData(Box::new(AreaData::from_binary(data)?))))
-        } else if AS::path_matches(name) {
-            Ok(Some(Self::AS(Box::new(AS::from_binary(data)?))))
         } else if ASList::path_matches(name) {
             Ok(Some(Self::ASList(Box::new(ASList::from_binary(data)?))))
         } else if AttClient::path_matches(name) {
@@ -541,6 +546,8 @@ impl MergeableResource {
             Ok(Some(Self::Location(Box::new(Location::from_binary(data)?))))
         } else if Lod::path_matches(name) {
             Ok(Some(Self::Lod(Box::new(Lod::from_binary(data)?))))
+        } else if MainStatic::path_matches(name) {
+            Ok(Some(Self::MainStatic(Box::new(MainStatic::from_binary(data)?))))
         } else if MapUnit::path_matches(name) {
             Ok(Some(Self::MapUnit(Box::new(MapUnit::from_binary(data)?))))
         } else if MessagePack::path_matches(name) {
@@ -605,9 +612,10 @@ impl MergeableResource {
             )?))))
         } else if data.len() > 4 && &data[0..4] == b"AAMP" {
             Ok(Some(Self::GenericAamp(Box::new(
-                roead::aamp::ParameterIO::from_binary(data)?,
+                ParameterIO::from_binary(data)?,
             ))))
-        } else if data.len() > 2 && matches!(&data[..2], b"BY" | b"YB") {
+        } else if data.len() > 4 && matches!(&data[..2], b"BY" | b"YB") &&
+            (as_u16_be(&data[2..4]) < 8 || as_u16_le(&data[2..4]) < 8) {
             Ok(Some(Self::GenericByml(Box::new(Byml::from_binary(data)?))))
         } else {
             Ok(None)
@@ -631,8 +639,8 @@ impl MergeableResource {
             Self::AIProgram(v) => v.into_binary(endian),
             Self::AISchedule(v) => v.into_binary(endian),
             Self::AnimationInfo(v) => v.into_binary(endian),
+            Self::AnimSeq(v) => v.into_binary(endian),
             Self::AreaData(v) => v.into_binary(endian),
-            Self::AS(v) => v.into_binary(endian),
             Self::ASList(v) => v.into_binary(endian),
             Self::AttClient(v) => v.into_binary(endian),
             Self::AttClientList(v) => v.into_binary(endian),
@@ -655,6 +663,7 @@ impl MergeableResource {
             Self::LifeCondition(v) => v.into_binary(endian),
             Self::Location(v) => v.into_binary(endian),
             Self::Lod(v) => v.into_binary(endian),
+            Self::MainStatic(v) => v.into_binary(endian),
             Self::MapUnit(v) => v.into_binary(endian),
             Self::MessagePack(v) => v.into_binary(endian),
             Self::ModelList(v) => v.into_binary(endian),
@@ -684,19 +693,29 @@ impl MergeableResource {
     }
 }
 
+fn as_u16_be(array: &[u8]) -> u16 {
+    ((array[1] as u16) <<  0) +
+    ((array[0] as u16) <<  8)
+}
+
+fn as_u16_le(array: &[u8]) -> u16 {
+    ((array[0] as u16) <<  0) +
+    ((array[1] as u16) <<  8)
+}
+
 pub trait ResourceRegister {
     fn contains_resource(&self, canon: &str) -> bool;
-    fn add_resource(&self, canon: &str, resource: ResourceData) -> anyhow::Result<()>;
+    fn add_resource(&self, canon: &str, resource: ResourceData) -> Result<()>;
 }
 
 impl ResourceRegister for std::cell::RefCell<BTreeMap<String, ResourceData>> {
-    fn add_resource(&self, canon: &str, resource: ResourceData) -> anyhow::Result<()> {
-        self.borrow_mut().insert(canon.into(), resource);
-        Ok(())
-    }
-
     fn contains_resource(&self, canon: &str) -> bool {
         self.borrow().contains_key(canon)
+    }
+
+    fn add_resource(&self, canon: &str, resource: ResourceData) -> Result<()> {
+        self.borrow_mut().insert(canon.into(), resource);
+        Ok(())
     }
 }
 

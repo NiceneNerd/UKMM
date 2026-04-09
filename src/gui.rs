@@ -24,7 +24,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow_ext::{Context, Result};
+use anyhow::{Context, Result};
 use eframe::{
     egui::{IconData, InnerResponse},
     epaint::text::TextWrapping,
@@ -40,6 +40,8 @@ use picker::FilePickerState;
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 use uk_content::util::HashMap;
+use uk_localization::*;
+use uk_localization::string_ext::LocString;
 use uk_manager::{
     core::Manager,
     mods::{LookupMod, Mod},
@@ -79,7 +81,16 @@ pub enum Tabs {
 
 impl std::fmt::Display for Tabs {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        let string = match self {
+            Self::Info => "Tab_Info".localize(),
+            Self::Install => "Tab_Install".localize(),
+            Self::Deploy => "Tab_Deploy".localize(),
+            Self::Mods => "Tab_Mods".localize(),
+            Self::Log => "Tab_Log".localize(),
+            Self::Settings => "Tab_Settings".localize(),
+            Self::Package => "Tab_Package".localize(),
+        };
+        write!(f, "{}", string)
     }
 }
 
@@ -112,7 +123,7 @@ impl Sort {
             }
             Sort::Category => {
                 Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                    a.meta.category.cmp(&b.meta.category)
+                    a.meta.category.u8().cmp(&b.meta.category.u8())
                 })
             }
             Sort::Version => {
@@ -137,6 +148,7 @@ pub enum Message {
     ChangeProfile(String),
     ChangeSort(Sort, bool),
     CheckMeta,
+    CleanProfile(String),
     ClearDrag,
     ClearSelect,
     CloseAbout,
@@ -191,6 +203,7 @@ pub enum Message {
     SetChangelog(String),
     SetDownloading(String),
     SetFocus(FocusedPane),
+    SetLanguage(LocLang),
     SetTheme(uk_ui::visuals::Theme),
     ShowAbout,
     ShowPackagingOptions(FxHashSet<PathBuf>),
@@ -261,7 +274,8 @@ pub struct App {
 
 impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
-        if option_env!("UPDATE_PLATFORM").unwrap_or_default() == "steamdeck" {
+        #[cfg(not(windows))]
+        if std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "wayland" {
             cc.egui_ctx.set_pixels_per_point(
                 std::env::var("WINIT_X11_SCALE_FACTOR")
                     .ok()
@@ -280,10 +294,9 @@ impl App {
         let mods: Vec<_> = core.mod_manager().all_mods().collect();
         let (send, recv) = flume::unbounded();
         tasks::ONECLICK_SENDER.set(send.clone()).unwrap_or(());
-        crate::logger::LOGGER.set_file(Settings::config_dir().join("log.txt"));
-        log::info!("Logger initialized");
         let temp_settings = core.settings().clone();
         let platform = core.settings().current_mode;
+        LOCALIZATION.write().update_language(&temp_settings.lang);
         Self {
             selected: mods.first().cloned().into_iter().collect(),
             drag_index: None,
@@ -296,14 +309,14 @@ impl App {
             mods,
             temp_settings,
             changelog: {
-                let last_version = core
-                    .settings()
-                    .last_version
-                    .as_ref()
-                    .map(|v| v.to_string())
-                    .unwrap_or_else(|| "0.0.0".into());
-                if last_version == "0.0.0" {
-                    Some(include_str!("../assets/intro.md").into())
+                let settings = core.settings();
+                let is_first_run = settings.last_version.is_none();
+                let needs_config = settings.platform_config().is_none();
+                drop(settings);
+                
+                // Show intro if first run OR if platform not configured
+                if is_first_run || needs_config {
+                    Some("Intro_Message".localize().to_string())
                 } else {
                     tasks::get_releases(core.clone(), send.clone());
                     None

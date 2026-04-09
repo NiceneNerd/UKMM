@@ -1,11 +1,3 @@
-# Temporary notice: UKMM download moved until v0.17.0
-
-Due to repo collaborator status timing, v0.16.0 was released on [this fork](
-https://github.com/GingerAvalanche/ukmm). Plans are underway to move the
-downloads back to this repo as the official location again for v0.17.0 and
-beyond. When that happens, the automatic updater included in both that repo
-and this one will point back to this repo for further updates.
-
 # UKMM: U-King Mod Manager
 
 U-King Mod Manager is a tool for managing and merging mods for *The Legend of
@@ -53,7 +45,7 @@ Requirements:
 
 - Recent Rust toolchain (MSRV 1.80)
 - A compiler that supports C++17
-- Modern CMake (3.12+)
+- CMake (3.12+ and <4.0)
 
 Nothing else special is required. Generate a release build by running `cargo
 build --release` in the root repo folder. It may take a while.
@@ -78,3 +70,13 @@ Contributions are always welcome. Some notes about the process:
 This software is licensed under the terms of the GNU General Public License,
 version 3 or later. The source is publicly available on
 [GitHub](https://github.com/NiceneNerd/UKMM).
+
+## Special Thanks
+
+[Léo Lam](https://github.com/leoetlino): oead, many other BotW libraries  
+[Anna Clemens](https://github.com/anna-is-cute): original BotW MSBT libraries  
+Gray: Dutch localization  
+[Nebroc](https://gamebanana.com/members/1920307): French localization  
+Waikuteru: German localization  
+𝘽𝙤𝙤𝙢𝙞𝙚𝙨!★: Italian localization  
+[carbonatedtea](https://github.com/k-carbonatedtea): Simplified Chinese localization  

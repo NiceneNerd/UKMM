@@ -42,32 +42,32 @@ impl TryFrom<&ParameterIO> for Chemical {
     fn try_from(pio: &ParameterIO) -> Result<Self> {
         let chem_root = pio.list("chemical_root").ok_or(UKError::MissingAampKey(
             "Chemical missing chemical_root",
-            None,
+            Box::from(None),
         ))?;
         let shape_num = chem_root
             .object("chemical_header")
             .ok_or(UKError::MissingAampKey(
                 "Chemical missing chemical_header",
-                None,
+                Box::from(None),
             ))?
             .get("res_shape_num")
             .ok_or(UKError::MissingAampKey(
                 "Chemical missing shape count",
-                None,
+                Box::from(None),
             ))?
             .as_int()?;
         let chemical_body = chem_root
             .list("chemical_body")
             .ok_or(UKError::MissingAampKey(
                 "Chemical missing chemical_body",
-                None,
+                Box::from(None),
             ))?;
         Ok(Self {
             unknown: chem_root
                 .object("chemical_header")
                 .ok_or(UKError::MissingAampKey(
                     "Chemical missing chemical_header",
-                    None,
+                    Box::from(None),
                 ))?
                 .0
                 .get(&3635073347)
@@ -80,14 +80,14 @@ impl TryFrom<&ParameterIO> for Chemical {
                             .object(&format!("rigid_c_{:02}", i))
                             .ok_or(UKError::MissingAampKey(
                                 "Chemical missing rigid_c entry",
-                                None,
+                                Box::from(None),
                             ))
                             .cloned()?,
                         shape:   chemical_body
                             .object(&format!("shape_{:02}", i))
                             .ok_or(UKError::MissingAampKey(
                                 "Chemical missing shape entry",
-                                None,
+                                Box::from(None),
                             ))
                             .cloned()?,
                     }))

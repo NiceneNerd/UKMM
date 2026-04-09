@@ -92,10 +92,10 @@ impl<'de> Deserialize<'de> for ModReader {
                     decompressor: super::init_decompressor(),
                     manifest,
                     options,
-                    zip: Some(
+                    zip: Arc::new(Some(
                         super::ParallelZipReader::open(&path, false)
                             .map_err(serde::de::Error::custom)?,
-                    ),
+                    )),
                     path,
                 })
             }
