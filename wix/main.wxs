@@ -70,7 +70,7 @@
         <Package Id='*'
             Keywords='Installer'
             Description='A new mod manager for The Legend of Zelda: Breath of the Wild. Successor to BCML.'
-            Manufacturer='Caleb Smith'
+            Manufacturer='Caleb Smith, Ginger Chody'
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'
@@ -186,7 +186,7 @@
         <Icon Id='ProductICO' SourceFile='assets/ukmm.ico'/>
         <Property Id='ARPPRODUCTICON' Value='ProductICO' />
         
-        <Property Id='ARPHELPLINK' Value='https://github.com/GingerAvalanche/ukmm'/>
+        <Property Id='ARPHELPLINK' Value='https://github.com/NiceneNerd/ukmm'/>
         
         <UI>
             <UIRef Id='WixUI_FeatureTree'/>
