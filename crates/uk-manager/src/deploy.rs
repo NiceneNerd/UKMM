@@ -90,7 +90,11 @@ impl Manager {
                                 Default::default()
                             }
                         };
-                        old_pending.try_into()?
+                        old_pending.try_into().unwrap_or_else(|e| {
+                            log::warn!("Could not load pending deployment data:\n{}", &e);
+                            log::info!("No files pending deployment");
+                            Default::default()
+                        })
                     }
                 }
             }

@@ -22,6 +22,7 @@ impl TryFrom<crate::deploy::OldPendingLog> for PendingLog {
             let mut map: Folder = Default::default();
             for f in files {
                 let path = PathBuf::from(f.as_str());
+                if path.to_string_lossy().is_empty() { continue; }
                 let mut iter = path.iter();
                 let name: String = iter.next()
                     .ok_or(anyhow!("{} is empty?", f))?

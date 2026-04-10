@@ -5,6 +5,16 @@ All notable changes to UKMM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0-1] 2026-04-10
+
+This release is a hotfix for 0.17.0, which fixes conversions from the old pending
+deployment log format to the new one.
+
+**Fixed**
+
+- Fixed a crash on program bootup, related to path traversal when converting
+  old pending logs to new ones when the old logs contain an empty path
+
 ## [0.17.0] - 2026-04-09
 
 This release includes multiple *breaking changes* to the UKMM mod format. This means
