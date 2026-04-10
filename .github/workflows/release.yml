@@ -116,7 +116,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install cargo-dist
-        run: ${{ matrix.install_dist }}
+        run: ${{ matrix.install_dist.run }}
       - name: Install packages (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libspeechd-dev libxkbcommon-dev libssl-dev libgtk-3-dev
