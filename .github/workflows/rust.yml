@@ -20,7 +20,7 @@ jobs:
       code: ${{ steps.get_changes.outputs.code }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v4
         id: get_changes
         with:
           filters: |
@@ -40,7 +40,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Cache crates
-      uses: actions/cache@v3
+      uses: actions/cache@v5
       with:
         key: ${{ matrix.platform }}-cargo-cache
         path: |
@@ -54,7 +54,7 @@ jobs:
       if: matrix.platform == 'windows-latest'
       uses: ilammy/setup-nasm@v1
     - name: Install latest nightly
-      uses: actions-rs/toolchain@v1
+      uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         toolchain: nightly
     - name: Build
