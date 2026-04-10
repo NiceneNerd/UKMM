@@ -19,7 +19,7 @@ jobs:
     outputs:
       code: ${{ steps.get_changes.outputs.code }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v2
         id: get_changes
         with:
@@ -38,7 +38,7 @@ jobs:
         platform: [ubuntu-latest, windows-latest, macos-14]
     runs-on: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
     - name: Cache crates
       uses: actions/cache@v3
       with:

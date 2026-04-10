@@ -134,7 +134,7 @@ zstd = { version = "0.13.1", features = ["experimental"] }
 [workspace.metadata.dist]
 allow-dirty = ["ci", "msi"]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.18.0"
+cargo-dist-version = "0.31.0"
 # CI backends to support
 ci = "github"
 # The installers to generate for each app
@@ -151,8 +151,8 @@ pr-run-mode = "plan"
 # Whether to install an updater program
 install-updater = true
 [workspace.metadata.dist.github-custom-runners]
-aarch64-apple-darwin = "macos-13"
-x86_64-apple-darwin = "macos-13"
+aarch64-apple-darwin = "macos-14"
+x86_64-apple-darwin = "macos-14"
 x86_64-unknown-linux-gnu = "ubuntu-22.04"
 
 # The profile that 'cargo dist' will build with
