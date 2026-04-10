@@ -26,11 +26,17 @@ impl TryFrom<&ParameterIO> for AnimSeq {
             elements: value.param_root
                 .lists
                 .get("Elements")
-                .ok_or(UKError::MissingAampKey("Missing Elements", Box::from(None)))?
+                .ok_or(UKError::MissingAampKey("Bas file missing Elements", Box::from(None)))?
                 .lists
                 .iter()
                 .map(|(n, l)| -> Result<(i32, Element)> {
-                    Ok((super::get_element_index(n.hash())?, l.try_into()?))
+                    let index = super::get_element_index(n.hash())
+                        .context(format!("Could not get index of Element with key hash {}", n))?;
+                    Ok((
+                        index,
+                        l.try_into()
+                            .context(format!("Could not parse Element{}", index))?
+                    ))
                 })
                 .collect::<Result<_>>()?,
             common_params: value.param_root

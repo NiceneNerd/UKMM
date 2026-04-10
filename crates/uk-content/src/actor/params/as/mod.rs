@@ -105,11 +105,11 @@ impl TryFrom<&ParameterList> for Element {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let type_index = value.objects
             .get("Parameters")
-            .context("Missing Parameters")?
+            .context("Element missing Parameters")?
             .get("TypeIndex")
-            .context("Missing TypeIndex")?
+            .context("Element missing TypeIndex")?
             .as_i32()
-            .context("TypeIndex not i32")?;
+            .context("Element TypeIndex must be signed integer (e.g. TypeIndex: 67)")?;
         match type_index.into() {
             ResType::AbsTemperatureBlender |
             ResType::BoneBlender |
