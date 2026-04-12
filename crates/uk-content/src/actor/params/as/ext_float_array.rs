@@ -20,10 +20,11 @@ impl TryFrom<&ParameterList> for FloatArray {
                 .ok_or(UKError::MissingAampKey("FloatArray missing FloatArray0", Box::from(None)))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, f32)> {
+                    let index = super::get_value_index(n.hash())
+                        .context(format!("Could not get index of Value with key hash {}", n))?;
                     Ok((
-                        super::get_value_index(n.hash())
-                            .context(format!("FloatArray has invalid key: {}", n))?,
-                        v.as_f32().context("FloatArray contains non-float")?
+                        index,
+                        v.as_f32().context(format!("FloatArray has invalid Value{}", index))?
                     ))
                 })
                 .collect::<Result<_>>()?,

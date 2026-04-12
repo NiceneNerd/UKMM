@@ -21,9 +21,13 @@ impl TryFrom<&ParameterList> for StringArray {
                 .ok_or(UKError::MissingAampKey("StringArray missing StringArray0", Box::from(None)))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, String)> {
+                    let index = super::get_value_index(n.hash())
+                        .context(format!("Could not get index of Value with key hash {}", n))?;
                     Ok((
-                        super::get_value_index(n.hash())?,
-                        v.as_str().context("StringArray contains non-string")?.into()
+                        index,
+                        v.as_str()
+                            .context(format!("StringArray has invalid Value{}", index))?
+                            .into()
                     ))
                 })
                 .collect::<Result<_>>()?,

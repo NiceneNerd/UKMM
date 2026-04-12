@@ -35,7 +35,7 @@ impl TryFrom<&ParameterList> for Resource {
                     .collect::<Result<_>>()
                 )
                 .transpose()
-                .context("Resource has invalid Extend")?,
+                .context("Element has invalid Extend")?,
         })
     }
 }
