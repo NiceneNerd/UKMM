@@ -20,10 +20,11 @@ impl TryFrom<&ParameterList> for IntArray {
                 .ok_or(UKError::MissingAampKey("IntArray missing IntArray0", Box::from(None)))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, i32)> {
+                    let index = super::get_value_index(n.hash())
+                        .context(format!("Could not get index of Value with key hash {}", n))?;
                     Ok((
-                        super::get_value_index(n.hash())
-                            .context(format!("IntArray has invalid key: {}", n))?,
-                        v.as_i32().context("IntArray contains non-integer")?
+                        index,
+                        v.as_i32().context(format!("IntArray has invalid Value{}", index))?
                     ))
                 })
                 .collect::<Result<_>>()?,

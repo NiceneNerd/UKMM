@@ -19,15 +19,17 @@ impl TryFrom<&ParameterList> for ResourceWithChildren {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let children = value.objects
             .get("Children")
-            .ok_or(UKError::MissingAampKey("ResourceWithChildren missing Children", Box::from(None)))?;
+            .ok_or(UKError::MissingAampKey("Element missing Children", Box::from(None)))?;
         Ok(Self {
             base: Some(value.try_into()?),
             children: children
                 .iter()
                 .map(|(n, p)| -> Result<(i32, i32)> {
+                    let index = get_child_index(n.hash())
+                        .context(format!("Could not get index of Child with key hash {}", n))?;
                     Ok((
-                        get_child_index(n.hash())?,
-                        p.as_i32().context("ResourceWithChildren has invalid Child Index")?
+                        index,
+                        p.as_i32().context(format!("Element has invalid Child{}", index))?
                     ))
                 })
                 .collect::<Result<_>>()?,

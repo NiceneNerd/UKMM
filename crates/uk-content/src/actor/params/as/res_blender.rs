@@ -19,20 +19,20 @@ impl TryFrom<&ParameterList> for BlenderResource {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let parameters = value.objects
             .get("Parameters")
-            .ok_or(UKError::MissingAampKey("BlenderResource missing Parameters", Box::from(None)))?;
+            .ok_or(UKError::MissingAampKey("Element missing Parameters", Box::from(None)))?;
         Ok(Self {
             base: Some(value.try_into()?),
             no_sync: parameters
                 .get("NoSync")
-                .map(|p| p.as_bool().context("BlenderResource has invalid NoSync"))
+                .map(|p| p.as_bool().context("Element has invalid NoSync"))
                 .transpose()?,
             judge_once: parameters
                 .get("JudgeOnce")
-                .map(|p| p.as_bool().context("BlenderResource has invalid JudgeOnce"))
+                .map(|p| p.as_bool().context("Element has invalid JudgeOnce"))
                 .transpose()?,
             input_limit: parameters
                 .get("InputLimit")
-                .map(|p| p.as_f32().context("BlenderResource has invalid InputLimit"))
+                .map(|p| p.as_f32().context("Element has invalid InputLimit"))
                 .transpose()?,
         })
     }

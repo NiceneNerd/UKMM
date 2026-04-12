@@ -140,9 +140,7 @@ impl TryFrom<&ParameterList> for Element {
             ResType::WeightBlender |
             ResType::WindVelocityBlender |
             ResType::YSpeedBlender |
-            ResType::ZEx00ExposureBlender => Ok(Element::Blender(
-                value.try_into().context("Bas file has invalid Blender")?
-            )),
+            ResType::ZEx00ExposureBlender => Ok(Element::Blender(value.try_into()?)),
             ResType::AbsTemperatureSelector |
             ResType::ArmorSelector |
             ResType::ArrowSelector |
@@ -208,30 +206,18 @@ impl TryFrom<&ParameterList> for Element {
             ResType::WeatherSelector |
             ResType::WeightSelector |
             ResType::YSpeedSelector |
-            ResType::ZEx00ExposureSelector => Ok(Element::Selector(
-                value.try_into().context("Bas file has invalid Selector")?
-            )),
+            ResType::ZEx00ExposureSelector => Ok(Element::Selector(value.try_into()?)),
             ResType::BoneVisibilityAsset |
             ResType::MatVisibilityAsset |
             ResType::ShaderParamAsset |
             ResType::ShaderParamColorAsset |
             ResType::ShaderParamTexSRTAsset |
-            ResType::TexturePatternAsset => Ok(Element::AssetEx(
-                value.try_into().context("Bas file has invalid AssetEx")?
-            )),
+            ResType::TexturePatternAsset => Ok(Element::AssetEx(value.try_into()?)),
             ResType::ClearMatAnmAsset |
-            ResType::NoAnmAsset => Ok(Element::Resource(
-                value.try_into().context("Bas file has invalid Resource")?
-            )),
-            ResType::SequencePlayContainer => Ok(Element::SequencePlayContainer(
-                value.try_into().context("Bas file has invalid SequencePlayContainer")?
-            )),
-            ResType::SkeletalAsset => Ok(Element::SkeletalAsset(
-                value.try_into().context("Bas file has invalid SkeletalAsset")?
-            )),
-            ResType::SyncPlayContainer => Ok(Element::ResourceWithChildren(
-                value.try_into().context("Bas file has invalid ResourceWithChildren")?
-            )),
+            ResType::NoAnmAsset => Ok(Element::Resource(value.try_into()?)),
+            ResType::SequencePlayContainer => Ok(Element::SequencePlayContainer(value.try_into()?)),
+            ResType::SkeletalAsset => Ok(Element::SkeletalAsset(value.try_into()?)),
+            ResType::SyncPlayContainer => Ok(Element::ResourceWithChildren(value.try_into()?)),
             ResType::Invalid => Err(UKError::Any(anyhow!(
                 "Bas file has invalid Element (TypeIndex: {})",
                 type_index

@@ -18,16 +18,16 @@ impl TryFrom<&ParameterList> for SelectorResource {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let parameters = value.objects
             .get("Parameters")
-            .ok_or(UKError::MissingAampKey("SelectorResource missing Parameters", Box::from(None)))?;
+            .ok_or(UKError::MissingAampKey("Element missing Parameters", Box::from(None)))?;
         Ok(Self {
             base: Some(value.try_into()?),
             no_sync: parameters
                 .get("NoSync")
-                .map(|p| p.as_bool().context("SelectorResource has invalid NoSync"))
+                .map(|p| p.as_bool().context("Element has invalid NoSync"))
                 .transpose()?,
             judge_once: parameters
                 .get("JudgeOnce")
-                .map(|p| p.as_bool().context("SelectorResource has invalid JudgeOnce"))
+                .map(|p| p.as_bool().context("Element has invalid JudgeOnce"))
                 .transpose()?,
         })
     }

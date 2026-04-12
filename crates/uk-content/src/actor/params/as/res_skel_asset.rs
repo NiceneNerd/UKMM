@@ -19,23 +19,20 @@ impl TryFrom<&ParameterList> for SkeletalAssetResource {
     fn try_from(value: &ParameterList) -> Result<Self> {
         let parameters = value.objects
             .get("Parameters")
-            .ok_or(UKError::MissingAampKey(
-                "SkeletalAssetResource missing Parameters",
-                Box::from(None)
-            ))?;
+            .ok_or(UKError::MissingAampKey("Element missing Parameters", Box::from(None)))?;
         Ok(Self {
             base: Some(value.try_into()?),
             init_anm_driven: parameters
                 .get("InitAnmDriven")
-                .map(|p| p.as_i32().context("SkeletalAssetResource has invalid InitAnmDriven"))
+                .map(|p| p.as_i32().context("Element has invalid InitAnmDriven"))
                 .transpose()?,
             morph: parameters
                 .get("Morph")
-                .map(|p| p.as_f32().context("SkeletalAssetResource has invalid Morph"))
+                .map(|p| p.as_f32().context("Element has invalid Morph"))
                 .transpose()?,
             reset_morph: parameters
                 .get("ResetMorph")
-                .map(|p| p.as_f32().context("SkeletalAssetResource has invalid ResetMorph"))
+                .map(|p| p.as_f32().context("Element has invalid ResetMorph"))
                 .transpose()?,
         })
     }

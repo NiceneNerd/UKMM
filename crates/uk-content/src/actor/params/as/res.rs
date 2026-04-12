@@ -35,7 +35,7 @@ impl TryFrom<&ParameterList> for Resource {
                     .collect::<Result<_>>()
                 )
                 .transpose()
-                .context("Resource has invalid Extend")?,
+                .context("Element has invalid Extend")?,
         })
     }
 }
@@ -46,7 +46,7 @@ impl From<Resource> for ParameterList {
             objects: objs!(
                 "Parameters" => params!(
                     "TypeIndex" => value.type_index
-                        .expect("Resource TypeIndex should have been read on import")
+                        .expect("Element TypeIndex should have been read on import")
                         .into(),
                 )
             ),

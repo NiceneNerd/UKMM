@@ -20,11 +20,11 @@ impl TryFrom<&ParameterList> for AssetResource {
             base: Some(value.try_into()?),
             file_name: Some(value.objects
                 .get("Parameters")
-                .ok_or(UKError::MissingAampKey("AssetResource missing Parameters", Box::from(None)))?
+                .ok_or(UKError::MissingAampKey("Element missing Parameters", Box::from(None)))?
                 .get("FileName")
-                .ok_or(UKError::MissingAampKey("AssetResource missing FileName", Box::from(None)))?
+                .ok_or(UKError::MissingAampKey("Element missing FileName", Box::from(None)))?
                 .as_str()
-                .context("AssetResource has invalid FileName")?
+                .context("Element has invalid FileName")?
                 .into()),
         })
     }
