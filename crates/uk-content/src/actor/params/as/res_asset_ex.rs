@@ -1,4 +1,3 @@
-use anyhow::Context;
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
@@ -15,7 +14,7 @@ impl TryFrom<&ParameterList> for AssetExResource {
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            base: Some(value.try_into().context("AssetExResource has invalid AssetResource")?),
+            base: Some(value.try_into()?),
         })
     }
 }

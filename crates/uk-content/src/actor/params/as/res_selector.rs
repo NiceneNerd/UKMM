@@ -20,7 +20,7 @@ impl TryFrom<&ParameterList> for SelectorResource {
             .get("Parameters")
             .ok_or(UKError::MissingAampKey("SelectorResource missing Parameters", Box::from(None)))?;
         Ok(Self {
-            base: Some(value.try_into().context("SelectorResource has invalid ResourceWithChildren")?),
+            base: Some(value.try_into()?),
             no_sync: parameters
                 .get("NoSync")
                 .map(|p| p.as_bool().context("SelectorResource has invalid NoSync"))

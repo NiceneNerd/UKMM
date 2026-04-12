@@ -21,7 +21,7 @@ impl TryFrom<&ParameterList> for ResourceWithChildren {
             .get("Children")
             .ok_or(UKError::MissingAampKey("ResourceWithChildren missing Children", Box::from(None)))?;
         Ok(Self {
-            base: Some(value.try_into().context("ResourceWithChildren has invalid Resource")?),
+            base: Some(value.try_into()?),
             children: children
                 .iter()
                 .map(|(n, p)| -> Result<(i32, i32)> {

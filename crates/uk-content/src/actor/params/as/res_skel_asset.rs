@@ -24,7 +24,7 @@ impl TryFrom<&ParameterList> for SkeletalAssetResource {
                 Box::from(None)
             ))?;
         Ok(Self {
-            base: Some(value.try_into().context("SkeletalAssetResource has invalid AssetResource")?),
+            base: Some(value.try_into()?),
             init_anm_driven: parameters
                 .get("InitAnmDriven")
                 .map(|p| p.as_i32().context("SkeletalAssetResource has invalid InitAnmDriven"))

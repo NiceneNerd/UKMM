@@ -21,7 +21,7 @@ impl TryFrom<&ParameterList> for BlenderResource {
             .get("Parameters")
             .ok_or(UKError::MissingAampKey("BlenderResource missing Parameters", Box::from(None)))?;
         Ok(Self {
-            base: Some(value.try_into().context("BlenderResource has invalid ResourceWithChildren")?),
+            base: Some(value.try_into()?),
             no_sync: parameters
                 .get("NoSync")
                 .map(|p| p.as_bool().context("BlenderResource has invalid NoSync"))

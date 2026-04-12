@@ -16,7 +16,7 @@ impl TryFrom<&ParameterList> for SequencePlayContainerResource {
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            base: Some(value.try_into().context("SequencePlayContainerResource has invalid ResourceWithChildren")?),
+            base: Some(value.try_into()?),
             sequence_loop: Some(value.objects
                 .get("Parameters")
                 .ok_or(UKError::MissingAampKey(
