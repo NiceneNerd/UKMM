@@ -46,7 +46,7 @@ impl From<Resource> for ParameterList {
             objects: objs!(
                 "Parameters" => params!(
                     "TypeIndex" => value.type_index
-                        .expect("Element TypeIndex should have been read on import")
+                        .expect("Resource TypeIndex should have been read on import")
                         .into(),
                 )
             ),
