@@ -345,6 +345,8 @@ pub fn parse_meta(file: PathBuf) -> Result<Message> {
 
 pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     let portable = path.join("portable");
+    let local_cemu = dirs2::data_local_dir().expect("YIKES").join("Cemu");
+    let config_cemu = dirs2::config_dir().expect("YIKES").join("Cemu");
     let settings_path = if let Some(path) = portable
         .join("settings.xml")
         .exists_then()
@@ -352,12 +354,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         path
     } else {
         #[cfg(windows)]
-        if let Some(path) = dirs2::config_dir()
-            .expect("YIKES")
-            .join("Cemu")
-            .join("settings.xml")
-            .exists_then()
-        {
+        if let Some(path) = config_cemu.join("settings.xml").exists_then() {
             path
         } else if let Some(path) = path.join("settings.xml").exists_then() {
             path
@@ -367,12 +364,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             )
         }
         #[cfg(not(windows))]
-        if let Some(path) = dirs2::config_dir()
-            .expect("YIKES")
-            .join("Cemu")
-            .join("settings.xml")
-            .exists_then()
-        {
+        if let Some(path) = config_cemu.join("settings.xml").exists_then() {
             path
         } else {
             anyhow::bail!(
@@ -399,12 +391,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         .or_else(|| {
             #[cfg(windows)]
             {
-                if let Some(path) = dirs2::config_dir()
-                    .expect("YIKES")
-                    .join("Cemu")
-                    .join("mlc01")
-                    .exists_then()
-                {
+                if let Some(path) = config_cemu.join("mlc01").exists_then() {
                     Some(path)
                 } else {
                     path.join("mlc01").exists_then()
@@ -412,28 +399,16 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
             }
             #[cfg(not(windows))]
             {
-                dirs2::data_local_dir()
-                    .expect("DOUBLE YIKES")
-                    .join("Cemu")
-                    .join("mlc01")
-                    .exists_then()
+                local_cemu.join("mlc01").exists_then()
             }
         });
     static REGIONS: &[&str] = &[
         "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
     ];
-    let (base, update, dlc, wua, encrypted) = if let Some(cache) = dirs2::config_dir()
-        .expect("YIKES")
-        .join("Cemu")
+    let (base, update, dlc, wua, encrypted) = if let Some(cache) = config_cemu
         .join("title_list_cache.xml")
         .exists_then()
-        .or_else(|| {
-            dirs2::data_local_dir()
-                .expect("YIKES")
-                .join("Cemu")
-                .join("title_list_cache.xml")
-                .exists_then()
-        })
+        .or_else(|| local_cemu.join("title_list_cache.xml").exists_then())
     {
         let title_list = fs::read_to_string(&cache).context("Failed to open Cemu title cache file")?;
         let title_tree = roxmltree::Document::parse(&title_list)
@@ -471,15 +446,25 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
                 } else {
                     None
                 }
-            }).for_each(|(dump_type, format, path)| {
+            }).for_each(|(dump_type, format, mut dump_path)| {
+                #[allow(irrefutable_let_patterns)]
+                {
+                    if dump_path.is_relative() {
+                        dump_path = if let p = path.join(&dump_path) && p.exists() { p }
+                        else if let p = portable.join(&dump_path) && p.exists() { p }
+                        else if let p = local_cemu.join(&dump_path) && p.exists() { p }
+                        else if let p = config_cemu.join(&dump_path) && p.exists() { p }
+                        else { return; };
+                    }
+                }
                 match (dump_type, format) {
-                    ("00050000", 1) => base_folder = Some(path.join("content")),
-                    ("0005000c", 1) => dlc_folder = Some(path.join("content").join("0010")),
-                    ("0005000e", 1) => update_folder = Some(path.join("content")),
+                    ("00050000", 1) => base_folder = Some(dump_path.join("content")),
+                    ("0005000c", 1) => dlc_folder = Some(dump_path.join("content").join("0010")),
+                    ("0005000e", 1) => update_folder = Some(dump_path.join("content")),
                     ("00050000", 4) |
                     ("0005000c", 4) |
                     ("0005000e", 4) => encrypted = true,
-                    ("00050000", 3) => wua_file = Some(path),
+                    ("00050000", 3) => wua_file = Some(dump_path),
                     _ => {},
                 }
             });
@@ -537,12 +522,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     } else {
         #[cfg(windows)]
         {
-            if let Some(path) = dirs2::config_dir()
-                .expect("YIKES")
-                .join("Cemu")
-                .join("graphicPacks")
-                .exists_then()
-            {
+            if let Some(path) = config_cemu.join("graphicPacks").exists_then() {
                 path
             } else {
                 settings_path.join("graphicPacks")
@@ -550,10 +530,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
         }
         #[cfg(not(windows))]
         {
-            dirs2::data_local_dir()
-                .expect("YIKES")
-                .join("Cemu")
-                .join("graphicPacks")
+            config_cemu.join("graphicPacks")
         }
     };
     let mut settings = core.settings_mut();

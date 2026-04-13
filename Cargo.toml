@@ -3,10 +3,10 @@ name = "ukmm"
 description = "A new mod manager for The Legend of Zelda: Breath of the Wild. Successor to BCML."
 repository = "https://github.com/NiceneNerd/ukmm"
 authors = ["Caleb Smith <c.smith@tuta.io>", "Ginger Chody <chodness@gmail.com>"]
-edition = "2021"
+edition = "2024"
 license = "GPL-3.0-or-later"
 version = { workspace = true }
-rust-version = "1.80"
+rust-version = "1.85"
 
 [package.metadata.wix]
 upgrade-guid = "0EC50392-193E-4A2B-9322-3CF045D8FCAE"
