@@ -1,4 +1,8 @@
-use std::{path::{Path, PathBuf}, sync::Arc};
+use std::{
+    panic::{AssertUnwindSafe, catch_unwind},
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use serde::Serialize;
 
@@ -7,17 +11,35 @@ use crate::{ROMError, Result};
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct ZArchive {
     #[serde(skip_serializing)]
-    archive:     Arc<zarchive::reader::ZArchiveReader>,
+    archive: Arc<zarchive::reader::ZArchiveReader>,
     content_dir: PathBuf,
-    update_dir:  PathBuf,
-    aoc_dir:     Option<PathBuf>,
-    host_path:   PathBuf,
+    update_dir: PathBuf,
+    aoc_dir: Option<PathBuf>,
+    host_path: PathBuf,
 }
 
 impl ZArchive {
+    fn open_archive(path: &Path) -> Result<Arc<zarchive::reader::ZArchiveReader>> {
+        match catch_unwind(AssertUnwindSafe(|| {
+            let archive = zarchive::reader::ZArchiveReader::open(path)?;
+            let _ = archive.iter()?;
+            Ok::<_, ROMError>(archive)
+        })) {
+            Ok(Ok(archive)) => Ok(Arc::new(archive)),
+            Ok(Err(err)) => Err(err),
+            Err(_) => Err(ROMError::Any(
+                anyhow::anyhow!(
+                    "Failed to open ZArchive at {}. The archive may be invalid or unreadable.",
+                    path.display()
+                )
+                .into(),
+            )),
+        }
+    }
+
     pub(crate) fn new(path: impl AsRef<Path>) -> Result<Self> {
         log::info!("Opening ZArchive at {}", path.as_ref().display());
-        let archive = Arc::new(zarchive::reader::ZArchiveReader::open(path.as_ref())?);
+        let archive = Self::open_archive(path.as_ref())?;
         let mut content_dir: Option<PathBuf> = None;
         let mut update_dir: Option<PathBuf> = None;
         let mut aoc_dir: Option<PathBuf> = None;
@@ -49,21 +71,19 @@ impl ZArchive {
 #[typetag::serde]
 impl super::ResourceLoader for ZArchive {
     fn get_base_file_data(&self, name: &Path) -> Result<Vec<u8>> {
-        self.archive.read_file(self.content_dir.join(name)).ok_or_else(|| {
-            crate::ROMError::FileNotFound(
-                name.to_string_lossy().into(),
-                self.host_path.clone(),
-            )
-        })
+        self.archive
+            .read_file(self.content_dir.join(name))
+            .ok_or_else(|| {
+                crate::ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
+            })
     }
 
     fn get_update_file_data(&self, name: &Path) -> Result<Vec<u8>> {
-        self.archive.read_file(self.update_dir.join(name)).ok_or_else(|| {
-            crate::ROMError::FileNotFound(
-                name.to_string_lossy().into(),
-                self.host_path.clone(),
-            )
-        })
+        self.archive
+            .read_file(self.update_dir.join(name))
+            .ok_or_else(|| {
+                crate::ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
+            })
     }
 
     fn get_aoc_file_data(&self, name: &Path) -> Result<Vec<u8>> {
@@ -194,8 +214,8 @@ mod de {
                     let host_path =
                         host_path.ok_or_else(|| serde::de::Error::missing_field("host_path"))?;
                     Ok(ZArchive {
-                        archive: Arc::new(::zarchive::reader::ZArchiveReader::open(&host_path)
-                            .map_err(serde::de::Error::custom)?),
+                        archive: ZArchive::open_archive(&host_path)
+                            .map_err(serde::de::Error::custom)?,
                         content_dir,
                         update_dir,
                         aoc_dir,
@@ -223,7 +243,11 @@ mod tests {
         }
         assert_eq!(
             "0.9.0".to_string(),
-            String::from_utf8(arch.get_base_file_data("System/Version.txt".as_ref()).unwrap()).unwrap()
+            String::from_utf8(
+                arch.get_base_file_data("System/Version.txt".as_ref())
+                    .unwrap()
+            )
+            .unwrap()
         );
     }
 }
