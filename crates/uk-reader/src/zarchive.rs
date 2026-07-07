@@ -235,6 +235,72 @@ mod tests {
     use crate::ResourceLoader;
 
     #[test]
+    fn test_nx_archive() {
+        use std::{fs::File, path::Path, hint::unreachable_unchecked};
+        use cloneable_file::CloneableFile;
+        use nx_archive::{
+            TitleDataExt,
+            VirtualFSExt,
+            formats::{
+                Keyset,
+                TitleKeys,
+                nca::Nca,
+                pfs0::Pfs0
+            }
+        };
+
+        let ryujinx_path = Path::new("/path/to/Ryujinx/");
+        let title_path = ryujinx_path
+            .join("games")
+            .join("The Legend of Zelda Breath of the Wild [01007EF00011E000][US][v0].nsp");
+        let ryujinx_system = ryujinx_path.join("system");
+        let keys = Keyset::from_file(ryujinx_system.join("prod.keys")).unwrap();
+        let title_keys = TitleKeys::load_from_file(ryujinx_system.join("title.keys")).unwrap();
+        let reader = CloneableFile::from(File::open(title_path).unwrap());
+        let mut pfs0 = Pfs0::from_reader(reader).unwrap();
+
+        for cnmt in pfs0.get_cnmts(&keys, Some(&title_keys)).unwrap() {
+            println!("Title ID: {}", cnmt.get_title_id_string());
+        }
+
+        for file in pfs0.list_files().unwrap() {
+            println!("\nFile: {}", file.name);
+            let sub = pfs0.create_reader(&file).unwrap();
+            if file.name.split(".").last().map(|ext| ext == "nca").unwrap_or(false) {
+                let mut nca = Nca::from_reader(sub, &keys, Some(&title_keys)).unwrap();
+                for index in 0..nca.filesystem_count() {
+                    match nca.fs_headers[index].fs_type as i32 {
+                        0x00 => {
+                            match nca.open_romfs_filesystem(index) {
+                                Ok(mut fs) => {
+                                    match fs.get_file_by_path("System/Version.txt") {
+                                        Ok(Some(thing)) => println!("{} found!", thing.name),
+                                        Ok(None) => println!("System/Version.txt not found"),
+                                        Err(e) => println!("System/Version.txt error: {}", e),
+                                    }
+                                }
+                                Err(e) => println!("RomFS open error: {}", e),
+                            }
+                        },
+                        0x01 => {
+                            match nca.open_pfs0_filesystem(index) {
+                                Ok(pfs) => {
+                                    println!("PFS0 #{} opened successfully!", index);
+                                    if let Ok(files) = pfs.list_files() {
+                                        println!("Files in PFS0 #{}: {:?}", index, files.iter().map(|file| &file.name).collect::<Vec<_>>());
+                                    }
+                                },
+                                Err(e) => println!("PartitionFs open error: {}", e),
+                            }
+                        },
+                        _ => unsafe { unreachable_unchecked() },
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn test_wua() {
         use super::*;
         let arch = ZArchive::new("test/test.wua").unwrap();

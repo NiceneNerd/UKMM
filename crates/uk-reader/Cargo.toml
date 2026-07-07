@@ -25,3 +25,6 @@ moka = { version = "0.12.8", features = ["sync"] }
 uk-content = { path = "../uk-content" }
 uk-util = { path = "../uk-util" }
 zarchive = "0.2.0"
+
+nx-archive = { git = "https://github.com/RyouVC/nx-archive.git" }
+cloneable-file = "0.1.1"

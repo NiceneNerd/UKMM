@@ -125,7 +125,7 @@ strfmt = "0.2.4"
 thiserror = "1"
 typetag = "0.2.1"
 unrar = "0.5.8"
-zip = { version = "2.1", default-features = false }
+zip = { version = "2.3.0", default-features = false }
 zstd = { version = "0.13.1", features = ["experimental"] }
 
 # Config for 'cargo dist'
