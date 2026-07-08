@@ -5,6 +5,17 @@ All notable changes to UKMM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+**Added**
+
+- Mod list filter! Type something in the box, filter your mods.
+
+**Fixed**
+
+- Updated ARM64 build flags, so the program will build on macOS higher than 14
+  - Thanks @emiyl and @hstriepe
+
 ## [0.17.1] 2026-07-01
 
 **Added**
