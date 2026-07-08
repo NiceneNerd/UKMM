@@ -182,7 +182,7 @@ impl Profile {
         self.load_order.write()
     }
 
-    pub fn iter(self_: MappedRef<'_, String, Profile, Profile>) -> ModIterator<'_> {
+    pub fn iter(self_: MappedRef<'_, String, Profile>) -> ModIterator<'_> {
         ModIterator {
             profile: self_,
             index:   0,
@@ -236,16 +236,15 @@ impl Profile {
             }
         }
         for h in load_order.iter() {
-            if !mods.contains_key(h) {
-                if let Some((_, m)) = all_mods.iter().find(|(_, m)| *h == m.hash) {
-                    log::warn!(
-                        "{} found in load order but not in profile mod list. Adding to profile \
-                        with no options selected. You will need to reselect mod options from the \
-                        Info tab if you want this mod to continue working.",
-                        m.meta.name
-                    );
-                    mods.insert(*h, m.clone());
-                }
+            if !mods.contains_key(h) && let Some((_, m)) =
+                all_mods.iter().find(|(_, m)| *h == m.hash) {
+                log::warn!(
+                    "{} found in load order but not in profile mod list. Adding to profile \
+                    with no options selected. You will need to reselect mod options from the \
+                    Info tab if you want this mod to continue working.",
+                    m.meta.name
+                );
+                mods.insert(*h, m.clone());
             }
         }
         load_order.retain(|k| mods.contains_key(k));
@@ -257,7 +256,7 @@ impl Profile {
 }
 
 pub struct ModIterator<'a> {
-    profile: MappedRef<'a, String, Profile, Profile>,
+    profile: MappedRef<'a, String, Profile>,
     index:   usize,
 }
 
@@ -292,7 +291,7 @@ impl Manager {
     }
 
     #[inline(always)]
-    pub fn profile(&self) -> MappedRef<'_, String, Profile, Profile> {
+    pub fn profile(&self) -> MappedRef<'_, String, Profile> {
         self.profiles
             .get(self.current_profile.as_str())
             .expect("Invalid profile")
@@ -300,7 +299,7 @@ impl Manager {
     }
 
     #[inline(always)]
-    pub fn get_profile(&self, profile: Option<&String>) -> MappedRef<'_, String, Profile, Profile> {
+    pub fn get_profile(&self, profile: Option<&String>) -> MappedRef<'_, String, Profile> {
         let profile = profile.unwrap_or(&self.current_profile);
         self.profiles
             .get(profile.as_str())
@@ -376,9 +375,9 @@ impl Manager {
                                 "Failed to parse profile data from {}",
                                 profile_path.to_string_lossy()
                             ))
-                            .and_then(|mut p| {
+                            .map(|mut p| {
                                 p.validate(&all_mods);
-                                Ok(p)
+                                p
                             })
                     )
                     .map(|v| (profile, v))
