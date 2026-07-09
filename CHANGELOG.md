@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated ARM64 build flags, so the program will build on macOS higher than 14
   - Thanks @emiyl and @hstriepe
+- Fixes shift-selecting multiple mods when mods are filtered or not sorted by
+  priority
 
 ## [0.17.1] 2026-07-01
 
