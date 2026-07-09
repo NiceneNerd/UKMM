@@ -20,7 +20,7 @@ body:
   - type: textarea
     id: issue
     attributes:
-      label: Steps to Reproduce
+      label: Reason for this Feature
       description: What problem will this feature solve?
       placeholder: Please be as detailed as possible.
     validations:
