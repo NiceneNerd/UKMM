@@ -483,244 +483,192 @@ impl App {
         egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
             let mut wiiu_changed = false;
             let mut switch_changed = false;
-            ui.horizontal(|ui| {
-                let platform_config_changed = self.temp_settings.ne(self.core.settings().deref())
-                    || wiiu_changed
-                    || switch_changed;
-                ui.add_enabled_ui(platform_config_changed, |ui| {
-                    if ui
-                        .icon_button(icons::Icon::Save)
-                        .on_hover_text("Generic_Save".localize())
-                        .clicked()
-                    {
-                        if wiiu_changed {
-                            let wiiu_config_ui =
-                                CONFIG.write().get(&Platform::WiiU).unwrap().clone();
-                            let wiiu_config = wiiu_config_ui.try_into();
-                            match wiiu_config {
-                                Ok(conf) => {
-                                    CONFIG.write().remove(&Platform::WiiU);
-                                    self.temp_settings.wiiu_config = Some(conf)
-                                }
-                                Err(e) => {
-                                    self.do_update(Message::Error(e));
-                                    return;
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.vertical(|ui| {
+                    let settings = &mut self.temp_settings;
+                    let mut theme_change: Option<Theme> = None;
+                    let mut lang_change: Option<LocLang> = None;
+                    egui::CollapsingHeader::new("Settings_General".localize())
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            if ui
+                                .icon_text_button("Settings_Migrate".localize(), icons::Icon::Import)
+                                .clicked()
+                            {
+                                self.channel
+                                    .0
+                                    .clone()
+                                    .send(Message::MigrateBcml)
+                                    .expect("Broken channel");
+                            }
+                            if ui
+                                .button("Settings_OneClick".localize())
+                                .on_hover_text("Settings_OneClick_Desc".localize())
+                                .clicked()
+                            {
+                                match crate::gui::tasks::register_handlers() {
+                                    Ok(()) => log::info!("GameBanana 1-click handler registered"),
+                                    Err(e) => {
+                                        self.channel
+                                            .0
+                                            .clone()
+                                            .send(Message::Error(e))
+                                            .expect("Broken channel")
+                                    }
                                 }
                             }
-                        }
-                        if switch_changed {
-                            let switch_config_ui =
-                                CONFIG.write().get(&Platform::Switch).unwrap().clone();
-                            let switch_config = switch_config_ui.try_into();
-                            match switch_config {
-                                Ok(conf) => {
-                                    CONFIG.write().remove(&Platform::Switch);
-                                    self.temp_settings.switch_config = Some(conf)
+                            let mut name = "Settings_Theme".localize();
+                            let mut description = "Settings_Theme_Desc".localize();
+                            render_setting(
+                                &name,
+                                &description,
+                                ui,
+                                |ui| {
+                                    egui::ComboBox::new("ui-theme", "")
+                                        .selected_text(self.theme.name())
+                                        .show_ui(ui, |ui| {
+                                            let mut current_theme = self.theme;
+                                            for theme in Theme::iter() {
+                                                if ui
+                                                    .selectable_value(
+                                                        &mut current_theme,
+                                                        theme,
+                                                        theme.name(),
+                                                    )
+                                                    .clicked()
+                                                {
+                                                    theme_change = Some(theme);
+                                                }
+                                            }
+                                        });
                                 }
-                                Err(e) => {
-                                    self.do_update(Message::Error(e));
-                                    return;
-                                }
-                            }
-                        }
-                        self.do_update(Message::SaveSettings);
-                    }
-                    if ui
-                        .icon_button(icons::Icon::Reset)
-                        .on_hover_text("Generic_Reset".localize())
-                        .clicked()
-                    {
-                        self.do_update(Message::SetLanguage(self.core.settings().lang));
-                        CONFIG.write().clear();
-                        self.do_update(Message::ResetSettings);
-                    }
-                })
-            });
-            ui.add_space(8.0);
-            ui.vertical(|ui| {
-                let settings = &mut self.temp_settings;
-                let mut theme_change: Option<Theme> = None;
-                let mut lang_change: Option<LocLang> = None;
-                egui::CollapsingHeader::new("Settings_General".localize())
-                    .default_open(true)
-                    .show(ui, |ui| {
+                            );
+                            name = "Settings_Language".localize();
+                            description = "Settings_Language_Desc".localize();
+                            render_setting(
+                                &name,
+                                &description,
+                                ui,
+                                |ui| {
+                                    egui::ComboBox::new("lang-ukmm", "")
+                                        .selected_text(settings.lang.to_str())
+                                        .show_ui(ui, |ui| {
+                                            for lang in LocLang::iter() {
+                                                if ui
+                                                    .selectable_value(
+                                                        &mut settings.lang,
+                                                        *lang,
+                                                        lang.to_str()
+                                                    )
+                                                    .changed()
+                                                {
+                                                    lang_change = Some(*lang);
+                                                }
+                                            };
+                                        });
+                                },
+                            );
+                            name = "Settings_Mode".localize();
+                            description = "Settings_Mode_Desc".localize();
+                            render_setting(
+                                &name,
+                                &description,
+                                ui,
+                                |ui| {
+                                    ui.radio_value(
+                                        &mut settings.current_mode,
+                                        Platform::WiiU,
+                                        "Settings_Mode_WiiU".localize(),
+                                    );
+                                    ui.radio_value(
+                                        &mut settings.current_mode,
+                                        Platform::Switch,
+                                        "Settings_Mode_Switch".localize(),
+                                    );
+                                },
+                            );
+                            name = "Settings_Storage".localize();
+                            description = "Settings_Storage_Desc".localize();
+                            render_setting(
+                                &name,
+                                &description,
+                                ui,
+                                |ui| {
+                                    ui.folder_picker(&mut settings.storage_dir);
+                                },
+                            );
+                            name = "Settings_Sys7z".localize();
+                            description = "Settings_Sys7z_Desc".localize();
+                            render_setting(
+                                &name,
+                                &description,
+                                ui,
+                                |ui| ui.checkbox(&mut settings.system_7z, ""),
+                            );
+                            name = "Settings_Changelog".localize();
+                            description = "Settings_Changelog_Desc".localize();
+                            render_setting(
+                                &name,
+                                &description,
+                                ui,
+                                |ui| ui.add(Checkbox::new(&mut settings.show_changelog, "")),
+                            );
+                        });
+                    egui::CollapsingHeader::new("Settings_Config_WiiU".localize()).show(ui, |ui| {
                         if ui
-                            .icon_text_button("Settings_Migrate".localize(), icons::Icon::Import)
+                            .icon_text_button(
+                                "Settings_Config_WiiU_ImportCemu".localize(),
+                                icons::Icon::Import
+                            )
                             .clicked()
                         {
                             self.channel
                                 .0
                                 .clone()
-                                .send(Message::MigrateBcml)
+                                .send(Message::ImportCemu)
                                 .expect("Broken channel");
                         }
-                        if ui
-                            .button("Settings_OneClick".localize())
-                            .on_hover_text("Settings_OneClick_Desc".localize())
-                            .clicked()
-                        {
-                            match crate::gui::tasks::register_handlers() {
-                                Ok(()) => log::info!("GameBanana 1-click handler registered"),
-                                Err(e) => {
-                                    self.channel
-                                        .0
-                                        .clone()
-                                        .send(Message::Error(e))
-                                        .expect("Broken channel")
-                                }
-                            }
-                        }
-                        let mut name = "Settings_Theme".localize();
-                        let mut description = "Settings_Theme_Desc".localize();
-                        render_setting(
-                            &name,
-                            &description,
-                            ui,
-                            |ui| {
-                                egui::ComboBox::new("ui-theme", "")
-                                    .selected_text(self.theme.name())
-                                    .show_ui(ui, |ui| {
-                                        let mut current_theme = self.theme;
-                                        for theme in uk_ui::visuals::Theme::iter() {
-                                            if ui
-                                                .selectable_value(
-                                                    &mut current_theme,
-                                                    theme,
-                                                    theme.name(),
-                                                )
-                                                .clicked()
-                                            {
-                                                theme_change = Some(theme);
-                                            }
-                                        }
-                                    });
-                            }
-                        );
-                        name = "Settings_Language".localize();
-                        description = "Settings_Language_Desc".localize();
-                        render_setting(
-                            &name,
-                            &description,
-                            ui,
-                            |ui| {
-                                egui::ComboBox::new("lang-ukmm", "")
-                                    .selected_text(settings.lang.to_str())
-                                    .show_ui(ui, |ui| {
-                                        for lang in LocLang::iter() {
-                                            if ui
-                                                .selectable_value(
-                                                    &mut settings.lang,
-                                                    *lang,
-                                                    lang.to_str()
-                                                )
-                                                .changed()
-                                            {
-                                                lang_change = Some(*lang);
-                                            }
-                                        };
-                                    });
-                            },
-                        );
-                        name = "Settings_Mode".localize();
-                        description = "Settings_Mode_Desc".localize();
-                        render_setting(
-                            &name,
-                            &description,
-                            ui,
-                            |ui| {
-                                ui.radio_value(
-                                    &mut settings.current_mode,
-                                    Platform::WiiU,
-                                    "Settings_Mode_WiiU".localize(),
-                                );
-                                ui.radio_value(
-                                    &mut settings.current_mode,
-                                    Platform::Switch,
-                                    "Settings_Mode_Switch".localize(),
-                                );
-                            },
-                        );
-                        name = "Settings_Storage".localize();
-                        description = "Settings_Storage_Desc".localize();
-                        render_setting(
-                            &name,
-                            &description,
-                            ui,
-                            |ui| {
-                                ui.folder_picker(&mut settings.storage_dir);
-                            },
-                        );
-                        name = "Settings_Sys7z".localize();
-                        description = "Settings_Sys7z_Desc".localize();
-                        render_setting(
-                            &name,
-                            &description,
-                            ui,
-                            |ui| ui.checkbox(&mut settings.system_7z, ""),
-                        );
-                        name = "Settings_Changelog".localize();
-                        description = "Settings_Changelog_Desc".localize();
-                        render_setting(
-                            &name,
-                            &description,
-                            ui,
-                            |ui| ui.add(Checkbox::new(&mut settings.show_changelog, "")),
-                        );
+                        wiiu_changed =
+                            render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
                     });
-                egui::CollapsingHeader::new("Settings_Config_WiiU".localize()).show(ui, |ui| {
-                    if ui
-                        .icon_text_button(
-                            "Settings_Config_WiiU_ImportCemu".localize(),
-                            icons::Icon::Import
-                        )
-                        .clicked()
-                    {
-                        self.channel
-                            .0
-                            .clone()
-                            .send(Message::ImportCemu)
-                            .expect("Broken channel");
+                    egui::CollapsingHeader::new("Settings_Config_NX".localize()).show(ui, |ui| {
+                        switch_changed =
+                            render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
+                    });
+                    if let Some(theme) = theme_change {
+                        self.do_update(Message::SetTheme(theme));
                     }
-                    wiiu_changed =
-                        render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
+                    if let Some(lang) = lang_change {
+                        self.do_update(Message::SetLanguage(lang));
+                    }
                 });
-                egui::CollapsingHeader::new("Settings_Config_NX".localize()).show(ui, |ui| {
-                    switch_changed =
-                        render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
-                });
-                if let Some(theme) = theme_change {
-                    self.do_update(Message::SetTheme(theme));
-                }
-                if let Some(lang) = lang_change {
-                    self.do_update(Message::SetLanguage(lang));
-                }
+                switch_changed |= {
+                    match (
+                        CONFIG.read().get(&Platform::Switch),
+                        self.temp_settings.switch_config.as_ref(),
+                    ) {
+                        (None, None) | (None, Some(_)) => false,
+                        (Some(config), None) => {
+                            !config.dump.is_empty()
+                                || !config.deploy_config.output.as_os_str().is_empty()
+                        }
+                        (Some(tmp_config), Some(config)) => tmp_config.ne(config),
+                    }
+                };
+                wiiu_changed |= {
+                    match (
+                        CONFIG.read().get(&Platform::WiiU),
+                        self.temp_settings.wiiu_config.as_ref(),
+                    ) {
+                        (None, None) | (None, Some(_)) => false,
+                        (Some(config), None) => {
+                            !config.dump.is_empty()
+                                || !config.deploy_config.output.as_os_str().is_empty()
+                        }
+                        (Some(tmp_config), Some(config)) => tmp_config.ne(config),
+                    }
+                };
             });
-            switch_changed |= {
-                match (
-                    CONFIG.read().get(&Platform::Switch),
-                    self.temp_settings.switch_config.as_ref(),
-                ) {
-                    (None, None) | (None, Some(_)) => false,
-                    (Some(config), None) => {
-                        !config.dump.is_empty()
-                            || !config.deploy_config.output.as_os_str().is_empty()
-                    }
-                    (Some(tmp_config), Some(config)) => tmp_config.ne(config),
-                }
-            };
-            wiiu_changed |= {
-                match (
-                    CONFIG.read().get(&Platform::WiiU),
-                    self.temp_settings.wiiu_config.as_ref(),
-                ) {
-                    (None, None) | (None, Some(_)) => false,
-                    (Some(config), None) => {
-                        !config.dump.is_empty()
-                            || !config.deploy_config.output.as_os_str().is_empty()
-                    }
-                    (Some(tmp_config), Some(config)) => tmp_config.ne(config),
-                }
-            };
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -767,7 +715,15 @@ impl App {
                             CONFIG.write().clear();
                             self.do_update(Message::ResetSettings);
                         }
-                    })
+                    });
+                    if platform_config_changed {
+                        ui.label(
+                            RichText::new("Changes to settings have not been saved")
+                                .color(uk_ui::visuals::RED)
+                                .heading()
+                                .size(13.0_f32),
+                        );
+                    }
                 });
             });
         });
