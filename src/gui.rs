@@ -447,6 +447,19 @@ impl App {
             self.do_task(move |core| tasks::open_mod(&core, &first, None));
         }
     }
+
+    fn filtered_mods(&self, filter: &str) -> Vec<(usize, &Mod)> {
+        self.displayed_mods
+            .iter()
+            .enumerate()
+            .filter(|(_, _mod)| _mod
+                .meta
+                .name
+                .to_lowercase()
+                .contains(&filter.to_lowercase())
+            )
+            .collect::<Vec<_>>()
+    }
 }
 
 impl eframe::App for App {

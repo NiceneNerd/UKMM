@@ -71,26 +71,31 @@ impl App {
                     self.drag_index = None;
                 }
                 Message::SelectThrough(i) => {
-                    let index = i.clamp(0, self.mods.len() - 1);
-                    if let Some(start_index) = self
-                        .selected
-                        .first()
-                        .and_then(|sm| self.mods.iter().position(|m| m == sm))
+                    let mods_visible = self.filtered_mods(&self.mod_list_filter);
+                    if let Some(index) = mods_visible.iter()
+                        .position(|(_, m)| *m == &self.mods[i])
                     {
-                        let range = if start_index < index {
-                            start_index..=index
-                        } else {
-                            index..=start_index
-                        };
-                        self.selected = self
-                            .mods
-                            .iter()
-                            .enumerate()
-                            .filter(|&(i, _m)| range.contains(&i))
-                            .map(|(_i, m)| m.clone())
-                            .collect();
+                        if let Some(start_index) = self
+                            .selected
+                            .first()
+                            .and_then(|sm| mods_visible.iter()
+                                .position(|(_, m)| *m == sm)
+                            )
+                        {
+                            let range = if start_index < index {
+                                start_index..=index
+                            } else {
+                                index..=start_index
+                            };
+                            self.selected = mods_visible
+                                .iter()
+                                .enumerate()
+                                .filter(|(i, _)| range.contains(i))
+                                .map(|(_, (_, m))| (*m).clone())
+                                .collect();
+                        }
+                        self.drag_index = None;
                     }
-                    self.drag_index = None;
                 }
                 Message::Deselect(i) => {
                     let index = i.clamp(0, self.mods.len() - 1);

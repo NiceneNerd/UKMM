@@ -213,15 +213,9 @@ impl App {
                         });
                     })
                     .body(|body| {
-                        let filtered = self.displayed_mods
+                        let filtered = self.filtered_mods(&self.mod_list_filter)
                             .iter()
-                            .enumerate()
-                            .filter(|&(_, _mod)| _mod
-                                .meta
-                                .name
-                                .to_lowercase()
-                                .contains(&self.mod_list_filter.to_lowercase()))
-                            .map(|(idx, _mod)| idx)
+                            .map(|(idx, _)| *idx)
                             .collect::<Vec<_>>();
                         body.rows(*text_height, filtered.len(), |row| {
                             let index = filtered[row.index()];
