@@ -483,7 +483,8 @@ impl App {
         egui::Frame::none().inner_margin(4.0).show(ui, |ui| {
             let mut wiiu_changed = false;
             let mut switch_changed = false;
-            egui::ScrollArea::vertical().show(ui, |ui| {
+            let scroll_height = ui.available_height() - 37.0_f32;
+            egui::ScrollArea::vertical().max_height(scroll_height).show(ui, |ui| {
                 ui.vertical(|ui| {
                     let settings = &mut self.temp_settings;
                     let mut theme_change: Option<Theme> = None;
