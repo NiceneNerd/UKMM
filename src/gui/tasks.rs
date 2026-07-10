@@ -46,6 +46,13 @@ fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
     {
         return (true, true);
     }
+    if path.is_dir() {
+        let is_a_mod = ["content", "aoc", "01007EF00011E000", "01007EF00011F001"]
+            .into_iter()
+            .any(|root| path.join(root).exists());
+        let has_meta = path.join("rules.txt").exists();
+        return (is_a_mod, has_meta);
+    }
     let ext = path
         .extension()
         .and_then(|e| e.to_str().map(|e| e.to_lowercase()))
