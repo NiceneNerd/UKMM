@@ -483,7 +483,7 @@ impl App {
         egui::Frame::NONE.inner_margin(4.0).show(ui, |ui| {
             let mut wiiu_changed = false;
             let mut switch_changed = false;
-            let scroll_height = ui.available_height() - 37.0_f32;
+            let scroll_height = ui.available_height() - 38.0_f32;
             egui::ScrollArea::vertical().auto_shrink(
                 [false, false]
             ).max_height(scroll_height).show(ui, |ui| {
