@@ -37,13 +37,7 @@ pub use handlers::register_handlers;
 use uk_localization::string_ext::LocString;
 
 fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
-    if path
-        .file_name()
-        .unwrap_or_default()
-        .to_str()
-        .unwrap_or_default()
-        == "rules.txt"
-    {
+    if path.file_name().unwrap_or_default().to_str().unwrap_or_default() == "rules.txt" {
         return (true, true);
     }
     if path.is_dir() {
