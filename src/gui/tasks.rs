@@ -519,7 +519,7 @@ pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     } else {
         #[cfg(windows)]
         {
-            settings_path.join("graphicPacks")
+            settings_path.parent().expect("We know it exists").join("graphicPacks")
         }
         #[cfg(not(windows))]
         config_cemu.join("graphicPacks")
