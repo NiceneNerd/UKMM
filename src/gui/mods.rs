@@ -1,5 +1,5 @@
 use std::{collections::HashMap, process::Command, sync::OnceLock};
-
+use serde::{Deserialize, Serialize};
 use strfmt::Format;
 use uk_localization::string_ext::LocString;
 use uk_manager::mods::Mod;
@@ -13,6 +13,21 @@ use uk_ui::{
 };
 
 use super::{App, FocusedPane, Message, Sort};
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ModListState {
+    pub sort: Sort,
+    pub descending: bool,
+}
+
+impl Default for ModListState {
+    fn default() -> Self {
+        Self {
+            sort: Sort::Priority,
+            descending: false,
+        }
+    }
+}
 
 enum ContextMenuMessage {
     CopyToProfile(smartstring::alias::String),
@@ -141,9 +156,9 @@ impl App {
                     .columns(Column::exact(*numeric_col_width), 2)
                     .header(*text_height, |mut header| {
                         header.col(|ui| {
-                            let is_current = self.sort.0 == Sort::Enabled;
+                            let is_current = self.list_state.sort == Sort::Enabled;
                             let label = if is_current {
-                                if self.sort.1 { "⏷" } else { "⏶" }
+                                if self.list_state.descending { "⏷" } else { "⏶" }
                             } else {
                                 "  "
                             };
@@ -155,9 +170,9 @@ impl App {
                                 self.do_update(Message::ChangeSort(
                                     Sort::Enabled,
                                     if is_current {
-                                        !self.sort.1
+                                        !self.list_state.descending
                                     } else {
-                                        self.sort.1
+                                        self.list_state.descending
                                     },
                                 ));
                             }
@@ -172,10 +187,10 @@ impl App {
                         .for_each(|(label, sort)| {
                             let width = header
                                 .col(|ui| {
-                                    let is_current = self.sort.0 == sort;
+                                    let is_current = self.list_state.sort == sort;
                                     let mut label = label.into_owned();
                                     if is_current {
-                                        if self.sort.1 {
+                                        if self.list_state.descending {
                                             label += " ⏷";
                                         } else {
                                             label += " ⏶";
@@ -184,22 +199,23 @@ impl App {
                                         label += "  ";
                                     }
                                     ui.centered_and_justified(|ui| {
-                                        ui.style_mut().visuals.widgets.inactive.bg_stroke.width =
-                                            0.0;
-                                        if ui
-                                            .add(
-                                                Button::new(label)
-                                                    .small()
-                                                    .fill(Color32::TRANSPARENT),
-                                            )
+                                        ui.style_mut()
+                                            .visuals
+                                            .widgets
+                                            .inactive
+                                            .bg_stroke
+                                            .width = 0.0;
+                                        if ui.add(Button::new(label)
+                                            .small()
+                                            .fill(Color32::TRANSPARENT))
                                             .clicked()
                                         {
                                             self.do_update(Message::ChangeSort(
                                                 sort,
                                                 if is_current {
-                                                    !self.sort.1
+                                                    !self.list_state.descending
                                                 } else {
-                                                    self.sort.1
+                                                    self.list_state.descending
                                                 },
                                             ));
                                         }

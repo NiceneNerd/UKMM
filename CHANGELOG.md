@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Cemu importer setting the wrong path to the graphics pack folder on Windows
   for non-portable installs
 - Fixed installing extracted non-bnp mods directly from folder
+- Fixed mod list sorting not persisting between program sessions
 
 ## [0.17.1] 2026-07-01
 
