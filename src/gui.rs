@@ -36,6 +36,7 @@ use fs_err as fs;
 use parking_lot::{
     MappedRwLockReadGuard, MappedRwLockWriteGuard, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
 };
+use mods::ModListState;
 use picker::FilePickerState;
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
@@ -101,7 +102,7 @@ pub enum FocusedPane {
     None,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Sort {
     Enabled,
     Name,
@@ -221,6 +222,7 @@ pub enum Message {
 #[serde(default)]
 struct UiState {
     theme: uk_ui::visuals::Theme,
+    list_state: ModListState,
     picker_state: FilePickerState,
     #[serde(default = "tabs::default_ui")]
     tree: DockState<Tabs>,
@@ -229,7 +231,8 @@ struct UiState {
 impl Default for UiState {
     fn default() -> Self {
         Self {
-            theme: uk_ui::visuals::Theme::Sheikah,
+            theme: visuals::Theme::Sheikah,
+            list_state: ModListState::default(),
             picker_state: FilePickerState::default(),
             tree: tabs::default_ui(),
         }
@@ -248,6 +251,7 @@ pub struct App {
     error_queue: VecDeque<anyhow_ext::Error>,
     drag_index: Option<usize>,
     hover_index: Option<usize>,
+    list_state: ModListState,
     picker_state: FilePickerState,
     profiles_state: RefCell<profiles::ProfileManagerState>,
     meta_input: modals::MetaInputModal,
@@ -263,7 +267,6 @@ pub struct App {
     show_package_deps: bool,
     opt_folders: Option<Mutex<FxHashSet<PathBuf>>>,
     dirty: RwLock<HashMap<String, Manifest>>,
-    sort: (Sort, bool),
     options_mod: Option<(Mod, bool)>,
     temp_settings: Settings,
     toasts: egui_notify::Toasts,
@@ -293,6 +296,13 @@ impl App {
             .unwrap_or_default();
         ui_state.theme.set_theme(&cc.egui_ctx);
         let mods: Vec<_> = core.mod_manager().all_mods().collect();
+        let mut temp = mods.iter().cloned().enumerate().collect::<Vec<_>>();
+        temp.sort_by(ui_state.list_state.sort.orderer());
+        let displayed_mods = if ui_state.list_state.descending {
+            temp.into_iter().rev().map(|(_, m)| m).collect()
+        } else {
+            temp.into_iter().map(|(_, m)| m).collect()
+        };
         let (send, recv) = flume::unbounded();
         tasks::ONECLICK_SENDER.set(send.clone()).unwrap_or(());
         let temp_settings = core.settings().clone();
@@ -303,10 +313,11 @@ impl App {
             drag_index: None,
             hover_index: None,
             package_builder: RefCell::new(ModPackerBuilder::new(platform)),
+            list_state: ui_state.list_state,
             picker_state: ui_state.picker_state,
             profiles_state: RefCell::new(profiles::ProfileManagerState::new(&core)),
             meta_input: MetaInputModal::new(send.clone()),
-            displayed_mods: mods.clone(),
+            displayed_mods,
             mod_list_filter: "".parse().unwrap(),
             mods,
             temp_settings,
@@ -343,7 +354,6 @@ impl App {
                         .collect(),
                 )
             },
-            sort: (Sort::Priority, false),
             options_mod: None,
             tree: Rc::new(RefCell::new(ui_state.tree)),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
@@ -501,6 +511,7 @@ impl eframe::App for App {
         let ui_state = UiState {
             theme: self.theme,
             picker_state: std::mem::take(&mut self.picker_state),
+            list_state: std::mem::take(&mut self.list_state),
             tree: std::mem::replace(&mut self.tree.borrow_mut(), tabs::default_ui()),
         };
         fs::write(

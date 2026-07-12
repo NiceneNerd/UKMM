@@ -30,7 +30,7 @@ impl App {
                     info::ROOTS.write().clear();
                 }
                 Message::RefreshModsDisplay => {
-                    self.do_update(Message::ChangeSort(self.sort.0, self.sort.1));
+                    self.do_update(Message::ChangeSort(self.list_state.sort, self.list_state.descending));
                 }
                 Message::ChangeSort(sort, rev) => {
                     let orderer = sort.orderer();
@@ -41,7 +41,8 @@ impl App {
                     } else {
                         temp.into_iter().map(|(_, m)| m).collect()
                     };
-                    self.sort = (sort, rev);
+                    self.list_state.sort = sort;
+                    self.list_state.descending = rev;
                 }
                 Message::CloseError => self.error = None,
                 Message::CloseConfirm => self.confirm = None,
