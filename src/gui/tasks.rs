@@ -36,6 +36,55 @@ mod handlers;
 pub use handlers::register_handlers;
 use uk_localization::string_ext::LocString;
 
+fn is_probably_a_bnp(path: &Path) -> bool {
+    match path
+        .extension()
+        .and_then(|e| e.to_str().map(|e| e.to_lowercase()))
+        .unwrap_or_default()
+        .as_str() {
+        "" => {
+            let is_a_mod = ["content", "aoc", "01007EF00011E000", "01007EF00011F001", "logs"]
+                .into_iter()
+                .any(|root| path.join(root).exists());
+            let has_meta = path.join("info.json").exists();
+            is_a_mod && has_meta
+        },
+        "bnp" => {
+            match sevenz_rust::Archive::open(path) {
+                Ok(sz) => {
+                    let mut is_a_mod = false;
+                    let mut has_meta = false;
+                    for entry in sz.files.iter() {
+                        is_a_mod = is_a_mod || [
+                            "content",
+                            "aoc",
+                            "01007EF00011E000",
+                            "01007EF00011F001",
+                            "logs"
+                        ]
+                            .into_iter()
+                            .any(|root| entry.name.ends_with(root));
+                        has_meta = has_meta || entry.name.ends_with("rules.txt");
+                        if is_a_mod && has_meta {
+                            break;
+                        }
+                    }
+                    is_a_mod && has_meta
+                },
+                Err(_) => false
+            }
+        },
+        "json" => {
+            let is_a_mod = ["content", "aoc", "01007EF00011E000", "01007EF00011F001", "logs"]
+                .into_iter()
+                .any(|root| path.parent().map(|p| p.join(root).exists()).unwrap_or(false));
+            let has_meta = path.file_name().map(|f| f == "info.json").unwrap_or(false);
+            is_a_mod && has_meta
+        }
+        _ => false
+    }
+}
+
 fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
     if path.file_name().unwrap_or_default().to_str().unwrap_or_default() == "rules.txt" {
         return (true, true);
@@ -131,15 +180,7 @@ fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
 
 pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Message> {
     log::info!("Opening mod at {}", path.display());
-    if path
-        .extension()
-        .and_then(|e| e.to_str())
-        .map(|e| e.to_lowercase() == "bnp")
-        .unwrap_or(false) ||
-       path
-        .join("info.json")
-        .exists()
-    {
+    if is_probably_a_bnp(path) {
         let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKMM mod")?;
         return Ok(Message::HandleMod(Mod::from_reader(
             ModReader::open_peek(mod_, vec![]).context("Failed to open converted mod")?,
