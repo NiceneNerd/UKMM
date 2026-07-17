@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Mod list filter! Type something in the box, filter your mods.
 
+**Changed**
+
+- Expanded drag-and-drop BNP detection to include decompressed folders
+
 **Fixed**
 
 - Updated ARM64 build flags, so the program will build on macOS higher than 14
