@@ -433,7 +433,7 @@ impl App {
                         "{}",
                         e.downcast::<String>().unwrap_or_else(|_| {
                             Box::new(
-                                "An unknown error occured, check the log for possible details."
+                                "An unknown error occurred, check the log for possible details."
                                     .to_string(),
                             )
                         })
