@@ -60,16 +60,16 @@ uk-localization = { path = "crates/uk-localization" }
 uk-manager = { path = "crates/uk-manager" }
 uk-mod = { path = "crates/uk-mod" }
 uk-reader = { path = "crates/uk-reader" }
-uk-settings = { path = "crates/uk-settings" }
 uk-ui = { path = "crates/uk-ui" }
 uk-util = { path = "crates/uk-util" }
+which = "6.0.3"
 xflags = "0.3.1"
 
 [build-dependencies]
 astrolabe = "0.5.2"
 
 [target.'cfg(windows)'.dependencies]
-remove_dir_all = "1.0.0"
+remove_dir_all = "0.8"
 winreg = "0.52.0"
 
 [target.'cfg(windows)'.build-dependencies]
@@ -83,13 +83,13 @@ members = [
     "crates/uk-manager",
     "crates/uk-mod",
     "crates/uk-reader",
-    "crates/uk-settings",
     "crates/uk-ui",
     "crates/uk-util",
+
 ]
 
 [workspace.package]
-version = "0.17.1"
+version = "0.17.0-1"
 
 [workspace.dependencies]
 anyhow = "1"
@@ -111,7 +111,7 @@ parking_lot = "0.12.1"
 path-slash = "0.2.1"
 rayon = "1.6"
 rfd = "0.14.1"
-roead = { git = "https://github.com/NiceneNerd/roead.git" }
+roead = "1"
 rstb = { git = "https://github.com/GingerAvalanche/rstb-rust.git", branch = "chemical", features = ["complex", "botw-data"] }
 rustc-hash = "2"
 sanitise-file-name = "1"
@@ -149,9 +149,9 @@ pr-run-mode = "plan"
 # Whether to install an updater program
 install-updater = true
 [workspace.metadata.dist.github-custom-runners]
-aarch64-apple-darwin = "macos-latest"
-x86_64-apple-darwin = "macos-latest"
-x86_64-unknown-linux-gnu = "ubuntu-26.04"
+aarch64-apple-darwin = "macos-14"
+x86_64-apple-darwin = "macos-14"
+x86_64-unknown-linux-gnu = "ubuntu-22.04"
 
 # The profile that 'cargo dist' will build with
 [profile.dist]

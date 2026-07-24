@@ -10,9 +10,7 @@ pub use msyt::{
 use roead::sarc::{Sarc, SarcWriter};
 use serde::{Deserialize, Serialize};
 
-use crate::prelude::*;
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{prelude::*, Result, UKError};
 
 impl Mergeable for Msyt {
     fn diff(&self, other: &Self) -> Self {

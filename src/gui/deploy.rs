@@ -1,11 +1,11 @@
 use uk_localization::string_ext::LocString;
-use uk_settings::SETTINGS;
 use super::*;
 
 impl App {
     pub fn render_deploy_tab(&self, ui: &mut Ui) {
-        match SETTINGS
-            .read()
+        match self
+            .core
+            .settings()
             .platform_config()
             .and_then(|c| c.deploy_config.as_ref())
         {

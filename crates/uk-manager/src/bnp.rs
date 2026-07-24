@@ -477,12 +477,7 @@ pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
             .context("Failed to copy files to temp folder")?;
     } else {
         log::info!("Extracting BNP…");
-        if let Err(e) = extract_7z(path, &tempdir) {
-            log::warn!("[lenient] 7z extraction failed ({}), attempting to extract as standard ZIP archive...", e);
-            let file = fs_err::File::open(path).context("Failed to open BNP as ZIP")?;
-            let mut archive = zip::ZipArchive::new(file.into_parts().0).context("Failed to read BNP as ZIP archive")?;
-            archive.extract(&*tempdir).context("Failed to extract BNP as ZIP")?;
-        }
+        extract_7z(path, &tempdir).context("Failed to extract BNP")?;
     }
     if tempdir.join("rules.txt").exists() && !tempdir.join("info.json").exists() {
         old::Bnp2xConverter::new(&tempdir)

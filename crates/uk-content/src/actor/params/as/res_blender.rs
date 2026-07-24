@@ -2,9 +2,8 @@ use anyhow::Context;
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use super::res_children::ResourceWithChildren;
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct BlenderResource {

@@ -12,28 +12,21 @@ use http_req::request::RedirectPolicy;
 use join_str::jstr;
 use serde::Deserialize;
 use strfmt::Format;
+use uk_content::constants::Language;
 use uk_manager::{
     bnp::convert_bnp,
     core::Manager,
     mods::Mod,
+    settings::{DeployConfig, Platform, PlatformSettings, UpdatePreference},
+    util::get_temp_file,
 };
 use uk_mod::{
     pack::{sanitise, ModPacker},
     unpack::{ModReader, ModUnpacker},
     Manifest, Meta,
 };
-use uk_settings::{
-    DeployConfig,
-    DeployMethod,
-    DeployLayout,
-    Platform,
-    PlatformSettings,
-    UpdatePreference,
-    util::get_temp_file,
-    SETTINGS
-};
 use uk_reader::ResourceReader;
-use uk_util::{PathExt, language::Language};
+use uk_util::PathExt;
 
 use super::{package::ModPackerBuilder, util::response, Message};
 use crate::INTERFACE;
@@ -135,7 +128,7 @@ fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
     }
 }
 
-pub fn open_mod(path: &Path, meta: Option<Meta>) -> Result<Message> {
+pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Message> {
     log::info!("Opening mod at {}", path.display());
     if path
         .extension()
@@ -146,7 +139,7 @@ pub fn open_mod(path: &Path, meta: Option<Meta>) -> Result<Message> {
         .join("info.json")
         .exists()
     {
-        let mod_ = convert_bnp(path).context("Failed to convert BNP to UKMM mod")?;
+        let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKMM mod")?;
         return Ok(Message::HandleMod(Mod::from_reader(
             ModReader::open_peek(mod_, vec![]).context("Failed to open converted mod")?,
         )));
@@ -172,7 +165,7 @@ pub fn open_mod(path: &Path, meta: Option<Meta>) -> Result<Message> {
                     log::info!("Converting mod {}…", meta.name);
                 }
                 let converted_path =
-                    uk_manager::mods::convert_gfx(path, meta).with_context(|| {
+                    uk_manager::mods::convert_gfx(core, path, meta).with_context(|| {
                         format!(
                             "Failed to convert {}",
                             path.file_name()
@@ -234,8 +227,8 @@ pub fn apply_changes(core: &Manager, mods: Vec<Mod>, dirty: Option<Manifest>) ->
     deploy_manager
         .apply(dirty)
         .context("Failed to apply pending mod changes")?;
-    if SETTINGS
-        .read()
+    if core
+        .settings()
         .platform_config()
         .and_then(|c| c.deploy_config.as_ref().map(|c| c.auto))
         .unwrap_or(false)
@@ -249,8 +242,8 @@ pub fn apply_changes(core: &Manager, mods: Vec<Mod>, dirty: Option<Manifest>) ->
     Ok(Message::ResetMods(None))
 }
 
-pub fn package_mod(builder: ModPackerBuilder) -> Result<Message> {
-    let Some(dump) = SETTINGS.read().dump() else {
+pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message> {
+    let Some(dump) = core.settings().dump() else {
         anyhow::bail!("No dump for current platform")
     };
     ModPacker::new(
@@ -283,7 +276,7 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
                 folder,
                 &mod_.path,
                 None,
-                [SETTINGS.read().dump().unwrap()].into_iter().collect(),
+                [core.settings().dump().unwrap()].into_iter().collect(),
             )
             .context("Failed to initialize mod packager")?
             .pack()
@@ -299,13 +292,13 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
     Ok(Message::ResetMods(Some(dirty)))
 }
 
-pub fn extract_mods(mods: Vec<Mod>) -> Result<Message> {
+pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
     let mut errors = vec![];
     if let Some(folder) = rfd::FileDialog::new()
         .set_title("Mod_Unpack_Folder".localize())
         .pick_folder()
     {
-        let settings = SETTINGS.read();
+        let settings = core.settings();
         let config = settings
             .platform_config()
             .context("No config for current platform. Have you configured your settings?")?;
@@ -314,7 +307,7 @@ pub fn extract_mods(mods: Vec<Mod>) -> Result<Message> {
             log::info!("Extracting {}…", name);
             let unpacker = ModUnpacker::new(
                 config.dump.clone(),
-                settings.current_mode.into(),
+                core.settings().current_mode.into(),
                 config.language,
                 vec![ModReader::open(&mod_.path, mod_.enabled_options.clone())?],
                 folder.join(name),
@@ -350,7 +343,7 @@ pub fn parse_meta(file: PathBuf) -> Result<Message> {
     .map(Message::UpdatePackageMeta)
 }
 
-pub fn import_cemu_settings(path: &Path) -> Result<Message> {
+pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
     let portable = path.join("portable");
     let local_cemu = dirs2::data_local_dir().expect("YIKES").join("Cemu");
     let config_cemu = dirs2::config_dir().expect("YIKES").join("Cemu");
@@ -531,7 +524,7 @@ pub fn import_cemu_settings(path: &Path) -> Result<Message> {
         #[cfg(not(windows))]
         config_cemu.join("graphicPacks")
     };
-    let mut settings = SETTINGS.write();
+    let mut settings = core.settings_mut();
     settings.current_mode = Platform::WiiU;
     let dump = if let Some(path) = wua {
         Arc::new(ResourceReader::from_zarchive(path)
@@ -603,8 +596,8 @@ pub fn import_cemu_settings(path: &Path) -> Result<Message> {
         deploy_config.cemu_rules = true;
         deploy_config.output = gfx_folder.clone();
         deploy_config.executable = exe_cmd;
-        deploy_config.method = DeployMethod::Symlink;
-        deploy_config.layout = DeployLayout::WithName;
+        deploy_config.method = uk_manager::settings::DeployMethod::Symlink;
+        deploy_config.layout = uk_manager::settings::DeployLayout::WithName;
     } else {
         settings.wiiu_config = Some(PlatformSettings {
             language: Language::USen,
@@ -612,11 +605,11 @@ pub fn import_cemu_settings(path: &Path) -> Result<Message> {
             dump,
             deploy_config: Some(DeployConfig {
                 auto: true,
-                method: DeployMethod::Symlink,
+                method: uk_manager::settings::DeployMethod::Symlink,
                 output: gfx_folder.clone(),
                 cemu_rules: true,
                 executable: exe_cmd,
-                layout: DeployLayout::WithName,
+                layout: uk_manager::settings::DeployLayout::WithName,
             }),
         })
     };
@@ -641,7 +634,7 @@ struct BcmlSettings {
 
 pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
     log::info!("Attempting to import BCML settings");
-    let current_mode = SETTINGS.read().current_mode;
+    let current_mode = core.settings().current_mode;
     let settings_path = if cfg!(windows) {
         dirs2::data_local_dir()
     } else {
@@ -661,7 +654,7 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
     ) {
         {
             log::info!("Import BCML Wii U game dump settings");
-            let mut settings = SETTINGS.write();
+            let mut settings = core.settings_mut();
             settings.wiiu_config = Some(PlatformSettings {
                 language: bcml_settings.lang,
                 profile: "Default".into(),
@@ -703,7 +696,7 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
     {
         {
             log::info!("Import BCML Switch game dump settings");
-            let mut settings = SETTINGS.write();
+            let mut settings = core.settings_mut();
             settings.switch_config = Some(PlatformSettings {
                 language: bcml_settings.lang,
                 profile: "Default".into(),
@@ -727,10 +720,10 @@ pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
         log::info!("Attempting to import BCML Switch mods");
         import_mods(&core, bcml_settings.store_dir.join("mods_nx"))?;
     }
-    let mode_changed = SETTINGS.read().current_mode != current_mode;
+    let mode_changed = core.settings().current_mode != current_mode;
     if mode_changed {
         {
-            let mut settings = SETTINGS.write();
+            let mut settings = core.settings_mut();
             settings.current_mode = current_mode;
             settings.save()?;
         }
@@ -756,7 +749,7 @@ fn import_mods(core: &Manager, mod_dir: PathBuf) -> Result<()> {
                 })
             })
         }) {
-            match convert_bnp(&dir) {
+            match convert_bnp(core, &dir) {
                 Ok(path) => {
                     core.mod_manager().add(&path, None)?;
                 }
@@ -792,7 +785,7 @@ impl VersionResponse {
     }
 }
 
-pub fn get_releases(sender: flume::Sender<Message>) {
+pub fn get_releases(core: Arc<Manager>, sender: flume::Sender<Message>) {
     let url = "https://api.github.com/repos/NiceneNerd/UKMM/releases?per_page=10";
     match response(url).and_then(|bytes| {
         serde_json::from_slice::<Vec<VersionResponse>>(&bytes)
@@ -800,7 +793,7 @@ pub fn get_releases(sender: flume::Sender<Message>) {
     }) {
         Ok(mut releases) => {
             let current_semver = lenient_semver::parse(env!("CARGO_PKG_VERSION")).unwrap();
-            let betas = SETTINGS.read().check_updates == UpdatePreference::Beta
+            let betas = core.settings().check_updates == UpdatePreference::Beta
                 || current_semver < lenient_semver::parse("1.0.0").unwrap();
             releases.retain(|r| !r.prerelease || betas);
             if let Some((release, release_ver)) = releases.first().and_then(|r| {

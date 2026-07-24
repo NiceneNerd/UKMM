@@ -50,10 +50,13 @@ impl ModInfo<'_> {
         preview
             .entry(self.0.hash())
             .or_insert_with(|| {
-                load_preview(self.0).unwrap_or_else(|e| {
-                    log::error!("Error loading mod preview: {}", e);
-                    None
-                })
+                match load_preview(self.0) {
+                    Ok(pre) => pre,
+                    Err(e) => {
+                        log::error!("Error loading mod preview: {}", e);
+                        None
+                    }
+                }
             })
             .clone()
     }

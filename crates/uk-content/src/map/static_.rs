@@ -4,9 +4,11 @@ use anyhow::Context;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, util::{DeleteMap, DeleteVec}};
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{
+    prelude::*,
+    util::{DeleteMap, DeleteVec},
+    Result, UKError,
+};
 
 use super::mainfield::{
     ScaleTranslate,

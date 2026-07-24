@@ -2,8 +2,7 @@ use anyhow::Context;
 use roead::{objs, aamp::{ParameterList, ParameterObject}};
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{UKError, Result};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FrameCtrl {

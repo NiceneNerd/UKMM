@@ -2,9 +2,7 @@ use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
 
-use crate::{prelude::*, util::SortedDeleteMap};
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
 
@@ -69,7 +67,7 @@ impl Mergeable for Tips {
 }
 
 impl Resource for Tips {
-    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 

@@ -16,9 +16,8 @@ use crate::{
     actor::ParameterResource,
     prelude::*,
     util::{self, HashMap, IndexMap, IndexSet},
+    Result, UKError,
 };
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub struct BehaviorMap(pub IndexMap<u32, String32>);

@@ -10,9 +10,8 @@ use crate::{
     actor::{info_params_filtered, InfoSource, ParameterResource},
     prelude::*,
     util::*,
+    Result, UKError,
 };
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 
@@ -260,7 +259,7 @@ impl Mergeable for ModelList {
 }
 
 impl InfoSource for ModelList {
-    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         info_params_filtered!(&self.attention, info, {
             ("cursorOffsetY", "CursorOffsetY", f32)
         });

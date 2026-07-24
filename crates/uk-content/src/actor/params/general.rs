@@ -6,9 +6,8 @@ use uk_util::OptionResultExt;
 use crate::{
     actor::{extract_info_param, InfoSource, ParameterResource},
     prelude::*,
+    Result,
 };
-
-use uk_util::uk_error::Result;
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 
@@ -35,7 +34,7 @@ impl From<GeneralParamList> for ParameterIO {
 impl_simple_aamp!(GeneralParamList, 0);
 
 impl InfoSource for GeneralParamList {
-    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         if let Some(obj) = self.0.object("AnimalUnit") {
             crate::actor::info_params!(obj, info, {
                 ("animalUnitBasePlayRate", "BasePlayRate", f32),

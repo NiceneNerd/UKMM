@@ -10,9 +10,7 @@ use roead::{
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
 
-use crate::{prelude::*, util::DeleteMap};
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{prelude::*, util::DeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
 pub struct FlagData {
@@ -515,7 +513,7 @@ impl Mergeable for GameDataPack {
 }
 
 impl Resource for GameDataPack {
-    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
         Self::from_sarc(&Sarc::new(data.as_ref())?)
     }
 

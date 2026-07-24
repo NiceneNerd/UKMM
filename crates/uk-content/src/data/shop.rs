@@ -1,9 +1,11 @@
 use roead::byml::{map, Byml};
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, util::{BymlHashValue, SortedDeleteMap}};
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{
+    prelude::*,
+    util::{BymlHashValue, SortedDeleteMap},
+    Result, UKError,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 
@@ -116,7 +118,7 @@ impl Mergeable for ShopGameDataInfo {
 }
 
 impl Resource for ShopGameDataInfo {
-    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
         (&Byml::from_binary(data.as_ref())?).try_into()
     }
 

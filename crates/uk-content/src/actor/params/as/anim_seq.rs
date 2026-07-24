@@ -7,10 +7,10 @@ use crate::{
     prelude::{Endian, Mergeable, Resource},
     util::{SortedDeleteMap, DeleteMap},
     actor::ParameterResource,
+    Result,
+    UKError
 };
 use super::{Element, traverser::Traverser};
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AnimSeq {

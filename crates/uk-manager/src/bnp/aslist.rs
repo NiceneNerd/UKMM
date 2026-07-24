@@ -18,9 +18,16 @@ fn handle_diff_entry(
     nest_root: &str,
     contents: &AampDiffEntry,
 ) -> Result<()> {
-    let nested_bytes = sarc
-        .get_file(nest_root)
-        .with_context(|| format!("SARC missing file at {nest_root}"))?;
+    let nested_bytes = match sarc.get_file(nest_root) {
+        Some(b) => b,
+        None => {
+            log::warn!(
+                "[lenient] SARC missing file at {nest_root}. \
+                 Файл пропущен при конвертации BNP. Мод может вызвать баги в игре."
+            );
+            return Ok(());
+        }
+    };
     match contents {
         AampDiffEntry::Sarc(nest_map) => {
             let mut nest_sarc = SarcWriter::from_sarc(&Sarc::new(nested_bytes)?);
@@ -53,40 +60,76 @@ impl BnpConverter {
             let pio = ParameterIO::from_binary(fs::read(aslist_path)?)?;
             let diff = parse_aamp_diff("FileTable", &pio)?;
             diff.into_par_iter()
-                .try_for_each(|(root, contents)| -> Result<()> {
+                .for_each(|(root, contents)| {
                     let base_path = self.current_root.join(&root);
-                    base_path.parent().iter().try_for_each(fs::create_dir_all)?;
+                    if let Err(e) = base_path.parent().iter().try_for_each(fs::create_dir_all) {
+                        log::warn!("[lenient] Failed to create dir for {}: {}", base_path.display(), e);
+                        return;
+                    }
                     match contents {
                         AampDiffEntry::Sarc(map) => {
-                            let mut sarc = self
-                                .open_or_create_sarc(&base_path, self.trim_prefixes(&root))
-                                .with_context(|| {
-                                    format!(
-                                        "Failed to open or create SARC at {}",
-                                        base_path.display()
-                                    )
-                                })?;
-                            map.iter().try_for_each(|(nest_root, contents)| {
-                                handle_diff_entry(&mut sarc, nest_root, contents).with_context(
-                                    || format!("Failed to process {} in {}", nest_root, root),
-                                )
-                            })?;
-                            fs::write(&base_path, compress_if(&sarc.to_binary(), &root))?;
+                            let mut sarc = match self.open_or_create_sarc(&base_path, self.trim_prefixes(&root)) {
+                                Ok(s) => s,
+                                Err(e) => {
+                                    log::warn!(
+                                        "[lenient] Failed to open or create SARC at {}: {}",
+                                        base_path.display(), e
+                                    );
+                                    return;
+                                }
+                            };
+                            map.iter().for_each(|(nest_root, contents)| {
+                                if let Err(e) = handle_diff_entry(&mut sarc, nest_root, contents) {
+                                    log::warn!(
+                                        "[lenient] Failed to process {} in {}: {}. Пропущен.",
+                                        nest_root, root, e
+                                    );
+                                }
+                            });
+                            if let Err(e) = fs::write(&base_path, compress_if(&sarc.to_binary(), &root)) {
+                                log::warn!("[lenient] Failed to write {}: {}", base_path.display(), e);
+                            }
                         }
                         AampDiffEntry::Aamp(plist) => {
-                            let pio = ASList::try_from(&ParameterIO::from_binary(
-                                self.get_master_bytes(self.trim_prefixes(&root))?,
-                            )?)?;
-                            let diff = ASList::try_from(&ParameterIO::new().with_root(plist))?;
-                            let data = pio
+                            let master_bytes = match self.get_master_bytes(self.trim_prefixes(&root)) {
+                                Ok(b) => b,
+                                Err(e) => {
+                                    log::warn!("[lenient] Failed to get master bytes for {}: {}", root, e);
+                                    return;
+                                }
+                            };
+                            let pio = match ParameterIO::from_binary(master_bytes) {
+                                Ok(p) => p,
+                                Err(e) => {
+                                    log::warn!("[lenient] Failed to parse AAMP for {}: {}", root, e);
+                                    return;
+                                }
+                            };
+                            let pio_aslist = match ASList::try_from(&pio) {
+                                Ok(a) => a,
+                                Err(e) => {
+                                    log::warn!("[lenient] Failed to parse ASList for {}: {}", root, e);
+                                    return;
+                                }
+                            };
+                            let diff_pio = ParameterIO::new().with_root(plist);
+                            let diff = match ASList::try_from(&diff_pio) {
+                                Ok(a) => a,
+                                Err(e) => {
+                                    log::warn!("[lenient] Failed to parse diff ASList for {}: {}", root, e);
+                                    return;
+                                }
+                            };
+                            let data = pio_aslist
                                 .merge(&diff)
                                 .into_binary(uk_content::prelude::Endian::Little);
                             let data = compress_if(&data, &root);
-                            fs::write(base_path, data)?;
+                            if let Err(e) = fs::write(&base_path, data) {
+                                log::warn!("[lenient] Failed to write {}: {}", base_path.display(), e);
+                            }
                         }
                     }
-                    Ok(())
-                })?;
+                });
         }
         Ok(())
     }

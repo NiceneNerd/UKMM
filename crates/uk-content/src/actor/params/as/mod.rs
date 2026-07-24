@@ -23,8 +23,7 @@ use res_skel_asset::SkeletalAssetResource;
 use res_type::ResType;
 use crate::prelude::Mergeable;
 use crate::util::HashMap;
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{UKError, Result};
 
 pub(crate) mod anim_seq;
 mod ext_bit_index;

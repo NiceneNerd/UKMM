@@ -8,9 +8,8 @@ use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
     util::{DeleteMap, IteratorExt},
+    Result, UKError,
 };
-
-use uk_util::uk_error::{Result, UKError};
 
 type RecipeTable = DeleteMap<String64, u8>;
 
@@ -184,7 +183,7 @@ impl Mergeable for Recipe {
 }
 
 impl InfoSource for Recipe {
-    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         if let Some(table) = self.0.get(String64::from("Normal0")) {
             info.insert("normal0StuffNum".into(), Byml::I32(table.len() as i32));
             for (name_idx, (num_idx, (name, num))) in table

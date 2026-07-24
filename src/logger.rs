@@ -7,7 +7,7 @@ use std::{
 
 use log::Record;
 use parking_lot::Mutex;
-use uk_settings::Settings;
+use uk_manager::settings::Settings;
 
 pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
     Logger {

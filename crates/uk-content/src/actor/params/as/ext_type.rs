@@ -1,7 +1,6 @@
 use roead::aamp::Name;
 use serde::{Deserialize, Serialize};
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{UKError, Result};
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum ExtType {

@@ -2,9 +2,8 @@ use anyhow::Context;
 use roead::{objs, aamp::ParameterList};
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use crate::util::DeleteMap;
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FloatArray {

@@ -530,20 +530,22 @@ impl ModUnpacker {
             ];
             for job in jobs {
                 match job.join() {
-                    Ok(Err(e)) => {
-                        log::warn!("[lenient] {}", e);
-                    }
+                    Ok(Err(e)) => bail!(e),
                     Ok(Ok(what)) => log::info!("Finished unpacking {what}"),
                     Err(e) => {
-                        let msg = e
-                            .downcast::<std::string::String>()
-                            .or_else(|e| {
-                                e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
-                            })
-                            .unwrap_or_else(|_| {
-                                Box::new("An unknown error was suppressed.".to_string())
-                            });
-                        log::warn!("[lenient] {}", msg);
+                        bail!(
+                            e.downcast::<std::string::String>()
+                                .or_else(|e| {
+                                    e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
+                                })
+                                .unwrap_or_else(|_| {
+                                    Box::new(
+                                        "An unknown error occured, check the log for possible \
+                                         details."
+                                            .to_string(),
+                                    )
+                                })
+                        )
                     }
                 }
             }

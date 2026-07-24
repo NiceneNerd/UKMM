@@ -1,6 +1,6 @@
 use roead::{aamp::*, byml::Byml};
 
-use uk_util::uk_error::{Result, UKError};
+use crate::Result;
 
 pub(crate) fn extract_info_param<T: TryFrom<Parameter> + Into<Byml> + Clone>(
     obj: &ParameterObject,
@@ -11,7 +11,7 @@ pub(crate) fn extract_info_param<T: TryFrom<Parameter> + Into<Byml> + Clone>(
         .map(|v| -> Result<T> {
             v.clone()
                 .try_into()
-                .map_err(|_| UKError::OtherD(format!("Wrong AAMP type for {:?}", v)))
+                .map_err(|_| crate::UKError::OtherD(format!("Wrong AAMP type for {:?}", v)))
         })
         .transpose()?
         .map(|v| v.into()))

@@ -10,8 +10,9 @@ use anyhow::Result;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
+use uk_content::{constants::Language, prelude::Endian};
 use uk_localization::LocLang;
-use uk_settings::{DeployConfig, DeployLayout, DeployMethod, Platform, PlatformSettings, SETTINGS};
+use uk_manager::{settings::{DeployConfig, Platform, PlatformSettings}};
 use uk_reader::ResourceReader;
 use uk_ui::{
     egui::{self, Align, Checkbox, ImageButton, InnerResponse, Layout, RichText, TextStyle, Ui},
@@ -19,7 +20,7 @@ use uk_ui::{
     icons::{self, IconButtonExt},
     visuals::Theme,
 };
-use uk_util::{OptionResultExt, endianness::Endian, language::Language};
+use uk_util::OptionResultExt;
 
 use super::{App, Message};
 
@@ -209,21 +210,21 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                 changed |= ui
                     .radio_value(
                         &mut config.method,
-                        DeployMethod::Copy,
+                        uk_manager::settings::DeployMethod::Copy,
                         "Settings_Platform_Deploy_Method_Copy".localize(),
                     )
                     .changed();
                 changed |= ui
                     .radio_value(
                         &mut config.method,
-                        DeployMethod::HardLink,
+                        uk_manager::settings::DeployMethod::HardLink,
                         "Settings_Platform_Deploy_Method_HardLink".localize(),
                     )
                     .changed();
                 changed |= ui
                     .radio_value(
                         &mut config.method,
-                        DeployMethod::Symlink,
+                        uk_manager::settings::DeployMethod::Symlink,
                         "Settings_Platform_Deploy_Method_Symlink".localize(),
                     )
                     .changed();
@@ -242,7 +243,7 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                 changed |= ui
                     .radio_value(
                         &mut config.layout,
-                        DeployLayout::WithoutName,
+                        uk_manager::settings::DeployLayout::WithoutName,
                         match platform {
                             Platform::WiiU =>
                                 "Settings_Platform_Deploy_Layout_WiiU_WithoutName".localize(),
@@ -254,7 +255,7 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
                 changed |= ui
                     .radio_value(
                         &mut config.layout,
-                        DeployLayout::WithName,
+                        uk_manager::settings::DeployLayout::WithName,
                         match platform {
                             Platform::WiiU =>
                                 "Settings_Platform_Deploy_Layout_WiiU_WithName".localize(),
@@ -483,7 +484,7 @@ impl App {
             let mut wiiu_changed = false;
             let mut switch_changed = false;
             ui.horizontal(|ui| {
-                let platform_config_changed = self.temp_settings.ne(SETTINGS.read().deref())
+                let platform_config_changed = self.temp_settings.ne(self.core.settings().deref())
                     || wiiu_changed
                     || switch_changed;
                 ui.add_enabled_ui(platform_config_changed, |ui| {
@@ -529,7 +530,7 @@ impl App {
                         .on_hover_text("Generic_Reset".localize())
                         .clicked()
                     {
-                        self.do_update(Message::SetLanguage(SETTINGS.read().lang));
+                        self.do_update(Message::SetLanguage(self.core.settings().lang));
                         CONFIG.write().clear();
                         self.do_update(Message::ResetSettings);
                     }
@@ -724,7 +725,7 @@ impl App {
             ui.horizontal(|ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     let platform_config_changed =
-                        self.temp_settings.ne(SETTINGS.read().deref())
+                        self.temp_settings.ne(self.core.settings().deref())
                             || wiiu_changed
                             || switch_changed;
                     ui.add_enabled_ui(platform_config_changed, |ui| {
@@ -762,7 +763,7 @@ impl App {
                             self.do_update(Message::SaveSettings);
                         }
                         if ui.button("Generic_Reset".localize()).clicked() {
-                            self.do_update(Message::SetLanguage(SETTINGS.read().lang));
+                            self.do_update(Message::SetLanguage(self.core.settings().lang));
                             CONFIG.write().clear();
                             self.do_update(Message::ResetSettings);
                         }

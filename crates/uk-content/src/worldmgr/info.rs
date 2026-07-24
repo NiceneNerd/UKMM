@@ -29,7 +29,7 @@ impl From<WorldInfo> for ParameterIO {
 impl_simple_aamp!(WorldInfo, 0);
 
 impl Resource for WorldInfo {
-    fn from_binary(data: impl AsRef<[u8]>) -> uk_util::uk_error::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
         Ok((&ParameterIO::from_binary(data)?).into())
     }
 

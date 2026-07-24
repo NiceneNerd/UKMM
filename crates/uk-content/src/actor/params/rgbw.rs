@@ -10,9 +10,8 @@ use crate::{
     actor::ParameterResource,
     prelude::*,
     util::{DeleteMap, IndexMap},
+    Result, UKError,
 };
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(
     Debug, Clone, Default, Hash, PartialEq, Eq, PartialOrd, Serialize, Deserialize, ParamData,
