@@ -6,9 +6,8 @@ use std::{
 
 use anyhow_ext::{Context, Result};
 use smartstring::alias::String;
-use uk_manager::{core, mods::LookupMod};
+use uk_manager::{core, mods::LookupMod, settings::Platform};
 use uk_mod::{unpack::ModReader, Manifest, Meta};
-use uk_settings::{Platform, SETTINGS};
 
 use crate::gui::{package, tasks};
 
@@ -21,7 +20,7 @@ xflags::xflags! {
         optional -d, --debug
         /// Run using settings in same folder as executable
         optional -p, --portable
-        /// Automatically deploy after running command (redundant with `deploy` command)
+        /// Automatically deploy after running command (redunant with `deploy` command)
         optional -D, --deploy
         /// Install a mod
         cmd install {
@@ -156,7 +155,7 @@ impl Runner {
         let (mod_, path) = match ModReader::open(path, vec![]) {
             Ok(mod_) => (mod_, path.to_path_buf()),
             Err(e) => {
-                match uk_manager::mods::convert_gfx(path, None) {
+                match uk_manager::mods::convert_gfx(&self.core, path, None) {
                     Ok(path) => {
                         log::info!("Opening mod at {}", path.display());
                         (
@@ -204,8 +203,8 @@ impl Runner {
         }
         match &self.cli.subcommand {
             UkmmCmd::Mode(Mode { platform }) => {
-                SETTINGS
-                    .write()
+                self.core
+                    .settings_mut()
                     .apply(|s| s.current_mode = *platform)?;
                 self.core.reload()?;
                 println!("Mode changed to {:?}", platform);
@@ -236,7 +235,7 @@ impl Runner {
                     dest:   pkg.output.clone(),
                     meta:   Meta::parse(&pkg.meta)?,
                 };
-                tasks::package_mod(builder)?;
+                tasks::package_mod(&self.core, builder)?;
                 println!("Done!");
             }
             UkmmCmd::Remerge(_) => {

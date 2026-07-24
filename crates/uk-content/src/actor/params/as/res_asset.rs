@@ -3,9 +3,8 @@ use roead::aamp::{ParameterList, Parameter::String64};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use crate::prelude::Mergeable;
+use crate::{UKError, Result};
 use super::res::Resource;
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct AssetResource {

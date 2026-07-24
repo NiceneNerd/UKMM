@@ -3,9 +3,8 @@ use roead::{objs, params, aamp::ParameterList, lists};
 use serde::{Deserialize, Serialize};
 use crate::prelude::Mergeable;
 use crate::util::DeleteMap;
+use crate::{UKError, Result};
 use super::{ExtType, ResType, Extension};
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Resource {

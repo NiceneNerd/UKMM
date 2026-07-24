@@ -11,10 +11,13 @@ log = { workspace = true }
 minicbor-ser = { workspace = true }
 roead = { workspace = true, features = ["with-serde", "aamp-names"] }
 rustc-hash = { workspace = true }
+rstb = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
+thiserror = { workspace = true }
 
+almost = "0.2.0"
 itertools = "0.13.0"
 lexical = "6.1.1"
 lexical-core = "0.8.5"

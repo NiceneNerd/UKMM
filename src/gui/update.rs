@@ -1,7 +1,6 @@
 use strfmt::Format;
 use uk_content::prelude::Endian;
 use uk_localization::string_ext::LocString;
-use uk_settings::SETTINGS;
 use super::*;
 
 impl App {
@@ -188,17 +187,17 @@ impl App {
                     }
                 }
                 Message::DeleteProfile(profile) => {
-                    self.do_task(move |_| {
-                        let path = SETTINGS.read().profiles_dir().join(profile.as_str());
+                    self.do_task(move |core| {
+                        let path = core.settings().profiles_dir().join(profile.as_str());
                         fs::remove_dir_all(path)?;
                         Ok(Message::CleanProfile(profile))
                     })
                 }
                 Message::DuplicateProfile(profile) => {
                     self.do_task(move |core| {
-                        let profiles_dir = SETTINGS.read().profiles_dir();
+                        let profiles_dir = core.settings().profiles_dir();
                         let new_profile = format!("{profile}_copy");
-                        uk_settings::util::copy_dir(
+                        uk_manager::util::copy_dir(
                             profiles_dir.join(profile),
                             profiles_dir.join(&new_profile),
                         )?;
@@ -207,8 +206,8 @@ impl App {
                     });
                 }
                 Message::RenameProfile(profile, rename) => {
-                    self.do_task(move |_| {
-                        let profiles_dir = SETTINGS.read().profiles_dir();
+                    self.do_task(move |core| {
+                        let profiles_dir = core.settings().profiles_dir();
                         fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
                         Ok(Message::ReloadProfiles)
                     })
@@ -223,7 +222,7 @@ impl App {
                         .iter()
                         .map(|(h, m)| (*h, m.path.clone()))
                         .collect::<HashMap<_,_>>();
-                    state.reload();
+                    state.reload(&self.core);
                     let assigned = state.all_assigned_mod_hashes();
                     mods.iter()
                         .filter(|(h, _)| !assigned.contains(h))
@@ -231,7 +230,7 @@ impl App {
                     self.busy.set(false);
                 }
                 Message::ReloadProfiles => {
-                    self.profiles_state.borrow_mut().reload();
+                    self.profiles_state.borrow_mut().reload(&self.core);
                     self.busy.set(false);
                 }
                 Message::SelectProfileManage(name) => {
@@ -267,13 +266,14 @@ impl App {
                         let first = paths.remove(0);
                         self.install_queue.extend(paths);
                         self.error_queue.clear();
-                        self.do_task(move |_| tasks::open_mod(&first, None));
+                        self.do_task(move |core| tasks::open_mod(&core, &first, None));
                     }
                 }
                 Message::OpenMod(path) => {
+                    let core = self.core.clone();
                     let meta = self.meta_input.take();
                     ctx.request_repaint();
-                    self.do_task(move |_| tasks::open_mod(&path, meta));
+                    self.do_task(move |_| tasks::open_mod(&core, &path, meta));
                 }
                 Message::HandleMod(mod_) => {
                     self.busy.set(false);
@@ -354,7 +354,7 @@ impl App {
                     {
                         let path = file.clone();
                         self.update_mod = Some(self.selected.first().unwrap().clone());
-                        self.do_task(move |_| tasks::open_mod(&path, None));
+                        self.do_task(move |core| tasks::open_mod(&core, &path, None));
                     }
                 }
                 Message::DevUpdate => {
@@ -390,7 +390,7 @@ impl App {
                     self.do_update(Message::RefreshModsDisplay);
                     self.busy.set(false);
                     if let Some(path) = self.install_queue.pop_front() {
-                        self.do_task(move |_| tasks::open_mod(&path, None));
+                        self.do_task(move |core| tasks::open_mod(&core, &path, None));
                     } else if !self.error_queue.is_empty() {
                         let msg = self
                             .error_queue
@@ -407,7 +407,7 @@ impl App {
                 }
                 Message::Extract => {
                     let mods = self.selected.clone();
-                    self.do_task(move |_| tasks::extract_mods(mods));
+                    self.do_task(move |core| tasks::extract_mods(&core, mods));
                 }
                 Message::AddToProfile(profile) => {
                     let mut dirty = self.dirty.write();
@@ -475,20 +475,20 @@ impl App {
                 }
                 Message::ResetSettings => {
                     self.busy.set(false);
-                    self.temp_settings = SETTINGS.read().clone();
+                    self.temp_settings = self.core.settings().clone();
                     settings::CONFIG.write().clear();
                 }
                 Message::SaveSettings => {
                     let mut needs_reset = false;
-                    SETTINGS.read().platform_config().map(|old_plat| {
+                    self.core.settings().platform_config().map(|old_plat| {
                         old_plat.deploy_config.as_ref().map(|old_dep| {
                             if let Some(new_plat) = &self.temp_settings.platform_config() {
                                 new_plat.deploy_config.as_ref().map(|new_dep| {
                                     if old_dep.layout != new_dep.layout ||
                                         old_dep.method != new_dep.method ||
                                         old_dep.output != new_dep.output {
-                                        if let Ok(_) = SETTINGS.read()
-                                            .wipe_output(SETTINGS.read().current_mode.into()) {
+                                        if let Ok(_) = self.core.settings()
+                                            .wipe_output(self.core.settings().current_mode.into()) {
                                             needs_reset = true;
                                         }
                                     }
@@ -507,7 +507,7 @@ impl App {
                                 toast.set_duration(Some(Duration::new(2, 0)));
                                 toast
                             });
-                            if let Some(dump) = SETTINGS.read().dump() {
+                            if let Some(dump) = self.core.settings().dump() {
                                 dump.clear_cache()
                             }
                             self.package_builder.borrow_mut().reset(self.platform());
@@ -521,13 +521,13 @@ impl App {
                     };
                 }
                 Message::HandleSettings => {
-                    self.temp_settings = SETTINGS.read().clone();
+                    self.temp_settings = self.core.settings().clone();
                     self.toasts.add({
                         let mut toast = Toast::success("Settings_Saved".localize());
                         toast.set_duration(Some(Duration::new(2, 0)));
                         toast
                     });
-                    if let Some(dump) = SETTINGS.read().dump() {
+                    if let Some(dump) = self.core.settings().dump() {
                         dump.clear_cache()
                     }
                     self.package_builder.borrow_mut().reset(self.platform());
@@ -573,7 +573,7 @@ impl App {
                         log::warn!("More operations in queue, stashing error and continuing…");
                         self.error_queue.push_back(error);
                         if let Some(path) = self.install_queue.pop_front() {
-                            self.do_task(move |_| tasks::open_mod(&path, None));
+                            self.do_task(move |core| tasks::open_mod(&core, &path, None));
                         }
                     }
                 }
@@ -621,7 +621,7 @@ impl App {
                         .save_file()
                     {
                         builder.dest = dest;
-                        self.do_task(move |_| tasks::package_mod(builder));
+                        self.do_task(move |core| tasks::package_mod(&core, builder));
                     }
                 }
                 Message::ResetPacker => {
@@ -633,7 +633,7 @@ impl App {
                         .set_title("Settings_SelectFolder_Cemu".localize())
                         .pick_folder()
                     {
-                        self.do_task(move |_| tasks::import_cemu_settings(&path));
+                        self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
                     }
                 }
                 Message::MigrateBcml => {

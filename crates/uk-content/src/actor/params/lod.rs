@@ -5,8 +5,6 @@ use uk_util::OptionResultExt;
 
 use crate::{actor::ParameterResource, prelude::*};
 
-use uk_util::uk_error::Result;
-
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 
 pub struct Lod(pub ParameterIO);
@@ -38,7 +36,7 @@ impl ParameterResource for Lod {
 }
 
 impl Resource for Lod {
-    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
         Ok((&ParameterIO::from_binary(data.as_ref())?).into())
     }
 

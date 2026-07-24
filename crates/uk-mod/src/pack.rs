@@ -20,11 +20,12 @@ use serde_with::{serde_as, DefaultOnError};
 use smartstring::alias::String;
 use uk_content::{
     canonicalize,
+    constants::Language,
     platform_prefixes,
     prelude::{Endian, Mergeable},
     resource::{is_mergeable_sarc, ResourceData},
 };
-use uk_util::{PathExt as UkPathExt, language::Language};
+use uk_util::PathExt as UkPathExt;
 use zip::{
     write::{FileOptions, SimpleFileOptions},
     ZipWriter as ZipW,
@@ -263,10 +264,36 @@ impl ModPacker {
             } else if source.join(content_nx).exists() || source.join(dlc_nx).exists() {
                 Endian::Little
             } else {
-                anyhow_ext::bail!(
-                    "No content or DLC folder found in source at {}",
-                    source.display()
-                );
+                // [lenient] Нет стандартных папок content/aoc — пробуем угадать платформу
+                let fallback_endian = match &meta.platform {
+                    ModPlatform::Specific(e) => {
+                        log::warn!(
+                            "[lenient] No content or DLC folder found in source at {}. \
+                             Using platform from mod metadata ({:?}). \
+                             Мод может работать некорректно.",
+                            source.display(), e
+                        );
+                        *e
+                    }
+                    _ => {
+                        // Большинство старых BNP модов без корректных
+                        // метаданных платформы были для WiiU
+                        log::warn!(
+                            "[lenient] No content or DLC folder found in source at {}. \
+                             Platform unknown, falling back to WiiU (Big Endian). \
+                             Мод может работать некорректно.",
+                            source.display()
+                        );
+                        Endian::Big
+                    }
+                };
+                // Создаём content-папку, чтобы упаковщик не упал дальше
+                let (fallback_content, _) = platform_prefixes(fallback_endian);
+                let content_dir = source.join(fallback_content);
+                if !content_dir.exists() {
+                    let _ = std::fs::create_dir_all(&content_dir);
+                }
+                fallback_endian
             };
             let dest_file = if dest.is_dir() {
                 dest.join(sanitise(&meta.name)).with_extension("zip")
@@ -373,8 +400,17 @@ impl ModPacker {
                     return Ok(None);
                 }
 
-                let resource = ResourceData::from_binary(name.as_str(), &*file_data)
-                    .with_context(|| jstr!("Failed to parse resource {&name}"))?;
+                let resource = match ResourceData::from_binary(name.as_str(), &*file_data) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        log::warn!(
+                            "[lenient] Не удалось распарсить ресурс {}: {}. \
+                             Файл пропущен. Мод может вызвать баги в игре.",
+                            &name, e
+                        );
+                        return Ok(None);
+                    }
+                };
                 let is_mergeable = matches!(resource, ResourceData::Mergeable(_));
                 if let ResourceData::Mergeable(
                     uk_content::resource::MergeableResource::BinaryOverride(v),
@@ -386,20 +422,44 @@ impl ModPacker {
                         v.1
                     );
                 }
-                self.process_resource(name.clone(), canon.clone(), resource, false)
-                    .with_context(|| jstr!("Failed to process resource {&canon}"))?;
+                if let Err(e) = self.process_resource(name.clone(), canon.clone(), resource, false) {
+                    log::warn!(
+                        "[lenient] Ошибка обработки ресурса {}: {}. \
+                         Файл пропущен. Мод может вызвать баги в игре.",
+                        &canon, e
+                    );
+                    return Ok(None);
+                }
                 if !is_mergeable && is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                     log::trace!(
                         "Resource {} is a mergeable SARC, processing contents",
                         &canon
                     );
-                    self.process_sarc(
-                        Sarc::new(file_data.as_ref())?,
-                        name.as_str().as_ref(),
-                        self.hash_table.is_file_new(&canon),
-                        canon.starts_with("Aoc"),
-                    )
-                    .with_context(|| jstr!("Failed to process SARC file {&canon}"))?;
+                    match Sarc::new(file_data.as_ref()) {
+                        Ok(sarc) => {
+                            if let Err(e) = self.process_sarc(
+                                sarc,
+                                name.as_str().as_ref(),
+                                self.hash_table.is_file_new(&canon),
+                                canon.starts_with("Aoc"),
+                            ) {
+                                log::warn!(
+                                    "[lenient] Ошибка обработки SARC {}: {}. \
+                                     Содержимое архива пропущено. \
+                                     Мод может вызвать баги в игре.",
+                                    &canon, e
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            log::warn!(
+                                "[lenient] Не удалось открыть SARC {}: {}. \
+                                 Содержимое архива пропущено. \
+                                 Мод может вызвать баги в игре.",
+                                &canon, e
+                            );
+                        }
+                    }
                 }
 
                 let progress = current_file.load(std::sync::atomic::Ordering::Relaxed) + 1;
@@ -440,13 +500,12 @@ impl ModPacker {
             return Ok(());
         }
         if resource.as_binary().is_some() && self.meta.platform == ModPlatform::Universal {
-            anyhow_ext::bail!(
-                "The resource {} is not a mergeable asset. Cross-platform mods must consist only \
-                 of mergeable assets. While there is no ready-made comprehensive list of \
-                 mergeable assets, common unmergeable assets include models, textures, music, and \
-                 Havok physics data.",
+            log::warn!(
+                "[lenient] Ресурс {} является бинарным и не поддерживает мердж для Universal-мода. \
+                 Ресурс пропущен. Мод может вызвать баги в игре.",
                 canon
             );
+            return Ok(());
         }
         let prefixes = platform_prefixes(self.endian);
         let ref_name = name
@@ -519,13 +578,22 @@ impl ModPacker {
             if file.data.is_empty() {
                 continue;
             }
-            let name = file
+            let name = match file
                 .name()
                 .with_context(|| jstr!("File in SARC missing name"))
                 .map(|n| match is_aoc {
                     true => format!("Aoc/0010/{n}"),
                     false => n.to_owned(),
-                })?;
+                }) {
+                Ok(n) => n,
+                Err(e) => {
+                    log::warn!(
+                        "[lenient] Файл в SARC {} не имеет имени: {}. Пропущен.",
+                        path.display(), e
+                    );
+                    continue;
+                }
+            };
             let canon = canonicalize(&name);
             let file_data = decompress_if(file.data);
 
@@ -534,9 +602,17 @@ impl ModPacker {
                 continue;
             }
 
-            let resource = ResourceData::from_binary(&name, &*file_data).with_context(|| {
-                jstr!("Failed to parse resource {&canon} in SARC {&path.display().to_string()}")
-            })?;
+            let resource = match ResourceData::from_binary(&name, &*file_data) {
+                Ok(r) => r,
+                Err(e) => {
+                    log::warn!(
+                        "[lenient] Не удалось распарсить ресурс {} в SARC {}: {}. \
+                         Файл пропущен. Мод может вызвать баги в игре.",
+                        &canon, path.display(), e
+                    );
+                    continue;
+                }
+            };
             if let ResourceData::Mergeable(
                 uk_content::resource::MergeableResource::BinaryOverride(v),
             ) = &resource
@@ -547,22 +623,43 @@ impl ModPacker {
                     v.1
                 );
             }
-            self.process_resource((&name).into(), canon.clone(), resource, is_new_sarc)?;
+            if let Err(e) = self.process_resource((&name).into(), canon.clone(), resource, is_new_sarc) {
+                log::warn!(
+                    "[lenient] Ошибка обработки ресурса {} в SARC {}: {}. \
+                     Файл пропущен. Мод может вызвать баги в игре.",
+                    &canon, path.display(), e
+                );
+                continue;
+            }
             if is_mergeable_sarc(canon.as_str(), file_data.as_ref()) {
                 log::trace!(
                     "Resource {} in SARC {} is a mergeable SARC, processing contents",
                     &canon,
                     path.display()
                 );
-                self.process_sarc(
-                    Sarc::new(file_data.as_ref())?,
-                    name.as_ref(),
-                    is_new_sarc,
-                    is_aoc,
-                )
-                .with_context(|| {
-                    jstr!("Failed to process {&canon} in SARC {&path.display().to_string()}")
-                })?;
+                match Sarc::new(file_data.as_ref()) {
+                    Ok(nested_sarc) => {
+                        if let Err(e) = self.process_sarc(
+                            nested_sarc,
+                            name.as_ref(),
+                            is_new_sarc,
+                            is_aoc,
+                        ) {
+                            log::warn!(
+                                "[lenient] Ошибка обработки вложенного SARC {} в {}: {}. \
+                                 Мод может вызвать баги в игре.",
+                                &canon, path.display(), e
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        log::warn!(
+                            "[lenient] Не удалось открыть вложенный SARC {} в {}: {}. \
+                             Мод может вызвать баги в игре.",
+                            &canon, path.display(), e
+                        );
+                    }
+                }
             }
         }
         Ok(())

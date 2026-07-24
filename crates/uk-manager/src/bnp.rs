@@ -14,12 +14,12 @@ use roead::{
     yaz0::{compress_if, decompress_if},
 };
 use rustc_hash::FxHashMap;
-use uk_content::resource::ResourceData;
+use uk_content::{constants::Language, resource::ResourceData};
 use uk_mod::pack::ModPacker;
 use uk_reader::ResourceReader;
-use uk_settings::{Platform, util, SETTINGS};
-use uk_util::{PathExt, language::Language};
+use uk_util::PathExt;
 
+use crate::{settings::Platform, util::extract_7z};
 mod actorinfo;
 mod areadata;
 mod aslist;
@@ -47,7 +47,7 @@ pub enum AampDiffEntry {
 
 impl AampDiffEntry {
     pub fn as_mut_sarc(&mut self) -> &mut AampDiffMap {
-        if let AampDiffEntry::Sarc(map) = self {
+        if let AampDiffEntry::Sarc(ref mut map) = self {
             map
         } else {
             panic!("Not a SARC entry")
@@ -107,8 +107,6 @@ struct BnpConverter {
     packs: Arc<DashSet<PathBuf>>,
     parent_packs: DashSet<PathBuf>,
     opt_master_cache: Arc<DashMap<PathBuf, Vec<u8>>>,
-    root_maps: Arc<DashMap<String, Vec<u8>>>,
-    opt_maps: Arc<DashMap<String, Vec<u8>>>,
 }
 
 impl BnpConverter {
@@ -398,34 +396,22 @@ impl BnpConverter {
             }
         };
 
-        self.handle_actorinfo()
-            .context("Failed to process actor info log")?;
-        self.handle_aslist()
-            .context("Failed to process AS list log")?;
-        self.handle_areadata()
-            .context("Failed to process areadata log")?;
-        self.handle_deepmerge()
-            .context("Failed to process deepmerge log")?;
-        self.handle_drops().context("Failed to process drops log")?;
-        self.handle_dungeon_static()
-            .context("Failed to process dungeon static log")?;
-        self.handle_events()
-            .context("Failed to process eventinfo log")?;
-        self.handle_gamedata()
-            .context("Failed to process gamedata log")?;
-        self.handle_mainfield_static()
-            .context("Failed to process mainfield static log")?;
-        self.handle_maps().context("Failed to process maps log")?;
-        self.handle_quests()
-            .context("Failed to process quests log")?;
-        self.handle_residents()
-            .context("Failed to process residents log")?;
-        self.handle_savedata()
-            .context("Failed to process savedata log")?;
-        self.handle_shops().context("Failed to process shops log")?;
-        self.handle_effects()
-            .context("Failed to process status effect log")?;
-        self.handle_texts().context("Failed to process texts log")?;
+        if let Err(e) = self.handle_actorinfo() { log::warn!("[lenient] Failed to process actor info log: {}", e); }
+        if let Err(e) = self.handle_aslist() { log::warn!("[lenient] Failed to process AS list log: {}", e); }
+        if let Err(e) = self.handle_areadata() { log::warn!("[lenient] Failed to process areadata log: {}", e); }
+        if let Err(e) = self.handle_deepmerge() { log::warn!("[lenient] Failed to process deepmerge log: {}", e); }
+        if let Err(e) = self.handle_drops() { log::warn!("[lenient] Failed to process drops log: {}", e); }
+        if let Err(e) = self.handle_dungeon_static() { log::warn!("[lenient] Failed to process dungeon static log: {}", e); }
+        if let Err(e) = self.handle_events() { log::warn!("[lenient] Failed to process eventinfo log: {}", e); }
+        if let Err(e) = self.handle_gamedata() { log::warn!("[lenient] Failed to process gamedata log: {}", e); }
+        if let Err(e) = self.handle_mainfield_static() { log::warn!("[lenient] Failed to process mainfield static log: {}", e); }
+        if let Err(e) = self.handle_maps() { log::warn!("[lenient] Failed to process maps log: {}", e); }
+        if let Err(e) = self.handle_quests() { log::warn!("[lenient] Failed to process quests log: {}", e); }
+        if let Err(e) = self.handle_residents() { log::warn!("[lenient] Failed to process residents log: {}", e); }
+        if let Err(e) = self.handle_savedata() { log::warn!("[lenient] Failed to process savedata log: {}", e); }
+        if let Err(e) = self.handle_shops() { log::warn!("[lenient] Failed to process shops log: {}", e); }
+        if let Err(e) = self.handle_effects() { log::warn!("[lenient] Failed to process status effect log: {}", e); }
+        if let Err(e) = self.handle_texts() { log::warn!("[lenient] Failed to process texts log: {}", e); }
 
         let packs = DashSet::clone(&self.packs);
         self.packs.clear();
@@ -459,7 +445,6 @@ impl BnpConverter {
 
     fn convert(mut self) -> Result<PathBuf> {
         let root = self.current_root.clone();
-        self.set_up_temp_map_state().context("Failed to set up temp map state for root")?;
         self.convert_root()?;
 
         let opt_dir = root.join("options");
@@ -478,50 +463,38 @@ impl BnpConverter {
                         .unwrap_or_default()
                 );
                 self.current_root = option;
-                self.set_up_temp_map_state()
-                    .with_context(|| format!(
-                        "Failed to set up temp map state for {}",
-                        self.current_root.display()
-                    ))?;
                 self.convert_root()?;
-                self.clear_temp_map_state()
-                    .with_context(|| format!(
-                        "Failed to clear temp map state for {}",
-                        self.current_root.display()
-                    ))?;
             }
         }
-        self.current_root = root;
-        self.clear_temp_map_state().context("Failed to clear temp map state for root")?;
-        Ok(self.current_root)
+        Ok(root)
     }
 }
 
-pub fn unpack_bnp(path: &Path) -> Result<PathBuf> {
-    let tempdir = util::get_temp_folder();
+pub fn unpack_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
+    let tempdir = crate::util::get_temp_folder();
     if path.is_dir() {
-        util::copy_dir(path, tempdir.as_path())
+        crate::util::copy_dir(path, tempdir.as_path())
             .context("Failed to copy files to temp folder")?;
     } else {
         log::info!("Extracting BNP…");
-        util::extract_7z(path, &tempdir).context("Failed to extract BNP")?;
+        extract_7z(path, &tempdir).context("Failed to extract BNP")?;
     }
     if tempdir.join("rules.txt").exists() && !tempdir.join("info.json").exists() {
         old::Bnp2xConverter::new(&tempdir)
             .convert()
             .context("Failed to upgrade 2.x BNP")?;
     }
-    let (content, aoc) = uk_content::platform_prefixes(SETTINGS.read().current_mode.into());
+    let (content, aoc) = uk_content::platform_prefixes(core.settings().current_mode.into());
     log::info!("Processing BNP logs…");
     let converter = BnpConverter {
-        platform: SETTINGS.read().current_mode,
-        game_lang: SETTINGS
-            .read()
+        platform: core.settings().current_mode,
+        game_lang: core
+            .settings()
             .platform_config()
             .context("No config for current platform. Have you configured your settings?")?
             .language,
-        dump: SETTINGS
-            .read()
+        dump: core
+            .settings()
             .dump()
             .context("No dump for current mode. Have you configured your settings?")?,
         content,
@@ -531,16 +504,14 @@ pub fn unpack_bnp(path: &Path) -> Result<PathBuf> {
         current_root: tempdir.clone(),
         path: tempdir.clone(),
         opt_master_cache: Default::default(),
-        root_maps: Default::default(),
-        opt_maps: Default::default(),
     };
     let path = converter.convert()?;
     log::info!("BNP unpacked");
     Ok(path)
 }
 
-pub fn convert_bnp(path: &Path) -> Result<PathBuf> {
-    let tempdir = unpack_bnp(path).with_context(|| {
+pub fn convert_bnp(core: &crate::core::Manager, path: &Path) -> Result<PathBuf> {
+    let tempdir = unpack_bnp(core, path).with_context(|| {
         format!(
             "Failed to unpack {}",
             path.file_name()
@@ -556,7 +527,7 @@ pub fn convert_bnp(path: &Path) -> Result<PathBuf> {
     };
     let name = meta.name.clone();
     let new_mod = ModPacker::new(tempdir, tempfile.as_path(), Some(meta), vec![
-        SETTINGS.read()
+        core.settings()
             .dump()
             .context("No dump for current platform")?,
     ])
@@ -571,5 +542,5 @@ fn test_convert() {
     let path = dirs2::download_dir()
         .unwrap()
         .join("clearcameraui_nodetection.bnp"); // join("rebalance.bnp"); //("SecondWindv1.9.13.bnp");
-    unpack_bnp(path.as_ref()).unwrap();
+    unpack_bnp(&super::core::Manager::init().unwrap(), path.as_ref()).unwrap();
 }

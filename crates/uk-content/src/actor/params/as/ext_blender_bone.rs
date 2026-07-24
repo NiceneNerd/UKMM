@@ -3,8 +3,7 @@ use roead::{objs, params, aamp::{ParameterList, Parameter::String32}};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use crate::prelude::Mergeable;
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{UKError, Result};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct BlenderBone {

@@ -45,7 +45,7 @@ fn field_from_param(
                 .get(#hash)
                 .map(|val| val.clone().try_into())
                 .transpose()
-                .map_err(|param| uk_util::uk_error::UKError::InvalidParameter(#field_src_name.into(), param))?;
+                .map_err(|param| crate::UKError::InvalidParameter(#field_src_name.into(), param))?;
         }
     } else {
         quote! {
@@ -55,7 +55,7 @@ fn field_from_param(
                 .cloned()
                 .ok_or(UKError::MissingAampKey(#err_msg, Box::from(Some(obj.into()))))?
                 .try_into()
-                .map_err(|param| uk_util::uk_error::UKError::InvalidParameter(#field_src_name.into(), param))?;
+                .map_err(|param| crate::UKError::InvalidParameter(#field_src_name.into(), param))?;
         }
     }
 }
@@ -74,7 +74,7 @@ pub fn impl_from_params(name: &Ident, fields: &FieldsNamed) -> TokenStream {
     quote! {
         #[automatically_derived]
         impl TryFrom<&::roead::aamp::ParameterObject> for #name {
-            type Error = uk_util::uk_error::UKError;
+            type Error = crate::UKError;
             fn try_from(obj: &::roead::aamp::ParameterObject) -> ::std::result::Result<#name, Self::Error> {
                 #(#field_tries)*
                 Ok(Self {

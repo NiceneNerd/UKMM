@@ -30,14 +30,14 @@ use serde::Serialize;
 use smartstring::alias::String;
 use uk_content::{
     canonicalize,
+    constants::Language,
     platform_content, platform_prefixes,
     prelude::{Endian, Mergeable, Resource},
     resource::{MergeableResource, ResourceData, SarcMap},
     util::{HashMap, IndexSet},
 };
 use uk_reader::{ResourceLoader, ResourceReader};
-use uk_settings::SETTINGS;
-use uk_util::{PathExt as UkPathExt, language::Language};
+use uk_util::PathExt as UkPathExt;
 
 use crate::{Manifest, Meta, ModOption};
 
@@ -268,7 +268,10 @@ impl ModReader {
             .context("Invalid API version for mod")?;
         let current_api = Version::parse(env!("CARGO_PKG_VERSION"))?;
         if current_api.major != mod_api.major {
-            bail!("{name} build with unsupported UKMM version: {mod_api}")
+            log::warn!(
+                "[lenient] {name} собран под несовместимую major-версию UKMM (v{mod_api}). \
+                 Установка продолжается, но мод может вызвать баги в игре."
+            );
         } else if current_api.minor > mod_api.minor && current_api.major == 0 {
             log::warn!(
                 "{name} is from an older UKMM prerelease (v{mod_api}), compatibility not \
@@ -527,39 +530,22 @@ impl ModUnpacker {
             ];
             for job in jobs {
                 match job.join() {
-                    Ok(Err(e)) =>
-                        if SETTINGS.read().suppress_merge {
-                            log::warn!("{}",
-                                e.downcast::<std::string::String>()
-                                    .or_else(|e| {
-                                        e.downcast::<&'static str>().map(|s| (*s).into())
-                                    })
-                                    .unwrap_or_else(|_|
-                                        "An unknown error was suppressed.".to_string()
-                                    )
-                            )
-                        } else {
-                            bail!(e)
-                        },
+                    Ok(Err(e)) => bail!(e),
                     Ok(Ok(what)) => log::info!("Finished unpacking {what}"),
                     Err(e) => {
-                        let msg = e.downcast::<std::string::String>()
-                            .or_else(|e| {
-                                e.downcast::<&'static str>()
-                                    .map(|s| Box::new((*s).into()))
-                            });
-                        if SETTINGS.read().suppress_merge {
-                            log::warn!("{}",
-                                msg.unwrap_or_else(|_|
-                                    Box::new("An unknown error was suppressed.".to_string())
-                                )
-                            )
-                        } else {
-                            bail!(msg.unwrap_or_else(|_| Box::new(
-                                "An unknown error occured, check the log for possible \
-                                 details."
-                                    .to_string())))
-                        }
+                        bail!(
+                            e.downcast::<std::string::String>()
+                                .or_else(|e| {
+                                    e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
+                                })
+                                .unwrap_or_else(|_| {
+                                    Box::new(
+                                        "An unknown error occured, check the log for possible \
+                                         details."
+                                            .to_string(),
+                                    )
+                                })
+                        )
                     }
                 }
             }
@@ -625,12 +611,36 @@ impl ModUnpacker {
         current_file: &AtomicUsize,
         aoc: bool,
     ) -> Result<()> {
-        files.into_par_iter().try_for_each(|file| -> Result<()> {
-            let data = self.build_file(file.as_str(), aoc)?;
+        // Критические IO-ошибки (нет места, права доступа) сохраняем отдельно
+        let critical_error: parking_lot::Mutex<Option<anyhow_ext::Error>> =
+            parking_lot::Mutex::new(None);
+        files.into_par_iter().for_each(|file| {
+            // Если уже поймали критическую ошибку - пропускаем остальное
+            if critical_error.lock().is_some() {
+                return;
+            }
+            let data = match self.build_file(file.as_str(), aoc) {
+                Ok(d) => d,
+                Err(e) => {
+                    log::warn!(
+                        "[lenient] Ошибка сборки файла {}: {}. \
+                         Файл пропущен. Мод может вызвать баги в игре.",
+                        file, e
+                    );
+                    return;
+                }
+            };
             let out_file = dir.join(file.as_str());
-            out_file.parent().map(fs::create_dir_all).transpose()?;
-            let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
-            writer.write_all(&compress_if(data.as_ref(), &out_file))?;
+            let result = (|| -> Result<()> {
+                out_file.parent().map(fs::create_dir_all).transpose()?;
+                let mut writer = std::io::BufWriter::new(fs::File::create(&out_file)?);
+                writer.write_all(&compress_if(data.as_ref(), &out_file))?;
+                Ok(())
+            })();
+            if let Err(e) = result {
+                *critical_error.lock() = Some(e);
+                return;
+            }
             let progress = 1 + current_file.load(Ordering::Relaxed);
             current_file.store(progress, Ordering::Relaxed);
             let percent = (progress as f64 / total_files as f64) * 100.0;
@@ -642,9 +652,14 @@ impl ModUnpacker {
                     percent as usize
                 );
             }
-            Ok(())
-        })
+        });
+        // Пробрасываем критическую IO-ошибку, если была
+        if let Some(e) = critical_error.into_inner() {
+            return Err(e);
+        }
+        Ok(())
     }
+
 
     fn build_file(&self, file: &str, aoc: bool) -> Result<Vec<u8>> {
         let mut versions = std::collections::VecDeque::with_capacity(
@@ -687,22 +702,25 @@ impl ModUnpacker {
             })
             .flatten()
         {
-            let res = minicbor_ser::from_slice(&data);
-            match res {
+            match minicbor_ser::from_slice::<ResourceData>(&data) {
                 Ok(res) => versions.push_back(Arc::new(res)),
                 Err(e) => {
                     let msg = format!("{}", e);
                     if msg.contains("unknown variant") {
-                        bail!(
-                            "Error deserializing resource {canon} from mod {mod_}. This is \
-                             probably because this mod was built with an old, incompatible beta \
-                             of UKMM."
+                        log::warn!(
+                            "[lenient] Не удалось десериализовать ресурс {canon} из мода {mod_} — \
+                             скорее всего, мод собран старой версией UKMM. \
+                             Файл будет взят из дампа. \
+                             Мод может вызвать баги в игре."
                         );
                     } else {
-                        bail!(
-                            "Error deserializing resource {canon} from mod {mod_}. Error: {e}"
+                        log::warn!(
+                            "[lenient] Ошибка десериализации ресурса {canon} из мода {mod_}: {e}. \
+                             Файл будет взят из дампа. \
+                             Мод может вызвать баги в игре."
                         );
                     }
+                    // Пропускаем битую версию мода, продолжаем с дампом
                 }
             }
         }
@@ -791,13 +809,21 @@ impl ModUnpacker {
     fn build_sarc(&self, sarc: SarcMap, aoc: bool) -> Result<Vec<u8>> {
         let mut writer = SarcWriter::new(self.endian.into()).with_min_alignment(sarc.alignment);
         for file in sarc.files.into_iter() {
-            let data = self
-                .build_file(&file, aoc)
-                .with_context(|| jstr!("Failed to build file {&file} for SARC"))?;
-            writer.add_file(
-                file.as_str(),
-                compress_if(data.as_ref(), file.as_str()).as_ref(),
-            );
+            match self.build_file(&file, aoc) {
+                Ok(data) => {
+                    writer.add_file(
+                        file.as_str(),
+                        compress_if(data.as_ref(), file.as_str()).as_ref(),
+                    );
+                }
+                Err(e) => {
+                    log::warn!(
+                        "[lenient] Ошибка сборки файла {} внутри SARC: {}. \
+                         Файл пропущен из архива. Мод может вызвать баги в игре.",
+                        &file, e
+                    );
+                }
+            }
         }
         Ok(writer.to_binary())
     }

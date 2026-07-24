@@ -8,11 +8,10 @@ use anyhow_ext::Context;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use uk_content::{
+    constants::Language,
     prelude::Endian,
     util::{HashSet, IndexMap},
 };
-use uk_util::language::Language;
-
 pub mod pack;
 pub mod unpack;
 pub use zstd;

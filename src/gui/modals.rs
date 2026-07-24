@@ -1,5 +1,5 @@
 use uk_localization::string_ext::LocString;
-use uk_settings::{Platform, SETTINGS};
+use uk_manager::settings::Platform;
 use uk_mod::{Meta, ModCategory};
 use util::SmartStringWrapper;
 
@@ -152,7 +152,7 @@ impl App {
                     });
                     ui.add_space(8.);
                     if let Some(context) = err.chain().find_map(|e| {
-                        e.downcast_ref::<uk_util::uk_error::UKError>()
+                        e.downcast_ref::<uk_content::UKError>()
                             .and_then(|e| e.context_data())
                     }) {
                         egui::CollapsingHeader::new("Error_Context".localize()).show(ui, |ui| {
@@ -347,15 +347,16 @@ impl App {
             })
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    let current_profile = SETTINGS
-                        .read()
+                    let current_profile = self
+                        .core
+                        .settings()
                         .platform_config()
                         .map(|c| c.profile.to_string())
                         .unwrap_or_else(|| "Default".to_owned());
                     ComboBox::from_id_source("profiles")
                         .selected_text(&current_profile)
                         .show_ui(ui, |ui| {
-                            SETTINGS.read().profiles().for_each(|profile| {
+                            self.core.settings().profiles().for_each(|profile| {
                                 if ui
                                     .selectable_label(
                                         profile.as_str() == current_profile,
@@ -388,22 +389,14 @@ impl App {
                         ui.add_space(20.);
                         ui.label(
                             RichText::new(format!(
-                                "{} {} / {} {} / {} {}",
-                                self.mods.iter().filter(|m| m.enabled).count(),
-                                "Profile_ActiveMods_2".localize(),
+                                "{} {} / {} {}",
                                 self.mods.len(),
                                 "Profile_ActiveMods_1".localize(),
-                                self.mods.iter()
-                                    .filter(|m| m.meta.name.to_lowercase()
-                                        .contains(&self.mod_list_filter.to_lowercase()))
-                                    .count(),
-                                "Profile_ActiveMods_3".localize(),
+                                self.mods.iter().filter(|m| m.enabled).count(),
+                                "Profile_ActiveMods_2".localize()
                             ))
                             .strong(),
                         );
-                        ui.add_space(20.);
-                        ui.text_edit_singleline(&mut self.mod_list_filter);
-                        ui.label(RichText::new("Mod_Filter".localize()).strong());
                     });
                 });
             });

@@ -3,8 +3,7 @@
 use std::path::Path;
 
 use smartstring::alias::String;
-
-use uk_util::endianness::Endian;
+use thiserror::Error;
 
 pub mod actor;
 pub mod chemical;
@@ -25,26 +24,130 @@ pub mod tips;
 pub mod util;
 pub mod worldmgr;
 
+#[derive(Debug, Clone)]
+pub enum ContextData {
+    Parameter(roead::aamp::Parameter),
+    List(roead::aamp::ParameterList),
+    Object(roead::aamp::ParameterObject),
+    Byml(roead::byml::Byml),
+}
+
+impl From<roead::aamp::Parameter> for ContextData {
+    fn from(param: roead::aamp::Parameter) -> Self {
+        ContextData::Parameter(param)
+    }
+}
+
+impl From<&roead::aamp::Parameter> for ContextData {
+    fn from(param: &roead::aamp::Parameter) -> Self {
+        ContextData::Parameter(param.clone())
+    }
+}
+
+impl From<roead::aamp::ParameterList> for ContextData {
+    fn from(list: roead::aamp::ParameterList) -> Self {
+        ContextData::List(list)
+    }
+}
+
+impl From<roead::aamp::ParameterObject> for ContextData {
+    fn from(obj: roead::aamp::ParameterObject) -> Self {
+        ContextData::Object(obj)
+    }
+}
+
+impl From<&roead::aamp::ParameterList> for ContextData {
+    fn from(list: &roead::aamp::ParameterList) -> Self {
+        ContextData::List(list.clone())
+    }
+}
+
+impl From<&roead::aamp::ParameterObject> for ContextData {
+    fn from(obj: &roead::aamp::ParameterObject) -> Self {
+        ContextData::Object(obj.clone())
+    }
+}
+
+impl From<roead::byml::Byml> for ContextData {
+    fn from(by: roead::byml::Byml) -> Self {
+        ContextData::Byml(by)
+    }
+}
+
+impl From<&roead::byml::Byml> for ContextData {
+    fn from(by: &roead::byml::Byml) -> Self {
+        ContextData::Byml(by.clone())
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum UKError {
+    #[error("Parameter file missing key: {0}")]
+    MissingAampKey(&'static str, Box::<Option<ContextData>>),
+    #[error("Parameter file missing key: {0}")]
+    MissingAampKeyD(std::string::String),
+    #[error("BYML file missing key: {0}")]
+    MissingBymlKey(&'static str),
+    #[error("BYML file missing key: {0}")]
+    MissingBymlKeyD(std::string::String),
+    #[error("Wrong type for BYML value: found {0}, expected {1}")]
+    WrongBymlType(std::string::String, &'static str),
+    #[error("{0} missing from SARC")]
+    MissingSarcFile(&'static str),
+    #[error("{0} missing from SARC")]
+    MissingSarcFileD(std::string::String),
+    #[error("Invalid weather value: {0}")]
+    InvalidWeatherOrTime(std::string::String),
+    #[error("Missing resource at {0}")]
+    MissingResource(std::string::String),
+    #[error("{0}")]
+    Other(&'static str),
+    #[error("{0}")]
+    OtherD(std::string::String),
+    #[error(transparent)]
+    _Infallible(#[from] std::convert::Infallible),
+    #[error(transparent)]
+    RoeadError(#[from] roead::Error),
+    #[error(transparent)]
+    Any(#[from] anyhow::Error),
+    #[error("Invalid BYML data for field {0}: {1:#?}")]
+    InvalidByml(String, roead::byml::Byml),
+    #[error("Invalid parameter data for field {0}: {1:#?}")]
+    InvalidParameter(String, roead::aamp::Parameter),
+}
+
+impl UKError {
+    pub fn context_data(&self) -> Option<ContextData> {
+        match self {
+            Self::MissingAampKey(_, data) => *data.clone(),
+            Self::InvalidByml(_, data) => Some(ContextData::Byml(data.clone())),
+            Self::InvalidParameter(_, data) => Some(ContextData::Parameter(data.clone())),
+            _ => None,
+        }
+    }
+}
+
+pub type Result<T> = std::result::Result<T, UKError>;
 pub type Assets = util::DeleteMap<String, Vec<u8>>;
 
-pub const fn platform_content(endian: Endian) -> &'static str {
+pub const fn platform_content(endian: prelude::Endian) -> &'static str {
     match endian {
-        Endian::Little => "01007EF00011E000/romfs",
-        Endian::Big => "content",
+        prelude::Endian::Little => "01007EF00011E000/romfs",
+        prelude::Endian::Big => "content",
     }
 }
 
-pub const fn platform_aoc(endian: Endian) -> &'static str {
+pub const fn platform_aoc(endian: prelude::Endian) -> &'static str {
     match endian {
-        Endian::Little => "01007EF00011F001/romfs",
-        Endian::Big => "aoc/0010",
+        prelude::Endian::Little => "01007EF00011F001/romfs",
+        prelude::Endian::Big => "aoc/0010",
     }
 }
 
-pub const fn platform_prefixes(endian: Endian) -> (&'static str, &'static str) {
+pub const fn platform_prefixes(endian: prelude::Endian) -> (&'static str, &'static str) {
     match endian {
-        Endian::Little => ("01007EF00011E000/romfs", "01007EF00011F001/romfs"),
-        Endian::Big => ("content", "aoc/0010"),
+        prelude::Endian::Little => ("01007EF00011E000/romfs", "01007EF00011F001/romfs"),
+        prelude::Endian::Big => ("content", "aoc/0010"),
     }
 }
 
@@ -84,7 +187,6 @@ pub fn canonicalize(path: impl AsRef<Path>) -> String {
 
 pub mod prelude {
     pub(crate) use smartstring::alias::String;
-    pub type Endian = uk_util::endianness::Endian;
     pub type String32 = roead::types::FixedSafeString<32>;
     pub type String64 = roead::types::FixedSafeString<64>;
     pub type String256 = roead::types::FixedSafeString<256>;
@@ -170,9 +272,82 @@ pub mod prelude {
 
     pub(crate) use impl_simple_byml;
 
-    pub trait Resource where Self: Sized,
+    #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+    pub enum Endian {
+        #[serde(rename = "Switch")]
+        Little,
+        #[serde(rename = "Wii U")]
+        Big,
+    }
+
+    impl std::fmt::Display for Endian {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Endian::Little => f.write_str("Little (Switch)"),
+                Endian::Big => f.write_str("Big (Wii U)"),
+            }
+        }
+    }
+
+    impl From<roead::Endian> for Endian {
+        fn from(endian: roead::Endian) -> Self {
+            match endian {
+                roead::Endian::Little => Endian::Little,
+                roead::Endian::Big => Endian::Big,
+            }
+        }
+    }
+
+    impl From<Endian> for roead::Endian {
+        fn from(endian: Endian) -> Self {
+            match endian {
+                Endian::Little => roead::Endian::Little,
+                Endian::Big => roead::Endian::Big,
+            }
+        }
+    }
+
+    impl From<&roead::Endian> for Endian {
+        fn from(endian: &roead::Endian) -> Self {
+            match endian {
+                roead::Endian::Little => Endian::Little,
+                roead::Endian::Big => Endian::Big,
+            }
+        }
+    }
+
+    impl From<&Endian> for roead::Endian {
+        fn from(endian: &Endian) -> Self {
+            match endian {
+                Endian::Little => roead::Endian::Little,
+                Endian::Big => roead::Endian::Big,
+            }
+        }
+    }
+
+    impl From<rstb::Endian> for Endian {
+        fn from(endian: rstb::Endian) -> Self {
+            match endian {
+                rstb::Endian::Little => Self::Little,
+                rstb::Endian::Big => Self::Big,
+            }
+        }
+    }
+
+    impl From<Endian> for rstb::Endian {
+        fn from(endian: Endian) -> Self {
+            match endian {
+                Endian::Little => Self::Little,
+                Endian::Big => Self::Big,
+            }
+        }
+    }
+
+    pub trait Resource
+    where
+        Self: std::marker::Sized,
     {
-        fn from_binary(data: impl AsRef<[u8]>) -> uk_util::uk_error::Result<Self>;
+        fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self>;
         fn into_binary(self, endian: Endian) -> Vec<u8>;
         fn path_matches(path: impl AsRef<std::path::Path>) -> bool;
     }

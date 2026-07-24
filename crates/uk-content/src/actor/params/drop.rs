@@ -8,9 +8,8 @@ use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
     util::{IndexMap, IteratorExt},
+    Result, UKError,
 };
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 
@@ -107,7 +106,7 @@ impl Mergeable for DropTable {
 }
 
 impl InfoSource for DropTable {
-    fn update_info(&self, info: &mut roead::byml::Map) -> Result<()> {
+    fn update_info(&self, info: &mut roead::byml::Map) -> crate::Result<()> {
         info.insert(
             "drops".into(),
             self.0

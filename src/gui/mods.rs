@@ -3,7 +3,6 @@ use std::{collections::HashMap, process::Command, sync::OnceLock};
 use strfmt::Format;
 use uk_localization::string_ext::LocString;
 use uk_manager::mods::Mod;
-use uk_settings::SETTINGS;
 use uk_ui::{
     egui::{
         self, epaint::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key,
@@ -58,13 +57,13 @@ impl App {
                     ui.vertical_centered(|ui| {
                         ui.add_space(80.0);
                         
-                        let has_config = SETTINGS.read().platform_config().is_some();
+                        let has_config = self.core.settings().platform_config().is_some();
                         
                         // Main message
                         if !has_config {
                             let message = "Helper_Modlist_NoConfig".localize();
                             let vars = HashMap::from(
-                                [("platform".to_string(), SETTINGS.read().current_mode.to_string())]
+                                [("platform".to_string(), self.core.settings().current_mode.to_string())]
                             );
                             let prompt = message.format(&vars).unwrap();
                             
@@ -174,7 +173,7 @@ impl App {
                             let width = header
                                 .col(|ui| {
                                     let is_current = self.sort.0 == sort;
-                                    let mut label = label.into_owned();
+                                    let mut label = label.to_owned();
                                     if is_current {
                                         if self.sort.1 {
                                             label += " ⏷";
@@ -214,19 +213,8 @@ impl App {
                         });
                     })
                     .body(|body| {
-                        let filtered = self.displayed_mods
-                            .iter()
-                            .enumerate()
-                            .filter(|&(_, _mod)| _mod
-                                .meta
-                                .name
-                                .to_lowercase()
-                                .contains(&self.mod_list_filter.to_lowercase()))
-                            .map(|(idx, _mod)| idx)
-                            .collect::<Vec<_>>();
-                        body.rows(*text_height, filtered.len(), |row| {
-                            let index = filtered[row.index()];
-                            self.render_mod_row(index, row);
+                        body.rows(*text_height, self.displayed_mods.len(), |row| {
+                            self.render_mod_row(row.index(), row);
                         });
                     });
             });
@@ -240,7 +228,8 @@ impl App {
                     self.mods
                         .iter()
                         .enumerate()
-                        .rfind(|(_, m)| self.selected.contains(m))
+                        .filter(|(_, m)| self.selected.contains(m))
+                        .last()
                 })
                 .flatten()
             {
@@ -271,7 +260,8 @@ impl App {
         if ui.input_mut(|i| i.pointer.any_released()) {
             ui.memory_mut(|m| m.data.insert_temp(Id::new("drag_delay_frames"), 0usize));
             if let Some((_start_index, dest_index)) = self
-                .drag_index.zip(self.hover_index)
+                .drag_index
+                .and_then(|d| self.hover_index.map(|h| (d, h)))
                 .filter(|(s, d)| s != d)
             {
                 self.do_update(Message::MoveSelected(dest_index))
@@ -464,8 +454,8 @@ impl App {
     ) -> Option<ContextMenuMessage> {
         let mut result = None;
         ui.menu_button("Mod_Send".localize(), |ui| {
-            for profile in SETTINGS
-                .read()
+            for profile in core
+                .settings()
                 .profiles()
                 .filter(|p| core.mod_manager().profile().key() != p)
             {

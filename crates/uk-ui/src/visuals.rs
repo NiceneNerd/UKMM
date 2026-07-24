@@ -75,7 +75,7 @@ pub fn slate_grid(ui: &mut Ui) {
                 &RectShape::stroke(
                     bg_rect.expand2([64.0, 0.0].into()),
                     0.0,
-                    Stroke::new(2.0_f32, ui.style().visuals.widgets.inactive.bg_fill),
+                    Stroke::new(2.0, ui.style().visuals.widgets.inactive.bg_fill),
                 ),
                 &mut mesh,
             );
@@ -85,14 +85,14 @@ pub fn slate_grid(ui: &mut Ui) {
             ui.painter().hline(
                 cursor.min.x..=width + 4.0,
                 (i as f32 * 48.0) + cursor.min.y + GRID_OFFSET,
-                Stroke::new(1.0_f32, *GRID_COLOR),
+                Stroke::new(1.0, *GRID_COLOR),
             );
         }
         for i in 0..(width as usize / 48 + 1) {
             ui.painter().vline(
                 (i as f32 * 48.0) + cursor.min.x + GRID_OFFSET,
                 cursor.min.y..=height,
-                Stroke::new(1.0_f32, *GRID_COLOR),
+                Stroke::new(1.0, *GRID_COLOR),
             );
         }
     });
@@ -161,40 +161,40 @@ impl Theme {
                         widgets: Widgets {
                             noninteractive: WidgetVisuals {
                                 bg_fill: hex_color!("#1C1E1F"),
-                                bg_stroke: Stroke::new(1.0_f32, hex_color!("#2F2E2A")),
-                                fg_stroke: Stroke::new(1.0_f32, hex_color!("#BCCAD1")),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
+                                fg_stroke: Stroke::new(1.0, hex_color!("#BCCAD1")),
                                 rounding: Rounding::same(0.0),
                                 expansion: 0.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
                             },
                             inactive: WidgetVisuals {
                                 bg_fill: hex_color!("#1d4e77"),
-                                bg_stroke: Stroke::new(1.0_f32, hex_color!("#237ba3")),
-                                fg_stroke: Stroke::new(1.0_f32, hex_color!("#f0f0f0")),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
+                                fg_stroke: Stroke::new(1.0, hex_color!("#f0f0f0")),
                                 rounding: Rounding::same(2.0),
                                 expansion: 0.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
                             },
                             hovered: WidgetVisuals {
                                 bg_fill: hex_color!("#237ba3"),
-                                bg_stroke: Stroke::new(1.0_f32, hex_color!("#1d649a")),
-                                fg_stroke: Stroke::new(1.5_f32, hex_color!("#f0f0f0")),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#1d649a")),
+                                fg_stroke: Stroke::new(1.5, hex_color!("#f0f0f0")),
                                 rounding: Rounding::same(2.0),
                                 expansion: 1.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
                             },
                             active: WidgetVisuals {
                                 bg_fill: hex_color!("#12384f"),
-                                bg_stroke: Stroke::new(1.0_f32, hex_color!("#237ba3")),
-                                fg_stroke: Stroke::new(1.5_f32, hex_color!("#D9EEFF")),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#237ba3")),
+                                fg_stroke: Stroke::new(1.5, hex_color!("#D9EEFF")),
                                 rounding: Rounding::same(2.0),
                                 expansion: 1.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
                             },
                             open: WidgetVisuals {
                                 bg_fill: hex_color!("#1C1E1F"),
-                                bg_stroke: Stroke::new(1.0_f32, hex_color!("#2F2E2A")),
-                                fg_stroke: Stroke::new(1.0_f32, hex_color!("#D9EEFF")),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#2F2E2A")),
+                                fg_stroke: Stroke::new(1.0, hex_color!("#D9EEFF")),
                                 rounding: Rounding::same(2.0),
                                 expansion: 0.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
@@ -202,7 +202,7 @@ impl Theme {
                         },
                         selection: Selection {
                             bg_fill: BLUE.linear_multiply(0.667),
-                            stroke:  Stroke::new(1.0_f32, Color32::WHITE),
+                            stroke:  Stroke::new(1.0, Color32::WHITE),
                         },
                         hyperlink_color: BLUE,
                         faint_bg_color: hex_color!("#252729"),
@@ -290,8 +290,8 @@ impl Theme {
                             noninteractive: WidgetVisuals {
                                 weak_bg_fill: hex_color!("#181B28"),
                                 bg_fill: hex_color!("#181B28"),
-                                bg_stroke: Stroke::new(1.0_f32, hex_color!("#2F3B51")), // separators, indentation lines
-                                fg_stroke: Stroke::new(1.0_f32, hex_color!("#EEEEEE")), // normal text color
+                                bg_stroke: Stroke::new(1.0, hex_color!("#2F3B51")), // separators, indentation lines
+                                fg_stroke: Stroke::new(1.0, hex_color!("#EEEEEE")), // normal text color
                                 rounding: Rounding::same(2.0),
                                 expansion: 0.0,
                             },
@@ -302,31 +302,31 @@ impl Theme {
                                     color: hex_color!("#12141e"),
                                     width: 1.0,
                                 },
-                                fg_stroke: Stroke::new(1.0_f32, hex_color!("#fefefe")), // button text
+                                fg_stroke: Stroke::new(1.0, hex_color!("#fefefe")), // button text
                                 rounding: Rounding::same(2.0),
                                 expansion: 0.0,
                             },
                             hovered: WidgetVisuals {
                                 weak_bg_fill: hex_color!("#262C45"),
                                 bg_fill: hex_color!("#262C45"),
-                                bg_stroke: Stroke::new(1.0_f32, hex_color!("#71f79f")), // e.g. hover over window edge or button
-                                fg_stroke: Stroke::new(1.5_f32, Color32::from_gray(240)),
+                                bg_stroke: Stroke::new(1.0, hex_color!("#71f79f")), // e.g. hover over window edge or button
+                                fg_stroke: Stroke::new(1.5, Color32::from_gray(240)),
                                 rounding: Rounding::same(3.0),
                                 expansion: 0.5,
                             },
                             active: WidgetVisuals {
                                 weak_bg_fill: hex_color!("#31363D"),
                                 bg_fill: hex_color!("#31363D"),
-                                bg_stroke: Stroke::new(1.0_f32, Color32::WHITE),
-                                fg_stroke: Stroke::new(2.0_f32, Color32::WHITE),
+                                bg_stroke: Stroke::new(1.0, Color32::WHITE),
+                                fg_stroke: Stroke::new(2.0, Color32::WHITE),
                                 rounding: Rounding::same(2.0),
                                 expansion: 0.5,
                             },
                             open: WidgetVisuals {
                                 weak_bg_fill: hex_color!("#262C45"),
                                 bg_fill: hex_color!("#c74ded"),
-                                bg_stroke: Stroke::new(1.0_f32, Color32::from_gray(60)),
-                                fg_stroke: Stroke::new(1.0_f32, Color32::from_gray(210)),
+                                bg_stroke: Stroke::new(1.0, Color32::from_gray(60)),
+                                fg_stroke: Stroke::new(1.0, Color32::from_gray(210)),
                                 rounding: Rounding::same(2.0),
                                 expansion: 0.0,
                             },
@@ -352,7 +352,7 @@ impl Theme {
                             color: Color32::from_black_alpha(96),
                         },
                         window_fill: hex_color!("#181B28"),
-                        window_stroke: Stroke::new(1.0_f32, Color32::from_gray(60)),
+                        window_stroke: Stroke::new(1.0, Color32::from_gray(60)),
                         window_highlight_topmost: true,
                         menu_rounding: Rounding::same(6.0),
                         panel_fill: hex_color!("#181B28"),
@@ -365,7 +365,7 @@ impl Theme {
                         resize_corner_size: 12.0,
                         text_cursor: TextCursorStyle {
                             preview: false,
-                            stroke: Stroke::new(2.0_f32, Color32::from_rgb(192, 222, 255)),
+                            stroke: Stroke::new(2.0, Color32::from_rgb(192, 222, 255)),
                             ..Default::default()
                         },
                         clip_rect_margin: 3.0, // should be at least half the size of the widest frame stroke + max WidgetVisuals::expansion

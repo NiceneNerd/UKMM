@@ -45,6 +45,7 @@ use uk_localization::string_ext::LocString;
 use uk_manager::{
     core::Manager,
     mods::{LookupMod, Mod},
+    settings::{Platform, Settings},
 };
 use uk_mod::{pack::sanitise, Manifest, Meta, ModPlatform};
 pub use uk_ui::visuals;
@@ -57,7 +58,6 @@ use uk_ui::{
     ext::UiExt,
     icons::{Icon, IconButtonExt},
 };
-use uk_settings::{Platform, Settings, SETTINGS};
 use uk_util::OptionResultExt;
 
 use self::{package::ModPackerBuilder, tasks::VersionResponse};
@@ -204,7 +204,7 @@ pub enum Message {
     SetDownloading(String),
     SetFocus(FocusedPane),
     SetLanguage(LocLang),
-    SetTheme(visuals::Theme),
+    SetTheme(uk_ui::visuals::Theme),
     ShowAbout,
     ShowPackagingOptions(FxHashSet<PathBuf>),
     ShowPackagingDependencies,
@@ -220,7 +220,7 @@ pub enum Message {
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 struct UiState {
-    theme: visuals::Theme,
+    theme: uk_ui::visuals::Theme,
     picker_state: FilePickerState,
     #[serde(default = "tabs::default_ui")]
     tree: DockState<Tabs>,
@@ -229,7 +229,7 @@ struct UiState {
 impl Default for UiState {
     fn default() -> Self {
         Self {
-            theme: visuals::Theme::Sheikah,
+            theme: uk_ui::visuals::Theme::Sheikah,
             picker_state: FilePickerState::default(),
             tree: tabs::default_ui(),
         }
@@ -241,7 +241,6 @@ pub struct App {
     channel: (Sender<Message>, Receiver<Message>),
     mods: Vec<Mod>,
     displayed_mods: Vec<Mod>,
-    mod_list_filter: String,
     selected: Vec<Mod>,
     install_queue: VecDeque<PathBuf>,
     update_mod: Option<Mod>,
@@ -250,7 +249,7 @@ pub struct App {
     hover_index: Option<usize>,
     picker_state: FilePickerState,
     profiles_state: RefCell<profiles::ProfileManagerState>,
-    meta_input: MetaInputModal,
+    meta_input: modals::MetaInputModal,
     closed_tabs: HashMap<Tabs, NodeIndex>,
     tree: Rc<RefCell<DockState<Tabs>>>,
     focused: FocusedPane,
@@ -267,7 +266,7 @@ pub struct App {
     options_mod: Option<(Mod, bool)>,
     temp_settings: Settings,
     toasts: egui_notify::Toasts,
-    theme: visuals::Theme,
+    theme: uk_ui::visuals::Theme,
     dock_style: uk_ui::egui_dock::Style,
     changelog: Option<String>,
     new_version: Option<VersionResponse>,
@@ -287,7 +286,7 @@ impl App {
         uk_ui::icons::load_icons();
         uk_ui::load_fonts(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
-        let ui_state: UiState = fs::read_to_string(SETTINGS.read().state_file())
+        let ui_state: UiState = fs::read_to_string(core.settings().state_file())
             .context("")
             .and_then(|s| serde_json::from_str(&s).context(""))
             .unwrap_or_default();
@@ -295,8 +294,8 @@ impl App {
         let mods: Vec<_> = core.mod_manager().all_mods().collect();
         let (send, recv) = flume::unbounded();
         tasks::ONECLICK_SENDER.set(send.clone()).unwrap_or(());
-        let temp_settings = SETTINGS.read().clone();
-        let platform = SETTINGS.read().current_mode;
+        let temp_settings = core.settings().clone();
+        let platform = core.settings().current_mode;
         LOCALIZATION.write().update_language(&temp_settings.lang);
         Self {
             selected: mods.first().cloned().into_iter().collect(),
@@ -304,14 +303,13 @@ impl App {
             hover_index: None,
             package_builder: RefCell::new(ModPackerBuilder::new(platform)),
             picker_state: ui_state.picker_state,
-            profiles_state: RefCell::new(profiles::ProfileManagerState::new()),
+            profiles_state: RefCell::new(profiles::ProfileManagerState::new(&core)),
             meta_input: MetaInputModal::new(send.clone()),
             displayed_mods: mods.clone(),
-            mod_list_filter: "".parse().unwrap(),
             mods,
             temp_settings,
             changelog: {
-                let settings = SETTINGS.read();
+                let settings = core.settings();
                 let is_first_run = settings.last_version.is_none();
                 let needs_config = settings.platform_config().is_none();
                 drop(settings);
@@ -320,7 +318,7 @@ impl App {
                 if is_first_run || needs_config {
                     Some("Intro_Message".localize().to_string())
                 } else {
-                    tasks::get_releases(send.clone());
+                    tasks::get_releases(core.clone(), send.clone());
                     None
                 }
             },
@@ -335,7 +333,7 @@ impl App {
             opt_folders: None,
             busy: Cell::new(false),
             dirty: {
-                let settings = SETTINGS.read();
+                let settings = core.settings();
                 RwLock::new(
                     settings
                         .profiles()
@@ -348,7 +346,7 @@ impl App {
             tree: Rc::new(RefCell::new(ui_state.tree)),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
-            dock_style: visuals::style_dock(&cc.egui_ctx.style()),
+            dock_style: uk_ui::visuals::style_dock(&cc.egui_ctx.style()),
             install_queue: Default::default(),
             update_mod: Default::default(),
             error_queue: Default::default(),
@@ -359,11 +357,11 @@ impl App {
 
     #[inline(always)]
     fn platform(&self) -> Platform {
-        SETTINGS.read().current_mode
+        self.core.settings().current_mode
     }
 
     #[inline(always)]
-    fn dirty(&self) -> MappedRwLockReadGuard<'_, Manifest> {
+    fn dirty(&self) -> MappedRwLockReadGuard<'_, uk_mod::Manifest> {
         let dirty = self.dirty.read();
         RwLockReadGuard::map(dirty, |dirty| {
             dirty
@@ -374,7 +372,7 @@ impl App {
     }
 
     #[inline(always)]
-    fn dirty_mut(&self) -> MappedRwLockWriteGuard<'_, Manifest> {
+    fn dirty_mut(&self) -> MappedRwLockWriteGuard<'_, uk_mod::Manifest> {
         let dirty = self.dirty.write();
         RwLockWriteGuard::map(dirty, |dirty| {
             dirty.get_mut(self.core.mod_manager().profile().key().as_str())
@@ -423,34 +421,34 @@ impl App {
                         "{}",
                         e.downcast::<String>().unwrap_or_else(|_| {
                             Box::new(
-                                "An unknown error occurred, check the log for possible details."
+                                "An unknown error occured, check the log for possible details."
                                     .to_string(),
                             )
                         })
                     ).context(std::backtrace::Backtrace::force_capture()))
                 }
             };
-            if let Some(d) = SETTINGS.read().dump() {
+            if let Some(d) = core.settings().dump() {
                 d.clear_cache()
             }
             sender.send(response).unwrap();
         });
     }
 
-    fn handle_drops(&mut self, ctx: &egui::Context) {
+    fn handle_drops(&mut self, ctx: &eframe::egui::Context) {
         let files = ctx.input(|i| i.raw.dropped_files.clone());
         if !(self.modal_open() || files.is_empty()) {
             let first = files.first().and_then(|f| f.path.clone()).unwrap();
             self.install_queue
                 .extend(files.iter().skip(1).filter_map(|f| f.path.clone()));
             self.error_queue.clear();
-            self.do_task(move |_| tasks::open_mod(&first, None));
+            self.do_task(move |core| tasks::open_mod(&core, &first, None));
         }
     }
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         self.handle_update(ctx, frame);
         self.render_menu(ctx, frame);
         self.render_error(ctx);
@@ -483,19 +481,19 @@ impl eframe::App for App {
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         crate::logger::LOGGER.save_log();
-        SETTINGS.write().last_version = Some(env!("CARGO_PKG_VERSION").into());
-        SETTINGS.read().save().unwrap_or(());
+        self.core.settings_mut().last_version = Some(env!("CARGO_PKG_VERSION").into());
+        self.core.settings().save().unwrap_or(());
         let ui_state = UiState {
             theme: self.theme,
             picker_state: std::mem::take(&mut self.picker_state),
             tree: std::mem::replace(&mut self.tree.borrow_mut(), tabs::default_ui()),
         };
         fs::write(
-            SETTINGS.read().state_file(),
+            self.core.settings().state_file(),
             serde_json::to_string_pretty(&ui_state).unwrap(),
         )
         .unwrap_or(());
-        uk_settings::util::clear_temp();
+        uk_manager::util::clear_temp();
     }
 }
 
@@ -518,8 +516,8 @@ pub fn main() -> Result<(), eframe::Error> {
                     }
                     .into(),
                 ),
-                min_inner_size: Some(Vec2::new(850.0, 500.0)),
-                inner_size: Some(Vec2::new(1200.0, 800.0)),
+                min_inner_size: Some(egui::Vec2::new(850.0, 500.0)),
+                inner_size: Some(egui::Vec2::new(1200.0, 800.0)),
                 ..Default::default()
             },
             ..Default::default()

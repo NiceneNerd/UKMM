@@ -2,9 +2,7 @@ use join_str::jstr;
 use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, util::DeleteMap};
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{prelude::*, util::DeleteMap, Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 
@@ -81,7 +79,7 @@ impl Mergeable for ChemicalRes {
 }
 
 impl Resource for ChemicalRes {
-    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
         (&ParameterIO::from_binary(data)?).try_into()
     }
 

@@ -11,10 +11,8 @@ use uk_util::OptionResultExt;
 use crate::{
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util,
+    util, Result, UKError,
 };
-
-use uk_util::uk_error::{Result, UKError};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 
@@ -165,7 +163,7 @@ impl Mergeable for Chemical {
 }
 
 impl InfoSource for Chemical {
-    fn update_info(&self, info: &mut Map) -> Result<()> {
+    fn update_info(&self, info: &mut Map) -> crate::Result<()> {
         let mut chem_info = Map::default();
         if self
             .body

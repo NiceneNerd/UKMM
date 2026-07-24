@@ -1,7 +1,7 @@
 use anyhow::Context;
 use roead::byml::Byml;
 
-use uk_util::uk_error::{self, UKError};
+use crate::UKError;
 
 use super::DeleteMap;
 
@@ -12,7 +12,7 @@ fn warn_vecf_not_float<T>(val: T) where T: std::fmt::Debug {
     )
 }
 
-pub(crate) fn try_get_vecf(value: &Byml) -> uk_error::Result<DeleteMap<char, f32>> {
+pub(crate) fn try_get_vecf(value: &Byml) -> crate::Result<DeleteMap<char, f32>> {
     value.as_map()
         .context("Invalid Vectorf")?
         .iter()

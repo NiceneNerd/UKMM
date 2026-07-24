@@ -6,7 +6,6 @@ use strfmt::Format;
 use uk_content::util::{HashMap, HashSet};
 use uk_localization::string_ext::LocString;
 use uk_manager::mods::Profile as ProfileData;
-use uk_settings::SETTINGS;
 use uk_ui::{
     egui::{self, text::LayoutJob, Layout, TextStyle},
     icons::IconButtonExt,
@@ -24,8 +23,8 @@ pub struct ProfileManagerState {
 }
 
 impl ProfileManagerState {
-    pub fn new() -> Self {
-        let settings = SETTINGS.read();
+    pub fn new(core: &uk_manager::core::Manager) -> Self {
+        let settings = core.settings();
         let dir = settings.profiles_dir();
         let profiles = settings
             .profiles()
@@ -45,8 +44,8 @@ impl ProfileManagerState {
         }
     }
 
-    pub fn reload(&mut self) {
-        let settings = SETTINGS.read();
+    pub fn reload(&mut self, core: &uk_manager::core::Manager) {
+        let settings = core.settings();
         self.profiles = settings
             .profiles()
             .filter_map(|name| -> Option<(SmartString, ProfileData)> {

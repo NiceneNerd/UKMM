@@ -1,7 +1,6 @@
 use super::Element;
 use anyhow::anyhow;
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{UKError, Result};
 
 pub struct Traverser<'a> {
     elements: &'a Vec<&'a Element>,

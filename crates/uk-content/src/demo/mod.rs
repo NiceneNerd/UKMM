@@ -29,7 +29,7 @@ impl From<Demo> for ParameterIO {
 impl_simple_aamp!(Demo, 0);
 
 impl Resource for Demo {
-    fn from_binary(data: impl AsRef<[u8]>) -> uk_util::uk_error::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
         Ok((&ParameterIO::from_binary(data)?).into())
     }
 

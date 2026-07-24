@@ -11,10 +11,10 @@ use roead::{
 use serde::Deserialize;
 use serde_yaml::Value;
 use uk_content::{
+    constants::Language,
     message::{Entry, Msyt},
     util::{HashMap, IteratorExt},
 };
-use uk_util::language::Language;
 
 use super::texts::TextsLog;
 

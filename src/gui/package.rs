@@ -4,7 +4,7 @@ use eframe::emath::Align;
 use parking_lot::Mutex;
 use rustc_hash::FxHashSet;
 use uk_localization::string_ext::LocString;
-use uk_settings::Platform;
+use uk_manager::settings::Platform;
 use uk_mod::{
     ExclusiveOptionGroup, Meta, ModOption, ModOptionGroup, ModPlatform, MultipleOptionGroup,
     OptionGroup, ModCategory,

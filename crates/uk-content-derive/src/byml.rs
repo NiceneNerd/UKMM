@@ -36,16 +36,16 @@ fn field_from_byml(
                 .get(#field_src_name)
                 .map(|val| val.clone().try_into())
                 .transpose()
-                .map_err(|by| uk_util::uk_error::UKError::InvalidByml(#field_src_name.into(), by))?;
+                .map_err(|by| crate::UKError::InvalidByml(#field_src_name.into(), by))?;
         }
     } else {
         quote! {
             let #field_var_name: #ty = hash
                 .get(#field_src_name)
                 .cloned()
-                .ok_or(uk_util::uk_error::UKError::MissingBymlKey(#err_msg))?
+                .ok_or(UKError::MissingBymlKey(#err_msg))?
                 .try_into()
-                .map_err(|by| uk_util::uk_error::UKError::InvalidByml(#field_src_name.into(), by))?;
+                .map_err(|by| crate::UKError::InvalidByml(#field_src_name.into(), by))?;
         }
     }
 }
@@ -64,7 +64,7 @@ pub fn impl_from_byml(name: &Ident, fields: &FieldsNamed) -> TokenStream {
     quote! {
         #[automatically_derived]
         impl TryFrom<&::roead::byml::Byml> for #name {
-            type Error = uk_util::uk_error::UKError;
+            type Error = crate::UKError;
             fn try_from(byml: &Byml) -> ::std::result::Result<#name, Self::Error> {
                 let hash = byml.as_map()?;
                 #(#field_tries)*

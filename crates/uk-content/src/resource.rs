@@ -336,10 +336,12 @@ impl Mergeable for MergeableResource {
             (Self::BinaryOverride(_), anything) => anything.clone(),
             (_anything, Self::BinaryOverride(bin)) => Self::BinaryOverride(bin.clone()),
             _ => {
-                panic!(
-                    "Tried to diff incompatible resources: {} and {}",
+                log::warn!(
+                    "[lenient] Попытка diff несовместимых типов ресурсов: {} и {}. \
+                     Берётся базовая версия. Мод может вызвать баги в игре.",
                     &self, &other
-                )
+                );
+                self.clone()
             }
         }
     }
@@ -435,10 +437,12 @@ impl Mergeable for MergeableResource {
             (Self::BinaryOverride(bin), _anything) => Self::BinaryOverride(bin.clone()),
             (_anything, Self::BinaryOverride(bin)) => Self::BinaryOverride(bin.clone()),
             _ => {
-                panic!(
-                    "Tried to merge incompatible resources: {} and {}",
+                log::warn!(
+                    "[lenient] Попытка merge несовместимых типов ресурсов: {} и {}. \
+                     Берётся базовая версия. Мод может вызвать баги в игре.",
                     &self, &diff
-                )
+                );
+                self.clone()
             }
         }
     }

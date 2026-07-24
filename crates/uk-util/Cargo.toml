@@ -2,15 +2,3 @@
 name = "uk-util"
 edition = "2021"
 version.workspace = true
-
-[dependencies]
-anyhow = { workspace = true }
-join_str = { workspace = true }
-roead = { workspace = true, features = ["with-serde", "aamp-names"] }
-rstb = { workspace = true }
-serde = { workspace = true }
-smartstring = { workspace = true, features = ["serde"] }
-thiserror = { workspace = true }
-
-lighter = "0.1.0"
-uk-localization = { path = "../uk-localization" }

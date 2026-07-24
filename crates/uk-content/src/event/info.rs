@@ -28,11 +28,11 @@ impl From<EventInfo> for Byml {
 impl_simple_byml!(EventInfo, 0);
 
 impl Resource for EventInfo {
-    fn from_binary(data: impl AsRef<[u8]>) -> uk_util::uk_error::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
         Ok((&Byml::from_binary(data.as_ref())?).into())
     }
 
-    fn into_binary(self, endian: Endian) -> Vec<u8> {
+    fn into_binary(self, endian: crate::prelude::Endian) -> Vec<u8> {
         Byml::from(self).to_binary(endian.into())
     }
 

@@ -5,8 +5,6 @@ use uk_util::OptionResultExt;
 
 use crate::{actor::ParameterResource, prelude::*};
 
-use uk_util::uk_error::Result;
-
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 
 pub struct AISchedule(pub Byml);
@@ -38,7 +36,7 @@ impl ParameterResource for AISchedule {
 }
 
 impl Resource for AISchedule {
-    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
         Ok((&Byml::from_binary(data.as_ref())?).into())
     }
 

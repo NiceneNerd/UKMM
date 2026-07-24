@@ -2,9 +2,11 @@ use roead::sarc::*;
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 
-use crate::{prelude::*, util::{HashSet, IndexMap}};
-
-use uk_util::uk_error::{Result, UKError};
+use crate::{
+    prelude::*,
+    util::{HashSet, IndexMap},
+    Result, UKError,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct FontArchive(pub IndexMap<String, Vec<u8>>);
