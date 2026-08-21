@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Changed**
 
 - Expanded drag-and-drop BNP detection to include decompressed folders
+- Reworded "Open mod" to "Install mod" in the File dropdown for clarity
 
 **Fixed**
 

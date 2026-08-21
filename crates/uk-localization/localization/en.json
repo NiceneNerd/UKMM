@@ -53,7 +53,7 @@
     "Info_Version": "Version",
     "Intro_Message": "# Welcome to UKMM!\n\nIt looks like this is your first time launching the app, or UKMM hasn't been configured yet.\n\n## Before you can use UKMM, you need to:\n\n1. **Choose your platform** - Are you modding the Wii U or Switch version of Breath of the Wild?\n\n2. **Set your game dump path** - UKMM needs to know where your game files are located so it can merge mods correctly.\n\n3. **Configure deployment** - Tell UKMM where to output the merged mods.\n\n## Getting Started\n\n**Head to the Settings tab** up top to configure UKMM. There's a Help button there if you need detailed guidance.\n\nOnce configured, you can start installing mods by dragging them into the Mods tab or using the Install tab.",
     "Menu_File": "File",
-    "Menu_File_Open": "Open mod…",
+    "Menu_File_Open": "Install mod…",
     "Menu_Help": "Help",
     "Menu_Help_About": "About",
     "Menu_Help_About_GUI": "Gui Library:",
