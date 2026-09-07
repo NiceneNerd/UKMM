@@ -64,7 +64,7 @@ fn is_probably_a_bnp(path: &Path) -> bool {
                         ]
                             .into_iter()
                             .any(|root| entry.name.ends_with(root));
-                        has_meta = has_meta || entry.name.ends_with("rules.txt");
+                        has_meta = has_meta || entry.name.ends_with("info.json");
                         if is_a_mod && has_meta {
                             break;
                         }
