@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Expanded drag-and-drop BNP detection to include decompressed folders
 - Reworded "Open mod" to "Install mod" in the File dropdown for clarity
+- No longer strips DLC identifier when sourcing files from a game dump when
+  installing mods from BNP files. (In plain English: allows BNP installations
+  to find files in your game dumps. Mods probably didn't install correctly
+  without this. You probably want to reinstall all the mods you installed from
+  BNPs, just to be sure they're not missing any data)
 
 **Fixed**
 

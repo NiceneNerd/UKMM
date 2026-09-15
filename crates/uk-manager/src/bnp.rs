@@ -115,7 +115,7 @@ impl BnpConverter {
     #[inline(always)]
     fn trim_prefixes<'f>(&self, file: &'f str) -> &'f str {
         file.trim_start_matches(self.content)
-            .trim_start_matches(self.aoc)
+            //.trim_start_matches(self.aoc)
             .trim_start_matches('/')
             .trim_start_matches('\\')
     }
