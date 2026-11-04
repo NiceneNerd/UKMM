@@ -84,11 +84,10 @@ members = [
     "crates/uk-reader",
     "crates/uk-ui",
     "crates/uk-util",
-
 ]
 
 [workspace.package]
-version = "0.17.1"
+version = "0.17.2"
 
 [workspace.dependencies]
 anyhow = "1"
