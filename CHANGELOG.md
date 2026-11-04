@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Expanded drag-and-drop BNP detection to include decompressed folders
 - Reworded "Open mod" to "Install mod" in the File dropdown for clarity
+  (English only)
 - No longer strips DLC identifier when sourcing files from a game dump when
   installing mods from BNP files. (In plain English: allows BNP installations
   to find files in your game dumps. Mods probably didn't install correctly
@@ -31,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for non-portable installs
 - Fixed installing extracted non-bnp mods directly from folder
 - Fixed mod list sorting not persisting between program sessions
+- Fixed (via roead) an error where mods with strings longer than 598 bytes in an
+  AAMP file would fail to install
 
 ## [0.17.1] 2026-07-01
 
