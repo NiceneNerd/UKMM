@@ -79,7 +79,7 @@ impl Mergeable for ChemicalRes {
 }
 
 impl Resource for ChemicalRes {
-    fn from_binary(data: impl AsRef<[u8]>) -> crate::Result<Self> {
+    fn from_binary(data: impl AsRef<[u8]>) -> Result<Self> {
         (&ParameterIO::from_binary(data)?).try_into()
     }
 

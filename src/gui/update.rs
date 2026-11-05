@@ -6,7 +6,7 @@ use super::*;
 impl App {
     pub(super) fn handle_update(
         &mut self,
-        ctx: &eframe::egui::Context,
+        ctx: &egui::Context,
         _frame: &mut eframe::Frame,
     ) {
         if let Ok(msg) = self.channel.1.try_recv() {
@@ -23,7 +23,7 @@ impl App {
                     self.do_update(Message::RefreshModsDisplay);
                     self.do_update(Message::ReloadProfiles);
                     ctx.data_mut(|d| {
-                        d.remove::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(egui::Id::new(
+                        d.remove::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(Id::new(
                             "md_cache",
                         ))
                     });
@@ -253,7 +253,7 @@ impl App {
                 Message::SetTheme(theme) => {
                     theme.set_theme(ctx);
                     self.theme = theme;
-                    self.dock_style = uk_ui::visuals::style_dock(&ctx.style());
+                    self.dock_style = visuals::style_dock(&ctx.style());
                 }
                 Message::SetLanguage(lang) => {
                     LOCALIZATION.write().update_language(&lang);
@@ -440,7 +440,7 @@ impl App {
                                 [("profile_name".to_string(), profile.to_string())]
                             );
                             let mut toast = Toast::success(message.format(&vars).unwrap());
-                            toast.set_duration(Some(Duration::new(2, 0)));
+                            toast.duration(Some(Duration::new(2, 0)));
                             toast
                         });
                     }
@@ -486,22 +486,22 @@ impl App {
                 }
                 Message::SaveSettings => {
                     let mut needs_reset = false;
-                    self.core.settings().platform_config().map(|old_plat| {
-                        old_plat.deploy_config.as_ref().map(|old_dep| {
+                    if let Some(old_plat) = self.core.settings().platform_config() {
+                        if let Some(old_dep) = old_plat.deploy_config.as_ref() {
                             if let Some(new_plat) = &self.temp_settings.platform_config() {
-                                new_plat.deploy_config.as_ref().map(|new_dep| {
-                                    if old_dep.layout != new_dep.layout ||
+                                if let Some(new_dep) = new_plat.deploy_config.as_ref() {
+                                    if (old_dep.layout != new_dep.layout ||
                                         old_dep.method != new_dep.method ||
-                                        old_dep.output != new_dep.output {
-                                        if let Ok(_) = self.core.settings()
-                                            .wipe_output(self.core.settings().current_mode.into()) {
-                                            needs_reset = true;
-                                        }
+                                        old_dep.output != new_dep.output)
+                                        && self.core.settings()
+                                            .wipe_output(self.core.settings().current_mode.into())
+                                            .is_ok() {
+                                        needs_reset = true;
                                     }
-                                });
+                                }
                             }
-                        });
-                    });
+                        }
+                    }
                     let save_res = self.temp_settings.save().and_then(|_| {
                         self.core.reload()?;
                         Ok(())
@@ -510,7 +510,7 @@ impl App {
                         Ok(()) => {
                             self.toasts.add({
                                 let mut toast = Toast::success("Settings_Saved".localize());
-                                toast.set_duration(Some(Duration::new(2, 0)));
+                                toast.duration(Some(Duration::new(2, 0)));
                                 toast
                             });
                             if let Some(dump) = self.core.settings().dump() {
@@ -530,7 +530,7 @@ impl App {
                     self.temp_settings = self.core.settings().clone();
                     self.toasts.add({
                         let mut toast = Toast::success("Settings_Saved".localize());
-                        toast.set_duration(Some(Duration::new(2, 0)));
+                        toast.duration(Some(Duration::new(2, 0)));
                         toast
                     });
                     if let Some(dump) = self.core.settings().dump() {
@@ -680,7 +680,7 @@ impl App {
                 Message::Toast(msg) => {
                     self.toasts.add({
                         let mut toast = Toast::info(msg);
-                        toast.set_duration(Some(Duration::new(2, 0)));
+                        toast.duration(Some(Duration::new(2, 0)));
                         toast
                     });
                 }

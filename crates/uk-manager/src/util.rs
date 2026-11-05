@@ -33,7 +33,7 @@ pub fn hardlink_dir<T: AsRef<Path>, U: AsRef<Path>>(src: T, dst: U) -> anyhow_ex
     Ok(())
 }
 
-pub fn remove_dir_all(dir: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
+pub fn remove_dir_all(dir: impl AsRef<Path>) -> anyhow_ext::Result<()> {
     fn inner(dir: &Path) -> anyhow_ext::Result<()> {
         #[cfg(windows)]
         remove_dir_all::remove_dir_all(dir).with_context(|| dir.to_string_lossy().to_string())?;
@@ -86,7 +86,7 @@ pub fn create_symlink(link: &Path, target: &Path) -> anyhow_ext::Result<()> {
 }
 
 #[inline(always)]
-pub fn remove_symlink(link: impl AsRef<std::path::Path>) -> anyhow_ext::Result<()> {
+pub fn remove_symlink(link: impl AsRef<Path>) -> anyhow_ext::Result<()> {
     fn inner(link: &Path) -> anyhow_ext::Result<()> {
         #[cfg(windows)]
         fs_err::remove_dir(link)?;
@@ -154,7 +154,7 @@ pub fn extract_7z(file: &Path, folder: &Path) -> anyhow_ext::Result<()> {
             .arg(format!("-o{}", folder.display()))
             .output()?;
         if !output.stderr.is_empty() {
-            anyhow_ext::bail!("{}", std::string::String::from_utf8_lossy(&output.stderr))
+            anyhow_ext::bail!("{}", String::from_utf8_lossy(&output.stderr))
         } else {
             Ok(())
         }

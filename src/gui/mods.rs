@@ -6,7 +6,7 @@ use uk_manager::mods::Mod;
 use uk_ui::{
     egui::{
         self, epaint::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key,
-        LayerId, Layout, Response, Sense, TextStyle, Ui, Vec2,
+        /*LayerId,*/ Layout, Response, Sense, TextStyle, Ui//, Vec2, emath::TSTransform
     },
     egui_extras::{Column, TableBuilder, TableRow},
     ext::UiExt,
@@ -48,7 +48,7 @@ impl App {
             ICON_WIDTH.get_or_init(|| ui.spacing().icon_width + ui.spacing().button_padding.x);
         static NUMERIC_COL_WIDTH: OnceLock<f32> = OnceLock::new();
         let numeric_col_width = NUMERIC_COL_WIDTH.get_or_init(|| {
-            ui.fonts(|f| {
+            ui.fonts_mut(|f| {
                 f.layout_job(LayoutJob::simple_singleline(
                     "PriorityWW".to_owned(),
                     ui.style()
@@ -66,8 +66,8 @@ impl App {
         
         // Show helper message if no mods installed
         if self.displayed_mods.is_empty() {
-            egui::Frame::none()
-                .inner_margin(Margin::same(40.0))
+            egui::Frame::NONE
+                .inner_margin(Margin::same(40))
                 .show(ui, |ui| {
                     ui.vertical_centered(|ui| {
                         ui.add_space(80.0);
@@ -114,12 +114,12 @@ impl App {
             return;
         }
         
-        egui::Frame::none()
+        egui::Frame::NONE
             .inner_margin(Margin {
-                bottom: 4.0,
-                top:    4.0,
-                left:   4.0,
-                right:  -12.0,
+                bottom: 12,
+                top:    4,
+                left:   4,
+                right:  -12,
             })
             .show(ui, |ui| {
                 ui.style_mut()
@@ -293,9 +293,9 @@ impl App {
 
     fn render_drag_state(
         &mut self,
-        text_height: f32,
-        icon_width: f32,
-        numeric_col_width: f32,
+        _text_height: f32,
+        _icon_width: f32,
+        _numeric_col_width: f32,
         ui: &mut Ui,
     ) {
         let being_dragged = ui.ctx().dragged_id().is_some();
@@ -304,18 +304,19 @@ impl App {
         if being_dragged {
             if delay_frames < 6 {
                 delay_frames += 1;
-            } else if let Some(drag_index) = self.drag_index {
+            } else if let Some(_drag_index) = self.drag_index {
                 ui.output_mut(|o| o.cursor_icon = CursorIcon::Grabbing);
+                /*
                 let layer_id =
                     LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
-                let res = ui
-                    .with_layer_id(layer_id, |ui| {
+                let res = ui.scope_builder(
+                    egui::UiBuilder::new().layer_id(layer_id),
+                    |ui| {
                         TableBuilder::new(ui)
                             .column(Column::exact(icon_width))
                             .column(Column::remainder())
                             .column(Column::initial(80.).at_least(16.).at_most(260.))
-                            .column(Column::exact(numeric_col_width))
-                            .column(Column::exact(numeric_col_width))
+                            .columns(Column::exact(numeric_col_width), 2)
                             .body(|body| {
                                 body.rows(text_height, self.selected.len(), |mut row| {
                                     let mod_ = &self.selected[row.index()];
@@ -344,9 +345,12 @@ impl App {
                     .response;
                 if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
                     let delta = pointer_pos.y - res.rect.center().y;
-                    #[allow(deprecated)]
-                    ui.ctx().translate_layer(layer_id, Vec2::new(0.0, delta));
+                    ui.ctx().set_transform_layer(
+                        layer_id,
+                        TSTransform::from_translation(Vec2::new(0.0, delta))
+                    );
                 }
+                */
             }
         } else {
             delay_frames = 0;
@@ -480,20 +484,20 @@ impl App {
             {
                 if ui.button(profile.as_str()).clicked() {
                     result = Some(ContextMenuMessage::CopyToProfile(profile));
-                    ui.close_menu();
+                    ui.close_kind(egui::UiKind::Menu)
                 }
             }
         });
         if ui.button("Generic_Update".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Update);
         }
         if ui.button("Mod_Dev_Update".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::DevUpdate);
         }
         if ui.button("Mod_Uninstall".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Uninstall);
         }
         if ui
@@ -504,11 +508,11 @@ impl App {
             })
             .clicked()
         {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Toggle(!mod_.enabled));
         }
         if ui.button("Mod_View".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             let _ = Command::new(if cfg!(windows) {
                 "explorer"
             } else {
@@ -522,15 +526,15 @@ impl App {
             .output();
         }
         if ui.button("Mod_Extract".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Extract);
         }
         if ui.button("Mod_Move_Start".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Move(0));
         }
         if ui.button("Mod_Move_End".localize()).clicked() {
-            ui.close_menu();
+            ui.close_kind(egui::UiKind::Menu);
             result = Some(ContextMenuMessage::Move(9999));
         }
         result

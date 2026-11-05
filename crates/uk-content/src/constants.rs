@@ -28,7 +28,7 @@ pub enum Language {
 }
 
 impl fmt::Display for Language {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.to_str())
     }
 }
@@ -128,7 +128,7 @@ impl FromStr for Language {
     type Err = UKError;
 
     #[allow(clippy::needless_borrow)]
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         lighter! {
             match s {
                 "USen" => Ok(Language::USen),

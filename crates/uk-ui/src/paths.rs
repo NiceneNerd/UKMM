@@ -67,7 +67,7 @@ impl PathNode {
     pub fn render_dir(&self, ui: &mut Ui) {
         if !self.children.is_empty() {
             egui::CollapsingHeader::new(self.name.as_str())
-                .id_source(self)
+                .id_salt(self)
                 .show(ui, |ui| {
                     self.children.iter().for_each(|subdir| {
                         subdir.render_dir(ui);
@@ -103,7 +103,7 @@ impl PathNode {
     {
         if !self.children.is_empty() {
             egui::CollapsingHeader::new(self.name.as_str())
-                .id_source(self)
+                .id_salt(self)
                 .show(ui, |ui| {
                     self.children.iter().for_each(|subdir| {
                         subdir.render_dir_selectable(ui, selected, on_select.clone());

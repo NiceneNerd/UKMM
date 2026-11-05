@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use anyhow::anyhow;
 use anyhow_ext::{Result, Error, Context};
 use rayon::prelude::*;
@@ -114,7 +114,7 @@ impl Folder {
                 else if from_path.is_dir() {
                     let folder_name = from_path.file_name()
                         .context("Folder should have name")?;
-                    let to_path = to.join(&folder_name);
+                    let to_path = to.join(folder_name);
                     let folder: Folder = Self::compile_moves(&from_path, &to_path)
                         .with_context(|| format!(
                             "Failed to compile moves from {:?} to {:?}",
@@ -152,7 +152,7 @@ impl Folder {
                 else if from_path.is_dir() {
                     let folder_name = from_path.file_name()
                         .context("Folder should have name")?;
-                    let based_on_path = based_on.join(&folder_name);
+                    let based_on_path = based_on.join(folder_name);
                     let folder: Folder = Self::compile_deletes(&from_path, &based_on_path)
                         .with_context(|| format!(
                             "Failed to compile deletes from {:?} based on {:?}",
@@ -169,7 +169,7 @@ impl Folder {
         Ok(Self { folders, files })
     }
 
-    pub fn copy(&self, from: &PathBuf, to: &PathBuf) -> Result<()> {
+    pub fn copy(&self, from: &Path, to: &Path) -> Result<()> {
         self.files.par_iter().try_for_each(|file| -> Result<()> {
             file.copy(from, to)
         })?;
@@ -183,7 +183,7 @@ impl Folder {
         Ok(())
     }
 
-    pub fn hard_link(&self, from: &PathBuf, to: &PathBuf) -> Result<()> {
+    pub fn hard_link(&self, from: &Path, to: &Path) -> Result<()> {
         self.files.par_iter().try_for_each(|file| -> Result<()> {
             file.hard_link(from, to)
         })?;
@@ -197,7 +197,7 @@ impl Folder {
         Ok(())
     }
 
-    pub fn delete(&self, path: &PathBuf) -> Result<()> {
+    pub fn delete(&self, path: &Path) -> Result<()> {
         self.files.par_iter().try_for_each(|file| -> Result<()> {
             let file_path = path.join(file.name());
             if file_path.exists() {

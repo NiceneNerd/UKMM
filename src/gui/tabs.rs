@@ -1,7 +1,7 @@
 use uk_localization::string_ext::LocString;
 use uk_ui::{
     egui::{self, Ui, WidgetText},
-    egui_dock::{DockState, Node, NodeIndex, TabViewer},
+    egui_dock::{DockState, Node, NodeIndex, TabViewer, tab_viewer::OnCloseResponse},
     visuals::Theme,
 };
 
@@ -38,11 +38,6 @@ impl TabViewer for super::App {
         tab.to_string().into()
     }
 
-    fn on_close(&mut self, tab: &mut Self::Tab) -> bool {
-        self.closed_tabs.insert(*tab, NodeIndex::root());
-        true
-    }
-
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
         ui.add_enabled_ui(!self.modal_open(), |ui| {
             match tab {
@@ -68,7 +63,7 @@ impl TabViewer for super::App {
                 Tabs::Mods => {
                     self.render_profile_menu(ui);
                     ui.add_space(4.);
-                    egui::Frame::none()
+                    egui::Frame::NONE
                         .inner_margin(0.0)
                         .outer_margin(0.0)
                         .show(ui, |ui| {
@@ -76,13 +71,13 @@ impl TabViewer for super::App {
                                 visuals::slate_grid(ui);
                             }
                             self.render_modlist(ui);
-                            let available = ui.available_size();
-                            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
+                            // let available = ui.available_size();
+                            // ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
                             self.render_pending(ui);
                         });
                 }
                 Tabs::Log => {
-                    egui::Frame::none()
+                    egui::Frame::NONE
                         .fill(ui.style().visuals.extreme_bg_color)
                         .inner_margin(-2.0)
                         .outer_margin(0.0)
@@ -99,5 +94,10 @@ impl TabViewer for super::App {
                 }
             }
         });
+    }
+
+    fn on_close(&mut self, tab: &mut Self::Tab) -> OnCloseResponse {
+        self.closed_tabs.insert(*tab, NodeIndex::root());
+        OnCloseResponse::Close
     }
 }

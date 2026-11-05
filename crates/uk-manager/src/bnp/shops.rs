@@ -43,13 +43,13 @@ fn merge(data: &mut ShopData, diff: &ParameterList) -> Result<()> {
         .lists
         .iter_by_name()
     {
-        let name: String64 = name.expect("Bad shop diff").as_ref().into();
+        let name = String64::from(name.expect("Bad shop diff").as_ref());
         #[allow(unstable_name_collisions)]
         let base = data.0.entry(name).or_default().get_or_insert_default();
         for (i, (name, params)) in table.objects.iter_by_name().enumerate() {
-            let name: String64 = name
+            let name = name
                 .ok()
-                .map(|n| n.as_ref().into())
+                .map(|n| String64::from(n.as_ref()))
                 .or_else(|| {
                     params
                         .get("ItemName")
@@ -100,10 +100,10 @@ fn merge(data: &mut ShopData, diff: &ParameterList) -> Result<()> {
         .lists
         .iter_by_name()
     {
-        let name: String64 = name.expect("Bad shop diff").as_ref().into();
+        let name = String64::from(name.expect("Bad shop diff").as_ref());
         if let Some(base) = data.0.get_mut(&name).and_then(|n| n.as_mut()) {
             for name in table.objects.iter_by_name().filter_map(|(k, _)| k.ok()) {
-                let name: String64 = name.as_ref().into();
+                let name = String64::from(name.as_ref());
                 if let Some(base) = base.get_mut(&name) {
                     base.delete = true;
                 }

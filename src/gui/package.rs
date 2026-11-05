@@ -42,7 +42,7 @@ impl ModPackerBuilder {
                 author: Default::default(),
                 category: ModCategory::Other,
                 description: Default::default(),
-                platform: uk_mod::ModPlatform::Specific(platform.into()),
+                platform: ModPlatform::Specific(platform.into()),
                 url: Default::default(),
                 options: Default::default(),
                 masters: Default::default(),
@@ -62,7 +62,7 @@ impl ModPackerBuilder {
             .anchor(Align2::CENTER_CENTER, [0., 0.])
             .show(ctx, |ui| {
                 egui::ScrollArea::new([true, true])
-                    .id_source("modal-pkg-deps")
+                    .id_salt("modal-pkg-deps")
                     .show_rows(
                         ui,
                         ui.text_style_height(&TextStyle::Body),
@@ -112,7 +112,7 @@ impl ModPackerBuilder {
                 .anchor(Align2::CENTER_CENTER, [0., 0.])
                 .scroll([false, true])
                 .show(ctx, |ui| {
-                    egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
+                    egui::Frame::NONE.inner_margin(8.0).show(ui, |ui| {
                         ui.spacing_mut().item_spacing.y = 8.0;
                         ui.horizontal(|ui| {
                             if ui.icon_text_button(
@@ -285,7 +285,7 @@ impl ModPackerBuilder {
                 option.name.as_str().into()
             };
             egui::CollapsingHeader::new(opt_name)
-                .id_source(id.with("header"))
+                .id_salt(id.with("header"))
                 .default_open(true)
                 .show(ui, |ui| {
                     if ui.icon_text_button("Generic_Delete".localize(), Icon::Delete).clicked() {
@@ -343,7 +343,7 @@ impl ModPackerBuilder {
     }
 
     pub fn render(&mut self, app: &App, ui: &mut Ui) {
-        egui::Frame::none().inner_margin(8.0).show(ui, |ui| {
+        egui::Frame::NONE.inner_margin(8.0).show(ui, |ui| {
             let id = Id::new("packer_data");
             self.render_package_deps(app, ui.ctx());
             self.render_package_opts(app, ui.ctx());
