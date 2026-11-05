@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed mod list sorting not persisting between program sessions
 - Fixed (via roead) an error where mods with strings longer than 598 bytes in an
   AAMP file would fail to install
+- Fixed RSTB calculating wrong values for terrain files
+- Fixed RSTB calculating wrong values for mubin (map) files
 
 ## [0.17.1] 2026-07-01
 
