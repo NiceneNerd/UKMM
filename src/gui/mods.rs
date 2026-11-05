@@ -6,7 +6,7 @@ use uk_manager::mods::Mod;
 use uk_ui::{
     egui::{
         self, epaint::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key,
-        LayerId, Layout, Response, Sense, TextStyle, Ui, Vec2, emath::TSTransform
+        /*LayerId,*/ Layout, Response, Sense, TextStyle, Ui//, Vec2, emath::TSTransform
     },
     egui_extras::{Column, TableBuilder, TableRow},
     ext::UiExt,
@@ -293,9 +293,9 @@ impl App {
 
     fn render_drag_state(
         &mut self,
-        text_height: f32,
-        icon_width: f32,
-        numeric_col_width: f32,
+        _text_height: f32,
+        _icon_width: f32,
+        _numeric_col_width: f32,
         ui: &mut Ui,
     ) {
         let being_dragged = ui.ctx().dragged_id().is_some();
@@ -304,8 +304,9 @@ impl App {
         if being_dragged {
             if delay_frames < 6 {
                 delay_frames += 1;
-            } else if let Some(drag_index) = self.drag_index {
+            } else if let Some(_drag_index) = self.drag_index {
                 ui.output_mut(|o| o.cursor_icon = CursorIcon::Grabbing);
+                /*
                 let layer_id =
                     LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
                 let res = ui.scope_builder(
@@ -349,6 +350,7 @@ impl App {
                         TSTransform::from_translation(Vec2::new(0.0, delta))
                     );
                 }
+                */
             }
         } else {
             delay_frames = 0;
