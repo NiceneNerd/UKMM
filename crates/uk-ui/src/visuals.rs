@@ -175,8 +175,8 @@ impl Theme {
                             },
                             hovered: WidgetVisuals {
                                 bg_fill: hex_color!("#237ba3"),
-                                bg_stroke: Stroke::new(1.0, hex_color!("#1d649a")),
-                                fg_stroke: Stroke::new(1.5, hex_color!("#f0f0f0")),
+                                bg_stroke: Stroke::new(1.0_f32, hex_color!("#1d649a")),
+                                fg_stroke: Stroke::new(1.5_f32, hex_color!("#f0f0f0")),
                                 corner_radius: CornerRadius::same(2),
                                 expansion: 1.0,
                                 weak_bg_fill: Color32::TRANSPARENT,
