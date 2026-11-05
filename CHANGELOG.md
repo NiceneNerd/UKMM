@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to find files in your game dumps. Mods probably didn't install correctly
   without this. You probably want to reinstall all the mods you installed from
   BNPs, just to be sure they're not missing any data)
+- Updated the GUI to modern egui
+  - Known issue: Dragging mods no longer shows the mods you're dragging. They still
+    get dragged, though, so this is only a visual change. I wanted to fix this
+    before release, but the macOS version won't work with the previous version of
+    egui anymore, so this is what we get, for now
 
 **Fixed**
 
