@@ -315,8 +315,7 @@ impl App {
                             .column(Column::exact(icon_width))
                             .column(Column::remainder())
                             .column(Column::initial(80.).at_least(16.).at_most(260.))
-                            .column(Column::exact(numeric_col_width))
-                            .column(Column::exact(numeric_col_width))
+                            .columns(Column::exact(numeric_col_width), 2)
                             .body(|body| {
                                 body.rows(text_height, self.selected.len(), |mut row| {
                                     let mod_ = &self.selected[row.index()];
@@ -345,7 +344,7 @@ impl App {
                     .response;
                 if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
                     let delta = pointer_pos.y - res.rect.center().y;
-                    ui.ctx().transform_layer_shapes(
+                    ui.ctx().set_transform_layer(
                         layer_id,
                         TSTransform::from_translation(Vec2::new(0.0, delta))
                     );
