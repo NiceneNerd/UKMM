@@ -4,7 +4,7 @@ use roead::byml::Byml;
 use smartstring::alias::String;
 
 use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
-
+use crate::util::DeleteValue;
 use super::MapUnit;
 
 #[derive(Debug, Copy, Clone, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -69,8 +69,8 @@ impl From<&PlayerState> for Byml {
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct StartPos {
     pub map:            Option<MapUnit>,
-    pub player_state:   Option<PlayerState>,
-    pub pos_name:       Option<String>,
+    pub player_state:   DeleteValue<PlayerState>,
+    pub pos_name:       DeleteValue<String>,
     pub rotate:         DeleteMap<char, f32>,
     pub translate:      DeleteMap<char, f32>,
 }
@@ -81,7 +81,7 @@ impl StartPos {
             &format!(
                 "{}{}",
                 self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
-                self.pos_name.clone().unwrap_or_default()
+                self.pos_name.value().unwrap_or_default()
             )
         )
         .to_string()
@@ -113,13 +113,15 @@ impl TryFrom<&Byml> for StartPos {
                 .into()),
             player_state: map.get("PlayerState")
                 .map(|b| b.try_into().context("Invalid PlayerState"))
-                .transpose()?,
+                .transpose()?
+                .into(),
             pos_name: map.get("PosName")
                 .map(|b| b.as_string()
                     .context("StartPos PosName must be String")
                 )
                 .transpose()?
-                .cloned(),
+                .cloned()
+                .into(),
             rotate: try_get_vecf(map.get("Rotate")
                 .context("StartPos must have Rotate")?)
                 .context("Invalid StartPos Rotate")?,
@@ -134,11 +136,11 @@ impl From<StartPos> for Byml {
     fn from(value: StartPos) -> Self {
         let mut map: HashMap<String, Byml> = Default::default();
         map.insert("Map".into(), (&value.map.expect("Map should have been read on diff")).into());
-        match &value.player_state {
+        match value.player_state.value_ref() {
             Some(p) => map.insert("PlayerState".into(), p.into()),
             None => None,
         };
-        match &value.pos_name {
+        match value.pos_name.value() {
             Some(p) => map.insert("PosName".into(), p.into()),
             None => None,
         };
@@ -162,14 +164,8 @@ impl Mergeable for StartPos {
                 .ne(&self.map)
                 .then(|| other.map.clone())
                 .unwrap_or_default(),
-            player_state: other.player_state
-                .ne(&self.player_state)
-                .then_some(other.player_state)
-                .unwrap_or_default(),
-            pos_name: other.pos_name
-                .ne(&self.pos_name)
-                .then(|| other.pos_name.clone())
-                .unwrap_or_default(),
+            player_state: self.player_state.diff(&other.player_state),
+            pos_name: self.pos_name.diff(&other.pos_name),
             rotate: self.rotate.diff(&other.rotate),
             translate: self.translate.diff(&other.translate),
         }
@@ -179,10 +175,8 @@ impl Mergeable for StartPos {
         Self {
             map: diff.map.clone()
                 .or_else(|| self.map.clone()),
-            player_state: diff.player_state
-                .or(self.player_state),
-            pos_name: diff.pos_name.clone()
-                .or_else(|| self.pos_name.clone()),
+            player_state: self.player_state.merge(&diff.player_state),
+            pos_name: self.pos_name.merge(&diff.pos_name),
             rotate: self.rotate.merge(&diff.rotate),
             translate: self.translate.merge(&diff.translate),
         }

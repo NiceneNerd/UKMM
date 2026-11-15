@@ -4,10 +4,11 @@ use roead::byml::Byml;
 use smartstring::alias::String;
 
 use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
+use crate::util::DeleteValue;
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct StaticGrudgeLocation {
-    pub eyeball_hash_id:    Option<u32>,
+    pub eyeball_hash_id:    DeleteValue<u32>,
     pub translate:          DeleteMap<char, f32>,
 }
 
@@ -17,7 +18,7 @@ impl StaticGrudgeLocation {
             &format!(
                 "{}{}",
                 self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
-                self.eyeball_hash_id.unwrap_or_default(),
+                self.eyeball_hash_id.value().unwrap_or_default(),
             )
         )
         .to_string()
@@ -40,7 +41,8 @@ impl TryFrom<&Byml> for StaticGrudgeLocation {
         Ok(Self {
             eyeball_hash_id: map.get("EyeballHashId")
                 .map(|b| b.as_u32().context("EyeballHashId must be u32"))
-                .transpose()?,
+                .transpose()?
+                .into(),
             translate: try_get_vecf(map.get("Translate")
                 .context("StaticGrudgeLocation must have Translate")?)
                 .context("Invalid StaticGrudgeLocation Translate")?,
@@ -51,7 +53,7 @@ impl TryFrom<&Byml> for StaticGrudgeLocation {
 impl From<StaticGrudgeLocation> for Byml {
     fn from(value: StaticGrudgeLocation) -> Self {
         let mut map: HashMap<String, Byml> = Default::default();
-        match value.eyeball_hash_id {
+        match value.eyeball_hash_id.value() {
             Some(u) => map.insert("EyeballHashId".into(), u.into()),
             None => None,
         };
@@ -67,18 +69,14 @@ impl Mergeable for StaticGrudgeLocation {
     #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
-            eyeball_hash_id: other.eyeball_hash_id
-                .ne(&self.eyeball_hash_id)
-                .then_some(other.eyeball_hash_id)
-                .unwrap_or_default(),
+            eyeball_hash_id: self.eyeball_hash_id.diff(&other.eyeball_hash_id),
             translate: self.translate.diff(&other.translate),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            eyeball_hash_id: diff.eyeball_hash_id
-                .or(self.eyeball_hash_id),
+            eyeball_hash_id: self.eyeball_hash_id.merge(&diff.eyeball_hash_id),
             translate: self.translate.merge(&diff.translate),
         }
     }

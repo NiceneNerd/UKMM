@@ -4,7 +4,7 @@ use roead::byml::Byml;
 use smartstring::alias::String;
 
 use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
-
+use crate::util::DeleteValue;
 use super::AreaShape;
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -16,7 +16,7 @@ pub struct NonAutoPlacement {
     pub non_auto_placement_insect:      Option<bool>,
     pub non_auto_placement_material:    Option<bool>,
     pub non_enemy_search_player:        Option<bool>,
-    pub not_use_for_stats:              Option<bool>,
+    pub not_use_for_stats:              DeleteValue<bool>,
     pub rotate_y:                       Option<f32>,
     pub scale:                          DeleteMap<char, f32>,
     pub shape:                          Option<AreaShape>,
@@ -94,7 +94,8 @@ impl TryFrom<&Byml> for NonAutoPlacement {
                 .map(|b| b.as_bool()
                     .context("NonAutoPlacement NotUseForStats must be Bool")
                 )
-                .transpose()?,
+                .transpose()?
+                .into(),
             rotate_y: Some(map.get("RotateY")
                 .context("NonAutoPlacement must have RotateY")?
                 .as_float()
@@ -123,7 +124,7 @@ impl From<NonAutoPlacement> for Byml {
         map.insert("NonAutoPlacementInsect".into(), value.non_auto_placement_insect.expect("NonAutoPlacementInsect should have been read on diff").into());
         map.insert("NonAutoPlacementMaterial".into(), value.non_auto_placement_material.expect("NonAutoPlacementMaterial should have been read on diff").into());
         map.insert("NonEnemySearchPlayer".into(), value.non_enemy_search_player.expect("NonEnemySearchPlayer should have been read on diff").into());
-        match value.not_use_for_stats {
+        match value.not_use_for_stats.value() {
             Some(p) => map.insert("NotUseForStats".into(), p.into()),
             None => None,
         };
@@ -173,10 +174,7 @@ impl Mergeable for NonAutoPlacement {
                 .ne(&self.non_enemy_search_player)
                 .then_some(other.non_enemy_search_player)
                 .unwrap_or_default(),
-            not_use_for_stats: other.not_use_for_stats
-                .ne(&self.not_use_for_stats)
-                .then_some(other.not_use_for_stats)
-                .unwrap_or_default(),
+            not_use_for_stats: self.not_use_for_stats.diff(&other.not_use_for_stats),
             rotate_y: other.rotate_y
                 .ne(&self.rotate_y)
                 .then_some(other.rotate_y)
@@ -206,8 +204,7 @@ impl Mergeable for NonAutoPlacement {
                 .or(self.non_auto_placement_material),
             non_enemy_search_player: diff.non_enemy_search_player
                 .or(self.non_enemy_search_player),
-            not_use_for_stats: diff.not_use_for_stats
-                .or(self.not_use_for_stats),
+            not_use_for_stats: self.not_use_for_stats.merge(&diff.not_use_for_stats),
             rotate_y: diff.rotate_y
                 .or(self.rotate_y),
             scale: self.scale.merge(&diff.scale),

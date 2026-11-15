@@ -3,7 +3,7 @@ use itertools::Itertools;
 use roead::byml::Byml;
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
+use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap, DeleteValue}};
 
 use super::MapAndUnit;
 
@@ -102,13 +102,13 @@ impl From<&LocationIcon> for Byml {
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct LocationMarker {
-    pub icon:               Option<LocationIcon>,
-    pub message_id:         Option<String>,
+    pub icon:               DeleteValue<LocationIcon>,
+    pub message_id:         DeleteValue<String>,
     pub priority:           Option<i32>,
     pub save_flag:          Option<String>,
     pub translate:          DeleteMap<char, f32>,
-    pub warp_dest_map_name: Option<MapAndUnit>,
-    pub warp_dest_pos_name: Option<String>,
+    pub warp_dest_map_name: DeleteValue<MapAndUnit>,
+    pub warp_dest_pos_name: DeleteValue<String>,
 }
 
 impl LocationMarker {
@@ -117,7 +117,7 @@ impl LocationMarker {
             &format!(
                 "{}{}",
                 self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
-                self.message_id.clone().unwrap_or_default()
+                self.message_id.value().unwrap_or_default()
             )
         )
         .to_string()
@@ -147,13 +147,15 @@ impl TryFrom<&Byml> for LocationMarker {
                 .map(|b| b.try_into()
                     .context("LocationMarker Icon invalid")
                 )
-                .transpose()?,
+                .transpose()?
+                .into(),
             message_id: map.get("MessageID")
                 .map(|b| b.as_string()
                     .context("LocationMarker MessageID must be String")
                 )
                 .transpose()?
-                .cloned(),
+                .cloned()
+                .into(),
             priority: Some(map.get("Priority")
                 .context("LocationMarker must have Priority")?
                 .as_i32()
@@ -170,13 +172,15 @@ impl TryFrom<&Byml> for LocationMarker {
                 .map(|b| b.try_into()
                     .context("Invalid LocationMarker WarpDestMapName")
                 )
-                .transpose()?,
+                .transpose()?
+                .into(),
             warp_dest_pos_name: map.get("WarpDestPosName")
                 .map(|b| b.as_string()
                     .context("LocationMarker WarpDestPosName must be String")
                 )
                 .transpose()?
-                .cloned(),
+                .cloned()
+                .into(),
         })
     }
 }
@@ -184,11 +188,11 @@ impl TryFrom<&Byml> for LocationMarker {
 impl From<LocationMarker> for Byml {
     fn from(value: LocationMarker) -> Self {
         let mut map: HashMap<String, Byml> = Default::default();
-        match &value.icon {
+        match value.icon.value_ref() {
             Some(i) => map.insert("Icon".into(), i.into()),
             None => None,
         };
-        match &value.message_id {
+        match value.message_id.value() {
             Some(i) => map.insert("MessageID".into(), i.into()),
             None => None,
         };
@@ -198,11 +202,11 @@ impl From<LocationMarker> for Byml {
             .iter()
             .map(|(k, v)| (k.to_string().into(), Byml::Float(*v)))
             .collect::<HashMap<String, Byml>>()));
-        match &value.warp_dest_map_name {
+        match value.warp_dest_map_name.value_ref() {
             Some(i) => map.insert("WarpDestMapName".into(), i.into()),
             None => None,
         };
-        match &value.warp_dest_pos_name {
+        match value.warp_dest_pos_name.value() {
             Some(i) => map.insert("WarpDestPosName".into(), i.into()),
             None => None,
         };
@@ -214,14 +218,8 @@ impl Mergeable for LocationMarker {
     #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
-            icon: other.icon
-                .ne(&self.icon)
-                .then_some(other.icon)
-                .unwrap_or_default(),
-            message_id: other.message_id
-                .ne(&self.message_id)
-                .then(|| other.message_id.clone())
-                .unwrap_or_default(),
+            icon: self.icon.diff(&other.icon),
+            message_id: self.message_id.diff(&other.message_id),
             priority: other.priority
                 .ne(&self.priority)
                 .then_some(other.priority)
@@ -231,32 +229,22 @@ impl Mergeable for LocationMarker {
                 .then(|| other.save_flag.clone())
                 .unwrap_or_default(),
             translate: self.translate.diff(&other.translate),
-            warp_dest_map_name: other.warp_dest_map_name
-                .ne(&self.warp_dest_map_name)
-                .then(|| other.warp_dest_map_name.clone())
-                .unwrap_or_default(),
-            warp_dest_pos_name: other.warp_dest_pos_name
-                .ne(&self.warp_dest_pos_name)
-                .then(|| other.warp_dest_pos_name.clone())
-                .unwrap_or_default(),
+            warp_dest_map_name: self.warp_dest_map_name.diff(&other.warp_dest_map_name),
+            warp_dest_pos_name: self.warp_dest_pos_name.diff(&other.warp_dest_pos_name),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            icon: diff.icon
-                .or(self.icon),
-            message_id: diff.message_id.clone()
-                .or_else(|| self.message_id.clone()),
+            icon: self.icon.merge(&diff.icon),
+            message_id: self.message_id.merge(&diff.message_id),
             priority: diff.priority
                 .or(self.priority),
             save_flag: diff.save_flag.clone()
                 .or_else(|| self.save_flag.clone()),
             translate: self.translate.merge(&diff.translate),
-            warp_dest_map_name: diff.warp_dest_map_name.clone()
-                .or_else(|| self.warp_dest_map_name.clone()),
-            warp_dest_pos_name: diff.warp_dest_pos_name.clone()
-                .or_else(|| self.warp_dest_pos_name.clone()),
+            warp_dest_map_name: self.warp_dest_map_name.merge(&diff.warp_dest_map_name),
+            warp_dest_pos_name: self.warp_dest_pos_name.merge(&diff.warp_dest_pos_name),
         }
     }
 }

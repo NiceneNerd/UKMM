@@ -687,3 +687,110 @@ impl<T: DeleteKey, U: PartialEq + Clone> DeleteMap<T, U> {
 pub struct SortedDeleteMap<T: DeleteKey + Ord, U: PartialEq + Clone>(BTreeMap<T, (U, bool)>);
 
 impl_delete_map!(SortedDeleteMap, BTreeMap<T, (U, bool)>, DeleteKey + Ord);
+
+#[derive(Debug, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct DeleteValue<T>(Option<T>, bool) where T: Clone;
+
+impl<T> Clone for DeleteValue<T> where T: Clone {
+    #[inline]
+    fn clone(&self) -> Self {
+        match &self.0 {
+            Some(x) => x.clone().into(),
+            None => None.into(),
+        }
+    }
+
+    #[inline]
+    fn clone_from(&mut self, source: &Self) {
+        match (&mut self.0, &source.0) {
+            (Some(to), Some(from)) => to.clone_from(from),
+            (to, from) => *to = from.clone(),
+        }
+    }
+}
+
+impl<T> From<T> for DeleteValue<T> where T: Clone {
+    fn from(value: T) -> Self {
+        Self(Some(value), false)
+    }
+}
+
+impl<T> From<Option<T>> for DeleteValue<T> where T: Clone {
+    fn from(value: Option<T>) -> Self {
+        Self(value, false)
+    }
+}
+
+impl<T> Default for DeleteValue<T> where T: Clone {
+    fn default() -> Self {
+        Self(None, false)
+    }
+}
+
+impl<T> Mergeable for DeleteValue<T> where T: Clone + PartialEq {
+    #[inline]
+    fn diff(&self, other: &Self) -> Self {
+        match &self.0 {
+            i @ Some(_) => i.ne(&other.0)
+                .then(|| unsafe { i.clone().unwrap_unchecked() })
+                .into(),
+            None => DeleteValue::delete(),
+        }
+    }
+
+    #[inline]
+    fn merge(&self, diff: &Self) -> Self {
+        match &diff.1 {
+            true => Self(None, false),
+            false => diff.0.clone().or_else(|| self.0.clone()).into(),
+        }
+    }
+}
+
+impl<T> DeleteValue<T> where T: Clone {
+    pub fn delete() -> Self {
+        Self(None, true)
+    }
+
+    pub fn or(&self, other: Self) -> Self {
+        match self.1 {
+            true => self.clone(),
+            false => match &self.0 {
+                Some(i) => i.clone().into(),
+                None => other,
+            },
+        }
+    }
+
+    pub fn or_else<F: FnOnce() -> Self>(self, f: F) -> Self {
+        match self.1 {
+            true => self.clone(),
+            false => match &self.0 {
+                Some(i) => i.clone().into(),
+                None => f(),
+            }
+        }
+    }
+
+    #[inline]
+    pub fn value(&self) -> Option<T> {
+        self.0.clone()
+    }
+
+    #[inline]
+    pub fn value_ref(&self) -> Option<&T> {
+        self.0.as_ref()
+    }
+
+    #[inline]
+    pub fn deleted(&self) -> bool {
+        self.1
+    }
+
+    pub fn as_deletion(&self) -> Self {
+        match self.value() {
+            Some(i) => i.into(),
+            None => DeleteValue::delete(),
+        }
+    }
+}

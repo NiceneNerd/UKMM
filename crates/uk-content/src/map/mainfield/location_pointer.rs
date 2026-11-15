@@ -4,13 +4,14 @@ use roead::byml::Byml;
 use smartstring::alias::String;
 
 use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap, HashMap}};
+use crate::util::DeleteValue;
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct LocationPointer {
     pub location_priority:  Option<i32>,
-    pub message_id:         Option<String>,
+    pub message_id:         DeleteValue<String>,
     pub pointer_type:       Option<i32>,
-    pub save_flag:          Option<String>,
+    pub save_flag:          DeleteValue<String>,
     pub show_level:         Option<i32>,
     pub translate:          DeleteMap<char, f32>,
 }
@@ -21,7 +22,7 @@ impl LocationPointer {
             &format!(
                 "{}{}",
                 self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
-                self.message_id.clone().unwrap_or_default()
+                self.message_id.value().unwrap_or_default()
             )
         )
         .to_string()
@@ -55,7 +56,8 @@ impl TryFrom<&Byml> for LocationPointer {
                     .context("LocationPointer MessageID must be String")
                 )
                 .transpose()?
-                .cloned(),
+                .cloned()
+                .into(),
             pointer_type: Some(map.get("PointerType")
                 .context("LocationPointer must have PointerType")?
                 .as_i32()
@@ -65,7 +67,8 @@ impl TryFrom<&Byml> for LocationPointer {
                     .context("LocationPointer SaveFlag must be String")
                 )
                 .transpose()?
-                .cloned(),
+                .cloned()
+                .into(),
             show_level: Some(map.get("ShowLevel")
                 .context("LocationPointer must have ShowLevel")?
                 .as_i32()
@@ -81,12 +84,12 @@ impl From<LocationPointer> for Byml {
     fn from(val: LocationPointer) -> Self {
         let mut map: HashMap<String, Byml> = Default::default();
         map.insert("LocationPriority".into(), val.location_priority.expect("LocationPriority should have been read on diff").into());
-        match &val.message_id {
+        match val.message_id.value() {
             Some(i) => map.insert("MessageID".into(), i.into()),
             None => None,
         };
         map.insert("PointerType".into(), val.pointer_type.expect("PointerType should have been read on diff").into());
-        match &val.save_flag {
+        match val.save_flag.value() {
             Some(i) => map.insert("SaveFlag".into(), i.into()),
             None => None,
         };
@@ -107,18 +110,12 @@ impl Mergeable for LocationPointer {
                 .ne(&self.location_priority)
                 .then_some(other.location_priority)
                 .unwrap_or_default(),
-            message_id: other.message_id
-                .ne(&self.message_id)
-                .then(|| other.message_id.clone())
-                .unwrap_or_default(),
+            message_id: self.message_id.diff(&other.message_id),
             pointer_type: other.pointer_type
                 .ne(&self.pointer_type)
                 .then_some(other.pointer_type)
                 .unwrap_or_default(),
-            save_flag: other.save_flag
-                .ne(&self.save_flag)
-                .then(|| other.save_flag.clone())
-                .unwrap_or_default(),
+            save_flag: self.save_flag.diff(&other.save_flag),
             show_level: other.show_level
                 .ne(&self.show_level)
                 .then_some(other.show_level)
@@ -131,12 +128,10 @@ impl Mergeable for LocationPointer {
         Self {
             location_priority: diff.location_priority
                 .or(self.location_priority),
-            message_id: diff.message_id.clone()
-                .or_else(|| self.message_id.clone()),
+            message_id: self.message_id.merge(&diff.message_id),
             pointer_type: diff.pointer_type
                 .or(self.pointer_type),
-            save_flag: diff.save_flag.clone()
-                .or_else(|| self.save_flag.clone()),
+            save_flag: self.save_flag.merge(&diff.save_flag),
             show_level: diff.show_level
                 .or(self.show_level),
             translate: self.translate.merge(&diff.translate),
