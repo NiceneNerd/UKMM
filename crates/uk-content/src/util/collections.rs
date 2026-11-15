@@ -730,11 +730,11 @@ impl<T> Default for DeleteValue<T> where T: Clone {
 impl<T> Mergeable for DeleteValue<T> where T: Clone + PartialEq {
     #[inline]
     fn diff(&self, other: &Self) -> Self {
-        match &other.0 {
-            i @ Some(_) => i.ne(&self.0)
-                .then(|| unsafe { i.clone().unwrap_unchecked() })
-                .into(),
-            None => DeleteValue::delete(),
+        match (&self.0, &other.0) {
+            (Some(orig), Some(mod_)) => orig.ne(mod_).then(|| mod_.clone()).into(),
+            (None, Some(mod_)) => mod_.clone().into(),
+            (Some(_), None) => DeleteValue::delete(),
+            (None, None) => Default::default(),
         }
     }
 
@@ -742,7 +742,10 @@ impl<T> Mergeable for DeleteValue<T> where T: Clone + PartialEq {
     fn merge(&self, diff: &Self) -> Self {
         match &diff.1 {
             true => Self(None, false),
-            false => diff.0.clone().or_else(|| self.0.clone()).into(),
+            false => match (&self.0, &diff.0) {
+                (_, Some(mod_)) => mod_.clone().into(),
+                (orig, None) => orig.clone().into(),
+            },
         }
     }
 }
