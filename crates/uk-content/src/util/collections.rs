@@ -730,8 +730,8 @@ impl<T> Default for DeleteValue<T> where T: Clone {
 impl<T> Mergeable for DeleteValue<T> where T: Clone + PartialEq {
     #[inline]
     fn diff(&self, other: &Self) -> Self {
-        match &self.0 {
-            i @ Some(_) => i.ne(&other.0)
+        match &other.0 {
+            i @ Some(_) => i.ne(&self.0)
                 .then(|| unsafe { i.clone().unwrap_unchecked() })
                 .into(),
             None => DeleteValue::delete(),
