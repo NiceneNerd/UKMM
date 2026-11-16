@@ -203,6 +203,8 @@
     "Settings_Sys7z_Desc": "Standaard zal UKMM proberen 7z van uw systeemPATH te gebruiken om 7-Zip-bestanden (zoals BNP's) uit te pakken. Anders valt het terug naar een langzamere ingebouwde 7z-extractiebibliotheek. Als u 7z-gerelateerde fouten heeft, probeer dan deze optie uit te schakelen.",
     "Settings_Theme": "Thema",
     "Settings_Theme_Desc": "Gebruikersinterface thema",
+    "Settings_Zoom": "Gebruikersinterfaceschaal",
+    "Settings_Zoom_Description": "Standaard schaalt UKMM mee met de schaalinstellingen van je monitor in het besturingssysteem. Mocht dit om een ​​of andere reden niet volstaan, dan kun je deze instelling gebruiken om de schaal verder aan te passen. Hogere waarden vergroten de gebruikersinterface; lagere waarden verkleinen deze. De wijzigingen worden doorgevoerd zodra je opslaat.",
     "Tab_Deploy": "Implementeren",
     "Tab_Info": "Info",
     "Tab_Install": "Installeren",

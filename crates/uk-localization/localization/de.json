@@ -203,6 +203,8 @@
     "Settings_Sys7z_Desc": "Standardmäßig versucht UKMM 7z von deinem System-PATH zu extrahieren für 7-Zip-Datein (wie BNPs). Ansonsten wird eine langsamere 7z-Extrahierungs-Bibliothek verwendet. Wenn du 7z-Fehler hast, versuch diese Option zu deaktivieren.",
     "Settings_Theme": "Design",
     "Settings_Theme_Desc": "User-Interface-Thema",
+    "Settings_Zoom": "UKMM-Benutzeroberflächenskalierung",
+    "Settings_Zoom_Description": "Standardmäßig passt sich die Skalierung von UKMM an die in Ihrem Betriebssystem festgelegten Skalierungseinstellungen für den Monitor an. Sollte dies aus irgendeinem Grund nicht ausreichen, können Sie mithilfe dieser Einstellung die Skalierung weiter anpassen. Höhere Werte vergrößern die Benutzeroberfläche, niedrigere Werte verkleinern sie. Die Änderung wird beim Speichern wirksam.",
     "Tab_Deploy": "Einsetzen",
     "Tab_Info": "Info",
     "Tab_Install": "Installieren",

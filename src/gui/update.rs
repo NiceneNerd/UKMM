@@ -688,6 +688,9 @@ impl App {
                     self.package_builder.borrow_mut().meta = meta;
                     self.busy.set(false);
                 }
+                Message::UpdateZoomFactor(zoom) => {
+                    ctx.set_zoom_factor(zoom);
+                },
             }
         } else {
             self.handle_drops(ctx);
