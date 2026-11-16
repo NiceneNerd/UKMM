@@ -521,7 +521,7 @@ impl App {
                                 }
                             }
                             let mut name = "Settings_Zoom".localize();
-                            let mut description = "Settings_Zoom_Desc".localize();
+                            let mut description = "Settings_Zoom_Description".localize();
                             render_setting(
                                 &name,
                                 &description,

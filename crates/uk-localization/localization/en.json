@@ -204,7 +204,7 @@
     "Settings_Theme": "Theme",
     "Settings_Theme_Desc": "User interface theme",
     "Settings_Zoom": "UKMM UI Scale",
-    "Settings_Zoom_Description": "By default, UKMM scales along with your monitor scale settings in your operating system. If this is insufficient for some reason, you can use this setting to change the scale further.\nHigher numbers makes the UI bigger. Smaller numbers make it smaller. Applied on save.",
+    "Settings_Zoom_Description": "By default, UKMM scales along with your monitor scale settings in your operating system. If this is insufficient for some reason, you can use this setting to change the scale further.\nHigher numbers make the UI bigger. Smaller numbers make it smaller. Applied on save.",
     "Tab_Deploy": "Deploy",
     "Tab_Info": "Info",
     "Tab_Install": "Install",
