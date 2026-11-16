@@ -24,6 +24,11 @@ a new setting to apply app-specific scaling *on top of* your monitor's scaling.
 - Changed scaling behavior. App no longer blanket scales to 1.0 on Wayland, now
   it scales by desktop environment scale in all DEs
 
+**Fixed**
+
+- Fixed game dump validation only working for the base game folder. UKMM will now
+  fail to save your settings if any of your paths is wrong, not just the first one.
+
 ## [0.17.3] 2026-11-05
 
 **Fixed**

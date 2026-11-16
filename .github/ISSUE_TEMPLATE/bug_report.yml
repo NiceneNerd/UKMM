@@ -15,7 +15,9 @@ body:
       label: Version
       description: What version of UKMM are you running?
       options:
-        - 0.17.1 (Latest)
+        - 0.17.3 (Latest)
+        - 0.17.2
+        - 0.17.1
         - 0.17.0-1
         - 0.17.0
         - 0.16.0
