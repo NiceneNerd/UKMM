@@ -240,6 +240,7 @@ pub struct Settings {
     pub wiiu_config: Option<PlatformSettings>,
     pub switch_config: Option<PlatformSettings>,
     pub lang: LocLang,
+    pub zoom_factor: f32,
 }
 
 impl Default for Settings {
@@ -254,6 +255,7 @@ impl Default for Settings {
             show_changelog: true,
             last_version: None,
             lang: LocLang::English,
+            zoom_factor: 1.0_f32,
         }
     }
 }

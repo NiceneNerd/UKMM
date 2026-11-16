@@ -216,6 +216,7 @@ pub enum Message {
     UpdatePackageMeta(Meta),
     UninstallMods(Option<Vec<Mod>>),
     UpdateOptions(Mod),
+    UpdateZoomFactor(f32),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -278,19 +279,11 @@ pub struct App {
 
 impl App {
     fn new(cc: &eframe::CreationContext) -> Self {
-        #[cfg(not(windows))]
-        if std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "wayland" {
-            cc.egui_ctx.set_pixels_per_point(
-                std::env::var("WINIT_X11_SCALE_FACTOR")
-                    .ok()
-                    .and_then(|v| v.parse().ok())
-                    .unwrap_or(1.0),
-            );
-        }
         uk_ui::icons::load_icons(&cc.egui_ctx);
         uk_ui::load_fonts(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
-        let ui_state: UiState = fs::read_to_string(core.settings().state_file())
+        let temp_settings = core.settings().clone();
+        let ui_state: UiState = fs::read_to_string(temp_settings.state_file())
             .context("")
             .and_then(|s| serde_json::from_str(&s).context(""))
             .unwrap_or_default();
@@ -305,8 +298,8 @@ impl App {
         };
         let (send, recv) = flume::unbounded();
         tasks::ONECLICK_SENDER.set(send.clone()).unwrap_or(());
-        let temp_settings = core.settings().clone();
-        let platform = core.settings().current_mode;
+        let platform = temp_settings.current_mode;
+        cc.egui_ctx.set_zoom_factor(temp_settings.zoom_factor);
         LOCALIZATION.write().update_language(&temp_settings.lang);
         Self {
             selected: mods.first().cloned().into_iter().collect(),

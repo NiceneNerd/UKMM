@@ -520,8 +520,23 @@ impl App {
                                     }
                                 }
                             }
-                            let mut name = "Settings_Theme".localize();
-                            let mut description = "Settings_Theme_Desc".localize();
+                            let mut name = "Settings_Zoom".localize();
+                            let mut description = "Settings_Zoom_Description".localize();
+                            render_setting(
+                                &name,
+                                &description,
+                                ui,
+                                |ui| {
+                                    ui.add(egui::Slider::new(
+                                        &mut settings.zoom_factor,
+                                        0.1_f32..=2.0_f32)
+                                        .update_while_editing(false)
+                                        .fixed_decimals(1)
+                                        .step_by(0.1))
+                                }
+                            );
+                            name = "Settings_Theme".localize();
+                            description = "Settings_Theme_Desc".localize();
                             render_setting(
                                 &name,
                                 &description,
@@ -710,6 +725,9 @@ impl App {
                                         return;
                                     }
                                 }
+                            }
+                            if self.temp_settings.zoom_factor != self.core.settings().zoom_factor {
+                                self.do_update(Message::UpdateZoomFactor(self.temp_settings.zoom_factor));
                             }
                             self.do_update(Message::SaveSettings);
                         }

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+Among other things, this update aims to provide a more holistic approach to app zoom
+scaling. It should now always respond to your monitor's scaling settings, plus
+a new setting to apply app-specific scaling *on top of* your monitor's scaling.
+
+**Added**
+
+- Zoom setting, for making the program bigger or smaller. Can be zoomed in up to 2x,
+  or zoomed out up to 10x (for Steam Deck users, in case egui still sets default
+  scaling to 10.0)
+  - Localization for this setting was machine-translated. It's probably garbage. If
+    you hate it, please help out by submitting a change to it.
+
+**Changed**
+
+- Changed scaling behavior. App no longer blanket scales to 1.0 on Wayland, now
+  it scales by desktop environment scale in all DEs
+
 **Fixed**
 
 - Fixed game dump validation only working for the base game folder. UKMM will now

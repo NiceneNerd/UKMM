@@ -203,6 +203,8 @@
 	"Settings_Sys7z_Desc": "Por defecto, UKMM intentará usar 7z desde el PATH del sistema para extraer archivos 7-Zip (como BNP).\nDe lo contrario, recurrirá a una biblioteca integrada de extracción 7z más lenta.\nSi tienes errores relacionados con 7z, prueba a desactivar esta opción.",
 	"Settings_Theme": "Tema",
 	"Settings_Theme_Desc": "Tema de la interfaz de usuario",
+	"Settings_Zoom": "Escala de la interfaz de usuario",
+	"Settings_Zoom_Description": "De forma predeterminada, la interfaz de usuario de UKMM se ajusta según la configuración de escala de tu monitor en el sistema operativo. Si, por algún motivo, esto no fuera suficiente, puedes utilizar este ajuste para modificar aún más la escala. Los valores más altos aumentan el tamaño de la interfaz, mientras que los valores más bajos la reducen. Los cambios se aplican al guardar.",
 	"Tab_Deploy": "Desplegar",
 	"Tab_Info": "Información",
 	"Tab_Install": "Instalar",

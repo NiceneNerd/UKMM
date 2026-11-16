@@ -203,6 +203,8 @@
 	"Settings_Sys7z_Desc": "Theo mặc định, UKMM sẽ cố gắng dùng 7z trong PATH của hệ thống để giải nén tệp 7-Zip (như BNP).\nNếu không, nó sẽ dùng thư viện giải nén 7z tích hợp chậm hơn.\nNếu gặp lỗi liên quan đến 7z, hãy thử tắt tùy chọn này.",
 	"Settings_Theme": "Giao diện",
 	"Settings_Theme_Desc": "Chủ đề giao diện người dùng",
+	"Settings_Zoom": "Tỷ lệ giao diện (UI Scale) trong UKMM",
+	"Settings_Zoom_Description": "Theo mặc định, giao diện của UKMM sẽ tự động điều chỉnh tỷ lệ dựa trên thiết lập tỷ lệ màn hình trong hệ điều hành của bạn. Nếu vì lý do nào đó mà thiết lập này chưa phù hợp, bạn có thể sử dụng tùy chỉnh này để thay đổi tỷ lệ theo ý muốn. Giá trị càng lớn, giao diện càng hiển thị lớn hơn; giá trị càng nhỏ, giao diện càng hiển thị nhỏ hơn. Thay đổi sẽ được áp dụng khi bạn lưu thiết lập.",
 	"Tab_Deploy": "Triển khai",
 	"Tab_Info": "Thông tin",
 	"Tab_Install": "Cài đặt",
