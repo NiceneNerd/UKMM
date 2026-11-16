@@ -5,6 +5,13 @@ All notable changes to UKMM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+**Fixed**
+
+- Fixed game dump validation only working for the base game folder. UKMM will now
+  fail to save your settings if any of your paths is wrong, not just the first one.
+
 ## [0.17.3] 2026-11-05
 
 **Fixed**

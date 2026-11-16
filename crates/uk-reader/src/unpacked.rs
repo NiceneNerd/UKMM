@@ -42,6 +42,11 @@ impl Unpacked {
             static CONTENT_TEST: &str = "Map/MainField/A-1/A-1.00_Clustering.sblwp";
             static UPDATE_TEST: &str = "Actor/Pack/Enemy_Lynel_Dark.sbactorpack";
             static AOC_TEST: &str = "Pack/AocMainField.pack";
+            if content_dir.is_none() && update_dir.is_none() && aoc_dir.is_none() {
+                return Err(ROMError::OtherMessage(
+                    "No base game, update, or DLC files found",
+                ));
+            }
             if let Some(content_dir) = content_dir {
                 if !content_dir.join(CONTENT_TEST).exists() {
                     log::error!("Test file {} not found in content folder", CONTENT_TEST);
@@ -50,20 +55,18 @@ impl Unpacked {
                         content_dir.to_path_buf(),
                     ));
                 }
-            } else if let Some(update_dir) = update_dir {
+            }
+            if let Some(update_dir) = update_dir {
                 if !update_dir.join(UPDATE_TEST).exists() {
                     log::error!("Test file {} not found in update folder", UPDATE_TEST);
                     return Err(ROMError::MissingDumpDir("update", update_dir.to_path_buf()));
                 }
-            } else if let Some(aoc_dir) = aoc_dir {
+            }
+            if let Some(aoc_dir) = aoc_dir {
                 if !aoc_dir.join(AOC_TEST).exists() {
                     log::error!("Test file {} not found in DLC folder", AOC_TEST);
                     return Err(ROMError::MissingDumpDir("DLC", aoc_dir.to_path_buf()));
                 }
-            } else if content_dir.is_none() && update_dir.is_none() && aoc_dir.is_none() {
-                return Err(ROMError::OtherMessage(
-                    "No base game, update, or DLC files found",
-                ));
             }
         }
 
