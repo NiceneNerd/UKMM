@@ -509,7 +509,7 @@ impl App {
                                 .on_hover_text("Settings_OneClick_Desc".localize())
                                 .clicked()
                             {
-                                match crate::gui::tasks::register_handlers() {
+                                match uk_app::host::handlers::register_url_handler() {
                                     Ok(()) => log::info!("GameBanana 1-click handler registered"),
                                     Err(e) => {
                                         self.channel

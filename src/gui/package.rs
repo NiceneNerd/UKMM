@@ -396,7 +396,7 @@ impl ModPackerBuilder {
                     .on_hover_text("Package_Version_Desc".localize());
                 if res.changed() {
                     let ver = tmp_version.read();
-                    if lenient_semver::Version::parse(ver.as_str()).is_ok() {
+                    if uk_app::lenient_semver::Version::parse(ver.as_str()).is_ok() {
                         self.meta.version = ver.as_str().into()
                     }
                 }

@@ -7,7 +7,7 @@ use std::{
 use anyhow_ext::{Context, Result};
 use smartstring::alias::String;
 use uk_manager::{core, mods::LookupMod, settings::Platform};
-use uk_mod::{Manifest, Meta};
+use uk_mod::Manifest;
 
 xflags::xflags! {
     src "./src/cli.rs"
@@ -26,6 +26,8 @@ xflags::xflags! {
             required path: PathBuf
             /// The profile to install the mod in
             optional profile: String
+            /// Path to a meta file (meta.yml, info.json, or rules.txt) for legacy mods
+            optional meta: PathBuf
         }
         /// Package a mod
         cmd package {
@@ -71,8 +73,8 @@ pub struct Ukmm {
 #[derive(Debug)]
 pub enum UkmmCmd {
     Install(Install),
-    Uninstall(Uninstall),
     Package(Package),
+    Uninstall(Uninstall),
     Remerge(Remerge),
     Deploy(Deploy),
     Mode(Mode),
@@ -80,20 +82,21 @@ pub enum UkmmCmd {
 
 #[derive(Debug)]
 pub struct Install {
-    pub path:    PathBuf,
+    pub path: PathBuf,
     pub profile: Option<String>,
+    pub meta: Option<PathBuf>,
 }
 
 #[derive(Debug)]
 pub struct Package {
-    pub path:   PathBuf,
+    pub path: PathBuf,
     pub output: PathBuf,
-    pub meta:   PathBuf,
+    pub meta: PathBuf,
 }
 
 #[derive(Debug)]
 pub struct Uninstall {
-    pub index:   Option<usize>,
+    pub index: Option<usize>,
     pub profile: Option<String>,
 }
 
@@ -149,11 +152,12 @@ impl Runner {
         }
     }
 
-    fn check_mod(&self, path: &Path) -> Result<PathBuf> {
-        let mod_ = match uk_app::open_mod(&self.core, path, None)? {
+    fn check_mod(&self, path: &Path, meta: Option<&Path>) -> Result<PathBuf> {
+        let meta = meta.map(uk_app::parse_meta).transpose()?;
+        let mod_ = match uk_app::open_mod(&self.core, path, meta)? {
             uk_app::Opened::Mod(mod_) => mod_,
             uk_app::Opened::NeedsMeta(_) => anyhow_ext::bail!(
-                "This mod has no metadata and should be installed via the GUI."
+                "This mod has no metadata; supply one with --meta or install it via the GUI."
             ),
         };
         if !mod_.meta.options.is_empty() {
@@ -194,8 +198,8 @@ impl Runner {
                 }
                 println!("Done!");
             }
-            UkmmCmd::Install(Install { path, profile }) => {
-                let path = self.check_mod(path)?;
+            UkmmCmd::Install(Install { path, profile, meta }) => {
+                let path = self.check_mod(path, meta.as_deref())?;
                 let mods = self.core.mod_manager();
                 let mod_ = mods.add(&path, profile.as_ref())?;
                 mods.set_enabled(mod_.as_map_id(), true, profile.as_ref())?;
@@ -210,7 +214,7 @@ impl Runner {
             }
             UkmmCmd::Package(pkg) => {
                 println!("Packaging mod...");
-                uk_app::package_mod(&self.core, &pkg.path, &pkg.output, Meta::parse(&pkg.meta)?)?;
+                uk_app::package_mod(&self.core, &pkg.path, &pkg.output, uk_app::parse_meta(&pkg.meta)?)?;
                 println!("Done!");
             }
             UkmmCmd::Remerge(_) => {

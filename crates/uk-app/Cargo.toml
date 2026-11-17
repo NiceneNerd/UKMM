@@ -8,14 +8,19 @@ version.workspace = true
 anyhow = { workspace = true }
 anyhow_ext = { workspace = true }
 dirs2 = { workspace = true }
+flume = { workspace = true }
 fs-err = { workspace = true }
 glob = { workspace = true }
+http_req = { version = "0.14.6", default-features = false, features = ["native-tls"] }
 join_str = { workspace = true }
+lenient_semver = { workspace = true }
 log = { workspace = true }
 roxmltree = "0.21.1"
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sevenz-rust = { workspace = true }
+ssilide = "0.2.0"
+thiserror = { workspace = true }
 unrar = { workspace = true }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 uk-content = { path = "../uk-content" }
@@ -23,6 +28,9 @@ uk-manager = { path = "../uk-manager" }
 uk-mod = { path = "../uk-mod" }
 uk-reader = { path = "../uk-reader" }
 uk-util = { path = "../uk-util" }
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55.0"
 
 [dev-dependencies]
 serde_yaml = { workspace = true }

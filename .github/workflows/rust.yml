@@ -61,3 +61,10 @@ jobs:
       run: cargo +nightly build
     - name: Run `uk-content` tests
       run: cargo +nightly test --package uk-content
+    - name: Check `uk-app` has no GUI dependencies
+      run: |
+        if cargo tree -p uk-app | grep -Eq 'egui|eframe|rfd|winit'; then
+          echo "::error::uk-app must not depend on GUI crates (egui/eframe/rfd/winit)"
+          cargo tree -p uk-app | grep -E 'egui|eframe|rfd|winit'
+          exit 1
+        fi

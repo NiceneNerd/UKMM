@@ -9,7 +9,6 @@ mod picker;
 mod profiles;
 mod settings;
 mod tabs;
-pub(crate) mod tasks;
 mod update;
 mod util;
 use std::{
@@ -40,6 +39,7 @@ use mods::ModListState;
 use picker::FilePickerState;
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
+use uk_app::host::updates::VersionResponse;
 use uk_content::util::HashMap;
 use uk_localization::*;
 use uk_localization::string_ext::LocString;
@@ -61,8 +61,20 @@ use uk_ui::{
 };
 use uk_util::OptionResultExt;
 
-use self::{package::ModPackerBuilder, tasks::VersionResponse};
+use self::package::ModPackerBuilder;
 use crate::gui::modals::MetaInputModal;
+
+/// Runs the mod-open operation in a task and maps the outcome to a message.
+pub(super) fn open_mod_task(
+    core: &Manager,
+    path: &std::path::Path,
+    meta: Option<Meta>,
+) -> Result<Message> {
+    Ok(match uk_app::open_mod(core, path, meta)? {
+        uk_app::Opened::Mod(mod_) => Message::HandleMod(mod_),
+        uk_app::Opened::NeedsMeta(path) => Message::RequestMeta(path),
+    })
+}
 
 pub trait Component {
     type Message;
@@ -277,7 +289,10 @@ pub struct App {
 }
 
 impl App {
-    fn new(cc: &eframe::CreationContext) -> Self {
+    fn new(
+        cc: &eframe::CreationContext,
+        ipc: Receiver<uk_app::host::oneclick::IpcMessage>,
+    ) -> Self {
         #[cfg(not(windows))]
         if std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "wayland" {
             cc.egui_ctx.set_pixels_per_point(
@@ -304,7 +319,28 @@ impl App {
             temp.into_iter().map(|(_, m)| m).collect()
         };
         let (send, recv) = flume::unbounded();
-        tasks::ONECLICK_SENDER.set(send.clone()).unwrap_or(());
+        // Bridge one-click IPC messages into the app message channel
+        {
+            let send = send.clone();
+            thread::spawn(move || {
+                while let Ok(msg) = ipc.recv() {
+                    let msg = match msg {
+                        uk_app::host::oneclick::IpcMessage::OpenMod(path) => {
+                            Message::OpenMod(path)
+                        }
+                        uk_app::host::oneclick::IpcMessage::Error(e) => {
+                            Message::Error(anyhow_ext::anyhow!(e))
+                        }
+                        uk_app::host::oneclick::IpcMessage::Starting(name) => {
+                            Message::SetDownloading(name)
+                        }
+                    };
+                    if send.send(msg).is_err() {
+                        break;
+                    }
+                }
+            });
+        }
         let temp_settings = core.settings().clone();
         let platform = core.settings().current_mode;
         LOCALIZATION.write().update_language(&temp_settings.lang);
@@ -331,7 +367,20 @@ impl App {
                 if is_first_run || needs_config {
                     Some("Intro_Message".localize().to_string())
                 } else {
-                    tasks::get_releases(core.clone(), send.clone());
+                    let core = core.clone();
+                    let send = send.clone();
+                    thread::spawn(move || {
+                        use uk_app::host::updates::ReleaseCheck;
+                        match uk_app::host::updates::check_releases(&core) {
+                            ReleaseCheck::OfferUpdate(version) => {
+                                let _ = send.send(Message::OfferUpdate(version));
+                            }
+                            ReleaseCheck::Changelog(md) => {
+                                let _ = send.send(Message::SetChangelog(md));
+                            }
+                            ReleaseCheck::None => {}
+                        }
+                    });
                     None
                 }
             },
@@ -454,7 +503,7 @@ impl App {
             self.install_queue
                 .extend(files.iter().skip(1).filter_map(|f| f.path.clone()));
             self.error_queue.clear();
-            self.do_task(move |core| tasks::open_mod(&core, &first, None));
+            self.do_task(move |core| open_mod_task(&core, &first, None));
         }
     }
 
@@ -524,7 +573,7 @@ impl eframe::App for App {
     }
 }
 
-pub fn main() -> Result<(), eframe::Error> {
+pub fn main(ipc: Receiver<uk_app::host::oneclick::IpcMessage>) -> Result<(), eframe::Error> {
     crate::logger::init();
     log::debug!("Logger initialized");
     log::info!("Started ukmm");
@@ -549,6 +598,6 @@ pub fn main() -> Result<(), eframe::Error> {
             },
             ..Default::default()
         },
-        Box::new(|cc| Ok(Box::new(App::new(cc)))),
+        Box::new(|cc| Ok(Box::new(App::new(cc, ipc)))),
     )
 }

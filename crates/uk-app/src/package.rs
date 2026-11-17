@@ -11,6 +11,8 @@ use uk_mod::{
     unpack::{ModReader, ModUnpacker},
 };
 
+use crate::error::AppError;
+
 pub fn package_mod(
     core: &Manager,
     source: impl AsRef<Path>,
@@ -18,7 +20,7 @@ pub fn package_mod(
     meta: Meta,
 ) -> Result<()> {
     let Some(dump) = core.settings().dump() else {
-        anyhow::bail!("No dump for current platform")
+        return Err(AppError::DumpMissing.into());
     };
     ModPacker::new(
         source.as_ref(),
@@ -40,7 +42,7 @@ pub fn dev_update_mod(core: &Manager, mod_: Mod, source: impl AsRef<Path>) -> Re
     dirty.extend(&mod_.manifest().unwrap_or_default());
     let hash = mod_.hash();
     let Some(dump) = core.settings().dump() else {
-        anyhow::bail!("No dump for current platform")
+        return Err(AppError::DumpMissing.into());
     };
     ModPacker::new(
         source.as_ref(),

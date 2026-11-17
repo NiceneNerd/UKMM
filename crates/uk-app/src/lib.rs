@@ -6,6 +6,8 @@
 //! data (see [`open::Opened`]).
 
 mod apply;
+pub mod error;
+pub mod host;
 pub mod import;
 pub mod open;
 pub mod options;
@@ -13,6 +15,8 @@ pub mod order;
 pub mod package;
 pub mod profile;
 pub mod sniff;
+
+pub use lenient_semver;
 
 pub use apply::apply_changes;
 pub use import::{import_cemu_settings, migrate_bcml, parse_bcml_settings};

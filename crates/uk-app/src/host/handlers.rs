@@ -1,14 +1,17 @@
+//! Registration of the `bcml:` URL scheme so the OS can forward GameBanana
+//! one-click links to UKMM.
+
 #![allow(unused_imports)]
 
 use std::{env, fs, path::PathBuf, process::Command};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow_ext::{anyhow, Context, Result};
 #[cfg(target_os = "windows")]
 use winreg::enums::*;
 #[cfg(target_os = "windows")]
 use winreg::RegKey;
 
-pub fn register_handlers() -> Result<()> {
+pub fn register_url_handler() -> Result<()> {
     #[cfg(target_os = "windows")]
     win_create_handler()?;
     #[cfg(target_os = "linux")]

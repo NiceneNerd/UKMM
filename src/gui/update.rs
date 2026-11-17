@@ -267,39 +267,43 @@ impl App {
                         let first = paths.remove(0);
                         self.install_queue.extend(paths);
                         self.error_queue.clear();
-                        self.do_task(move |core| tasks::open_mod(&core, &first, None));
+                        self.do_task(move |core| open_mod_task(&core, &first, None));
                     }
                 }
                 Message::OpenMod(path) => {
-                    let core = self.core.clone();
                     let meta = self.meta_input.take();
                     ctx.request_repaint();
-                    self.do_task(move |_| tasks::open_mod(&core, &path, meta));
+                    self.do_task(move |core| open_mod_task(&core, &path, meta));
                 }
                 Message::HandleMod(mod_) => {
                     self.busy.set(false);
                     log::debug!("{:#?}", &mod_);
                     for (hash, (name, version)) in mod_.meta.masters.iter() {
                         if !self.mods.iter().any(|m| m.hash() == *hash) {
-                            self.do_update(Message::Error(anyhow_ext::anyhow!(
-                                "Could not find required mod dependency {} (version {})",
-                                name,
-                                version
-                            )));
+                            self.do_update(Message::Error(
+                                uk_app::error::AppError::MissingMasters {
+                                    name: name.to_string(),
+                                    version: version.to_string(),
+                                }
+                                .into(),
+                            ));
                         }
                     }
                     if !matches!(mod_.meta.platform, ModPlatform::Universal)
                         && mod_.meta.platform != ModPlatform::Specific(self.platform().into())
                     {
-                        self.do_update(Message::Error(anyhow_ext::anyhow!(
-                            "Mod is for {:?}, current mode is {}",
-                            match mod_.meta.platform {
-                                ModPlatform::Specific(Endian::Little) => "Switch",
-                                ModPlatform::Specific(Endian::Big) => "Wii U",
-                                ModPlatform::Universal => "any console",
-                            },
-                            self.platform()
-                        )));
+                        self.do_update(Message::Error(
+                            uk_app::error::AppError::WrongPlatform(
+                                match mod_.meta.platform {
+                                    ModPlatform::Specific(Endian::Little) => "Switch",
+                                    ModPlatform::Specific(Endian::Big) => "Wii U",
+                                    ModPlatform::Universal => "any console",
+                                }
+                                .to_owned(),
+                                self.platform().to_string(),
+                            )
+                            .into(),
+                        ));
                     } else if !mod_.meta.options.is_empty() {
                         self.do_update(Message::RequestOptions(mod_, false));
                     } else {
@@ -355,12 +359,45 @@ impl App {
                     {
                         let path = file.clone();
                         self.update_mod = Some(self.selected.first().unwrap().clone());
-                        self.do_task(move |core| tasks::open_mod(&core, &path, None));
+                        self.do_task(move |core| open_mod_task(&core, &path, None));
                     }
                 }
                 Message::DevUpdate => {
                     let mods = self.selected.clone();
-                    self.do_task(move |core| tasks::dev_update_mods(&core, mods));
+                    // Pick the source folder for each mod here in render code;
+                    // the worker stays dialog-free.
+                    let mut folders = Vec::with_capacity(mods.len());
+                    let mut aborted = false;
+                    for mod_ in &mods {
+                        let message = "Mod_Update_Folder".localize();
+                        let vars = std::collections::HashMap::from([(
+                            "mod_name".to_string(),
+                            mod_.meta.name.to_string(),
+                        )]);
+                        match message.format(&vars) {
+                            Ok(title) => match rfd::FileDialog::new()
+                                .set_title(title)
+                                .pick_folder()
+                            {
+                                Some(folder) => folders.push(folder),
+                                None => {
+                                    aborted = true;
+                                    break;
+                                }
+                            },
+                            Err(e) => {
+                                self.do_update(Message::Error(e.into()));
+                                aborted = true;
+                                break;
+                            }
+                        }
+                    }
+                    if !aborted {
+                        self.do_task(move |core| {
+                            let dirty = uk_app::dev_update_mods(&core, mods, folders)?;
+                            Ok(Message::ResetMods(Some(dirty)))
+                        });
+                    }
                 }
                 Message::ToggleMods(mods, enabled) => {
                     let mods = mods.as_ref().unwrap_or(&self.selected);
@@ -391,7 +428,7 @@ impl App {
                     self.do_update(Message::RefreshModsDisplay);
                     self.busy.set(false);
                     if let Some(path) = self.install_queue.pop_front() {
-                        self.do_task(move |core| tasks::open_mod(&core, &path, None));
+                        self.do_task(move |core| open_mod_task(&core, &path, None));
                     } else if !self.error_queue.is_empty() {
                         let msg = self
                             .error_queue
@@ -408,7 +445,15 @@ impl App {
                 }
                 Message::Extract => {
                     let mods = self.selected.clone();
-                    self.do_task(move |core| tasks::extract_mods(&core, mods));
+                    if let Some(folder) = rfd::FileDialog::new()
+                        .set_title("Mod_Unpack_Folder".localize())
+                        .pick_folder()
+                    {
+                        self.do_task(move |core| {
+                            uk_app::extract_mods(&core, mods, folder)?;
+                            Ok(Message::Noop)
+                        });
+                    }
                 }
                 Message::AddToProfile(profile) => {
                     let mut dirty = self.dirty.write();
@@ -454,7 +499,10 @@ impl App {
                 Message::Apply => {
                     let mods = self.mods.clone();
                     let dirty = std::mem::take(self.dirty_mut().deref_mut());
-                    self.do_task(move |core| tasks::apply_changes(&core, mods, Some(dirty)));
+                    self.do_task(move |core| {
+                        uk_app::apply_changes(&core, mods, Some(dirty))?;
+                        Ok(Message::ResetMods(None))
+                    });
                 }
                 Message::Deploy => {
                     self.do_task(move |core| {
@@ -472,7 +520,10 @@ impl App {
                     })
                 }
                 Message::Remerge => {
-                    self.do_task(|core| tasks::apply_changes(&core, vec![], None));
+                    self.do_task(|core| {
+                        uk_app::apply_changes(&core, vec![], None)?;
+                        Ok(Message::ResetMods(None))
+                    });
                 }
                 Message::ResetSettings => {
                     self.busy.set(false);
@@ -574,7 +625,7 @@ impl App {
                         log::warn!("More operations in queue, stashing error and continuing…");
                         self.error_queue.push_back(error);
                         if let Some(path) = self.install_queue.pop_front() {
-                            self.do_task(move |core| tasks::open_mod(&core, &path, None));
+                            self.do_task(move |core| open_mod_task(&core, &path, None));
                         }
                     }
                 }
@@ -584,7 +635,9 @@ impl App {
                     for file in ["info.json", "rules.txt", "meta.yml"] {
                         let file = source.join(file);
                         if file.exists() {
-                            self.do_task(move |_| tasks::parse_meta(file));
+                            self.do_task(move |_| {
+                                uk_app::parse_meta(file).map(Message::UpdatePackageMeta)
+                            });
                             break;
                         }
                     }
@@ -622,7 +675,10 @@ impl App {
                         .save_file()
                     {
                         builder.dest = dest;
-                        self.do_task(move |core| tasks::package_mod(&core, builder));
+                        self.do_task(move |core| {
+                            uk_app::package_mod(&core, builder.source, builder.dest, builder.meta)?;
+                            Ok(Message::ResetPacker)
+                        });
                     }
                 }
                 Message::ResetPacker => {
@@ -634,11 +690,17 @@ impl App {
                         .set_title("Settings_SelectFolder_Cemu".localize())
                         .pick_folder()
                     {
-                        self.do_task(move |core| tasks::import_cemu_settings(&core, &path));
+                        self.do_task(move |core| {
+                            uk_app::import_cemu_settings(&core, &path)?;
+                            Ok(Message::ResetSettings)
+                        });
                     }
                 }
                 Message::MigrateBcml => {
-                    self.do_task(tasks::migrate_bcml);
+                    self.do_task(move |core| {
+                        uk_app::migrate_bcml(&core)?;
+                        Ok(Message::HandleSettings)
+                    });
                 }
                 Message::RequestMeta(path) => {
                     self.meta_input.open(path, self.platform());
@@ -657,7 +719,10 @@ impl App {
                 Message::DoUpdate => {
                     let version = self.new_version.take().unwrap();
                     self.changelog = None;
-                    self.do_task(move |_| tasks::do_update(version));
+                    self.do_task(move |_| {
+                        uk_app::host::updates::install_update(version)?;
+                        Ok(Message::Restart)
+                    });
                 }
                 Message::Restart => {
                     let mut exe = std::env::current_exe().unwrap();

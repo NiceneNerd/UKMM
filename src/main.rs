@@ -27,8 +27,6 @@ unsafe extern "system" {
     fn MessageBoxW(hwnd: i32, message: *const i8, title: *const i8, utype: usize) -> i32;
 }
 
-const INTERFACE: ssilide::Interface = ssilide::Interface::new(6666);
-
 fn main() -> Result<()> {
     #[cfg(target_os = "windows")]
     unsafe {
@@ -46,25 +44,28 @@ fn main() -> Result<()> {
         }
         Err(e) => {
             if !e.is_help() {
-                if let Some(path) = std::env::args().nth(1) {
+                let ipc = uk_app::host::oneclick::start_listener();
+                if let Some(arg) = std::env::args().nth(1) {
                     if std::env::args().any(|a| a == "--debug") {
                         env_logger::init();
                         log::set_max_level(log::LevelFilter::Debug);
                     }
-                    match path.strip_prefix("bcml:") {
-                        Some(url) => {
-                            gui::tasks::oneclick(url);
+                    match uk_app::host::args::classify_arg(Some(arg)) {
+                        uk_app::host::args::ArgAction::OneClick(url) => {
+                            uk_app::host::oneclick::oneclick(&url);
                         }
-                        None => {
-                            gui::tasks::handle_mod_arg(path.into());
+                        uk_app::host::args::ArgAction::ModPath(path) => {
+                            uk_app::host::oneclick::open_mod_arg(path);
                         }
+                        uk_app::host::args::ArgAction::None => {}
                     }
                 }
-                gui::tasks::wait_ipc();
                 std::panic::set_hook(Box::new(|_| {
                     println!("{}", std::backtrace::Backtrace::force_capture());
                 }));
-                if let Err(e) = std::panic::catch_unwind(gui::main) {
+                if let Err(e) =
+                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| gui::main(ipc)))
+                {
                     display_error(e);
                     if let Some(file) = logger::LOGGER.log_path() {
                         logger::LOGGER.save_log();
