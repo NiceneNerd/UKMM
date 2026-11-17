@@ -1,68 +1,87 @@
-use std::{
-    io::BufReader,
-    path::Path,
-};
+use std::{io::BufReader, path::Path};
 
 use anyhow::Context;
 use fs_err as fs;
+
+/// Content folder names that mark an archive/directory as a BotW mod.
+const MOD_ROOTS: &[&str] = &["content", "aoc", "01007EF00011E000", "01007EF00011F001"];
+
+/// BNP archives additionally keep their logs at the root.
+const BNP_ROOTS: &[&str] = &[
+    "content",
+    "aoc",
+    "01007EF00011E000",
+    "01007EF00011F001",
+    "logs",
+];
+
+/// True if any `/`-separated segment of an archive entry name is one of
+/// `roots`. This matches explicit directory entries (`content/`), plain files
+/// inside them (`content/a.txt`, including archives written without directory
+/// entries), and nested roots (`MyMod/content/…`).
+fn has_root_segment(name: &str, roots: &[&str]) -> bool {
+    name.split('/').any(|seg| roots.contains(&seg))
+}
+
+/// True if the final `/`-separated segment of an archive entry name is `file`.
+fn has_file_segment(name: &str, file: &str) -> bool {
+    name.rsplit('/').next() == Some(file)
+}
 
 pub fn is_probably_a_bnp(path: &Path) -> bool {
     match path
         .extension()
         .and_then(|e| e.to_str().map(|e| e.to_lowercase()))
         .unwrap_or_default()
-        .as_str() {
+        .as_str()
+    {
         "" => {
-            let is_a_mod = ["content", "aoc", "01007EF00011E000", "01007EF00011F001", "logs"]
-                .into_iter()
-                .any(|root| path.join(root).exists());
+            let is_a_mod = BNP_ROOTS.iter().any(|&root| path.join(root).exists());
             let has_meta = path.join("info.json").exists();
             is_a_mod && has_meta
-        },
+        }
         "bnp" => {
             match sevenz_rust::Archive::open(path) {
                 Ok(sz) => {
                     let mut is_a_mod = false;
                     let mut has_meta = false;
                     for entry in sz.files.iter() {
-                        is_a_mod = is_a_mod || [
-                            "content",
-                            "aoc",
-                            "01007EF00011E000",
-                            "01007EF00011F001",
-                            "logs"
-                        ]
-                            .into_iter()
-                            .any(|root| entry.name.ends_with(root));
-                        has_meta = has_meta || entry.name.ends_with("info.json");
+                        is_a_mod = is_a_mod || has_root_segment(&entry.name, BNP_ROOTS);
+                        has_meta = has_meta || has_file_segment(&entry.name, "info.json");
                         if is_a_mod && has_meta {
                             break;
                         }
                     }
                     is_a_mod && has_meta
-                },
-                Err(_) => false
+                }
+                Err(_) => false,
             }
-        },
+        }
         "json" => {
-            let is_a_mod = ["content", "aoc", "01007EF00011E000", "01007EF00011F001", "logs"]
-                .into_iter()
-                .any(|root| path.parent().map(|p| p.join(root).exists()).unwrap_or(false));
+            let is_a_mod = BNP_ROOTS.iter().any(|&root| {
+                path.parent()
+                    .map(|p| p.join(root).exists())
+                    .unwrap_or(false)
+            });
             let has_meta = path.file_name().map(|f| f == "info.json").unwrap_or(false);
             is_a_mod && has_meta
         }
-        _ => false
+        _ => false,
     }
 }
 
 pub fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
-    if path.file_name().unwrap_or_default().to_str().unwrap_or_default() == "rules.txt" {
+    if path
+        .file_name()
+        .unwrap_or_default()
+        .to_str()
+        .unwrap_or_default()
+        == "rules.txt"
+    {
         return (true, true);
     }
     if path.is_dir() {
-        let is_a_mod = ["content", "aoc", "01007EF00011E000", "01007EF00011F001"]
-            .into_iter()
-            .any(|root| path.join(root).exists());
+        let is_a_mod = MOD_ROOTS.iter().any(|&root| path.join(root).exists());
         let has_meta = path.join("rules.txt").exists();
         return (is_a_mod, has_meta);
     }
@@ -78,16 +97,9 @@ pub fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
                 let mut is_a_mod = false;
                 let mut has_meta = false;
                 while let Ok(Some(header)) = rar.read_header() {
-                    let filename = &header.entry().filename;
-                    is_a_mod = is_a_mod || [
-                        "content",
-                        "aoc",
-                        "01007EF00011E000",
-                        "01007EF00011F001",
-                    ]
-                        .into_iter()
-                        .any(|root| filename.ends_with(root));
-                    has_meta = has_meta || filename.ends_with("rules.txt");
+                    let filename = header.entry().filename.to_string_lossy().replace('\\', "/");
+                    is_a_mod = is_a_mod || has_root_segment(&filename, MOD_ROOTS);
+                    has_meta = has_meta || has_file_segment(&filename, "rules.txt");
                     if is_a_mod && has_meta {
                         break;
                     }
@@ -97,8 +109,8 @@ pub fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
                     }
                 }
                 (is_a_mod, has_meta)
-            },
-            Err(_) => (false, false)
+            }
+            Err(_) => (false, false),
         }
     } else if ext == "7z" {
         match sevenz_rust::Archive::open(path) {
@@ -106,22 +118,15 @@ pub fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
                 let mut is_a_mod = false;
                 let mut has_meta = false;
                 for entry in sz.files.iter() {
-                    is_a_mod = is_a_mod || [
-                        "content",
-                        "aoc",
-                        "01007EF00011E000",
-                        "01007EF00011F001",
-                    ]
-                        .into_iter()
-                        .any(|root| entry.name.ends_with(root));
-                    has_meta = has_meta || entry.name.ends_with("rules.txt");
+                    is_a_mod = is_a_mod || has_root_segment(&entry.name, MOD_ROOTS);
+                    has_meta = has_meta || has_file_segment(&entry.name, "rules.txt");
                     if is_a_mod && has_meta {
                         break;
                     }
                 }
                 (is_a_mod, has_meta)
-            },
-            Err(_) => (false, false)
+            }
+            Err(_) => (false, false),
         }
     } else {
         match fs::File::open(path)
@@ -129,21 +134,16 @@ pub fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
             .and_then(|f| zip::ZipArchive::new(BufReader::new(f)).context(""))
         {
             Ok(zip) => {
-                let is_a_mod = zip.file_names().any(|n| {
-                    if n.is_err() { return false; }
-                    let name = n.unwrap();
+                let mut is_a_mod = false;
+                let mut has_meta = false;
+                for name in zip.file_names().filter_map(Result::ok) {
                     log::info!("Checking file: {}", name);
-                    [
-                        "content/",
-                        "aoc/",
-                        "01007EF00011E000/",
-                        "01007EF00011F001/"
-                    ]
-                    .into_iter()
-                    .any(|root| name.ends_with(root))
-                });
-                let has_meta = zip.file_names()
-                    .any(|n| n.unwrap_or_default().ends_with("rules.txt"));
+                    is_a_mod = is_a_mod || has_root_segment(&name, MOD_ROOTS);
+                    has_meta = has_meta || has_file_segment(&name, "rules.txt");
+                    if is_a_mod && has_meta {
+                        break;
+                    }
+                }
                 (is_a_mod, has_meta)
             }
             Err(_) => (false, false),
@@ -202,14 +202,74 @@ mod tests {
         assert_eq!(is_probably_a_mod_and_has_meta(&path), (true, true));
     }
 
-    /// Detection looks for an explicit `content/` directory entry, so archives
-    /// written without directory entries are not recognised as mods.
+    /// Archives written without explicit directory entries must still be
+    /// recognised — detection matches any path segment, not just `content/`.
     #[test]
-    #[ignore = "known gap: zip detection requires explicit directory entries"]
     fn zip_mods_without_directory_entries_are_detected() {
         let dir = tempfile::tempdir().unwrap();
         let path = zip_with_entries(dir.path(), &[], &["content/a.txt", "rules.txt"]);
         assert_eq!(is_probably_a_mod_and_has_meta(&path), (true, true));
+    }
+
+    #[test]
+    fn zip_mods_with_nested_root_are_detected() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = zip_with_entries(dir.path(), &["MyMod/content/"], &["MyMod/rules.txt"]);
+        assert_eq!(is_probably_a_mod_and_has_meta(&path), (true, true));
+    }
+
+    #[test]
+    fn similarly_named_files_are_not_roots() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = zip_with_entries(dir.path(), &[], &["mycontent/a.txt", "xrules.txt"]);
+        assert_eq!(is_probably_a_mod_and_has_meta(&path), (false, false));
+    }
+
+    fn sz_with_entries(dir: &Path, name: &str, entries: &[(&str, &str)]) -> std::path::PathBuf {
+        let path = dir.join(name);
+        let mut sz = sevenz_rust::SevenZWriter::create(&path).unwrap();
+        for (entry, body) in entries {
+            let src = dir.join("sz_src.tmp");
+            std::fs::write(&src, body.as_bytes()).unwrap();
+            let file = std::fs::File::open(&src).unwrap();
+            sz.push_archive_entry(
+                sevenz_rust::SevenZArchiveEntry::from_path(&src, entry.to_string()),
+                Some(file),
+            )
+            .unwrap();
+        }
+        sz.finish().unwrap();
+        path
+    }
+
+    #[test]
+    fn bnp_7z_archives_are_detected() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = sz_with_entries(dir.path(), "mod.bnp", &[
+            ("content/Pack/foo.pack", "x"),
+            ("info.json", "{}"),
+        ]);
+        assert!(is_probably_a_bnp(&path));
+        assert_eq!(is_probably_a_mod_and_has_meta(&path), (false, false));
+    }
+
+    #[test]
+    fn sevenz_mod_archives_are_detected_without_directory_entries() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = sz_with_entries(dir.path(), "mod.7z", &[
+            ("content/a.txt", "x"),
+            ("rules.txt", "x"),
+        ]);
+        assert_eq!(is_probably_a_mod_and_has_meta(&path), (true, true));
+        assert!(!is_probably_a_bnp(&path));
+    }
+
+    #[test]
+    fn non_7z_bnp_is_not_detected() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("fake.bnp");
+        std::fs::write(&path, b"definitely not a 7z archive").unwrap();
+        assert!(!is_probably_a_bnp(&path));
     }
 
     #[test]

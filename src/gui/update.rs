@@ -125,15 +125,10 @@ impl App {
                     self.drag_index = None;
                 }
                 Message::MoveSelected(dest_index) => {
-                    let dest_index = dest_index.clamp(0, self.mods.len() - 1);
                     if self.selected.len() == self.mods.len() {
                         return;
                     }
-                    self.mods.retain(|m| !self.selected.contains(m));
-                    for (i, selected_mod) in self.selected.iter().enumerate() {
-                        self.mods
-                            .insert((dest_index + i).min(self.mods.len()), selected_mod.clone());
-                    }
+                    uk_app::move_selected(&mut self.mods, &self.selected, dest_index);
                     self.hover_index = None;
                     self.drag_index = None;
                     match self.selected.iter().try_for_each(|m| {

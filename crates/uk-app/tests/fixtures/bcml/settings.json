@@ -1,0 +1,12 @@
+{
+  "lang": "USen",
+  "cemu_dir": "/opt/cemu",
+  "export_dir": "/opt/cemu/graphicPacks",
+  "export_dir_nx": "/sdcard/BreathOfTheWild",
+  "game_dir": "/dumps/botw",
+  "game_dir_nx": "/dumps/botw-nx",
+  "update_dir": "/dumps/botw-update",
+  "dlc_dir": "/dumps/botw-dlc",
+  "dlc_dir_nx": "/dumps/botw-dlc-nx",
+  "store_dir": "/home/user/.local/share/bcml"
+}

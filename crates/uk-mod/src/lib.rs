@@ -426,6 +426,21 @@ mod tests {
     use super::*;
 
     #[test]
+    fn blank_meta_has_sane_defaults() {
+        let meta = Meta::blank(ModPlatform::Universal);
+        assert_eq!(meta.version, "1.0.0");
+        assert_eq!(meta.category, ModCategory::Other);
+        assert!(meta.api.starts_with(env!("CARGO_PKG_VERSION").split('.').next().unwrap()));
+        assert!(meta.name.is_empty());
+        assert!(meta.options.is_empty());
+        assert!(meta.masters.is_empty());
+        assert_eq!(meta.platform, ModPlatform::Universal);
+        // must round-trip through YAML (used for meta.yml in packages)
+        let text = serde_yaml::to_string(&meta).unwrap();
+        assert_eq!(serde_yaml::from_str::<Meta>(&text).unwrap(), meta);
+    }
+
+    #[test]
     fn read_meta() {
         dbg!(Meta::from_mod("test/wiiu.zip").unwrap());
     }

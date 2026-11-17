@@ -87,12 +87,10 @@ impl App {
                                 }
                             });
                         });
-                    if group.required()
-                        && !group
-                            .options()
-                            .iter()
-                            .any(|opt| mod_.enabled_options.contains(opt))
-                    {
+                    if !uk_app::required_satisfied(
+                        std::slice::from_ref(group),
+                        &mod_.enabled_options,
+                    ) {
                         done = false;
                     }
                 });

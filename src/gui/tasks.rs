@@ -344,12 +344,3 @@ pub fn handle_mod_arg(path: PathBuf) {
         });
     }
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn remerge() {
-        let core = uk_manager::core::Manager::init().unwrap();
-        super::apply_changes(&core, vec![], None).unwrap();
-    }
-}

@@ -6,12 +6,18 @@
 //! data (see [`open::Opened`]).
 
 mod apply;
-mod import;
+pub mod import;
 pub mod open;
+pub mod options;
+pub mod order;
 pub mod package;
+pub mod profile;
 pub mod sniff;
 
 pub use apply::apply_changes;
-pub use import::{import_cemu_settings, migrate_bcml};
-pub use open::{open_mod, Opened};
-pub use package::{dev_update_mod, extract_mods, package_mod, parse_meta};
+pub use import::{import_cemu_settings, migrate_bcml, parse_bcml_settings};
+pub use open::{Opened, open_mod};
+pub use options::required_satisfied;
+pub use order::move_selected;
+pub use package::{dev_update_mod, dev_update_mods, extract_mods, package_mod, parse_meta};
+pub use profile::ProfileName;

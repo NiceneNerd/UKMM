@@ -1,11 +1,14 @@
-use std::{fmt::Write, path::Path};
+use std::{
+    fmt::Write,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
 use uk_manager::{core::Manager, mods::Mod};
 use uk_mod::{
+    Manifest, Meta,
     pack::ModPacker,
     unpack::{ModReader, ModUnpacker},
-    Manifest, Meta,
 };
 
 pub fn package_mod(
@@ -52,6 +55,25 @@ pub fn dev_update_mod(core: &Manager, mod_: Mod, source: impl AsRef<Path>) -> Re
     dirty.extend(new_mod.manifest());
     core.mod_manager_mut()
         .replace(Mod::from_reader(new_mod), hash)?;
+    Ok(dirty)
+}
+
+/// Repacks each mod in place from the loose folder at the same index in
+/// `folders` (collected by the frontend) and swaps it into the mod manager.
+/// Returns the manifest of all files affected, for the next merge.
+pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>, folders: Vec<PathBuf>) -> Result<Manifest> {
+    if mods.len() != folders.len() {
+        anyhow::bail!(
+            "Got {} mods but {} source folders",
+            mods.len(),
+            folders.len()
+        );
+    }
+    let mut dirty = Manifest::default();
+    for (mod_, folder) in mods.into_iter().zip(folders) {
+        log::info!("Updating {}…", mod_.meta.name.as_str());
+        dirty.extend(&dev_update_mod(core, mod_, folder)?);
+    }
     Ok(dirty)
 }
 

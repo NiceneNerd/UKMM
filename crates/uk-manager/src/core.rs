@@ -16,7 +16,13 @@ impl std::panic::RefUnwindSafe for Manager {}
 
 impl Manager {
     pub fn init() -> Result<Self> {
-        let settings = Settings::load();
+        Self::init_with(Settings::load())
+    }
+
+    /// Initializes a manager on top of an explicitly provided settings
+    /// instance, e.g. one loaded from a custom path with
+    /// [`Settings::load_from`] (used by tests to get a temp config dir).
+    pub fn init_with(settings: Arc<RwLock<Settings>>) -> Result<Self> {
         let mod_manager = Arc::new(RwLock::new(
             mods::Manager::init(&settings).context("Failed to initialize mod manager")?,
         ));

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<title_list_cache>
+  <title titleId="00050000101C9400" name="THE LEGEND OF ZELDA: Breath of the Wild">
+    <format>1</format>
+    <path>/dumps/base</path>
+  </title>
+  <title titleId="0005000e101C9500" name="THE LEGEND OF ZELDA: Breath of the Wild - Update">
+    <format>1</format>
+    <path>/dumps/update</path>
+  </title>
+  <title titleId="0005000c101C9300" name="THE LEGEND OF ZELDA: Breath of the Wild - DLC">
+    <format>1</format>
+    <path>/dumps/dlc</path>
+  </title>
+  <title titleId="0005000e101c9300" name="THE LEGEND OF ZELDA: Breath of the Wild - Update (EUR)">
+    <format>4</format>
+    <path>/dumps/update-enc</path>
+  </title>
+</title_list_cache>

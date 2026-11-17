@@ -217,6 +217,11 @@ fn default_storage() -> PathBuf {
     }
 }
 
+#[inline]
+fn default_file_path() -> PathBuf {
+    Settings::config_dir().join("settings.yml")
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum UpdatePreference {
     None,
@@ -240,6 +245,11 @@ pub struct Settings {
     pub wiiu_config: Option<PlatformSettings>,
     pub switch_config: Option<PlatformSettings>,
     pub lang: LocLang,
+    /// The file this instance is loaded from and saved to. Not serialized;
+    /// defaults to [`Settings::path`]. Use [`Settings::load_from`] to point a
+    /// settings instance at a different file (e.g. a temp dir in tests).
+    #[serde(skip, default = "default_file_path")]
+    file_path: PathBuf,
 }
 
 impl Default for Settings {
@@ -254,6 +264,7 @@ impl Default for Settings {
             show_changelog: true,
             last_version: None,
             lang: LocLang::English,
+            file_path: default_file_path(),
         }
     }
 }
@@ -280,23 +291,43 @@ impl Settings {
         PATH.as_path()
     }
 
+    /// The file this settings instance was loaded from and saves to.
+    #[inline]
+    pub fn file_path(&self) -> &Path {
+        &self.file_path
+    }
+
     pub fn load() -> Arc<RwLock<Settings>> {
-        Arc::new(RwLock::new(match Settings::read(Self::path()) {
-            Ok(settings) => {
-                log::debug!("{:#?}", settings);
-                util::USE_SZ.store(settings.system_7z, std::sync::atomic::Ordering::Release);
-                settings
-            }
+        Self::load_from(Self::path())
+    }
+
+    /// Loads settings from `path` instead of the default config location. If
+    /// the file is missing or invalid, defaults are used with `storage_dir`
+    /// redirected next to `path`, so loading a custom config (e.g. a temp dir
+    /// in tests) never reads or writes the real user directories.
+    pub fn load_from(path: &Path) -> Arc<RwLock<Settings>> {
+        let mut settings = match Settings::read(path) {
+            Ok(settings) => settings,
             Err(e) => {
                 log::error!("Failed to read settings file:\n{}", e);
                 log::info!("Loading default settings instead");
-                Settings::default()
+                let mut settings = Settings::default();
+                settings.storage_dir = path
+                    .parent()
+                    .map(|p| p.join("data"))
+                    .unwrap_or_else(default_storage);
+                settings
             }
-        }))
+        };
+        settings.file_path = path.to_path_buf();
+        log::debug!("{:#?}", settings);
+        util::USE_SZ.store(settings.system_7z, std::sync::atomic::Ordering::Release);
+        Arc::new(RwLock::new(settings))
     }
 
     pub fn reload(&mut self) {
-        *self = match Settings::read(Self::path()) {
+        let file_path = self.file_path.clone();
+        *self = match Settings::read(&file_path) {
             Ok(settings) => {
                 log::debug!("{:#?}", settings);
                 settings
@@ -306,7 +337,8 @@ impl Settings {
                 log::info!("Loading default settings instead");
                 Settings::default()
             }
-        }
+        };
+        self.file_path = file_path;
     }
 
     pub fn read(path: &Path) -> Result<Self> {
@@ -320,8 +352,8 @@ impl Settings {
     }
 
     pub fn save(&self) -> Result<()> {
-        if !Self::path().parent().unwrap().exists() {
-            fs::create_dir_all(Self::path().parent().unwrap())?;
+        if !self.file_path.parent().unwrap().exists() {
+            fs::create_dir_all(self.file_path.parent().unwrap())?;
         }
         log::debug!("Saving settings:\n{:#?}", self);
         let _ = util::USE_SZ.compare_exchange_weak(
@@ -330,7 +362,7 @@ impl Settings {
             std::sync::atomic::Ordering::Relaxed,
             std::sync::atomic::Ordering::Relaxed,
         );
-        fs::write(Self::path(), serde_yaml::to_string(self)?)?;
+        fs::write(&self.file_path, serde_yaml::to_string(self)?)?;
         log::info!("Settings saved");
         Ok(())
     }

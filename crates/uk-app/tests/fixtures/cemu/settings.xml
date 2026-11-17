@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<settings>
+  <mlc_path>/cemu/mlc01</mlc_path>
+  <game_paths>
+    <path>/games/BotW/code/U-King.rpx</path>
+  </game_paths>
+</settings>
