@@ -39,6 +39,29 @@ use uk_content::{
 use uk_reader::{ResourceLoader, ResourceReader};
 use uk_util::PathExt as UkPathExt;
 
+/// Why a path could not be opened as a UKMM mod, as opposed to any other I/O or
+/// parse failure. Callers use this to decide whether trying a legacy-format
+/// conversion is worthwhile.
+#[derive(Debug, thiserror::Error)]
+pub enum OpenError {
+    #[error("Mod missing meta file")]
+    MissingMeta,
+    #[error("Not a valid zip archive")]
+    NotAnArchive,
+}
+
+impl OpenError {
+    /// True if `err` came from the container step of opening a UKMM mod (no
+    /// `meta.yml`, or not a zip at all) rather than from a malformed UKMM mod.
+    pub fn is_not_ukmm_mod(err: &anyhow_ext::Error) -> bool {
+        err.downcast_ref::<Self>().is_some()
+            || matches!(
+                err.downcast_ref::<piz::result::ZipError>(),
+                Some(piz::result::ZipError::InvalidArchive(_))
+            )
+    }
+}
+
 use crate::{Manifest, Meta, ModOption};
 
 pub enum ZipData {
@@ -292,7 +315,15 @@ impl ModReader {
     }
 
     fn open_unzipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
-        let meta: Meta = serde_yaml::from_str(&fs::read_to_string(path.join("meta.yml"))?)?;
+        let meta: Meta = serde_yaml::from_str(
+            &fs::read_to_string(path.join("meta.yml")).map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    anyhow_ext::Error::from(OpenError::MissingMeta)
+                } else {
+                    e.into()
+                }
+            })?,
+        )?;
         let mut manifest: Manifest =
             serde_yaml::from_str(&fs::read_to_string(path.join("manifest.yml"))?)?;
         for option in &options {
@@ -323,7 +354,7 @@ impl ModReader {
             let meta = zip
                 .borrow_files()
                 .get(Path::new("meta.yml"))
-                .context("Mod missing meta file")?;
+                .ok_or(OpenError::MissingMeta)?;
             size = meta.size;
             let mut reader = zip.borrow_zip().read(meta)?;
             read = reader.read(&mut buffer)?;

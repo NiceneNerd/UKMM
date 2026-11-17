@@ -1,0 +1,29 @@
+[package]
+name = "uk-app"
+description = "Frontend-agnostic application layer for UKMM: the operations a GUI or CLI performs on top of uk-manager"
+edition = "2024"
+version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+anyhow_ext = { workspace = true }
+dirs2 = { workspace = true }
+fs-err = { workspace = true }
+glob = { workspace = true }
+join_str = { workspace = true }
+log = { workspace = true }
+roxmltree = "0.21.1"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+sevenz-rust = { workspace = true }
+unrar = { workspace = true }
+zip = { workspace = true, default-features = false, features = ["deflate"] }
+uk-content = { path = "../uk-content" }
+uk-manager = { path = "../uk-manager" }
+uk-mod = { path = "../uk-mod" }
+uk-reader = { path = "../uk-reader" }
+uk-util = { path = "../uk-util" }
+
+[dev-dependencies]
+serde_yaml = { workspace = true }
+tempfile = "3.3"

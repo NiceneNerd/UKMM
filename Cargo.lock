@@ -5814,6 +5814,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "uk-app"
+version = "0.17.3"
+dependencies = [
+ "anyhow",
+ "anyhow_ext",
+ "dirs2",
+ "fs-err",
+ "glob",
+ "join_str",
+ "log",
+ "roxmltree 0.21.1",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.9.34+deprecated",
+ "sevenz-rust",
+ "tempfile",
+ "uk-content",
+ "uk-manager",
+ "uk-mod",
+ "uk-reader",
+ "uk-util",
+ "unrar",
+ "zip",
+]
+
+[[package]]
 name = "uk-content"
 version = "0.17.3"
 dependencies = [
@@ -5928,6 +5954,7 @@ dependencies = [
  "serde_with",
  "serde_yaml 0.9.34+deprecated",
  "smartstring",
+ "thiserror 2.0.18",
  "typetag",
  "uk-content",
  "uk-reader",
@@ -5998,10 +6025,8 @@ dependencies = [
  "env_logger",
  "flume",
  "fs-err",
- "glob",
  "http_req",
  "image",
- "join_str",
  "lenient_semver",
  "log",
  "mimalloc",
@@ -6009,17 +6034,16 @@ dependencies = [
  "parking_lot",
  "remove_dir_all",
  "rfd",
- "roxmltree 0.21.1",
  "rustc-hash 2.1.3",
  "rustls",
  "serde",
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
- "sevenz-rust",
  "shlex 2.0.1",
  "smartstring",
  "ssilide",
  "strfmt",
+ "uk-app",
  "uk-content",
  "uk-localization",
  "uk-manager",
@@ -6027,7 +6051,6 @@ dependencies = [
  "uk-reader",
  "uk-ui",
  "uk-util",
- "unrar",
  "winreg",
  "winres",
  "xflags",

@@ -25,8 +25,6 @@ eframe = { workspace = true, features = ["glow", "x11", "wayland"] }
 env_logger = "0.11.11"
 flume = { workspace = true }
 fs-err = { workspace = true }
-glob = { workspace = true }
-join_str = { workspace = true }
 #jwalk = { workspace = true }
 lenient_semver = { workspace = true }
 log = { workspace = true }
@@ -37,11 +35,9 @@ rustc-hash = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
-sevenz-rust = { workspace = true }
 smartstring = { workspace = true, features = ["serde"] }
 ssilide = "0.2.0"
 strfmt = { workspace = true }
-unrar = { workspace = true }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 
 astrolabe = "0.5.4"
@@ -52,9 +48,9 @@ http_req = { version = "0.14.6", default-features = false, features = ["native-t
 image = { version = "0.25.10", features = ["jpeg", "png"] }
 mimalloc = { version = "0.1.52", default-features = false }
 open = "5.2"
-roxmltree = "0.21.1"
 rustls = "0.23.40"
 shlex = "2.0.1"
+uk-app = { path = "crates/uk-app" }
 uk-content = { path = "crates/uk-content" }
 uk-localization = { path = "crates/uk-localization" }
 uk-manager = { path = "crates/uk-manager" }
@@ -76,6 +72,7 @@ winres = "0.1.12"
 
 [workspace]
 members = [
+    "crates/uk-app",
     "crates/uk-content",
     "crates/uk-content-derive",
     "crates/uk-localization",

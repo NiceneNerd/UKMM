@@ -25,6 +25,7 @@ serde_with = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
 smartstring = { workspace = true }
+thiserror = { workspace = true }
 typetag = { workspace = true }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
 zstd = { workspace = true }

@@ -1,7 +1,5 @@
 #![allow(unstable_name_collisions)]
 use std::{
-    fmt::Write,
-    io::BufReader,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -9,24 +7,15 @@ use std::{
 use anyhow::{Context, Result};
 use fs_err as fs;
 use http_req::request::RedirectPolicy;
-use join_str::jstr;
 use serde::Deserialize;
 use strfmt::Format;
-use uk_content::constants::Language;
 use uk_manager::{
-    bnp::convert_bnp,
     core::Manager,
     mods::Mod,
-    settings::{DeployConfig, Platform, PlatformSettings, UpdatePreference},
+    settings::UpdatePreference,
     util::get_temp_file,
 };
-use uk_mod::{
-    pack::{sanitise, ModPacker},
-    unpack::{ModReader, ModUnpacker},
-    Manifest, Meta,
-};
-use uk_reader::ResourceReader;
-use uk_util::PathExt;
+use uk_mod::{pack::sanitise, Manifest, Meta};
 
 use super::{package::ModPackerBuilder, util::response, Message};
 use crate::INTERFACE;
@@ -36,270 +25,20 @@ mod handlers;
 pub use handlers::register_handlers;
 use uk_localization::string_ext::LocString;
 
-fn is_probably_a_bnp(path: &Path) -> bool {
-    match path
-        .extension()
-        .and_then(|e| e.to_str().map(|e| e.to_lowercase()))
-        .unwrap_or_default()
-        .as_str() {
-        "" => {
-            let is_a_mod = ["content", "aoc", "01007EF00011E000", "01007EF00011F001", "logs"]
-                .into_iter()
-                .any(|root| path.join(root).exists());
-            let has_meta = path.join("info.json").exists();
-            is_a_mod && has_meta
-        },
-        "bnp" => {
-            match sevenz_rust::Archive::open(path) {
-                Ok(sz) => {
-                    let mut is_a_mod = false;
-                    let mut has_meta = false;
-                    for entry in sz.files.iter() {
-                        is_a_mod = is_a_mod || [
-                            "content",
-                            "aoc",
-                            "01007EF00011E000",
-                            "01007EF00011F001",
-                            "logs"
-                        ]
-                            .into_iter()
-                            .any(|root| entry.name.ends_with(root));
-                        has_meta = has_meta || entry.name.ends_with("info.json");
-                        if is_a_mod && has_meta {
-                            break;
-                        }
-                    }
-                    is_a_mod && has_meta
-                },
-                Err(_) => false
-            }
-        },
-        "json" => {
-            let is_a_mod = ["content", "aoc", "01007EF00011E000", "01007EF00011F001", "logs"]
-                .into_iter()
-                .any(|root| path.parent().map(|p| p.join(root).exists()).unwrap_or(false));
-            let has_meta = path.file_name().map(|f| f == "info.json").unwrap_or(false);
-            is_a_mod && has_meta
-        }
-        _ => false
-    }
-}
-
-fn is_probably_a_mod_and_has_meta(path: &Path) -> (bool, bool) {
-    if path.file_name().unwrap_or_default().to_str().unwrap_or_default() == "rules.txt" {
-        return (true, true);
-    }
-    if path.is_dir() {
-        let is_a_mod = ["content", "aoc", "01007EF00011E000", "01007EF00011F001"]
-            .into_iter()
-            .any(|root| path.join(root).exists());
-        let has_meta = path.join("rules.txt").exists();
-        return (is_a_mod, has_meta);
-    }
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str().map(|e| e.to_lowercase()))
-        .unwrap_or_default();
-    if ext != "zip" && ext != "7z" && ext != "rar" {
-        (false, false)
-    } else if ext == "rar" {
-        match unrar::Archive::new(path).open_for_listing() {
-            Ok(mut rar) => {
-                let mut is_a_mod = false;
-                let mut has_meta = false;
-                while let Ok(Some(header)) = rar.read_header() {
-                    let filename = &header.entry().filename;
-                    is_a_mod = is_a_mod || [
-                        "content",
-                        "aoc",
-                        "01007EF00011E000",
-                        "01007EF00011F001",
-                    ]
-                        .into_iter()
-                        .any(|root| filename.ends_with(root));
-                    has_meta = has_meta || filename.ends_with("rules.txt");
-                    if is_a_mod && has_meta {
-                        break;
-                    }
-                    rar = match header.skip() {
-                        Ok(header) => header,
-                        Err(_) => break,
-                    }
-                }
-                (is_a_mod, has_meta)
-            },
-            Err(_) => (false, false)
-        }
-    } else if ext == "7z" {
-        match sevenz_rust::Archive::open(path) {
-            Ok(sz) => {
-                let mut is_a_mod = false;
-                let mut has_meta = false;
-                for entry in sz.files.iter() {
-                    is_a_mod = is_a_mod || [
-                        "content",
-                        "aoc",
-                        "01007EF00011E000",
-                        "01007EF00011F001",
-                    ]
-                        .into_iter()
-                        .any(|root| entry.name.ends_with(root));
-                    has_meta = has_meta || entry.name.ends_with("rules.txt");
-                    if is_a_mod && has_meta {
-                        break;
-                    }
-                }
-                (is_a_mod, has_meta)
-            },
-            Err(_) => (false, false)
-        }
-    } else {
-        match fs::File::open(path)
-            .context("")
-            .and_then(|f| zip::ZipArchive::new(BufReader::new(f)).context(""))
-        {
-            Ok(zip) => {
-                let is_a_mod = zip.file_names().any(|n| {
-                    if n.is_err() { return false; }
-                    let name = n.unwrap();
-                    log::info!("Checking file: {}", name);
-                    [
-                        "content/",
-                        "aoc/",
-                        "01007EF00011E000/",
-                        "01007EF00011F001/"
-                    ]
-                    .into_iter()
-                    .any(|root| name.ends_with(root))
-                });
-                let has_meta = zip.file_names()
-                    .any(|n| n.unwrap_or_default().ends_with("rules.txt"));
-                (is_a_mod, has_meta)
-            }
-            Err(_) => (false, false),
-        }
-    }
-}
-
 pub fn open_mod(core: &Manager, path: &Path, meta: Option<Meta>) -> Result<Message> {
-    log::info!("Opening mod at {}", path.display());
-    if is_probably_a_bnp(path) {
-        let mod_ = convert_bnp(core, path).context("Failed to convert BNP to UKMM mod")?;
-        return Ok(Message::HandleMod(Mod::from_reader(
-            ModReader::open_peek(mod_, vec![]).context("Failed to open converted mod")?,
-        )));
-    }
-    let mod_ = match ModReader::open_peek(path, vec![]) {
-        Ok(reader) => Mod::from_reader(reader),
-        Err(err) => {
-            log::warn!("Could not open mod, let's find out why");
-            let err_msg = err.to_string();
-            if let Some(has_meta) = (err_msg.contains("meta file")
-                || err_msg.contains("meta.yml")
-                || err_msg.contains("d Zip"))
-            .then(|| is_probably_a_mod_and_has_meta(path))
-            .filter(|(is_mod, _has_meta)| *is_mod)
-            .map(|(_, has_meta)| has_meta)
-            {
-                log::info!("Maybe it's not a UKMM mod, let's try to convert it");
-                if !has_meta && meta.is_none() {
-                    log::info!("Mod has no meta info, requesting manual input");
-                    return Ok(Message::RequestMeta(path.to_path_buf()));
-                }
-                if let Some(ref meta) = meta {
-                    log::info!("Converting mod {}…", meta.name);
-                }
-                let converted_path =
-                    uk_manager::mods::convert_gfx(core, path, meta).with_context(|| {
-                        format!(
-                            "Failed to convert {}",
-                            path.file_name()
-                                .and_then(|n| n.to_str())
-                                .unwrap_or_default()
-                        )
-                    })?;
-                Mod::from_reader(
-                    ModReader::open_peek(converted_path, vec![])
-                        .context("Failed to open converted mod")?,
-                )
-            } else {
-                return Err(err.context(format!("Failed to open mod {}", path.display())));
-            }
-        }
-    };
-    Ok(Message::HandleMod(mod_))
+    Ok(match uk_app::open_mod(core, path, meta)? {
+        uk_app::Opened::Mod(mod_) => Message::HandleMod(mod_),
+        uk_app::Opened::NeedsMeta(path) => Message::RequestMeta(path),
+    })
 }
 
 pub fn apply_changes(core: &Manager, mods: Vec<Mod>, dirty: Option<Manifest>) -> Result<Message> {
-    let mod_manager = core.mod_manager();
-    log::info!("Applying pending changes to mod configuration");
-    if !mods.is_empty() {
-        log::info!("Updating mod states");
-        mods.iter()
-            .try_for_each(|m| -> Result<()> {
-                let mod_ = mod_manager
-                    .all_mods()
-                    .find(|m2| m2.hash() == m.hash())
-                    .unwrap();
-                if !mod_.state_eq(m) {
-                    mod_manager
-                        .set_enabled(m.hash(), m.enabled, None)
-                        .with_context(|| {
-                            format!(
-                                "Failed to {} {}",
-                                if m.enabled { "enable" } else { "disable" },
-                                m.meta.name.as_str()
-                            )
-                        })?;
-                    mod_manager
-                        .set_enabled_options(m.hash(), m.enabled_options.clone())
-                        .with_context(|| {
-                            format!("Failed to update options on {}", m.meta.name.as_str())
-                        })?;
-                }
-                Ok(())
-            })
-            .context("Failed to update mod state")?;
-        log::info!("Updating load order");
-        let order = mods.iter().map(|m| m.hash()).collect();
-        mod_manager.set_order(order);
-        mod_manager
-            .save()
-            .context("Failed to save mod configuration for current profile")?;
-    }
-    log::info!("Applying changes");
-    let deploy_manager = core.deploy_manager();
-    deploy_manager
-        .apply(dirty)
-        .context("Failed to apply pending mod changes")?;
-    if core
-        .settings()
-        .platform_config()
-        .and_then(|c| c.deploy_config.as_ref().map(|c| c.auto))
-        .unwrap_or(false)
-    {
-        log::info!("Deploying changes");
-        deploy_manager
-            .deploy()
-            .context("Failed to deploy update to merged mod(s)")?;
-    }
-    log::info!("Done");
+    uk_app::apply_changes(core, mods, dirty)?;
     Ok(Message::ResetMods(None))
 }
 
 pub fn package_mod(core: &Manager, builder: ModPackerBuilder) -> Result<Message> {
-    let Some(dump) = core.settings().dump() else {
-        anyhow::bail!("No dump for current platform")
-    };
-    ModPacker::new(
-        builder.source,
-        builder.dest,
-        Some(builder.meta),
-        [dump].into_iter().collect(),
-    )
-    .context("Failed to initialize mod packager")?
-    .pack()
-    .context("Failed to package mod")?;
+    uk_app::package_mod(core, builder.source, builder.dest, builder.meta)?;
     Ok(Message::ResetPacker)
 }
 
@@ -311,499 +50,39 @@ pub fn dev_update_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
         let vars = std::collections::HashMap::from(
             [("mod_name".to_string(), mod_.meta.name.to_string())]
         );
-        if let Some(folder) = rfd::FileDialog::new()
+        let Some(folder) = rfd::FileDialog::new()
             .set_title(message.format(&vars)?)
             .pick_folder()
-        {
-            dirty.extend(&mod_.manifest().unwrap_or_default());
-            let hash = mod_.hash();
-            ModPacker::new(
-                folder,
-                &mod_.path,
-                None,
-                [core.settings().dump().unwrap()].into_iter().collect(),
-            )
-            .context("Failed to initialize mod packager")?
-            .pack()
-            .context("Failed to package mod")?;
-            let new_mod = ModReader::open_peek(mod_.path, vec![])?;
-            dirty.extend(new_mod.manifest());
-            core.mod_manager_mut()
-                .replace(Mod::from_reader(new_mod), hash)?;
-        } else {
+        else {
             return Ok(Message::Noop);
-        }
+        };
+        dirty.extend(&uk_app::dev_update_mod(core, mod_, folder)?);
     }
     Ok(Message::ResetMods(Some(dirty)))
 }
 
 pub fn extract_mods(core: &Manager, mods: Vec<Mod>) -> Result<Message> {
-    let mut errors = vec![];
     if let Some(folder) = rfd::FileDialog::new()
         .set_title("Mod_Unpack_Folder".localize())
         .pick_folder()
     {
-        let settings = core.settings();
-        let config = settings
-            .platform_config()
-            .context("No config for current platform. Have you configured your settings?")?;
-        for mod_ in mods {
-            let name = mod_.meta.name.as_str();
-            log::info!("Extracting {}…", name);
-            let unpacker = ModUnpacker::new(
-                config.dump.clone(),
-                core.settings().current_mode.into(),
-                config.language,
-                vec![ModReader::open(&mod_.path, mod_.enabled_options.clone())?],
-                folder.join(name),
-            );
-            if let Err(e) = unpacker.unpack() {
-                log::error!("{e:?}");
-                errors.push(e);
-            }
-        }
-        if errors.is_empty() {
-            Ok(Message::Noop)
-        } else {
-            anyhow_ext::bail!(
-                "One or more mods encountered errors when extracting. Details below:\n{}",
-                errors.into_iter().fold(String::new(), |mut acc, e| {
-                    writeln!(acc, "{:?}", e).expect("Failed to write to String");
-                    acc
-                })
-            )
-        }
-    } else {
-        Ok(Message::Noop)
+        uk_app::extract_mods(core, mods, folder)?;
     }
+    Ok(Message::Noop)
 }
 
 pub fn parse_meta(file: PathBuf) -> Result<Message> {
-    match file.extension().and_then(|x| x.to_str()).unwrap() {
-        "txt" => ModPacker::parse_rules(file),
-        "yml" => Meta::parse(file),
-        "json" => ModPacker::parse_info(file),
-        _ => unreachable!(),
-    }
-    .map(Message::UpdatePackageMeta)
+    uk_app::parse_meta(file).map(Message::UpdatePackageMeta)
 }
 
 pub fn import_cemu_settings(core: &Manager, path: &Path) -> Result<Message> {
-    let portable = path.join("portable");
-    let local_cemu = dirs2::data_local_dir().expect("YIKES").join("Cemu");
-    let config_cemu = dirs2::config_dir().expect("YIKES").join("Cemu");
-    let settings_path = if portable.join("settings.xml").exists() {
-        portable.clone()
-    } else {
-        #[cfg(windows)]
-        if let Some(path) = path.join("settings.xml").exists_then() {
-            path
-        } else if let Some(path) = config_cemu.join("settings.xml").exists_then() {
-            path
-        } else {
-            anyhow::bail!(
-                "Could not find Cemu settings file. Please run Cemu at least once to generate it."
-            )
-        }
-        #[cfg(not(windows))]
-        if let Some(path) = config_cemu.join("settings.xml").exists_then() {
-            path
-        } else {
-            anyhow::bail!(
-                "Could not find Cemu settings file. Please run Cemu at least once to generate it."
-            )
-        }
-    };
-    let text = fs::read_to_string(&settings_path).context("Failed to open Cemu settings file")?;
-    let tree = roxmltree::Document::parse(&text)
-        .context("Failed to parse Cemu settings file: invalid XML")?;
-    let mlc_path = tree
-        .descendants()
-        .find_map(|n| {
-            (n.tag_name().name() == "mlc_path")
-                .then(|| {
-                    n.text()
-                        .and_then(|s| (!s.is_empty()).then(|| PathBuf::from(s)))
-                })
-                .flatten()
-        })
-        .or_else(|| {
-            portable.join("mlc01").exists_then()
-        })
-        .or_else(|| {
-            #[cfg(windows)]
-            {
-                if let Some(path) = path.join("mlc01").exists_then() {
-                    Some(path)
-                } else {
-                    config_cemu.join("mlc01").exists_then()
-                }
-            }
-            #[cfg(not(windows))]
-            {
-                local_cemu.join("mlc01").exists_then()
-            }
-        });
-    static REGIONS: &[&str] = &[
-        "101C9400", "101c9400", "101C9500", "101c9500", "101C9300", "101c9300",
-    ];
-    let (base, update, dlc, wua, encrypted) = if let Some(cache) = config_cemu
-        .join("title_list_cache.xml")
-        .exists_then()
-        .or_else(|| local_cemu.join("title_list_cache.xml").exists_then())
-    {
-        let title_list = fs::read_to_string(&cache).context("Failed to open Cemu title cache file")?;
-        let title_tree = roxmltree::Document::parse(&title_list)
-            .context("Failed to parse Cemu title cache file: invalid XML")?;
-        let mut base_folder: Option<PathBuf> = None;
-        let mut update_folder: Option<PathBuf> = None;
-        let mut dlc_folder: Option<PathBuf> = None;
-        let mut wua_file: Option<PathBuf> = None;
-        let mut encrypted = false;
-        title_tree.descendants()
-            .filter_map(|n| {
-                if n.tag_name().name() == "title" {
-                    let title_id = n.attribute("titleId").expect("invalid title");
-                    if !REGIONS.contains(&&title_id[8..]) {
-                        None
-                    } else {
-                        let format = n.descendants()
-                            .find(|c| c.tag_name().name() == "format")
-                            .expect("invalid title")
-                            .text()
-                            .expect("invalid format")
-                            .parse::<u32>()
-                            .expect("invalid format");
-                        if let Ok(path) = PathBuf::from(n.descendants()
-                            .find(|c| c.tag_name().name() == "path")
-                            .expect("invalid title")
-                            .text()
-                            .expect("invalid path"))
-                            .canonicalize() {
-                            Some((&title_id[..8], format, path))
-                        } else {
-                            None
-                        }
-                    }
-                } else {
-                    None
-                }
-            }).for_each(|(dump_type, format, mut dump_path)| {
-                #[allow(irrefutable_let_patterns)]
-                {
-                    if dump_path.is_relative() {
-                        dump_path = if let p = path.join(&dump_path) && p.exists() { p }
-                        else if let p = portable.join(&dump_path) && p.exists() { p }
-                        else if let p = local_cemu.join(&dump_path) && p.exists() { p }
-                        else if let p = config_cemu.join(&dump_path) && p.exists() { p }
-                        else { return; };
-                    }
-                }
-                match (dump_type, format) {
-                    ("00050000", 1) => base_folder = Some(dump_path.join("content")),
-                    ("0005000c", 1) => dlc_folder = Some(dump_path.join("content").join("0010")),
-                    ("0005000e", 1) => update_folder = Some(dump_path.join("content")),
-                    ("00050000", 4) |
-                    ("0005000c", 4) |
-                    ("0005000e", 4) => encrypted = true,
-                    ("00050000", 3) => wua_file = Some(dump_path),
-                    _ => {},
-                }
-            });
-        (base_folder, update_folder, dlc_folder, wua_file, encrypted)
-    } else {
-        mlc_path
-            .as_ref()
-            .map(|mlc_path| {
-                let title_path = mlc_path.join("usr/title");
-                let base_folder = if let Some(base_folder_path) = REGIONS
-                    .iter()
-                    .find_map(|r| {
-                        let path = title_path.join(jstr!("00050000/{r}/content"));
-                        path.exists().then_some(path)
-                    }
-                ) {
-                    Some(base_folder_path)
-                } else {
-                    std::fs::read_to_string(&settings_path)
-                        .expect("Cannot read settings file")
-                        .split('\n')
-                        .find_map(|line| {
-                            let line = line.trim();
-                            if line.starts_with("<path>") && line.contains("U-King.rpx") {
-                                Some(PathBuf::from(&line[6..line.len()-23]).join("content"))
-                            } else {
-                                None
-                            }
-                        })
-                };
-                let update_folder = REGIONS.iter().find_map(|r| {
-                    let path = title_path.join(jstr!("0005000e/{r}/content"));
-                    path.exists().then_some(path)
-                });
-                let dlc_folder = REGIONS.iter().find_map(|r| {
-                    let path = title_path.join(jstr!("0005000c/{r}/content/0010"));
-                    path.exists().then_some(path)
-                });
-                (base_folder, update_folder, dlc_folder, None, false)
-            })
-            .context("Could not find unpacked game dump from Cemu settings.")?
-    };
-    if (base.is_none() || update.is_none()) && wua.is_none() {
-        anyhow::bail!(if encrypted {
-            "UKMM does not support encrypted dumps."
-        } else {
-            "Could not find unpacked game dump from Cemu settings."
-        });
-    }
-    let gfx_folder = if let Some(path) = portable
-        .join("graphicPacks")
-        .exists_then()
-    {
-        path
-    } else {
-        #[cfg(windows)]
-        {
-            settings_path.parent().expect("We know it exists").join("graphicPacks")
-        }
-        #[cfg(not(windows))]
-        config_cemu.join("graphicPacks")
-    };
-    let mut settings = core.settings_mut();
-    settings.current_mode = Platform::WiiU;
-    let dump = if let Some(path) = wua {
-        Arc::new(ResourceReader::from_zarchive(path)
-            .context("Failed to validate game dump")?)
-    } else {
-        Arc::new(ResourceReader::from_unpacked_dirs(
-            base.as_ref(),
-            update,
-            dlc,
-            uk_content::prelude::Endian::Big,
-        )
-        .context("Failed to validate game dump")?)
-    };
-    #[cfg(windows)]
-    let exe = path
-        .join("Cemu.exe")
-        .exists_then()
-        .map(|p| format!("\"{}\"", p.display().to_string()));
-    #[cfg(not(windows))]
-    let exe = path
-        .join("Cemu")
-        .exists_then()
-        .or_else(|| {
-            // glob lists in alphabetical order, so we can just return the last one
-            glob::glob(&path.join("Cemu-*-*.AppImage").to_string_lossy())
-                .ok()?
-                .filter_map(Result::ok)
-                .last()
-        })
-        .map(|p| {
-            let str_ = p.to_string_lossy();
-            if str_.contains(' ') {
-                format!("\"{str_}\"")
-            } else {
-                str_.into()
-            }
-        });
-    let exe_cmd = if exe.is_some() {
-        if let Some(item) = base {
-            let rpx = item
-                .parent()
-                .unwrap()
-                .join("code")
-                .join("U-King.rpx")
-                .display()
-                .to_string();
-            #[cfg(windows)]
-            {
-                Some(format!("{} -g \"{}\"", exe.unwrap(), rpx.strip_prefix(r"\\?\").unwrap()))
-            }
-            #[cfg(not(windows))]
-            {
-                if rpx.contains(' ') {
-                    Some(format!("{} -g \"{}\"", exe.unwrap(), rpx))
-                } else {
-                    Some(format!("{} -g {}", exe.unwrap(), rpx))
-                }
-            }
-        } else {
-            exe
-        }
-    } else {
-        None
-    };
-    if let Some(wiiu_config) = settings.wiiu_config.as_mut() {
-        wiiu_config.dump = dump;
-        let deploy_config = wiiu_config.deploy_config.get_or_insert_default();
-        deploy_config.auto = true;
-        deploy_config.cemu_rules = true;
-        deploy_config.output = gfx_folder.clone();
-        deploy_config.executable = exe_cmd;
-        deploy_config.method = uk_manager::settings::DeployMethod::Symlink;
-        deploy_config.layout = uk_manager::settings::DeployLayout::WithName;
-    } else {
-        settings.wiiu_config = Some(PlatformSettings {
-            language: Language::USen,
-            profile: "Default".into(),
-            dump,
-            deploy_config: Some(DeployConfig {
-                auto: true,
-                method: uk_manager::settings::DeployMethod::Symlink,
-                output: gfx_folder.clone(),
-                cemu_rules: true,
-                executable: exe_cmd,
-                layout: uk_manager::settings::DeployLayout::WithName,
-            }),
-        })
-    };
-    settings.save()?;
+    uk_app::import_cemu_settings(core, path)?;
     Ok(Message::ResetSettings)
 }
 
-#[derive(Debug, Default, Deserialize)]
-#[serde(default)]
-struct BcmlSettings {
-    lang: Language,
-    cemu_dir: Option<PathBuf>,
-    export_dir: Option<PathBuf>,
-    export_dir_nx: Option<PathBuf>,
-    game_dir: Option<PathBuf>,
-    game_dir_nx: Option<PathBuf>,
-    update_dir: Option<PathBuf>,
-    dlc_dir: Option<PathBuf>,
-    dlc_dir_nx: Option<PathBuf>,
-    store_dir: PathBuf,
-}
-
 pub fn migrate_bcml(core: Arc<Manager>) -> Result<Message> {
-    log::info!("Attempting to import BCML settings");
-    let current_mode = core.settings().current_mode;
-    let settings_path = if cfg!(windows) {
-        dirs2::data_local_dir()
-    } else {
-        dirs2::config_dir()
-    }
-    .unwrap()
-    .join("bcml/settings.json");
-    let bcml_settings: BcmlSettings = serde_json::from_str(
-        &fs::read_to_string(settings_path).context("Failed to read BCML settings file")?,
-    )
-    .context("Failed to parse BCML settings file")?;
-    if let (Some(game_dir), Some(update_dir)) = (
-        bcml_settings.game_dir.filter(|d| !d.as_os_str().is_empty()),
-        bcml_settings
-            .update_dir
-            .filter(|d| !d.as_os_str().is_empty()),
-    ) {
-        {
-            log::info!("Import BCML Wii U game dump settings");
-            let mut settings = core.settings_mut();
-            settings.wiiu_config = Some(PlatformSettings {
-                language: bcml_settings.lang,
-                profile: "Default".into(),
-                deploy_config: bcml_settings
-                    .export_dir
-                    .map(|export_dir| {
-                        DeployConfig {
-                            output: export_dir,
-                            cemu_rules: bcml_settings.cemu_dir.is_some(),
-                            ..Default::default()
-                        }
-                    })
-                    .or_else(|| {
-                        bcml_settings.cemu_dir.map(|cemu_dir| {
-                            DeployConfig {
-                                output: cemu_dir.join("graphicPacks/BreathOfTheWild_UKMM"),
-                                cemu_rules: true,
-                                ..Default::default()
-                            }
-                        })
-                    }),
-                dump: Arc::new(ResourceReader::from_unpacked_dirs(
-                    Some(game_dir),
-                    Some(update_dir),
-                    bcml_settings.dlc_dir,
-                    uk_content::prelude::Endian::Big,
-                )?),
-            });
-            settings.current_mode = Platform::WiiU;
-            settings.save()?;
-        }
-        core.reload()?;
-        log::info!("Attempting to import BCML Wii U mods");
-        import_mods(&core, bcml_settings.store_dir.join("mods"))?;
-    }
-    if let Some(game_dir) = bcml_settings
-        .game_dir_nx
-        .filter(|d| !d.as_os_str().is_empty())
-    {
-        {
-            log::info!("Import BCML Switch game dump settings");
-            let mut settings = core.settings_mut();
-            settings.switch_config = Some(PlatformSettings {
-                language: bcml_settings.lang,
-                profile: "Default".into(),
-                deploy_config: bcml_settings.export_dir_nx.map(|export_dir| {
-                    DeployConfig {
-                        output: export_dir,
-                        ..Default::default()
-                    }
-                }),
-                dump: Arc::new(ResourceReader::from_unpacked_dirs(
-                    Some(game_dir),
-                    None::<PathBuf>,
-                    bcml_settings.dlc_dir_nx,
-                    uk_content::prelude::Endian::Little,
-                )?),
-            });
-            settings.current_mode = Platform::Switch;
-            settings.save()?;
-        }
-        core.reload()?;
-        log::info!("Attempting to import BCML Switch mods");
-        import_mods(&core, bcml_settings.store_dir.join("mods_nx"))?;
-    }
-    let mode_changed = core.settings().current_mode != current_mode;
-    if mode_changed {
-        {
-            let mut settings = core.settings_mut();
-            settings.current_mode = current_mode;
-            settings.save()?;
-        }
-        core.reload()?;
-    }
+    uk_app::migrate_bcml(&core)?;
     Ok(Message::HandleSettings)
-}
-
-fn import_mods(core: &Manager, mod_dir: PathBuf) -> Result<()> {
-    if !mod_dir.exists() {
-        Ok(())
-    } else {
-        for dir in fs::read_dir(mod_dir)?.filter_map(|e| {
-            e.ok().and_then(|e| {
-                e.file_type().ok().and_then(|t| {
-                    (t.is_dir()
-                        && !e
-                            .file_name()
-                            .to_str()
-                            .map(|n| n.starts_with("9999"))
-                            .unwrap_or(false))
-                    .then(|| e.path())
-                })
-            })
-        }) {
-            match convert_bnp(core, &dir) {
-                Ok(path) => {
-                    core.mod_manager().add(&path, None)?;
-                }
-                Err(e) => log::warn!("Failed to import BCML mod: {}", e),
-            }
-        }
-        core.mod_manager().save()?;
-        Ok(())
-    }
 }
 
 #[derive(Debug, Deserialize, Clone)]

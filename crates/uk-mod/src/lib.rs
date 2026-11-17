@@ -382,6 +382,23 @@ impl std::hash::Hash for Meta {
 }
 
 impl Meta {
+    /// Starting point for a mod being packaged or converted by hand; `api` is
+    /// pinned to the running version so the result passes `ModReader`'s check.
+    pub fn blank(platform: ModPlatform) -> Self {
+        Self {
+            api: env!("CARGO_PKG_VERSION").into(),
+            name: Default::default(),
+            version: "1.0.0".into(),
+            author: Default::default(),
+            category: ModCategory::Other,
+            description: Default::default(),
+            platform,
+            url: Default::default(),
+            options: Default::default(),
+            masters: Default::default(),
+        }
+    }
+
     pub fn from_mod(mod_path: impl AsRef<Path>) -> anyhow_ext::Result<Self> {
         use std::io::Read;
         let mod_path = mod_path.as_ref();

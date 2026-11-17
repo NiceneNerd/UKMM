@@ -33,22 +33,14 @@ impl MetaInputModal {
     }
 
     pub fn open(&mut self, path: PathBuf, platform: Platform) {
-        self.meta = Some(Meta {
-            api: env!("CARGO_PKG_VERSION").into(),
-            name: path.file_stem()
-                .expect("Filepath has no file?")
-                .to_string_lossy()
-                .replace("_", " ")
-                .into(),
-            description: Default::default(),
-            category: ModCategory::Other,
-            author: Default::default(),
-            masters: Default::default(),
-            options: Default::default(),
-            platform: ModPlatform::Specific(platform.into()),
-            url: Default::default(),
-            version: "1.0.0".into(),
-        });
+        let mut meta = Meta::blank(ModPlatform::Specific(platform.into()));
+        meta.name = path
+            .file_stem()
+            .expect("Filepath has no file?")
+            .to_string_lossy()
+            .replace("_", " ")
+            .into();
+        self.meta = Some(meta);
         self.path = Some(path);
     }
 

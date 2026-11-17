@@ -7,9 +7,7 @@ use std::{
 use anyhow_ext::{Context, Result};
 use smartstring::alias::String;
 use uk_manager::{core, mods::LookupMod, settings::Platform};
-use uk_mod::{unpack::ModReader, Manifest, Meta};
-
-use crate::gui::{package, tasks};
+use uk_mod::{Manifest, Meta};
 
 xflags::xflags! {
     src "./src/cli.rs"
@@ -151,29 +149,12 @@ impl Runner {
         }
     }
 
-    fn check_mod(&self, path: &Path) -> Result<Option<PathBuf>> {
-        let (mod_, path) = match ModReader::open(path, vec![]) {
-            Ok(mod_) => (mod_, path.to_path_buf()),
-            Err(e) => {
-                match uk_manager::mods::convert_gfx(&self.core, path, None) {
-                    Ok(path) => {
-                        log::info!("Opening mod at {}", path.display());
-                        (
-                            ModReader::open(&path, vec![])
-                                .context("Failed to open converted mod")?,
-                            path,
-                        )
-                    }
-                    Err(e2) => {
-                        anyhow_ext::bail!(
-                            "Could not open mod. Error when attempting to open as UKMM mod: {}. \
-                             Error when attempting to open as legacy mod: {}.",
-                            e,
-                            e2
-                        )
-                    }
-                }
-            }
+    fn check_mod(&self, path: &Path) -> Result<PathBuf> {
+        let mod_ = match uk_app::open_mod(&self.core, path, None)? {
+            uk_app::Opened::Mod(mod_) => mod_,
+            uk_app::Opened::NeedsMeta(_) => anyhow_ext::bail!(
+                "This mod has no metadata and should be installed via the GUI."
+            ),
         };
         if !mod_.meta.options.is_empty() {
             anyhow_ext::bail!(
@@ -181,7 +162,7 @@ impl Runner {
             );
         }
         println!("Installing {}...", mod_.meta.name);
-        Ok(Some(path))
+        Ok(mod_.path.to_path_buf())
     }
 
     fn deploy(&self) -> Result<()> {
@@ -214,33 +195,27 @@ impl Runner {
                 println!("Done!");
             }
             UkmmCmd::Install(Install { path, profile }) => {
-                if let Some(path) = self.check_mod(path)? {
-                    let mods = self.core.mod_manager();
-                    let mod_ = mods.add(&path, profile.as_ref())?;
-                    mods.set_enabled(mod_.as_map_id(), true, profile.as_ref())?;
-                    mods.save()?;
-                    println!("Applying mod to load order...");
-                    let deployer = self.core.deploy_manager();
-                    deployer.apply(Some(mod_.manifest()?.as_ref().clone()))?;
-                    if self.cli.deploy {
-                        self.deploy()?;
-                    }
-                    println!("Done!");
+                let path = self.check_mod(path)?;
+                let mods = self.core.mod_manager();
+                let mod_ = mods.add(&path, profile.as_ref())?;
+                mods.set_enabled(mod_.as_map_id(), true, profile.as_ref())?;
+                mods.save()?;
+                println!("Applying mod to load order...");
+                let deployer = self.core.deploy_manager();
+                deployer.apply(Some(mod_.manifest()?.as_ref().clone()))?;
+                if self.cli.deploy {
+                    self.deploy()?;
                 }
+                println!("Done!");
             }
             UkmmCmd::Package(pkg) => {
                 println!("Packaging mod...");
-                let builder = package::ModPackerBuilder {
-                    source: pkg.path.clone(),
-                    dest:   pkg.output.clone(),
-                    meta:   Meta::parse(&pkg.meta)?,
-                };
-                tasks::package_mod(&self.core, builder)?;
+                uk_app::package_mod(&self.core, &pkg.path, &pkg.output, Meta::parse(&pkg.meta)?)?;
                 println!("Done!");
             }
             UkmmCmd::Remerge(_) => {
                 println!("Remerging...");
-                tasks::apply_changes(&self.core, vec![], None)?;
+                uk_app::apply_changes(&self.core, vec![], None)?;
                 println!("Done!");
             }
             UkmmCmd::Uninstall(Uninstall { index, profile }) => {
