@@ -62,6 +62,9 @@ xflags::xflags! {
 #[derive(Debug)]
 pub struct Ukmm {
     pub debug: bool,
+    /// While the `portable` flag needs to be recognized by xflags, it is
+    /// handled by [std::env::args] in the static Settings methods
+    #[allow(dead_code)]
     pub portable: bool,
     pub deploy: bool,
     pub subcommand: UkmmCmd,
@@ -81,7 +84,6 @@ pub enum UkmmCmd {
 pub struct Install {
     pub path: PathBuf,
     pub profile: Option<String>,
-
     pub meta: Option<PathBuf>,
 }
 
