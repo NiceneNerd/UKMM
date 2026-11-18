@@ -1,756 +1,437 @@
-use strfmt::Format;
-use uk_content::prelude::Endian;
+use uk_app::{Inspection, view::load_index_of};
 use uk_localization::string_ext::LocString;
+
 use super::*;
+use crate::gui::options::OptionsModal;
 
 impl App {
-    pub(super) fn handle_update(
-        &mut self,
-        ctx: &egui::Context,
-        _frame: &mut eframe::Frame,
-    ) {
-        if let Ok(msg) = self.channel.1.try_recv() {
-            match msg {
-                Message::Noop => self.busy.set(false),
-                Message::ResetMods(dirty) => {
-                    self.busy.set(false);
-                    self.dirty_mut().clear();
-                    if let Some(dirty) = dirty {
-                        self.dirty_mut().extend(&dirty);
-                    }
-                    self.mods = self.core.mod_manager().all_mods().collect();
-                    self.selected.retain(|m| self.mods.contains(m));
-                    self.do_update(Message::RefreshModsDisplay);
-                    self.do_update(Message::ReloadProfiles);
-                    ctx.data_mut(|d| {
-                        d.remove::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(Id::new(
-                            "md_cache",
-                        ))
-                    });
-                    info::ROOTS.write().clear();
-                }
-                Message::RefreshModsDisplay => {
-                    self.do_update(Message::ChangeSort(self.list_state.sort, self.list_state.descending));
-                }
-                Message::ChangeSort(sort, rev) => {
-                    let orderer = sort.orderer();
-                    let mut temp = self.mods.iter().cloned().enumerate().collect::<Vec<_>>();
-                    temp.sort_by(orderer);
-                    self.displayed_mods = if rev {
-                        temp.into_iter().rev().map(|(_, m)| m).collect()
-                    } else {
-                        temp.into_iter().map(|(_, m)| m).collect()
-                    };
-                    self.list_state.sort = sort;
-                    self.list_state.descending = rev;
-                }
-                Message::CloseError => self.error = None,
-                Message::CloseConfirm => self.confirm = None,
-                Message::ShowAbout => self.show_about = true,
-                Message::CloseAbout => self.show_about = false,
-                Message::CloseProfiles => self.profiles_state.borrow_mut().show = false,
-                Message::Confirm(msg, prompt) => {
-                    self.confirm = Some((*msg, prompt));
-                }
-                Message::SelectOnly(i) => {
-                    let index = i.clamp(0, self.mods.len() - 1);
-                    let mod_ = &self.mods[index];
-                    if self.selected.contains(mod_) {
-                        self.selected.retain(|m| m == mod_);
-                    } else {
-                        self.selected.clear();
-                        self.selected.push(self.mods[index].clone());
-                    }
-                    self.drag_index = None;
-                }
-                Message::SelectAlso(i) => {
-                    let index = i.clamp(0, self.mods.len() - 1);
-                    let mod_ = &self.mods[index];
-                    if !self.selected.contains(mod_) {
-                        self.selected.push(mod_.clone());
-                    }
-                    self.drag_index = None;
-                }
-                Message::SelectThrough(i) => {
-                    let mods_visible = self.filtered_mods(&self.mod_list_filter);
-                    if let Some(index) = mods_visible.iter()
-                        .position(|(_, m)| *m == &self.mods[i])
-                    {
-                        if let Some(start_index) = self
-                            .selected
-                            .first()
-                            .and_then(|sm| mods_visible.iter()
-                                .position(|(_, m)| *m == sm)
-                            )
-                        {
-                            let range = if start_index < index {
-                                start_index..=index
-                            } else {
-                                index..=start_index
-                            };
-                            self.selected = mods_visible
-                                .iter()
-                                .enumerate()
-                                .filter(|(i, _)| range.contains(i))
-                                .map(|(_, (_, m))| (*m).clone())
-                                .collect();
-                        }
-                        self.drag_index = None;
-                    }
-                }
-                Message::Deselect(i) => {
-                    let index = i.clamp(0, self.mods.len() - 1);
-                    let mod_ = &self.mods[index];
-                    self.selected.retain(|m| m != mod_);
-                    self.drag_index = None;
-                }
-                Message::ClearSelect => {
-                    self.selected.clear();
-                    self.drag_index = None;
-                }
-                Message::StartDrag(i) => {
-                    if ctx.input(|i| i.pointer.any_released()) {
-                        self.drag_index = None;
-                    }
-                    self.drag_index = Some(i);
-                    let mod_ = &self.mods[i];
-                    if !self.selected.contains(mod_) {
-                        if !ctx.input(|i| i.modifiers.ctrl) {
-                            self.selected.clear();
-                        }
-                        self.selected.push(mod_.clone());
-                    }
-                }
-                Message::ClearDrag => {
-                    self.drag_index = None;
-                }
-                Message::MoveSelected(dest_index) => {
-                    if self.selected.len() == self.mods.len() {
-                        return;
-                    }
-                    uk_app::move_selected(&mut self.mods, &self.selected, dest_index);
-                    self.hover_index = None;
-                    self.drag_index = None;
-                    match self.selected.iter().try_for_each(|m| {
-                        self.dirty_mut()
-                            .extend(m.manifest_with_options(&m.enabled_options)?.as_ref());
-                        Ok(())
-                    }) {
-                        Ok(()) => self.do_update(Message::RefreshModsDisplay),
-                        Err(e) => self.do_update(Message::Error(e)),
-                    };
-                }
-                Message::FilePickerUp => {
-                    let has_parent = self.picker_state.path.parent().is_some();
-                    if has_parent {
-                        self.picker_state
-                            .history
-                            .push(self.picker_state.path.clone());
-                        self.picker_state
-                            .set_path(self.picker_state.path.parent().unwrap().to_path_buf());
-                    }
-                }
-                Message::FilePickerBack => {
-                    if let Some(prev) = self.picker_state.history.pop() {
-                        self.picker_state.set_path(prev);
-                    }
-                }
-                Message::FilePickerSet(path) => {
-                    let path = match path {
-                        Some(path) => path,
-                        None => self.picker_state.path_input.as_str().into(),
-                    };
-                    if path.is_dir() {
-                        self.picker_state.selected = None;
-                        self.picker_state
-                            .history
-                            .push(self.picker_state.path.clone());
-                        self.picker_state.set_path(path);
-                    }
-                }
-                Message::ChangeProfile(profile) => {
-                    match self.core.change_profile(profile) {
-                        Ok(()) => {
-                            self.mods = self.core.mod_manager().all_mods().collect();
-                            self.do_update(Message::RefreshModsDisplay);
-                            self.do_update(Message::ReloadProfiles);
-                        }
-                        Err(e) => self.do_update(Message::Error(e)),
-                    };
-                }
-                Message::NewProfile => self.new_profile = Some("".into()),
-                Message::AddProfile => {
-                    if let Some(profile) = self.new_profile.take() {
-                        match self.core.change_profile(profile) {
-                            Ok(()) => self.do_update(Message::ResetMods(None)),
-                            Err(e) => self.do_update(Message::Error(e)),
-                        };
-                    }
-                }
-                Message::DeleteProfile(profile) => {
-                    self.do_task(move |core| {
-                        let path = core.settings().profiles_dir().join(profile.as_str());
-                        fs::remove_dir_all(path)?;
-                        Ok(Message::CleanProfile(profile))
-                    })
-                }
-                Message::DuplicateProfile(profile) => {
-                    self.do_task(move |core| {
-                        let profiles_dir = core.settings().profiles_dir();
-                        let new_profile = format!("{profile}_copy");
-                        uk_manager::util::copy_dir(
-                            profiles_dir.join(profile),
-                            profiles_dir.join(&new_profile),
-                        )?;
-                        core.mod_manager().add_profile(new_profile.into());
-                        Ok(Message::ReloadProfiles)
-                    });
-                }
-                Message::RenameProfile(profile, rename) => {
-                    self.do_task(move |core| {
-                        let profiles_dir = core.settings().profiles_dir();
-                        fs::rename(profiles_dir.join(&profile), profiles_dir.join(rename))?;
-                        Ok(Message::ReloadProfiles)
-                    })
-                }
-                Message::CleanProfile(profile) => {
-                    let mut state = self.profiles_state.borrow_mut();
-                    let mods = state
-                        .profiles
-                        .get(profile.as_str())
-                        .unwrap()
-                        .mods()
-                        .iter()
-                        .map(|(h, m)| (*h, m.path.clone()))
-                        .collect::<HashMap<_,_>>();
-                    state.reload(&self.core);
-                    let assigned = state.all_assigned_mod_hashes();
-                    mods.iter()
-                        .filter(|(h, _)| !assigned.contains(h))
-                        .for_each(|(_, p)| fs::remove_file(p).unwrap_or_default());
-                    self.busy.set(false);
-                }
-                Message::ReloadProfiles => {
-                    self.profiles_state.borrow_mut().reload(&self.core);
-                    self.busy.set(false);
-                }
-                Message::SelectProfileManage(name) => {
-                    self.profiles_state.borrow_mut().selected = Some(name);
-                }
-                Message::SetDownloading(mod_name) => {
-                    ctx.request_repaint();
-                    self.busy.set(true);
-                    log::info!("Downloading {mod_name} from GameBanana…");
-                }
-                Message::SetFocus(pane) => {
-                    self.focused = pane;
-                }
-                Message::SetTheme(theme) => {
-                    theme.set_theme(ctx);
-                    self.theme = theme;
-                    self.dock_style = visuals::style_dock(&ctx.style());
-                }
-                Message::SetLanguage(lang) => {
-                    LOCALIZATION.write().update_language(&lang);
-                }
-                Message::SelectFile => {
-                    if let Some(mut paths) = rfd::FileDialog::new()
-                        .set_title("Mod_Select_Title".localize())
-                        .add_filter("Any mod (*.zip, *.rar, *.7z, *.bnp, rules.txt)", &["zip", "rar", "7z", "bnp", "txt"])
-                        .add_filter("UKMM Mod (*.zip)", &["zip"])
-                        .add_filter("BCML Mod (*.bnp)", &["bnp"])
-                        .add_filter("Legacy Mod (*.zip, *.rar, *.7z, rules.txt)", &["zip", "rar", "7z", "txt"])
-                        .add_filter("All files (*.*)", &["*"])
-                        .pick_files()
-                        .filter(|p| !p.is_empty())
-                    {
-                        let first = paths.remove(0);
-                        self.install_queue.extend(paths);
-                        self.error_queue.clear();
-                        self.do_task(move |core| open_mod_task(&core, &first, None));
-                    }
-                }
-                Message::OpenMod(path) => {
-                    let meta = self.meta_input.take();
-                    ctx.request_repaint();
-                    self.do_task(move |core| open_mod_task(&core, &path, meta));
-                }
-                Message::HandleMod(mod_) => {
-                    self.busy.set(false);
-                    log::debug!("{:#?}", &mod_);
-                    for (hash, (name, version)) in mod_.meta.masters.iter() {
-                        if !self.mods.iter().any(|m| m.hash() == *hash) {
-                            self.do_update(Message::Error(
-                                uk_app::error::AppError::MissingMasters {
-                                    name: name.to_string(),
-                                    version: version.to_string(),
-                                }
-                                .into(),
-                            ));
-                        }
-                    }
-                    if !matches!(mod_.meta.platform, ModPlatform::Universal)
-                        && mod_.meta.platform != ModPlatform::Specific(self.platform().into())
-                    {
-                        self.do_update(Message::Error(
-                            uk_app::error::AppError::WrongPlatform(
-                                match mod_.meta.platform {
-                                    ModPlatform::Specific(Endian::Little) => "Switch",
-                                    ModPlatform::Specific(Endian::Big) => "Wii U",
-                                    ModPlatform::Universal => "any console",
-                                }
-                                .to_owned(),
-                                self.platform().to_string(),
-                            )
-                            .into(),
-                        ));
-                    } else if !mod_.meta.options.is_empty() {
-                        self.do_update(Message::RequestOptions(mod_, false));
-                    } else {
-                        self.do_update(Message::InstallMod(mod_));
-                    }
-                }
-                Message::InstallMod(tmp_mod_) => {
-                    let update_mod = self.update_mod.take();
-                    self.do_task(move |core| {
-                        let mods = core.mod_manager();
-                        if let Some(mod_) = update_mod {
-                            let mut dirty = Manifest::default();
-                            dirty.extend(&tmp_mod_.manifest().unwrap_or_default());
-                            mods.replace(tmp_mod_, mod_.hash())?;
-                            log::info!("Updated {}", mod_.meta.name);
-                            dirty.extend(&mod_.manifest().unwrap_or_default());
-                            Ok(Message::ResetMods(Some(dirty)))
-                        } else {
-                            let mod_ = mods.add(&tmp_mod_.path, None)?;
-                            let hash = mod_.as_map_id();
-                            if !tmp_mod_.enabled_options.is_empty() {
-                                mods.set_enabled_options(hash, tmp_mod_.enabled_options)?;
-                            }
-                            mods.save()?;
-                            log::info!("Added mod {} to current profile", mod_.meta.name.as_str());
-                            let mod_ = unsafe { mods.get_mod(hash).unwrap_unchecked() };
-                            Ok(Message::AddMod(mod_))
-                        }
-                    });
-                }
-                Message::UninstallMods(mods) => {
-                    let mods = mods.unwrap_or_else(|| self.selected.clone());
-                    self.do_task(move |core| {
-                        let manager = core.mod_manager();
-                        mods.iter().try_for_each(|m| -> Result<()> {
-                            manager.del(m.as_map_id(), None)?;
-                            log::info!("Removed mod {} from current profile", m.meta.name.as_str());
-                            Ok(())
-                        })?;
-                        manager.save()?;
-                        Ok(Message::RemoveMods(mods))
-                    });
-                }
-                Message::ModUpdate => {
-                    if let Some(file) = rfd::FileDialog::new()
-                        .set_title("Mod_Select_Title".localize())
-                        .add_filter("Any mod (*.zip, *.rar, *.7z, *.bnp, rules.txt)", &["zip", "rar", "7z", "bnp", "txt"])
-                        .add_filter("UKMM Mod (*.zip)", &["zip"])
-                        .add_filter("BCML Mod (*.bnp)", &["bnp"])
-                        .add_filter("Legacy Mod (*.zip, *.rar, *.7z, rules.txt)", &["zip", "rar", "7z", "txt"])
-                        .add_filter("All files (*.*)", &["*"])
-                        .pick_file()
-                    {
-                        let path = file.clone();
-                        self.update_mod = Some(self.selected.first().unwrap().clone());
-                        self.do_task(move |core| open_mod_task(&core, &path, None));
-                    }
-                }
-                Message::DevUpdate => {
-                    let mods = self.selected.clone();
-                    // Pick the source folder for each mod here in render code;
-                    // the worker stays dialog-free.
-                    let mut folders = Vec::with_capacity(mods.len());
-                    let mut aborted = false;
-                    for mod_ in &mods {
-                        let message = "Mod_Update_Folder".localize();
-                        let vars = std::collections::HashMap::from([(
-                            "mod_name".to_string(),
-                            mod_.meta.name.to_string(),
-                        )]);
-                        match message.format(&vars) {
-                            Ok(title) => match rfd::FileDialog::new()
-                                .set_title(title)
-                                .pick_folder()
-                            {
-                                Some(folder) => folders.push(folder),
-                                None => {
-                                    aborted = true;
-                                    break;
-                                }
-                            },
-                            Err(e) => {
-                                self.do_update(Message::Error(e.into()));
-                                aborted = true;
-                                break;
-                            }
-                        }
-                    }
-                    if !aborted {
-                        self.do_task(move |core| {
-                            let dirty = uk_app::dev_update_mods(&core, mods, folders)?;
-                            Ok(Message::ResetMods(Some(dirty)))
-                        });
-                    }
-                }
-                Message::ToggleMods(mods, enabled) => {
-                    let mods = mods.as_ref().unwrap_or(&self.selected);
-                    let dirty = mods.iter().try_fold(
-                        Manifest::default(),
-                        |mut dirty, m| -> Result<Manifest> {
-                            let mod_ = unsafe {
-                                self.mods.iter_mut().find(|m2| m.eq(m2)).unwrap_unchecked()
-                            };
-                            mod_.enabled = enabled;
-                            dirty.extend(m.manifest()?.as_ref());
-                            Ok(dirty)
-                        },
-                    );
-                    match dirty {
-                        Ok(dirty) => {
-                            self.dirty_mut().extend(&dirty);
-                            self.do_update(Message::RefreshModsDisplay)
-                        }
-                        Err(e) => self.do_update(Message::Error(e)),
-                    };
-                }
-                Message::AddMod(mod_) => {
-                    if let Ok(manifest) = mod_.manifest() {
-                        self.dirty_mut().extend(&manifest);
-                    }
-                    self.mods = self.core.mod_manager().all_mods().collect();
-                    self.do_update(Message::RefreshModsDisplay);
-                    self.busy.set(false);
-                    if let Some(path) = self.install_queue.pop_front() {
-                        self.do_task(move |core| open_mod_task(&core, &path, None));
-                    } else if !self.error_queue.is_empty() {
-                        let msg = self
-                            .error_queue
-                            .drain(..)
-                            .fold(String::new(), |mut acc, e| {
-                                writeln!(acc, "{:?}", e).expect("Failed to write to String");
-                                acc
-                            });
-                        self.do_update(Message::Error(anyhow_ext::anyhow!("{msg}").context(
-                            "One or more errors occured while installing your mods. Please see \
-                             full details.",
-                        )));
-                    }
-                }
-                Message::Extract => {
-                    let mods = self.selected.clone();
-                    if let Some(folder) = rfd::FileDialog::new()
-                        .set_title("Mod_Unpack_Folder".localize())
-                        .pick_folder()
-                    {
-                        self.do_task(move |core| {
-                            uk_app::extract_mods(&core, mods, folder)?;
-                            Ok(Message::Noop)
-                        });
-                    }
-                }
-                Message::AddToProfile(profile) => {
-                    let mut dirty = self.dirty.write();
-                    let dirty = dirty.entry(profile.as_str().into()).or_default();
-                    let mut err = false;
-                    for mod_ in &self.selected {
-                        match self.core.mod_manager().add(&mod_.path, Some(&profile)) {
-                            Ok(_) => {
-                                if let Ok(manifest) = mod_.manifest() {
-                                    dirty.extend(&manifest);
-                                }
-                            }
-                            Err(e) => {
-                                self.do_update(Message::Error(e));
-                                err = true;
-                                break;
-                            }
-                        };
-                    }
-                    if !err {
-                        self.toasts.add({
-                            let message = "Profile_Added".localize();
-                            let vars = std::collections::HashMap::from(
-                                [("profile_name".to_string(), profile.to_string())]
-                            );
-                            let mut toast = Toast::success(message.format(&vars).unwrap());
-                            toast.duration(Some(Duration::new(2, 0)));
-                            toast
-                        });
-                    }
-                }
-                Message::RemoveMods(mods) => {
-                    self.mods.retain(|m| !mods.contains(m));
-                    self.selected.retain(|m| !mods.contains(m));
-                    mods.iter().for_each(|m| {
-                        if let Ok(manifest) = m.manifest() {
-                            self.dirty_mut().extend(&manifest);
-                        }
-                    });
-                    self.do_update(Message::RefreshModsDisplay);
-                    self.busy.set(false);
-                }
-                Message::Apply => {
-                    let mods = self.mods.clone();
-                    let dirty = std::mem::take(self.dirty_mut().deref_mut());
-                    self.do_task(move |core| {
-                        uk_app::apply_changes(&core, mods, Some(dirty))?;
-                        Ok(Message::ResetMods(None))
-                    });
-                }
-                Message::Deploy => {
-                    self.do_task(move |core| {
-                        log::info!("Deploying current mod configuration");
-                        core.deploy_manager().deploy()?;
-                        Ok(Message::ResetMods(None))
-                    })
-                }
-                Message::ResetPending => {
-                    self.do_task(|core| {
-                        log::info!("Resetting pending deployment data");
-                        core.deploy_manager().reset_pending()?;
-                        core.deploy_manager().save()?;
-                        Ok(Message::Noop)
-                    })
-                }
-                Message::Remerge => {
-                    self.do_task(|core| {
-                        uk_app::apply_changes(&core, vec![], None)?;
-                        Ok(Message::ResetMods(None))
-                    });
-                }
-                Message::ResetSettings => {
-                    self.busy.set(false);
-                    self.temp_settings = self.core.settings().clone();
-                    settings::CONFIG.write().clear();
-                }
-                Message::SaveSettings => {
-                    let mut needs_reset = false;
-                    if let Some(old_plat) = self.core.settings().platform_config() {
-                        if let Some(old_dep) = old_plat.deploy_config.as_ref() {
-                            if let Some(new_plat) = &self.temp_settings.platform_config() {
-                                if let Some(new_dep) = new_plat.deploy_config.as_ref() {
-                                    if (old_dep.layout != new_dep.layout ||
-                                        old_dep.method != new_dep.method ||
-                                        old_dep.output != new_dep.output)
-                                        && self.core.settings()
-                                            .wipe_output(self.core.settings().current_mode.into())
-                                            .is_ok() {
-                                        needs_reset = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    let save_res = self.temp_settings.save().and_then(|_| {
-                        self.core.reload()?;
-                        Ok(())
-                    });
-                    match save_res {
-                        Ok(()) => {
-                            self.toasts.add({
-                                let mut toast = Toast::success("Settings_Saved".localize());
-                                toast.duration(Some(Duration::new(2, 0)));
-                                toast
-                            });
-                            if let Some(dump) = self.core.settings().dump() {
-                                dump.clear_cache()
-                            }
-                            self.package_builder.borrow_mut().reset(self.platform());
-                            self.do_update(Message::ClearSelect);
-                            self.do_update(Message::ResetMods(None));
-                            if needs_reset {
-                                self.do_update(Message::ResetPending);
-                            }
-                        }
-                        Err(e) => self.do_update(Message::Error(e)),
-                    };
-                }
-                Message::HandleSettings => {
-                    self.temp_settings = self.core.settings().clone();
-                    self.toasts.add({
-                        let mut toast = Toast::success("Settings_Saved".localize());
-                        toast.duration(Some(Duration::new(2, 0)));
-                        toast
-                    });
-                    if let Some(dump) = self.core.settings().dump() {
-                        dump.clear_cache()
-                    }
-                    self.package_builder.borrow_mut().reset(self.platform());
-                    self.do_update(Message::ClearSelect);
-                    self.do_update(Message::ResetMods(None));
-                }
-                Message::RequestOptions(mut mod_, update) => {
-                    if !update {
-                        mod_.enable_default_options();
-                    }
-                    self.options_mod = Some((mod_, update));
-                }
-                Message::UpdateOptions(mod_) => {
-                    let opts = mod_.enabled_options.clone();
-                    match self
-                        .core
-                        .mod_manager()
-                        .set_enabled_options(mod_.hash(), opts)
-                    {
-                        Ok(manifest) => {
-                            self.dirty_mut().extend(&manifest);
-                            if let Some(old_mod) =
-                                self.mods.iter_mut().find(|m| m.hash() == mod_.hash())
-                            {
-                                *old_mod = mod_.clone();
-                            }
-                            if let Some(old_mod) =
-                                self.selected.iter_mut().find(|m| m.hash() == mod_.hash())
-                            {
-                                *old_mod = mod_;
-                            }
-                            self.do_update(Message::RefreshModsDisplay);
-                        }
-                        Err(e) => self.do_update(Message::Error(e)),
-                    }
-                }
-                Message::Error(error) => {
-                    log::error!("{:?}", &error);
-                    if self.install_queue.is_empty() {
-                        self.busy.set(false);
-                        self.error = Some(error);
-                    } else {
-                        log::warn!("More operations in queue, stashing error and continuing…");
-                        self.error_queue.push_back(error);
-                        if let Some(path) = self.install_queue.pop_front() {
-                            self.do_task(move |core| open_mod_task(&core, &path, None));
-                        }
-                    }
-                }
+    pub(super) fn handle_update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Drain ALL session events per frame (fixes the one-message-per-frame
+        // lag, GUI_REF §22.8).
+        let mut got_events = false;
+        while let Ok(event) = self.events.try_recv() {
+            got_events = true;
+            self.handle_event(event, ctx);
+        }
+        if got_events {
+            self.sync_snapshot(ctx);
+        }
+        // Drain ALL UI messages per frame.
+        while let Ok(msg) = self.channel.1.try_recv() {
+            self.handle_message(msg, ctx);
+        }
+        if self.visible_dirty {
+            self.refresh_visible();
+        }
+        self.handle_drops(ctx);
+        if got_events || self.snap.busy.is_some() || self.downloading.is_some() {
+            ctx.request_repaint();
+        }
+    }
 
-                Message::CheckMeta => {
-                    let source = &self.package_builder.borrow().source;
-                    for file in ["info.json", "rules.txt", "meta.yml"] {
-                        let file = source.join(file);
-                        if file.exists() {
-                            self.do_task(move |_| {
-                                uk_app::parse_meta(file).map(Message::UpdatePackageMeta)
-                            });
-                            break;
-                        }
+    /// Re-reads the snapshot after events: reconciles selection with the
+    /// current entries and flags the visible list for re-derivation.
+    fn sync_snapshot(&mut self, ctx: &egui::Context) {
+        let old = std::mem::replace(&mut self.snap, self.session.snapshot());
+        if old.profile != self.snap.profile {
+            // Switching profiles clears the selection (GUI_REF §22.39).
+            self.selected.clear();
+            self.drag = None;
+            self.hover = None;
+        }
+        if old.revision != self.snap.revision {
+            self.visible_dirty = true;
+            // The mod list changed: reload the profile manager and drop the
+            // info tab's cached file trees / markdown (parity with the old
+            // ResetMods handler).
+            self.profiles_state.borrow_mut().reload(&self.core);
+            info::ROOTS.write().clear();
+            ctx.data_mut(|d| {
+                d.remove::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(Id::new("md_cache"));
+            });
+        }
+        // Drop selected ids that no longer exist (an update changes the hash).
+        self.selected
+            .retain(|id| self.snap.entries.iter().any(|e| &e.id == id));
+    }
+
+    fn handle_event(&mut self, event: Event, ctx: &egui::Context) {
+        match event {
+            Event::Revision(_) | Event::Progress { .. } => {
+                // The snapshot is re-read after the drain loop.
+            }
+            Event::Inspection(inspection) => {
+                match inspection {
+                    Inspection::Ready(candidate) => {
+                        self.session.dispatch(Command::Install(candidate));
                     }
-                }
-                Message::GetPackagingOptions => {
-                    let folder = self.package_builder.borrow().source.join("options");
-                    if let Ok(reader) = fs::read_dir(folder) {
-                        let files = reader
-                            .filter_map(|res| {
-                                res.ok().and_then(|e| {
-                                    e.file_type()
-                                        .ok()
-                                        .and_then(|t| t.is_dir().then(|| e.path()))
-                                })
-                            })
-                            .collect();
-                        self.do_update(Message::ShowPackagingOptions(files));
+                    Inspection::NeedsOptions(prompt) => {
+                        let picks = prompt.defaults().to_vec();
+                        self.options_modal = Some(OptionsModal::Install { prompt, picks });
                     }
-                }
-                Message::ShowPackagingOptions(folders) => {
-                    self.opt_folders = Some(Mutex::new(folders));
-                }
-                Message::ShowPackagingDependencies => {
-                    self.show_package_deps = true;
-                }
-                Message::ClosePackagingOptions => self.opt_folders = None,
-                Message::ClosePackagingDependencies => self.show_package_deps = false,
-                Message::PackageMod => {
-                    let mut builder = self.package_builder.borrow().clone();
-                    let default_name = sanitise(&builder.meta.name) + ".zip";
-                    if let Some(dest) = rfd::FileDialog::new()
-                        .add_filter("UKMM Mod", &["zip"])
-                        .set_title("Package_Save_Title".localize())
-                        .set_file_name(default_name)
-                        .save_file()
-                    {
-                        builder.dest = dest;
-                        self.do_task(move |core| {
-                            uk_app::package_mod(&core, builder.source, builder.dest, builder.meta)?;
-                            Ok(Message::ResetPacker)
-                        });
+                    Inspection::NeedsMeta { path, .. } => {
+                        self.meta_input.open(path, self.platform());
                     }
-                }
-                Message::ResetPacker => {
-                    self.package_builder.borrow_mut().reset(self.platform());
-                    self.busy.set(false);
-                }
-                Message::ImportCemu => {
-                    if let Some(path) = rfd::FileDialog::new()
-                        .set_title("Settings_SelectFolder_Cemu".localize())
-                        .pick_folder()
-                    {
-                        self.do_task(move |core| {
-                            uk_app::import_cemu_settings(&core, &path)?;
-                            Ok(Message::ResetSettings)
-                        });
+                    Inspection::WrongPlatform { mod_is, current } => {
+                        self.error =
+                            Some(uk_app::error::AppError::WrongPlatform(mod_is, current).into());
                     }
-                }
-                Message::MigrateBcml => {
-                    self.do_task(move |core| {
-                        uk_app::migrate_bcml(&core)?;
-                        Ok(Message::HandleSettings)
-                    });
-                }
-                Message::RequestMeta(path) => {
-                    self.meta_input.open(path, self.platform());
-                }
-                Message::SetChangelog(msg) => self.changelog = Some(msg),
-                Message::CloseChangelog => self.changelog = None,
-                Message::OfferUpdate(version) => {
-                    let message = "Update_Available".localize();
-                    self.changelog = Some(format!(
-                        "{}\n\n{}",
-                        message,
-                        version.description()
-                    ));
-                    self.new_version = Some(version);
-                }
-                Message::DoUpdate => {
-                    let version = self.new_version.take().unwrap();
-                    self.changelog = None;
-                    self.do_task(move |_| {
-                        uk_app::host::updates::install_update(version)?;
-                        Ok(Message::Restart)
-                    });
-                }
-                Message::Restart => {
-                    let mut exe = std::env::current_exe().unwrap();
-                    if exe.extension().and_then(|x| x.to_str()).contains(&"bak") {
-                        exe.set_extension("");
+                    Inspection::MissingMasters(masters) => {
+                        // Advisory only: the install proceeds regardless.
+                        let names = masters
+                            .iter()
+                            .map(|m| format!("{} {}", m.name, m.version))
+                            .collect::<Vec<_>>()
+                            .join(", ");
+                        self.error = Some(
+                            uk_app::error::AppError::MissingMasters {
+                                name:    names,
+                                version: String::new(),
+                            }
+                            .into(),
+                        );
                     }
-                    let mut command = std::process::Command::new(exe);
-                    #[cfg(unix)]
-                    {
-                        std::os::unix::process::CommandExt::process_group(&mut command, 0);
-                    }
-                    command.spawn().unwrap();
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                }
-                Message::Toast(msg) => {
-                    self.toasts.add({
-                        let mut toast = Toast::info(msg);
-                        toast.duration(Some(Duration::new(2, 0)));
-                        toast
-                    });
-                }
-                Message::UpdatePackageMeta(meta) => {
-                    self.package_builder.borrow_mut().meta = meta;
-                    self.busy.set(false);
                 }
             }
-        } else {
-            self.handle_drops(ctx);
+            Event::Updated { from, to } => {
+                // An update changed the mod's hash: carry the selection over
+                // to the new id.
+                if self.selected.contains(&from) {
+                    self.selected.retain(|s| *s != from);
+                    if !self.selected.contains(&to) {
+                        self.selected.push(to);
+                    }
+                }
+                if self.drag == Some(from) {
+                    self.drag = Some(to);
+                }
+                if self.hover == Some(from) {
+                    self.hover = Some(to);
+                }
+            }
+            Event::ProfilesChanged => {
+                self.profiles_state.borrow_mut().reload(&self.core);
+            }
+            Event::SettingsChanged => {
+                self.temp_settings = self.core.settings().clone();
+                settings::CONFIG.write().clear();
+                self.package_builder.borrow_mut().reset(self.platform());
+                self.toasts.add({
+                    let mut toast = Toast::success("Settings_Saved".localize());
+                    toast.duration(Some(Duration::new(2, 0)));
+                    toast
+                });
+            }
+            Event::PackageMeta(meta) => {
+                self.package_builder.borrow_mut().meta = meta;
+            }
+            Event::Packaged => {
+                self.package_builder.borrow_mut().reset(self.platform());
+            }
+            Event::Changelog(md) => self.changelog = Some(md),
+            Event::UpdateAvailable(version) => {
+                let message = "Update_Available".localize();
+                self.changelog = Some(format!("{}\n\n{}", message, version.description()));
+                self.new_version = Some(version);
+            }
+            Event::Restart => self.restart(ctx),
+            Event::JobDone {
+                result: Err(error), ..
+            }
+            | Event::Error(error) => {
+                log::error!("{:?}", &error);
+                self.error = Some(error.into());
+            }
+            _ => {}
         }
+    }
+
+    fn restart(&self, ctx: &egui::Context) {
+        let mut exe = std::env::current_exe().unwrap();
+        if exe.extension().and_then(|x| x.to_str()).contains(&"bak") {
+            exe.set_extension("");
+        }
+        let mut command = std::process::Command::new(exe);
+        #[cfg(unix)]
+        {
+            std::os::unix::process::CommandExt::process_group(&mut command, 0);
+        }
+        command.spawn().unwrap();
+        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+    }
+
+    fn handle_message(&mut self, msg: Message, ctx: &egui::Context) {
+        match msg {
+            Message::ChangeSort(sort, rev) => {
+                self.list_state.sort = sort;
+                self.list_state.descending = rev;
+                self.visible_dirty = true;
+            }
+            Message::SelectOnly(id) => {
+                if self.selected.contains(&id) {
+                    self.selected.retain(|s| *s == id);
+                } else {
+                    self.selected.clear();
+                    self.selected.push(id);
+                }
+                self.drag = None;
+            }
+            Message::SelectAlso(id) => {
+                if !self.selected.contains(&id) {
+                    self.selected.push(id);
+                }
+                self.drag = None;
+            }
+            Message::SelectThrough(id) => {
+                if let Some(index) = self.visible.iter().position(|v| *v == id) {
+                    if let Some(start) = self
+                        .selected
+                        .first()
+                        .and_then(|s| self.visible.iter().position(|v| v == s))
+                    {
+                        let range = if start < index {
+                            start..=index
+                        } else {
+                            index..=start
+                        };
+                        self.selected = self
+                            .visible
+                            .iter()
+                            .enumerate()
+                            .filter(|(i, _)| range.contains(i))
+                            .map(|(_, id)| *id)
+                            .collect();
+                    }
+                }
+                self.drag = None;
+            }
+            Message::Deselect(id) => {
+                self.selected.retain(|s| *s != id);
+                self.drag = None;
+            }
+            Message::StartDrag(id) => {
+                if ctx.input(|i| i.pointer.any_released()) {
+                    self.drag = None;
+                }
+                self.drag = Some(id);
+                if !self.selected.contains(&id) {
+                    if !ctx.input(|i| i.modifiers.ctrl) {
+                        self.selected.clear();
+                    }
+                    self.selected.push(id);
+                }
+            }
+            Message::CloseError => self.error = None,
+            Message::CloseConfirm => self.confirm = None,
+            Message::ShowAbout => self.show_about = true,
+            Message::CloseAbout => self.show_about = false,
+            Message::CloseProfiles => self.profiles_state.borrow_mut().show = false,
+            Message::Confirm(cmd, prompt) => self.confirm = Some((cmd, prompt)),
+            Message::SelectProfileManage(name) => {
+                self.profiles_state.borrow_mut().selected = Some(name);
+            }
+            Message::SetDownloading(name) => {
+                log::info!("Downloading {name} from GameBanana…");
+                ctx.request_repaint();
+                self.downloading = Some(name);
+            }
+            Message::SetFocus(pane) => self.focused = pane,
+            Message::SetTheme(theme) => {
+                theme.set_theme(ctx);
+                self.theme = theme;
+                self.dock_style = visuals::style_dock(&ctx.style());
+            }
+            Message::SetLanguage(lang) => {
+                LOCALIZATION.write().update_language(&lang);
+            }
+            Message::FilePickerUp => {
+                let has_parent = self.picker_state.path.parent().is_some();
+                if has_parent {
+                    self.picker_state
+                        .history
+                        .push(self.picker_state.path.clone());
+                    self.picker_state
+                        .set_path(self.picker_state.path.parent().unwrap().to_path_buf());
+                }
+            }
+            Message::FilePickerBack => {
+                if let Some(prev) = self.picker_state.history.pop() {
+                    self.picker_state.set_path(prev);
+                }
+            }
+            Message::FilePickerSet(path) => {
+                let path = match path {
+                    Some(path) => path,
+                    None => self.picker_state.path_input.as_str().into(),
+                };
+                if path.is_dir() {
+                    self.picker_state.selected = None;
+                    self.picker_state
+                        .history
+                        .push(self.picker_state.path.clone());
+                    self.picker_state.set_path(path);
+                }
+            }
+            Message::OpenMod(path) => {
+                let meta = self.meta_input.take();
+                self.downloading = None;
+                ctx.request_repaint();
+                self.session.dispatch(Command::Open { path, meta });
+            }
+            Message::SelectFile => {
+                if let Some(paths) = rfd::FileDialog::new()
+                    .set_title("Mod_Select_Title".localize())
+                    .add_filter("Any mod (*.zip, *.rar, *.7z, *.bnp, rules.txt)", &[
+                        "zip", "rar", "7z", "bnp", "txt",
+                    ])
+                    .add_filter("UKMM Mod (*.zip)", &["zip"])
+                    .add_filter("BCML Mod (*.bnp)", &["bnp"])
+                    .add_filter("Legacy Mod (*.zip, *.rar, *.7z, rules.txt)", &[
+                        "zip", "rar", "7z", "txt",
+                    ])
+                    .add_filter("All files (*.*)", &["*"])
+                    .pick_files()
+                    .filter(|p| !p.is_empty())
+                {
+                    self.downloading = None;
+                    self.session.dispatch(Command::InstallBatch {
+                        paths,
+                        replace: None,
+                    });
+                }
+            }
+            Message::CheckMeta => {
+                let source = self.package_builder.borrow().source.clone();
+                for file in ["info.json", "rules.txt", "meta.yml"] {
+                    let file = source.join(file);
+                    if file.exists() {
+                        self.session.dispatch(Command::ParseMeta(file));
+                        break;
+                    }
+                }
+            }
+            Message::GetPackagingOptions => {
+                let folder = self.package_builder.borrow().source.join("options");
+                if let Ok(reader) = fs::read_dir(folder) {
+                    let files = reader
+                        .filter_map(|res| {
+                            res.ok().and_then(|e| {
+                                e.file_type()
+                                    .ok()
+                                    .and_then(|t| t.is_dir().then(|| e.path()))
+                            })
+                        })
+                        .collect();
+                    self.do_update(Message::ShowPackagingOptions(files));
+                }
+            }
+            Message::ShowPackagingOptions(folders) => {
+                self.opt_folders = Some(Mutex::new(folders));
+            }
+            Message::ShowPackagingDependencies => {
+                self.show_package_deps = true;
+            }
+            Message::ClosePackagingOptions => self.opt_folders = None,
+            Message::ClosePackagingDependencies => self.show_package_deps = false,
+            Message::PackageMod => {
+                let builder = self.package_builder.borrow().clone();
+                let default_name = sanitise(&builder.meta.name) + ".zip";
+                if let Some(dest) = rfd::FileDialog::new()
+                    .add_filter("UKMM Mod", &["zip"])
+                    .set_title("Package_Save_Title".localize())
+                    .set_file_name(default_name)
+                    .save_file()
+                {
+                    self.session.dispatch(Command::Package {
+                        source: builder.source,
+                        dest,
+                        meta: builder.meta,
+                    });
+                }
+            }
+            Message::ImportCemu => {
+                if let Some(path) = rfd::FileDialog::new()
+                    .set_title("Settings_SelectFolder_Cemu".localize())
+                    .pick_folder()
+                {
+                    self.session.dispatch(Command::ImportCemu(path));
+                }
+            }
+            Message::MigrateBcml => {
+                self.session.dispatch(Command::MigrateBcml);
+            }
+            Message::SaveSettings => {
+                let mut needs_reset = false;
+                if let Some(old_plat) = self.core.settings().platform_config() {
+                    if let Some(old_dep) = old_plat.deploy_config.as_ref() {
+                        if let Some(new_plat) = &self.temp_settings.platform_config() {
+                            if let Some(new_dep) = new_plat.deploy_config.as_ref() {
+                                if (old_dep.layout != new_dep.layout
+                                    || old_dep.method != new_dep.method
+                                    || old_dep.output != new_dep.output)
+                                    && self
+                                        .core
+                                        .settings()
+                                        .wipe_output(self.core.settings().current_mode.into())
+                                        .is_ok()
+                                {
+                                    needs_reset = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                match self.temp_settings.save() {
+                    Ok(()) => {
+                        // The session reloads the core from disk and answers
+                        // with SettingsChanged. Saving also drops the staged
+                        // pending files (parity with the old ResetMods(None)).
+                        self.session.dispatch(Command::Reload);
+                        self.session.dispatch(Command::CancelPending);
+                        self.selected.clear();
+                        if needs_reset {
+                            self.session.dispatch(Command::ResetPending);
+                        }
+                    }
+                    Err(e) => self.error = Some(e),
+                };
+            }
+            Message::ResetSettings => {
+                self.temp_settings = self.core.settings().clone();
+                settings::CONFIG.write().clear();
+            }
+            Message::NewProfile => self.new_profile = Some("".into()),
+            Message::DoUpdate => {
+                if let Some(version) = self.new_version.take() {
+                    self.changelog = None;
+                    self.session.dispatch(Command::InstallUpdate(version));
+                }
+            }
+            Message::Toast(msg) => {
+                self.toasts.add({
+                    let mut toast = Toast::info(msg);
+                    toast.duration(Some(Duration::new(2, 0)));
+                    toast
+                });
+            }
+            Message::CloseChangelog => self.changelog = None,
+            Message::Error(error) => self.error = Some(error),
+        }
+    }
+
+    /// The ids a context-menu action targets: the clicked mod, or the whole
+    /// selection when the clicked mod is part of it (GUI_REF §22.10).
+    pub(super) fn context_target(&self, clicked: ModId) -> Vec<ModId> {
+        if self.selected.contains(&clicked) {
+            self.selected.clone()
+        } else {
+            vec![clicked]
+        }
+    }
+
+    /// The load-order destination for a drag onto `hovered` (never a row
+    /// index — GUI_REF §22.1).
+    pub(super) fn drag_dest(&self, hovered: ModId) -> usize {
+        load_index_of(&self.snap.entries, hovered).unwrap_or(self.snap.entries.len())
     }
 }

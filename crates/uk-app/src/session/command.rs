@@ -8,7 +8,10 @@ use serde::{Deserialize, Serialize};
 use uk_manager::mods::Mod;
 use uk_mod::{Meta, ModOption, OptionGroup};
 
-use crate::{options::required_satisfied, profile::ProfileName, session::ModId};
+use crate::{
+    host::updates::VersionResponse, options::required_satisfied, profile::ProfileName,
+    session::ModId,
+};
 
 /// A mod that passed inspection and is ready to install. Constructible only
 /// through [`OptionsPrompt::resolve`] or the no-options path, so installing
@@ -155,4 +158,28 @@ pub enum Command {
         ids:  Vec<ModId>,
         dest: PathBuf,
     },
+    /// Re-read settings from disk and rebuild the managers, then refresh all
+    /// session state. The frontend saves settings itself (phase 4 owns the
+    /// settings draft) and dispatches this afterwards.
+    Reload,
+    /// Import settings from a Cemu `settings.xml`, then reload.
+    ImportCemu(PathBuf),
+    /// Migrate a BCML installation into the current config, then reload.
+    MigrateBcml,
+    /// Package a mod zip from a loose source folder.
+    Package {
+        source: PathBuf,
+        dest:   PathBuf,
+        meta:   Meta,
+    },
+    /// Parse a meta file (`info.json` / `rules.txt` / `meta.yml`); answers
+    /// with [`Event::PackageMeta`](crate::session::Event::PackageMeta).
+    ParseMeta(PathBuf),
+    /// Check GitHub for releases; answers with
+    /// [`Event::UpdateAvailable`](crate::session::Event::UpdateAvailable) or
+    /// [`Event::Changelog`](crate::session::Event::Changelog).
+    CheckForUpdates,
+    /// Download and install a release; answers with
+    /// [`Event::Restart`](crate::session::Event::Restart).
+    InstallUpdate(VersionResponse),
 }

@@ -180,13 +180,14 @@ impl State {
         let pending = self
             .dirty
             .get(profile.as_str())
-            .map(manifest_files)
-            .unwrap_or(0);
+            .cloned()
+            .map(|manifest| PendingSummary { manifest })
+            .unwrap_or_default();
         Snapshot {
             revision: self.revision,
             profile,
             entries: self.mods.iter().map(ModEntry::from_mod).collect(),
-            pending: PendingSummary { files: pending },
+            pending,
             busy: self.busy,
             progress: self.progress.clone(),
             installing: self.installing,

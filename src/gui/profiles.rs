@@ -3,11 +3,12 @@ use std::path::PathBuf;
 use fs_err as fs;
 use smartstring::alias::String as SmartString;
 use strfmt::Format;
-use uk_content::util::{HashMap, HashSet};
+use uk_app::Command;
+use uk_content::util::HashMap;
 use uk_localization::string_ext::LocString;
 use uk_manager::mods::Profile as ProfileData;
 use uk_ui::{
-    egui::{self, text::LayoutJob, Layout, TextStyle},
+    egui::{self, Layout, TextStyle, text::LayoutJob},
     icons::IconButtonExt,
 };
 
@@ -99,18 +100,26 @@ impl ProfileManagerState {
                             ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
                         });
                     ui.add_space(8.0);
-                    if let Some(new_name) = self.rename.as_mut() {
+                    let rename_target = self.rename.clone();
+                    if let Some(new_name) = rename_target {
                         ui.horizontal(|ui| {
-                            ui.text_edit_singleline(new_name);
+                            let mut new_name = new_name;
+                            ui.text_edit_singleline(&mut new_name);
                             if ui
                                 .icon_button(uk_ui::icons::Icon::Check)
                                 .on_hover_text("Generic_Save".localize())
                                 .clicked()
                             {
-                                app.do_update(Message::RenameProfile(
-                                    name.to_string(),
-                                    new_name.clone(),
-                                ));
+                                match uk_app::ProfileName::parse(&new_name) {
+                                    Ok(to) => {
+                                        app.session.dispatch(Command::RenameProfile {
+                                            from: uk_app::ProfileName::from_existing(name),
+                                            to,
+                                        });
+                                        self.rename = None;
+                                    }
+                                    Err(e) => app.do_update(Message::Error(e)),
+                                }
                             }
                         });
                     }
@@ -120,15 +129,19 @@ impl ProfileManagerState {
                             self.rename = Some(name.to_string());
                         }
                         if ui.button("Profile_Duplicate".localize()).clicked() {
-                            app.do_update(Message::DuplicateProfile(name.to_string()));
+                            app.session.dispatch(Command::DuplicateProfile(
+                                uk_app::ProfileName::from_existing(name),
+                            ));
                         }
                         if ui.button("Generic_Delete".localize()).clicked() {
                             let message = "Profile_Delete_Confirmation".localize();
-                            let vars = std::collections::HashMap::from(
-                                [("profile_name".to_string(), name.to_string())]
-                            );
+                            let vars = std::collections::HashMap::from([(
+                                "profile_name".to_string(),
+                                name.to_string(),
+                            )]);
                             app.do_update(Message::Confirm(
-                                Message::DeleteProfile(name.to_string()).into(),
+                                Command::DeleteProfile(uk_app::ProfileName::from_existing(name))
+                                    .into(),
                                 message.format(&vars).unwrap(),
                             ));
                         }
@@ -184,7 +197,9 @@ impl ProfileManagerState {
                                     });
                                 });
                                 let available = ui.available_size();
-                            ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
+                                ui.allocate_space(
+                                    [available.x.max(0.0), available.y.max(0.0)].into(),
+                                );
                             });
                             self.render_selected_profile(app, ui);
                         });
@@ -198,18 +213,5 @@ impl ProfileManagerState {
                     });
                 });
         }
-    }
-
-    #[inline]
-    pub fn all_assigned_mod_hashes(&self) -> HashSet<usize> {
-        self.profiles
-            .values()
-            .map(|m| m.mods()
-                .keys()
-                .copied()
-                .collect::<Vec<_>>()
-            )
-            .flatten()
-            .collect()
     }
 }

@@ -1,4 +1,5 @@
 use uk_localization::string_ext::LocString;
+
 use super::*;
 
 impl App {
@@ -31,11 +32,9 @@ impl App {
                             // ui.add_space(8.);
                             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                                 ui.label(if config.auto {
-                                    RichText::new("Generic_Yes".localize())
-                                        .color(visuals::GREEN)
+                                    RichText::new("Generic_Yes".localize()).color(visuals::GREEN)
                                 } else {
-                                    RichText::new("Generic_No".localize())
-                                        .color(visuals::RED)
+                                    RichText::new("Generic_No".localize()).color(visuals::RED)
                                 });
                             })
                         });
@@ -83,32 +82,38 @@ impl App {
                                     if let Some(ref exe) = config.executable {
                                         ui.add_space(4.);
                                         if ui.button("Deploy_OpenEmu".localize()).clicked() {
-                                            let mut iter = shlex::split(&exe.replace("\\","/"))
+                                            let mut iter = shlex::split(&exe.replace("\\", "/"))
                                                 .unwrap_or_default()
                                                 .into_iter();
-                                            let (cmd, args) = (
-                                                iter.next().unwrap(),
-                                                iter.collect::<Vec<_>>()
-                                            );
-                                            match std::process::Command::new(cmd)
-                                                .args(args)
-                                                .spawn() {
+                                            let (cmd, args) =
+                                                (iter.next().unwrap(), iter.collect::<Vec<_>>());
+                                            match std::process::Command::new(cmd).args(args).spawn()
+                                            {
                                                 Ok(mut child) => {
                                                     thread::sleep(Duration::from_secs(1));
                                                     match child.try_wait() {
-                                                        Ok(Some(status)) => if !status.success() {
-                                                            self.do_update(Message::Error(
-                                                                anyhow::anyhow!("Emulator exited with non-zero exit status {status}"),
-                                                            ))
-                                                        },
+                                                        Ok(Some(status)) => {
+                                                            if !status.success() {
+                                                                self.do_update(Message::Error(
+                                                                    anyhow::anyhow!(
+                                                                        "Emulator exited with \
+                                                                         non-zero exit status \
+                                                                         {status}"
+                                                                    ),
+                                                                ))
+                                                            }
+                                                        }
                                                         Ok(None) => {}
-                                                        Err(e) =>
+                                                        Err(e) => {
                                                             self.do_update(Message::Error(
-                                                                anyhow::Error::from(e)
-                                                                    .context("There was an error running the emulator"),
+                                                                anyhow::Error::from(e).context(
+                                                                    "There was an error running \
+                                                                     the emulator",
+                                                                ),
                                                             ))
+                                                        }
                                                     }
-                                                },
+                                                }
                                                 Err(e) => {
                                                     self.do_update(Message::Error(
                                                         anyhow::Error::from(e)
@@ -118,18 +123,14 @@ impl App {
                                             }
                                         }
                                     }
-                                    if ui
-                                        .add(egui::Button::new("Tab_Deploy".localize()))
-                                        .clicked()
+                                    if ui.add(egui::Button::new("Tab_Deploy".localize())).clicked()
                                     {
-                                        self.do_update(Message::Deploy);
+                                        self.session.dispatch(uk_app::Command::Deploy);
                                     }
                                     if config.auto && self.core.deploy_manager().pending() {
                                         ui.label(
-                                            RichText::new(
-                                                "Deploy_Auto_Failed".localize()
-                                            )
-                                            .color(visuals::RED),
+                                            RichText::new("Deploy_Auto_Failed".localize())
+                                                .color(visuals::RED),
                                         );
                                     }
                                 });

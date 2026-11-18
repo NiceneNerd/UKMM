@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use uk_manager::mods::Mod;
-use uk_mod::{Meta, ModOption};
+use uk_mod::{Manifest, Meta, ModOption};
 
 use crate::profile::ProfileName;
 
@@ -42,12 +42,17 @@ impl ModEntry {
 /// Pending (staged for the next merge) state of the current profile.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PendingSummary {
-    pub files: usize,
+    pub manifest: Manifest,
 }
 
 impl PendingSummary {
+    /// Number of files the pending manifest touches.
+    pub fn files(&self) -> usize {
+        self.manifest.content_files.len() + self.manifest.aoc_files.len()
+    }
+
     pub fn is_empty(&self) -> bool {
-        self.files == 0
+        self.files() == 0
     }
 }
 

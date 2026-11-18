@@ -4,9 +4,11 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+use uk_mod::Meta;
 
 use crate::{
     error::AppError,
+    host::updates::VersionResponse,
     profile::ProfileName,
     session::{InstallCandidate, JobId, ModId, OptionsPrompt},
 };
@@ -47,8 +49,11 @@ pub enum Event {
     Installed {
         id: ModId,
     },
+    /// A mod was replaced by an update; `from` is the old id (its hash
+    /// changed), `to` the new one.
     Updated {
-        id: ModId,
+        from: ModId,
+        to:   ModId,
     },
     Removed {
         ids: Vec<ModId>,
@@ -68,4 +73,16 @@ pub enum Event {
         result: Result<(), AppError>,
     },
     Error(AppError),
+    /// Settings were reloaded from disk; re-read them from the core.
+    SettingsChanged,
+    /// Result of [`Command::ParseMeta`](crate::session::Command::ParseMeta).
+    PackageMeta(Meta),
+    /// A mod was packaged; the packer can reset.
+    Packaged,
+    /// The newest release's changelog (we are ahead of it).
+    Changelog(String),
+    /// A newer release is available.
+    UpdateAvailable(VersionResponse),
+    /// The self-update finished; the frontend should restart the app.
+    Restart,
 }

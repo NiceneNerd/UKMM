@@ -6,8 +6,8 @@ use rustc_hash::FxHashSet;
 use uk_localization::string_ext::LocString;
 use uk_manager::settings::Platform;
 use uk_mod::{
-    ExclusiveOptionGroup, Meta, ModOption, ModOptionGroup, ModPlatform, MultipleOptionGroup,
-    OptionGroup, ModCategory,
+    ExclusiveOptionGroup, Meta, ModCategory, ModOption, ModOptionGroup, ModPlatform,
+    MultipleOptionGroup, OptionGroup,
 };
 use uk_ui::{
     egui::{self, Align2, Context, Id, Layout, Response, TextStyle, Ui},
@@ -26,7 +26,6 @@ fn render_field(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R
 #[derive(Debug, Clone)]
 pub struct ModPackerBuilder {
     pub source: PathBuf,
-    pub dest:   PathBuf,
     pub meta:   Meta,
 }
 
@@ -34,7 +33,6 @@ impl ModPackerBuilder {
     pub fn new(platform: Platform) -> Self {
         ModPackerBuilder {
             source: Default::default(),
-            dest:   Default::default(),
             meta:   Meta::blank(ModPlatform::Specific(platform.into())),
         }
     }
@@ -55,28 +53,29 @@ impl ModPackerBuilder {
                     .show_rows(
                         ui,
                         ui.text_style_height(&TextStyle::Body),
-                        app.mods.len(),
+                        app.snap.entries.len(),
                         |ui, range| {
-                            for mod_ in app
-                                .mods
+                            for entry in app
+                                .snap
+                                .entries
                                 .iter()
                                 .skip(range.start)
                                 .take(range.end - range.start)
                             {
-                                let mut in_deps = self.meta.masters.contains_key(&mod_.hash());
+                                let mut in_deps = self.meta.masters.contains_key(&entry.id.0);
                                 let friendly = format!(
                                     " {} (v{})",
-                                    mod_.meta.name.as_str(),
-                                    mod_.meta.version
+                                    entry.meta.name.as_str(),
+                                    entry.meta.version
                                 );
                                 if ui.checkbox(&mut in_deps, friendly).changed() {
                                     if in_deps {
                                         self.meta.masters.insert(
-                                            mod_.hash(),
-                                            (mod_.meta.name.clone(), mod_.meta.version.clone()),
+                                            entry.id.0,
+                                            (entry.meta.name.clone(), entry.meta.version.clone()),
                                         );
                                     } else {
-                                        self.meta.masters.shift_remove(&mod_.hash());
+                                        self.meta.masters.shift_remove(&entry.id.0);
                                     }
                                 }
                             }
@@ -104,10 +103,10 @@ impl ModPackerBuilder {
                     egui::Frame::NONE.inner_margin(8.0).show(ui, |ui| {
                         ui.spacing_mut().item_spacing.y = 8.0;
                         ui.horizontal(|ui| {
-                            if ui.icon_text_button(
-                                "Options_Group_Add".localize(),
-                                Icon::Add
-                            ).clicked() {
+                            if ui
+                                .icon_text_button("Options_Group_Add".localize(), Icon::Add)
+                                .clicked()
+                            {
                                 self.meta
                                     .options
                                     .push(OptionGroup::Multiple(Default::default()));
@@ -150,10 +149,10 @@ impl ModPackerBuilder {
                 egui::CollapsingHeader::new(group_name)
                     .default_open(true)
                     .show(ui, |ui| {
-                        if ui.icon_text_button(
-                            "Generic_Delete".localize(),
-                            Icon::Delete
-                        ).clicked() {
+                        if ui
+                            .icon_text_button("Generic_Delete".localize(), Icon::Delete)
+                            .clicked()
+                        {
                             delete = Some(i);
                         }
                         ui.label("Options_Group_Name".localize());
@@ -167,7 +166,7 @@ impl ModPackerBuilder {
                             if ui
                                 .radio(
                                     matches!(opt_group, OptionGroup::Exclusive(_)),
-                                    "Options_Group_Exclusive".localize()
+                                    "Options_Group_Exclusive".localize(),
                                 )
                                 .clicked()
                             {
@@ -182,7 +181,7 @@ impl ModPackerBuilder {
                             if ui
                                 .radio(
                                     matches!(opt_group, OptionGroup::Multiple(_)),
-                                    "Options_Group_Multiple".localize()
+                                    "Options_Group_Multiple".localize(),
                                 )
                                 .clicked()
                             {
@@ -195,8 +194,11 @@ impl ModPackerBuilder {
                                 });
                             }
                         });
-                        ui.checkbox(opt_group.required_mut(), "Options_Group_Required".localize())
-                            .on_hover_text("Options_Group_Required_Desc".localize());
+                        ui.checkbox(
+                            opt_group.required_mut(),
+                            "Options_Group_Required".localize(),
+                        )
+                        .on_hover_text("Options_Group_Required_Desc".localize());
                         if let OptionGroup::Exclusive(group) = opt_group {
                             let id = Id::new(group.name.as_str()).with("default");
                             let default = "Options_None".localize();
@@ -225,7 +227,10 @@ impl ModPackerBuilder {
                                 });
                         }
                         ui.add_enabled_ui(!folders.lock().is_empty(), |ui| {
-                            if ui.icon_text_button("Options_Add".localize(), Icon::Add).clicked() {
+                            if ui
+                                .icon_text_button("Options_Add".localize(), Icon::Add)
+                                .clicked()
+                            {
                                 opt_group.options_mut().push(ModOption {
                                     name: Default::default(),
                                     description: Default::default(),
@@ -277,7 +282,10 @@ impl ModPackerBuilder {
                 .id_salt(id.with("header"))
                 .default_open(true)
                 .show(ui, |ui| {
-                    if ui.icon_text_button("Generic_Delete".localize(), Icon::Delete).clicked() {
+                    if ui
+                        .icon_text_button("Generic_Delete".localize(), Icon::Delete)
+                        .clicked()
+                    {
                         *delete = Some(i);
                     }
                     ui.label("Options_Name".localize());
@@ -286,7 +294,10 @@ impl ModPackerBuilder {
                     ui.text_edit_multiline(&mut SmartStringWrapper(&mut option.description));
                     if let Some(ref mut defaults) = defaults {
                         let mut default = defaults.contains(&option.path);
-                        if ui.checkbox(&mut default, "Options_Default_Enable".localize()).changed() {
+                        if ui
+                            .checkbox(&mut default, "Options_Default_Enable".localize())
+                            .changed()
+                        {
                             if default {
                                 defaults.insert(option.path.clone());
                             } else {
@@ -339,10 +350,10 @@ impl ModPackerBuilder {
             ui.horizontal(|ui| {
                 let source_set = self.source.exists();
                 ui.add_enabled_ui(source_set, |ui| {
-                    if ui.icon_text_button(
-                        "Package_ManageOptions".localize(),
-                        Icon::Tune
-                    ).clicked() {
+                    if ui
+                        .icon_text_button("Package_ManageOptions".localize(), Icon::Tune)
+                        .clicked()
+                    {
                         app.do_update(Message::GetPackagingOptions);
                     }
                 });
@@ -352,23 +363,22 @@ impl ModPackerBuilder {
                 {
                     app.do_update(Message::ShowPackagingDependencies);
                 }
-                if ui.icon_text_button("Menu_Help".localize(), Icon::Help).clicked() {
+                if ui
+                    .icon_text_button("Menu_Help".localize(), Icon::Help)
+                    .clicked()
+                {
                     open::that("https://nicenenerd.github.io/UKMM/mod_format.html").unwrap_or(());
                 }
             });
             ui.add_space(8.0);
             let mut name = "Package_RootFolder".localize();
-            render_field(
-                &name,
-                ui,
-                |ui| {
-                    let res = ui.folder_picker(&mut self.source);
-                    if res.changed() {
-                        app.do_update(Message::CheckMeta);
-                    }
-                    res
+            render_field(&name, ui, |ui| {
+                let res = ui.folder_picker(&mut self.source);
+                if res.changed() {
+                    app.do_update(Message::CheckMeta);
                 }
-            );
+                res
+            });
             let mut cross = matches!(self.meta.platform, ModPlatform::Universal);
             if ui
                 .checkbox(&mut cross, "Package_CrossPlatform".localize())
@@ -415,7 +425,7 @@ impl ModPackerBuilder {
                             ui.selectable_value(
                                 &mut self.meta.category,
                                 *cat,
-                                cat.to_loc_str().localize()
+                                cat.to_loc_str().localize(),
                             );
                         });
                     })

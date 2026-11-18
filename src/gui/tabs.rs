@@ -5,7 +5,7 @@ use uk_ui::{
     visuals::Theme,
 };
 
-use super::{info, visuals, Component, Tabs};
+use super::{Component, Tabs, info, visuals};
 
 pub fn default_ui() -> DockState<Tabs> {
     let mut state = DockState::new(vec![Tabs::Mods, Tabs::Package, Tabs::Settings]);
@@ -42,11 +42,24 @@ impl TabViewer for super::App {
         ui.add_enabled_ui(!self.modal_open(), |ui| {
             match tab {
                 Tabs::Info => {
-                    if let Some(mod_) = self.selected.first() {
-                        if let Some(info::Message::RequestOptions) =
-                            info::ModInfo(mod_).show(ui).inner
-                        {
-                            self.do_update(super::Message::RequestOptions(mod_.clone(), true));
+                    if let Some(id) = self.selected.first().copied() {
+                        if let Some(mod_) = self.core.mod_manager().get_mod(id.0) {
+                            if let Some(info::Message::RequestOptions) =
+                                info::ModInfo(&mod_).show(ui).inner
+                            {
+                                if let Some(entry) = self.snap.entries.iter().find(|e| e.id == id) {
+                                    self.options_modal =
+                                        Some(super::options::OptionsModal::for_mod(
+                                            id,
+                                            entry.meta.options.clone(),
+                                            entry.options.clone(),
+                                        ));
+                                }
+                            }
+                        } else {
+                            ui.centered_and_justified(|ui| {
+                                ui.label("Mod_Selected_None".localize());
+                            });
                         }
                     } else {
                         ui.centered_and_justified(|ui| {
@@ -72,7 +85,8 @@ impl TabViewer for super::App {
                             }
                             self.render_modlist(ui);
                             // let available = ui.available_size();
-                            // ui.allocate_space([available.x.max(0.0), available.y.max(0.0)].into());
+                            // ui.allocate_space([available.x.max(0.0),
+                            // available.y.max(0.0)].into());
                             self.render_pending(ui);
                         });
                 }

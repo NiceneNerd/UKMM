@@ -1,18 +1,18 @@
 //! Update checking and self-update installation against GitHub releases.
 
 use anyhow_ext::{Context, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uk_manager::{core::Manager, settings::UpdatePreference, util::get_temp_file};
 
 use crate::{error::AppError, host::http::http_get};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VersionAsset {
     pub name: String,
     pub browser_download_url: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VersionResponse {
     pub body: String,
     pub name: String,
@@ -96,11 +96,7 @@ pub fn install_update(version: VersionResponse) -> Result<UpdatePlan> {
     let asset_name = "ukmm-x86_64-apple-darwin.tar.xz";
     #[cfg(target_os = "linux")]
     let asset_name = "ukmm-x86_64-unknown-linux-gnu.tar.xz";
-    #[cfg(not(any(
-        target_os = "windows",
-        target_os = "macos",
-        target_os = "linux"
-    )))]
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let asset_name = "";
     let asset = version
         .assets

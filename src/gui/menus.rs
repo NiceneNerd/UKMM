@@ -1,4 +1,5 @@
 use uk_localization::string_ext::LocString;
+
 use super::*;
 
 impl App {
@@ -35,11 +36,11 @@ impl App {
     pub fn tool_menu(&mut self, ui: &mut Ui) {
         if ui.button("Menu_Tools_RefreshMerge".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);
-            self.do_update(Message::Remerge);
+            self.session.dispatch(uk_app::Command::Remerge);
         }
         if ui.button("Menu_Tools_ResetPending".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);
-            self.do_update(Message::ResetPending);
+            self.session.dispatch(uk_app::Command::ResetPending);
         }
         if ui.button("Menu_Tools_ConfigFolder".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);

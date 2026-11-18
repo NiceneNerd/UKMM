@@ -11,6 +11,7 @@ use std::{
 };
 
 use anyhow_ext::{Context, Result, bail};
+use rustc_hash::FxHashSet;
 use uk_content::prelude::Endian;
 use uk_manager::mods::Mod;
 use uk_mod::{Manifest, Meta, ModOption, ModPlatform};
@@ -18,6 +19,7 @@ use uk_mod::{Manifest, Meta, ModOption, ModPlatform};
 use super::State;
 use crate::{
     apply::apply_changes,
+    host::updates::VersionResponse,
     open::{Opened, open_mod},
     order::move_ids,
     package::{dev_update_mods, extract_mods},
@@ -59,6 +61,13 @@ impl State {
             Command::UpdateFromPath { id, path } => self.inspect_path(&path, None, Some(id)),
             Command::DevUpdate { ids, folders } => self.dev_update(ids, folders),
             Command::Extract { ids, dest } => self.extract(ids, dest),
+            Command::Reload => self.reload(),
+            Command::ImportCemu(path) => self.import_cemu(path),
+            Command::MigrateBcml => self.migrate_bcml(),
+            Command::Package { source, dest, meta } => self.package(source, dest, meta),
+            Command::ParseMeta(path) => self.parse_meta(path),
+            Command::CheckForUpdates => self.check_for_updates(),
+            Command::InstallUpdate(version) => self.install_update(version),
         }
     }
 
@@ -149,7 +158,7 @@ impl State {
             replace,
         } = candidate;
         let core = Arc::clone(&self.core);
-        let (id, dirty, updated) = match replace {
+        let (id, dirty, updated, old_id) = match replace {
             Some(old) => {
                 let old_mod = self
                     .mods
@@ -175,7 +184,7 @@ impl State {
                 if let Ok(manifest) = new_mod.manifest() {
                     dirty.extend(&manifest);
                 }
-                (ModId(new_mod.hash()), dirty, true)
+                (ModId(new_mod.hash()), dirty, true, Some(old))
             }
             None => {
                 let manager = core.mod_manager();
@@ -184,7 +193,7 @@ impl State {
                 if !picks.is_empty() {
                     manager.set_enabled_options(id.0, picks)?;
                 }
-                (id, Manifest::default(), false)
+                (id, Manifest::default(), false, None)
             }
         };
         core.mod_manager().save()?;
@@ -198,7 +207,10 @@ impl State {
         }
         self.emit_pending();
         if updated {
-            self.emit(Event::Updated { id });
+            self.emit(Event::Updated {
+                from: old_id.unwrap_or(id),
+                to:   id,
+            });
         } else {
             self.emit(Event::Installed { id });
         }
@@ -546,8 +558,8 @@ impl State {
         Ok(())
     }
 
-    /// Deletes a profile. The active profile cannot be deleted — switch away
-    /// from it first.
+    /// Deletes a profile, plus any mod files no remaining profile uses. The
+    /// active profile cannot be deleted — switch away from it first.
     fn delete_profile(&mut self, profile: ProfileName) -> Result<()> {
         let core = Arc::clone(&self.core);
         if self.current_profile_name().as_str() == profile.as_str() {
@@ -558,7 +570,33 @@ impl State {
         if !dir.is_dir() {
             bail!("Profile {} does not exist", profile.as_str());
         }
+        // The deleted profile's mods, captured while it is still loadable.
+        let deleted_mods: Vec<(usize, PathBuf)> = {
+            let manager = core.mod_manager();
+            manager
+                .get_profile(Some(&profile.as_str().into()))
+                .mods()
+                .iter()
+                .map(|(h, m)| (*h, m.path.clone()))
+                .collect()
+        };
         fs_err::remove_dir_all(&dir)?;
+        // Remove the mod files no remaining profile still references.
+        let mut assigned = FxHashSet::default();
+        for other in core.settings().profiles() {
+            let manager = core.mod_manager();
+            assigned.extend(manager.get_profile(Some(&other)).mods().keys().copied());
+        }
+        for (hash, path) in deleted_mods {
+            if !assigned.contains(&hash) {
+                log::info!("Removing orphaned mod file {}", path.display());
+                if path.is_dir() {
+                    let _ = fs_err::remove_dir_all(&path);
+                } else {
+                    let _ = fs_err::remove_file(&path);
+                }
+            }
+        }
         self.dirty.remove(profile.as_str());
         self.emit(Event::ProfilesChanged);
         self.emit_pending();
@@ -582,6 +620,70 @@ impl State {
         let mods = self.mods_for(&ids)?;
         let core = Arc::clone(&self.core);
         extract_mods(&core, mods, dest)?;
+        Ok(())
+    }
+
+    /// Re-reads settings from disk, rebuilds the managers, and refreshes all
+    /// session state (mods, per-profile pending entries).
+    fn reload(&mut self) -> Result<()> {
+        let core = Arc::clone(&self.core);
+        core.reload()?;
+        let profiles: Vec<String> = core.settings().profiles().map(|p| p.to_string()).collect();
+        self.dirty.retain(|k, _| profiles.iter().any(|p| p == k));
+        for p in &profiles {
+            self.dirty.entry(p.clone()).or_default();
+        }
+        self.refresh_mods();
+        self.emit(Event::ProfilesChanged);
+        self.emit(Event::SettingsChanged);
+        self.emit_pending();
+        Ok(())
+    }
+
+    /// Imports Cemu settings, then reloads like [`State::reload`].
+    fn import_cemu(&mut self, path: PathBuf) -> Result<()> {
+        let core = Arc::clone(&self.core);
+        crate::import_cemu_settings(&core, &path)?;
+        self.reload()
+    }
+
+    /// Migrates a BCML installation, then reloads like [`State::reload`].
+    fn migrate_bcml(&mut self) -> Result<()> {
+        let core = Arc::clone(&self.core);
+        crate::migrate_bcml(&core)?;
+        self.reload()
+    }
+
+    /// Packages a mod zip from a loose source folder.
+    fn package(&mut self, source: PathBuf, dest: PathBuf, meta: Meta) -> Result<()> {
+        let core = Arc::clone(&self.core);
+        crate::package::package_mod(&core, source, dest, meta)?;
+        self.emit(Event::Packaged);
+        Ok(())
+    }
+
+    /// Parses a meta file and reports it back as an event.
+    fn parse_meta(&mut self, path: PathBuf) -> Result<()> {
+        let meta = crate::package::parse_meta(&path)?;
+        self.emit(Event::PackageMeta(meta));
+        Ok(())
+    }
+
+    /// Checks GitHub for releases; the verdict comes back as events.
+    fn check_for_updates(&mut self) -> Result<()> {
+        use crate::host::updates::ReleaseCheck;
+        match crate::host::updates::check_releases(&self.core) {
+            ReleaseCheck::OfferUpdate(version) => self.emit(Event::UpdateAvailable(version)),
+            ReleaseCheck::Changelog(md) => self.emit(Event::Changelog(md)),
+            ReleaseCheck::None => {}
+        }
+        Ok(())
+    }
+
+    /// Installs a self-update; the frontend restarts on [`Event::Restart`].
+    fn install_update(&mut self, version: VersionResponse) -> Result<()> {
+        crate::host::updates::install_update(version)?;
+        self.emit(Event::Restart);
         Ok(())
     }
 

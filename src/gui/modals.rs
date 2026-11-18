@@ -1,6 +1,8 @@
+use std::ops::DerefMut;
+
 use uk_localization::string_ext::LocString;
 use uk_manager::settings::Platform;
-use uk_mod::{Meta, ModCategory};
+use uk_mod::{Meta, ModCategory, ModPlatform};
 use uk_ui::egui::OutputCommand;
 use util::SmartStringWrapper;
 
@@ -25,7 +27,6 @@ impl MetaInputModal {
     pub fn clear(&mut self) {
         self.meta = None;
         self.path = None;
-        self.sender.send(Message::Noop).expect("Broken channel");
     }
 
     pub fn take(&mut self) -> Option<Meta> {
@@ -67,7 +68,7 @@ impl MetaInputModal {
                                 ui.selectable_value(
                                     &mut meta.category,
                                     *cat,
-                                    cat.to_loc_str().localize()
+                                    cat.to_loc_str().localize(),
                                 );
                             });
                         });
@@ -169,8 +170,10 @@ impl App {
                                     .sense(egui::Sense::click())
                                     .show(|ui| ui.label("Generic_Copied".localize()));
                                 if ui.button("Generic_Copy".localize()).clicked() {
-                                    ui.output_mut(|o| o.commands
-                                        .push(OutputCommand::CopyText(format!("{:?}", &err))));
+                                    ui.output_mut(|o| {
+                                        o.commands
+                                            .push(OutputCommand::CopyText(format!("{:?}", &err)))
+                                    });
                                 }
                                 ui.shrink_width_to_current();
                             },
@@ -199,9 +202,8 @@ impl App {
                             Layout::right_to_left(Align::Center),
                             |ui| {
                                 if ui.button("Generic_OK".localize()).clicked() {
-                                    let msg = self.confirm.take().unwrap().0;
-                                    self.do_update(msg);
-                                    self.do_update(Message::CloseConfirm);
+                                    let cmd = self.confirm.take().unwrap().0;
+                                    self.session.dispatch(*cmd);
                                 }
                                 if ui.button("Generic_Close".localize()).clicked() {
                                     self.do_update(Message::CloseConfirm);
@@ -240,7 +242,15 @@ impl App {
                                     )
                                     .clicked()
                                 {
-                                    self.do_update(Message::AddProfile);
+                                    if let Some(name) = self.new_profile.take() {
+                                        match ProfileName::parse(&name) {
+                                            Ok(profile) => {
+                                                self.session
+                                                    .dispatch(Command::CreateProfile(profile));
+                                            }
+                                            Err(e) => self.error = Some(e),
+                                        }
+                                    }
                                 }
                                 if ui.button("Generic_Close".localize()).clicked() {
                                     self.new_profile = None;
@@ -254,15 +264,19 @@ impl App {
     }
 
     pub fn render_busy(&self, ctx: &egui::Context, _frame: &eframe::Frame) {
-        if self.busy.get() {
+        // The busy overlay reads straight from the session snapshot (plus the
+        // IPC-reported one-click download) — the frontend never sets its own
+        // busy flag.
+        if self.snap.busy.is_some() || self.downloading.is_some() {
             egui::Window::new("Busy_Working".localize())
                 .default_size([240., 80.])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
                 .collapsible(false)
                 .frame(Frame::window(&ctx.style()).inner_margin(8.))
                 .show(ctx, |ui| {
-                    let max_width =
-                        (ui.available_width() / 2.).min(ctx.content_rect().size().x - 64.0).max(0.0);
+                    let max_width = (ui.available_width() / 2.)
+                        .min(ctx.content_rect().size().x - 64.0)
+                        .max(0.0);
                     ui.vertical_centered(|ui| {
                         let text_height = ui.text_style_height(&TextStyle::Body) * 2.;
                         let padding = (80. - text_height - 8.).max(0.0);
@@ -273,7 +287,13 @@ impl App {
                             ui.add_space(8.);
                             ui.vertical(|ui| {
                                 ui.label("Busy_Processing".localize());
-                                if let Some(progress) = crate::logger::LOGGER.get_progress() {
+                                let progress = self
+                                    .snap
+                                    .progress
+                                    .clone()
+                                    .or_else(|| self.downloading.clone())
+                                    .or_else(|| crate::logger::LOGGER.get_progress());
+                                if let Some(progress) = progress {
                                     ui.add(
                                         Label::new(progress)
                                             .wrap_mode(egui::TextWrapMode::Truncate),
@@ -341,12 +361,7 @@ impl App {
             })
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    let current_profile = self
-                        .core
-                        .settings()
-                        .platform_config()
-                        .map(|c| c.profile.to_string())
-                        .unwrap_or_else(|| "Default".to_owned());
+                    let current_profile = self.snap.profile.as_str().to_owned();
                     ComboBox::from_id_salt("profiles")
                         .selected_text(&current_profile)
                         .show_ui(ui, |ui| {
@@ -359,7 +374,9 @@ impl App {
                                     .clicked()
                                     && current_profile != profile
                                 {
-                                    self.do_update(Message::ChangeProfile(profile.into()));
+                                    self.session.dispatch(Command::SwitchProfile(
+                                        ProfileName::from_existing(profile),
+                                    ));
                                 }
                             });
                         })
@@ -381,23 +398,27 @@ impl App {
                     }
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         ui.add_space(20.);
+                        let filter = self.mod_list_filter.to_lowercase();
                         ui.label(
                             RichText::new(format!(
                                 "{} {} / {} {} / {} {}",
-                                self.mods.iter().filter(|m| m.enabled).count(),
+                                self.snap.entries.iter().filter(|e| e.enabled).count(),
                                 "Profile_ActiveMods_2".localize(),
-                                self.mods.len(),
+                                self.snap.entries.len(),
                                 "Profile_ActiveMods_1".localize(),
-                                self.mods.iter()
-                                    .filter(|m| m.meta.name.to_lowercase()
-                                        .contains(&self.mod_list_filter.to_lowercase()))
+                                self.snap
+                                    .entries
+                                    .iter()
+                                    .filter(|e| e.meta.name.to_lowercase().contains(&filter))
                                     .count(),
                                 "Profile_ActiveMods_3".localize(),
                             ))
                             .strong(),
                         );
                         ui.add_space(20.);
-                        ui.text_edit_singleline(&mut self.mod_list_filter);
+                        if ui.text_edit_singleline(&mut self.mod_list_filter).changed() {
+                            self.visible_dirty = true;
+                        }
                         ui.label(RichText::new("Mod_Filter".localize()).strong());
                     });
                 });
@@ -405,7 +426,7 @@ impl App {
     }
 
     pub fn render_pending(&self, ui: &mut Ui) {
-        if !self.dirty().is_empty() {
+        if !self.snap.pending.is_empty() {
             egui::Window::new("Pending_Changes".localize())
                 .anchor(Align2::RIGHT_BOTTOM, [-32.0, -32.0])
                 .collapsible(true)
@@ -419,24 +440,24 @@ impl App {
                                 egui::CollapsingHeader::new("Pending_Files".localize()).show(
                                     ui,
                                     |ui| {
-                                        info::render_manifest(&self.dirty(), ui);
+                                        info::render_manifest(&self.snap.pending.manifest, ui);
                                     },
                                 );
                             });
                         ui.add_space(8.0);
                         ui.horizontal(|ui| {
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                if ui.icon_text_button(
-                                    "Generic_Apply".localize(),
-                                    Icon::Check
-                                ).clicked() {
-                                    self.do_update(Message::Apply);
+                                if ui
+                                    .icon_text_button("Generic_Apply".localize(), Icon::Check)
+                                    .clicked()
+                                {
+                                    self.session.dispatch(Command::Apply);
                                 }
-                                if ui.icon_text_button(
-                                    "Generic_Cancel".localize(),
-                                    Icon::Cancel
-                                ).clicked() {
-                                    self.do_update(Message::ResetMods(None));
+                                if ui
+                                    .icon_text_button("Generic_Cancel".localize(), Icon::Cancel)
+                                    .clicked()
+                                {
+                                    self.session.dispatch(Command::CancelPending);
                                 }
                             });
                         });
@@ -481,11 +502,11 @@ impl App {
                             .on_hover_text("Changelog_Bitcoin_Copy".localize())
                             .clicked()
                         {
-                            ui.output_mut(|o| o.commands
-                                .push(OutputCommand::CopyText(
-                                    "392YEGQ8WybkRSg4oyeLf7Pj2gQNhPcWoa".into()
+                            ui.output_mut(|o| {
+                                o.commands.push(OutputCommand::CopyText(
+                                    "392YEGQ8WybkRSg4oyeLf7Pj2gQNhPcWoa".into(),
                                 ))
-                            );
+                            });
                             self.do_update(Message::Toast(
                                 "Changelog_Bitcoin_Copied".localize().into(),
                             ));

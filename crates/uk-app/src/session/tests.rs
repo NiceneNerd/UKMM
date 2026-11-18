@@ -138,6 +138,9 @@ fn legacy_zip(dir: &Path, file_name: &str) -> PathBuf {
 fn temp_session() -> (tempfile::TempDir, Session) {
     let dir = tempfile::tempdir().unwrap();
     let settings = Settings::load_from(&dir.path().join("config").join("settings.yml"));
+    // Persist the settings so `Reload` re-reads this temp file instead of
+    // falling back to the real user config.
+    settings.read().save().unwrap();
     let core = Manager::init_with(settings).unwrap();
     let session = Session::open(Arc::new(core)).unwrap();
     (dir, session)
@@ -250,7 +253,7 @@ fn install_publishes_the_mod_and_stages_its_files() {
     assert_eq!(snap.entries[0].id, id);
     assert_eq!(snap.entries[0].meta.name, "Test Mod");
     assert!(snap.entries[0].enabled);
-    assert_eq!(snap.pending.files, 1);
+    assert_eq!(snap.pending.files(), 1);
     assert!(snap.busy.is_none());
     assert!(profile_file(&session, "Default").exists());
 }
@@ -318,13 +321,13 @@ fn apply_without_a_dump_fails_and_keeps_the_pending_files() {
         .with_file("content/a.txt")
         .write(dir.path(), "mod.zip");
     install(&session, &rx, &path);
-    assert_eq!(snapshot(&session).pending.files, 1);
+    assert_eq!(snapshot(&session).pending.files(), 1);
 
     let (_, result) = run(&session, &rx, Command::Apply);
     let error = result.expect_err("apply without a dump fails");
     assert!(matches!(error, AppError::Other(_)), "{error:?}");
     // The staged files are not lost by the failed merge.
-    assert_eq!(snapshot(&session).pending.files, 1);
+    assert_eq!(snapshot(&session).pending.files(), 1);
 }
 
 #[test]
@@ -338,7 +341,7 @@ fn cancel_pending_drops_the_staged_files() {
 
     let (_, result) = run(&session, &rx, Command::CancelPending);
     result.expect("cancel succeeds");
-    assert_eq!(snapshot(&session).pending.files, 0);
+    assert_eq!(snapshot(&session).pending.files(), 0);
 }
 
 #[test]
@@ -548,14 +551,14 @@ fn profiles_keep_their_own_pending_files() {
     result.expect("create profile succeeds");
     // A new profile starts empty — no fallback to another profile's files.
     assert_eq!(snapshot(&session).profile, other);
-    assert_eq!(snapshot(&session).pending.files, 0);
+    assert_eq!(snapshot(&session).pending.files(), 0);
     assert!(snapshot(&session).entries.is_empty());
 
     let path = Fixture::new("Test Mod")
         .with_file("content/a.txt")
         .write(dir.path(), "mod.zip");
     let id = install(&session, &rx, &path);
-    assert_eq!(snapshot(&session).pending.files, 1);
+    assert_eq!(snapshot(&session).pending.files(), 1);
 
     // Switching back shows the other profile's state.
     let (_, result) = run(
@@ -566,13 +569,13 @@ fn profiles_keep_their_own_pending_files() {
     result.expect("switch succeeds");
     assert_eq!(snapshot(&session).profile.as_str(), "Default");
     assert!(snapshot(&session).entries.is_empty());
-    assert_eq!(snapshot(&session).pending.files, 0);
+    assert_eq!(snapshot(&session).pending.files(), 0);
 
     // The staged files are still there for the profile they belong to.
     let (_, result) = run(&session, &rx, Command::SwitchProfile(other.clone()));
     result.expect("switch succeeds");
     assert_eq!(snapshot(&session).entries.len(), 1);
-    assert_eq!(snapshot(&session).pending.files, 1);
+    assert_eq!(snapshot(&session).pending.files(), 1);
     assert_eq!(snapshot(&session).entries[0].id, id);
 }
 
@@ -655,7 +658,7 @@ fn renaming_a_profile_moves_its_directory_and_pending_files() {
     assert!(profiles_dir.join("Renamed").is_dir());
     assert!(!profiles_dir.join("Default").exists());
     assert_eq!(snapshot(&session).profile.as_str(), "Renamed");
-    assert_eq!(snapshot(&session).pending.files, 1);
+    assert_eq!(snapshot(&session).pending.files(), 1);
 }
 
 #[test]
@@ -703,6 +706,89 @@ fn deleting_a_profile_removes_its_directory() {
             .join("Other")
             .exists()
     );
+}
+
+#[test]
+fn deleting_a_profile_removes_orphaned_mod_files() {
+    let (dir, session) = temp_session();
+    let rx = session.subscribe();
+    let mod_zip = Fixture::new("Orphan Mod")
+        .with_file("content/a.txt")
+        .write(dir.path(), "orphan.zip");
+    let id = install(&session, &rx, &mod_zip);
+    // The stored copy of the mod (name is sanitised by the core).
+    let stored = std::fs::read_dir(session.core().settings().mods_dir())
+        .unwrap()
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .find(|p| p.extension().is_some_and(|e| e == "zip"))
+        .expect("mod file stored");
+    assert!(stored.exists(), "mod file stored at {}", stored.display());
+
+    // Copy the mod into another profile, then delete that profile: the file
+    // stays, because the active profile still uses it.
+    let other = ProfileName::parse("Other").unwrap();
+    let (_, result) = run(&session, &rx, Command::CreateProfile(other.clone()));
+    result.expect("create profile succeeds");
+    let (_, result) = run(&session, &rx, Command::SwitchProfile(other.clone()));
+    result.expect("switch succeeds");
+    let (_, result) = run(
+        &session,
+        &rx,
+        Command::SwitchProfile(ProfileName::parse("Default").unwrap()),
+    );
+    result.expect("switch back succeeds");
+    let (_, result) = run(&session, &rx, Command::AddToProfile {
+        ids:     vec![id],
+        profile: other.clone(),
+    });
+    result.expect("add to profile succeeds");
+    let (_, result) = run(&session, &rx, Command::DeleteProfile(other));
+    result.expect("delete succeeds");
+    assert!(stored.exists(), "still used by the active profile");
+
+    // Uninstall from the active profile and delete the last referencing
+    // profile: now the file is orphaned and must go.
+    let other2 = ProfileName::parse("Other2").unwrap();
+    let (_, result) = run(&session, &rx, Command::CreateProfile(other2.clone()));
+    result.expect("create second profile succeeds");
+    let (_, result) = run(&session, &rx, Command::SwitchProfile(other2.clone()));
+    result.expect("switch succeeds");
+    let (_, result) = run(
+        &session,
+        &rx,
+        Command::SwitchProfile(ProfileName::parse("Default").unwrap()),
+    );
+    result.expect("switch back succeeds");
+    let (_, result) = run(&session, &rx, Command::AddToProfile {
+        ids:     vec![id],
+        profile: other2.clone(),
+    });
+    result.expect("add to second profile succeeds");
+    let (_, result) = run(&session, &rx, Command::Uninstall(vec![id]));
+    result.expect("uninstall succeeds");
+    assert!(stored.exists(), "Other2 still references the file");
+    let (_, result) = run(&session, &rx, Command::DeleteProfile(other2));
+    result.expect("delete succeeds");
+    assert!(!stored.exists(), "orphaned mod file removed");
+}
+
+#[test]
+fn reload_keeps_session_state_consistent() {
+    let (dir, session) = temp_session();
+    let rx = session.subscribe();
+    let mod_zip = Fixture::new("Reload Mod")
+        .with_file("content/a.txt")
+        .write(dir.path(), "reload.zip");
+    let id = install(&session, &rx, &mod_zip);
+
+    let (events, result) = run(&session, &rx, Command::Reload);
+    result.expect("reload succeeds");
+    assert!(events.iter().any(|e| matches!(e, Event::SettingsChanged)));
+    assert!(events.iter().any(|e| matches!(e, Event::ProfilesChanged)));
+    let snap = snapshot(&session);
+    assert_eq!(snap.entries.len(), 1);
+    assert_eq!(snap.entries[0].id, id);
+    assert_eq!(snap.profile.as_str(), "Default");
 }
 
 #[test]

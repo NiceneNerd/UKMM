@@ -1,12 +1,25 @@
-use std::{collections::HashMap, process::Command, sync::OnceLock};
+use std::{collections::HashMap, process::Command as ProcCommand, sync::OnceLock};
+
 use serde::{Deserialize, Serialize};
 use strfmt::Format;
+use uk_app::{Command, ModId, ProfileName, view::load_index_of};
 use uk_localization::string_ext::LocString;
-use uk_manager::mods::Mod;
 use uk_ui::{
     egui::{
-        self, epaint::Margin, text::LayoutJob, Align, Button, Color32, CursorIcon, Id, Key,
-        /*LayerId,*/ Layout, Response, Sense, TextStyle, Ui//, Vec2, emath::TSTransform
+        self,
+        Align,
+        Button,
+        Color32,
+        CursorIcon,
+        Id,
+        Key,
+        /* LayerId, */ Layout,
+        Response,
+        Sense,
+        TextStyle,
+        Ui, //, Vec2, emath::TSTransform
+        epaint::Margin,
+        text::LayoutJob,
     },
     egui_extras::{Column, TableBuilder, TableRow},
     ext::UiExt,
@@ -63,57 +76,58 @@ impl App {
             .x
         });
         static CATEGORY_WIDTH: OnceLock<f32> = OnceLock::new();
-        
+
         // Show helper message if no mods installed
-        if self.displayed_mods.is_empty() {
+        if self.snap.entries.is_empty() {
             egui::Frame::NONE
                 .inner_margin(Margin::same(40))
                 .show(ui, |ui| {
                     ui.vertical_centered(|ui| {
                         ui.add_space(80.0);
-                        
+
                         let has_config = self.core.settings().platform_config().is_some();
-                        
+
                         // Main message
                         if !has_config {
                             let message = "Helper_Modlist_NoConfig".localize();
-                            let vars = HashMap::from(
-                                [("platform".to_string(), self.core.settings().current_mode.to_string())]
-                            );
+                            let vars = HashMap::from([(
+                                "platform".to_string(),
+                                self.core.settings().current_mode.to_string(),
+                            )]);
                             let prompt = message.format(&vars).unwrap();
-                            
+
                             ui.label(
                                 egui::RichText::new(prompt)
                                     .size(16.0)
-                                    .color(ui.style().visuals.text_color())
+                                    .color(ui.style().visuals.text_color()),
                             );
                         } else {
                             ui.label(
                                 egui::RichText::new("Helper_Modlist_NoMods".localize())
                                     .size(16.0)
-                                    .color(ui.style().visuals.text_color())
+                                    .color(ui.style().visuals.text_color()),
                             );
                         }
-                        
+
                         ui.add_space(8.0);
-                        
+
                         // Hint text
                         let hint = if !has_config {
                             "Helper_Modlist_NoConfig_Hint".localize()
                         } else {
                             "Helper_Modlist_NoMods_Hint".localize()
                         };
-                        
+
                         ui.label(
                             egui::RichText::new(hint)
                                 .size(13.0)
-                                .color(ui.style().visuals.weak_text_color())
+                                .color(ui.style().visuals.weak_text_color()),
                         );
                     });
                 });
             return;
         }
-        
+
         egui::Frame::NONE
             .inner_margin(Margin {
                 bottom: 12,
@@ -158,7 +172,11 @@ impl App {
                         header.col(|ui| {
                             let is_current = self.list_state.sort == Sort::Enabled;
                             let label = if is_current {
-                                if self.list_state.descending { "⏷" } else { "⏶" }
+                                if self.list_state.descending {
+                                    "⏷"
+                                } else {
+                                    "⏶"
+                                }
                             } else {
                                 "  "
                             };
@@ -199,15 +217,14 @@ impl App {
                                         label += "  ";
                                     }
                                     ui.centered_and_justified(|ui| {
-                                        ui.style_mut()
-                                            .visuals
-                                            .widgets
-                                            .inactive
-                                            .bg_stroke
-                                            .width = 0.0;
-                                        if ui.add(Button::new(label)
-                                            .small()
-                                            .fill(Color32::TRANSPARENT))
+                                        ui.style_mut().visuals.widgets.inactive.bg_stroke.width =
+                                            0.0;
+                                        if ui
+                                            .add(
+                                                Button::new(label)
+                                                    .small()
+                                                    .fill(Color32::TRANSPARENT),
+                                            )
                                             .clicked()
                                         {
                                             self.do_update(Message::ChangeSort(
@@ -229,13 +246,10 @@ impl App {
                         });
                     })
                     .body(|body| {
-                        let filtered = self.filtered_mods(&self.mod_list_filter)
-                            .iter()
-                            .map(|(idx, _)| *idx)
-                            .collect::<Vec<_>>();
-                        body.rows(*text_height, filtered.len(), |row| {
-                            let index = filtered[row.index()];
-                            self.render_mod_row(index, row);
+                        let visible = self.visible.clone();
+                        body.rows(*text_height, visible.len(), |row| {
+                            let id = visible[row.index()];
+                            self.render_mod_row(id, row);
                         });
                     });
             });
@@ -243,50 +257,48 @@ impl App {
             && self.focused == FocusedPane::ModList
             && !self.modal_open()
         {
-            if let Some((last_index, _)) = ui
-                .input(|i| i.key_pressed(Key::ArrowDown))
-                .then(|| {
-                    self.mods
-                        .iter()
-                        .enumerate()
-                        .rfind(|(_, m)| self.selected.contains(m))
-                })
-                .flatten()
-            {
-                if !ui.input(|i| i.modifiers.shift) {
-                    self.do_update(Message::SelectOnly(last_index + 1));
-                } else {
-                    self.do_update(Message::SelectAlso(last_index + 1));
+            if ui.input(|i| i.key_pressed(Key::ArrowDown)) {
+                if let Some(index) = self
+                    .visible
+                    .iter()
+                    .rposition(|id| self.selected.contains(id))
+                    .map(|i| (i + 1).min(self.visible.len().saturating_sub(1)))
+                {
+                    let id = self.visible[index];
+                    if ui.input(|i| i.modifiers.shift) {
+                        self.do_update(Message::SelectAlso(id));
+                    } else {
+                        self.do_update(Message::SelectOnly(id));
+                    }
                 }
-            } else if let Some((first_index, _)) = ui
-                .input(|i| i.key_pressed(Key::ArrowUp))
-                .then(|| {
-                    self.mods
-                        .iter()
-                        .enumerate()
-                        .find(|(_, m)| self.selected.contains(m))
-                })
-                .flatten()
-            {
-                let index = first_index.max(1);
-                if !ui.input(|i| i.modifiers.shift) {
-                    self.do_update(Message::SelectOnly(index - 1));
-                } else {
-                    self.do_update(Message::SelectAlso(index - 1));
+            } else if ui.input(|i| i.key_pressed(Key::ArrowUp)) {
+                if let Some(index) = self
+                    .visible
+                    .iter()
+                    .position(|id| self.selected.contains(id))
+                    .map(|i| i.saturating_sub(1))
+                {
+                    let id = self.visible[index];
+                    if ui.input(|i| i.modifiers.shift) {
+                        self.do_update(Message::SelectAlso(id));
+                    } else {
+                        self.do_update(Message::SelectOnly(id));
+                    }
                 }
             }
         }
         self.render_drag_state(*text_height, *icon_width, *numeric_col_width, ui);
         if ui.input_mut(|i| i.pointer.any_released()) {
             ui.memory_mut(|m| m.data.insert_temp(Id::new("drag_delay_frames"), 0usize));
-            if let Some((_start_index, dest_index)) = self
-                .drag_index.zip(self.hover_index)
-                .filter(|(s, d)| s != d)
-            {
-                self.do_update(Message::MoveSelected(dest_index))
-            } else {
-                self.do_update(Message::ClearDrag);
+            if let (Some(dragged), Some(hovered)) = (self.drag, self.hover) {
+                if dragged != hovered {
+                    // The destination is a load-order index, not a row index.
+                    let index = self.drag_dest(hovered);
+                    let ids = self.selected.clone();
+                    self.session.dispatch(Command::MoveTo { ids, index });
+                }
             }
+            self.drag = None;
             ui.output_mut(|o| o.cursor_icon = CursorIcon::Default);
         }
     }
@@ -304,53 +316,8 @@ impl App {
         if being_dragged {
             if delay_frames < 6 {
                 delay_frames += 1;
-            } else if let Some(_drag_index) = self.drag_index {
+            } else if self.drag.is_some() {
                 ui.output_mut(|o| o.cursor_icon = CursorIcon::Grabbing);
-                /*
-                let layer_id =
-                    LayerId::new(egui::Order::Tooltip, Id::new("mod_list").with(drag_index));
-                let res = ui.scope_builder(
-                    egui::UiBuilder::new().layer_id(layer_id),
-                    |ui| {
-                        TableBuilder::new(ui)
-                            .column(Column::exact(icon_width))
-                            .column(Column::remainder())
-                            .column(Column::initial(80.).at_least(16.).at_most(260.))
-                            .columns(Column::exact(numeric_col_width), 2)
-                            .body(|body| {
-                                body.rows(text_height, self.selected.len(), |mut row| {
-                                    let mod_ = &self.selected[row.index()];
-                                    let mut enabled = mod_.enabled;
-                                    row.col(|ui| {
-                                        ui.checkbox(&mut enabled, "");
-                                    });
-                                    for label in [
-                                        mod_.meta.name.as_str(),
-                                        mod_.meta.category.to_loc_str().localize().as_ref(),
-                                        mod_.meta.version.to_string().as_str(),
-                                        self.mods
-                                            .iter()
-                                            .position(|m| m == mod_)
-                                            .unwrap()
-                                            .to_string()
-                                            .as_str(),
-                                    ] {
-                                        row.col(|ui| {
-                                            ui.label(label);
-                                        });
-                                    }
-                                });
-                            });
-                    })
-                    .response;
-                if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
-                    let delta = pointer_pos.y - res.rect.center().y;
-                    ui.ctx().set_transform_layer(
-                        layer_id,
-                        TSTransform::from_translation(Vec2::new(0.0, delta))
-                    );
-                }
-                */
             }
         } else {
             delay_frames = 0;
@@ -358,121 +325,189 @@ impl App {
         ui.memory_mut(|m| m.data.insert_temp(delay_id, delay_frames));
     }
 
-    fn render_mod_row(&mut self, index: usize, mut row: TableRow) {
-        let mod_ = unsafe { self.displayed_mods.get_mut(index).unwrap_unchecked() };
-        if let Some(index) = self.mods.iter().position(|m| m == mod_) {
-            let selected = self.selected.contains(mod_);
-            let mut clicked = false;
-            let mut drag_started = false;
-            let mut ctrl = false;
-            let mut shift = false;
-            let mut hover = false;
-            let mut toggled = false;
-            let mut ctx_action = None;
-            let menu_mod = mod_.clone();
+    fn render_mod_row(&mut self, id: ModId, mut row: TableRow) {
+        let Some(entry) = self.snap.entries.iter().find(|e| e.id == id).cloned() else {
+            return;
+        };
+        // The Priority column shows the load-order index (GUI_REF §22.1).
+        let load_index = load_index_of(&self.snap.entries, id).unwrap_or(0);
+        let selected = self.selected.contains(&id);
+        let mut clicked = false;
+        let mut drag_started = false;
+        let mut ctrl = false;
+        let mut shift = false;
+        let mut hover = false;
+        let mut toggled = false;
+        let mut ctx_action = None;
+        let menu_path = entry.path.clone();
+        let menu_enabled = entry.enabled;
 
-            let mut process_col_res = |res: Response| {
-                clicked = clicked || res.clicked();
-                hover = hover || res.hovered();
-                drag_started = drag_started || res.drag_started();
-                res.context_menu(|ui| {
-                    if let Some(action) =
-                        Self::render_mod_context_menu(&self.core, menu_mod.clone(), ui)
+        let mut process_col_res = |res: Response| {
+            clicked = clicked || res.clicked();
+            hover = hover || res.hovered();
+            drag_started = drag_started || res.drag_started();
+            res.context_menu(|ui| {
+                if let Some(action) =
+                    Self::render_mod_context_menu(&self.core, &menu_path, menu_enabled, ui)
+                {
+                    ctx_action.replace(action);
+                }
+            });
+        };
+
+        if selected {
+            row.set_selected(true);
+        }
+        let mut enabled = entry.enabled;
+        process_col_res(
+            row.col(|ui| {
+                toggled = ui.checkbox(&mut enabled, "").clicked();
+                shift = ui.input(|i| i.modifiers.shift);
+                ctrl = ui.input(|i| i.modifiers.ctrl);
+            })
+            .1,
+        );
+        process_col_res(
+            row.col(|ui| {
+                ui.clipped_label(entry.meta.name.as_str());
+            })
+            .1,
+        );
+        for label in [
+            entry.meta.category.to_loc_str().localize().as_ref(),
+            entry.meta.version.to_string().as_str(),
+            load_index.to_string().as_str(),
+        ] {
+            process_col_res(
+                row.col(|ui| {
+                    ui.centered_and_justified(|ui| {
+                        ui.label(label);
+                    });
+                })
+                .1,
+            );
+        }
+        if let Some(action) = ctx_action {
+            // Context-menu actions target the clicked mod, or the whole
+            // selection when the clicked mod is part of it.
+            let ids = self.context_target(id);
+            match action {
+                ContextMenuMessage::CopyToProfile(profile) => {
+                    self.session.dispatch(Command::AddToProfile {
+                        ids,
+                        profile: ProfileName::from_existing(profile),
+                    });
+                }
+                ContextMenuMessage::Extract => {
+                    if let Some(folder) = rfd::FileDialog::new()
+                        .set_title("Mod_Unpack_Folder".localize())
+                        .pick_folder()
                     {
-                        ctx_action.replace(action);
-                    }
-                });
-            };
-
-            if selected {
-                row.set_selected(true);
-            }
-            let mut enabled = mod_.enabled;
-            process_col_res(
-                row.col(|ui| {
-                    toggled = ui.checkbox(&mut enabled, "").clicked();
-                    shift = ui.input(|i| i.modifiers.shift);
-                    ctrl = ui.input(|i| i.modifiers.ctrl);
-                })
-                .1,
-            );
-            process_col_res(
-                row.col(|ui| {
-                    ui.clipped_label(mod_.meta.name.as_str());
-                })
-                .1,
-            );
-            for label in [
-                mod_.meta.category.to_loc_str().localize().as_ref(),
-                mod_.meta.version.to_string().as_str(),
-                index.to_string().as_str(),
-            ] {
-                process_col_res(
-                    row.col(|ui| {
-                        ui.centered_and_justified(|ui| {
-                            ui.label(label);
-                        });
-                    })
-                    .1,
-                );
-            }
-            if let Some(action) = ctx_action {
-                match action {
-                    ContextMenuMessage::CopyToProfile(profile) => {
-                        self.do_update(Message::AddToProfile(profile));
-                    }
-                    ContextMenuMessage::Extract => {
-                        self.do_update(Message::Extract);
-                    }
-                    ContextMenuMessage::Update => self.do_update(Message::ModUpdate),
-                    ContextMenuMessage::DevUpdate => {
-                        self.do_update(Message::DevUpdate);
-                    }
-                    ContextMenuMessage::Uninstall => {
-                        let message = "Mod_Uninstall_Confirmation".localize();
-                        let vars = HashMap::from(
-                            [("mod_name".to_string(), mod_.meta.name.to_string())]
-                        );
-                        let prompt = message.format(&vars).unwrap();
-                        self.do_update(Message::Confirm(
-                            Message::UninstallMods(None).into(),
-                            prompt,
-                        ));
-                    }
-                    ContextMenuMessage::Toggle(state) => {
-                        self.do_update(Message::ToggleMods(None, state));
-                    }
-                    ContextMenuMessage::Move(dest) => {
-                        self.do_update(Message::MoveSelected(dest));
+                        self.session
+                            .dispatch(Command::Extract { ids, dest: folder });
                     }
                 }
-            }
-            if toggled {
-                self.do_update(Message::ToggleMods(Some(vec![menu_mod.clone()]), enabled));
-            } else if clicked {
-                self.do_update(Message::SetFocus(FocusedPane::ModList));
-                if selected && ctrl {
-                    self.do_update(Message::Deselect(index));
-                } else if shift {
-                    self.do_update(Message::SelectThrough(index));
-                } else if ctrl {
-                    self.do_update(Message::SelectAlso(index));
-                } else {
-                    self.do_update(Message::SelectOnly(index));
+                ContextMenuMessage::Update => {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_title("Mod_Select_Title".localize())
+                        .add_filter("Any mod (*.zip, *.rar, *.7z, *.bnp, rules.txt)", &[
+                            "zip", "rar", "7z", "bnp", "txt",
+                        ])
+                        .add_filter("UKMM Mod (*.zip)", &["zip"])
+                        .add_filter("BCML Mod (*.bnp)", &["bnp"])
+                        .add_filter("Legacy Mod (*.zip, *.rar, *.7z, rules.txt)", &[
+                            "zip", "rar", "7z", "txt",
+                        ])
+                        .add_filter("All files (*.*)", &["*"])
+                        .pick_file()
+                    {
+                        self.session.dispatch(Command::UpdateFromPath { id, path });
+                    }
                 }
-            } else if drag_started {
-                if !ctrl && !shift {
-                    self.do_update(Message::StartDrag(index));
+                ContextMenuMessage::DevUpdate => {
+                    // Pick the source folder for each target mod here in render
+                    // code; the worker stays dialog-free.
+                    let mut folders = Vec::with_capacity(ids.len());
+                    let mut aborted = false;
+                    for target in &ids {
+                        let name = self
+                            .snap
+                            .entries
+                            .iter()
+                            .find(|e| &e.id == target)
+                            .map(|e| e.meta.name.to_string())
+                            .unwrap_or_default();
+                        let message = "Mod_Update_Folder".localize();
+                        let vars =
+                            std::collections::HashMap::from([("mod_name".to_string(), name)]);
+                        match message.format(&vars) {
+                            Ok(title) => {
+                                match rfd::FileDialog::new().set_title(title).pick_folder() {
+                                    Some(folder) => folders.push(folder),
+                                    None => {
+                                        aborted = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                self.do_update(Message::Error(e.into()));
+                                aborted = true;
+                                break;
+                            }
+                        }
+                    }
+                    if !aborted {
+                        self.session.dispatch(Command::DevUpdate { ids, folders });
+                    }
                 }
-            } else if self.drag_index != Some(index) && hover {
-                self.hover_index = Some(index);
+                ContextMenuMessage::Uninstall => {
+                    let message = "Mod_Uninstall_Confirmation".localize();
+                    let vars =
+                        HashMap::from([("mod_name".to_string(), entry.meta.name.to_string())]);
+                    let prompt = message.format(&vars).unwrap();
+                    self.confirm = Some((Command::Uninstall(ids).into(), prompt));
+                }
+                ContextMenuMessage::Toggle(state) => {
+                    self.session.dispatch(Command::SetEnabled {
+                        ids,
+                        enabled: state,
+                    });
+                }
+                ContextMenuMessage::Move(dest) => {
+                    self.session.dispatch(Command::MoveTo { ids, index: dest });
+                }
             }
+        }
+        if toggled {
+            self.session.dispatch(Command::SetEnabled {
+                ids: vec![id],
+                enabled,
+            });
+        } else if clicked {
+            self.do_update(Message::SetFocus(FocusedPane::ModList));
+            if selected && ctrl {
+                self.do_update(Message::Deselect(id));
+            } else if shift {
+                self.do_update(Message::SelectThrough(id));
+            } else if ctrl {
+                self.do_update(Message::SelectAlso(id));
+            } else {
+                self.do_update(Message::SelectOnly(id));
+            }
+        } else if drag_started {
+            if !ctrl && !shift {
+                self.do_update(Message::StartDrag(id));
+            }
+        } else if self.drag != Some(id) && hover {
+            self.hover = Some(id);
         }
     }
 
     fn render_mod_context_menu(
         core: &uk_manager::core::Manager,
-        mod_: Mod,
+        path: &std::path::Path,
+        enabled: bool,
         ui: &mut Ui,
     ) -> Option<ContextMenuMessage> {
         let mut result = None;
@@ -501,7 +536,7 @@ impl App {
             result = Some(ContextMenuMessage::Uninstall);
         }
         if ui
-            .button(if mod_.enabled {
+            .button(if enabled {
                 "Mod_Disable".localize()
             } else {
                 "Mod_Enable".localize()
@@ -509,19 +544,19 @@ impl App {
             .clicked()
         {
             ui.close_kind(egui::UiKind::Menu);
-            result = Some(ContextMenuMessage::Toggle(!mod_.enabled));
+            result = Some(ContextMenuMessage::Toggle(!enabled));
         }
         if ui.button("Mod_View".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);
-            let _ = Command::new(if cfg!(windows) {
+            let _ = ProcCommand::new(if cfg!(windows) {
                 "explorer"
             } else {
                 "xdg-open"
             })
-            .arg(if mod_.path.is_dir() {
-                &mod_.path
+            .arg(if path.is_dir() {
+                path
             } else {
-                mod_.path.parent().unwrap()
+                path.parent().unwrap()
             })
             .output();
         }

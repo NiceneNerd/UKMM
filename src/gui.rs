@@ -11,49 +11,40 @@ mod settings;
 mod tabs;
 mod update;
 mod util;
-use std::{
-    cell::{Cell, RefCell},
-    collections::VecDeque,
-    fmt::Write,
-    ops::DerefMut,
-    path::PathBuf,
-    rc::Rc,
-    sync::Arc,
-    thread,
-    time::Duration,
-};
+use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc, thread, time::Duration};
 
 use anyhow::{Context, Result};
 use eframe::{
+    NativeOptions,
     egui::{IconData, InnerResponse},
     epaint::text::TextWrapping,
-    NativeOptions,
 };
 use egui_notify::Toast;
 use flume::{Receiver, Sender};
 use fs_err as fs;
-use parking_lot::{
-    MappedRwLockReadGuard, MappedRwLockWriteGuard, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
-};
 use mods::ModListState;
+use options::OptionsModal;
+use parking_lot::Mutex;
 use picker::FilePickerState;
 use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
-use uk_app::host::updates::VersionResponse;
+use uk_app::{
+    Command, Event, ModId, ProfileName, Session, Snapshot,
+    host::updates::VersionResponse,
+    view::{filter_entries, sort_entries},
+};
 use uk_content::util::HashMap;
-use uk_localization::*;
-use uk_localization::string_ext::LocString;
+use uk_localization::{string_ext::LocString, *};
 use uk_manager::{
     core::Manager,
-    mods::{LookupMod, Mod},
     settings::{Platform, Settings},
 };
-use uk_mod::{pack::sanitise, Manifest, Meta, ModPlatform};
+use uk_mod::pack::sanitise;
 pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
-        self, epaint::Margin, text::LayoutJob, Align, Align2, ComboBox, Frame, Id, Label, LayerId,
-        Layout, RichText, Spinner, TextStyle, Ui, UiStackInfo, Vec2, ViewportBuilder,
+        self, Align, Align2, ComboBox, Frame, Id, Label, LayerId, Layout, RichText, Spinner,
+        TextStyle, Ui, UiStackInfo, Vec2, ViewportBuilder, epaint::Margin, text::LayoutJob,
     },
     egui_dock::{DockArea, DockState, NodeIndex},
     ext::UiExt,
@@ -63,18 +54,6 @@ use uk_util::OptionResultExt;
 
 use self::package::ModPackerBuilder;
 use crate::gui::modals::MetaInputModal;
-
-/// Runs the mod-open operation in a task and maps the outcome to a message.
-pub(super) fn open_mod_task(
-    core: &Manager,
-    path: &std::path::Path,
-    meta: Option<Meta>,
-) -> Result<Message> {
-    Ok(match uk_app::open_mod(core, path, meta)? {
-        uk_app::Opened::Mod(mod_) => Message::HandleMod(mod_),
-        uk_app::Opened::NeedsMeta(path) => Message::RequestMeta(path),
-    })
-}
 
 pub trait Component {
     type Message;
@@ -118,18 +97,12 @@ pub enum FocusedPane {
 // re-exports it and keeps persisting it in `ui.json`.
 pub use uk_app::view::Sort;
 
+/// Frontend-only messages. Anything that mutates core state goes straight to
+/// `Session::dispatch(Command)`; results come back as `Event`s.
 #[derive(Debug)]
 pub enum Message {
-    AddMod(Mod),
-    AddToProfile(smartstring::alias::String),
-    AddProfile,
-    Apply,
-    ChangeProfile(String),
     ChangeSort(Sort, bool),
     CheckMeta,
-    CleanProfile(String),
-    ClearDrag,
-    ClearSelect,
     CloseAbout,
     CloseConfirm,
     CloseError,
@@ -137,49 +110,27 @@ pub enum Message {
     ClosePackagingOptions,
     ClosePackagingDependencies,
     CloseProfiles,
-    Confirm(Box<Message>, String),
-    DeleteProfile(String),
-    Deploy,
-    Deselect(usize),
+    /// Ask the user to confirm a session command; dispatched on OK.
+    Confirm(Box<Command>, String),
+    Deselect(ModId),
     DoUpdate,
-    DuplicateProfile(String),
     Error(anyhow_ext::Error),
-    Extract,
     FilePickerBack,
     FilePickerSet(Option<PathBuf>),
     FilePickerUp,
     GetPackagingOptions,
-    HandleMod(Mod),
-    HandleSettings,
     ImportCemu,
-    InstallMod(Mod),
     MigrateBcml,
-    ModUpdate,
-    MoveSelected(usize),
     NewProfile,
-    Noop,
-    OfferUpdate(VersionResponse),
     OpenMod(PathBuf),
     PackageMod,
-    RefreshModsDisplay,
-    Remerge,
-    ReloadProfiles,
-    RemoveMods(Vec<Mod>),
-    RenameProfile(String, String),
-    RequestMeta(PathBuf),
-    RequestOptions(Mod, bool),
-    ResetMods(Option<Manifest>),
-    ResetPacker,
-    ResetPending,
     ResetSettings,
-    Restart,
     SaveSettings,
-    SelectAlso(usize),
+    SelectAlso(ModId),
     SelectFile,
-    SelectOnly(usize),
-    SelectThrough(usize),
+    SelectOnly(ModId),
+    SelectThrough(ModId),
     SelectProfileManage(smartstring::alias::String),
-    SetChangelog(String),
     SetDownloading(String),
     SetFocus(FocusedPane),
     SetLanguage(LocLang),
@@ -187,13 +138,8 @@ pub enum Message {
     ShowAbout,
     ShowPackagingOptions(FxHashSet<PathBuf>),
     ShowPackagingDependencies,
-    StartDrag(usize),
+    StartDrag(ModId),
     Toast(String),
-    ToggleMods(Option<Vec<Mod>>, bool),
-    DevUpdate,
-    UpdatePackageMeta(Meta),
-    UninstallMods(Option<Vec<Mod>>),
-    UpdateOptions(Mod),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -219,16 +165,23 @@ impl Default for UiState {
 
 pub struct App {
     core: Arc<Manager>,
+    /// The session owns all mod/profile/pending state; the frontend only
+    /// keeps view state and dispatches commands.
+    session: Session,
+    events: Receiver<Event>,
+    /// Latest snapshot from the session (re-read after events).
+    snap: Arc<Snapshot>,
+    /// Visible rows (sorted + filtered), as mod ids; display indices never
+    /// leave the frontend.
+    visible: Vec<ModId>,
+    visible_dirty: bool,
     channel: (Sender<Message>, Receiver<Message>),
-    mods: Vec<Mod>,
-    displayed_mods: Vec<Mod>,
     mod_list_filter: String,
-    selected: Vec<Mod>,
-    install_queue: VecDeque<PathBuf>,
-    update_mod: Option<Mod>,
-    error_queue: VecDeque<anyhow_ext::Error>,
-    drag_index: Option<usize>,
-    hover_index: Option<usize>,
+    selected: Vec<ModId>,
+    drag: Option<ModId>,
+    hover: Option<ModId>,
+    /// One-click download in progress (reported over IPC).
+    downloading: Option<String>,
     list_state: ModListState,
     picker_state: FilePickerState,
     profiles_state: RefCell<profiles::ProfileManagerState>,
@@ -238,14 +191,12 @@ pub struct App {
     focused: FocusedPane,
     error: Option<anyhow_ext::Error>,
     new_profile: Option<String>,
-    confirm: Option<(Message, String)>,
-    busy: Cell<bool>,
+    confirm: Option<(Box<Command>, String)>,
     show_about: bool,
     package_builder: RefCell<ModPackerBuilder>,
     show_package_deps: bool,
     opt_folders: Option<Mutex<FxHashSet<PathBuf>>>,
-    dirty: RwLock<HashMap<String, Manifest>>,
-    options_mod: Option<(Mod, bool)>,
+    options_modal: Option<OptionsModal>,
     temp_settings: Settings,
     toasts: egui_notify::Toasts,
     theme: visuals::Theme,
@@ -271,19 +222,14 @@ impl App {
         uk_ui::icons::load_icons(&cc.egui_ctx);
         uk_ui::load_fonts(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
+        let session = Session::open(core.clone()).expect("Failed to open session");
+        let events = session.subscribe();
+        let snap = session.snapshot();
         let ui_state: UiState = fs::read_to_string(core.settings().state_file())
             .context("")
             .and_then(|s| serde_json::from_str(&s).context(""))
             .unwrap_or_default();
         ui_state.theme.set_theme(&cc.egui_ctx);
-        let mods: Vec<_> = core.mod_manager().all_mods().collect();
-        let mut temp = mods.iter().cloned().enumerate().collect::<Vec<_>>();
-        temp.sort_by(ui_state.list_state.sort.orderer());
-        let displayed_mods = if ui_state.list_state.descending {
-            temp.into_iter().rev().map(|(_, m)| m).collect()
-        } else {
-            temp.into_iter().map(|(_, m)| m).collect()
-        };
         let (send, recv) = flume::unbounded();
         // Bridge one-click IPC messages into the app message channel
         {
@@ -291,9 +237,7 @@ impl App {
             thread::spawn(move || {
                 while let Ok(msg) = ipc.recv() {
                     let msg = match msg {
-                        uk_app::host::oneclick::IpcMessage::OpenMod(path) => {
-                            Message::OpenMod(path)
-                        }
+                        uk_app::host::oneclick::IpcMessage::OpenMod(path) => Message::OpenMod(path),
                         uk_app::host::oneclick::IpcMessage::Error(e) => {
                             Message::Error(anyhow_ext::anyhow!(e))
                         }
@@ -310,46 +254,30 @@ impl App {
         let temp_settings = core.settings().clone();
         let platform = core.settings().current_mode;
         LOCALIZATION.write().update_language(&temp_settings.lang);
-        Self {
-            selected: mods.first().cloned().into_iter().collect(),
-            drag_index: None,
-            hover_index: None,
+        let (changelog, check_updates) = {
+            let settings = core.settings();
+            let is_first_run = settings.last_version.is_none();
+            let needs_config = settings.platform_config().is_none();
+            drop(settings);
+            // Show intro if first run OR if platform not configured
+            if is_first_run || needs_config {
+                (Some("Intro_Message".localize().to_string()), false)
+            } else {
+                (None, true)
+            }
+        };
+        let mut app = Self {
+            selected: snap.entries.first().map(|e| e.id).into_iter().collect(),
+            drag: None,
+            hover: None,
             package_builder: RefCell::new(ModPackerBuilder::new(platform)),
             list_state: ui_state.list_state,
             picker_state: ui_state.picker_state,
             profiles_state: RefCell::new(profiles::ProfileManagerState::new(&core)),
             meta_input: MetaInputModal::new(send.clone()),
-            displayed_mods,
             mod_list_filter: "".parse().unwrap(),
-            mods,
             temp_settings,
-            changelog: {
-                let settings = core.settings();
-                let is_first_run = settings.last_version.is_none();
-                let needs_config = settings.platform_config().is_none();
-                drop(settings);
-                
-                // Show intro if first run OR if platform not configured
-                if is_first_run || needs_config {
-                    Some("Intro_Message".localize().to_string())
-                } else {
-                    let core = core.clone();
-                    let send = send.clone();
-                    thread::spawn(move || {
-                        use uk_app::host::updates::ReleaseCheck;
-                        match uk_app::host::updates::check_releases(&core) {
-                            ReleaseCheck::OfferUpdate(version) => {
-                                let _ = send.send(Message::OfferUpdate(version));
-                            }
-                            ReleaseCheck::Changelog(md) => {
-                                let _ = send.send(Message::SetChangelog(md));
-                            }
-                            ReleaseCheck::None => {}
-                        }
-                    });
-                    None
-                }
-            },
+            changelog,
             channel: (send, recv),
             closed_tabs: Default::default(),
             focused: FocusedPane::None,
@@ -359,27 +287,25 @@ impl App {
             show_about: false,
             show_package_deps: false,
             opt_folders: None,
-            busy: Cell::new(false),
-            dirty: {
-                let settings = core.settings();
-                RwLock::new(
-                    settings
-                        .profiles()
-                        .map(|p| (p.into(), Default::default()))
-                        .collect(),
-                )
-            },
-            options_mod: None,
+            options_modal: None,
+            downloading: None,
             tree: Rc::new(RefCell::new(ui_state.tree)),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
             dock_style: visuals::style_dock(&cc.egui_ctx.style()),
-            install_queue: Default::default(),
-            update_mod: Default::default(),
-            error_queue: Default::default(),
             new_version: None,
+            session,
+            events,
+            snap,
+            visible: vec![],
+            visible_dirty: true,
             core,
+        };
+        app.refresh_visible();
+        if check_updates {
+            app.session.dispatch(Command::CheckForUpdates);
         }
+        app
     }
 
     #[inline(always)]
@@ -387,33 +313,24 @@ impl App {
         self.core.settings().current_mode
     }
 
-    #[inline(always)]
-    fn dirty(&self) -> MappedRwLockReadGuard<'_, Manifest> {
-        let dirty = self.dirty.read();
-        RwLockReadGuard::map(dirty, |dirty| {
-            dirty
-                .get(self.core.mod_manager().profile().key().as_str())
-                .or_else(|| dirty.values().next())
-                .unwrap()
-        })
-    }
-
-    #[inline(always)]
-    fn dirty_mut(&self) -> MappedRwLockWriteGuard<'_, Manifest> {
-        let dirty = self.dirty.write();
-        RwLockWriteGuard::map(dirty, |dirty| {
-            dirty.get_mut(self.core.mod_manager().profile().key().as_str())
-            .map(|m| unsafe { &mut *(m as *mut _) }) // Classic Polonius situation
-            .or_else(|| dirty.values_mut().next())
-            .unwrap()
-        })
+    /// Rebuilds the visible row list (sorted + filtered ids) from the
+    /// snapshot. Display indices never leave the frontend.
+    fn refresh_visible(&mut self) {
+        let sorted = sort_entries(
+            &self.snap.entries,
+            self.list_state.sort,
+            self.list_state.descending,
+        );
+        self.visible = filter_entries(&sorted, &self.snap.entries, &self.mod_list_filter);
+        self.visible_dirty = false;
     }
 
     #[inline(always)]
     fn modal_open(&self) -> bool {
         self.error.is_some()
-            || self.busy.get()
-            || self.options_mod.is_some()
+            || self.snap.busy.is_some()
+            || self.downloading.is_some()
+            || self.options_modal.is_some()
             || self.confirm.is_some()
             || self.show_about
             || self.new_profile.is_some()
@@ -427,63 +344,20 @@ impl App {
         self.channel.0.send(message).unwrap();
     }
 
-    fn do_task(
-        &self,
-        task: impl 'static
-        + Send
-        + Sync
-        + FnOnce(Arc<Manager>) -> Result<Message>
-        + std::panic::UnwindSafe,
-    ) {
-        let sender = self.channel.0.clone();
-        let core = self.core.clone();
-        let task = Box::new(task);
-        self.busy.set(true);
-        thread::spawn(move || {
-            let response = match std::panic::catch_unwind(|| task(core.clone())) {
-                Ok(Ok(msg)) => msg,
-                Ok(Err(e)) => Message::Error(e),
-                Err(e) => {
-                    Message::Error(anyhow::format_err!(
-                        "{}",
-                        e.downcast::<String>().unwrap_or_else(|_| {
-                            Box::new(
-                                "An unknown error occurred, check the log for possible details."
-                                    .to_string(),
-                            )
-                        })
-                    ).context(std::backtrace::Backtrace::force_capture()))
-                }
-            };
-            if let Some(d) = core.settings().dump() {
-                d.clear_cache()
-            }
-            sender.send(response).unwrap();
-        });
-    }
-
     fn handle_drops(&mut self, ctx: &egui::Context) {
         let files = ctx.input(|i| i.raw.dropped_files.clone());
         if !(self.modal_open() || files.is_empty()) {
-            let first = files.first().and_then(|f| f.path.clone()).unwrap();
-            self.install_queue
-                .extend(files.iter().skip(1).filter_map(|f| f.path.clone()));
-            self.error_queue.clear();
-            self.do_task(move |core| open_mod_task(&core, &first, None));
+            let paths = files
+                .iter()
+                .filter_map(|f| f.path.clone())
+                .collect::<Vec<_>>();
+            if !paths.is_empty() {
+                self.session.dispatch(Command::InstallBatch {
+                    paths,
+                    replace: None,
+                });
+            }
         }
-    }
-
-    fn filtered_mods(&self, filter: &str) -> Vec<(usize, &Mod)> {
-        self.displayed_mods
-            .iter()
-            .enumerate()
-            .filter(|(_, _mod)| _mod
-                .meta
-                .name
-                .to_lowercase()
-                .contains(&filter.to_lowercase())
-            )
-            .collect::<Vec<_>>()
     }
 }
 
@@ -507,11 +381,7 @@ impl eframe::App for App {
         ui_builder.layer_id = Some(LayerId::background());
         ui_builder.max_rect = Some(ctx.available_rect());
         ui_builder.ui_stack_info = UiStackInfo::new(egui::UiKind::CentralPanel);
-        let mut ui = Ui::new(
-            ctx.clone(),
-            id,
-            ui_builder,
-        );
+        let mut ui = Ui::new(ctx.clone(), id, ui_builder);
         ui.spacing_mut().item_spacing = [8.0, 8.0].into();
         DockArea::new(&mut Rc::clone(&self.tree).borrow_mut())
             .style(self.dock_style.clone())
