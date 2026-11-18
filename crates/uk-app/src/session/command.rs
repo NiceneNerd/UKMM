@@ -98,6 +98,9 @@ pub enum Command {
         path: PathBuf,
         meta: Option<Meta>,
     },
+    /// Download a GameBanana one-click URL and inspect the result, as one
+    /// job (busy/progress come from the job lifecycle, not a stray flag).
+    OneClick(String),
     /// Install an inspected mod (from `Inspection::Ready` or a resolved
     /// `OptionsPrompt`).
     Install(InstallCandidate),

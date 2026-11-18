@@ -24,7 +24,7 @@ impl App {
             self.refresh_visible();
         }
         self.handle_drops(ctx);
-        if got_events || self.snap.busy.is_some() || self.downloading.is_some() {
+        if got_events || self.snap.busy.is_some() {
             ctx.request_repaint();
         }
     }
@@ -230,10 +230,10 @@ impl App {
             Message::SelectProfileManage(name) => {
                 self.profiles_state.borrow_mut().selected = Some(name);
             }
-            Message::SetDownloading(name) => {
-                log::info!("Downloading {name} from GameBanana…");
-                ctx.request_repaint();
-                self.downloading = Some(name);
+            Message::OneClick(url) => {
+                // The download itself is a session job, so the busy overlay
+                // and progress come from the snapshot — no stray flag.
+                self.session.dispatch(Command::OneClick(url));
             }
             Message::SetFocus(pane) => self.focused = pane,
             Message::SetTheme(theme) => {
@@ -274,7 +274,6 @@ impl App {
             }
             Message::OpenMod(path) => {
                 let meta = self.meta_input.take();
-                self.downloading = None;
                 ctx.request_repaint();
                 self.session.dispatch(Command::Open { path, meta });
             }
@@ -293,7 +292,6 @@ impl App {
                     .pick_files()
                     .filter(|p| !p.is_empty())
                 {
-                    self.downloading = None;
                     self.session.dispatch(Command::InstallBatch {
                         paths,
                         replace: None,

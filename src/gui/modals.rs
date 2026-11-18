@@ -264,10 +264,9 @@ impl App {
     }
 
     pub fn render_busy(&self, ctx: &egui::Context, _frame: &eframe::Frame) {
-        // The busy overlay reads straight from the session snapshot (plus the
-        // IPC-reported one-click download) — the frontend never sets its own
-        // busy flag.
-        if self.snap.busy.is_some() || self.downloading.is_some() {
+        // The busy overlay reads straight from the session snapshot — the
+        // frontend never sets its own busy flag.
+        if self.snap.busy.is_some() {
             egui::Window::new("Busy_Working".localize())
                 .default_size([240., 80.])
                 .anchor(Align2::CENTER_CENTER, Vec2::default())
@@ -291,7 +290,6 @@ impl App {
                                     .snap
                                     .progress
                                     .clone()
-                                    .or_else(|| self.downloading.clone())
                                     .or_else(|| crate::logger::LOGGER.get_progress());
                                 if let Some(progress) = progress {
                                     ui.add(

@@ -122,6 +122,7 @@ pub enum Message {
     ImportCemu,
     MigrateBcml,
     NewProfile,
+    OneClick(String),
     OpenMod(PathBuf),
     PackageMod,
     ResetSettings,
@@ -131,7 +132,6 @@ pub enum Message {
     SelectOnly(ModId),
     SelectThrough(ModId),
     SelectProfileManage(smartstring::alias::String),
-    SetDownloading(String),
     SetFocus(FocusedPane),
     SetLanguage(LocLang),
     SetTheme(visuals::Theme),
@@ -180,8 +180,6 @@ pub struct App {
     selected: Vec<ModId>,
     drag: Option<ModId>,
     hover: Option<ModId>,
-    /// One-click download in progress (reported over IPC).
-    downloading: Option<String>,
     list_state: ModListState,
     picker_state: FilePickerState,
     profiles_state: RefCell<profiles::ProfileManagerState>,
@@ -238,11 +236,9 @@ impl App {
                 while let Ok(msg) = ipc.recv() {
                     let msg = match msg {
                         uk_app::host::oneclick::IpcMessage::OpenMod(path) => Message::OpenMod(path),
+                        uk_app::host::oneclick::IpcMessage::OneClick(url) => Message::OneClick(url),
                         uk_app::host::oneclick::IpcMessage::Error(e) => {
                             Message::Error(anyhow_ext::anyhow!(e))
-                        }
-                        uk_app::host::oneclick::IpcMessage::Starting(name) => {
-                            Message::SetDownloading(name)
                         }
                     };
                     if send.send(msg).is_err() {
@@ -288,7 +284,6 @@ impl App {
             show_package_deps: false,
             opt_folders: None,
             options_modal: None,
-            downloading: None,
             tree: Rc::new(RefCell::new(ui_state.tree)),
             toasts: egui_notify::Toasts::new().with_anchor(egui_notify::Anchor::BottomRight),
             theme: ui_state.theme,
@@ -329,7 +324,6 @@ impl App {
     fn modal_open(&self) -> bool {
         self.error.is_some()
             || self.snap.busy.is_some()
-            || self.downloading.is_some()
             || self.options_modal.is_some()
             || self.confirm.is_some()
             || self.show_about

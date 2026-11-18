@@ -61,6 +61,7 @@ impl State {
             Command::UpdateFromPath { id, path } => self.inspect_path(&path, None, Some(id)),
             Command::DevUpdate { ids, folders } => self.dev_update(ids, folders),
             Command::Extract { ids, dest } => self.extract(ids, dest),
+            Command::OneClick(url) => self.one_click(&url),
             Command::Reload => self.reload(),
             Command::ImportCemu(path) => self.import_cemu(path),
             Command::MigrateBcml => self.migrate_bcml(),
@@ -69,6 +70,19 @@ impl State {
             Command::CheckForUpdates => self.check_for_updates(),
             Command::InstallUpdate(version) => self.install_update(version),
         }
+    }
+
+    /// Downloads a one-click URL, then inspects the downloaded file like
+    /// [`Command::Open`](crate::session::Command::Open).
+    fn one_click(&mut self, url: &str) -> Result<()> {
+        if let Some(job) = self.busy {
+            let message = "Downloading mod from GameBanana…".to_owned();
+            self.progress = Some(message.clone());
+            self.emit(Event::Progress { job, message });
+            self.publish();
+        }
+        let (path, _name) = crate::host::oneclick::download_oneclick(url)?;
+        self.inspect_path(&path, None, None)
     }
 
     /// Opens a path and classifies it. The verdict is data, not control flow:

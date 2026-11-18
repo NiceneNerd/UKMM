@@ -773,6 +773,21 @@ fn deleting_a_profile_removes_orphaned_mod_files() {
 }
 
 #[test]
+fn one_click_job_has_a_proper_busy_lifecycle() {
+    let (_dir, session) = temp_session();
+    let rx = session.subscribe();
+    // An empty URL fails before any network access; what matters is the job
+    // lifecycle: JobStarted → JobDone(Err), and busy cleared afterwards
+    // (GUI_REF §22.26 — no stray flag).
+    let (events, result) = run(&session, &rx, Command::OneClick(String::new()));
+    assert!(result.is_err());
+    assert!(events.iter().any(|e| matches!(e, Event::JobStarted(_))));
+    let snap = snapshot(&session);
+    assert!(snap.busy.is_none());
+    assert!(snap.progress.is_none());
+}
+
+#[test]
 fn reload_keeps_session_state_consistent() {
     let (dir, session) = temp_session();
     let rx = session.subscribe();

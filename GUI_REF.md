@@ -1507,6 +1507,8 @@ A replacement frontend is at parity when it can:
 10. Package a mod with dependencies and option groups, then reinstall the package.
 11. Trigger a fake update and one-click URL; verify download, restart, single-instance forwarding, and busy/progress.
 12. Show every log, error, confirm, busy, toast, and changelog state described above.
+13. Under a Name sort with an active filter, drag a row onto another row and verify the *clicked mod* moves to that mod's load-order position (not a display index), and that the Priority column shows load order.
+14. Switch profiles and verify the stale selection is cleared; update a selected mod and verify the selection follows the new mod id.
 
 ---
 
