@@ -114,43 +114,9 @@ pub enum FocusedPane {
     None,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Sort {
-    Enabled,
-    Name,
-    Category,
-    Version,
-    Priority,
-}
-
-type Orderer = dyn Fn(&(usize, Mod), &(usize, Mod)) -> std::cmp::Ordering;
-
-impl Sort {
-    pub fn orderer(&self) -> Box<Orderer> {
-        match self {
-            Sort::Enabled => {
-                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| a.enabled.cmp(&b.enabled))
-            }
-            Sort::Name => {
-                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| a.meta.name.cmp(&b.meta.name))
-            }
-            Sort::Category => {
-                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                    a.meta.category.u8().cmp(&b.meta.category.u8())
-                })
-            }
-            Sort::Version => {
-                Box::new(|(_, a): &(_, Mod), (_, b): &(_, Mod)| {
-                    a.meta
-                        .version
-                        .partial_cmp(&b.meta.version)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-            }
-            Sort::Priority => Box::new(|&(a, _), &(b, _)| a.cmp(&b)),
-        }
-    }
-}
+// The sort order lives in `uk-app` so every frontend shares it; the GUI
+// re-exports it and keeps persisting it in `ui.json`.
+pub use uk_app::view::Sort;
 
 #[derive(Debug)]
 pub enum Message {

@@ -15,9 +15,12 @@ http_req = { version = "0.14.6", default-features = false, features = ["native-t
 join_str = { workspace = true }
 lenient_semver = { workspace = true }
 log = { workspace = true }
+parking_lot = { workspace = true }
 roxmltree = "0.21.1"
+rustc-hash = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+serde_yaml = { workspace = true }
 sevenz-rust = { workspace = true }
 ssilide = "0.2.0"
 thiserror = { workspace = true }
@@ -33,5 +36,4 @@ uk-util = { path = "../uk-util" }
 winreg = "0.55.0"
 
 [dev-dependencies]
-serde_yaml = { workspace = true }
 tempfile = "3.3"

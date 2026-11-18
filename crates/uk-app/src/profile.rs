@@ -6,8 +6,10 @@ use std::fmt;
 use anyhow_ext::{Result, bail};
 
 /// A profile name that is safe to join onto the profiles directory.
-/// Construct only via [`ProfileName::parse`].
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// Construct user-supplied names only via [`ProfileName::parse`].
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub struct ProfileName(String);
 
 impl ProfileName {
@@ -26,9 +28,20 @@ impl ProfileName {
         Ok(Self(name.to_owned()))
     }
 
+    /// Wraps an existing on-disk profile name without validation. Only for
+    /// names read from disk; user input must go through [`ProfileName::parse`].
+    pub fn from_existing(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+
     #[inline(always)]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    #[inline(always)]
+    pub fn into_string(self) -> String {
+        self.0
     }
 }
 

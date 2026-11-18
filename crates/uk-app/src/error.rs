@@ -2,7 +2,7 @@
 //! instead of matching English error strings.
 
 /// Errors with a stable, matchable identity.
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error, serde::Serialize, serde::Deserialize)]
 pub enum AppError {
     /// The mod targets a different platform than the current mode.
     #[error("Mod is for {0}, current mode is {1}")]
@@ -21,8 +21,17 @@ pub enum AppError {
     Other(String),
 }
 
+impl AppError {
+    /// Converts an anyhow error, preserving a typed `AppError` when the chain
+    /// contains one.
+    pub fn from_anyhow(e: anyhow::Error) -> Self {
+        e.downcast::<AppError>()
+            .unwrap_or_else(|e| Self::Other(format!("{e:?}")))
+    }
+}
+
 impl From<anyhow::Error> for AppError {
     fn from(e: anyhow::Error) -> Self {
-        Self::Other(format!("{e:?}"))
+        Self::from_anyhow(e)
     }
 }
