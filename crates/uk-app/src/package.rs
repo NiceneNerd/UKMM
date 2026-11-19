@@ -55,8 +55,7 @@ pub fn dev_update_mod(core: &Manager, mod_: Mod, source: impl AsRef<Path>) -> Re
     .context("Failed to package mod")?;
     let new_mod = ModReader::open_peek(mod_.path, vec![])?;
     dirty.extend(new_mod.manifest());
-    core.mod_manager_mut()
-        .replace(Mod::from_reader(new_mod), hash)?;
+    core.with_mod_manager_mut(|mm| mm.replace(Mod::from_reader(new_mod), hash))?;
     Ok(dirty)
 }
 

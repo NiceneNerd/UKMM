@@ -94,24 +94,23 @@ fn install_reorder_apply_deploy() {
     // install two mods
     let mod_a = mod_zip_named(dir.path(), "a.zip", "E2E Test Mod A");
     let mod_b = mod_zip_named(dir.path(), "b.zip", "E2E Test Mod B");
-    {
-        let mods = core.mod_manager();
+    core.with_mod_manager(|mods| {
         let a = mods.add(&mod_a, None).unwrap();
         let b = mods.add(&mod_b, None).unwrap();
         mods.set_enabled(a.as_map_id(), true, None).unwrap();
         mods.set_enabled(b.as_map_id(), true, None).unwrap();
         mods.save().unwrap();
         // reorder: b before a
-        let mut order = core.mod_manager().all_mods().collect::<Vec<_>>();
+        let mut order = mods.all_mods().collect::<Vec<_>>();
         uk_app::move_selected(&mut order, std::slice::from_ref(&b), 0);
         let hashes = order.iter().map(|m| m.hash()).collect();
-        core.mod_manager().set_order(hashes);
-        core.mod_manager().save().unwrap();
-    }
+        mods.set_order(hashes);
+        mods.save().unwrap();
+    });
 
     // remerge + deploy through the app layer
     uk_app::apply_changes(&core, vec![], None).unwrap();
-    core.deploy_manager().deploy().unwrap();
+    core.with_deploy_manager(|d| d.deploy()).unwrap();
 
     // the merged output exists and the profile persisted
     let profile = core.settings().profile_dir().join("profile.yml");

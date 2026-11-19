@@ -285,12 +285,12 @@ fn import_mods(core: &Manager, mod_dir: PathBuf) -> Result<()> {
         }) {
             match convert_bnp(core, &dir) {
                 Ok(path) => {
-                    core.mod_manager().add(&path, None)?;
+                    core.with_mod_manager(|mm| mm.add(&path, None))?;
                 }
                 Err(e) => log::warn!("Failed to import BCML mod: {}", e),
             }
         }
-        core.mod_manager().save()?;
+        core.with_mod_manager(|mm| mm.save())?;
         Ok(())
     }
 }

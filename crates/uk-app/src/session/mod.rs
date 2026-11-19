@@ -217,12 +217,12 @@ impl State {
     }
 
     fn current_profile_name(&self) -> ProfileName {
-        let mm = self.core.mod_manager();
-        ProfileName::from_existing(mm.profile().key().to_string())
+        self.core
+            .with_mod_manager(|mm| ProfileName::from_existing(mm.profile().key().to_string()))
     }
 
     fn refresh_mods(&mut self) {
-        self.mods = self.core.mod_manager().all_mods().collect();
+        self.mods = self.core.with_mod_manager(|mm| mm.all_mods().collect());
     }
 
     fn dirty_current_mut(&mut self) -> &mut Manifest {

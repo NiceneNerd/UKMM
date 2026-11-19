@@ -171,15 +171,16 @@ impl Runner {
     }
 
     fn deploy(&self) -> Result<()> {
-        let deployer = self.core.deploy_manager();
-        if deployer.pending() {
-            println!("Deploying changes...");
-            deployer.deploy()?;
-            println!("Deployment complete");
-        } else {
-            println!("No changes pending deployment");
-        };
-        Ok(())
+        self.core.with_deploy_manager(|deployer| {
+            if deployer.pending() {
+                println!("Deploying changes...");
+                deployer.deploy()?;
+                println!("Deployment complete");
+            } else {
+                println!("No changes pending deployment");
+            }
+            Ok(())
+        })
     }
 
     pub fn run(self) -> Result<()> {
@@ -205,13 +206,16 @@ impl Runner {
                 meta,
             }) => {
                 let path = self.check_mod(path, meta.as_deref())?;
-                let mods = self.core.mod_manager();
-                let mod_ = mods.add(&path, profile.as_ref())?;
-                mods.set_enabled(mod_.as_map_id(), true, profile.as_ref())?;
-                mods.save()?;
+                let mod_ = self.core.with_mod_manager(|mods| -> Result<_> {
+                    let mod_ = mods.add(&path, profile.as_ref())?;
+                    mods.set_enabled(mod_.as_map_id(), true, profile.as_ref())?;
+                    mods.save()?;
+                    Ok(mod_)
+                })?;
                 println!("Applying mod to load order...");
-                let deployer = self.core.deploy_manager();
-                deployer.apply(Some(mod_.manifest()?.as_ref().clone()))?;
+                let manifest = mod_.manifest()?.as_ref().clone();
+                self.core
+                    .with_deploy_manager(|deployer| deployer.apply(Some(manifest)))?;
                 if self.cli.deploy {
                     self.deploy()?;
                 }
@@ -233,47 +237,50 @@ impl Runner {
                 println!("Done!");
             }
             UkmmCmd::Uninstall(Uninstall { index, profile }) => {
-                let mut manifests = Manifest::default();
-                let mod_manager = self.core.mod_manager();
-                let mods = mod_manager.mods().collect::<Vec<_>>();
-
-                if let Some(index_value) = index {
-                    let mod_ = mods
-                        .get(*index_value)
-                        .with_context(|| format!("Mod {} does not exist", index_value))?;
-                    println!("Removing mod {}...", &mod_.meta.name);
-                    mod_manager.del(mod_, profile.as_ref())?;
-                    mod_manager.save()?;
-                    manifests.extend(mod_.manifest()?.as_ref());
-                } else {
-                    println!("Installed mods:");
-                    for (i, mod_) in mods.iter().enumerate() {
-                        println!(
-                            "{}. {} (v{}) by {}",
-                            i + 1,
-                            &mod_.meta.name,
-                            &mod_.meta.version,
-                            &mod_.meta.author
-                        );
-                    }
-                    print!("Enter mod(s) to uninstall, separated by commas: ");
+                self.core.with_mod_manager(|mod_manager| -> Result<()> {
                     let mut manifests = Manifest::default();
-                    for id in input!().replace(' ', "").split(',') {
+                    let mods = mod_manager.mods().collect::<Vec<_>>();
+
+                    if let Some(index_value) = index {
                         let mod_ = mods
-                            .get(id.trim().parse::<usize>().context("Invalid mod number")? - 1)
-                            .with_context(|| format!("Mod {} does not exist", id))?;
+                            .get(*index_value)
+                            .with_context(|| format!("Mod {} does not exist", index_value))?;
                         println!("Removing mod {}...", &mod_.meta.name);
                         mod_manager.del(mod_, profile.as_ref())?;
                         mod_manager.save()?;
                         manifests.extend(mod_.manifest()?.as_ref());
+                    } else {
+                        println!("Installed mods:");
+                        for (i, mod_) in mods.iter().enumerate() {
+                            println!(
+                                "{}. {} (v{}) by {}",
+                                i + 1,
+                                &mod_.meta.name,
+                                &mod_.meta.version,
+                                &mod_.meta.author
+                            );
+                        }
+                        print!("Enter mod(s) to uninstall, separated by commas: ");
+                        let mut manifests = Manifest::default();
+                        for id in input!().replace(' ', "").split(',') {
+                            let mod_ = mods
+                                .get(id.trim().parse::<usize>().context("Invalid mod number")? - 1)
+                                .with_context(|| format!("Mod {} does not exist", id))?;
+                            println!("Removing mod {}...", &mod_.meta.name);
+                            mod_manager.del(mod_, profile.as_ref())?;
+                            mod_manager.save()?;
+                            manifests.extend(mod_.manifest()?.as_ref());
+                        }
                     }
-                }
 
-                println!("Applying changes to merge...");
-                self.core.deploy_manager().apply(Some(manifests))?;
-                if self.cli.deploy {
-                    self.deploy()?;
-                }
+                    println!("Applying changes to merge...");
+                    self.core
+                        .with_deploy_manager(|deployer| deployer.apply(Some(manifests)))?;
+                    if self.cli.deploy {
+                        self.deploy()?;
+                    }
+                    Ok(())
+                })?;
                 println!("Done!");
             }
             UkmmCmd::Deploy(_) => self.deploy()?,

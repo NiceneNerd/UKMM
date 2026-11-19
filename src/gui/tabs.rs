@@ -43,7 +43,7 @@ impl TabViewer for super::App {
             match tab {
                 Tabs::Info => {
                     if let Some(id) = self.selected.first().copied() {
-                        if let Some(mod_) = self.core.mod_manager().get_mod(id.0) {
+                        if let Some(mod_) = self.core.with_mod_manager(|mm| mm.get_mod(id.0)) {
                             if let Some(info::Message::RequestOptions) =
                                 info::ModInfo(&mod_).show(ui).inner
                             {

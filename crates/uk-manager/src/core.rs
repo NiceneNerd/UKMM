@@ -63,18 +63,24 @@ impl Manager {
         self.settings.write()
     }
 
+    /// Runs `f` with read access to the mod manager. The guard never escapes
+    /// this call, so lock ordering and hold times stay under `Manager`'s
+    /// control (phase 5 seal).
     #[inline(always)]
-    pub fn mod_manager(&self) -> RwLockReadGuard<'_, mods::Manager> {
-        self.mod_manager.read()
+    pub fn with_mod_manager<R>(&self, f: impl FnOnce(&mods::Manager) -> R) -> R {
+        f(&self.mod_manager.read())
     }
 
+    /// Runs `f` with write access to the mod manager. See [`Self::with_mod_manager`].
     #[inline(always)]
-    pub fn mod_manager_mut(&self) -> RwLockWriteGuard<'_, mods::Manager> {
-        self.mod_manager.write()
+    pub fn with_mod_manager_mut<R>(&self, f: impl FnOnce(&mut mods::Manager) -> R) -> R {
+        f(&mut self.mod_manager.write())
     }
 
+    /// Runs `f` with read access to the deployment manager. See
+    /// [`Self::with_mod_manager`].
     #[inline(always)]
-    pub fn deploy_manager(&self) -> RwLockReadGuard<'_, deploy::Manager> {
-        self.deploy_manager.read()
+    pub fn with_deploy_manager<R>(&self, f: impl FnOnce(&deploy::Manager) -> R) -> R {
+        f(&self.deploy_manager.read())
     }
 }

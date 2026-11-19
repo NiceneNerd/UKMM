@@ -88,7 +88,9 @@ impl App {
                                     {
                                         self.session.dispatch(uk_app::Command::Deploy);
                                     }
-                                    if config.auto && self.core.deploy_manager().pending() {
+                                    if config.auto
+                                        && self.core.with_deploy_manager(|dm| dm.pending())
+                                    {
                                         ui.label(
                                             RichText::new("Deploy_Auto_Failed".localize())
                                                 .color(visuals::RED),

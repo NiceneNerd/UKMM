@@ -518,7 +518,7 @@ impl App {
         ui.menu_button("Mod_Send".localize(), |ui| {
             for profile in profiles
                 .iter()
-                .filter(|p| core.mod_manager().profile().key() != p.as_str())
+                .filter(|p| core.with_mod_manager(|mm| mm.profile().key() != p.as_str()))
             {
                 if ui.button(profile.as_str()).clicked() {
                     result = Some(ContextMenuMessage::CopyToProfile(profile.as_str().into()));

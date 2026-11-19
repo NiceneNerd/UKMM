@@ -294,27 +294,30 @@ impl State {
                     fs_err::copy(&mod_.path, &old_mod.path)
                         .with_context(|| format!("Failed to replace {}", old_mod.path.display()))?;
                 }
-                let new_mod = core.mod_manager().replace(mod_, old_mod.hash())?;
-                if !picks.is_empty() {
-                    core.mod_manager()
-                        .set_enabled_options(new_mod.hash(), picks)?;
-                }
+                let new_mod = core.with_mod_manager(|mm| -> Result<Mod> {
+                    let new_mod = mm.replace(mod_, old_mod.hash())?;
+                    if !picks.is_empty() {
+                        mm.set_enabled_options(new_mod.hash(), picks)?;
+                    }
+                    Ok(new_mod)
+                })?;
                 if let Ok(manifest) = new_mod.manifest() {
                     dirty.extend(&manifest);
                 }
                 (ModId(new_mod.hash()), dirty, true, Some(old))
             }
             None => {
-                let manager = core.mod_manager();
-                let installed = manager.add(&mod_.path, None)?;
-                let id = ModId(installed.hash());
-                if !picks.is_empty() {
-                    manager.set_enabled_options(id.0, picks)?;
-                }
-                (id, Manifest::default(), false, None)
+                core.with_mod_manager(|manager| {
+                    let installed = manager.add(&mod_.path, None)?;
+                    let id = ModId(installed.hash());
+                    if !picks.is_empty() {
+                        manager.set_enabled_options(id.0, picks)?;
+                    }
+                    Ok::<_, anyhow_ext::Error>((id, Manifest::default(), false, None))
+                })?
             }
         };
-        core.mod_manager().save()?;
+        core.with_mod_manager(|mm| mm.save())?;
         self.refresh_mods();
         if updated {
             self.dirty_current_mut().extend(&dirty);
@@ -407,14 +410,14 @@ impl State {
         }
         let core = Arc::clone(&self.core);
         let mut dirty = Manifest::default();
-        {
-            let manager = core.mod_manager();
+        core.with_mod_manager(|manager| -> Result<()> {
             for id in &ids {
                 let manifest = manager.set_enabled(id.0, enabled, None)?;
                 dirty.extend(&manifest);
             }
             manager.save()?;
-        }
+            Ok(())
+        })?;
         self.dirty_current_mut().extend(&dirty);
         self.refresh_mods();
         self.emit_pending();
@@ -424,12 +427,11 @@ impl State {
     /// Sets the enabled options of a mod. Saved immediately.
     fn set_options(&mut self, id: ModId, picks: Vec<ModOption>) -> Result<()> {
         let core = Arc::clone(&self.core);
-        let manifest = {
-            let manager = core.mod_manager();
+        let manifest = core.with_mod_manager(|manager| -> Result<Arc<Manifest>> {
             let manifest = manager.set_enabled_options(id.0, picks)?;
             manager.save()?;
-            manifest
-        };
+            Ok(manifest)
+        })?;
         self.dirty_current_mut().extend(&manifest);
         self.refresh_mods();
         self.emit_pending();
@@ -454,9 +456,11 @@ impl State {
         }
         {
             let core = Arc::clone(&self.core);
-            let manager = core.mod_manager();
-            manager.set_order(hashes);
-            manager.save()?;
+            core.with_mod_manager(|manager| -> Result<()> {
+                manager.set_order(hashes);
+                manager.save()?;
+                Ok(())
+            })?;
         }
         self.dirty_current_mut().extend(&dirty);
         self.refresh_mods();
@@ -494,7 +498,7 @@ impl State {
     /// Deploys the merged output.
     fn deploy(&mut self) -> Result<()> {
         let core = Arc::clone(&self.core);
-        core.deploy_manager().deploy()?;
+        core.with_deploy_manager(|dm| dm.deploy())?;
         Ok(())
     }
 
@@ -509,10 +513,11 @@ impl State {
     /// Resets the deployment pending log.
     fn reset_pending(&mut self) -> Result<()> {
         let core = Arc::clone(&self.core);
-        let manager = core.deploy_manager();
-        manager.reset_pending()?;
-        manager.save()?;
-        Ok(())
+        core.with_deploy_manager(|manager| -> Result<()> {
+            manager.reset_pending()?;
+            manager.save()?;
+            Ok(())
+        })
     }
 
     /// Removes mods from the current profile. Saved immediately.
@@ -522,14 +527,14 @@ impl State {
         }
         let core = Arc::clone(&self.core);
         let mut dirty = Manifest::default();
-        {
-            let manager = core.mod_manager();
+        core.with_mod_manager(|manager| -> Result<()> {
             for id in &ids {
                 let manifest = manager.del(id.0, None)?;
                 dirty.extend(&manifest);
             }
             manager.save()?;
-        }
+            Ok(())
+        })?;
         self.dirty_current_mut().extend(&dirty);
         self.refresh_mods();
         self.emit(Event::Removed { ids });
@@ -545,11 +550,10 @@ impl State {
         }
         let core = Arc::clone(&self.core);
         // Make sure the profile exists on disk and in the core.
-        core.mod_manager().create_profile_if(profile.as_str())?;
+        core.with_mod_manager(|mm| mm.create_profile_if(profile.as_str()))?;
         let name = profile.as_str().to_owned();
         let mut dirty = Manifest::default();
-        {
-            let manager = core.mod_manager();
+        core.with_mod_manager(|manager| -> Result<()> {
             for id in &ids {
                 let mod_ = self
                     .mods
@@ -562,7 +566,8 @@ impl State {
                     dirty.extend(&manifest);
                 }
             }
-        }
+            Ok(())
+        })?;
         self.save_profile_named(profile.as_str())?;
         let files = {
             let entry = self.dirty.entry(profile.as_str().to_owned()).or_default();
@@ -606,8 +611,7 @@ impl State {
                 serde_yaml::to_string(&uk_manager::mods::Profile::default())?,
             )?;
         }
-        core.mod_manager()
-            .add_profile(profile.as_str().to_owned().into());
+        core.with_mod_manager(|mm| mm.add_profile(profile.as_str().to_owned().into()));
         Ok(())
     }
 
@@ -640,7 +644,7 @@ impl State {
                 serde_yaml::to_string(&uk_manager::mods::Profile::default())?,
             )?;
         }
-        core.mod_manager().add_profile(new_name.clone().into());
+        core.with_mod_manager(|mm| mm.add_profile(new_name.clone().into()));
         self.dirty.entry(new_name.clone()).or_default();
         self.emit(Event::ProfilesChanged);
         Ok(())
@@ -660,8 +664,7 @@ impl State {
         }
         fs_err::rename(&source, &target)?;
         // The core keeps its profiles in a map — teach it the new name.
-        core.mod_manager()
-            .add_profile(to.as_str().to_owned().into());
+        core.with_mod_manager(|mm| mm.add_profile(to.as_str().to_owned().into()));
         if self.current_profile_name().as_str() == from.as_str() {
             core.change_profile(to.as_str())?;
         }
@@ -692,21 +695,21 @@ impl State {
         // teach the core about it so `get_profile` below cannot panic.
         self.ensure_profile_known(&profile)?;
         // The deleted profile's mods, captured while it is still loadable.
-        let deleted_mods: Vec<(usize, PathBuf)> = {
-            let manager = core.mod_manager();
+        let deleted_mods: Vec<(usize, PathBuf)> = core.with_mod_manager(|manager| {
             manager
                 .get_profile(Some(&profile.as_str().into()))
                 .mods()
                 .iter()
                 .map(|(h, m)| (*h, m.path.clone()))
                 .collect()
-        };
+        });
         fs_err::remove_dir_all(&dir)?;
         // Remove the mod files no remaining profile still references.
         let mut assigned = FxHashSet::default();
         for other in core.settings().profiles() {
-            let manager = core.mod_manager();
-            assigned.extend(manager.get_profile(Some(&other)).mods().keys().copied());
+            core.with_mod_manager(|manager| {
+                assigned.extend(manager.get_profile(Some(&other)).mods().keys().copied());
+            });
         }
         for (hash, path) in deleted_mods {
             if !assigned.contains(&hash) {
@@ -737,7 +740,7 @@ impl State {
         let mods = self.mods_for(&ids)?;
         let core = Arc::clone(&self.core);
         let dirty = dev_update_mods(&core, mods, folders)?;
-        core.mod_manager().save()?;
+        core.with_mod_manager(|mm| mm.save())?;
         self.dirty_current_mut().extend(&dirty);
         self.refresh_mods();
         self.emit_pending();
@@ -833,11 +836,10 @@ impl State {
     /// profile, so other profiles are written here.
     fn save_profile_named(&self, name: &str) -> Result<()> {
         let core = Arc::clone(&self.core);
-        let yaml = {
-            let manager = core.mod_manager();
+        let yaml = core.with_mod_manager(|manager| -> Result<String> {
             let profile = manager.get_profile(Some(&name.into()));
-            serde_yaml::to_string(&*profile).context("Failed to serialize profile data")?
-        };
+            serde_yaml::to_string(&*profile).context("Failed to serialize profile data")
+        })?;
         let path = core
             .settings()
             .profiles_dir()
