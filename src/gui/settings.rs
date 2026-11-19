@@ -461,18 +461,7 @@ impl App {
                                     .on_hover_text("Settings_OneClick_Desc".localize())
                                     .clicked()
                                 {
-                                    match uk_app::host::handlers::register_url_handler() {
-                                        Ok(()) => {
-                                            log::info!("GameBanana 1-click handler registered")
-                                        }
-                                        Err(e) => {
-                                            self.channel
-                                                .0
-                                                .clone()
-                                                .send(Message::Error(e))
-                                                .expect("Broken channel")
-                                        }
-                                    }
+                                    self.session.dispatch(uk_app::Command::RegisterUrlHandler);
                                 }
                                 let mut name = "Settings_Theme".localize();
                                 let mut description = "Settings_Theme_Desc".localize();

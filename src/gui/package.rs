@@ -367,7 +367,9 @@ impl ModPackerBuilder {
                     .icon_text_button("Menu_Help".localize(), Icon::Help)
                     .clicked()
                 {
-                    open::that("https://nicenenerd.github.io/UKMM/mod_format.html").unwrap_or(());
+                    uk_app::host::shell::open_url(
+                        "https://nicenenerd.github.io/UKMM/mod_format.html",
+                    );
                 }
             });
             ui.add_space(8.0);

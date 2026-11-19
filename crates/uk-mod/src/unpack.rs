@@ -417,6 +417,12 @@ impl ModReader {
         &self.manifest
     }
 
+    /// The mod's thumbnail image bytes (`thumb.{jpg,jpeg,png,svg}`), if it has
+    /// one. See [`read_thumbnail`].
+    pub fn thumbnail(&self) -> Result<Option<Vec<u8>>> {
+        read_thumbnail(&self.path)
+    }
+
     pub fn get_versions(&self, name: &Path) -> Result<Vec<Vec<u8>>> {
         let canon = canonicalize(name);
         let mut versions = Vec::with_capacity(1);
@@ -811,6 +817,30 @@ impl ModUnpacker {
         }
         Ok(writer.to_binary())
     }
+}
+
+/// Read a mod's thumbnail image bytes (`thumb.{jpg,jpeg,png,svg}`) straight
+/// from its path, without parsing the mod's metadata. Thumbnails are stored
+/// uncompressed in the archive (`Stored` zip entries, no zstd layer), so the
+/// raw bytes are the image; loose (directory) mods read the file from disk.
+/// Frontends turn the bytes into their own image type.
+pub fn read_thumbnail(path: impl AsRef<Path>) -> Result<Option<Vec<u8>>> {
+    let path = path.as_ref();
+    for ext in ["jpg", "jpeg", "png", "svg"] {
+        let name = format!("thumb.{ext}");
+        if path.is_file() {
+            let zip = ParallelZipReader::open(path, true)?;
+            if let Ok(data) = zip.get_file(&name) {
+                return Ok(Some(data));
+            }
+        } else {
+            let file = path.join(&name);
+            if file.is_file() {
+                return Ok(Some(fs::read(file)?));
+            }
+        }
+    }
+    Ok(None)
 }
 
 /// Extract a zipped mod, decompressing the binary files, but otherwise

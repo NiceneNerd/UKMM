@@ -27,7 +27,7 @@ pub use order::move_selected;
 pub use package::{dev_update_mod, dev_update_mods, extract_mods, package_mod, parse_meta};
 pub use profile::ProfileName;
 pub use session::{
-    Command, Event, Inspection, InstallCandidate, JobId, MasterRef, ModEntry, ModId, OptionsPrompt,
-    PendingSummary, Session, Snapshot,
+    Command, Event, FolderKind, Inspection, InstallCandidate, JobId, MasterRef, ModEntry, ModId,
+    OptionsPrompt, PendingSummary, Session, Snapshot,
 };
 pub use view::Sort;

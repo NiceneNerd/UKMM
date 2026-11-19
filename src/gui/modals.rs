@@ -329,12 +329,12 @@ impl App {
                     egui::Grid::new("about_box").num_columns(2).show(ui, |ui| {
                         ui.label("GitHub:");
                         if ui.link("https://github.com/NiceneNerd/UKMM").clicked() {
-                            open::that("https://github.com/NiceneNerd/UKMM").unwrap_or(());
+                            uk_app::host::shell::open_url("https://github.com/NiceneNerd/UKMM");
                         }
                         ui.end_row();
                         ui.label("Menu_Help_About_GUI".localize());
                         if ui.link("egui").clicked() {
-                            open::that("https://github.com/emilk/egui").unwrap_or(());
+                            uk_app::host::shell::open_url("https://github.com/emilk/egui");
                         }
                         ui.end_row();
                     });
@@ -497,7 +497,7 @@ impl App {
                             .on_hover_text("https://www.patreon.com/nicenenerd")
                             .clicked()
                         {
-                            open::that("https://www.patreon.com/nicenenerd").unwrap_or(());
+                            uk_app::host::shell::open_url("https://www.patreon.com/nicenenerd");
                         }
                         if ui
                             .icon_text_button("Changelog_Bitcoin".localize(), Icon::Bitcoin)

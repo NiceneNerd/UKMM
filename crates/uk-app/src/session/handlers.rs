@@ -24,7 +24,9 @@ use crate::{
     order::move_ids,
     package::{dev_update_mods, extract_mods},
     profile::ProfileName,
-    session::{Command, Event, Inspection, InstallCandidate, MasterRef, ModId, OptionsPrompt},
+    session::{
+        Command, Event, FolderKind, Inspection, InstallCandidate, MasterRef, ModId, OptionsPrompt,
+    },
 };
 
 /// What the frontend has to do with an opened mod. `MissingMasters` is not
@@ -69,7 +71,63 @@ impl State {
             Command::ParseMeta(path) => self.parse_meta(path),
             Command::CheckForUpdates => self.check_for_updates(),
             Command::InstallUpdate(version) => self.install_update(version),
+            Command::LaunchEmulator => self.launch_emulator(),
+            Command::OpenFolder(kind) => self.open_folder(kind),
+            Command::RegisterUrlHandler => self.register_url_handler(),
         }
+    }
+
+    /// Launches the configured emulator on the worker thread (never in
+    /// frontend render code — GUI_REF §22.16).
+    fn launch_emulator(&mut self) -> Result<()> {
+        let exe = self
+            .core
+            .settings()
+            .platform_config()
+            .and_then(|c| c.deploy_config.as_ref())
+            .and_then(|c| c.executable.clone())
+            .with_context(|| "No emulator executable is configured for the current platform")?;
+        crate::host::shell::launch_emulator(&exe)
+    }
+
+    /// Resolves a [`FolderKind`] to a path and asks the OS to open it.
+    fn open_folder(&mut self, kind: FolderKind) -> Result<()> {
+        use crate::host::shell::open_path;
+        let path = match kind {
+            FolderKind::Config => uk_manager::settings::Settings::config_dir().to_path_buf(),
+            FolderKind::Storage => self.core.settings().storage_dir.clone(),
+            FolderKind::DeployOutput => {
+                self.core
+                    .settings()
+                    .deploy_dir()
+                    .map(|p| p.to_path_buf())
+                    .with_context(|| "No deploy output is configured for the current platform")?
+            }
+            FolderKind::Mod(id) => {
+                let mod_ = self
+                    .mods
+                    .iter()
+                    .find(|m| m.hash() == id.0)
+                    .with_context(|| format!("Mod {} is not installed", id.0))?;
+                if mod_.path.is_dir() {
+                    mod_.path.clone()
+                } else {
+                    mod_.path
+                        .parent()
+                        .with_context(|| format!("{} has no parent folder", mod_.path.display()))?
+                        .to_path_buf()
+                }
+            }
+        };
+        open_path(&path);
+        Ok(())
+    }
+
+    /// Registers the `bcml:` URL scheme with the OS.
+    fn register_url_handler(&mut self) -> Result<()> {
+        crate::host::handlers::register_url_handler()?;
+        log::info!("GameBanana 1-click handler registered");
+        Ok(())
     }
 
     /// Downloads a one-click URL, then inspects the downloaded file like

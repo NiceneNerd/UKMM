@@ -1,6 +1,5 @@
 use std::{
     hash::{Hash, Hasher},
-    io::{BufReader, Read},
     sync::{Arc, LazyLock},
 };
 
@@ -34,21 +33,18 @@ impl ModInfo<'_> {
             mod_: &Mod,
             ctx: &egui::Context,
         ) -> Result<Option<Arc<egui::TextureHandle>>> {
-            let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
-            for ext in ["jpg", "jpeg", "png", "svg"] {
-                if let Ok(mut file) = zip.by_name(&format!("thumb.{}", ext)) {
-                    let mut vec = vec![0; file.size() as usize];
-                    file.read_exact(&mut vec)?;
-                    let image =
-                        image::load_image_bytes(&vec).map_err(|e| anyhow::anyhow!("{}", e))?;
-                    return Ok(Some(Arc::new(ctx.load_texture(
-                        mod_.meta.name.as_str(),
-                        image,
-                        Default::default(),
-                    ))));
-                }
-            }
-            Ok(None)
+            // The thumbnail bytes come from uk-mod; the frontend only turns
+            // them into a texture. The cache is keyed by the mod hash, so an
+            // update (new hash) invalidates automatically (GUI_REF §22.29).
+            let Some(bytes) = mod_.thumbnail()? else {
+                return Ok(None);
+            };
+            let image = image::load_image_bytes(&bytes).map_err(|e| anyhow::anyhow!("{}", e))?;
+            Ok(Some(Arc::new(ctx.load_texture(
+                mod_.meta.name.as_str(),
+                image,
+                Default::default(),
+            ))))
         }
         static PREVIEW: LazyLock<RwLock<FxHashMap<usize, Option<Arc<egui::TextureHandle>>>>> =
             LazyLock::new(|| RwLock::new(FxHashMap::default()));

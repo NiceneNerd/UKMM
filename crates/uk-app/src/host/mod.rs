@@ -6,4 +6,5 @@ pub mod args;
 pub mod handlers;
 pub mod http;
 pub mod oneclick;
+pub mod shell;
 pub mod updates;

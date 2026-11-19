@@ -63,12 +63,9 @@ impl App {
                                 .clicked()
                             {
                                 ui.close_kind(egui::UiKind::Menu);
-                                open::that(if config.output.is_dir() {
-                                    &config.output
-                                } else {
-                                    config.output.parent().unwrap()
-                                })
-                                .unwrap_or(());
+                                self.session.dispatch(uk_app::Command::OpenFolder(
+                                    uk_app::FolderKind::DeployOutput,
+                                ));
                             }
                         });
                         ui.add_space(4.);
@@ -79,48 +76,12 @@ impl App {
                             ),
                             |ui| {
                                 Frame::NONE.show(ui, |ui| {
-                                    if let Some(ref exe) = config.executable {
+                                    if config.executable.is_some() {
                                         ui.add_space(4.);
                                         if ui.button("Deploy_OpenEmu".localize()).clicked() {
-                                            let mut iter = shlex::split(&exe.replace("\\", "/"))
-                                                .unwrap_or_default()
-                                                .into_iter();
-                                            let (cmd, args) =
-                                                (iter.next().unwrap(), iter.collect::<Vec<_>>());
-                                            match std::process::Command::new(cmd).args(args).spawn()
-                                            {
-                                                Ok(mut child) => {
-                                                    thread::sleep(Duration::from_secs(1));
-                                                    match child.try_wait() {
-                                                        Ok(Some(status)) => {
-                                                            if !status.success() {
-                                                                self.do_update(Message::Error(
-                                                                    anyhow::anyhow!(
-                                                                        "Emulator exited with \
-                                                                         non-zero exit status \
-                                                                         {status}"
-                                                                    ),
-                                                                ))
-                                                            }
-                                                        }
-                                                        Ok(None) => {}
-                                                        Err(e) => {
-                                                            self.do_update(Message::Error(
-                                                                anyhow::Error::from(e).context(
-                                                                    "There was an error running \
-                                                                     the emulator",
-                                                                ),
-                                                            ))
-                                                        }
-                                                    }
-                                                }
-                                                Err(e) => {
-                                                    self.do_update(Message::Error(
-                                                        anyhow::Error::from(e)
-                                                            .context("Failed to open emulator"),
-                                                    ))
-                                                }
-                                            }
+                                            // Runs on the session worker, not in
+                                            // render code (GUI_REF §22.16).
+                                            self.session.dispatch(uk_app::Command::LaunchEmulator);
                                         }
                                     }
                                     if ui.add(egui::Button::new("Tab_Deploy".localize())).clicked()

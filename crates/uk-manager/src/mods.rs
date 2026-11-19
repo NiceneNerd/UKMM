@@ -97,6 +97,12 @@ impl Mod {
         self.enabled == other.enabled && self.enabled_options == other.enabled_options
     }
 
+    /// The mod's thumbnail image bytes, if it has one (see
+    /// [`uk_mod::unpack::read_thumbnail`]).
+    pub fn thumbnail(&self) -> Result<Option<Vec<u8>>> {
+        uk_mod::unpack::read_thumbnail(&self.path)
+    }
+
     #[inline(always)]
     pub fn hash(&self) -> usize {
         self.hash

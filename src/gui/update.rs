@@ -147,17 +147,11 @@ impl App {
         }
     }
 
-    fn restart(&self, ctx: &egui::Context) {
-        let mut exe = std::env::current_exe().unwrap();
-        if exe.extension().and_then(|x| x.to_str()).contains(&"bak") {
-            exe.set_extension("");
+    fn restart(&mut self, ctx: &egui::Context) {
+        if let Err(e) = uk_app::host::shell::restart() {
+            self.error = Some(e.into());
+            return;
         }
-        let mut command = std::process::Command::new(exe);
-        #[cfg(unix)]
-        {
-            std::os::unix::process::CommandExt::process_group(&mut command, 0);
-        }
-        command.spawn().unwrap();
         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
     }
 

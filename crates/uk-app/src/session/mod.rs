@@ -22,7 +22,7 @@ use std::{
 };
 
 use anyhow_ext::Result;
-pub use command::{Command, InstallCandidate, OptionsPrompt};
+pub use command::{Command, FolderKind, InstallCandidate, OptionsPrompt};
 pub use event::{Event, Inspection, MasterRef};
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;

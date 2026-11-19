@@ -89,6 +89,19 @@ impl OptionsPrompt {
     }
 }
 
+/// A folder the frontend may ask the host to reveal in the OS file manager.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum FolderKind {
+    /// The config directory (`settings.yml`, `ui-*.json`, `log.txt`).
+    Config,
+    /// The mod storage directory.
+    Storage,
+    /// The current deploy output folder (if configured).
+    DeployOutput,
+    /// The folder of this mod (or the archive's parent folder).
+    Mod(ModId),
+}
+
 /// Everything a frontend can ask the session to do.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
@@ -185,4 +198,12 @@ pub enum Command {
     /// Download and install a release; answers with
     /// [`Event::Restart`](crate::session::Event::Restart).
     InstallUpdate(VersionResponse),
+    /// Launch the configured emulator (deploy settings → executable). Runs on
+    /// the worker thread, never in frontend render code.
+    LaunchEmulator,
+    /// Ask the host OS to open a folder in the file manager.
+    OpenFolder(FolderKind),
+    /// Register the `bcml:` URL scheme so GameBanana one-click links reach
+    /// UKMM.
+    RegisterUrlHandler,
 }

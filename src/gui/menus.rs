@@ -44,23 +44,26 @@ impl App {
         }
         if ui.button("Menu_Tools_ConfigFolder".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);
-            open::that(Settings::config_dir()).unwrap_or(());
+            self.session
+                .dispatch(uk_app::Command::OpenFolder(uk_app::FolderKind::Config));
         }
-        let settings = self.core.settings();
         if ui.button("Menu_Tools_StorageFolder".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);
-            open::that(&settings.storage_dir).unwrap_or(());
+            self.session
+                .dispatch(uk_app::Command::OpenFolder(uk_app::FolderKind::Storage));
         }
-        let deploy_dir = settings.deploy_dir();
+        let deploy_configured = self.core.settings().deploy_dir().is_some();
         if ui
             .add_enabled(
-                deploy_dir.is_some(),
+                deploy_configured,
                 egui::Button::new("Menu_Tools_DeployFolder".localize()),
             )
             .clicked()
         {
             ui.close_kind(egui::UiKind::Menu);
-            open::that(deploy_dir.unwrap()).unwrap_or(());
+            self.session.dispatch(uk_app::Command::OpenFolder(
+                uk_app::FolderKind::DeployOutput,
+            ));
         }
     }
 
@@ -117,7 +120,7 @@ impl App {
     pub fn help_menu(&self, ui: &mut Ui) {
         if ui.button("Menu_Help".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);
-            open::that("https://nicenenerd.github.io/UKMM").unwrap_or(());
+            uk_app::host::shell::open_url("https://nicenenerd.github.io/UKMM");
         }
         if ui.button("Menu_Help_About".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);

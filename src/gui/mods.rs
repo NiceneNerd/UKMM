@@ -1,4 +1,4 @@
-use std::{collections::HashMap, process::Command as ProcCommand, sync::OnceLock};
+use std::{collections::HashMap, sync::OnceLock};
 
 use serde::{Deserialize, Serialize};
 use strfmt::Format;
@@ -50,6 +50,7 @@ enum ContextMenuMessage {
     Uninstall,
     Toggle(bool),
     Move(usize),
+    View,
 }
 
 impl App {
@@ -339,7 +340,6 @@ impl App {
         let mut hover = false;
         let mut toggled = false;
         let mut ctx_action = None;
-        let menu_path = entry.path.clone();
         let menu_enabled = entry.enabled;
 
         let mut process_col_res = |res: Response| {
@@ -347,9 +347,7 @@ impl App {
             hover = hover || res.hovered();
             drag_started = drag_started || res.drag_started();
             res.context_menu(|ui| {
-                if let Some(action) =
-                    Self::render_mod_context_menu(&self.core, &menu_path, menu_enabled, ui)
-                {
+                if let Some(action) = Self::render_mod_context_menu(&self.core, menu_enabled, ui) {
                     ctx_action.replace(action);
                 }
             });
@@ -477,6 +475,10 @@ impl App {
                 ContextMenuMessage::Move(dest) => {
                     self.session.dispatch(Command::MoveTo { ids, index: dest });
                 }
+                ContextMenuMessage::View => {
+                    self.session
+                        .dispatch(Command::OpenFolder(uk_app::FolderKind::Mod(id)));
+                }
             }
         }
         if toggled {
@@ -506,7 +508,6 @@ impl App {
 
     fn render_mod_context_menu(
         core: &uk_manager::core::Manager,
-        path: &std::path::Path,
         enabled: bool,
         ui: &mut Ui,
     ) -> Option<ContextMenuMessage> {
@@ -548,17 +549,7 @@ impl App {
         }
         if ui.button("Mod_View".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);
-            let _ = ProcCommand::new(if cfg!(windows) {
-                "explorer"
-            } else {
-                "xdg-open"
-            })
-            .arg(if path.is_dir() {
-                path
-            } else {
-                path.parent().unwrap()
-            })
-            .output();
+            result = Some(ContextMenuMessage::View);
         }
         if ui.button("Mod_Extract".localize()).clicked() {
             ui.close_kind(egui::UiKind::Menu);
