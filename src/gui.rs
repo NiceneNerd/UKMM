@@ -150,6 +150,9 @@ struct UiState {
     picker_state: FilePickerState,
     #[serde(default = "tabs::default_ui")]
     tree: DockState<Tabs>,
+    /// UI language: frontend state since settings format v2 (it used to live
+    /// in core `settings.yml`).
+    lang: LocLang,
 }
 
 impl Default for UiState {
@@ -159,6 +162,7 @@ impl Default for UiState {
             list_state: ModListState::default(),
             picker_state: FilePickerState::default(),
             tree: tabs::default_ui(),
+            lang: LocLang::English,
         }
     }
 }
@@ -195,7 +199,10 @@ pub struct App {
     show_package_deps: bool,
     opt_folders: Option<Mutex<FxHashSet<PathBuf>>>,
     options_modal: Option<OptionsModal>,
-    temp_settings: Settings,
+    /// The editable settings draft; saved via `Command::SaveSettings`.
+    settings_draft: uk_app::settings::SettingsDraft,
+    /// UI language (frontend state, persisted in `ui-egui.json`).
+    lang: LocLang,
     toasts: egui_notify::Toasts,
     theme: visuals::Theme,
     dock_style: uk_ui::egui_dock::Style,
@@ -223,10 +230,24 @@ impl App {
         let session = Session::open(core.clone()).expect("Failed to open session");
         let events = session.subscribe();
         let snap = session.snapshot();
-        let ui_state: UiState = fs::read_to_string(core.settings().state_file())
+        // Per-frontend UI state (`ui-egui.json`). One-time migration: a legacy
+        // shared `ui.json` (and the v1 `lang` inside `settings.yml`) seeds the
+        // language when there is no egui state yet.
+        let state_file = Settings::frontend_state_file("egui");
+        let ui_state: UiState = fs::read_to_string(&state_file)
             .context("")
             .and_then(|s| serde_json::from_str(&s).context(""))
-            .unwrap_or_default();
+            .ok()
+            .unwrap_or_else(|| {
+                let legacy = fs::read_to_string(Settings::legacy_state_file())
+                    .context("")
+                    .and_then(|s| serde_json::from_str::<UiState>(&s).context(""))
+                    .unwrap_or_default();
+                UiState {
+                    lang: core.settings().lang,
+                    ..legacy
+                }
+            });
         ui_state.theme.set_theme(&cc.egui_ctx);
         let (send, recv) = flume::unbounded();
         // Bridge one-click IPC messages into the app message channel
@@ -247,9 +268,9 @@ impl App {
                 }
             });
         }
-        let temp_settings = core.settings().clone();
         let platform = core.settings().current_mode;
-        LOCALIZATION.write().update_language(&temp_settings.lang);
+        let settings_draft = uk_app::settings::SettingsDraft::from_settings(&core.settings());
+        LOCALIZATION.write().update_language(&ui_state.lang);
         let (changelog, check_updates) = {
             let settings = core.settings();
             let is_first_run = settings.last_version.is_none();
@@ -272,7 +293,8 @@ impl App {
             profiles_state: RefCell::new(profiles::ProfileManagerState::new(&core)),
             meta_input: MetaInputModal::new(send.clone()),
             mod_list_filter: "".parse().unwrap(),
-            temp_settings,
+            settings_draft,
+            lang: ui_state.lang,
             changelog,
             channel: (send, recv),
             closed_tabs: Default::default(),
@@ -403,9 +425,10 @@ impl eframe::App for App {
             picker_state: std::mem::take(&mut self.picker_state),
             list_state: std::mem::take(&mut self.list_state),
             tree: std::mem::replace(&mut self.tree.borrow_mut(), tabs::default_ui()),
+            lang: self.lang,
         };
         fs::write(
-            self.core.settings().state_file(),
+            Settings::frontend_state_file("egui"),
             serde_json::to_string_pretty(&ui_state).unwrap(),
         )
         .unwrap_or(());

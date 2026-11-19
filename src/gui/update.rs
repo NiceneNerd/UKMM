@@ -114,14 +114,26 @@ impl App {
                 self.profiles_state.borrow_mut().reload(&self.core);
             }
             Event::SettingsChanged => {
-                self.temp_settings = self.core.settings().clone();
-                settings::CONFIG.write().clear();
+                self.settings_draft =
+                    uk_app::settings::SettingsDraft::from_settings(&self.core.settings());
                 self.package_builder.borrow_mut().reset(self.platform());
-                self.toasts.add({
-                    let mut toast = Toast::success("Settings_Saved".localize());
-                    toast.duration(Some(Duration::new(2, 0)));
-                    toast
-                });
+            }
+            Event::SettingsSaved {
+                output_wiped,
+                pending_reset,
+            } => {
+                self.selected.clear();
+                let mut toast = Toast::success("Settings_Saved".localize());
+                toast.duration(Some(Duration::new(2, 0)));
+                self.toasts.add(toast);
+                if output_wiped {
+                    let mut toast = Toast::info("Settings_OutputWiped".localize());
+                    toast.duration(Some(Duration::new(3, 0)));
+                    self.toasts.add(toast);
+                }
+                if pending_reset {
+                    log::info!("Pending deployment reset after settings wipe");
+                }
             }
             Event::PackageMeta(meta) => {
                 self.package_builder.borrow_mut().meta = meta;
@@ -237,6 +249,7 @@ impl App {
                 self.dock_style = visuals::style_dock(&ctx.style());
             }
             Message::SetLanguage(lang) => {
+                self.lang = lang;
                 LOCALIZATION.write().update_language(&lang);
             }
             Message::FilePickerUp => {
@@ -363,44 +376,14 @@ impl App {
                 self.session.dispatch(Command::MigrateBcml);
             }
             Message::SaveSettings => {
-                let mut needs_reset = false;
-                if let Some(old_plat) = self.core.settings().platform_config() {
-                    if let Some(old_dep) = old_plat.deploy_config.as_ref() {
-                        if let Some(new_plat) = &self.temp_settings.platform_config() {
-                            if let Some(new_dep) = new_plat.deploy_config.as_ref() {
-                                if (old_dep.layout != new_dep.layout
-                                    || old_dep.method != new_dep.method
-                                    || old_dep.output != new_dep.output)
-                                    && self
-                                        .core
-                                        .settings()
-                                        .wipe_output(self.core.settings().current_mode.into())
-                                        .is_ok()
-                                {
-                                    needs_reset = true;
-                                }
-                            }
-                        }
-                    }
-                }
-                match self.temp_settings.save() {
-                    Ok(()) => {
-                        // The session reloads the core from disk and answers
-                        // with SettingsChanged. Saving also drops the staged
-                        // pending files (parity with the old ResetMods(None)).
-                        self.session.dispatch(Command::Reload);
-                        self.session.dispatch(Command::CancelPending);
-                        self.selected.clear();
-                        if needs_reset {
-                            self.session.dispatch(Command::ResetPending);
-                        }
-                    }
-                    Err(e) => self.error = Some(e),
-                };
+                // Validate + wipe + save + reload happen in the session job;
+                // a failed wipe aborts the save (GUI_REF §22.37).
+                self.session
+                    .dispatch(Command::SaveSettings(self.settings_draft.clone()));
             }
             Message::ResetSettings => {
-                self.temp_settings = self.core.settings().clone();
-                settings::CONFIG.write().clear();
+                self.settings_draft =
+                    uk_app::settings::SettingsDraft::from_settings(&self.core.settings());
             }
             Message::NewProfile => self.new_profile = Some("".into()),
             Message::DoUpdate => {

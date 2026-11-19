@@ -350,10 +350,28 @@ impl Manager {
 
     pub fn init(settings: &Arc<RwLock<Settings>>) -> Result<Self> {
         log::info!("Initializing mod manager");
+        // A single unreadable mod archive must not take down the whole app
+        // (GUI_REF §22.9): skip it with a warning.
         let all_mods = glob::glob(&settings.read().mods_dir().join("*.zip").to_string_lossy())?
-            .map(|p| {
-                let mod_ = Mod::from_reader(ModReader::open(p?, vec![])?);
-                Ok((mod_.meta.name.clone(), mod_))
+            .filter_map(|p| {
+                match p {
+                    Ok(path) => {
+                        match ModReader::open(&path, vec![]) {
+                            Ok(reader) => {
+                                let mod_ = Mod::from_reader(reader);
+                                Some(Ok((mod_.meta.name.clone(), mod_)))
+                            }
+                            Err(e) => {
+                                log::warn!("Skipping unreadable mod archive {path:?}: {e:?}");
+                                None
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        log::warn!("Skipping unreadable mod path: {e:?}");
+                        None
+                    }
+                }
             })
             .collect::<Result<HashMap<String, Mod>>>()?;
         let current_profile = settings
@@ -364,12 +382,15 @@ impl Manager {
             .unwrap_or_else(|| "Default".into());
         log::info!("Current profile: {}", current_profile);
         let path = settings.read().profiles_dir();
+        // Same for profiles: a missing/malformed profile.yml gets a default
+        // profile plus a warning instead of failing the whole init (§22.9,
+        // aligns with §22.24).
         let profiles = settings
             .read()
             .profiles()
-            .map(|profile| {
+            .filter_map(|profile| {
                 let profile_path = path.join(profile.as_str()).join("profile.yml");
-                fs::read_to_string(&profile_path)
+                let data = fs::read_to_string(&profile_path)
                     .with_context(|| {
                         format!(
                             "Failed to read profile data from {}",
@@ -377,21 +398,25 @@ impl Manager {
                         )
                     })
                     .and_then(|t| {
-                        serde_yaml::from_str::<Profile>(&t)
-                            .with_context(|| {
-                                format!(
-                                    "Failed to parse profile data from {}",
-                                    profile_path.to_string_lossy()
-                                )
-                            })
-                            .map(|mut p| {
-                                p.validate(&all_mods);
-                                p
-                            })
-                    })
-                    .map(|v| (profile, v))
+                        serde_yaml::from_str::<Profile>(&t).with_context(|| {
+                            format!(
+                                "Failed to parse profile data from {}",
+                                profile_path.to_string_lossy()
+                            )
+                        })
+                    });
+                match data {
+                    Ok(mut p) => {
+                        p.validate(&all_mods);
+                        Some((profile, p))
+                    }
+                    Err(e) => {
+                        log::warn!("Using empty profile {profile}: {e:?}");
+                        Some((profile, Profile::default()))
+                    }
+                }
             })
-            .collect::<Result<_>>()?;
+            .collect::<DashMap<_, _>>();
         let self_ = Self {
             dir: path,
             profiles,

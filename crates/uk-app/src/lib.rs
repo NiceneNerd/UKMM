@@ -15,6 +15,7 @@ pub mod order;
 pub mod package;
 pub mod profile;
 pub mod session;
+pub mod settings;
 pub mod sniff;
 pub mod view;
 

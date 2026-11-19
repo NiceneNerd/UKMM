@@ -1001,6 +1001,132 @@ fn a_background_job_runs_without_setting_busy() {
     assert!(events.iter().any(|e| matches!(e, Event::Progress { .. })));
 }
 
+// ------------------------------------------------------------ settings save
+
+#[test]
+fn save_settings_validates_before_saving() {
+    let (_dir, session) = temp_session();
+    let rx = session.subscribe();
+    let core = session.core();
+    let old = core.settings().clone();
+    let mut draft = crate::settings::SettingsDraft::from_settings(&old);
+    // A broken Switch config (ZArchive pointing nowhere) plus a valid scalar
+    // edit: the whole save must fail, and nothing may be persisted.
+    draft.switch = Some(crate::settings::PlatformDraft {
+        dump: crate::settings::DumpDraft::ZArchive {
+            content_dir: Default::default(),
+            update_dir:  Default::default(),
+            aoc_dir:     None,
+            host_path:   _dir.path().join("missing.wua"),
+        },
+        ..Default::default()
+    });
+    draft.system_7z = !old.system_7z;
+    let (events, result) = run(&session, &rx, Command::SaveSettings(draft));
+    assert!(result.is_err(), "invalid draft must abort the save");
+    assert!(
+        !events
+            .iter()
+            .any(|e| matches!(e, Event::SettingsSaved { .. })),
+        "no SettingsSaved on failure"
+    );
+    assert_eq!(&*core.settings(), &old, "settings file untouched");
+}
+
+#[test]
+fn save_settings_roundtrip_and_event() {
+    let (_dir, session) = temp_session();
+    let rx = session.subscribe();
+    let core = session.core();
+    let old = core.settings().clone();
+    let mut draft = crate::settings::SettingsDraft::from_settings(&old);
+    draft.show_changelog = !old.show_changelog;
+    draft.storage_dir = _dir.path().join("storage2");
+    let (events, result) = run(&session, &rx, Command::SaveSettings(draft));
+    assert!(result.is_ok());
+    assert!(events.iter().any(|e| {
+        matches!(e, Event::SettingsSaved {
+            output_wiped:  false,
+            pending_reset: false,
+        })
+    }));
+    let saved = core.settings();
+    assert_eq!(saved.show_changelog, !old.show_changelog);
+    assert_eq!(saved.storage_dir, _dir.path().join("storage2"));
+    assert_eq!(saved.format_version, uk_manager::settings::FORMAT_VERSION);
+    // v2 files no longer contain the legacy lang field.
+    let text = std::fs::read_to_string(saved.file_path()).unwrap();
+    assert!(
+        !text.contains("lang:"),
+        "lang must be omitted in v2: {text}"
+    );
+}
+
+#[test]
+fn save_settings_wipe_failure_aborts_save() {
+    let (dir, session) = temp_session();
+    let rx = session.subscribe();
+    let core = session.core();
+    // A valid Wii U config (fake unpacked dump) with a deploy output.
+    let dump_root = dir.path().join("dump");
+    let content = dump_root.join("content");
+    std::fs::create_dir_all(content.join("Map/MainField/A-1")).unwrap();
+    std::fs::write(
+        content.join("Map/MainField/A-1/A-1.00_Clustering.sblwp"),
+        b"",
+    )
+    .unwrap();
+    let dump = Arc::new(
+        uk_reader::ResourceReader::from_unpacked_dirs(
+            Some(&content),
+            None::<&Path>,
+            None::<&Path>,
+            Endian::Big,
+        )
+        .unwrap(),
+    );
+    let deploy = uk_manager::settings::DeployConfig {
+        output: dir.path().join("out"),
+        ..Default::default()
+    };
+    let old = {
+        let mut s = core.settings().clone();
+        s.wiiu_config = Some(uk_manager::settings::PlatformSettings {
+            language: uk_content::constants::Language::USen,
+            profile: "Default".into(),
+            dump,
+            deploy_config: Some(deploy.clone()),
+        });
+        *core.settings_mut() = s.clone();
+        core.settings().save().unwrap();
+        s
+    };
+    // Make the wipe fail: the content output path exists as a *file*, so
+    // remove_dir_all errors.
+    let (wipe_content, _wipe_aoc) = deploy.final_output_paths(Endian::Big);
+    std::fs::create_dir_all(wipe_content.parent().unwrap()).unwrap();
+    std::fs::write(&wipe_content, b"not a dir").unwrap();
+    let mut draft = crate::settings::SettingsDraft::from_settings(&old);
+    draft
+        .platform_draft_mut(uk_manager::settings::Platform::WiiU)
+        .deploy_config
+        .output = dir.path().join("out2");
+    let (events, result) = run(&session, &rx, Command::SaveSettings(draft));
+    // The wipe must fail and therefore abort the save (GUI_REF §22.37).
+    assert!(result.is_err(), "wipe failure must abort the save");
+    assert!(
+        !events
+            .iter()
+            .any(|e| matches!(e, Event::SettingsSaved { .. })),
+        "no SettingsSaved when the wipe failed"
+    );
+    assert_eq!(
+        &*core.settings(),
+        &old,
+        "settings must not be saved when the wipe failed"
+    );
+}
+
 /// The names of the files in a zip archive.
 fn zip_entries(path: &Path) -> Vec<String> {
     let file = std::fs::File::open(path).unwrap();

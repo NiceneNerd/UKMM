@@ -74,7 +74,53 @@ impl State {
             Command::LaunchEmulator => self.launch_emulator(),
             Command::OpenFolder(kind) => self.open_folder(kind),
             Command::RegisterUrlHandler => self.register_url_handler(),
+            Command::SaveSettings(draft) => self.save_settings(draft),
         }
+    }
+
+    /// Validates the draft, wipes the old deploy output when the deploy
+    /// config changed, saves, reloads, and resets the staged state — all in
+    /// one job so events stay consistent. A failed wipe **aborts the save**
+    /// (GUI_REF §22.37: never save settings while leaving a stale output).
+    fn save_settings(&mut self, draft: crate::settings::SettingsDraft) -> Result<()> {
+        let core = Arc::clone(&self.core);
+        let (new_settings, wipe, storage_changed) = {
+            let old = core.settings();
+            let wipe = draft.wipe_needed(&old);
+            let storage_changed = old.storage_dir != draft.storage_dir;
+            let new_settings = draft.validate(&old)?;
+            (new_settings, wipe, storage_changed)
+        };
+        if storage_changed {
+            log::warn!(
+                "Storage folder changed — existing profiles/mods are NOT migrated to the new \
+                 location"
+            );
+        }
+        if wipe {
+            let mode = core.settings().current_mode;
+            core.settings()
+                .wipe_output(mode.into())
+                .context("Failed to wipe the old deploy output — settings were not saved")?;
+        }
+        {
+            let mut settings = core.settings_mut();
+            *settings = new_settings;
+            settings.save().context("Failed to save settings")?;
+        }
+        self.reload()?;
+        self.cancel_pending()?;
+        let pending_reset = if wipe {
+            self.reset_pending()?;
+            true
+        } else {
+            false
+        };
+        self.emit(Event::SettingsSaved {
+            output_wiped: wipe,
+            pending_reset,
+        });
+        Ok(())
     }
 
     /// Launches the configured emulator on the worker thread (never in

@@ -196,6 +196,7 @@
     "Settings_Platform_Language": "Game Language",
     "Settings_Platform_Language_Desc": "Select the language and region corresponding to your game version and settings.",
     "Settings_Saved": "Settings saved",
+    "Settings_OutputWiped": "Old deploy output was wiped because the deploy settings changed",
     "Settings_SelectFolder_Cemu": "Select Cemu Directory",
     "Settings_Storage": "Storage Folder",
     "Settings_Storage_Desc": "UKMM will store mods, profiles, and similar data here.",

@@ -206,4 +206,9 @@ pub enum Command {
     /// Register the `bcml:` URL scheme so GameBanana one-click links reach
     /// UKMM.
     RegisterUrlHandler,
+    /// Validate and save a settings draft (wiping the old deploy output and
+    /// resetting pending when the deploy layout/method/output changed);
+    /// answers with [`Event::SettingsSaved`](crate::session::Event::SettingsSaved)
+    /// after the reload.
+    SaveSettings(crate::settings::SettingsDraft),
 }

@@ -75,6 +75,13 @@ pub enum Event {
     Error(AppError),
     /// Settings were reloaded from disk; re-read them from the core.
     SettingsChanged,
+    /// Result of [`Command::SaveSettings`](crate::session::Command::SaveSettings).
+    SettingsSaved {
+        /// The old deploy output was wiped because layout/method/output changed.
+        output_wiped:  bool,
+        /// The deployment pending log was reset after the wipe.
+        pending_reset: bool,
+    },
     /// Result of [`Command::ParseMeta`](crate::session::Command::ParseMeta).
     PackageMeta(Meta),
     /// A mod was packaged; the packer can reset.

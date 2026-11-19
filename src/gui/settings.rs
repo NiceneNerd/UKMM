@@ -1,25 +1,14 @@
 #![allow(unstable_name_collisions)]
-use std::{
-    ops::Deref,
-    path::{Path, PathBuf},
-    sync::{Arc, LazyLock},
-};
-
-use anyhow::Result;
-use parking_lot::RwLock;
-use rustc_hash::FxHashMap;
-use serde::Deserialize;
-use uk_content::{constants::Language, prelude::Endian};
+use uk_app::settings::{DumpDraft, PlatformDraft};
+use uk_content::constants::Language;
 use uk_localization::{LocLang, string_ext::LocString};
-use uk_manager::settings::{DeployConfig, Platform, PlatformSettings};
-use uk_reader::ResourceReader;
+use uk_manager::settings::{DeployConfig, Platform};
 use uk_ui::{
     egui::{self, Align, Button, Checkbox, InnerResponse, Layout, RichText, TextStyle, Ui},
     ext::UiExt,
     icons::{self, IconButtonExt},
     visuals::Theme,
 };
-use uk_util::OptionResultExt;
 
 use super::{App, Message};
 
@@ -41,158 +30,6 @@ fn render_setting<R>(
     });
     ui.horizontal(|ui| add_contents(ui))
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(tag = "type")]
-pub enum DumpType {
-    Unpacked {
-        host_path:   PathBuf,
-        content_dir: Option<PathBuf>,
-        update_dir:  Option<PathBuf>,
-        aoc_dir:     Option<PathBuf>,
-    },
-    ZArchive {
-        content_dir: PathBuf,
-        update_dir:  PathBuf,
-        aoc_dir:     Option<PathBuf>,
-        host_path:   PathBuf,
-    },
-}
-
-impl DumpType {
-    pub fn host_path(&self) -> &Path {
-        match self {
-            DumpType::Unpacked { host_path, .. } => host_path.as_path(),
-            DumpType::ZArchive { host_path, .. } => host_path.as_path(),
-        }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        match self {
-            DumpType::Unpacked {
-                content_dir,
-                update_dir,
-                aoc_dir,
-                ..
-            } => {
-                content_dir
-                    .as_ref()
-                    .map(|d| d.as_os_str().is_empty())
-                    .unwrap_or(true)
-                    && update_dir
-                        .as_ref()
-                        .map(|d| d.as_os_str().is_empty())
-                        .unwrap_or(true)
-                    && aoc_dir
-                        .as_ref()
-                        .map(|d| d.as_os_str().is_empty())
-                        .unwrap_or(true)
-            }
-            DumpType::ZArchive { host_path, .. } => host_path.as_os_str().is_empty(),
-        }
-    }
-}
-
-impl From<&ResourceReader> for DumpType {
-    fn from(reader: &ResourceReader) -> Self {
-        serde_json::from_str(&reader.source_ser()).unwrap()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PlatformSettingsUI {
-    pub language: Language,
-    pub profile: String,
-    pub dump: DumpType,
-    pub deploy_config: DeployConfig,
-}
-
-impl Default for PlatformSettingsUI {
-    fn default() -> Self {
-        PlatformSettingsUI {
-            language: Language::USen,
-            profile: "Default".into(),
-            dump: DumpType::Unpacked {
-                host_path:   Default::default(),
-                content_dir: Default::default(),
-                update_dir:  Default::default(),
-                aoc_dir:     Default::default(),
-            },
-            deploy_config: Default::default(),
-        }
-    }
-}
-
-impl TryFrom<PlatformSettingsUI> for PlatformSettings {
-    type Error = anyhow::Error;
-
-    fn try_from(settings: PlatformSettingsUI) -> Result<Self> {
-        let dump = match settings.dump {
-            DumpType::Unpacked {
-                content_dir,
-                update_dir,
-                aoc_dir,
-                ..
-            } => {
-                let endian = content_dir
-                    .as_ref()
-                    .and_then(|p| {
-                        p.to_string_lossy()
-                            .contains("content")
-                            .then_some(Endian::Big)
-                            .or(Some(Endian::Little))
-                    })
-                    .ok_or_else(|| {
-                        uk_reader::ROMError::MissingDumpDir(
-                            "Base",
-                            content_dir.clone().unwrap_or_default(),
-                        )
-                    })?;
-                Arc::new(ResourceReader::from_unpacked_dirs(
-                    content_dir,
-                    update_dir,
-                    aoc_dir,
-                    endian,
-                )?)
-            }
-            DumpType::ZArchive { host_path, .. } => {
-                Arc::new(ResourceReader::from_zarchive(host_path)?)
-            }
-        };
-        Ok(Self {
-            language: settings.language,
-            profile: settings.profile.into(),
-            dump,
-            deploy_config: if settings.deploy_config.output.as_os_str().is_empty() {
-                None
-            } else {
-                Some(settings.deploy_config)
-            },
-        })
-    }
-}
-
-impl From<&PlatformSettings> for PlatformSettingsUI {
-    fn from(settings: &PlatformSettings) -> Self {
-        Self {
-            language: settings.language,
-            profile: settings.profile.to_string(),
-            dump: settings.dump.as_ref().into(),
-            deploy_config: settings.deploy_config.as_ref().cloned().unwrap_or_default(),
-        }
-    }
-}
-
-impl PartialEq<PlatformSettings> for PlatformSettingsUI {
-    fn eq(&self, other: &PlatformSettings) -> bool {
-        self.language == other.language
-            && other.deploy_config.contains(&self.deploy_config)
-            && self.dump.host_path() == other.dump.source().host_path()
-    }
-}
-
-pub static CONFIG: LazyLock<RwLock<FxHashMap<Platform, PlatformSettingsUI>>> =
-    LazyLock::new(|| RwLock::new(Default::default()));
 
 fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut Ui) -> bool {
     ui.label("Settings_Platform_Deploy".localize());
@@ -289,16 +126,9 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
     changed
 }
 
-fn render_platform_config(
-    config: &mut Option<PlatformSettings>,
-    platform: Platform,
-    ui: &mut Ui,
-) -> bool {
+fn render_platform_config(config: &mut PlatformDraft, platform: Platform, ui: &mut Ui) -> bool {
     let mut changed = false;
-    let mut conf_lock = CONFIG.write();
-    let config = conf_lock
-        .entry(platform)
-        .or_insert_with(|| config.as_ref().map(|c| c.into()).unwrap_or_default());
+    let config = config;
     let mut name = "Settings_Platform_Language".localize();
     let mut description = "Settings_Platform_Language_Desc".localize();
     render_setting(&name, &description, ui, |ui| {
@@ -323,12 +153,12 @@ fn render_platform_config(
             render_setting(&name, &description, ui, |ui| {
                 if ui
                     .radio(
-                        matches!(config.dump, DumpType::Unpacked { .. }),
+                        matches!(config.dump, DumpDraft::Unpacked { .. }),
                         "Settings_Platform_Dump_Type_Unpacked".localize(),
                     )
                     .clicked()
                 {
-                    config.dump = DumpType::Unpacked {
+                    config.dump = DumpDraft::Unpacked {
                         host_path:   Default::default(),
                         content_dir: Default::default(),
                         update_dir:  Default::default(),
@@ -338,12 +168,12 @@ fn render_platform_config(
                 }
                 if ui
                     .radio(
-                        matches!(config.dump, DumpType::ZArchive { .. }),
+                        matches!(config.dump, DumpDraft::ZArchive { .. }),
                         "Settings_Platform_Dump_Type_WUA".localize(),
                     )
                     .clicked()
                 {
-                    config.dump = DumpType::ZArchive {
+                    config.dump = DumpDraft::ZArchive {
                         content_dir: Default::default(),
                         update_dir:  Default::default(),
                         aoc_dir:     Default::default(),
@@ -354,7 +184,7 @@ fn render_platform_config(
             });
         }
         match &mut config.dump {
-            DumpType::Unpacked {
+            DumpDraft::Unpacked {
                 host_path,
                 content_dir,
                 update_dir,
@@ -408,7 +238,7 @@ fn render_platform_config(
                     }
                 });
             }
-            DumpType::ZArchive {
+            DumpDraft::ZArchive {
                 content_dir: _,
                 update_dir: _,
                 aoc_dir: _,
@@ -429,15 +259,13 @@ fn render_platform_config(
 impl App {
     pub fn render_settings(&mut self, ui: &mut Ui) {
         egui::Frame::NONE.inner_margin(4.0).show(ui, |ui| {
-            let mut wiiu_changed = false;
-            let mut switch_changed = false;
             let scroll_height = ui.available_height() - 38.0_f32;
             egui::ScrollArea::vertical()
                 .auto_shrink([false, false])
                 .max_height(scroll_height)
                 .show(ui, |ui| {
                     ui.vertical(|ui| {
-                        let settings = &mut self.temp_settings;
+                        let settings = &mut self.settings_draft;
                         let mut theme_change: Option<Theme> = None;
                         let mut lang_change: Option<LocLang> = None;
                         egui::CollapsingHeader::new("Settings_General".localize())
@@ -487,13 +315,15 @@ impl App {
                                 name = "Settings_Language".localize();
                                 description = "Settings_Language_Desc".localize();
                                 render_setting(&name, &description, ui, |ui| {
+                                    // UI language is frontend state (persisted
+                                    // in ui-egui.json), not core settings.
                                     egui::ComboBox::new("lang-ukmm", "")
-                                        .selected_text(settings.lang.to_str())
+                                        .selected_text(self.lang.to_str())
                                         .show_ui(ui, |ui| {
                                             for lang in LocLang::iter() {
                                                 if ui
                                                     .selectable_value(
-                                                        &mut settings.lang,
+                                                        &mut self.lang,
                                                         *lang,
                                                         lang.to_str(),
                                                     )
@@ -550,8 +380,8 @@ impl App {
                                         .send(Message::ImportCemu)
                                         .expect("Broken channel");
                                 }
-                                wiiu_changed = render_platform_config(
-                                    &mut settings.wiiu_config,
+                                render_platform_config(
+                                    settings.platform_draft_mut(Platform::WiiU),
                                     Platform::WiiU,
                                     ui,
                                 );
@@ -560,8 +390,8 @@ impl App {
                         egui::CollapsingHeader::new("Settings_Config_NX".localize()).show(
                             ui,
                             |ui| {
-                                switch_changed = render_platform_config(
-                                    &mut settings.switch_config,
+                                render_platform_config(
+                                    settings.platform_draft_mut(Platform::Switch),
                                     Platform::Switch,
                                     ui,
                                 );
@@ -574,77 +404,20 @@ impl App {
                             self.do_update(Message::SetLanguage(lang));
                         }
                     });
-                    switch_changed |= {
-                        match (
-                            CONFIG.read().get(&Platform::Switch),
-                            self.temp_settings.switch_config.as_ref(),
-                        ) {
-                            (None, None) | (None, Some(_)) => false,
-                            (Some(config), None) => {
-                                !config.dump.is_empty()
-                                    || !config.deploy_config.output.as_os_str().is_empty()
-                            }
-                            (Some(tmp_config), Some(config)) => tmp_config.ne(config),
-                        }
-                    };
-                    wiiu_changed |= {
-                        match (
-                            CONFIG.read().get(&Platform::WiiU),
-                            self.temp_settings.wiiu_config.as_ref(),
-                        ) {
-                            (None, None) | (None, Some(_)) => false,
-                            (Some(config), None) => {
-                                !config.dump.is_empty()
-                                    || !config.deploy_config.output.as_os_str().is_empty()
-                            }
-                            (Some(tmp_config), Some(config)) => tmp_config.ne(config),
-                        }
-                    };
                 });
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    // The draft is validated (all platforms) and saved by the
+                    // session job; the button is enabled when the draft
+                    // differs from the saved settings.
                     let platform_config_changed =
-                        self.temp_settings.ne(self.core.settings().deref())
-                            || wiiu_changed
-                            || switch_changed;
+                        self.settings_draft.differs_from(&self.core.settings());
                     ui.add_enabled_ui(platform_config_changed, |ui| {
                         if ui.button("Generic_Save".localize()).clicked() {
-                            if wiiu_changed {
-                                let wiiu_config_ui =
-                                    CONFIG.write().get(&Platform::WiiU).unwrap().clone();
-                                let wiiu_config = wiiu_config_ui.try_into();
-                                match wiiu_config {
-                                    Ok(conf) => {
-                                        CONFIG.write().remove(&Platform::WiiU);
-                                        self.temp_settings.wiiu_config = Some(conf)
-                                    }
-                                    Err(e) => {
-                                        self.do_update(Message::Error(e));
-                                        return;
-                                    }
-                                }
-                            }
-                            if switch_changed {
-                                let switch_config_ui =
-                                    CONFIG.write().get(&Platform::Switch).unwrap().clone();
-                                let switch_config = switch_config_ui.try_into();
-                                match switch_config {
-                                    Ok(conf) => {
-                                        CONFIG.write().remove(&Platform::Switch);
-                                        self.temp_settings.switch_config = Some(conf)
-                                    }
-                                    Err(e) => {
-                                        self.do_update(Message::Error(e));
-                                        return;
-                                    }
-                                }
-                            }
                             self.do_update(Message::SaveSettings);
                         }
                         if ui.button("Generic_Reset".localize()).clicked() {
-                            self.do_update(Message::SetLanguage(self.core.settings().lang));
-                            CONFIG.write().clear();
                             self.do_update(Message::ResetSettings);
                         }
                     });

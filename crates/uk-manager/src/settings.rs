@@ -238,10 +238,28 @@ pub enum UpdatePreference {
     Beta,
 }
 
+/// Current `settings.yml` format version. v1 had the UI language (`lang`)
+/// inside; v2 moves it to the per-frontend state file and omits it here.
+pub const FORMAT_VERSION: u32 = 2;
+
+#[inline(always)]
+fn default_format_version() -> u32 {
+    1
+}
+
+#[inline(always)]
+fn default_lang() -> LocLang {
+    LocLang::English
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 #[serde_as]
 pub struct Settings {
+    /// Format version of `settings.yml`. Old files (no field) read as 1;
+    /// saves always write [`FORMAT_VERSION`].
+    #[serde(default = "default_format_version")]
+    pub format_version: u32,
     pub current_mode: Platform,
     pub system_7z: bool,
     #[serde(default = "default_storage")]
@@ -252,6 +270,10 @@ pub struct Settings {
     pub last_version: Option<String>,
     pub wiiu_config: Option<PlatformSettings>,
     pub switch_config: Option<PlatformSettings>,
+    /// Legacy v1 field: the UI language used to live in `settings.yml`. Still
+    /// read from old files (frontends seed their state file from it once),
+    /// never written — v2+ keeps language in the frontend state file.
+    #[serde(default = "default_lang", skip_serializing)]
     pub lang: LocLang,
     /// The file this instance is loaded from and saved to. Not serialized;
     /// defaults to [`Settings::path`]. Use [`Settings::load_from`] to point a
@@ -263,6 +285,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            format_version: FORMAT_VERSION,
             current_mode: Platform::WiiU,
             system_7z: true,
             storage_dir: default_storage(),
@@ -370,7 +393,10 @@ impl Settings {
             std::sync::atomic::Ordering::Relaxed,
             std::sync::atomic::Ordering::Relaxed,
         );
-        fs::write(&self.file_path, serde_yaml::to_string(self)?)?;
+        // Always write the current format version (v2 drops the legacy `lang`).
+        let mut serialized = self.clone();
+        serialized.format_version = FORMAT_VERSION;
+        fs::write(&self.file_path, serde_yaml::to_string(&serialized)?)?;
         log::info!("Settings saved");
         Ok(())
     }
@@ -492,8 +518,18 @@ impl Settings {
             .map(|c| c.output.as_ref())
     }
 
+    /// The per-frontend UI state file (`ui-<frontend>.json`). Each frontend
+    /// keeps its own theme/layout/language here, so two frontends never
+    /// overwrite each other.
     #[inline]
-    pub fn state_file(&self) -> PathBuf {
+    pub fn frontend_state_file(frontend: &str) -> PathBuf {
+        Self::config_dir().join(format!("ui-{frontend}.json"))
+    }
+
+    /// The legacy shared UI state file (`ui.json`, pre per-frontend files).
+    /// Read once for migration, then ignored.
+    #[inline]
+    pub fn legacy_state_file() -> PathBuf {
         Self::config_dir().join("ui.json")
     }
 
