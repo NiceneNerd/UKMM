@@ -215,3 +215,22 @@ frontend-local (view state); URL links are plain `host::open_url` calls, not
 commands; dump "changed" detection compares full dump dirs, not just
 `host_path` (the old comparison missed content-dir changes with equal host
 root).
+
+## 11. Review fixes (2026-11-19, post-review commit)
+
+- **History hygiene:** the whole-tree reformat produced by the current nightly
+  rustfmt was split into its own commit (`b589d20`, base of the phase commits),
+  and `rustfmt.toml` now uses `style_edition = "2024"` instead of the deprecated
+  `version = "Two"` (identical output on this toolchain, no deprecation warning).
+  The phase commits themselves are semantic-only again.
+- **Wipe rule (review finding 2):** `SettingsDraft::wipe_needed` is now keyed on
+  the *old* current platform (the one `wipe_output` actually removes), and a
+  platform switch counts as a wipe trigger; changes to the inactive platform's
+  deploy config do not. Previously the decision used the draft's
+  `current_mode`, which could disagree with the wiped folder on a mode switch.
+  Covered by `wipe_needed_keys_on_old_mode`.
+- **Fallible draft decoding (review finding 3):** `DumpDraft`/`PlatformDraft` now
+  implement `TryFrom` (no more `expect` in `uk-app`), and
+  `SettingsDraft::try_from_settings` returns `Result`; the GUI surfaces decode
+  failures as an error instead of panicking. `differs_from` treats an
+  undecodable saved dump as "changed" so `validate` re-checks it.

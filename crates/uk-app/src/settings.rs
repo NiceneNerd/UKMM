@@ -68,9 +68,12 @@ impl DumpDraft {
     }
 }
 
-impl From<&ResourceReader> for DumpDraft {
-    fn from(reader: &ResourceReader) -> Self {
-        serde_json::from_str(&reader.source_ser()).expect("Reader source must be a dump draft")
+impl TryFrom<&ResourceReader> for DumpDraft {
+    type Error = anyhow_ext::Error;
+
+    fn try_from(reader: &ResourceReader) -> Result<Self> {
+        serde_json::from_str(&reader.source_ser())
+            .context("Saved dump source does not match a known dump type")
     }
 }
 
@@ -150,7 +153,10 @@ impl PlatformDraft {
                         (None, false) => true,
                         (Some(d), _) => d != &self.deploy_config,
                     }
-                    || !dump_eq(&self.dump, &DumpDraft::from(saved.dump.as_ref()))
+                    // If the saved dump source can't be decoded, treat the
+                    // draft as different so `validate` re-checks it properly.
+                    || !DumpDraft::try_from(saved.dump.as_ref())
+                        .is_ok_and(|d| dump_eq(&self.dump, &d))
             }
         }
     }
@@ -191,14 +197,16 @@ impl PlatformDraft {
     }
 }
 
-impl From<&PlatformSettings> for PlatformDraft {
-    fn from(settings: &PlatformSettings) -> Self {
-        Self {
+impl TryFrom<&PlatformSettings> for PlatformDraft {
+    type Error = anyhow_ext::Error;
+
+    fn try_from(settings: &PlatformSettings) -> Result<Self> {
+        Ok(Self {
             language: settings.language,
             profile: settings.profile.to_string(),
-            dump: (&*settings.dump).into(),
+            dump: DumpDraft::try_from(settings.dump.as_ref())?,
             deploy_config: settings.deploy_config.as_ref().cloned().unwrap_or_default(),
-        }
+        })
     }
 }
 
@@ -217,16 +225,29 @@ pub struct SettingsDraft {
 }
 
 impl SettingsDraft {
-    pub fn from_settings(settings: &Settings) -> Self {
-        Self {
+    /// Builds a draft from saved settings. Fails (with context) if a saved
+    /// platform's dump source cannot be decoded — callers decide how to
+    /// surface that; nothing here panics.
+    pub fn try_from_settings(settings: &Settings) -> Result<Self> {
+        Ok(Self {
             current_mode: settings.current_mode,
             system_7z: settings.system_7z,
             storage_dir: settings.storage_dir.clone(),
             check_updates: settings.check_updates.clone(),
             show_changelog: settings.show_changelog,
-            wiiu: settings.wiiu_config.as_ref().map(PlatformDraft::from),
-            switch: settings.switch_config.as_ref().map(PlatformDraft::from),
-        }
+            wiiu: settings
+                .wiiu_config
+                .as_ref()
+                .map(PlatformDraft::try_from)
+                .transpose()
+                .context("Invalid saved Wii U configuration")?,
+            switch: settings
+                .switch_config
+                .as_ref()
+                .map(PlatformDraft::try_from)
+                .transpose()
+                .context("Invalid saved Switch configuration")?,
+        })
     }
 
     /// The draft for `platform`, creating a default one if absent (the settings
@@ -250,7 +271,7 @@ impl SettingsDraft {
                 // Removing a saved config counts only when it was non-empty
                 // (mirrors the old changed-check).
                 (None, Some(s)) => {
-                    !DumpDraft::from(s.dump.as_ref()).is_empty()
+                    DumpDraft::try_from(s.dump.as_ref()).is_ok_and(|d| !d.is_empty())
                         || s.deploy_config
                             .as_ref()
                             .is_some_and(|d| !d.output.as_os_str().is_empty())
@@ -310,22 +331,39 @@ impl SettingsDraft {
     /// Whether saving this draft must wipe the old deploy output: the current
     /// platform's deploy layout/method/output changed (GUI_REF §22.37's wipe
     /// rule, computed here so every frontend gets it).
+    /// Whether saving this draft must wipe the old deploy output. The wipe
+    /// (`Settings::wipe_output`) targets the **previous** current platform's
+    /// output folder, so the decision is keyed on that same platform — never
+    /// on the draft's `current_mode` (which may have just changed). A platform
+    /// switch also counts: the active output target changes. Changes to the
+    /// *inactive* platform's deploy config do not trigger a wipe.
     pub fn wipe_needed(&self, old: &Settings) -> bool {
-        let old_config = match self.current_mode {
+        let mode = old.current_mode;
+        let old_dep = match mode {
             Platform::WiiU => old.wiiu_config.as_ref(),
             Platform::Switch => old.switch_config.as_ref(),
+        }
+        .and_then(|c| c.deploy_config.as_ref());
+        // No deploy output configured for the old platform: nothing to wipe
+        // (`wipe_output` would have nothing to remove).
+        let Some(old_dep) = old_dep else {
+            return false;
         };
-        let old_dep = old_config.and_then(|c| c.deploy_config.as_ref());
-        let new_draft = match self.current_mode {
+        if self.current_mode != mode {
+            return true;
+        }
+        let new_draft = match mode {
             Platform::WiiU => self.wiiu.as_ref(),
             Platform::Switch => self.switch.as_ref(),
         };
-        match (old_dep, new_draft) {
-            (Some(old), Some(new)) => {
+        match new_draft {
+            Some(new) => {
                 let new = &new.deploy_config;
-                old.layout != new.layout || old.method != new.method || old.output != new.output
+                old_dep.layout != new.layout
+                    || old_dep.method != new.method
+                    || old_dep.output != new.output
             }
-            _ => false,
+            None => false,
         }
     }
 }
@@ -375,7 +413,7 @@ mod tests {
     fn validate_checks_all_platforms_before_applying() {
         let dir = tempfile::tempdir().unwrap();
         let old = test_settings(&dir);
-        let mut draft = SettingsDraft::from_settings(&old);
+        let mut draft = SettingsDraft::try_from_settings(&old).unwrap();
         // Broken Switch config (ZArchive pointing nowhere) + valid scalar edit.
         draft.switch = Some(PlatformDraft {
             dump: DumpDraft::ZArchive {
@@ -395,7 +433,7 @@ mod tests {
     fn validate_rejects_missing_base_dir() {
         let dir = tempfile::tempdir().unwrap();
         let old = test_settings(&dir);
-        let mut draft = SettingsDraft::from_settings(&old);
+        let mut draft = SettingsDraft::try_from_settings(&old).unwrap();
         // A dump draft pointing at a nonexistent folder must fail validation.
         draft.wiiu = Some(PlatformDraft {
             dump: DumpDraft::Unpacked {
@@ -413,7 +451,7 @@ mod tests {
     fn untouched_default_draft_stays_none() {
         let dir = tempfile::tempdir().unwrap();
         let old = test_settings(&dir);
-        let mut draft = SettingsDraft::from_settings(&old);
+        let mut draft = SettingsDraft::try_from_settings(&old).unwrap();
         // Rendering the platform section materializes a default draft; an
         // untouched one must not be validated into an error (or saved).
         let _ = draft.platform_draft_mut(Platform::WiiU);
@@ -426,7 +464,7 @@ mod tests {
     fn wipe_needed_only_on_deploy_change() {
         let dir = tempfile::tempdir().unwrap();
         let old = test_settings(&dir);
-        let mut draft = SettingsDraft::from_settings(&old);
+        let mut draft = SettingsDraft::try_from_settings(&old).unwrap();
         assert!(!draft.wipe_needed(&old));
         draft.storage_dir = dir.path().join("elsewhere");
         assert!(
@@ -435,11 +473,61 @@ mod tests {
         );
     }
 
+    /// Old settings with a configured Wii U deploy output.
+    fn configured_old(dir: &tempfile::TempDir) -> Settings {
+        let content = fake_dump(dir.path());
+        let dump = Arc::new(
+            ResourceReader::from_unpacked_dirs(
+                Some(&content),
+                None::<&Path>,
+                None::<&Path>,
+                Endian::Big,
+            )
+            .unwrap(),
+        );
+        let mut old = test_settings(dir);
+        old.current_mode = Platform::WiiU;
+        old.wiiu_config = Some(PlatformSettings {
+            language: Language::USen,
+            profile: "Default".into(),
+            dump,
+            deploy_config: Some(DeployConfig {
+                output: dir.path().join("out"),
+                ..Default::default()
+            }),
+        });
+        old
+    }
+
+    #[test]
+    fn wipe_needed_keys_on_old_mode() {
+        let dir = tempfile::tempdir().unwrap();
+        let old = configured_old(&dir);
+        // Editing the INACTIVE platform (Switch) must not wipe the Wii U output.
+        let mut draft = SettingsDraft::try_from_settings(&old).unwrap();
+        draft
+            .platform_draft_mut(Platform::Switch)
+            .deploy_config
+            .output = "/elsewhere".into();
+        assert!(!draft.wipe_needed(&old));
+        // Changing the old (active) platform's deploy output wipes.
+        let mut draft = SettingsDraft::try_from_settings(&old).unwrap();
+        draft
+            .platform_draft_mut(Platform::WiiU)
+            .deploy_config
+            .output = dir.path().join("out2");
+        assert!(draft.wipe_needed(&old));
+        // Switching the platform wipes the old platform's output too.
+        let mut draft = SettingsDraft::try_from_settings(&old).unwrap();
+        draft.current_mode = Platform::Switch;
+        assert!(draft.wipe_needed(&old));
+    }
+
     #[test]
     fn differs_from_matches_saved() {
         let dir = tempfile::tempdir().unwrap();
         let old = test_settings(&dir);
-        let draft = SettingsDraft::from_settings(&old);
+        let draft = SettingsDraft::try_from_settings(&old).unwrap();
         assert!(!draft.differs_from(&old));
         let mut changed = draft.clone();
         changed.show_changelog = !old.show_changelog;

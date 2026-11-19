@@ -1009,7 +1009,7 @@ fn save_settings_validates_before_saving() {
     let rx = session.subscribe();
     let core = session.core();
     let old = core.settings().clone();
-    let mut draft = crate::settings::SettingsDraft::from_settings(&old);
+    let mut draft = crate::settings::SettingsDraft::try_from_settings(&old).unwrap();
     // A broken Switch config (ZArchive pointing nowhere) plus a valid scalar
     // edit: the whole save must fail, and nothing may be persisted.
     draft.switch = Some(crate::settings::PlatformDraft {
@@ -1039,7 +1039,7 @@ fn save_settings_roundtrip_and_event() {
     let rx = session.subscribe();
     let core = session.core();
     let old = core.settings().clone();
-    let mut draft = crate::settings::SettingsDraft::from_settings(&old);
+    let mut draft = crate::settings::SettingsDraft::try_from_settings(&old).unwrap();
     draft.show_changelog = !old.show_changelog;
     draft.storage_dir = _dir.path().join("storage2");
     let (events, result) = run(&session, &rx, Command::SaveSettings(draft));
@@ -1106,7 +1106,7 @@ fn save_settings_wipe_failure_aborts_save() {
     let (wipe_content, _wipe_aoc) = deploy.final_output_paths(Endian::Big);
     std::fs::create_dir_all(wipe_content.parent().unwrap()).unwrap();
     std::fs::write(&wipe_content, b"not a dir").unwrap();
-    let mut draft = crate::settings::SettingsDraft::from_settings(&old);
+    let mut draft = crate::settings::SettingsDraft::try_from_settings(&old).unwrap();
     draft
         .platform_draft_mut(uk_manager::settings::Platform::WiiU)
         .deploy_config

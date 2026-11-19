@@ -269,7 +269,10 @@ impl App {
             });
         }
         let platform = core.settings().current_mode;
-        let settings_draft = uk_app::settings::SettingsDraft::from_settings(&core.settings());
+        // A saved platform config that fails to decode is a startup error, not
+        // a panic (phase-4 review finding 3).
+        let settings_draft = uk_app::settings::SettingsDraft::try_from_settings(&core.settings())
+            .expect("Failed to decode saved platform settings");
         LOCALIZATION.write().update_language(&ui_state.lang);
         let (changelog, check_updates) = {
             let settings = core.settings();

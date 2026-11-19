@@ -114,8 +114,10 @@ impl App {
                 self.profiles_state.borrow_mut().reload(&self.core);
             }
             Event::SettingsChanged => {
-                self.settings_draft =
-                    uk_app::settings::SettingsDraft::from_settings(&self.core.settings());
+                match uk_app::settings::SettingsDraft::try_from_settings(&self.core.settings()) {
+                    Ok(draft) => self.settings_draft = draft,
+                    Err(e) => self.error = Some(e),
+                }
                 self.package_builder.borrow_mut().reset(self.platform());
             }
             Event::SettingsSaved {
@@ -382,8 +384,10 @@ impl App {
                     .dispatch(Command::SaveSettings(self.settings_draft.clone()));
             }
             Message::ResetSettings => {
-                self.settings_draft =
-                    uk_app::settings::SettingsDraft::from_settings(&self.core.settings());
+                match uk_app::settings::SettingsDraft::try_from_settings(&self.core.settings()) {
+                    Ok(draft) => self.settings_draft = draft,
+                    Err(e) => self.error = Some(e),
+                }
             }
             Message::NewProfile => self.new_profile = Some("".into()),
             Message::DoUpdate => {
