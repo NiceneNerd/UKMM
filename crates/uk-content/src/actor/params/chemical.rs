@@ -9,9 +9,10 @@ use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
 
 use crate::{
+    Result, UKError,
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util, Result, UKError,
+    util,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

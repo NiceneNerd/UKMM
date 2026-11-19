@@ -1,7 +1,7 @@
 use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use roead::{
-    byml::{map, Byml},
+    byml::{Byml, map},
     yaz0::{compress, decompress},
 };
 use rustc_hash::FxHashMap;

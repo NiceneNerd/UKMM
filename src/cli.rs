@@ -1,5 +1,5 @@
 use std::{
-    io::{stdin, stdout, Write},
+    io::{Write, stdin, stdout},
     option::Option,
     path::{Path, PathBuf},
 };
@@ -82,21 +82,21 @@ pub enum UkmmCmd {
 
 #[derive(Debug)]
 pub struct Install {
-    pub path: PathBuf,
+    pub path:    PathBuf,
     pub profile: Option<String>,
-    pub meta: Option<PathBuf>,
+    pub meta:    Option<PathBuf>,
 }
 
 #[derive(Debug)]
 pub struct Package {
-    pub path: PathBuf,
+    pub path:   PathBuf,
     pub output: PathBuf,
-    pub meta: PathBuf,
+    pub meta:   PathBuf,
 }
 
 #[derive(Debug)]
 pub struct Uninstall {
-    pub index: Option<usize>,
+    pub index:   Option<usize>,
     pub profile: Option<String>,
 }
 
@@ -156,9 +156,11 @@ impl Runner {
         let meta = meta.map(uk_app::parse_meta).transpose()?;
         let mod_ = match uk_app::open_mod(&self.core, path, meta)? {
             uk_app::Opened::Mod(mod_) => mod_,
-            uk_app::Opened::NeedsMeta(_) => anyhow_ext::bail!(
-                "This mod has no metadata; supply one with --meta or install it via the GUI."
-            ),
+            uk_app::Opened::NeedsMeta(_) => {
+                anyhow_ext::bail!(
+                    "This mod has no metadata; supply one with --meta or install it via the GUI."
+                )
+            }
         };
         if !mod_.meta.options.is_empty() {
             anyhow_ext::bail!(
@@ -198,7 +200,11 @@ impl Runner {
                 }
                 println!("Done!");
             }
-            UkmmCmd::Install(Install { path, profile, meta }) => {
+            UkmmCmd::Install(Install {
+                path,
+                profile,
+                meta,
+            }) => {
                 let path = self.check_mod(path, meta.as_deref())?;
                 let mods = self.core.mod_manager();
                 let mod_ = mods.add(&path, profile.as_ref())?;
@@ -214,7 +220,12 @@ impl Runner {
             }
             UkmmCmd::Package(pkg) => {
                 println!("Packaging mod...");
-                uk_app::package_mod(&self.core, &pkg.path, &pkg.output, uk_app::parse_meta(&pkg.meta)?)?;
+                uk_app::package_mod(
+                    &self.core,
+                    &pkg.path,
+                    &pkg.output,
+                    uk_app::parse_meta(&pkg.meta)?,
+                )?;
                 println!("Done!");
             }
             UkmmCmd::Remerge(_) => {

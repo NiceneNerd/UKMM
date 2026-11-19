@@ -7,10 +7,10 @@ use uk_content_derive::ParamData;
 use uk_util::OptionResultExt;
 
 use crate::{
+    Result, UKError,
     actor::ParameterResource,
     prelude::*,
     util::{DeleteMap, IndexMap},
-    Result, UKError,
 };
 
 #[derive(

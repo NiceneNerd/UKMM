@@ -68,54 +68,51 @@ pub fn load_fonts(context: &egui::Context) {
     }
     fonts.font_data.insert(
         "Noto".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANS_REG))
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANS_REG)),
     );
     fonts.font_data.insert(
         "NotoBold".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANS_BOLD))
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANS_BOLD)),
     );
     fonts.font_data.insert(
         "NotoJP".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSJP_REG))
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSJP_REG)),
     );
     fonts.font_data.insert(
         "NotoJPBold".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSJP_BOLD))
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSJP_BOLD)),
     );
     fonts.font_data.insert(
         "NotoKR".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSKR_REG))
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSKR_REG)),
     );
     fonts.font_data.insert(
         "NotoKRBold".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSKR_BOLD))
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSKR_BOLD)),
     );
     fonts.font_data.insert(
         "NotoSC".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSSC_REG))
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSSC_REG)),
     );
     fonts.font_data.insert(
         "NotoSCBold".to_owned(),
-        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSSC_BOLD))
+        std::sync::Arc::new(egui::FontData::from_static(&NOTOSANSSC_BOLD)),
     );
-    if let Some(family) = fonts
-        .families
-        .get_mut(&egui::FontFamily::Proportional) {
-        ["NotoSC", "NotoKR", "NotoJP", "Noto", "System"].iter().for_each(|s| {
-            family.insert(0, s.to_string());
-        });
+    if let Some(family) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
+        ["NotoSC", "NotoKR", "NotoJP", "Noto", "System"]
+            .iter()
+            .for_each(|s| {
+                family.insert(0, s.to_string());
+            });
     }
     fonts
         .families
-        .insert(
-            egui::FontFamily::Name("Bold".into()),
-            vec![
-                "Bold".to_owned(),
-                "NotoBold".to_owned(),
-                "NotoJPBold".to_owned(),
-                "NotoKRBold".to_owned(),
-                "NotoSCBold".to_owned(),
-            ]
-        );
+        .insert(egui::FontFamily::Name("Bold".into()), vec![
+            "Bold".to_owned(),
+            "NotoBold".to_owned(),
+            "NotoJPBold".to_owned(),
+            "NotoKRBold".to_owned(),
+            "NotoSCBold".to_owned(),
+        ]);
     context.set_fonts(fonts);
 }

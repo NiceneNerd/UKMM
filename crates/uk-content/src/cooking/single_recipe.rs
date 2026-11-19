@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use smartstring::{LazyCompact, SmartString};
 
 use crate::{
-    util::{DeleteVec, HashMap},
     Result, UKError,
+    util::{DeleteVec, HashMap},
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]

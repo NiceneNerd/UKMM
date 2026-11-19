@@ -1,9 +1,12 @@
 use anyhow::Context;
-use roead::{objs, params, aamp::{ParameterList, Parameter::String32}};
+use roead::{
+    aamp::{Parameter::String32, ParameterList},
+    objs, params,
+};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use crate::prelude::Mergeable;
-use crate::{UKError, Result};
+
+use crate::{Result, UKError, prelude::Mergeable};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct BlenderBone {
@@ -15,14 +18,23 @@ impl TryFrom<&ParameterList> for BlenderBone {
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            value: Some(value.objects
-                .get("BlenderBone0")
-                .ok_or(UKError::MissingAampKey("BlenderBone missing BlenderBone0", Box::from(None)))?
-                .get("Value0")
-                .ok_or(UKError::MissingAampKey("BlenderBone0 missing Value0", Box::from(None)))?
-                .as_str()
-                .context("BlenderBone0 has invalid Value0")?
-                .into()),
+            value: Some(
+                value
+                    .objects
+                    .get("BlenderBone0")
+                    .ok_or(UKError::MissingAampKey(
+                        "BlenderBone missing BlenderBone0",
+                        Box::from(None),
+                    ))?
+                    .get("Value0")
+                    .ok_or(UKError::MissingAampKey(
+                        "BlenderBone0 missing Value0",
+                        Box::from(None),
+                    ))?
+                    .as_str()
+                    .context("BlenderBone0 has invalid Value0")?
+                    .into(),
+            ),
         })
     }
 }
@@ -37,7 +49,7 @@ impl From<BlenderBone> for ParameterList {
                         .into())
                 )
             ),
-            lists: Default::default(),
+            lists:   Default::default(),
         }
     }
 }
@@ -46,7 +58,8 @@ impl Mergeable for BlenderBone {
     #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
-            value: other.value
+            value: other
+                .value
                 .ne(&self.value)
                 .then(|| other.value.clone())
                 .unwrap_or_default(),
@@ -55,8 +68,7 @@ impl Mergeable for BlenderBone {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            value: diff.value.clone()
-                .or_else(|| self.value.clone()),
+            value: diff.value.clone().or_else(|| self.value.clone()),
         }
     }
 }

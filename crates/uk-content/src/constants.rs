@@ -3,7 +3,6 @@ use std::{fmt, path::Path, str::FromStr};
 use join_str::jstr;
 use lighter::lighter;
 use serde::{Deserialize, Serialize};
-
 use uk_localization::LocLang;
 
 use crate::UKError;

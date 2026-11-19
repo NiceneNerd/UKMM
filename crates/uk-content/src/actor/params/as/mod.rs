@@ -1,7 +1,6 @@
 use std::sync::LazyLock;
-use anyhow::{anyhow, Context};
-use roead::aamp::{Name, ParameterList};
-use serde::{Deserialize, Serialize};
+
+use anyhow::{Context, anyhow};
 use ext_bit_index::BitIndex;
 use ext_blender_bone::BlenderBone;
 use ext_float_array::FloatArray;
@@ -21,9 +20,10 @@ use res_selector::SelectorResource;
 use res_seq_play::SequencePlayContainerResource;
 use res_skel_asset::SkeletalAssetResource;
 use res_type::ResType;
-use crate::prelude::Mergeable;
-use crate::util::HashMap;
-use crate::{UKError, Result};
+use roead::aamp::{Name, ParameterList};
+use serde::{Deserialize, Serialize};
+
+use crate::{Result, UKError, prelude::Mergeable, util::HashMap};
 
 pub(crate) mod anim_seq;
 mod ext_bit_index;
@@ -35,6 +35,7 @@ mod ext_int_array;
 mod ext_ranges;
 mod ext_string_array;
 mod ext_trigger_events;
+mod ext_type;
 mod res;
 mod res_asset;
 mod res_asset_ex;
@@ -45,46 +46,59 @@ mod res_seq_play;
 mod res_skel_asset;
 mod res_type;
 mod traverser;
-mod ext_type;
 
 pub(crate) fn get_child_index(hash: u32) -> Result<i32> {
-    static CHILD_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+    static CHILD_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(|| {
         minicbor_ser::from_slice(include_bytes!("../../../../data/child_hashes.bin"))
             .expect("child_hashes should not be broken")
-    );
-    CHILD_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Child# format or # is above 255"))
+    });
+    CHILD_HASHES
+        .get(&hash)
+        .copied()
+        .ok_or(UKError::Other("Key not of Child# format or # is above 255"))
 }
 
 pub(crate) fn get_element_index(hash: u32) -> Result<i32> {
-    static ELEMENT_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+    static ELEMENT_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(|| {
         minicbor_ser::from_slice(include_bytes!("../../../../data/element_hashes.bin"))
             .expect("element_hashes should not be broken")
-    );
-    ELEMENT_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Element# format or # is above 511"))
+    });
+    ELEMENT_HASHES.get(&hash).copied().ok_or(UKError::Other(
+        "Key not of Element# format or # is above 511",
+    ))
 }
 
 pub(crate) fn get_event_index(hash: u32) -> Result<i32> {
-    static EVENT_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+    static EVENT_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(|| {
         minicbor_ser::from_slice(include_bytes!("../../../../data/event_hashes.bin"))
             .expect("event_hashes should not be broken")
-    );
-    EVENT_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Event# format or # is above 255"))
+    });
+    EVENT_HASHES
+        .get(&hash)
+        .copied()
+        .ok_or(UKError::Other("Key not of Event# format or # is above 255"))
 }
 
 pub(crate) fn get_range_index(hash: u32) -> Result<i32> {
-    static RANGE_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+    static RANGE_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(|| {
         minicbor_ser::from_slice(include_bytes!("../../../../data/range_hashes.bin"))
             .expect("range_hashes should not be broken")
-    );
-    RANGE_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Range# format or # is above 255"))
+    });
+    RANGE_HASHES
+        .get(&hash)
+        .copied()
+        .ok_or(UKError::Other("Key not of Range# format or # is above 255"))
 }
 
 pub(crate) fn get_value_index(hash: u32) -> Result<i32> {
-    static VALUE_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(||
+    static VALUE_HASHES: LazyLock<HashMap<u32, i32>> = LazyLock::new(|| {
         minicbor_ser::from_slice(include_bytes!("../../../../data/value_hashes.bin"))
             .expect("value_hashes should not be broken")
-    );
-    VALUE_HASHES.get(&hash).copied().ok_or(UKError::Other("Key not of Value# format or # is above 255"))
+    });
+    VALUE_HASHES
+        .get(&hash)
+        .copied()
+        .ok_or(UKError::Other("Key not of Value# format or # is above 255"))
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -103,7 +117,8 @@ impl TryFrom<&ParameterList> for Element {
     type Error = UKError;
 
     fn try_from(value: &ParameterList) -> Result<Self> {
-        let type_index = value.objects
+        let type_index = value
+            .objects
             .get("Parameters")
             .context("Element missing Parameters")?
             .get("TypeIndex")
@@ -111,117 +126,120 @@ impl TryFrom<&ParameterList> for Element {
             .as_i32()
             .context("Element TypeIndex must be signed integer (e.g. TypeIndex: 67)")?;
         match type_index.into() {
-            ResType::AbsTemperatureBlender |
-            ResType::BoneBlender |
-            ResType::DiffAngleYBlender |
-            ResType::DirectionAngleBlender |
-            ResType::DistanceBlender |
-            ResType::ForwardBentBlender |
-            ResType::GroundNormalBlender |
-            ResType::GroundNormalSideBlender |
-            ResType::NoLoopStickAngleBlender |
-            ResType::RightStickAngleBlender |
-            ResType::RightStickValueBlender |
-            ResType::RightStickXBlender |
-            ResType::RightStickYBlender |
-            ResType::SizeBlender |
-            ResType::SpeedBlender |
-            ResType::StickAngleBlender |
-            ResType::StickValueBlender |
-            ResType::StickXBlender |
-            ResType::StickYBlender |
-            ResType::StressBlender |
-            ResType::TemperatureBlender |
-            ResType::TiredBlender |
-            ResType::UserAngle2Blender |
-            ResType::UserAngleBlender |
-            ResType::UserSpeedBlender |
-            ResType::WallAngleBlender |
-            ResType::WeightBlender |
-            ResType::WindVelocityBlender |
-            ResType::YSpeedBlender |
-            ResType::ZEx00ExposureBlender => Ok(Element::Blender(value.try_into()?)),
-            ResType::AbsTemperatureSelector |
-            ResType::ArmorSelector |
-            ResType::ArrowSelector |
-            ResType::AttentionSelector |
-            ResType::BoolSelector |
-            ResType::ButtonSelector |
-            ResType::ChargeSelector |
-            ResType::ComboSelector |
-            ResType::DiffAngleYSelector |
-            ResType::DirectionAngleSelector |
-            ResType::DistanceSelector |
-            ResType::DungeonClearSelector |
-            ResType::DungeonNumberSelector |
-            ResType::EmotionSelector |
-            ResType::EventFlagSelector |
-            ResType::EyeSelector |
-            ResType::EyebrowSelector |
-            ResType::FaceEmotionSelector |
-            ResType::FootBLLifeSelector |
-            ResType::FootBRLifeSelector |
-            ResType::FootFLLifeSelector |
-            ResType::FootFRLifeSelector |
-            ResType::ForwardBentSelector |
-            ResType::GearSelector |
-            ResType::GenerationSelector |
-            ResType::GrabTypeSelector |
-            ResType::GroundNormalSelector |
-            ResType::GroundNormalSideSelector |
-            ResType::MaskSelector |
-            ResType::MouthSelector |
-            ResType::NoLoopStickAngleSelector |
-            ResType::NodePosSelector |
-            ResType::PersonalitySelector |
-            ResType::PostureSelector |
-            ResType::PreASSelector |
-            ResType::PreExclusionRandomSelector |
-            ResType::RandomSelector |
-            ResType::RideSelector |
-            ResType::RightStickAngleSelector |
-            ResType::RightStickValueSelector |
-            ResType::RightStickXSelector |
-            ResType::RightStickYSelector |
-            ResType::SelfHeightSelector |
-            ResType::SelfWeightSelector |
-            ResType::SizeSelector |
-            ResType::SpeedSelector |
-            ResType::StickAngleSelector |
-            ResType::StickValueSelector |
-            ResType::StickXSelector |
-            ResType::StickYSelector |
-            ResType::StressSelector |
-            ResType::TemperatureSelector |
-            ResType::TimeSelector |
-            ResType::TiredSelector |
-            ResType::UseItemSelector |
-            ResType::UserAngle2Selector |
-            ResType::UserAngleSelector |
-            ResType::UserSpeedSelector |
-            ResType::VariationSelector |
-            ResType::WallAngleSelector |
-            ResType::WeaponDetailSelector |
-            ResType::WeaponSelector |
-            ResType::WeatherSelector |
-            ResType::WeightSelector |
-            ResType::YSpeedSelector |
-            ResType::ZEx00ExposureSelector => Ok(Element::Selector(value.try_into()?)),
-            ResType::BoneVisibilityAsset |
-            ResType::MatVisibilityAsset |
-            ResType::ShaderParamAsset |
-            ResType::ShaderParamColorAsset |
-            ResType::ShaderParamTexSRTAsset |
-            ResType::TexturePatternAsset => Ok(Element::AssetEx(value.try_into()?)),
-            ResType::ClearMatAnmAsset |
-            ResType::NoAnmAsset => Ok(Element::Resource(value.try_into()?)),
+            ResType::AbsTemperatureBlender
+            | ResType::BoneBlender
+            | ResType::DiffAngleYBlender
+            | ResType::DirectionAngleBlender
+            | ResType::DistanceBlender
+            | ResType::ForwardBentBlender
+            | ResType::GroundNormalBlender
+            | ResType::GroundNormalSideBlender
+            | ResType::NoLoopStickAngleBlender
+            | ResType::RightStickAngleBlender
+            | ResType::RightStickValueBlender
+            | ResType::RightStickXBlender
+            | ResType::RightStickYBlender
+            | ResType::SizeBlender
+            | ResType::SpeedBlender
+            | ResType::StickAngleBlender
+            | ResType::StickValueBlender
+            | ResType::StickXBlender
+            | ResType::StickYBlender
+            | ResType::StressBlender
+            | ResType::TemperatureBlender
+            | ResType::TiredBlender
+            | ResType::UserAngle2Blender
+            | ResType::UserAngleBlender
+            | ResType::UserSpeedBlender
+            | ResType::WallAngleBlender
+            | ResType::WeightBlender
+            | ResType::WindVelocityBlender
+            | ResType::YSpeedBlender
+            | ResType::ZEx00ExposureBlender => Ok(Element::Blender(value.try_into()?)),
+            ResType::AbsTemperatureSelector
+            | ResType::ArmorSelector
+            | ResType::ArrowSelector
+            | ResType::AttentionSelector
+            | ResType::BoolSelector
+            | ResType::ButtonSelector
+            | ResType::ChargeSelector
+            | ResType::ComboSelector
+            | ResType::DiffAngleYSelector
+            | ResType::DirectionAngleSelector
+            | ResType::DistanceSelector
+            | ResType::DungeonClearSelector
+            | ResType::DungeonNumberSelector
+            | ResType::EmotionSelector
+            | ResType::EventFlagSelector
+            | ResType::EyeSelector
+            | ResType::EyebrowSelector
+            | ResType::FaceEmotionSelector
+            | ResType::FootBLLifeSelector
+            | ResType::FootBRLifeSelector
+            | ResType::FootFLLifeSelector
+            | ResType::FootFRLifeSelector
+            | ResType::ForwardBentSelector
+            | ResType::GearSelector
+            | ResType::GenerationSelector
+            | ResType::GrabTypeSelector
+            | ResType::GroundNormalSelector
+            | ResType::GroundNormalSideSelector
+            | ResType::MaskSelector
+            | ResType::MouthSelector
+            | ResType::NoLoopStickAngleSelector
+            | ResType::NodePosSelector
+            | ResType::PersonalitySelector
+            | ResType::PostureSelector
+            | ResType::PreASSelector
+            | ResType::PreExclusionRandomSelector
+            | ResType::RandomSelector
+            | ResType::RideSelector
+            | ResType::RightStickAngleSelector
+            | ResType::RightStickValueSelector
+            | ResType::RightStickXSelector
+            | ResType::RightStickYSelector
+            | ResType::SelfHeightSelector
+            | ResType::SelfWeightSelector
+            | ResType::SizeSelector
+            | ResType::SpeedSelector
+            | ResType::StickAngleSelector
+            | ResType::StickValueSelector
+            | ResType::StickXSelector
+            | ResType::StickYSelector
+            | ResType::StressSelector
+            | ResType::TemperatureSelector
+            | ResType::TimeSelector
+            | ResType::TiredSelector
+            | ResType::UseItemSelector
+            | ResType::UserAngle2Selector
+            | ResType::UserAngleSelector
+            | ResType::UserSpeedSelector
+            | ResType::VariationSelector
+            | ResType::WallAngleSelector
+            | ResType::WeaponDetailSelector
+            | ResType::WeaponSelector
+            | ResType::WeatherSelector
+            | ResType::WeightSelector
+            | ResType::YSpeedSelector
+            | ResType::ZEx00ExposureSelector => Ok(Element::Selector(value.try_into()?)),
+            ResType::BoneVisibilityAsset
+            | ResType::MatVisibilityAsset
+            | ResType::ShaderParamAsset
+            | ResType::ShaderParamColorAsset
+            | ResType::ShaderParamTexSRTAsset
+            | ResType::TexturePatternAsset => Ok(Element::AssetEx(value.try_into()?)),
+            ResType::ClearMatAnmAsset | ResType::NoAnmAsset => {
+                Ok(Element::Resource(value.try_into()?))
+            }
             ResType::SequencePlayContainer => Ok(Element::SequencePlayContainer(value.try_into()?)),
             ResType::SkeletalAsset => Ok(Element::SkeletalAsset(value.try_into()?)),
             ResType::SyncPlayContainer => Ok(Element::ResourceWithChildren(value.try_into()?)),
-            ResType::Invalid => Err(UKError::Any(anyhow!(
-                "Bas file has invalid Element (TypeIndex: {})",
-                type_index
-            ))),
+            ResType::Invalid => {
+                Err(UKError::Any(anyhow!(
+                    "Bas file has invalid Element (TypeIndex: {})",
+                    type_index
+                )))
+            }
         }
     }
 }
@@ -273,20 +291,59 @@ impl TryFrom<(&Name, &ParameterList)> for Extension {
     fn try_from(value: (&Name, &ParameterList)) -> Result<Self> {
         let (n, l) = value;
         match n.hash() {
-            4007221886 => Ok(Extension::FrameCtrl(l.try_into().context("Extension has invalid FrameCtrl")?)),
-            679723989 => Ok(Extension::TriggerEvents(l.try_into().context("Extension has invalid TriggerEvents")?)),
-            4033433482 => Ok(Extension::HoldEvents(l.try_into().context("Extension has invalid HoldEvents")?)),
-            203374876 => Ok(Extension::StringArray(l.try_into().context("Extension has invalid StringArray")?)),
-            322024531 => Ok(Extension::Ranges(l.try_into().context("Extension has invalid Ranges")?)),
-            3627016478 => Ok(Extension::FloatArray(l.try_into().context("Extension has invalid FloatArray")?)),
-            3190114414 => Ok(Extension::IntArray(l.try_into().context("Extension has invalid IntArray")?)),
-            127394560 => Ok(Extension::BitIndex(l.try_into().context("Extension has invalid BitIndex")?)),
-            3977185723 => Ok(Extension::BlenderBone(l.try_into().context("Extension has invalid BlenderBone")?)),
-            _ => Err(UKError::Any(anyhow!(
-                "Extension has invalid key: {}, hash: {}",
-                n,
-                n.hash()
-            ))),
+            4007221886 => {
+                Ok(Extension::FrameCtrl(
+                    l.try_into().context("Extension has invalid FrameCtrl")?,
+                ))
+            }
+            679723989 => {
+                Ok(Extension::TriggerEvents(
+                    l.try_into()
+                        .context("Extension has invalid TriggerEvents")?,
+                ))
+            }
+            4033433482 => {
+                Ok(Extension::HoldEvents(
+                    l.try_into().context("Extension has invalid HoldEvents")?,
+                ))
+            }
+            203374876 => {
+                Ok(Extension::StringArray(
+                    l.try_into().context("Extension has invalid StringArray")?,
+                ))
+            }
+            322024531 => {
+                Ok(Extension::Ranges(
+                    l.try_into().context("Extension has invalid Ranges")?,
+                ))
+            }
+            3627016478 => {
+                Ok(Extension::FloatArray(
+                    l.try_into().context("Extension has invalid FloatArray")?,
+                ))
+            }
+            3190114414 => {
+                Ok(Extension::IntArray(
+                    l.try_into().context("Extension has invalid IntArray")?,
+                ))
+            }
+            127394560 => {
+                Ok(Extension::BitIndex(
+                    l.try_into().context("Extension has invalid BitIndex")?,
+                ))
+            }
+            3977185723 => {
+                Ok(Extension::BlenderBone(
+                    l.try_into().context("Extension has invalid BlenderBone")?,
+                ))
+            }
+            _ => {
+                Err(UKError::Any(anyhow!(
+                    "Extension has invalid key: {}, hash: {}",
+                    n,
+                    n.hash()
+                )))
+            }
         }
     }
 }
@@ -310,48 +367,50 @@ impl From<Extension> for (&str, ParameterList) {
 impl Mergeable for Extension {
     fn diff(&self, other: &Self) -> Self {
         match (self, other) {
-            (Extension::FrameCtrl(a), Extension::FrameCtrl(b)) =>
-                Extension::FrameCtrl(a.diff(b)),
-            (Extension::TriggerEvents(a), Extension::TriggerEvents(b)) =>
-                Extension::TriggerEvents(a.diff(b)),
-            (Extension::HoldEvents(a), Extension::HoldEvents(b)) =>
-                Extension::HoldEvents(a.diff(b)),
-            (Extension::StringArray(a), Extension::StringArray(b)) =>
-                Extension::StringArray(a.diff(b)),
-            (Extension::Ranges(a), Extension::Ranges(b)) =>
-                Extension::Ranges(a.diff(b)),
-            (Extension::FloatArray(a), Extension::FloatArray(b)) =>
-                Extension::FloatArray(a.diff(b)),
-            (Extension::IntArray(a), Extension::IntArray(b)) =>
-                Extension::IntArray(a.diff(b)),
-            (Extension::BitIndex(a), Extension::BitIndex(b)) =>
-                Extension::BitIndex(a.diff(b)),
-            (Extension::BlenderBone(a), Extension::BlenderBone(b)) =>
-                Extension::BlenderBone(a.diff(b)),
+            (Extension::FrameCtrl(a), Extension::FrameCtrl(b)) => Extension::FrameCtrl(a.diff(b)),
+            (Extension::TriggerEvents(a), Extension::TriggerEvents(b)) => {
+                Extension::TriggerEvents(a.diff(b))
+            }
+            (Extension::HoldEvents(a), Extension::HoldEvents(b)) => {
+                Extension::HoldEvents(a.diff(b))
+            }
+            (Extension::StringArray(a), Extension::StringArray(b)) => {
+                Extension::StringArray(a.diff(b))
+            }
+            (Extension::Ranges(a), Extension::Ranges(b)) => Extension::Ranges(a.diff(b)),
+            (Extension::FloatArray(a), Extension::FloatArray(b)) => {
+                Extension::FloatArray(a.diff(b))
+            }
+            (Extension::IntArray(a), Extension::IntArray(b)) => Extension::IntArray(a.diff(b)),
+            (Extension::BitIndex(a), Extension::BitIndex(b)) => Extension::BitIndex(a.diff(b)),
+            (Extension::BlenderBone(a), Extension::BlenderBone(b)) => {
+                Extension::BlenderBone(a.diff(b))
+            }
             _ => panic!("Attempted to diff invalid Extensions!"),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         match (self, diff) {
-            (Extension::FrameCtrl(a), Extension::FrameCtrl(b)) =>
-                Extension::FrameCtrl(a.merge(b)),
-            (Extension::TriggerEvents(a), Extension::TriggerEvents(b)) =>
-                Extension::TriggerEvents(a.merge(b)),
-            (Extension::HoldEvents(a), Extension::HoldEvents(b)) =>
-                Extension::HoldEvents(a.merge(b)),
-            (Extension::StringArray(a), Extension::StringArray(b)) =>
-                Extension::StringArray(a.merge(b)),
-            (Extension::Ranges(a), Extension::Ranges(b)) =>
-                Extension::Ranges(a.merge(b)),
-            (Extension::FloatArray(a), Extension::FloatArray(b)) =>
-                Extension::FloatArray(a.merge(b)),
-            (Extension::IntArray(a), Extension::IntArray(b)) =>
-                Extension::IntArray(a.merge(b)),
-            (Extension::BitIndex(a), Extension::BitIndex(b)) =>
-                Extension::BitIndex(a.merge(b)),
-            (Extension::BlenderBone(a), Extension::BlenderBone(b)) =>
-                Extension::BlenderBone(a.merge(b)),
+            (Extension::FrameCtrl(a), Extension::FrameCtrl(b)) => Extension::FrameCtrl(a.merge(b)),
+            (Extension::TriggerEvents(a), Extension::TriggerEvents(b)) => {
+                Extension::TriggerEvents(a.merge(b))
+            }
+            (Extension::HoldEvents(a), Extension::HoldEvents(b)) => {
+                Extension::HoldEvents(a.merge(b))
+            }
+            (Extension::StringArray(a), Extension::StringArray(b)) => {
+                Extension::StringArray(a.merge(b))
+            }
+            (Extension::Ranges(a), Extension::Ranges(b)) => Extension::Ranges(a.merge(b)),
+            (Extension::FloatArray(a), Extension::FloatArray(b)) => {
+                Extension::FloatArray(a.merge(b))
+            }
+            (Extension::IntArray(a), Extension::IntArray(b)) => Extension::IntArray(a.merge(b)),
+            (Extension::BitIndex(a), Extension::BitIndex(b)) => Extension::BitIndex(a.merge(b)),
+            (Extension::BlenderBone(a), Extension::BlenderBone(b)) => {
+                Extension::BlenderBone(a.merge(b))
+            }
             _ => panic!("Attempted to merge invalid Extensions!"),
         }
     }

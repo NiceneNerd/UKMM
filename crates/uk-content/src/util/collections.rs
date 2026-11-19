@@ -67,8 +67,8 @@ impl<T: Clone + PartialEq> PartialEq for DeleteVec<T> {
 }
 
 impl<T: Clone + PartialEq> IntoIterator for DeleteVec<T> {
-    type Item = T;
     type IntoIter = DeleteIterator<vec::IntoIter<(T, bool)>, T>;
+    type Item = T;
 
     fn into_iter(self) -> Self::IntoIter {
         DeleteIterator {
@@ -178,8 +178,8 @@ impl<T: Clone + PartialEq> Mergeable for DeleteVec<T> {
 pub struct DeleteSet<T: DeleteKey>(IndexMap<T, bool>);
 
 impl<T: DeleteKey> IntoIterator for DeleteSet<T> {
-    type Item = T;
     type IntoIter = DeleteIterator<indexmap::map::IntoIter<T, bool>, T>;
+    type Item = T;
 
     fn into_iter(self) -> Self::IntoIter {
         DeleteIterator {
@@ -307,8 +307,8 @@ impl<T: DeleteKey> Mergeable for DeleteSet<T> {
 pub struct SortedDeleteSet<T: DeleteKey + Ord>(BTreeMap<T, bool>);
 
 impl<T: DeleteKey + Ord> IntoIterator for SortedDeleteSet<T> {
-    type Item = T;
     type IntoIter = DeleteIterator<std::collections::btree_map::IntoIter<T, bool>, T>;
+    type Item = T;
 
     fn into_iter(self) -> Self::IntoIter {
         DeleteIterator {
@@ -421,7 +421,8 @@ impl<T: DeleteKey + Ord> Mergeable for SortedDeleteSet<T> {
                 .chain(other.0.keys())
                 .map(|k| (k.clone(), other.0.get(k).copied().unwrap_or(false)))
                 .collect(),
-        ).and_delete()
+        )
+        .and_delete()
     }
 }
 

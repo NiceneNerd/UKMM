@@ -8,7 +8,7 @@ use roead::{
 };
 use uk_content::util::merge_plist;
 
-use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
+use super::{AampDiffEntry, BnpConverter, parse_aamp_diff};
 
 fn handle_diff_entry(
     sarc: &mut SarcWriter,
@@ -16,9 +16,7 @@ fn handle_diff_entry(
     contents: &AampDiffEntry,
 ) -> Result<()> {
     let empty = ParameterIO::new().to_binary();
-    let nested_bytes = sarc
-        .get_file(nest_root)
-        .unwrap_or(&empty);
+    let nested_bytes = sarc.get_file(nest_root).unwrap_or(&empty);
     match contents {
         AampDiffEntry::Sarc(nest_map) => {
             let mut nest_sarc = SarcWriter::from_sarc(&Sarc::new(nested_bytes)?);
@@ -47,7 +45,7 @@ impl BnpConverter {
         if deepmerge_path.exists() {
             log::debug!("Processing deepmerge log");
             let data = fs::read(&deepmerge_path)?;
-            let pio  = match &data[0..4] {
+            let pio = match &data[0..4] {
                 b"AAMP" => ParameterIO::from_binary(data),
                 _ => ParameterIO::from_text(fs::read_to_string(&deepmerge_path)?),
             }?;

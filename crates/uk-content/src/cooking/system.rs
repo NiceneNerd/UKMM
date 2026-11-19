@@ -1,9 +1,9 @@
 use anyhow::Context;
-use roead::byml::{map, Byml};
+use roead::byml::{Byml, map};
 use serde::{Deserialize, Serialize};
 use smartstring::{LazyCompact, SmartString};
 
-use crate::{prelude::Mergeable, util::DeleteVec, Result, UKError};
+use crate::{Result, UKError, prelude::Mergeable, util::DeleteVec};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 

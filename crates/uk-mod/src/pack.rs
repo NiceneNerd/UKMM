@@ -2,8 +2,9 @@ use std::{
     collections::{BTreeSet, HashSet},
     io::Write,
     path::{Path, PathBuf},
-    sync::{atomic::AtomicUsize, Arc, LazyLock},
+    sync::{Arc, LazyLock, atomic::AtomicUsize},
 };
+
 use anyhow_ext::{Context, Result};
 use botw_utils::hashes::StockHashTable;
 use fs_err as fs;
@@ -15,19 +16,19 @@ use rayon::prelude::*;
 use roead::{sarc::Sarc, yaz0::decompress_if};
 pub use sanitise_file_name::sanitise;
 use serde::Deserialize;
-use serde_with::{serde_as, DefaultOnError};
+use serde_with::{DefaultOnError, serde_as};
 use smartstring::alias::String;
 use uk_content::{
     canonicalize,
     constants::Language,
     platform_prefixes,
     prelude::{Endian, Mergeable},
-    resource::{is_mergeable_sarc, ResourceData},
+    resource::{ResourceData, is_mergeable_sarc},
 };
 use uk_util::PathExt as UkPathExt;
 use zip::{
-    write::{FileOptions, SimpleFileOptions},
     ZipWriter as ZipW,
+    write::{FileOptions, SimpleFileOptions},
 };
 
 use crate::{
@@ -291,9 +292,10 @@ impl ModPacker {
                 },
                 meta,
                 built_resources: Default::default(),
-                compressor: Arc::new(Mutex::new(
-                    zstd::bulk::Compressor::with_dictionary(8, super::DICTIONARY)?,
-                )),
+                compressor: Arc::new(Mutex::new(zstd::bulk::Compressor::with_dictionary(
+                    8,
+                    super::DICTIONARY,
+                )?)),
                 _zip_opts: FileOptions::default()
                     .compression_method(zip::CompressionMethod::Stored),
                 _out_file: dest_file,
@@ -315,12 +317,14 @@ impl ModPacker {
             let mut zip = self.zip.lock();
             match zip.start_file(zip_path.to_slash_lossy(), self._zip_opts) {
                 Ok(_) => zip.write_all(&self.compressor.lock().compress(&data)?)?,
-                Err(e) => if let zip::result::ZipError::InvalidArchive(message) = &e
-                    && message.starts_with("Duplicate filename") {
-                    log::warn!("Attempted to duplicate resource {}, skipping", canon);
-                }
-                else {
-                    return Err(e.into());
+                Err(e) => {
+                    if let zip::result::ZipError::InvalidArchive(message) = &e
+                        && message.starts_with("Duplicate filename")
+                    {
+                        log::warn!("Attempted to duplicate resource {}, skipping", canon);
+                    } else {
+                        return Err(e.into());
+                    }
                 }
             }
         }
@@ -439,7 +443,10 @@ impl ModPacker {
             return Ok(());
         }
         if canon.starts_with("Pack/Bootup_") {
-            log::trace!("{} must always contain the same single file, skipping direct processing", &canon);
+            log::trace!(
+                "{} must always contain the same single file, skipping direct processing",
+                &canon
+            );
             return Ok(());
         }
         if resource.as_binary().is_some() && self.meta.platform == ModPlatform::Universal {
@@ -456,31 +463,27 @@ impl ModPacker {
             .trim_start_matches(prefixes.0)
             .trim_start_matches(prefixes.1)
             .trim_start_matches('/');
-        let reference = self
-            .masters
-            .iter()
-            .rev()
-            .find_map(|master| {
-                master
-                    .get_data(name.as_str())
-                    .or_else(|err| {
-                        log::trace!("{err}");
-                        if let Some(lang) = canon
-                            .starts_with("Message/Msg_")
-                            .then(|| Language::from_message_path(ref_name.as_ref()))
-                            .flatten()
-                        {
-                            let languages = master.languages();
-                            match languages.iter().find(|l| l.short() == lang.short()) {
-                                Some(ref_lang) => master.get_data(ref_lang.message_path().as_str()),
-                                None => Err(err),
-                            }
-                        } else {
-                            Err(err)
+        let reference = self.masters.iter().rev().find_map(|master| {
+            master
+                .get_data(name.as_str())
+                .or_else(|err| {
+                    log::trace!("{err}");
+                    if let Some(lang) = canon
+                        .starts_with("Message/Msg_")
+                        .then(|| Language::from_message_path(ref_name.as_ref()))
+                        .flatten()
+                    {
+                        let languages = master.languages();
+                        match languages.iter().find(|l| l.short() == lang.short()) {
+                            Some(ref_lang) => master.get_data(ref_lang.message_path().as_str()),
+                            None => Err(err),
                         }
-                    })
-                    .ok()
-            });
+                    } else {
+                        Err(err)
+                    }
+                })
+                .ok()
+        });
         log::trace!("Resource {} has a master: {}", &canon, reference.is_some());
         if let (Some(res), Some(ref_res)) = (
             resource.as_mergeable(),
@@ -505,7 +508,8 @@ impl ModPacker {
         } else if let (Some(bin), Some(ref_bin)) = (
             resource.as_binary(),
             reference.as_ref().and_then(|rrd| rrd.as_binary()),
-        ) && ref_bin == bin {
+        ) && ref_bin == bin
+        {
             log::trace!("{} not modded, skipping", &canon);
             return Ok(());
         }
@@ -523,9 +527,11 @@ impl ModPacker {
             let name = file
                 .name()
                 .with_context(|| jstr!("File in SARC missing name"))
-                .map(|n| match is_aoc {
-                    true => format!("Aoc/0010/{n}"),
-                    false => n.to_owned(),
+                .map(|n| {
+                    match is_aoc {
+                        true => format!("Aoc/0010/{n}"),
+                        false => n.to_owned(),
+                    }
                 })?;
             let canon = canonicalize(&name);
             let file_data = decompress_if(file.data);
@@ -555,15 +561,10 @@ impl ModPacker {
                     &canon,
                     path.display()
                 );
-                self.process_sarc(
-                    Sarc::new(file_data)?,
-                    name.as_ref(),
-                    is_new_sarc,
-                    is_aoc,
-                )
-                .with_context(|| {
-                    jstr!("Failed to process {&canon} in SARC {&path.display().to_string()}")
-                })?;
+                self.process_sarc(Sarc::new(file_data)?, name.as_ref(), is_new_sarc, is_aoc)
+                    .with_context(|| {
+                        jstr!("Failed to process {&canon} in SARC {&path.display().to_string()}")
+                    })?;
             }
         }
         Ok(())

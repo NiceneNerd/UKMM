@@ -5,10 +5,10 @@ use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
 
 use crate::{
+    Result, UKError,
     actor::{InfoSource, ParameterResource},
     prelude::*,
     util::{DeleteMap, IteratorExt},
-    Result, UKError,
 };
 
 type RecipeTable = DeleteMap<String64, u8>;
@@ -21,9 +21,10 @@ impl TryFrom<&ParameterIO> for Recipe {
     type Error = UKError;
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
-        let header = pio
-            .object("Header")
-            .ok_or(UKError::MissingAampKey("Recipe missing header", Box::from(None)))?;
+        let header = pio.object("Header").ok_or(UKError::MissingAampKey(
+            "Recipe missing header",
+            Box::from(None),
+        ))?;
         let table_count = header
             .get("TableNum")
             .ok_or(UKError::MissingAampKey(

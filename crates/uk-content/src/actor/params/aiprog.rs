@@ -13,10 +13,10 @@ use uk_content_derive::ParamData;
 use uk_util::OptionResultExt;
 
 use crate::{
+    Result, UKError,
     actor::ParameterResource,
     prelude::*,
     util::{self, HashMap, IndexMap, IndexSet},
-    Result, UKError,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -205,9 +205,10 @@ impl<'a> Parser<'a> {
                 "AI program missing DemoAIActionIdx",
                 Box::from(None),
             ))?;
-        let ais = pio
-            .list("AI")
-            .ok_or(UKError::MissingAampKey("AI program missing AI list", Box::from(None)))?;
+        let ais = pio.list("AI").ok_or(UKError::MissingAampKey(
+            "AI program missing AI list",
+            Box::from(None),
+        ))?;
         let action_offset = ais.lists.len();
         let actions = pio.list("Action").ok_or(UKError::MissingAampKey(
             "AI program missing Action list",
@@ -429,7 +430,10 @@ impl<'a> Parser<'a> {
                         .name
                         .as_ref()
                         .ok_or_else(|| {
-                            UKError::MissingAampKey("AI entry def missing name", Box::from(Some(list.into())))
+                            UKError::MissingAampKey(
+                                "AI entry def missing name",
+                                Box::from(Some(list.into())),
+                            )
                         })?
                         .clone(),
                     entry,
@@ -556,7 +560,8 @@ impl Writer {
                             .get_mut(&name)
                             .unwrap_or_else(|| panic!("Err line 557: {}", &name))
                             .object_mut("ChildIdx")
-                            .unwrap_or_else(|| panic!("Err line 559: ChildIdx inside {}", &name)) = children;
+                            .unwrap_or_else(|| panic!("Err line 559: ChildIdx inside {}", &name)) =
+                            children;
                     }
                     self.finished.insert(def, index);
                     index
@@ -576,7 +581,8 @@ impl Writer {
                             .get_mut(&name)
                             .unwrap_or_else(|| panic!("Err line 577: {}", &name))
                             .object_mut("ChildIdx")
-                            .unwrap_or_else(|| panic!("Err line 579: ChildIdx inside {}", &name)) = children;
+                            .unwrap_or_else(|| panic!("Err line 579: ChildIdx inside {}", &name)) =
+                            children;
                     }
                     self.finished.insert(def, index);
                     index

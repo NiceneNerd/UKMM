@@ -1,14 +1,16 @@
 use anyhow::Context;
-use roead::{params, aamp::{ParameterList, ParameterObject}};
+use roead::{
+    aamp::{ParameterList, ParameterObject},
+    params,
+};
 use serde::{Deserialize, Serialize};
-use crate::prelude::Mergeable;
-use crate::{UKError, Result};
-use crate::util::DeleteMap;
+
+use crate::{Result, UKError, prelude::Mergeable, util::DeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 struct Range {
     start: Option<f32>,
-    end: Option<f32>,
+    end:   Option<f32>,
 }
 
 impl TryFrom<&ParameterObject> for Range {
@@ -16,16 +18,26 @@ impl TryFrom<&ParameterObject> for Range {
 
     fn try_from(value: &ParameterObject) -> Result<Self> {
         Ok(Self {
-            start: Some(value
-                .get("Start")
-                .ok_or(UKError::MissingAampKey("Range missing Start", Box::from(None)))?
-                .as_f32()
-                .context("Range has invalid Start")?),
-            end: Some(value
-                .get("End")
-                .ok_or(UKError::MissingAampKey("Range missing End", Box::from(None)))?
-                .as_f32()
-                .context("Range has invalid End")?),
+            start: Some(
+                value
+                    .get("Start")
+                    .ok_or(UKError::MissingAampKey(
+                        "Range missing Start",
+                        Box::from(None),
+                    ))?
+                    .as_f32()
+                    .context("Range has invalid Start")?,
+            ),
+            end:   Some(
+                value
+                    .get("End")
+                    .ok_or(UKError::MissingAampKey(
+                        "Range missing End",
+                        Box::from(None),
+                    ))?
+                    .as_f32()
+                    .context("Range has invalid End")?,
+            ),
         })
     }
 }
@@ -43,11 +55,13 @@ impl Mergeable for Range {
     #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
-            start: other.start
+            start: other
+                .start
                 .ne(&self.start)
                 .then_some(other.start)
                 .unwrap_or_default(),
-            end: other.end
+            end:   other
+                .end
                 .ne(&self.end)
                 .then_some(other.end)
                 .unwrap_or_default(),
@@ -56,10 +70,8 @@ impl Mergeable for Range {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            start: diff.start
-                .or(self.start),
-            end: diff.end
-                .or(self.end),
+            start: diff.start.or(self.start),
+            end:   diff.end.or(self.end),
         }
     }
 }
@@ -74,11 +86,13 @@ impl TryFrom<&ParameterList> for Ranges {
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            ranges: value.objects.iter()
+            ranges: value
+                .objects
+                .iter()
                 .map(|(n, v)| -> Result<(i32, Range)> {
                     Ok((
                         super::get_range_index(n.hash())?,
-                        v.try_into().context("Ranges has invalid Range")?
+                        v.try_into().context("Ranges has invalid Range")?,
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -89,11 +103,12 @@ impl TryFrom<&ParameterList> for Ranges {
 impl From<Ranges> for ParameterList {
     fn from(value: Ranges) -> Self {
         Self {
-            objects: value.ranges
+            objects: value
+                .ranges
                 .into_iter()
                 .map(|(i, r)| (format!("Range{}", i), r.into()))
                 .collect(),
-            lists: Default::default(),
+            lists:   Default::default(),
         }
     }
 }

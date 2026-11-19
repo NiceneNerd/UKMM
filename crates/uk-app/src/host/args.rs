@@ -17,10 +17,12 @@ pub enum ArgAction {
 /// Classifies `arg` (typically `std::env::args().nth(1)`).
 pub fn classify_arg(arg: Option<String>) -> ArgAction {
     match arg {
-        Some(arg) => match arg.strip_prefix("bcml:") {
-            Some(url) => ArgAction::OneClick(url.to_owned()),
-            None => ArgAction::ModPath(arg.into()),
-        },
+        Some(arg) => {
+            match arg.strip_prefix("bcml:") {
+                Some(url) => ArgAction::OneClick(url.to_owned()),
+                None => ArgAction::ModPath(arg.into()),
+            }
+        }
         None => ArgAction::None,
     }
 }

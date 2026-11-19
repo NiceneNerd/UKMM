@@ -1,9 +1,10 @@
-use super::Element;
 use anyhow::anyhow;
-use crate::{UKError, Result};
+
+use super::Element;
+use crate::{Result, UKError};
 
 pub struct Traverser<'a> {
-    elements: &'a Vec<&'a Element>,
+    elements:  &'a Vec<&'a Element>,
     traversed: Vec<i32>,
 }
 
@@ -23,13 +24,22 @@ impl<'a> Traverser<'a> {
     }
 
     pub fn traverse(&mut self, index: i32) -> Result<()> {
-        for idx in self.elements
+        for idx in self
+            .elements
             .get(index as usize)
-            .ok_or(anyhow!("Reference index out of bounds! {:?} -> {}", self.traversed, index))?
+            .ok_or(anyhow!(
+                "Reference index out of bounds! {:?} -> {}",
+                self.traversed,
+                index
+            ))?
             .children()
         {
             if self.traversed.contains(idx) {
-                return Err(UKError::Any(anyhow!("Traversal loop found! {:?} -> {}", self.traversed, *idx)));
+                return Err(UKError::Any(anyhow!(
+                    "Traversal loop found! {:?} -> {}",
+                    self.traversed,
+                    *idx
+                )));
             }
             let mut traversed = self.traversed.clone();
             traversed.push(*idx);

@@ -1,10 +1,12 @@
 use anyhow::Context;
-use roead::{params, aamp::{ParameterList, ParameterObject, Parameter::String32}};
+use roead::{
+    aamp::{Parameter::String32, ParameterList, ParameterObject},
+    params,
+};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use crate::prelude::Mergeable;
-use crate::{UKError, Result};
-use crate::util::DeleteMap;
+
+use crate::{Result, UKError, prelude::Mergeable, util::DeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct HoldEvent {
@@ -19,27 +21,47 @@ impl TryFrom<&ParameterObject> for HoldEvent {
 
     fn try_from(value: &ParameterObject) -> Result<Self> {
         Ok(Self {
-            type_index: Some(value
-                .get("TypeIndex")
-                .ok_or(UKError::MissingAampKey("HoldEvent missing TypeIndex", Box::from(None)))?
-                .as_i32()
-                .context("HoldEvent has invalid TypeIndex")?),
-            start_frame: Some(value
-                .get("StartFrame")
-                .ok_or(UKError::MissingAampKey("HoldEvent missing StartFrame", Box::from(None)))?
-                .as_f32()
-                .context("HoldEvent has invalid StartFrame")?),
-            end_frame: Some(value
-                .get("EndFrame")
-                .ok_or(UKError::MissingAampKey("HoldEvent missing EndFrame", Box::from(None)))?
-                .as_f32()
-                .context("HoldEvent has invalid EndFrame")?),
-            value: Some(value
-                .get("Value")
-                .ok_or(UKError::MissingAampKey("HoldEvent missing Value", Box::from(None)))?
-                .as_str()
-                .context("HoldEvent has invalid Value")?
-                .into()),
+            type_index: Some(
+                value
+                    .get("TypeIndex")
+                    .ok_or(UKError::MissingAampKey(
+                        "HoldEvent missing TypeIndex",
+                        Box::from(None),
+                    ))?
+                    .as_i32()
+                    .context("HoldEvent has invalid TypeIndex")?,
+            ),
+            start_frame: Some(
+                value
+                    .get("StartFrame")
+                    .ok_or(UKError::MissingAampKey(
+                        "HoldEvent missing StartFrame",
+                        Box::from(None),
+                    ))?
+                    .as_f32()
+                    .context("HoldEvent has invalid StartFrame")?,
+            ),
+            end_frame: Some(
+                value
+                    .get("EndFrame")
+                    .ok_or(UKError::MissingAampKey(
+                        "HoldEvent missing EndFrame",
+                        Box::from(None),
+                    ))?
+                    .as_f32()
+                    .context("HoldEvent has invalid EndFrame")?,
+            ),
+            value: Some(
+                value
+                    .get("Value")
+                    .ok_or(UKError::MissingAampKey(
+                        "HoldEvent missing Value",
+                        Box::from(None),
+                    ))?
+                    .as_str()
+                    .context("HoldEvent has invalid Value")?
+                    .into(),
+            ),
         })
     }
 }
@@ -67,19 +89,23 @@ impl Mergeable for HoldEvent {
     #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
-            type_index: other.type_index
+            type_index: other
+                .type_index
                 .ne(&self.type_index)
                 .then_some(other.type_index)
                 .unwrap_or_default(),
-            start_frame: other.start_frame
+            start_frame: other
+                .start_frame
                 .ne(&self.start_frame)
                 .then_some(other.start_frame)
                 .unwrap_or_default(),
-            end_frame: other.end_frame
+            end_frame: other
+                .end_frame
                 .ne(&self.end_frame)
                 .then_some(other.end_frame)
                 .unwrap_or_default(),
-            value: other.value
+            value: other
+                .value
                 .ne(&self.value)
                 .then(|| other.value.clone())
                 .unwrap_or_default(),
@@ -88,14 +114,10 @@ impl Mergeable for HoldEvent {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            type_index: diff.type_index
-                .or(self.type_index),
-            start_frame: diff.start_frame
-                .or(self.start_frame),
-            end_frame: diff.end_frame
-                .or(self.end_frame),
-            value: diff.value.clone()
-                .or_else(|| self.value.clone()),
+            type_index: diff.type_index.or(self.type_index),
+            start_frame: diff.start_frame.or(self.start_frame),
+            end_frame: diff.end_frame.or(self.end_frame),
+            value: diff.value.clone().or_else(|| self.value.clone()),
         }
     }
 }
@@ -110,12 +132,14 @@ impl TryFrom<&ParameterList> for HoldEvents {
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            events: value.objects
+            events: value
+                .objects
                 .iter()
                 .map(|(n, v)| -> Result<(i32, HoldEvent)> {
                     Ok((
                         super::get_event_index(n.hash())?,
-                        v.try_into().context("HoldEvents contains invalid HoldEvent")?
+                        v.try_into()
+                            .context("HoldEvents contains invalid HoldEvent")?,
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -126,11 +150,12 @@ impl TryFrom<&ParameterList> for HoldEvents {
 impl From<HoldEvents> for ParameterList {
     fn from(value: HoldEvents) -> Self {
         Self {
-            objects: value.events
+            objects: value
+                .events
                 .into_iter()
                 .map(|(i, h)| (format!("Event{}", i), h.into()))
                 .collect(),
-            lists: Default::default(),
+            lists:   Default::default(),
         }
     }
 }

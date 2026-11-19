@@ -2,7 +2,7 @@ use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
 
-use crate::{prelude::*, util::SortedDeleteMap, Result, UKError};
+use crate::{Result, UKError, prelude::*, util::SortedDeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
 

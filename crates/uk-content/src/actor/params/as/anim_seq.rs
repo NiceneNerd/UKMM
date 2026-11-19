@@ -3,19 +3,19 @@ use join_str::jstr;
 use roead::aamp::{Parameter, ParameterIO, ParameterList};
 use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
-use crate::{
-    prelude::{Endian, Mergeable, Resource},
-    util::{SortedDeleteMap, DeleteMap},
-    actor::ParameterResource,
-    Result,
-    UKError
-};
+
 use super::{Element, traverser::Traverser};
+use crate::{
+    Result, UKError,
+    actor::ParameterResource,
+    prelude::{Endian, Mergeable, Resource},
+    util::{DeleteMap, SortedDeleteMap},
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AnimSeq {
     elements: SortedDeleteMap<i32, Element>,
-    common_params: Option<DeleteMap<u32, Parameter>>
+    common_params: Option<DeleteMap<u32, Parameter>>,
 }
 
 impl TryFrom<&ParameterIO> for AnimSeq {
@@ -23,31 +23,34 @@ impl TryFrom<&ParameterIO> for AnimSeq {
 
     fn try_from(value: &ParameterIO) -> Result<AnimSeq> {
         let anim_seq = Self {
-            elements: value.param_root
+            elements: value
+                .param_root
                 .lists
                 .get("Elements")
-                .ok_or(UKError::MissingAampKey("Bas file missing Elements", Box::from(None)))?
+                .ok_or(UKError::MissingAampKey(
+                    "Bas file missing Elements",
+                    Box::from(None),
+                ))?
                 .lists
                 .iter()
                 .map(|(n, l)| -> Result<(i32, Element)> {
-                    let index = super::get_element_index(n.hash())
-                        .context(format!("Could not get index of Element with key hash {}", n))?;
+                    let index = super::get_element_index(n.hash()).context(format!(
+                        "Could not get index of Element with key hash {}",
+                        n
+                    ))?;
                     Ok((
                         index,
                         l.try_into()
-                            .context(format!("Could not parse Element{}", index))?
+                            .context(format!("Could not parse Element{}", index))?,
                     ))
                 })
                 .collect::<Result<_>>()?,
-            common_params: value.param_root
-                .objects
-                .get("CommonParams")
-                .map(|obj| {
-                    obj.0
-                        .iter()
-                        .map(|(n, p)| (n.hash(), p.clone()))
-                        .collect::<DeleteMap<u32, Parameter>>()
-                })
+            common_params: value.param_root.objects.get("CommonParams").map(|obj| {
+                obj.0
+                    .iter()
+                    .map(|(n, p)| (n.hash(), p.clone()))
+                    .collect::<DeleteMap<u32, Parameter>>()
+            }),
         };
         if !anim_seq.elements.is_empty() {
             anim_seq.traverse()?;
@@ -59,14 +62,20 @@ impl TryFrom<&ParameterIO> for AnimSeq {
 impl From<AnimSeq> for ParameterIO {
     fn from(anim_seq: AnimSeq) -> Self {
         Self::new()
-            .with_objects(anim_seq.common_params.into_iter().map(|m|
-                ("CommonParams", m.into_iter().collect())
-            ))
+            .with_objects(
+                anim_seq
+                    .common_params
+                    .into_iter()
+                    .map(|m| ("CommonParams", m.into_iter().collect())),
+            )
             .with_list(
                 "Elements",
-                ParameterList::new().with_lists(anim_seq.elements
-                    .into_iter()
-                    .map(|(i, e)| (format!("Element{}", i), e.into())))
+                ParameterList::new().with_lists(
+                    anim_seq
+                        .elements
+                        .into_iter()
+                        .map(|(i, e)| (format!("Element{}", i), e.into())),
+                ),
             )
     }
 }
@@ -83,7 +92,9 @@ impl Mergeable for AnimSeq {
 
 impl AnimSeq {
     pub fn traverse(&self) -> anyhow::Result<()> {
-        Traverser::new(&self.elements.values().collect()).traverse(0).context("Failed to validate AnimSeq")
+        Traverser::new(&self.elements.values().collect())
+            .traverse(0)
+            .context("Failed to validate AnimSeq")
     }
 }
 

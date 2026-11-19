@@ -14,8 +14,7 @@ fn copyright_string() {
     writeln!(
         &mut file,
         "pub const COPYRIGHT: &str = \"© {}-{} Caleb Smith, Ginger Chody - GPLv3\";",
-        start,
-        year
+        start, year
     )
     .unwrap();
 

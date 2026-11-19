@@ -1,9 +1,9 @@
 use anyhow::Context;
 use roead::aamp::ParameterList;
 use serde::{Deserialize, Serialize};
-use crate::prelude::Mergeable;
-use crate::{UKError, Result};
+
 use super::res_children::ResourceWithChildren;
+use crate::{Result, UKError, prelude::Mergeable};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SequencePlayContainerResource {
@@ -17,20 +17,30 @@ impl TryFrom<&ParameterList> for SequencePlayContainerResource {
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
             base: Some(value.try_into()?),
-            sequence_loop: Some(value.objects
-                .get("Parameters")
-                .ok_or(UKError::MissingAampKey("Element missing Parameters", Box::from(None)))?
-                .get("SequenceLoop")
-                .ok_or(UKError::MissingAampKey("Element missing SequenceLoop", Box::from(None)))?
-                .as_bool()
-                .context("Element has invalid SequenceLoop")?),
+            sequence_loop: Some(
+                value
+                    .objects
+                    .get("Parameters")
+                    .ok_or(UKError::MissingAampKey(
+                        "Element missing Parameters",
+                        Box::from(None),
+                    ))?
+                    .get("SequenceLoop")
+                    .ok_or(UKError::MissingAampKey(
+                        "Element missing SequenceLoop",
+                        Box::from(None),
+                    ))?
+                    .as_bool()
+                    .context("Element has invalid SequenceLoop")?,
+            ),
         })
     }
 }
 
 impl From<SequencePlayContainerResource> for ParameterList {
     fn from(value: SequencePlayContainerResource) -> Self {
-        let mut base: Self = value.base
+        let mut base: Self = value
+            .base
             .expect("SequencePlayContainerResource should have base ResourceWithChildren")
             .into();
         base.objects
@@ -38,9 +48,10 @@ impl From<SequencePlayContainerResource> for ParameterList {
             .expect("SequencePlayContainerResource should have Parameters")
             .insert(
                 "SequenceLoop",
-                value.sequence_loop
+                value
+                    .sequence_loop
                     .expect("SequencePlayContainerResource should have SequenceLoop")
-                    .into()
+                    .into(),
             );
         base
     }
@@ -60,11 +71,21 @@ impl Mergeable for SequencePlayContainerResource {
     #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
-            base: self.base.as_ref()
+            base: self
+                .base
+                .as_ref()
                 .expect("SequencePlayContainerResource should contain base ResourceWithChildren")
-                .ne(other.base.as_ref().expect("SequencePlayContainerResource should contain base ResourceWithChildren"))
-                .then(|| self.base.as_ref().expect("").diff(other.base.as_ref().expect(""))),
-            sequence_loop: other.sequence_loop
+                .ne(other.base.as_ref().expect(
+                    "SequencePlayContainerResource should contain base ResourceWithChildren",
+                ))
+                .then(|| {
+                    self.base
+                        .as_ref()
+                        .expect("")
+                        .diff(other.base.as_ref().expect(""))
+                }),
+            sequence_loop: other
+                .sequence_loop
                 .ne(&self.sequence_loop)
                 .then_some(other.sequence_loop)
                 .unwrap_or_default(),
@@ -73,15 +94,17 @@ impl Mergeable for SequencePlayContainerResource {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            base: diff.base.as_ref()
-                .map(|b|
-                    self.base.as_ref()
+            base: diff
+                .base
+                .as_ref()
+                .map(|b| {
+                    self.base
+                        .as_ref()
                         .expect("BlenderResource should contain base ResourceWithChildren")
                         .merge(b)
-                )
+                })
                 .or(self.base.clone()),
-            sequence_loop: diff.sequence_loop
-                .or(self.sequence_loop),
+            sequence_loop: diff.sequence_loop.or(self.sequence_loop),
         }
     }
 }

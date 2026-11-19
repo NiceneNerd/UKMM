@@ -4,13 +4,13 @@ use anyhow::Context;
 use join_str::jstr;
 use lighter::lighter;
 use roead::{
-    byml::{map, Byml},
+    byml::{Byml, map},
     sarc::{Sarc, SarcWriter},
 };
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
 
-use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use crate::{Result, UKError, prelude::*, util::DeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]
 pub struct FlagData {
@@ -582,9 +582,7 @@ mod tests {
     fn pack() {
         let gs = load_gamedata_sarc();
         let gamedata = super::GameDataPack::from_sarc(&gs).unwrap();
-        let gs2 = gamedata
-            .clone()
-            .into_sarc_writer(Endian::Big);
+        let gs2 = gamedata.clone().into_sarc_writer(Endian::Big);
         let gamedata2 = super::GameDataPack::from_sarc_writer(&gs2).unwrap();
         assert_eq!(gamedata, gamedata2);
     }

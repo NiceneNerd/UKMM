@@ -459,7 +459,8 @@ impl BnpConverter {
 
     fn convert(mut self) -> Result<PathBuf> {
         let root = self.current_root.clone();
-        self.set_up_temp_map_state().context("Failed to set up temp map state for root")?;
+        self.set_up_temp_map_state()
+            .context("Failed to set up temp map state for root")?;
         self.convert_root()?;
 
         let opt_dir = root.join("options");
@@ -478,21 +479,24 @@ impl BnpConverter {
                         .unwrap_or_default()
                 );
                 self.current_root = option;
-                self.set_up_temp_map_state()
-                    .with_context(|| format!(
+                self.set_up_temp_map_state().with_context(|| {
+                    format!(
                         "Failed to set up temp map state for {}",
                         self.current_root.display()
-                    ))?;
+                    )
+                })?;
                 self.convert_root()?;
-                self.clear_temp_map_state()
-                    .with_context(|| format!(
+                self.clear_temp_map_state().with_context(|| {
+                    format!(
                         "Failed to clear temp map state for {}",
                         self.current_root.display()
-                    ))?;
+                    )
+                })?;
             }
         }
         self.current_root = root;
-        self.clear_temp_map_state().context("Failed to clear temp map state for root")?;
+        self.clear_temp_map_state()
+            .context("Failed to clear temp map state for root")?;
         Ok(self.current_root)
     }
 }

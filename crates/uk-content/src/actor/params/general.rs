@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
 
 use crate::{
-    actor::{extract_info_param, InfoSource, ParameterResource},
-    prelude::*,
     Result,
+    actor::{InfoSource, ParameterResource, extract_info_param},
+    prelude::*,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]

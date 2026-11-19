@@ -1,5 +1,4 @@
 #![allow(unstable_name_collisions)]
-use uk_localization::string_ext::LocString;
 use std::{
     ops::Deref,
     path::{Path, PathBuf},
@@ -11,11 +10,11 @@ use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use serde::Deserialize;
 use uk_content::{constants::Language, prelude::Endian};
-use uk_localization::LocLang;
-use uk_manager::{settings::{DeployConfig, Platform, PlatformSettings}};
+use uk_localization::{LocLang, string_ext::LocString};
+use uk_manager::settings::{DeployConfig, Platform, PlatformSettings};
 use uk_reader::ResourceReader;
 use uk_ui::{
-    egui::{self, Align, Checkbox, Button, InnerResponse, Layout, RichText, TextStyle, Ui},
+    egui::{self, Align, Button, Checkbox, InnerResponse, Layout, RichText, TextStyle, Ui},
     ext::UiExt,
     icons::{self, IconButtonExt},
     visuals::Theme,
@@ -137,17 +136,18 @@ impl TryFrom<PlatformSettingsUI> for PlatformSettings {
             } => {
                 let endian = content_dir
                     .as_ref()
-                    .and_then(|p| p.to_string_lossy()
-                        .contains("content")
-                        .then_some(Endian::Big)
-                        .or(Some(Endian::Little))
-                    )
-                    .ok_or_else(||
+                    .and_then(|p| {
+                        p.to_string_lossy()
+                            .contains("content")
+                            .then_some(Endian::Big)
+                            .or(Some(Endian::Little))
+                    })
+                    .ok_or_else(|| {
                         uk_reader::ROMError::MissingDumpDir(
                             "Base",
-                            content_dir.clone().unwrap_or_default()
+                            content_dir.clone().unwrap_or_default(),
                         )
-                    )?;
+                    })?;
                 Arc::new(ResourceReader::from_unpacked_dirs(
                     content_dir,
                     update_dir,
@@ -202,115 +202,89 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
         ui.allocate_space([width, 0.0].into());
         let mut name = "Settings_Platform_Deploy_Method".localize();
         let mut description = "Settings_Platform_Deploy_Method_Desc".localize();
-        render_setting(
-            &name,
-            &description,
-            ui,
-            |ui| {
-                changed |= ui
-                    .radio_value(
-                        &mut config.method,
-                        uk_manager::settings::DeployMethod::Copy,
-                        "Settings_Platform_Deploy_Method_Copy".localize(),
-                    )
-                    .changed();
-                changed |= ui
-                    .radio_value(
-                        &mut config.method,
-                        uk_manager::settings::DeployMethod::HardLink,
-                        "Settings_Platform_Deploy_Method_HardLink".localize(),
-                    )
-                    .changed();
-                changed |= ui
-                    .radio_value(
-                        &mut config.method,
-                        uk_manager::settings::DeployMethod::Symlink,
-                        "Settings_Platform_Deploy_Method_Symlink".localize(),
-                    )
-                    .changed();
-            },
-        );
+        render_setting(&name, &description, ui, |ui| {
+            changed |= ui
+                .radio_value(
+                    &mut config.method,
+                    uk_manager::settings::DeployMethod::Copy,
+                    "Settings_Platform_Deploy_Method_Copy".localize(),
+                )
+                .changed();
+            changed |= ui
+                .radio_value(
+                    &mut config.method,
+                    uk_manager::settings::DeployMethod::HardLink,
+                    "Settings_Platform_Deploy_Method_HardLink".localize(),
+                )
+                .changed();
+            changed |= ui
+                .radio_value(
+                    &mut config.method,
+                    uk_manager::settings::DeployMethod::Symlink,
+                    "Settings_Platform_Deploy_Method_Symlink".localize(),
+                )
+                .changed();
+        });
         name = "Settings_Platform_Deploy_Layout".localize();
         description = match platform {
             Platform::WiiU => "Settings_Platform_Deploy_Layout_WiiU_Desc".localize(),
             Platform::Switch => "Settings_Platform_Deploy_Layout_NX_Desc".localize(),
         };
-        render_setting(
-            &name,
-            &description,
-            ui,
-            |ui| {
-                changed |= ui
-                    .radio_value(
-                        &mut config.layout,
-                        uk_manager::settings::DeployLayout::WithoutName,
-                        match platform {
-                            Platform::WiiU =>
-                                "Settings_Platform_Deploy_Layout_WiiU_WithoutName".localize(),
-                            Platform::Switch =>
-                                "Settings_Platform_Deploy_Layout_NX_WithoutName".localize(),
-                        },
-                    )
-                    .changed();
-                changed |= ui
-                    .radio_value(
-                        &mut config.layout,
-                        uk_manager::settings::DeployLayout::WithName,
-                        match platform {
-                            Platform::WiiU =>
-                                "Settings_Platform_Deploy_Layout_WiiU_WithName".localize(),
-                            Platform::Switch =>
-                                "Settings_Platform_Deploy_Layout_NX_WithName".localize(),
-                        },
-                    )
-                    .changed();
-            }
-        );
+        render_setting(&name, &description, ui, |ui| {
+            changed |= ui
+                .radio_value(
+                    &mut config.layout,
+                    uk_manager::settings::DeployLayout::WithoutName,
+                    match platform {
+                        Platform::WiiU => {
+                            "Settings_Platform_Deploy_Layout_WiiU_WithoutName".localize()
+                        }
+                        Platform::Switch => {
+                            "Settings_Platform_Deploy_Layout_NX_WithoutName".localize()
+                        }
+                    },
+                )
+                .changed();
+            changed |= ui
+                .radio_value(
+                    &mut config.layout,
+                    uk_manager::settings::DeployLayout::WithName,
+                    match platform {
+                        Platform::WiiU => {
+                            "Settings_Platform_Deploy_Layout_WiiU_WithName".localize()
+                        }
+                        Platform::Switch => {
+                            "Settings_Platform_Deploy_Layout_NX_WithName".localize()
+                        }
+                    },
+                )
+                .changed();
+        });
         name = "Settings_Platform_Deploy_Auto".localize();
         description = "Settings_Platform_Deploy_Auto_Desc".localize();
-        render_setting(
-            &name,
-            &description,
-            ui,
-            |ui| {
-                changed |= ui.checkbox(&mut config.auto, "").changed();
-            },
-        );
+        render_setting(&name, &description, ui, |ui| {
+            changed |= ui.checkbox(&mut config.auto, "").changed();
+        });
         if platform == Platform::WiiU {
             name = "Settings_Platform_Deploy_Rules".localize();
             description = "Settings_Platform_Deploy_Rules_Desc".localize();
-            render_setting(
-                &name,
-                &description,
-                ui,
-                |ui| {
-                    changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
-                },
-            );
+            render_setting(&name, &description, ui, |ui| {
+                changed |= ui.checkbox(&mut config.cemu_rules, "").changed();
+            });
             ui.add_space(8.0);
         }
         name = "Settings_Platform_Deploy_Output".localize();
         description = "Settings_Platform_Deploy_Output_Desc".localize();
-        render_setting(
-            &name,
-            &description,
-            ui,
-            |ui| {
-                changed |= ui.folder_picker(&mut config.output).changed();
-            },
-        );
+        render_setting(&name, &description, ui, |ui| {
+            changed |= ui.folder_picker(&mut config.output).changed();
+        });
         name = "Settings_Platform_Deploy_Emu".localize();
         description = "Settings_Platform_Deploy_Emu_Desc".localize();
-        render_setting(
-            &name,
-            &description,
-            ui,
-            |ui| {
-                changed |= ui
-                    .file_picker_string(config.executable.get_or_insert_default())
-                    .changed();
-            },
-        );
+        render_setting(&name, &description, ui, |ui| {
+            changed |= ui
+                .file_picker_string(config.executable.get_or_insert_default())
+                .changed();
+        });
     });
     changed
 }
@@ -327,22 +301,17 @@ fn render_platform_config(
         .or_insert_with(|| config.as_ref().map(|c| c.into()).unwrap_or_default());
     let mut name = "Settings_Platform_Language".localize();
     let mut description = "Settings_Platform_Language_Desc".localize();
-    render_setting(
-        &name,
-        &description,
-        ui,
-        |ui| {
-            egui::ComboBox::new(format!("lang-{platform}"), "")
-                .selected_text(config.language.to_str())
-                .show_ui(ui, |ui| {
-                    Language::iter().for_each(|lang| {
-                        changed |= ui
-                            .selectable_value(&mut config.language, *lang, lang.to_str())
-                            .changed();
-                    });
+    render_setting(&name, &description, ui, |ui| {
+        egui::ComboBox::new(format!("lang-{platform}"), "")
+            .selected_text(config.language.to_str())
+            .show_ui(ui, |ui| {
+                Language::iter().for_each(|lang| {
+                    changed |= ui
+                        .selectable_value(&mut config.language, *lang, lang.to_str())
+                        .changed();
                 });
-        },
-    );
+            });
+    });
     ui.add_space(8.0);
     ui.label("Settings_Platform_Dump".localize());
     ui.group(|ui| {
@@ -351,43 +320,38 @@ fn render_platform_config(
         if platform == Platform::WiiU {
             name = "Settings_Platform_Dump_Type".localize();
             description = "Settings_Platform_Dump_Type_Desc".localize();
-            render_setting(
-                &name,
-                &description,
-                ui,
-                |ui| {
-                    if ui
-                        .radio(
-                            matches!(config.dump, DumpType::Unpacked { .. }),
-                            "Settings_Platform_Dump_Type_Unpacked".localize()
-                        )
-                        .clicked()
-                    {
-                        config.dump = DumpType::Unpacked {
-                            host_path:   Default::default(),
-                            content_dir: Default::default(),
-                            update_dir:  Default::default(),
-                            aoc_dir:     Default::default(),
-                        };
-                        changed = true;
-                    }
-                    if ui
-                        .radio(
-                            matches!(config.dump, DumpType::ZArchive { .. }),
-                            "Settings_Platform_Dump_Type_WUA".localize()
-                        )
-                        .clicked()
-                    {
-                        config.dump = DumpType::ZArchive {
-                            content_dir: Default::default(),
-                            update_dir:  Default::default(),
-                            aoc_dir:     Default::default(),
-                            host_path:   Default::default(),
-                        };
-                        changed = true;
-                    }
-                },
-            );
+            render_setting(&name, &description, ui, |ui| {
+                if ui
+                    .radio(
+                        matches!(config.dump, DumpType::Unpacked { .. }),
+                        "Settings_Platform_Dump_Type_Unpacked".localize(),
+                    )
+                    .clicked()
+                {
+                    config.dump = DumpType::Unpacked {
+                        host_path:   Default::default(),
+                        content_dir: Default::default(),
+                        update_dir:  Default::default(),
+                        aoc_dir:     Default::default(),
+                    };
+                    changed = true;
+                }
+                if ui
+                    .radio(
+                        matches!(config.dump, DumpType::ZArchive { .. }),
+                        "Settings_Platform_Dump_Type_WUA".localize(),
+                    )
+                    .clicked()
+                {
+                    config.dump = DumpType::ZArchive {
+                        content_dir: Default::default(),
+                        update_dir:  Default::default(),
+                        aoc_dir:     Default::default(),
+                        host_path:   Default::default(),
+                    };
+                    changed = true;
+                }
+            });
         }
         match &mut config.dump {
             DumpType::Unpacked {
@@ -397,63 +361,52 @@ fn render_platform_config(
                 aoc_dir,
             } => {
                 (name, description) = match platform {
-                    Platform::WiiU => (
-                        "Settings_Platform_Dump_WiiU_Base".localize(),
-                        "Settings_Platform_Dump_WiiU_Base_Desc".localize()
-                    ),
-                    Platform::Switch => (
-                        "Settings_Platform_Dump_NX_Base".localize(),
-                        "Settings_Platform_Dump_NX_Base_Desc".localize()
-                    ),
+                    Platform::WiiU => {
+                        (
+                            "Settings_Platform_Dump_WiiU_Base".localize(),
+                            "Settings_Platform_Dump_WiiU_Base_Desc".localize(),
+                        )
+                    }
+                    Platform::Switch => {
+                        (
+                            "Settings_Platform_Dump_NX_Base".localize(),
+                            "Settings_Platform_Dump_NX_Base_Desc".localize(),
+                        )
+                    }
                 };
-                render_setting(
-                    &name,
-                    &description,
-                    ui,
-                    |ui| {
+                render_setting(&name, &description, ui, |ui| {
+                    if ui
+                        .folder_picker(content_dir.get_or_insert_default())
+                        .changed()
+                    {
+                        changed = true;
+                        *host_path = "/".into();
+                    }
+                });
+                if platform == Platform::WiiU {
+                    name = "Settings_Platform_Dump_Update".localize();
+                    description = "Settings_Platform_Dump_Update_Desc".localize();
+                    render_setting(&name, &description, ui, |ui| {
                         if ui
-                            .folder_picker(content_dir.get_or_insert_default())
+                            .folder_picker(update_dir.get_or_insert_default())
                             .changed()
                         {
                             changed = true;
                             *host_path = "/".into();
                         }
-                    },
-                );
-                if platform == Platform::WiiU {
-                    name = "Settings_Platform_Dump_Update".localize();
-                    description = "Settings_Platform_Dump_Update_Desc".localize();
-                    render_setting(
-                        &name,
-                        &description,
-                        ui,
-                        |ui| {
-                            if ui
-                                .folder_picker(update_dir.get_or_insert_default())
-                                .changed()
-                            {
-                                changed = true;
-                                *host_path = "/".into();
-                            }
-                        },
-                    );
+                    });
                 }
                 name = "Settings_Platform_Dump_DLC".localize();
                 description = match platform {
                     Platform::WiiU => "Settings_Platform_Dump_DLC_WiiU_Desc".localize(),
                     Platform::Switch => "Settings_Platform_Dump_DLC_NX_Desc".localize(),
                 };
-                render_setting(
-                    &name,
-                    &description,
-                    ui,
-                    |ui| {
-                        if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
-                            changed = true;
-                            *host_path = "/".into();
-                        }
-                    },
-                );
+                render_setting(&name, &description, ui, |ui| {
+                    if ui.folder_picker(aoc_dir.get_or_insert_default()).changed() {
+                        changed = true;
+                        *host_path = "/".into();
+                    }
+                });
             }
             DumpType::ZArchive {
                 content_dir: _,
@@ -463,14 +416,9 @@ fn render_platform_config(
             } => {
                 name = "Settings_Platform_Dump_WUA".localize();
                 description = "Settings_Platform_Dump_WUA_Desc".localize();
-                render_setting(
-                    &name,
-                    &description,
-                    ui,
-                    |ui| {
-                        changed |= ui.file_picker(host_path).changed();
-                    },
-                );
+                render_setting(&name, &description, ui, |ui| {
+                    changed |= ui.file_picker(host_path).changed();
+                });
             }
         }
     });
@@ -484,49 +432,51 @@ impl App {
             let mut wiiu_changed = false;
             let mut switch_changed = false;
             let scroll_height = ui.available_height() - 38.0_f32;
-            egui::ScrollArea::vertical().auto_shrink(
-                [false, false]
-            ).max_height(scroll_height).show(ui, |ui| {
-                ui.vertical(|ui| {
-                    let settings = &mut self.temp_settings;
-                    let mut theme_change: Option<Theme> = None;
-                    let mut lang_change: Option<LocLang> = None;
-                    egui::CollapsingHeader::new("Settings_General".localize())
-                        .default_open(true)
-                        .show(ui, |ui| {
-                            if ui
-                                .icon_text_button("Settings_Migrate".localize(), icons::Icon::Import)
-                                .clicked()
-                            {
-                                self.channel
-                                    .0
-                                    .clone()
-                                    .send(Message::MigrateBcml)
-                                    .expect("Broken channel");
-                            }
-                            if ui
-                                .button("Settings_OneClick".localize())
-                                .on_hover_text("Settings_OneClick_Desc".localize())
-                                .clicked()
-                            {
-                                match uk_app::host::handlers::register_url_handler() {
-                                    Ok(()) => log::info!("GameBanana 1-click handler registered"),
-                                    Err(e) => {
-                                        self.channel
-                                            .0
-                                            .clone()
-                                            .send(Message::Error(e))
-                                            .expect("Broken channel")
+            egui::ScrollArea::vertical()
+                .auto_shrink([false, false])
+                .max_height(scroll_height)
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        let settings = &mut self.temp_settings;
+                        let mut theme_change: Option<Theme> = None;
+                        let mut lang_change: Option<LocLang> = None;
+                        egui::CollapsingHeader::new("Settings_General".localize())
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                if ui
+                                    .icon_text_button(
+                                        "Settings_Migrate".localize(),
+                                        icons::Icon::Import,
+                                    )
+                                    .clicked()
+                                {
+                                    self.channel
+                                        .0
+                                        .clone()
+                                        .send(Message::MigrateBcml)
+                                        .expect("Broken channel");
+                                }
+                                if ui
+                                    .button("Settings_OneClick".localize())
+                                    .on_hover_text("Settings_OneClick_Desc".localize())
+                                    .clicked()
+                                {
+                                    match uk_app::host::handlers::register_url_handler() {
+                                        Ok(()) => {
+                                            log::info!("GameBanana 1-click handler registered")
+                                        }
+                                        Err(e) => {
+                                            self.channel
+                                                .0
+                                                .clone()
+                                                .send(Message::Error(e))
+                                                .expect("Broken channel")
+                                        }
                                     }
                                 }
-                            }
-                            let mut name = "Settings_Theme".localize();
-                            let mut description = "Settings_Theme_Desc".localize();
-                            render_setting(
-                                &name,
-                                &description,
-                                ui,
-                                |ui| {
+                                let mut name = "Settings_Theme".localize();
+                                let mut description = "Settings_Theme_Desc".localize();
+                                render_setting(&name, &description, ui, |ui| {
                                     egui::ComboBox::new("ui-theme", "")
                                         .selected_text(self.theme.name())
                                         .show_ui(ui, |ui| {
@@ -544,15 +494,10 @@ impl App {
                                                 }
                                             }
                                         });
-                                }
-                            );
-                            name = "Settings_Language".localize();
-                            description = "Settings_Language_Desc".localize();
-                            render_setting(
-                                &name,
-                                &description,
-                                ui,
-                                |ui| {
+                                });
+                                name = "Settings_Language".localize();
+                                description = "Settings_Language_Desc".localize();
+                                render_setting(&name, &description, ui, |ui| {
                                     egui::ComboBox::new("lang-ukmm", "")
                                         .selected_text(settings.lang.to_str())
                                         .show_ui(ui, |ui| {
@@ -561,23 +506,18 @@ impl App {
                                                     .selectable_value(
                                                         &mut settings.lang,
                                                         *lang,
-                                                        lang.to_str()
+                                                        lang.to_str(),
                                                     )
                                                     .changed()
                                                 {
                                                     lang_change = Some(*lang);
                                                 }
-                                            };
+                                            }
                                         });
-                                },
-                            );
-                            name = "Settings_Mode".localize();
-                            description = "Settings_Mode_Desc".localize();
-                            render_setting(
-                                &name,
-                                &description,
-                                ui,
-                                |ui| {
+                                });
+                                name = "Settings_Mode".localize();
+                                description = "Settings_Mode_Desc".localize();
+                                render_setting(&name, &description, ui, |ui| {
                                     ui.radio_value(
                                         &mut settings.current_mode,
                                         Platform::WiiU,
@@ -588,90 +528,90 @@ impl App {
                                         Platform::Switch,
                                         "Settings_Mode_Switch".localize(),
                                     );
-                                },
-                            );
-                            name = "Settings_Storage".localize();
-                            description = "Settings_Storage_Desc".localize();
-                            render_setting(
-                                &name,
-                                &description,
-                                ui,
-                                |ui| {
+                                });
+                                name = "Settings_Storage".localize();
+                                description = "Settings_Storage_Desc".localize();
+                                render_setting(&name, &description, ui, |ui| {
                                     ui.folder_picker(&mut settings.storage_dir);
-                                },
-                            );
-                            name = "Settings_Sys7z".localize();
-                            description = "Settings_Sys7z_Desc".localize();
-                            render_setting(
-                                &name,
-                                &description,
-                                ui,
-                                |ui| ui.checkbox(&mut settings.system_7z, ""),
-                            );
-                            name = "Settings_Changelog".localize();
-                            description = "Settings_Changelog_Desc".localize();
-                            render_setting(
-                                &name,
-                                &description,
-                                ui,
-                                |ui| ui.add(Checkbox::new(&mut settings.show_changelog, "")),
-                            );
-                        });
-                    egui::CollapsingHeader::new("Settings_Config_WiiU".localize()).show(ui, |ui| {
-                        if ui
-                            .icon_text_button(
-                                "Settings_Config_WiiU_ImportCemu".localize(),
-                                icons::Icon::Import
-                            )
-                            .clicked()
-                        {
-                            self.channel
-                                .0
-                                .clone()
-                                .send(Message::ImportCemu)
-                                .expect("Broken channel");
+                                });
+                                name = "Settings_Sys7z".localize();
+                                description = "Settings_Sys7z_Desc".localize();
+                                render_setting(&name, &description, ui, |ui| {
+                                    ui.checkbox(&mut settings.system_7z, "")
+                                });
+                                name = "Settings_Changelog".localize();
+                                description = "Settings_Changelog_Desc".localize();
+                                render_setting(&name, &description, ui, |ui| {
+                                    ui.add(Checkbox::new(&mut settings.show_changelog, ""))
+                                });
+                            });
+                        egui::CollapsingHeader::new("Settings_Config_WiiU".localize()).show(
+                            ui,
+                            |ui| {
+                                if ui
+                                    .icon_text_button(
+                                        "Settings_Config_WiiU_ImportCemu".localize(),
+                                        icons::Icon::Import,
+                                    )
+                                    .clicked()
+                                {
+                                    self.channel
+                                        .0
+                                        .clone()
+                                        .send(Message::ImportCemu)
+                                        .expect("Broken channel");
+                                }
+                                wiiu_changed = render_platform_config(
+                                    &mut settings.wiiu_config,
+                                    Platform::WiiU,
+                                    ui,
+                                );
+                            },
+                        );
+                        egui::CollapsingHeader::new("Settings_Config_NX".localize()).show(
+                            ui,
+                            |ui| {
+                                switch_changed = render_platform_config(
+                                    &mut settings.switch_config,
+                                    Platform::Switch,
+                                    ui,
+                                );
+                            },
+                        );
+                        if let Some(theme) = theme_change {
+                            self.do_update(Message::SetTheme(theme));
                         }
-                        wiiu_changed =
-                            render_platform_config(&mut settings.wiiu_config, Platform::WiiU, ui);
+                        if let Some(lang) = lang_change {
+                            self.do_update(Message::SetLanguage(lang));
+                        }
                     });
-                    egui::CollapsingHeader::new("Settings_Config_NX".localize()).show(ui, |ui| {
-                        switch_changed =
-                            render_platform_config(&mut settings.switch_config, Platform::Switch, ui);
-                    });
-                    if let Some(theme) = theme_change {
-                        self.do_update(Message::SetTheme(theme));
-                    }
-                    if let Some(lang) = lang_change {
-                        self.do_update(Message::SetLanguage(lang));
-                    }
+                    switch_changed |= {
+                        match (
+                            CONFIG.read().get(&Platform::Switch),
+                            self.temp_settings.switch_config.as_ref(),
+                        ) {
+                            (None, None) | (None, Some(_)) => false,
+                            (Some(config), None) => {
+                                !config.dump.is_empty()
+                                    || !config.deploy_config.output.as_os_str().is_empty()
+                            }
+                            (Some(tmp_config), Some(config)) => tmp_config.ne(config),
+                        }
+                    };
+                    wiiu_changed |= {
+                        match (
+                            CONFIG.read().get(&Platform::WiiU),
+                            self.temp_settings.wiiu_config.as_ref(),
+                        ) {
+                            (None, None) | (None, Some(_)) => false,
+                            (Some(config), None) => {
+                                !config.dump.is_empty()
+                                    || !config.deploy_config.output.as_os_str().is_empty()
+                            }
+                            (Some(tmp_config), Some(config)) => tmp_config.ne(config),
+                        }
+                    };
                 });
-                switch_changed |= {
-                    match (
-                        CONFIG.read().get(&Platform::Switch),
-                        self.temp_settings.switch_config.as_ref(),
-                    ) {
-                        (None, None) | (None, Some(_)) => false,
-                        (Some(config), None) => {
-                            !config.dump.is_empty()
-                                || !config.deploy_config.output.as_os_str().is_empty()
-                        }
-                        (Some(tmp_config), Some(config)) => tmp_config.ne(config),
-                    }
-                };
-                wiiu_changed |= {
-                    match (
-                        CONFIG.read().get(&Platform::WiiU),
-                        self.temp_settings.wiiu_config.as_ref(),
-                    ) {
-                        (None, None) | (None, Some(_)) => false,
-                        (Some(config), None) => {
-                            !config.dump.is_empty()
-                                || !config.deploy_config.output.as_os_str().is_empty()
-                        }
-                        (Some(tmp_config), Some(config)) => tmp_config.ne(config),
-                    }
-                };
-            });
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {

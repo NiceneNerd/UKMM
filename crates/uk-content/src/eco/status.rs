@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
 use itertools::Itertools;
-use roead::byml::{map, Byml};
+use roead::byml::{Byml, map};
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, util::DeleteVec, Result, UKError};
+use crate::{Result, UKError, prelude::*, util::DeleteVec};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 

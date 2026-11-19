@@ -6,10 +6,10 @@ use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
 
 use crate::{
+    Result, UKError,
     actor::ParameterResource,
     prelude::*,
     util::{DeleteSet, IndexMap},
-    Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

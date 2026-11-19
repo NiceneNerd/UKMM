@@ -4,13 +4,13 @@ use std::collections::{BTreeMap, BTreeSet};
 use anyhow::Context;
 use join_str::jstr;
 pub use msyt::{
-    model::{Entry, MsbtInfo},
     Endianness, Msyt,
+    model::{Entry, MsbtInfo},
 };
 use roead::sarc::{Sarc, SarcWriter};
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, Result, UKError};
+use crate::{Result, UKError, prelude::*};
 
 impl Mergeable for Msyt {
     fn diff(&self, other: &Self) -> Self {

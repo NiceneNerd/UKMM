@@ -110,7 +110,7 @@ pub enum ResType {
     YSpeedBlender = 103,
     YSpeedSelector = 104,
     ZEx00ExposureBlender = 105,
-    ZEx00ExposureSelector = 106
+    ZEx00ExposureSelector = 106,
 }
 
 impl Default for ResType {

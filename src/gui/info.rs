@@ -12,11 +12,12 @@ use uk_manager::mods::Mod;
 use uk_mod::Manifest;
 #[allow(deprecated)]
 use uk_ui::{
+    PathNode,
     egui::{self, Align, Label, Layout, RichText, Ui},
     egui_extras::image,
     icons::IconButtonExt,
-    PathNode,
 };
+
 use super::Component;
 
 pub enum Message {
@@ -29,17 +30,22 @@ pub struct ModInfo<'a>(pub &'a Mod);
 impl ModInfo<'_> {
     #[allow(deprecated)]
     pub fn preview(&self, ctx: &egui::Context) -> Option<Arc<egui::TextureHandle>> {
-        fn load_preview(mod_: &Mod, ctx: &egui::Context) -> Result<Option<Arc<egui::TextureHandle>>> {
+        fn load_preview(
+            mod_: &Mod,
+            ctx: &egui::Context,
+        ) -> Result<Option<Arc<egui::TextureHandle>>> {
             let mut zip = zip::ZipArchive::new(BufReader::new(std::fs::File::open(&mod_.path)?))?;
             for ext in ["jpg", "jpeg", "png", "svg"] {
                 if let Ok(mut file) = zip.by_name(&format!("thumb.{}", ext)) {
                     let mut vec = vec![0; file.size() as usize];
                     file.read_exact(&mut vec)?;
-                    let image = image::load_image_bytes(&vec)
-                        .map_err(|e| anyhow::anyhow!("{}", e))?;
-                    return Ok(Some(Arc::new(
-                        ctx.load_texture(mod_.meta.name.as_str(), image, Default::default()),
-                    )));
+                    let image =
+                        image::load_image_bytes(&vec).map_err(|e| anyhow::anyhow!("{}", e))?;
+                    return Ok(Some(Arc::new(ctx.load_texture(
+                        mod_.meta.name.as_str(),
+                        image,
+                        Default::default(),
+                    ))));
                 }
             }
             Ok(None)
@@ -70,9 +76,10 @@ impl Component for ModInfo<'_> {
             ui.add_space(8.);
             if let Some(preview) = self.preview(ui.ctx()) {
                 let available = ui.available_size();
-                ui.add(egui::Image::from_texture(
-                    egui::load::SizedTexture::new(preview.id(), available)
-                ));
+                ui.add(egui::Image::from_texture(egui::load::SizedTexture::new(
+                    preview.id(),
+                    available,
+                )));
                 //preview.show_max_size(ui, [available.x.max(0.0), available.y.max(0.0)].into());
                 ui.add_space(8.);
             }
@@ -94,8 +101,10 @@ impl Component for ModInfo<'_> {
                     })
                 });
             });
-            ui.label(RichText::new("Info_Description".localize())
-                .family(egui::FontFamily::Name("Bold".into())));
+            ui.label(
+                RichText::new("Info_Description".localize())
+                    .family(egui::FontFamily::Name("Bold".into())),
+            );
             ui.add_space(4.);
             let md_cache = ui.data_mut(|d| {
                 d.get_temp_mut_or_default::<Arc<Mutex<egui_commonmark::CommonMarkCache>>>(
@@ -134,8 +143,10 @@ impl Component for ModInfo<'_> {
                 }
                 ui.add_space(4.0);
             }
-            ui.label(RichText::new("Info_Manifest".localize())
-                .family(egui::FontFamily::Name("Bold".into())));
+            ui.label(
+                RichText::new("Info_Manifest".localize())
+                    .family(egui::FontFamily::Name("Bold".into())),
+            );
             match mod_.manifest() {
                 Ok(manifest) => render_manifest(&manifest, ui),
                 Err(e) => {

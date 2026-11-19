@@ -5,7 +5,7 @@ use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
 
-use crate::{actor::ParameterResource, prelude::*, util, Result, UKError};
+use crate::{Result, UKError, actor::ParameterResource, prelude::*, util};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 

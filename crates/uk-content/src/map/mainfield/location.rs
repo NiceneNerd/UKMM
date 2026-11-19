@@ -1,10 +1,10 @@
-use roead::byml::{map, Byml};
+use roead::byml::{Byml, map};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    Result, UKError,
     prelude::*,
     util::{DeleteVec, SortedDeleteMap},
-    Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]

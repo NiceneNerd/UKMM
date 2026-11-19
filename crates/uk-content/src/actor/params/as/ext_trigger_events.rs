@@ -1,10 +1,12 @@
 use anyhow::Context;
-use roead::{params, aamp::{ParameterList, ParameterObject, Parameter::String32}};
+use roead::{
+    aamp::{Parameter::String32, ParameterList, ParameterObject},
+    params,
+};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use crate::prelude::Mergeable;
-use crate::{UKError, Result};
-use crate::util::DeleteMap;
+
+use crate::{Result, UKError, prelude::Mergeable, util::DeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct TriggerEvent {
@@ -18,22 +20,37 @@ impl TryFrom<&ParameterObject> for TriggerEvent {
 
     fn try_from(value: &ParameterObject) -> Result<Self> {
         Ok(Self {
-            type_index: Some(value
-                .get("TypeIndex")
-                .ok_or(UKError::MissingAampKey("TriggerEvent missing TypeIndex", Box::from(None)))?
-                .as_i32()
-                .context("TriggerEvent has invalid TypeIndex")?),
-            frame: Some(value
-                .get("Frame")
-                .ok_or(UKError::MissingAampKey("TriggerEvent missing Frame", Box::from(None)))?
-                .as_f32()
-                .context("TriggerEvent has invalid Frame")?),
-            value: Some(value
-                .get("Value")
-                .ok_or(UKError::MissingAampKey("TriggerEvent missing Value", Box::from(None)))?
-                .as_str()
-                .context("TriggerEvent has invalid Value")?
-                .into()),
+            type_index: Some(
+                value
+                    .get("TypeIndex")
+                    .ok_or(UKError::MissingAampKey(
+                        "TriggerEvent missing TypeIndex",
+                        Box::from(None),
+                    ))?
+                    .as_i32()
+                    .context("TriggerEvent has invalid TypeIndex")?,
+            ),
+            frame: Some(
+                value
+                    .get("Frame")
+                    .ok_or(UKError::MissingAampKey(
+                        "TriggerEvent missing Frame",
+                        Box::from(None),
+                    ))?
+                    .as_f32()
+                    .context("TriggerEvent has invalid Frame")?,
+            ),
+            value: Some(
+                value
+                    .get("Value")
+                    .ok_or(UKError::MissingAampKey(
+                        "TriggerEvent missing Value",
+                        Box::from(None),
+                    ))?
+                    .as_str()
+                    .context("TriggerEvent has invalid Value")?
+                    .into(),
+            ),
         })
     }
 }
@@ -58,15 +75,19 @@ impl Mergeable for TriggerEvent {
     #[allow(clippy::obfuscated_if_else)]
     fn diff(&self, other: &Self) -> Self {
         Self {
-            type_index: other.type_index
+            type_index: other
+                .type_index
                 .ne(&self.type_index)
                 .then_some(other.type_index)
                 .unwrap_or_default(),
-            frame: other.frame
+            frame: other
+                .frame
                 .ne(&self.frame)
                 .then_some(other.frame)
                 .unwrap_or_default(),
-            value: other.value.clone()
+            value: other
+                .value
+                .clone()
                 .ne(&self.value)
                 .then(|| other.value.clone())
                 .unwrap_or_default(),
@@ -75,12 +96,9 @@ impl Mergeable for TriggerEvent {
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            type_index: diff.type_index
-                .or(self.type_index),
-            frame: diff.frame
-                .or(self.frame),
-            value: diff.value.clone()
-                .or_else(|| self.value.clone()),
+            type_index: diff.type_index.or(self.type_index),
+            frame: diff.frame.or(self.frame),
+            value: diff.value.clone().or_else(|| self.value.clone()),
         }
     }
 }
@@ -95,12 +113,14 @@ impl TryFrom<&ParameterList> for TriggerEvents {
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            events: value.objects
+            events: value
+                .objects
                 .iter()
                 .map(|(n, v)| -> Result<(i32, TriggerEvent)> {
                     Ok((
                         super::get_event_index(n.hash())?,
-                        v.try_into().context("TriggerEvents contains invalid TriggerEvent")?
+                        v.try_into()
+                            .context("TriggerEvents contains invalid TriggerEvent")?,
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -111,11 +131,12 @@ impl TryFrom<&ParameterList> for TriggerEvents {
 impl From<TriggerEvents> for ParameterList {
     fn from(value: TriggerEvents) -> Self {
         Self {
-            objects: value.events
+            objects: value
+                .events
                 .into_iter()
                 .map(|(i, t)| (format!("Event{}", i), t.into()))
                 .collect(),
-            lists: Default::default(),
+            lists:   Default::default(),
         }
     }
 }

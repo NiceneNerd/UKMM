@@ -4,6 +4,7 @@
 )]
 
 use std::any::Any;
+
 use mimalloc::MiMalloc;
 
 #[global_allocator]
@@ -88,13 +89,10 @@ fn display_error(e: Box<dyn Any + Send>) {
     let error_msg = format!(
         "An unrecoverable error occurred. Error details: {}",
         e.downcast::<String>()
-            .or_else(|e| {
-                e.downcast::<&'static str>().map(|s| Box::new((*s).into()))
-            })
+            .or_else(|e| { e.downcast::<&'static str>().map(|s| Box::new((*s).into())) })
             .unwrap_or_else(|_| {
                 Box::new(
-                    "An unknown error occurred, check the log for possible details."
-                        .to_string(),
+                    "An unknown error occurred, check the log for possible details.".to_string(),
                 )
             })
     );

@@ -1,6 +1,7 @@
 use roead::aamp::Name;
 use serde::{Deserialize, Serialize};
-use crate::{UKError, Result};
+
+use crate::{Result, UKError};
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum ExtType {
@@ -29,7 +30,11 @@ impl TryFrom<&Name> for ExtType {
             3190114414 => Ok(Self::IntArray),
             127394560 => Ok(Self::BitIndex),
             3977185723 => Ok(Self::BlenderBone),
-            _ => Err(UKError::Other("AnimSeq Element Extend contains invalid Extension key")),
+            _ => {
+                Err(UKError::Other(
+                    "AnimSeq Element Extend contains invalid Extension key",
+                ))
+            }
         }
     }
 }

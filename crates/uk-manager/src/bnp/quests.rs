@@ -12,10 +12,10 @@ impl BnpConverter {
         if quests_path.exists() {
             log::debug!("Processing quests log");
             let mut diff = Byml::from_text(fs::read_to_string(quests_path)?)?.into_map()?;
-            let mut quests = Byml::from_binary(
-                self.dump
-                    .get_bytes_from_sarc("Pack/TitleBG.pack//Quest/QuestProduct.sbquestpack", false)?,
-            )?
+            let mut quests = Byml::from_binary(self.dump.get_bytes_from_sarc(
+                "Pack/TitleBG.pack//Quest/QuestProduct.sbquestpack",
+                false,
+            )?)?
             .into_array()?;
             let quest_hashes: FxHashMap<String, usize> = quests
                 .iter()

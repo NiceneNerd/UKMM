@@ -2,7 +2,12 @@ use std::sync::LazyLock;
 
 use color_hex::color_from_hex;
 use eframe::epaint::StrokeKind;
-use egui::{epaint::{Margin, RectShape, Shadow, Tessellator}, style::{Selection, Spacing, TextCursorStyle, WidgetVisuals, Widgets}, vec2, Color32, CornerRadius, FontFamily, LayerId, Mesh, Rect, Stroke, Style, Ui, Visuals};
+use egui::{
+    Color32, CornerRadius, FontFamily, LayerId, Mesh, Rect, Stroke, Style, Ui, Visuals,
+    epaint::{Margin, RectShape, Shadow, Tessellator},
+    style::{Selection, Spacing, TextCursorStyle, WidgetVisuals, Widgets},
+    vec2,
+};
 use egui_aesthetix::Aesthetix;
 use serde::{Deserialize, Serialize};
 
@@ -46,54 +51,60 @@ pub fn style_dock(style: &Style) -> egui_dock::Style {
 }
 
 pub fn slate_grid(ui: &mut Ui) {
-    ui.scope_builder(egui::UiBuilder::new().layer_id(LayerId::background()), |ui| {
-        let cursor = ui.cursor();
-        let width = ui.available_width();
-        let height = ui.available_height() * 1.5;
-        static GRID_COLOR: LazyLock<Color32> = LazyLock::new(|| BLUE.linear_multiply(0.0333));
-        const GRID_OFFSET: f32 = 16.0;
-        let bg_rect = Rect::from_min_size(ui.cursor().min, ui.available_size()); //.shrink(4.0);
-        ui.painter()
-            .rect_filled(bg_rect, CornerRadius::ZERO, ui.style().visuals.extreme_bg_color);
-        ui.set_clip_rect(bg_rect);
-        ui.painter().add({
-            let mut mesh = Mesh::default();
-            let mut tesselator = Tessellator::new(
-                ui.pixels_per_point(),
-                egui::epaint::TessellationOptions {
-                    feathering: true,
-                    feathering_size_in_pixels: 32.0,
-                    ..Default::default()
-                },
-                [0, 0],
-                vec![],
+    ui.scope_builder(
+        egui::UiBuilder::new().layer_id(LayerId::background()),
+        |ui| {
+            let cursor = ui.cursor();
+            let width = ui.available_width();
+            let height = ui.available_height() * 1.5;
+            static GRID_COLOR: LazyLock<Color32> = LazyLock::new(|| BLUE.linear_multiply(0.0333));
+            const GRID_OFFSET: f32 = 16.0;
+            let bg_rect = Rect::from_min_size(ui.cursor().min, ui.available_size()); //.shrink(4.0);
+            ui.painter().rect_filled(
+                bg_rect,
+                CornerRadius::ZERO,
+                ui.style().visuals.extreme_bg_color,
             );
-            tesselator.tessellate_rect(
-                &RectShape::stroke(
-                    bg_rect.expand2([64.0, 0.0].into()),
-                    0.0,
-                    Stroke::new(2.0_f32, ui.style().visuals.widgets.inactive.bg_fill),
-                    StrokeKind::Inside
-                ),
-                &mut mesh,
-            );
-            mesh
-        });
-        for i in 0..(height as usize / 48 + 1) {
-            ui.painter().hline(
-                cursor.min.x..=width + 4.0,
-                (i as f32 * 48.0) + cursor.min.y + GRID_OFFSET,
-                Stroke::new(1.0_f32, *GRID_COLOR),
-            );
-        }
-        for i in 0..(width as usize / 48 + 1) {
-            ui.painter().vline(
-                (i as f32 * 48.0) + cursor.min.x + GRID_OFFSET,
-                cursor.min.y..=height,
-                Stroke::new(1.0_f32, *GRID_COLOR),
-            );
-        }
-    });
+            ui.set_clip_rect(bg_rect);
+            ui.painter().add({
+                let mut mesh = Mesh::default();
+                let mut tesselator = Tessellator::new(
+                    ui.pixels_per_point(),
+                    egui::epaint::TessellationOptions {
+                        feathering: true,
+                        feathering_size_in_pixels: 32.0,
+                        ..Default::default()
+                    },
+                    [0, 0],
+                    vec![],
+                );
+                tesselator.tessellate_rect(
+                    &RectShape::stroke(
+                        bg_rect.expand2([64.0, 0.0].into()),
+                        0.0,
+                        Stroke::new(2.0_f32, ui.style().visuals.widgets.inactive.bg_fill),
+                        StrokeKind::Inside,
+                    ),
+                    &mut mesh,
+                );
+                mesh
+            });
+            for i in 0..(height as usize / 48 + 1) {
+                ui.painter().hline(
+                    cursor.min.x..=width + 4.0,
+                    (i as f32 * 48.0) + cursor.min.y + GRID_OFFSET,
+                    Stroke::new(1.0_f32, *GRID_COLOR),
+                );
+            }
+            for i in 0..(width as usize / 48 + 1) {
+                ui.painter().vline(
+                    (i as f32 * 48.0) + cursor.min.x + GRID_OFFSET,
+                    cursor.min.y..=height,
+                    Stroke::new(1.0_f32, *GRID_COLOR),
+                );
+            }
+        },
+    );
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
@@ -207,7 +218,7 @@ impl Theme {
                         extreme_bg_color: hex_color!("#030a0e"), // e.g. TextEdit background
                         code_bg_color: Color32::from_gray(32),
                         warn_fg_color: ORANGE, // orange
-                        error_fg_color: RED,    // red
+                        error_fg_color: RED,   // red
                         window_corner_radius: CornerRadius::same(4),
                         window_shadow: Shadow {
                             offset: [0, 0],

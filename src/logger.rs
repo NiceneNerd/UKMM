@@ -14,7 +14,9 @@ pub static LOGGER: LazyLock<Logger> = LazyLock::new(|| {
         text: Default::default(),
         record_buf: Arc::new(Mutex::new(String::with_capacity(512))),
         msg: Default::default(),
-        inner: egui_logger::builder().max_level(log::LevelFilter::max()).build(),
+        inner: egui_logger::builder()
+            .max_level(log::LevelFilter::max())
+            .build(),
         file: OnceLock::new(),
     }
 });

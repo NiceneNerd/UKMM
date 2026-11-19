@@ -1,10 +1,12 @@
 use anyhow::Context;
-use roead::{objs, aamp::{ParameterList, Parameter::String64}};
+use roead::{
+    aamp::{Parameter::String64, ParameterList},
+    objs,
+};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
-use crate::prelude::Mergeable;
-use crate::{UKError, Result};
-use crate::util::DeleteMap;
+
+use crate::{Result, UKError, prelude::Mergeable, util::DeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct StringArray {
@@ -16,9 +18,13 @@ impl TryFrom<&ParameterList> for StringArray {
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            values: value.objects
+            values: value
+                .objects
                 .get("StringArray0")
-                .ok_or(UKError::MissingAampKey("StringArray missing StringArray0", Box::from(None)))?
+                .ok_or(UKError::MissingAampKey(
+                    "StringArray missing StringArray0",
+                    Box::from(None),
+                ))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, String)> {
                     let index = super::get_value_index(n.hash())
@@ -27,7 +33,7 @@ impl TryFrom<&ParameterList> for StringArray {
                         index,
                         v.as_str()
                             .context(format!("StringArray has invalid Value{}", index))?
-                            .into()
+                            .into(),
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -46,7 +52,7 @@ impl From<StringArray> for ParameterList {
                     )
                     .collect()
             ),
-            lists: Default::default()
+            lists:   Default::default(),
         }
     }
 }

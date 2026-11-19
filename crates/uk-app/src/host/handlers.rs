@@ -5,11 +5,11 @@
 
 use std::{env, fs, path::PathBuf, process::Command};
 
-use anyhow_ext::{anyhow, Context, Result};
-#[cfg(target_os = "windows")]
-use winreg::enums::*;
+use anyhow_ext::{Context, Result, anyhow};
 #[cfg(target_os = "windows")]
 use winreg::RegKey;
+#[cfg(target_os = "windows")]
+use winreg::enums::*;
 
 pub fn register_url_handler() -> Result<()> {
     #[cfg(target_os = "windows")]

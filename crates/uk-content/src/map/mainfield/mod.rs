@@ -1,9 +1,12 @@
 use anyhow::Context;
 use itertools::Itertools;
-use roead::byml::{map, Byml};
+use roead::byml::{Byml, map};
 use smartstring::alias::String;
 
-use crate::{prelude::Mergeable, util::{parsers::try_get_vecf, DeleteMap}};
+use crate::{
+    prelude::Mergeable,
+    util::{DeleteMap, parsers::try_get_vecf},
+};
 
 pub mod collab_anchor;
 pub mod korok_location;
@@ -27,9 +30,9 @@ pub struct MapUnit {
 impl<'a> FromIterator<&'a str> for MapUnit {
     fn from_iter<T: IntoIterator<Item = &'a str>>(iter: T) -> Self {
         let mut it = iter.into_iter();
-        let row = it.next()
-            .expect("iter must have 2 elements");
-        let col = it.next()
+        let row = it.next().expect("iter must have 2 elements");
+        let col = it
+            .next()
             .expect("iter must have 2 elements")
             .parse::<u32>()
             .expect("MapUnit third character must be number");
@@ -44,10 +47,12 @@ impl From<&str> for MapUnit {
     fn from(value: &str) -> Self {
         match value.len() {
             3 => value.split('-').collect(),
-            _ => Self {
-                row: value.into(),
-                col: 0xFFFFFFFF,
-            },
+            _ => {
+                Self {
+                    row: value.into(),
+                    col: 0xFFFFFFFF,
+                }
+            }
         }
     }
 }
@@ -118,7 +123,7 @@ impl TryFrom<&Byml> for Map {
     }
 }
 
-impl From<&Map> for & str {
+impl From<&Map> for &str {
     fn from(value: &Map) -> Self {
         match value {
             Map::AocField => "AocField",
@@ -141,27 +146,22 @@ impl From<&Map> for Byml {
     }
 }
 
-
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct MapAndUnit {
-    pub map:    Map,
-    pub unit:   MapUnit,
+    pub map:  Map,
+    pub unit: MapUnit,
 }
 
 impl<'a> FromIterator<&'a str> for MapAndUnit {
     fn from_iter<T: IntoIterator<Item = &'a str>>(iter: T) -> Self {
         let mut it = iter.into_iter();
-        let map = it.next()
+        let map = it
+            .next()
             .expect("iter must have 2 elements")
             .try_into()
             .expect("MapAndUnit first part must be Map");
-        let unit = it.next()
-            .expect("iter must have 2 elements")
-            .into();
-        Self {
-            map,
-            unit,
-        }
+        let unit = it.next().expect("iter must have 2 elements").into();
+        Self { map, unit }
     }
 }
 
@@ -171,17 +171,24 @@ impl TryFrom<&str> for MapAndUnit {
     fn try_from(value: &str) -> anyhow::Result<Self> {
         let parts = value.split('/');
         match parts.try_len() {
-            Ok(size) => match size {
-                2 => Ok(parts.collect()),
-                _ => Err(anyhow::anyhow!("MapAndUnit size must contain 2 parts: {}", size)),
+            Ok(size) => {
+                match size {
+                    2 => Ok(parts.collect()),
+                    _ => {
+                        Err(anyhow::anyhow!(
+                            "MapAndUnit size must contain 2 parts: {}",
+                            size
+                        ))
+                    }
+                }
             }
-            Err(size) => Err(
-                anyhow::anyhow!(
+            Err(size) => {
+                Err(anyhow::anyhow!(
                     "MapAndUnit must contain 2 parts, but could not be sized. Maybe it's {} or {}?",
                     size.0,
                     size.1.unwrap_or(0)
-                )
-            ),
+                ))
+            }
         }
     }
 }
@@ -229,13 +236,15 @@ impl TryFrom<&Byml> for AreaShape {
 
     fn try_from(value: &Byml) -> anyhow::Result<Self> {
         match value.as_string() {
-            Ok(s) => match s.as_str() {
-                "Box" => Ok(AreaShape::Box),
-                "Capsule" => Ok(AreaShape::Capsule),
-                "Cylinder" => Ok(AreaShape::Cylinder),
-                "Sphere" => Ok(AreaShape::Sphere),
-                _ => Err(anyhow::anyhow!("{} not valid AreaShape", s)),
-            },
+            Ok(s) => {
+                match s.as_str() {
+                    "Box" => Ok(AreaShape::Box),
+                    "Capsule" => Ok(AreaShape::Capsule),
+                    "Cylinder" => Ok(AreaShape::Cylinder),
+                    "Sphere" => Ok(AreaShape::Sphere),
+                    _ => Err(anyhow::anyhow!("{} not valid AreaShape", s)),
+                }
+            }
             Err(_) => Err(anyhow::anyhow!("AreaShape must be String")),
         }
     }
@@ -266,26 +275,35 @@ impl From<&AreaShape> for Byml {
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct ScaleTranslate {
-    pub scale:      DeleteMap<char, f32>,
-    pub translate:  DeleteMap<char, f32>,
+    pub scale:     DeleteMap<char, f32>,
+    pub translate: DeleteMap<char, f32>,
 }
 
 impl ScaleTranslate {
     pub fn id(&self) -> String {
-        roead::aamp::hash_name(
-            &format!(
-                "{}{}",
-                self.translate.values().map(|v| (v * 100000.0f32).to_string()).join(""),
-                self.scale.values().map(|v| (v * 100000.0f32).to_string()).join(""),
-            )
-        )
+        roead::aamp::hash_name(&format!(
+            "{}{}",
+            self.translate
+                .values()
+                .map(|v| (v * 100000.0f32).to_string())
+                .join(""),
+            self.scale
+                .values()
+                .map(|v| (v * 100000.0f32).to_string())
+                .join(""),
+        ))
         .to_string()
         .into()
     }
 
     pub fn is_complete(&self) -> bool {
-        self.scale.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z') &&
-            self.translate.iter().all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+        self.scale
+            .iter()
+            .all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
+            && self
+                .translate
+                .iter()
+                .all(|(c, _)| *c == 'X' || *c == 'Y' || *c == 'Z')
     }
 }
 
@@ -293,14 +311,17 @@ impl TryFrom<&Byml> for ScaleTranslate {
     type Error = anyhow::Error;
 
     fn try_from(value: &Byml) -> anyhow::Result<Self> {
-        let map = value.as_map().context("ScaleTranslate node must be HashMap")?;
+        let map = value
+            .as_map()
+            .context("ScaleTranslate node must be HashMap")?;
         Ok(Self {
-            scale: try_get_vecf(map.get("Scale")
-                .context("ScaleTranslate must have Scale")?)
+            scale:     try_get_vecf(map.get("Scale").context("ScaleTranslate must have Scale")?)
                 .context("Invalid ScaleTranslate Scale")?,
-            translate: try_get_vecf(map.get("Translate")
-                .context("ScaleTranslate must have Translate")?)
-                .context("Invalid ScaleTranslate Translate")?,
+            translate: try_get_vecf(
+                map.get("Translate")
+                    .context("ScaleTranslate must have Translate")?,
+            )
+            .context("Invalid ScaleTranslate Translate")?,
         })
     }
 }
@@ -323,14 +344,14 @@ impl From<ScaleTranslate> for Byml {
 impl Mergeable for ScaleTranslate {
     fn diff(&self, other: &Self) -> Self {
         Self {
-            scale: self.scale.diff(&other.scale),
+            scale:     self.scale.diff(&other.scale),
             translate: self.translate.diff(&other.translate),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         Self {
-            scale: self.scale.merge(&diff.scale),
+            scale:     self.scale.merge(&diff.scale),
             translate: self.scale.merge(&diff.translate),
         }
     }

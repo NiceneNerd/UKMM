@@ -2,7 +2,7 @@ use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use rayon::prelude::*;
 use roead::{
-    aamp::{get_default_name_table, ParameterIO, ParameterList, ParameterListing},
+    aamp::{ParameterIO, ParameterList, ParameterListing, get_default_name_table},
     sarc::{Sarc, SarcWriter},
     yaz0::compress_if,
 };
@@ -12,7 +12,7 @@ use uk_content::{
     util::merge_plist,
 };
 
-use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
+use super::{AampDiffEntry, BnpConverter, parse_aamp_diff};
 
 fn update_name_table(list: &ParameterList, base: Option<&ShopData>) {
     let name_table = get_default_name_table();

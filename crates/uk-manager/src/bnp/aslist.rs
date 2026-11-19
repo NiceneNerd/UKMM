@@ -11,7 +11,7 @@ use uk_content::{
     resource::ASList,
 };
 
-use super::{parse_aamp_diff, AampDiffEntry, BnpConverter};
+use super::{AampDiffEntry, BnpConverter, parse_aamp_diff};
 
 fn handle_diff_entry(
     sarc: &mut SarcWriter,

@@ -1,6 +1,6 @@
 use std::{
     path::{Path, PathBuf},
-    sync::{atomic::AtomicBool, LazyLock},
+    sync::{LazyLock, atomic::AtomicBool},
 };
 
 use anyhow_ext::Context;

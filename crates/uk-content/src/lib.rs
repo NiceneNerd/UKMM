@@ -83,7 +83,7 @@ impl From<&roead::byml::Byml> for ContextData {
 #[derive(Debug, Error)]
 pub enum UKError {
     #[error("Parameter file missing key: {0}")]
-    MissingAampKey(&'static str, Box::<Option<ContextData>>),
+    MissingAampKey(&'static str, Box<Option<ContextData>>),
     #[error("Parameter file missing key: {0}")]
     MissingAampKeyD(std::string::String),
     #[error("BYML file missing key: {0}")]

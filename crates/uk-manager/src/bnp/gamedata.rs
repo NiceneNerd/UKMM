@@ -80,7 +80,8 @@ impl BnpConverter {
                                     .or_else(|e| {
                                         let mut flag = flag.clone();
                                         flag.as_mut_map()?.insert("DataName".into(), name.into());
-                                        flag.as_mut_map()?.insert("DeleteRev".into(), Byml::I32(-1));
+                                        flag.as_mut_map()?
+                                            .insert("DeleteRev".into(), Byml::I32(-1));
                                         (&flag).try_into().context(e)
                                     })
                                     .with_context(|| {

@@ -9,7 +9,7 @@ use anyhow_ext::{Context, Result};
 use fs_err as fs;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DefaultOnError};
+use serde_with::{DefaultOnError, serde_as};
 use smartstring::alias::String;
 use uk_content::{constants::Language, prelude::Endian};
 use uk_localization::LocLang;
@@ -117,35 +117,43 @@ impl DeployConfig {
         match endian {
             Endian::Little => {
                 match self.layout {
-                    DeployLayout::WithoutName => (
-                        self.output.join("01007EF00011E000").join("romfs"),
-                        self.output.join("01007EF00011F001").join("romfs"),
-                    ),
-                    DeployLayout::WithName => (
-                        self.output
-                            .join("01007EF00011E000")
-                            .join("BreathOfTheWild_UKMM")
-                            .join("romfs"),
-                        self.output
-                            .join("01007EF00011F001")
-                            .join("BreathOfTheWild_UKMM")
-                            .join("romfs"),
-                    ),
+                    DeployLayout::WithoutName => {
+                        (
+                            self.output.join("01007EF00011E000").join("romfs"),
+                            self.output.join("01007EF00011F001").join("romfs"),
+                        )
+                    }
+                    DeployLayout::WithName => {
+                        (
+                            self.output
+                                .join("01007EF00011E000")
+                                .join("BreathOfTheWild_UKMM")
+                                .join("romfs"),
+                            self.output
+                                .join("01007EF00011F001")
+                                .join("BreathOfTheWild_UKMM")
+                                .join("romfs"),
+                        )
+                    }
                 }
             }
             Endian::Big => {
                 match self.layout {
-                    DeployLayout::WithoutName => (
-                        self.output.join("content"),
-                        self.output.join("aoc").join("0010"),
-                    ),
-                    DeployLayout::WithName => (
-                        self.output.join("BreathOfTheWild_UKMM").join("content"),
-                        self.output
-                            .join("BreathOfTheWild_UKMM")
-                            .join("aoc")
-                            .join("0010"),
-                    ),
+                    DeployLayout::WithoutName => {
+                        (
+                            self.output.join("content"),
+                            self.output.join("aoc").join("0010"),
+                        )
+                    }
+                    DeployLayout::WithName => {
+                        (
+                            self.output.join("BreathOfTheWild_UKMM").join("content"),
+                            self.output
+                                .join("BreathOfTheWild_UKMM")
+                                .join("aoc")
+                                .join("0010"),
+                        )
+                    }
                 }
             }
         }
@@ -187,7 +195,7 @@ impl DeployMethod {
 pub enum DeployLayout {
     #[default]
     WithoutName,
-    WithName
+    WithName,
 }
 
 impl DeployLayout {
@@ -369,20 +377,24 @@ impl Settings {
 
     pub fn wipe_output(&self, endian: Endian) -> Result<()> {
         let (content, aoc) = match endian {
-            Endian::Big => self.wiiu_config
-                .as_ref()
-                .unwrap()
-                .deploy_config
-                .as_ref()
-                .unwrap()
-                .final_output_paths(endian),
-            Endian::Little => self.switch_config
-                .as_ref()
-                .unwrap()
-                .deploy_config
-                .as_ref()
-                .unwrap()
-                .final_output_paths(endian),
+            Endian::Big => {
+                self.wiiu_config
+                    .as_ref()
+                    .unwrap()
+                    .deploy_config
+                    .as_ref()
+                    .unwrap()
+                    .final_output_paths(endian)
+            }
+            Endian::Little => {
+                self.switch_config
+                    .as_ref()
+                    .unwrap()
+                    .deploy_config
+                    .as_ref()
+                    .unwrap()
+                    .final_output_paths(endian)
+            }
         };
         if util::is_symlink(content.as_ref()) {
             util::remove_symlink(content)?;
@@ -429,14 +441,12 @@ impl Settings {
         fs::read_dir(self.profiles_dir())
             .into_iter()
             .flat_map(|entries| {
-                entries
-                    .filter_map(Result::ok)
-                    .filter_map(|entry| {
-                        entry
-                            .path()
-                            .is_dir()
-                            .then(|| entry.file_name().to_string_lossy().into())
-                    })
+                entries.filter_map(Result::ok).filter_map(|entry| {
+                    entry
+                        .path()
+                        .is_dir()
+                        .then(|| entry.file_name().to_string_lossy().into())
+                })
             })
     }
 

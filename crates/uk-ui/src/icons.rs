@@ -67,8 +67,8 @@ pub fn load_icons(context: &egui::Context) {
             "delete",
             image::load_svg_bytes(DELETE.as_bytes(), &load_options)
                 .expect("Could not load DELETE image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Delete,
@@ -80,8 +80,8 @@ pub fn load_icons(context: &egui::Context) {
             "cancel",
             image::load_svg_bytes(CANCEL.as_bytes(), &load_options)
                 .expect("Could not load CANCEL image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Cancel,
@@ -93,8 +93,8 @@ pub fn load_icons(context: &egui::Context) {
             "list",
             image::load_svg_bytes(LIST.as_bytes(), &load_options)
                 .expect("Could not load LIST image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::List,
@@ -106,8 +106,8 @@ pub fn load_icons(context: &egui::Context) {
             "menu",
             image::load_svg_bytes(MENU.as_bytes(), &load_options)
                 .expect("Could not load MENU image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Menu,
@@ -119,8 +119,8 @@ pub fn load_icons(context: &egui::Context) {
             "check",
             image::load_svg_bytes(CHECK.as_bytes(), &load_options)
                 .expect("Could not load CHECK image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Check,
@@ -130,10 +130,9 @@ pub fn load_icons(context: &egui::Context) {
         Icon::Add,
         context.load_texture(
             "add",
-            image::load_svg_bytes(ADD.as_bytes(), &load_options)
-                .expect("Could not load ADD image"),
-            texture_options
-        )
+            image::load_svg_bytes(ADD.as_bytes(), &load_options).expect("Could not load ADD image"),
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Add,
@@ -145,8 +144,8 @@ pub fn load_icons(context: &egui::Context) {
             "import",
             image::load_svg_bytes(IMPORT.as_bytes(), &load_options)
                 .expect("Could not load IMPORT image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Import,
@@ -158,8 +157,8 @@ pub fn load_icons(context: &egui::Context) {
             "info",
             image::load_svg_bytes(INFO.as_bytes(), &load_options)
                 .expect("Could not load INFO image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Info,
@@ -171,8 +170,8 @@ pub fn load_icons(context: &egui::Context) {
             "help",
             image::load_svg_bytes(HELP.as_bytes(), &load_options)
                 .expect("Could not load HELP image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Help,
@@ -184,8 +183,8 @@ pub fn load_icons(context: &egui::Context) {
             "blank",
             image::load_svg_bytes(BLANK.as_bytes(), &load_options)
                 .expect("Could not load BLANK image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Blank,
@@ -197,8 +196,8 @@ pub fn load_icons(context: &egui::Context) {
             "folder",
             image::load_svg_bytes(FOLDER.as_bytes(), &load_options)
                 .expect("Could not load FOLDER image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Folder,
@@ -210,8 +209,8 @@ pub fn load_icons(context: &egui::Context) {
             "archive",
             image::load_svg_bytes(FOLDER_ZIP.as_bytes(), &load_options)
                 .expect("Could not load FOLDER_ZIP image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::FolderZip,
@@ -223,8 +222,8 @@ pub fn load_icons(context: &egui::Context) {
             "folder-open",
             image::load_svg_bytes(FOLDER_OPEN.as_bytes(), &load_options)
                 .expect("Could not load FOLDER_OPEN image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::FolderOpen,
@@ -236,8 +235,8 @@ pub fn load_icons(context: &egui::Context) {
             "up",
             image::load_svg_bytes(ARROW_UP.as_bytes(), &load_options)
                 .expect("Could not load ARROW_UP image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::ArrowUp,
@@ -249,8 +248,8 @@ pub fn load_icons(context: &egui::Context) {
             "back",
             image::load_svg_bytes(ARROW_BACK.as_bytes(), &load_options)
                 .expect("Could not load ARROW_BACK image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::ArrowBack,
@@ -262,8 +261,8 @@ pub fn load_icons(context: &egui::Context) {
             "reset",
             image::load_svg_bytes(RESET.as_bytes(), &load_options)
                 .expect("Could not load RESET image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Reset,
@@ -275,8 +274,8 @@ pub fn load_icons(context: &egui::Context) {
             "refresh",
             image::load_svg_bytes(REFRESH.as_bytes(), &load_options)
                 .expect("Could not load REFRESH image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Refresh,
@@ -288,8 +287,8 @@ pub fn load_icons(context: &egui::Context) {
             "save",
             image::load_svg_bytes(SAVE.as_bytes(), &load_options)
                 .expect("Could not load SAVE image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Save,
@@ -301,8 +300,8 @@ pub fn load_icons(context: &egui::Context) {
             "settings",
             image::load_svg_bytes(SETTINGS.as_bytes(), &load_options)
                 .expect("Could not load SETTINGS image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Settings,
@@ -314,8 +313,8 @@ pub fn load_icons(context: &egui::Context) {
             "tune",
             image::load_svg_bytes(TUNE.as_bytes(), &load_options)
                 .expect("Could not load TUNE image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Tune,
@@ -327,8 +326,8 @@ pub fn load_icons(context: &egui::Context) {
             "patreon",
             image::load_svg_bytes(PATREON.as_bytes(), &load_options)
                 .expect("Could not load PATREON image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Patreon,
@@ -340,8 +339,8 @@ pub fn load_icons(context: &egui::Context) {
             "btc",
             image::load_svg_bytes(BITCOIN.as_bytes(), &load_options)
                 .expect("Could not load BITCOIN image"),
-            texture_options
-        )
+            texture_options,
+        ),
     );
     // map.insert(
     //     Icon::Bitcoin,

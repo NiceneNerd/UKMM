@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uk_content_derive::ParamData;
 use uk_util::OptionResultExt;
 
-use crate::{actor::ParameterResource, prelude::*, util::DeleteMap, Result, UKError};
+use crate::{Result, UKError, actor::ParameterResource, prelude::*, util::DeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, ParamData)]
 
@@ -34,7 +34,10 @@ impl TryFrom<&ParameterIO> for ASList {
             common:     pio.object("Common").cloned(),
             add_reses:  pio
                 .list("AddReses")
-                .ok_or(UKError::MissingAampKey("AS list missing add reses", Box::from(None)))?
+                .ok_or(UKError::MissingAampKey(
+                    "AS list missing add reses",
+                    Box::from(None),
+                ))?
                 .objects
                 .0
                 .values()
@@ -45,7 +48,10 @@ impl TryFrom<&ParameterIO> for ASList {
                 .collect::<Result<_>>()?,
             as_defines: pio
                 .list("ASDefines")
-                .ok_or(UKError::MissingAampKey("AS list missing AS defines", Box::from(None)))?
+                .ok_or(UKError::MissingAampKey(
+                    "AS list missing AS defines",
+                    Box::from(None),
+                ))?
                 .objects
                 .0
                 .values()

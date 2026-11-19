@@ -11,11 +11,11 @@ use crate::{ROMError, Result};
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct ZArchive {
     #[serde(skip_serializing)]
-    archive: Arc<zarchive::reader::ZArchiveReader>,
+    archive:     Arc<zarchive::reader::ZArchiveReader>,
     content_dir: PathBuf,
-    update_dir: PathBuf,
-    aoc_dir: Option<PathBuf>,
-    host_path: PathBuf,
+    update_dir:  PathBuf,
+    aoc_dir:     Option<PathBuf>,
+    host_path:   PathBuf,
 }
 
 impl ZArchive {
@@ -27,13 +27,15 @@ impl ZArchive {
         })) {
             Ok(Ok(archive)) => Ok(Arc::new(archive)),
             Ok(Err(err)) => Err(err),
-            Err(_) => Err(ROMError::Any(
-                anyhow::anyhow!(
-                    "Failed to open ZArchive at {}. The archive may be invalid or unreadable.",
-                    path.display()
-                )
-                .into(),
-            )),
+            Err(_) => {
+                Err(ROMError::Any(
+                    anyhow::anyhow!(
+                        "Failed to open ZArchive at {}. The archive may be invalid or unreadable.",
+                        path.display()
+                    )
+                    .into(),
+                ))
+            }
         }
     }
 
@@ -74,10 +76,7 @@ impl super::ResourceLoader for ZArchive {
         self.archive
             .read_file(self.content_dir.join(name))
             .ok_or_else(|| {
-                ROMError::FileNotFound(
-                    name.to_string_lossy().into(),
-                    self.host_path.clone()
-                )
+                ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
             })
     }
 
@@ -85,10 +84,7 @@ impl super::ResourceLoader for ZArchive {
         self.archive
             .read_file(self.update_dir.join(name))
             .ok_or_else(|| {
-                ROMError::FileNotFound(
-                    name.to_string_lossy().into(),
-                    self.host_path.clone(),
-                )
+                ROMError::FileNotFound(name.to_string_lossy().into(), self.host_path.clone())
             })
     }
 

@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 
 use crate::{
+    Result, UKError,
     prelude::*,
     util::{HashSet, IndexMap},
-    Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]

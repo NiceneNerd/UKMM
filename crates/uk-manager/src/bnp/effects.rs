@@ -9,10 +9,10 @@ impl BnpConverter {
         let effects_path = self.current_root.join("logs/effects.yml");
         if effects_path.exists() {
             log::debug!("Processing status effect log");
-            let mut base = Byml::from_binary(
-                self.dump
-                    .get_bytes_from_sarc("Pack/Bootup.pack//Ecosystem/StatusEffectList.sbyml", false)?,
-            )?
+            let mut base = Byml::from_binary(self.dump.get_bytes_from_sarc(
+                "Pack/Bootup.pack//Ecosystem/StatusEffectList.sbyml",
+                false,
+            )?)?
             .into_array()?
             .remove(0)
             .into_map()?;

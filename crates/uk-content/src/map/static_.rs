@@ -4,25 +4,17 @@ use anyhow::Context;
 use roead::byml::Byml;
 use serde::{Deserialize, Serialize};
 
+use super::mainfield::{
+    ScaleTranslate, collab_anchor::CollabAnchor, korok_location::KorokLocation,
+    location_marker::LocationMarker, location_pointer::LocationPointer,
+    non_auto_gen_area::NonAutoGenArea, non_auto_placement::NonAutoPlacement,
+    restart_pos::RestartPos, road_npc_rest_station::RoadNpcRestStation, start_pos::StartPos,
+    static_grudge_location::StaticGrudgeLocation, target_pos_marker::TargetPosMarker,
+};
 use crate::{
+    Result, UKError,
     prelude::*,
     util::{DeleteMap, DeleteVec},
-    Result, UKError,
-};
-
-use super::mainfield::{
-    ScaleTranslate,
-    collab_anchor::CollabAnchor,
-    korok_location::KorokLocation,
-    location_marker::LocationMarker,
-    location_pointer::LocationPointer,
-    non_auto_gen_area::NonAutoGenArea,
-    non_auto_placement::NonAutoPlacement,
-    restart_pos::RestartPos,
-    road_npc_rest_station::RoadNpcRestStation,
-    start_pos::StartPos,
-    static_grudge_location::StaticGrudgeLocation,
-    target_pos_marker::TargetPosMarker,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -212,19 +204,19 @@ impl Resource for Static {
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 pub struct MainStatic {
-    pub dlc_restart_pos:            Option<DeleteMap<String, RestartPos>>,
-    pub collab_anchor:              DeleteMap<String, CollabAnchor>,
-    pub korok_location:             DeleteMap<String, KorokLocation>,
-    pub location_marker:            DeleteMap<String, LocationMarker>,
-    pub location_pointer:           DeleteMap<String, LocationPointer>,
-    pub non_auto_gen_area:          DeleteMap<String, NonAutoGenArea>,
-    pub non_auto_placement:         DeleteMap<String, NonAutoPlacement>,
-    pub road_npc_rest_station:      DeleteMap<String, RoadNpcRestStation>,
-    pub start_pos:                  DeleteMap<String, StartPos>,
-    pub static_grudge_location:     DeleteMap<String, StaticGrudgeLocation>,
-    pub target_pos_marker:          DeleteMap<String, TargetPosMarker>,
-    pub tera_water_disable:         DeleteMap<String, ScaleTranslate>,
-    pub terrain_hide_center_tag:    DeleteMap<String, ScaleTranslate>,
+    pub dlc_restart_pos: Option<DeleteMap<String, RestartPos>>,
+    pub collab_anchor: DeleteMap<String, CollabAnchor>,
+    pub korok_location: DeleteMap<String, KorokLocation>,
+    pub location_marker: DeleteMap<String, LocationMarker>,
+    pub location_pointer: DeleteMap<String, LocationPointer>,
+    pub non_auto_gen_area: DeleteMap<String, NonAutoGenArea>,
+    pub non_auto_placement: DeleteMap<String, NonAutoPlacement>,
+    pub road_npc_rest_station: DeleteMap<String, RoadNpcRestStation>,
+    pub start_pos: DeleteMap<String, StartPos>,
+    pub static_grudge_location: DeleteMap<String, StaticGrudgeLocation>,
+    pub target_pos_marker: DeleteMap<String, TargetPosMarker>,
+    pub tera_water_disable: DeleteMap<String, ScaleTranslate>,
+    pub terrain_hide_center_tag: DeleteMap<String, ScaleTranslate>,
 }
 
 impl TryFrom<&Byml> for MainStatic {
@@ -235,27 +227,31 @@ impl TryFrom<&Byml> for MainStatic {
         Ok(Self {
             dlc_restart_pos: root_map
                 .get("DLCRestartPos")
-                .map(|b| b.as_array()
-                    .expect("Invalid DLCRestartPos")
-                    .iter()
-                    .enumerate()
-                    .map(|(index, entry)| {
-                        let entry: RestartPos = entry.try_into()
-                            .with_context(|| format!("Could not read RestartPos {}", index))?;
-                        Ok((entry.id(), entry))
-                    })
-                    .collect::<Result<DeleteMap<_, _>>>())
+                .map(|b| {
+                    b.as_array()
+                        .expect("Invalid DLCRestartPos")
+                        .iter()
+                        .enumerate()
+                        .map(|(index, entry)| {
+                            let entry: RestartPos = entry
+                                .try_into()
+                                .with_context(|| format!("Could not read RestartPos {}", index))?;
+                            Ok((entry.id(), entry))
+                        })
+                        .collect::<Result<DeleteMap<_, _>>>()
+                })
                 .transpose()?,
             collab_anchor: root_map
                 .get("FldObj_DLC_ShootingStarCollaborationAnchor")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing FldObj_DLC_ShootingStarCollaborationAnchor"
+                    "MainField static missing FldObj_DLC_ShootingStarCollaborationAnchor",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: CollabAnchor = entry.try_into()
+                    let entry: CollabAnchor = entry
+                        .try_into()
                         .with_context(|| format!("Could not read CollabAnchor {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -263,13 +259,14 @@ impl TryFrom<&Byml> for MainStatic {
             korok_location: root_map
                 .get("KorokLocation")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing KorokLocation"
+                    "MainField static missing KorokLocation",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: KorokLocation = entry.try_into()
+                    let entry: KorokLocation = entry
+                        .try_into()
                         .with_context(|| format!("Could not read KorokLocation {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -277,13 +274,14 @@ impl TryFrom<&Byml> for MainStatic {
             location_marker: root_map
                 .get("LocationMarker")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing LocationMarker"
+                    "MainField static missing LocationMarker",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: LocationMarker = entry.try_into()
+                    let entry: LocationMarker = entry
+                        .try_into()
                         .with_context(|| format!("Could not read LocationMarker {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -291,13 +289,14 @@ impl TryFrom<&Byml> for MainStatic {
             location_pointer: root_map
                 .get("LocationPointer")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing LocationPointer"
+                    "MainField static missing LocationPointer",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: LocationPointer = entry.try_into()
+                    let entry: LocationPointer = entry
+                        .try_into()
                         .with_context(|| format!("Could not read LocationPointer {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -305,13 +304,14 @@ impl TryFrom<&Byml> for MainStatic {
             non_auto_gen_area: root_map
                 .get("NonAutoGenArea")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing NonAutoGenArea"
+                    "MainField static missing NonAutoGenArea",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: NonAutoGenArea = entry.try_into()
+                    let entry: NonAutoGenArea = entry
+                        .try_into()
                         .with_context(|| format!("Could not read NonAutoGenArea {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -319,13 +319,14 @@ impl TryFrom<&Byml> for MainStatic {
             non_auto_placement: root_map
                 .get("NonAutoPlacement")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing NonAutoPlacement"
+                    "MainField static missing NonAutoPlacement",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: NonAutoPlacement = entry.try_into()
+                    let entry: NonAutoPlacement = entry
+                        .try_into()
                         .with_context(|| format!("Could not read NonAutoPlacement {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -333,27 +334,27 @@ impl TryFrom<&Byml> for MainStatic {
             road_npc_rest_station: root_map
                 .get("RoadNpcRestStation")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing RoadNpcRestStation"
+                    "MainField static missing RoadNpcRestStation",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: RoadNpcRestStation = entry.try_into()
+                    let entry: RoadNpcRestStation = entry
+                        .try_into()
                         .with_context(|| format!("Could not read RoadNpcRestStation {}", index))?;
                     Ok((entry.id(), entry))
                 })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             start_pos: root_map
                 .get("StartPos")
-                .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing StartPos"
-                ))?
+                .ok_or(UKError::MissingBymlKey("MainField static missing StartPos"))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: StartPos = entry.try_into()
+                    let entry: StartPos = entry
+                        .try_into()
                         .with_context(|| format!("Could not read StartPos {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -361,27 +362,29 @@ impl TryFrom<&Byml> for MainStatic {
             static_grudge_location: root_map
                 .get("StaticGrudgeLocation")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing StaticGrudgeLocation"
+                    "MainField static missing StaticGrudgeLocation",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: StaticGrudgeLocation = entry.try_into()
-                        .with_context(|| format!("Could not read StaticGrudgeLocation {}", index))?;
+                    let entry: StaticGrudgeLocation = entry.try_into().with_context(|| {
+                        format!("Could not read StaticGrudgeLocation {}", index)
+                    })?;
                     Ok((entry.id(), entry))
                 })
                 .collect::<Result<DeleteMap<_, _>>>()?,
             target_pos_marker: root_map
                 .get("TargetPosMarker")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing TargetPosMarker"
+                    "MainField static missing TargetPosMarker",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: TargetPosMarker = entry.try_into()
+                    let entry: TargetPosMarker = entry
+                        .try_into()
                         .with_context(|| format!("Could not read TargetPosMarker {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -389,13 +392,14 @@ impl TryFrom<&Byml> for MainStatic {
             tera_water_disable: root_map
                 .get("TeraWaterDisable")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing TeraWaterDisable"
+                    "MainField static missing TeraWaterDisable",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: ScaleTranslate = entry.try_into()
+                    let entry: ScaleTranslate = entry
+                        .try_into()
                         .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -403,13 +407,14 @@ impl TryFrom<&Byml> for MainStatic {
             terrain_hide_center_tag: root_map
                 .get("TerrainHideCenterTag")
                 .ok_or(UKError::MissingBymlKey(
-                    "MainField static missing TerrainHideCenterTag"
+                    "MainField static missing TerrainHideCenterTag",
                 ))?
                 .as_array()?
                 .iter()
                 .enumerate()
                 .map(|(index, entry)| {
-                    let entry: ScaleTranslate = entry.try_into()
+                    let entry: ScaleTranslate = entry
+                        .try_into()
                         .with_context(|| format!("Could not read ScaleTranslate {}", index))?;
                     Ok((entry.id(), entry))
                 })
@@ -421,145 +426,126 @@ impl TryFrom<&Byml> for MainStatic {
 impl From<MainStatic> for Byml {
     fn from(val: MainStatic) -> Self {
         val.dlc_restart_pos
-            .map_or_else(Vec::<(String, Byml)>::new, |d| [(
-                String::from("DLCRestartPos"),
-                Byml::Array(d.into_iter()
-                    .map(|(_, entry)| entry.into())
-                    .collect::<Vec<Byml>>())
-            )].into())
+            .map_or_else(Vec::<(String, Byml)>::new, |d| {
+                [(
+                    String::from("DLCRestartPos"),
+                    Byml::Array(
+                        d.into_iter()
+                            .map(|(_, entry)| entry.into())
+                            .collect::<Vec<Byml>>(),
+                    ),
+                )]
+                .into()
+            })
             .into_iter()
-            .chain(
-                [(
-                    "FldObj_DLC_ShootingStarCollaborationAnchor".into(),
-                    val.collab_anchor
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "KorokLocation".into(),
-                    val.korok_location
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "LocationMarker".into(),
-                    val.location_marker
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "LocationPointer".into(),
-                    val.location_pointer
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "NonAutoGenArea".into(),
-                    val.non_auto_gen_area
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "NonAutoPlacement".into(),
-                    val.non_auto_placement
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "RoadNpcRestStation".into(),
-                    val.road_npc_rest_station
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "StartPos".into(),
-                    val.start_pos
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "StaticGrudgeLocation".into(),
-                    val.static_grudge_location
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "TargetPosMarker".into(),
-                    val.target_pos_marker
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "TeraWaterDisable".into(),
-                    val.tera_water_disable
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
-            .chain(
-                [(
-                    "TerrainHideCenterTag".into(),
-                    val.terrain_hide_center_tag
-                        .into_iter()
-                        .filter(|(_, entry)| entry.is_complete())
-                        .map(|(_, entry)| entry.into())
-                        .collect::<Vec<_>>()
-                        .into(),
-                )]
-            )
+            .chain([(
+                "FldObj_DLC_ShootingStarCollaborationAnchor".into(),
+                val.collab_anchor
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "KorokLocation".into(),
+                val.korok_location
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "LocationMarker".into(),
+                val.location_marker
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "LocationPointer".into(),
+                val.location_pointer
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "NonAutoGenArea".into(),
+                val.non_auto_gen_area
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "NonAutoPlacement".into(),
+                val.non_auto_placement
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "RoadNpcRestStation".into(),
+                val.road_npc_rest_station
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "StartPos".into(),
+                val.start_pos
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "StaticGrudgeLocation".into(),
+                val.static_grudge_location
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "TargetPosMarker".into(),
+                val.target_pos_marker
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "TeraWaterDisable".into(),
+                val.tera_water_disable
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
+            .chain([(
+                "TerrainHideCenterTag".into(),
+                val.terrain_hide_center_tag
+                    .into_iter()
+                    .filter(|(_, entry)| entry.is_complete())
+                    .map(|(_, entry)| entry.into())
+                    .collect::<Vec<_>>()
+                    .into(),
+            )])
             .collect::<crate::util::HashMap<String, Byml>>()
             .into()
     }
@@ -568,10 +554,12 @@ impl From<MainStatic> for Byml {
 impl Mergeable for MainStatic {
     fn diff(&self, other: &Self) -> Self {
         let dlc_restart_pos = match &other.dlc_restart_pos {
-            Some(b) => match &self.dlc_restart_pos {
-                Some(a) => Some(a.deep_diff(b)),
-                None => Some(b.clone()),
-            },
+            Some(b) => {
+                match &self.dlc_restart_pos {
+                    Some(a) => Some(a.deep_diff(b)),
+                    None => Some(b.clone()),
+                }
+            }
             None => self.dlc_restart_pos.clone(),
         };
         Self {
@@ -582,21 +570,29 @@ impl Mergeable for MainStatic {
             location_pointer: self.location_pointer.deep_diff(&other.location_pointer),
             non_auto_gen_area: self.non_auto_gen_area.deep_diff(&other.non_auto_gen_area),
             non_auto_placement: self.non_auto_placement.deep_diff(&other.non_auto_placement),
-            road_npc_rest_station: self.road_npc_rest_station.deep_diff(&other.road_npc_rest_station),
+            road_npc_rest_station: self
+                .road_npc_rest_station
+                .deep_diff(&other.road_npc_rest_station),
             start_pos: self.start_pos.deep_diff(&other.start_pos),
-            static_grudge_location: self.static_grudge_location.deep_diff(&other.static_grudge_location),
+            static_grudge_location: self
+                .static_grudge_location
+                .deep_diff(&other.static_grudge_location),
             target_pos_marker: self.target_pos_marker.deep_diff(&other.target_pos_marker),
             tera_water_disable: self.tera_water_disable.deep_diff(&other.tera_water_disable),
-            terrain_hide_center_tag: self.terrain_hide_center_tag.deep_diff(&other.terrain_hide_center_tag),
+            terrain_hide_center_tag: self
+                .terrain_hide_center_tag
+                .deep_diff(&other.terrain_hide_center_tag),
         }
     }
 
     fn merge(&self, diff: &Self) -> Self {
         let dlc_restart_pos = match &diff.dlc_restart_pos {
-            Some(b) => match &self.dlc_restart_pos {
-                Some(a) => Some(a.deep_merge(b)),
-                None => Some(b.clone()),
-            },
+            Some(b) => {
+                match &self.dlc_restart_pos {
+                    Some(a) => Some(a.deep_merge(b)),
+                    None => Some(b.clone()),
+                }
+            }
             None => self.dlc_restart_pos.clone(),
         };
         Self {
@@ -607,12 +603,18 @@ impl Mergeable for MainStatic {
             location_pointer: self.location_pointer.deep_merge(&diff.location_pointer),
             non_auto_gen_area: self.non_auto_gen_area.deep_merge(&diff.non_auto_gen_area),
             non_auto_placement: self.non_auto_placement.deep_merge(&diff.non_auto_placement),
-            road_npc_rest_station: self.road_npc_rest_station.deep_merge(&diff.road_npc_rest_station),
+            road_npc_rest_station: self
+                .road_npc_rest_station
+                .deep_merge(&diff.road_npc_rest_station),
             start_pos: self.start_pos.deep_merge(&diff.start_pos),
-            static_grudge_location: self.static_grudge_location.deep_merge(&diff.static_grudge_location),
+            static_grudge_location: self
+                .static_grudge_location
+                .deep_merge(&diff.static_grudge_location),
             target_pos_marker: self.target_pos_marker.deep_merge(&diff.target_pos_marker),
             tera_water_disable: self.tera_water_disable.deep_merge(&diff.tera_water_disable),
-            terrain_hide_center_tag: self.terrain_hide_center_tag.deep_merge(&diff.terrain_hide_center_tag),
+            terrain_hide_center_tag: self
+                .terrain_hide_center_tag
+                .deep_merge(&diff.terrain_hide_center_tag),
         }
     }
 }
@@ -685,12 +687,21 @@ mod tests {
         assert_eq!(mstatic.location_pointer, mstatic2.location_pointer);
         assert_eq!(mstatic.non_auto_gen_area, mstatic2.non_auto_gen_area);
         assert_eq!(mstatic.non_auto_placement, mstatic2.non_auto_placement);
-        assert_eq!(mstatic.road_npc_rest_station, mstatic2.road_npc_rest_station);
+        assert_eq!(
+            mstatic.road_npc_rest_station,
+            mstatic2.road_npc_rest_station
+        );
         assert_eq!(mstatic.start_pos, mstatic2.start_pos);
-        assert_eq!(mstatic.static_grudge_location, mstatic2.static_grudge_location);
+        assert_eq!(
+            mstatic.static_grudge_location,
+            mstatic2.static_grudge_location
+        );
         assert_eq!(mstatic.target_pos_marker, mstatic2.target_pos_marker);
         assert_eq!(mstatic.tera_water_disable, mstatic2.tera_water_disable);
-        assert_eq!(mstatic.terrain_hide_center_tag, mstatic2.terrain_hide_center_tag);
+        assert_eq!(
+            mstatic.terrain_hide_center_tag,
+            mstatic2.terrain_hide_center_tag
+        );
     }
 
     #[test]

@@ -5,10 +5,10 @@ use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
 
 use crate::{
+    Result, UKError,
     actor::{InfoSource, ParameterResource},
     prelude::*,
     util::{IndexMap, IteratorExt},
-    Result, UKError,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
@@ -56,9 +56,10 @@ impl TryFrom<&ParameterIO> for DropTable {
     type Error = UKError;
 
     fn try_from(list: &ParameterIO) -> Result<Self> {
-        let header = list
-            .object("Header")
-            .ok_or(UKError::MissingAampKey("Drop table missing header", Box::from(None)))?;
+        let header = list.object("Header").ok_or(UKError::MissingAampKey(
+            "Drop table missing header",
+            Box::from(None),
+        ))?;
         Ok(Self(
             header
                 .iter()

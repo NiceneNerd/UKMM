@@ -2,16 +2,16 @@ use anyhow::Context;
 use join_str::jstr;
 use roead::{
     aamp::hash_name,
-    byml::{map, Byml},
+    byml::{Byml, map},
     sarc::{Sarc, SarcWriter},
 };
 use serde::{Deserialize, Serialize};
 use uk_content_derive::BymlData;
 
 use crate::{
+    Result, UKError,
     prelude::*,
     util::{HashMap, SortedDeleteSet},
-    Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, BymlData)]

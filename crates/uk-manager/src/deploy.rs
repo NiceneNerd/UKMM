@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used, unstable_name_collisions)]
 
-mod folder;
 mod file;
+mod folder;
 mod pending_log;
 
 use std::{
@@ -14,6 +14,7 @@ use dashmap::DashMap;
 use fs_err as fs;
 use join_str::jstr;
 use parking_lot::RwLock;
+use pending_log::PendingLog;
 use rayon::prelude::*;
 use roead::yaz0::{compress, decompress};
 use rstb::ResourceSizeTable;
@@ -21,8 +22,8 @@ use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use uk_content::{constants::Language, platform_prefixes};
 use uk_mod::{
-    unpack::{ModReader, ModUnpacker},
     Manifest,
+    unpack::{ModReader, ModUnpacker},
 };
 
 use crate::{
@@ -30,7 +31,6 @@ use crate::{
     settings::{DeployMethod, Platform, Settings},
     util,
 };
-use pending_log::PendingLog;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct OldPendingLog {
@@ -40,7 +40,7 @@ struct OldPendingLog {
 
 #[derive(Debug)]
 pub struct Manager {
-    settings: Weak<RwLock<Settings>>,
+    settings:    Weak<RwLock<Settings>>,
     mod_manager: Weak<RwLock<mods::Manager>>,
     pending_log: RwLock<PendingLog>,
     //pending_files: RwLock<Manifest>,
@@ -59,10 +59,10 @@ impl Manager {
     ) -> Result<Self> {
         log::info!("Initializing deployment manager");
         let pending = match fs::read_to_string(Self::log_path(&settings.read()))
-            .map_err(anyhow_ext::Error::from) {
+            .map_err(anyhow_ext::Error::from)
+        {
             Ok(text) => {
-                match serde_yaml::from_str::<PendingLog>(&text)
-                {
+                match serde_yaml::from_str::<PendingLog>(&text) {
                     Ok(log) => {
                         if log.has_some() {
                             log::info!("Pending deployment data found");
@@ -73,8 +73,7 @@ impl Manager {
                         log
                     }
                     Err(_) => {
-                        let old_pending = match serde_yaml::from_str::<OldPendingLog>(&text)
-                        {
+                        let old_pending = match serde_yaml::from_str::<OldPendingLog>(&text) {
                             Ok(old_log) => {
                                 if !old_log.files.is_empty() || !old_log.delete.is_empty() {
                                     log::info!("Pending deployment data found");
@@ -105,7 +104,7 @@ impl Manager {
             }
         };
         Ok(Self {
-            settings: Arc::downgrade(settings),
+            settings:    Arc::downgrade(settings),
             mod_manager: Arc::downgrade(mod_manager),
             pending_log: RwLock::new(pending),
         })
@@ -137,7 +136,10 @@ impl Manager {
         let (dest_content, dest_aoc) = config.final_output_paths(settings.current_mode.into());
 
         *self.pending_log.write() = PendingLog::try_from((
-            source.join(content), source.join(aoc), dest_content, dest_aoc
+            source.join(content),
+            source.join(aoc),
+            dest_content,
+            dest_aoc,
         ))?;
 
         Ok(())
@@ -171,7 +173,7 @@ impl Manager {
 
         // Determine src and dest folders
         let (content, aoc) = platform_prefixes(settings.current_mode.into());
-        let src_content  = settings.merged_dir().join(content);
+        let src_content = settings.merged_dir().join(content);
         let src_aoc = settings.merged_dir().join(aoc);
         let (dest_content, dest_aoc) = config.final_output_paths(settings.current_mode.into());
         // Remove old behavior
@@ -186,7 +188,7 @@ impl Manager {
 
             for (src, dest, type_) in [
                 (src_content, dest_content.clone(), "content"),
-                (src_aoc, dest_aoc, "aoc")
+                (src_aoc, dest_aoc, "aoc"),
             ] {
                 let (actual_src, actual_dest) = match (type_, settings.current_mode) {
                     ("aoc", Platform::WiiU) => (src.parent().unwrap(), dest.parent().unwrap()),
@@ -211,8 +213,10 @@ impl Manager {
                     log::info!("No {} files, removing link", type_);
                     util::remove_symlink(actual_dest)
                         .context("Failed to remove symlink to non-existent folder")?;
-                } else if actual_src.exists() && actual_dest.exists() &&
-                    !util::is_symlink_to(actual_dest, actual_src) {
+                } else if actual_src.exists()
+                    && actual_dest.exists()
+                    && !util::is_symlink_to(actual_dest, actual_src)
+                {
                     log::info!("Refreshing {} link to correct profile", type_);
                     util::remove_symlink(actual_dest)
                         .context("Failed to remove symlink to incorrect profile")?;
@@ -230,9 +234,9 @@ impl Manager {
             if settings.current_mode == Platform::Switch && util::is_symlink(&dest_aoc) {
                 util::remove_symlink(&dest_aoc)
                     .context("Failed to remove symlink to old symlinked dlc")?;
-            }
-            else if settings.current_mode == Platform::WiiU &&
-                util::is_symlink(dest_aoc.parent().unwrap()) {
+            } else if settings.current_mode == Platform::WiiU
+                && util::is_symlink(dest_aoc.parent().unwrap())
+            {
                 util::remove_symlink(dest_aoc.parent().unwrap())
                     .context("Failed to remove symlink to old symlinked dlc")?;
             }
@@ -259,11 +263,11 @@ impl Manager {
                 DeployMethod::Copy => {
                     log.content_copies.copy(&src_content, &dest_content)?;
                     log.aoc_copies.copy(&src_aoc, &dest_aoc)?;
-                },
+                }
                 DeployMethod::HardLink => {
                     log.content_copies.hard_link(&src_content, &dest_content)?;
                     log.aoc_copies.hard_link(&src_aoc, &dest_aoc)?;
-                },
+                }
                 DeployMethod::Symlink => unsafe { std::hint::unreachable_unchecked() },
             }
 
@@ -319,7 +323,7 @@ impl Manager {
         let mut log = self.pending_log.write();
         log.extend_deletes(&Manifest {
             content_files: orphans_content.iter().cloned().collect(),
-            aoc_files: orphans_aoc.iter().cloned().collect(),
+            aoc_files:     orphans_aoc.iter().cloned().collect(),
         })?;
         let (content, dlc) = platform_prefixes(platform.into());
         for (dir, orphans) in [(content, orphans_content), (dlc, orphans_aoc)] {
@@ -394,8 +398,7 @@ impl Manager {
             .settings
             .upgrade()
             .context("YIKES, the settings manager is gone")?;
-        let settings = settings.try_read()
-            .context("Could not read settings")?;
+        let settings = settings.try_read().context("Could not read settings")?;
         let dump = settings
             .dump()
             .context("No dump available for current platform")?;
@@ -424,7 +427,10 @@ impl Manager {
             ModUnpacker::new(
                 dump,
                 endian,
-                settings.platform_config().context("No config for platform")?.language,
+                settings
+                    .platform_config()
+                    .context("No config for platform")?
+                    .language,
                 mods,
                 out_dir.clone(),
             )
@@ -446,7 +452,10 @@ impl Manager {
             ModUnpacker::new(
                 dump,
                 endian,
-                settings.platform_config().context("No config for platform")?.language,
+                settings
+                    .platform_config()
+                    .context("No config for platform")?
+                    .language,
                 mods,
                 out_dir.clone(),
             )

@@ -1,10 +1,11 @@
-use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::{collections::BTreeSet, path::PathBuf};
+
 use anyhow::anyhow;
-use anyhow_ext::{Result, Error, Context};
+use anyhow_ext::{Context, Error, Result};
 use serde::{Deserialize, Serialize};
 use smartstring::alias::String;
 use uk_mod::Manifest;
+
 use crate::deploy::folder::Folder;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -17,14 +18,18 @@ pub struct PendingLog {
 
 impl TryFrom<crate::deploy::OldPendingLog> for PendingLog {
     type Error = Error;
+
     fn try_from(pending: crate::deploy::OldPendingLog) -> Result<Self> {
         fn convert_set(files: BTreeSet<String>) -> Result<Folder> {
             let mut map: Folder = Default::default();
             for f in files {
                 let path = PathBuf::from(f.as_str());
-                if path.to_string_lossy().is_empty() { continue; }
+                if path.to_string_lossy().is_empty() {
+                    continue;
+                }
                 let mut iter = path.iter();
-                let name: String = iter.next()
+                let name: String = iter
+                    .next()
                     .ok_or(anyhow!("{} is empty?", f))?
                     .to_string_lossy()
                     .into();
@@ -32,7 +37,9 @@ impl TryFrom<crate::deploy::OldPendingLog> for PendingLog {
                     if !map.contains_folder(&name) {
                         map.insert_folder(name.clone());
                     }
-                    map.get_folder_mut(&name).expect("Can't happen").extend_iter(iter)?;
+                    map.get_folder_mut(&name)
+                        .expect("Can't happen")
+                        .extend_iter(iter)?;
                 }
             }
             Ok(map)
@@ -80,14 +87,18 @@ impl PendingLog {
 
     #[inline(always)]
     pub fn has_some(&self) -> bool {
-        self.content_copies.has_some() || self.aoc_copies.has_some() ||
-            self.content_deletes.has_some() || self.aoc_deletes.has_some()
+        self.content_copies.has_some()
+            || self.aoc_copies.has_some()
+            || self.content_deletes.has_some()
+            || self.aoc_deletes.has_some()
     }
 
     #[inline(always)]
     pub fn len(&self) -> usize {
-        self.content_copies.len() + self.aoc_copies.len() +
-            self.content_deletes.len() + self.aoc_deletes.len()
+        self.content_copies.len()
+            + self.aoc_copies.len()
+            + self.content_deletes.len()
+            + self.aoc_deletes.len()
     }
 
     pub fn clear(&mut self) {
@@ -99,7 +110,7 @@ impl PendingLog {
 
     pub fn add_rstb(&mut self) -> Result<()> {
         self.content_copies.extend_iter(
-            PathBuf::from("System/Resource/ResourceSizeTable.product.srsizetable").iter()
+            PathBuf::from("System/Resource/ResourceSizeTable.product.srsizetable").iter(),
         )
     }
 }

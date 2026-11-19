@@ -1,8 +1,8 @@
 use itertools::Itertools;
-use roead::byml::{map, Byml};
+use roead::byml::{Byml, map};
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, util::DeleteMap, Result, UKError};
+use crate::{Result, UKError, prelude::*, util::DeleteMap};
 
 type Series = DeleteMap<String, (f32, usize)>;
 
@@ -87,7 +87,7 @@ impl TryFrom<&Byml> for LevelSensor {
                                             ))?
                                             .as_float()?,
                                         idx,
-                                    )
+                                    ),
                                 ))
                             })
                             .collect::<Result<_>>()?,
@@ -116,7 +116,7 @@ impl TryFrom<&Byml> for LevelSensor {
                                 ))?
                                 .as_float()?,
                             idx,
-                        )
+                        ),
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -129,13 +129,7 @@ impl TryFrom<&Byml> for LevelSensor {
                 .iter()
                 .enumerate()
                 .map(|(i, (k, v))| -> Result<(String, (f32, usize))> {
-                    Ok((
-                        k.clone(),
-                        (
-                            v.as_float()?,
-                            i,
-                        )
-                    ))
+                    Ok((k.clone(), (v.as_float()?, i)))
                 })
                 .collect::<Result<_>>()?,
             weapon:  hash

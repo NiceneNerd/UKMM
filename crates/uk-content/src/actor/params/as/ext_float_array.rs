@@ -1,9 +1,8 @@
 use anyhow::Context;
-use roead::{objs, aamp::ParameterList};
+use roead::{aamp::ParameterList, objs};
 use serde::{Deserialize, Serialize};
-use crate::prelude::Mergeable;
-use crate::{UKError, Result};
-use crate::util::DeleteMap;
+
+use crate::{Result, UKError, prelude::Mergeable, util::DeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FloatArray {
@@ -15,16 +14,21 @@ impl TryFrom<&ParameterList> for FloatArray {
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            values: value.objects
+            values: value
+                .objects
                 .get("FloatArray0")
-                .ok_or(UKError::MissingAampKey("FloatArray missing FloatArray0", Box::from(None)))?
+                .ok_or(UKError::MissingAampKey(
+                    "FloatArray missing FloatArray0",
+                    Box::from(None),
+                ))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, f32)> {
                     let index = super::get_value_index(n.hash())
                         .context(format!("Could not get index of Value with key hash {}", n))?;
                     Ok((
                         index,
-                        v.as_f32().context(format!("FloatArray has invalid Value{}", index))?
+                        v.as_f32()
+                            .context(format!("FloatArray has invalid Value{}", index))?,
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -41,7 +45,7 @@ impl From<FloatArray> for ParameterList {
                     .map(|(i, f)| (format!("Value{}", i), f.into()))
                     .collect()
             ),
-            lists: Default::default(),
+            lists:   Default::default(),
         }
     }
 }
@@ -52,7 +56,7 @@ impl Mergeable for FloatArray {
             values: self.values.diff(&other.values),
         }
     }
-    
+
     fn merge(&self, diff: &Self) -> Self {
         Self {
             values: self.values.merge(&diff.values),

@@ -220,7 +220,7 @@ pub enum ModCategory {
     Quest,
     Shrine,
     #[serde(alias = "Skin/Texture")]
-    Texture
+    Texture,
 }
 
 impl ModCategory {
@@ -430,7 +430,10 @@ mod tests {
         let meta = Meta::blank(ModPlatform::Universal);
         assert_eq!(meta.version, "1.0.0");
         assert_eq!(meta.category, ModCategory::Other);
-        assert!(meta.api.starts_with(env!("CARGO_PKG_VERSION").split('.').next().unwrap()));
+        assert!(
+            meta.api
+                .starts_with(env!("CARGO_PKG_VERSION").split('.').next().unwrap())
+        );
         assert!(meta.name.is_empty());
         assert!(meta.options.is_empty());
         assert!(meta.masters.is_empty());

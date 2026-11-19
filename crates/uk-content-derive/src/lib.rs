@@ -10,12 +10,16 @@ fn get_name(field: &Field) -> String {
         .attrs
         .iter()
         .find(|at| at.path().is_ident("name"))
-        .map(|at| match &at.meta {
-            Meta::NameValue(meta) => match &meta.value {
-                Expr::Lit(expr_lit) => &expr_lit.lit,
+        .map(|at| {
+            match &at.meta {
+                Meta::NameValue(meta) => {
+                    match &meta.value {
+                        Expr::Lit(expr_lit) => &expr_lit.lit,
+                        _ => &throwaway,
+                    }
+                }
                 _ => &throwaway,
-            },
-            _ => &throwaway,
+            }
         })
     {
         lit_str.value()

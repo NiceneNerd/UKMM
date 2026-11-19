@@ -4,7 +4,7 @@ use roead::aamp::*;
 use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
 
-use crate::{actor::ParameterResource, prelude::*, util::IndexMap, Result, UKError};
+use crate::{Result, UKError, actor::ParameterResource, prelude::*, util::IndexMap};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize, Serialize)]
 
@@ -52,9 +52,10 @@ impl TryFrom<&ParameterIO> for ShopData {
     type Error = UKError;
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
-        let header = pio
-            .object("Header")
-            .ok_or(UKError::MissingAampKey("Shop data missing header", Box::from(None)))?;
+        let header = pio.object("Header").ok_or(UKError::MissingAampKey(
+            "Shop data missing header",
+            Box::from(None),
+        ))?;
         let tables: Vec<_> = header.iter().filter_map(|(_, v)| v.as_str().ok()).collect();
         let mut shop_tables = IndexMap::default();
         shop_tables.reserve(tables.len());

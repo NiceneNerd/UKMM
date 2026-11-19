@@ -63,27 +63,19 @@ impl FilePickerState {
     }
 
     fn load_entries(path: &Path) -> Vec<PathBuf> {
-        if let Ok(dir_entries) =
-            fs::read_dir(path).map(|entries| entries.filter_map(Result::ok))
-        {
+        if let Ok(dir_entries) = fs::read_dir(path).map(|entries| entries.filter_map(Result::ok)) {
             let mut entries = dir_entries
                 .filter_map(|e| {
                     let path = e.path();
-                    let filename = e.file_name()
-                        .to_str()
-                        .unwrap_or("")
-                        .to_lowercase();
+                    let filename = e.file_name().to_str().unwrap_or("").to_lowercase();
                     let ext = path
                         .extension()
                         .and_then(|e| e.to_str())
                         .unwrap_or("")
                         .to_lowercase();
-                    (
-                        (
-                            matches!(ext.as_str(), "zip" | "rar" | "7z" | "bnp") ||
-                            matches!(filename.as_str(), "rules.txt" | "info.json") ||
-                            path.is_dir()
-                        )
+                    ((matches!(ext.as_str(), "zip" | "rar" | "7z" | "bnp")
+                        || matches!(filename.as_str(), "rules.txt" | "info.json")
+                        || path.is_dir())
                         && !filename.starts_with('.'))
                     .then_some(path)
                 })

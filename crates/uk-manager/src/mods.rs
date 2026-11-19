@@ -7,20 +7,20 @@ use std::{
 };
 
 use anyhow_ext::{Context, Result};
-use dashmap::{mapref::one::MappedRef, DashMap};
+use dashmap::{DashMap, mapref::one::MappedRef};
 use fs_err as fs;
 use lenient_semver::Version;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use sanitise_file_name as sfn;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 use smartstring::alias::String;
 use uk_content::platform_prefixes;
-use uk_mod::{pack::ModPacker, unpack::ModReader, Manifest, Meta, ModOption};
+use uk_mod::{Manifest, Meta, ModOption, pack::ModPacker, unpack::ModReader};
 
 use crate::{
     settings::Settings,
-    util::{self, extract_7z, HashMap},
+    util::{self, HashMap, extract_7z},
 };
 
 type ManifestCache = LazyLock<RwLock<HashMap<(usize, Vec<PathBuf>), Result<Arc<Manifest>>>>>;
@@ -201,7 +201,7 @@ impl Profile {
                         m.path.display()
                     );
                     false
-                },
+                }
                 Some(m_) => {
                     if m.path != m_.path {
                         log::warn!(
@@ -213,17 +213,14 @@ impl Profile {
                         m.path = m_.path.clone();
                     }
                     if *h != m_.hash {
-                        log::info!(
-                            "{} has a hash mismatch. Reassigning hash...",
-                            m.meta.name
-                        );
+                        log::info!("{} has a hash mismatch. Reassigning hash...", m.meta.name);
                         m.hash = m_.hash;
                         mods_by_invalid_hash.insert(*h, m.clone());
                         false
                     } else {
                         true
                     }
-                },
+                }
             }
         });
         for m in mods_by_invalid_hash.values() {
@@ -236,19 +233,21 @@ impl Profile {
             }
         }
         for h in load_order.iter() {
-            if !mods.contains_key(h) && let Some((_, m)) =
-                all_mods.iter().find(|(_, m)| *h == m.hash) {
+            if !mods.contains_key(h)
+                && let Some((_, m)) = all_mods.iter().find(|(_, m)| *h == m.hash)
+            {
                 log::warn!(
-                    "{} found in load order but not in profile mod list. Adding to profile \
-                    with no options selected. You will need to reselect mod options from the \
-                    Info tab if you want this mod to continue working.",
+                    "{} found in load order but not in profile mod list. Adding to profile with \
+                     no options selected. You will need to reselect mod options from the Info tab \
+                     if you want this mod to continue working.",
                     m.meta.name
                 );
                 mods.insert(*h, m.clone());
             }
         }
         load_order.retain(|k| mods.contains_key(k));
-        let keys_missing_from_order = mods.keys()
+        let keys_missing_from_order = mods
+            .keys()
             .filter(|&k| !load_order.contains(k))
             .collect::<Vec<_>>();
         load_order.extend(keys_missing_from_order);
@@ -312,17 +311,17 @@ impl Manager {
             name.clone(),
             serde_yaml::from_str(
                 &fs_err::read_to_string(
-                        self.settings
+                    self.settings
                         .upgrade()
                         .expect("Settings is GONE!")
                         .read()
                         .profiles_dir()
                         .join(name.to_string())
-                        .join("profile.yml")
-                    )
-                    .expect("Lost profile we just created?")
+                        .join("profile.yml"),
+                )
+                .expect("Lost profile we just created?"),
             )
-            .expect("Copied profile contains errors?")
+            .expect("Copied profile contains errors?"),
         );
     }
 
@@ -345,12 +344,12 @@ impl Manager {
 
     pub fn init(settings: &Arc<RwLock<Settings>>) -> Result<Self> {
         log::info!("Initializing mod manager");
-        let all_mods = glob::glob(
-            &settings.read().mods_dir().join("*.zip").to_string_lossy()
-        )?.map(|p| {
-            let mod_ = Mod::from_reader(ModReader::open(p?, vec![])?);
-            Ok((mod_.meta.name.clone(), mod_))
-        }).collect::<Result<HashMap<String, Mod>>>()?;
+        let all_mods = glob::glob(&settings.read().mods_dir().join("*.zip").to_string_lossy())?
+            .map(|p| {
+                let mod_ = Mod::from_reader(ModReader::open(p?, vec![])?);
+                Ok((mod_.meta.name.clone(), mod_))
+            })
+            .collect::<Result<HashMap<String, Mod>>>()?;
         let current_profile = settings
             .read()
             .platform_config()
@@ -365,21 +364,25 @@ impl Manager {
             .map(|profile| {
                 let profile_path = path.join(profile.as_str()).join("profile.yml");
                 fs::read_to_string(&profile_path)
-                    .with_context(|| format!(
-                        "Failed to read profile data from {}",
-                        profile_path.to_string_lossy()
-                    ))
-                    .and_then(|t|
+                    .with_context(|| {
+                        format!(
+                            "Failed to read profile data from {}",
+                            profile_path.to_string_lossy()
+                        )
+                    })
+                    .and_then(|t| {
                         serde_yaml::from_str::<Profile>(&t)
-                            .with_context(|| format!(
-                                "Failed to parse profile data from {}",
-                                profile_path.to_string_lossy()
-                            ))
+                            .with_context(|| {
+                                format!(
+                                    "Failed to parse profile data from {}",
+                                    profile_path.to_string_lossy()
+                                )
+                            })
                             .map(|mut p| {
                                 p.validate(&all_mods);
                                 p
                             })
-                    )
+                    })
                     .map(|v| (profile, v))
             })
             .collect::<Result<_>>()?;
@@ -422,9 +425,11 @@ impl Manager {
         self.mods().filter(move |mod_| {
             match mod_.manifest() {
                 Ok(manifest) => {
-                    !ref_manifest.content_files.is_disjoint(&manifest.content_files)
-                    || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
-                    || (ref_edits_text && !manifest.languages().is_empty())
+                    !ref_manifest
+                        .content_files
+                        .is_disjoint(&manifest.content_files)
+                        || !ref_manifest.aoc_files.is_disjoint(&manifest.aoc_files)
+                        || (ref_edits_text && !manifest.languages().is_empty())
                 }
                 Err(_) => false,
             }
@@ -620,7 +625,8 @@ pub fn convert_gfx(
                 .into_iter()
                 .filter_map(Result::ok)
                 .find_map(|f| {
-                    [Some("rules.txt"), Some("info.json")].contains(&f.file_name().to_str())
+                    [Some("rules.txt"), Some("info.json")]
+                        .contains(&f.file_name().to_str())
                         .then(|| f.parent_path().into())
                 })
         };
@@ -634,7 +640,8 @@ pub fn convert_gfx(
                     (f.path().join(content).exists() || f.path().join(dlc).exists())
                         .then(|| f.path())
                         .or_else(|| {
-                            [Some(content), Some(dlc)].contains(&f.file_name().to_str())
+                            [Some(content), Some(dlc)]
+                                .contains(&f.file_name().to_str())
                                 .then(|| f.parent_path().into())
                         })
                 })
@@ -669,11 +676,14 @@ pub fn convert_gfx(
             let mut archive = unrar::Archive::new(path)
                 .open_for_processing()
                 .context("Failed to open RAR for extraction")?;
-            while let Some(header) = archive.read_header()
-                .context("Failed to read header")? {
+            while let Some(header) = archive.read_header().context("Failed to read header")? {
                 archive = if header.entry().is_file() {
-                    log::info!("Extracting {}...", header.entry().filename.to_string_lossy());
-                    header.extract_with_base::<&Path>(tmpdir.as_ref())
+                    log::info!(
+                        "Extracting {}...",
+                        header.entry().filename.to_string_lossy()
+                    );
+                    header
+                        .extract_with_base::<&Path>(tmpdir.as_ref())
                         .context("Failed to extract file")?
                 } else {
                     header.skip().context("Failed to skip folder")?

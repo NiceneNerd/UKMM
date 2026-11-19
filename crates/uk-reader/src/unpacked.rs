@@ -130,7 +130,7 @@ impl super::ResourceLoader for Unpacked {
             })
             .unwrap_or_else(|| Err(ROMError::MissingDumpDir("Base", self.host_path.clone())))
     }
-    
+
     fn get_update_file_data(&self, name: &Path) -> Result<Vec<u8>> {
         self.update_dir
             .as_ref()

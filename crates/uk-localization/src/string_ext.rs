@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+
 use crate::LOCALIZATION;
 
 pub trait LocString {

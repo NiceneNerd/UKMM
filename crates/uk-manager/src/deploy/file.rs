@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+
 use anyhow::anyhow;
 use anyhow_ext::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -23,13 +24,13 @@ impl TryFrom<&PathBuf> for File {
     fn try_from(path: &PathBuf) -> Result<Self> {
         if !path.exists() || path.is_dir() {
             Err(anyhow!("{:?} is not a valid file", path))
-        }
-        else {
+        } else {
             Ok(Self {
-                name: path.file_name()
+                name: path
+                    .file_name()
                     .ok_or(anyhow!("File name is empty"))?
                     .to_string_lossy()
-                    .into()
+                    .into(),
             })
         }
     }
@@ -99,8 +100,8 @@ impl File {
                 .map_err(|e| {
                     if e.root_cause().to_string().contains("os error 17") {
                         e.context(
-                            "Hard linking failed because the output folder is on a \
-                             different disk or partition than the storage folder.",
+                            "Hard linking failed because the output folder is on a different disk \
+                             or partition than the storage folder.",
                         )
                     } else {
                         e

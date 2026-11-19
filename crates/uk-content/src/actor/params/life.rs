@@ -4,11 +4,11 @@ use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
 
 use crate::{
+    Result, UKError,
     actor::{InfoSource, ParameterResource},
     constants::{Time, Weather},
     prelude::*,
     util::{DeleteSet, IteratorExt},
-    Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

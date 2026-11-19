@@ -1,8 +1,8 @@
 use std::{hash::Hash, path::PathBuf, str::FromStr, sync::Arc};
 
 use egui::{
-    epaint::text::TextWrapping, mutex::RwLock, text::LayoutJob, Button, Direction, Id, NumExt,
-    Response, RichText, Ui,
+    Button, Direction, Id, NumExt, Response, RichText, Ui, epaint::text::TextWrapping,
+    mutex::RwLock, text::LayoutJob,
 };
 
 pub trait UiExt {

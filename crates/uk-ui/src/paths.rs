@@ -1,7 +1,7 @@
 use std::path::Path;
 pub use std::path::PathBuf;
 
-use egui::{epaint::text::TextWrapping, text::LayoutJob, FontId, Label, Sense, TextFormat, Ui};
+use egui::{FontId, Label, Sense, TextFormat, Ui, epaint::text::TextWrapping, text::LayoutJob};
 
 // A recursive type to represent a directory tree.
 // Simplification: If it has children, it is considered

@@ -5,10 +5,10 @@ use uk_content_derive::ParamData;
 use uk_util::OptionResultExt;
 
 use crate::{
+    Result, UKError,
     actor::ParameterResource,
     prelude::*,
     util::{self, DeleteMap},
-    Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, ParamData)]

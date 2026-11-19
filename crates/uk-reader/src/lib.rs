@@ -51,10 +51,10 @@ impl From<ROMError> for uk_content::UKError {
 }
 
 flate!(static MAP_SRC_U: str from "data/filemap_wiiu.json");
-const FILE_MAP_U: LazyLock<Arc<DashMap<String, [&'static str;3]>>> =
+const FILE_MAP_U: LazyLock<Arc<DashMap<String, [&'static str; 3]>>> =
     LazyLock::new(|| Arc::new(serde_json::from_str(MAP_SRC_U.as_ref()).unwrap()));
 flate!(static MAP_SRC_NX: str from "data/filemap_nx.json");
-const FILE_MAP_NX: LazyLock<Arc<DashMap<String, [&'static str;3]>>> =
+const FILE_MAP_NX: LazyLock<Arc<DashMap<String, [&'static str; 3]>>> =
     LazyLock::new(|| Arc::new(serde_json::from_str(MAP_SRC_NX.as_ref()).unwrap()));
 type ResourceCache = Cache<String, Arc<ResourceData>>;
 type SarcCache = Cache<String, Arc<Sarc<'static>>>;
@@ -97,19 +97,22 @@ fn construct_sarc_cache() -> SarcCache {
 #[derive(Serialize, Deserialize)]
 pub struct YAMLResourceReader {
     bin_type: BinType,
-    source: Box<dyn ResourceLoader>,
-    endian: Option<Endian>,
+    source:   Box<dyn ResourceLoader>,
+    endian:   Option<Endian>,
 }
 
 impl From<ResourceReader> for YAMLResourceReader {
     fn from(value: ResourceReader) -> Self {
         Self {
-            endian: match &value.source.file_exists(&PathBuf::from("Movie/Demo101_0.mp4")) {
+            endian:   match &value
+                .source
+                .file_exists(&PathBuf::from("Movie/Demo101_0.mp4"))
+            {
                 false => Some(Endian::Little),
                 true => Some(Endian::Big),
             },
             bin_type: value.bin_type,
-            source: value.source,
+            source:   value.source,
         }
     }
 }
@@ -118,14 +121,21 @@ impl From<YAMLResourceReader> for ResourceReader {
     fn from(value: YAMLResourceReader) -> Self {
         Self {
             file_map: match value.endian {
-                Some(e) => match e {
-                    Endian::Little => FILE_MAP_NX.clone(),
-                    Endian::Big => FILE_MAP_U.clone(),
-                },
-                None => match &value.source.file_exists(&PathBuf::from("Movie/Demo101_0.mp4")) {
-                    false => FILE_MAP_NX.clone(),
-                    true => FILE_MAP_U.clone(),
-                },
+                Some(e) => {
+                    match e {
+                        Endian::Little => FILE_MAP_NX.clone(),
+                        Endian::Big => FILE_MAP_U.clone(),
+                    }
+                }
+                None => {
+                    match &value
+                        .source
+                        .file_exists(&PathBuf::from("Movie/Demo101_0.mp4"))
+                    {
+                        false => FILE_MAP_NX.clone(),
+                        true => FILE_MAP_U.clone(),
+                    }
+                }
             },
             bin_type: value.bin_type,
             source: value.source,
@@ -209,18 +219,12 @@ impl ResourceReader {
                 false => Endian::Little,
             };
             let (content, aoc) = platform_prefixes(endian);
-            let content_dir = mod_dir
-                .join(content)
-                .exists_then();
+            let content_dir = mod_dir.join(content).exists_then();
             let update_dir = match endian {
-                Endian::Big => mod_dir
-                    .join(content)
-                    .exists_then(),
+                Endian::Big => mod_dir.join(content).exists_then(),
                 Endian::Little => None,
             };
-            let aoc_dir = mod_dir
-                .join(aoc)
-                .exists_then();
+            let aoc_dir = mod_dir.join(aoc).exists_then();
             Ok(ResourceReader {
                 source: Box::new(Unpacked::new(content_dir, update_dir, aoc_dir, false)?),
                 cache: construct_res_cache(),
@@ -238,8 +242,7 @@ impl ResourceReader {
     pub fn get_data(&self, path: impl AsRef<Path>) -> Result<Arc<ResourceData>> {
         let canon = canonicalize(path.as_ref());
         log::trace!("Loading resource {}", &canon);
-        self
-            .cache
+        self.cache
             .try_get_with(canon.clone(), || -> Result<_> {
                 log::trace!("Resource {} not in cache, pulling", &canon);
                 let data = self.get_bytes_uncached(path)?;
@@ -255,14 +258,13 @@ impl ResourceReader {
                 };
                 Ok(Arc::new(resource))
             })
-            .map_err(|e| Arc::try_unwrap(e)
-                .unwrap_or_else(|e| anyhow::format_err!("{e}").into())
-            )
+            .map_err(|e| Arc::try_unwrap(e).unwrap_or_else(|e| anyhow::format_err!("{e}").into()))
     }
 
     pub fn get_bytes_uncached(&self, path: impl AsRef<Path>) -> Result<Vec<u8>> {
         let canon = canonicalize(path.as_ref());
-        self.file_map.get(&canon)
+        self.file_map
+            .get(&canon)
             .with_context(|| jstr!("File {&canon} not in vanilla files"))?
             .iter()
             .enumerate()
@@ -272,15 +274,31 @@ impl ResourceReader {
                         match file_path.contains("//") {
                             false => {
                                 match dump {
-                                    0 => Some(self.source.get_aoc_file_data(&PathBuf::from(file_path.to_string()))),
-                                    1 => Some(self.source.get_update_file_data(&PathBuf::from(file_path.to_string()))),
-                                    2 => Some(self.source.get_base_file_data(&PathBuf::from(file_path.to_string()))),
-                                    _ => unreachable!("An [Arc<&str>;3] cannot be longer than length 3")
+                                    0 => {
+                                        Some(self.source.get_aoc_file_data(&PathBuf::from(
+                                            file_path.to_string(),
+                                        )))
+                                    }
+                                    1 => {
+                                        Some(self.source.get_update_file_data(&PathBuf::from(
+                                            file_path.to_string(),
+                                        )))
+                                    }
+                                    2 => {
+                                        Some(self.source.get_base_file_data(&PathBuf::from(
+                                            file_path.to_string(),
+                                        )))
+                                    }
+                                    _ => {
+                                        unreachable!(
+                                            "An [Arc<&str>;3] cannot be longer than length 3"
+                                        )
+                                    }
                                 }
-                            },
+                            }
                             true => Some(self.get_bytes_from_sarc(file_path, dump == 0)),
                         }
-                    },
+                    }
                     true => None,
                 }
             })
@@ -290,7 +308,8 @@ impl ResourceReader {
 
     pub fn get_aoc_bytes_uncached(&self, path: impl AsRef<Path>) -> Result<Vec<u8>> {
         let canon = canonicalize(path.as_ref());
-        self.file_map.get(&canon)
+        self.file_map
+            .get(&canon)
             .with_context(|| jstr!("File {&canon} not in vanilla files"))?
             .iter()
             .next()
@@ -299,10 +318,15 @@ impl ResourceReader {
                 match file_path.is_empty() {
                     false => {
                         match file_path.contains("//") {
-                            false => Some(self.source.get_aoc_file_data(&PathBuf::from(file_path.to_string()))),
+                            false => {
+                                Some(
+                                    self.source
+                                        .get_aoc_file_data(&PathBuf::from(file_path.to_string())),
+                                )
+                            }
                             true => Some(self.get_bytes_from_sarc(file_path, true)),
                         }
-                    },
+                    }
                     true => None,
                 }
             })
@@ -317,40 +341,43 @@ impl ResourceReader {
         let (super_container_path, container_path, file_path) = match parts.len() {
             2 => (None, root, parts[1]),
             3 => (Some(root), parts[1], parts[2]),
-            _ => unreachable!("All sarc paths have 2 or 3 parts")
+            _ => unreachable!("All sarc paths have 2 or 3 parts"),
         };
         let parent = self
             .sarc_cache
             .try_get_with(container_path.into(), || -> Result<_> {
                 match super_container_path {
-                    None => Ok(Arc::new(Sarc::new(self.get_bytes_uncached(container_path)?)
-                        .map_err(|e| anyhow::format_err!("{e}"))?)),
+                    None => {
+                        Ok(Arc::new(
+                            Sarc::new(self.get_bytes_uncached(container_path)?)
+                                .map_err(|e| anyhow::format_err!("{e}"))?,
+                        ))
+                    }
                     Some(p) => {
                         let root = self
                             .sarc_cache
                             .try_get_with(p.into(), || -> anyhow_ext::Result<Arc<Sarc<'static>>> {
-                                Ok(Arc::new(Sarc::new(self.get_bytes_uncached(p)?)
-                                    .map_err(|e| anyhow::format_err!("{e}"))?))
+                                Ok(Arc::new(
+                                    Sarc::new(self.get_bytes_uncached(p)?)
+                                        .map_err(|e| anyhow::format_err!("{e}"))?,
+                                ))
                             })
                             .map_err(|e| {
-                                Arc::try_unwrap(e)
-                                    .unwrap_or_else(|e| anyhow::format_err!("{e}"))
+                                Arc::try_unwrap(e).unwrap_or_else(|e| anyhow::format_err!("{e}"))
                             })?;
                         let sarc = Sarc::new(
                             root.get_data(container_path)
                                 .context("Couldn't get nested SARC")?
                                 .to_vec(),
                         )
-                        .map_err(|e| 
+                        .map_err(|e| {
                             ROMError::FileNotFound(format!("{e}").into(), container_path.into())
-                        )?;
+                        })?;
                         Ok(Arc::new(sarc))
                     }
                 }
             })
-            .map_err(|e| Arc::try_unwrap(e)
-                .unwrap_or_else(|e| ROMError::Any(e.into()))
-            )?;
+            .map_err(|e| Arc::try_unwrap(e).unwrap_or_else(|e| ROMError::Any(e.into())))?;
         Ok(roead::yaz0::decompress_if(
             parent
                 .get_data(file_path)

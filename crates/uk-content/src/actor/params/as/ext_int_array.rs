@@ -1,9 +1,8 @@
 use anyhow::Context;
-use roead::{objs, aamp::ParameterList};
+use roead::{aamp::ParameterList, objs};
 use serde::{Deserialize, Serialize};
-use crate::prelude::Mergeable;
-use crate::{UKError, Result};
-use crate::util::DeleteMap;
+
+use crate::{Result, UKError, prelude::Mergeable, util::DeleteMap};
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct IntArray {
@@ -15,16 +14,21 @@ impl TryFrom<&ParameterList> for IntArray {
 
     fn try_from(value: &ParameterList) -> Result<Self> {
         Ok(Self {
-            values: value.objects
+            values: value
+                .objects
                 .get("IntArray0")
-                .ok_or(UKError::MissingAampKey("IntArray missing IntArray0", Box::from(None)))?
+                .ok_or(UKError::MissingAampKey(
+                    "IntArray missing IntArray0",
+                    Box::from(None),
+                ))?
                 .iter()
                 .map(|(n, v)| -> Result<(i32, i32)> {
                     let index = super::get_value_index(n.hash())
                         .context(format!("Could not get index of Value with key hash {}", n))?;
                     Ok((
                         index,
-                        v.as_i32().context(format!("IntArray has invalid Value{}", index))?
+                        v.as_i32()
+                            .context(format!("IntArray has invalid Value{}", index))?,
                     ))
                 })
                 .collect::<Result<_>>()?,
@@ -41,7 +45,7 @@ impl From<IntArray> for ParameterList {
                     .map(|(i, v)| (format!("Value{}", i), v.into()))
                     .collect()
             ),
-            lists: Default::default(),
+            lists:   Default::default(),
         }
     }
 }

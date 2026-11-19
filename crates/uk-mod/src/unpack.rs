@@ -5,12 +5,12 @@ use std::{
     ops::Deref,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
 };
 
-use anyhow_ext::{bail, Context, Result};
+use anyhow_ext::{Context, Result, bail};
 use botw_utils::hashes::StockHashTable;
 use dashmap::DashMap;
 use fs_err as fs;
@@ -223,8 +223,7 @@ impl ResourceLoader for ModReader {
 
     fn file_exists(&self, name: &Path) -> bool {
         let name: String = name.to_slash_lossy().into();
-        self.manifest.content_files.contains(&name)
-            || self.manifest.aoc_files.contains(&name)
+        self.manifest.content_files.contains(&name) || self.manifest.aoc_files.contains(&name)
     }
 
     fn host_path(&self) -> &Path {
@@ -249,9 +248,9 @@ impl ModReader {
                 let path = Path::new("options").join(&opt.path).join(canon.as_str());
                 if let Some(zip) = self_.zip.as_ref() {
                     if let Ok(data) = zip.get_file(path) {
-                        return Ok(self_
-                            .decompress(data.as_slice())
-                            .with_context(|| jstr!("Failed to decompress file {&canon} from mod"))?);
+                        return Ok(self_.decompress(data.as_slice()).with_context(|| {
+                            jstr!("Failed to decompress file {&canon} from mod")
+                        })?);
                     }
                 } else if let Some(path) = self_.path.join(path).exists_then() {
                     return Ok(fs::read(path)?);
@@ -261,7 +260,8 @@ impl ModReader {
                 "Failed to read file {} (canonical path {}) from mod",
                 name.display(),
                 canon
-            ).into())
+            )
+            .into())
         }
         inner(self, name.as_ref())
     }
@@ -280,7 +280,7 @@ impl ModReader {
         let result = if path.is_file() {
             match peek {
                 true => ModReader::open_zipped_peek(path, options),
-                false => ModReader::open_zipped(path, options)
+                false => ModReader::open_zipped(path, options),
             }
         } else {
             ModReader::open_unzipped(path, options)
@@ -315,15 +315,14 @@ impl ModReader {
     }
 
     fn open_unzipped(path: PathBuf, options: Vec<ModOption>) -> Result<Self> {
-        let meta: Meta = serde_yaml::from_str(
-            &fs::read_to_string(path.join("meta.yml")).map_err(|e| {
+        let meta: Meta =
+            serde_yaml::from_str(&fs::read_to_string(path.join("meta.yml")).map_err(|e| {
                 if e.kind() == std::io::ErrorKind::NotFound {
                     anyhow_ext::Error::from(OpenError::MissingMeta)
                 } else {
                     e.into()
                 }
-            })?,
-        )?;
+            })?)?;
         let mut manifest: Manifest =
             serde_yaml::from_str(&fs::read_to_string(path.join("manifest.yml"))?)?;
         for option in &options {
@@ -713,9 +712,7 @@ impl ModUnpacker {
                              of UKMM."
                         );
                     } else {
-                        bail!(
-                            "Error deserializing resource {canon} from mod {mod_}. Error: {e}"
-                        );
+                        bail!("Error deserializing resource {canon} from mod {mod_}. Error: {e}");
                     }
                 }
             }
@@ -747,9 +744,11 @@ impl ModUnpacker {
                 }
                 match Arc::try_unwrap(res) {
                     Ok(res) => res.take_binary().context("No binary resource?")?,
-                    Err(res) => res.as_binary()
-                        .map(|b| b.to_vec())
-                        .context("No binary resource?")?,
+                    Err(res) => {
+                        res.as_binary()
+                            .map(|b| b.to_vec())
+                            .context("No binary resource?")?
+                    }
                 }
             }
             ResourceData::Mergeable(base_res) => {
@@ -808,10 +807,7 @@ impl ModUnpacker {
             let data = self
                 .build_file(&file, aoc)
                 .with_context(|| jstr!("Failed to build file {&file} for SARC"))?;
-            writer.add_file(
-                file.as_str(),
-                compress_if(data.as_ref(), file.as_str()),
-            );
+            writer.add_file(file.as_str(), compress_if(data.as_ref(), file.as_str()));
         }
         Ok(writer.to_binary())
     }

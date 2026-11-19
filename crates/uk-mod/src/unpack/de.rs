@@ -93,8 +93,7 @@ impl<'de> Deserialize<'de> for ModReader {
                     manifest,
                     options,
                     zip: Arc::new(Some(
-                        ParallelZipReader::open(&path, false)
-                            .map_err(serde::de::Error::custom)?,
+                        ParallelZipReader::open(&path, false).map_err(serde::de::Error::custom)?,
                     )),
                     path,
                 })

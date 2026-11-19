@@ -7,10 +7,10 @@ use serde::{Deserialize, Serialize};
 use uk_util::OptionResultExt;
 
 use crate::{
-    actor::{info_params_filtered, InfoSource, ParameterResource},
+    Result, UKError,
+    actor::{InfoSource, ParameterResource, info_params_filtered},
     prelude::*,
     util::*,
-    Result, UKError,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
@@ -26,7 +26,9 @@ impl TryFrom<&ParameterList> for ModelData {
     fn try_from(list: &ParameterList) -> std::result::Result<Self, Self::Error> {
         let folder = list
             .object("Base")
-            .ok_or_else(|| UKError::MissingAampKey("Model data missing Base object", Box::from(None)))?
+            .ok_or_else(|| {
+                UKError::MissingAampKey("Model data missing Base object", Box::from(None))
+            })?
             .get("Folder")
             .ok_or_else(|| UKError::MissingAampKey("Model data missing Folder", Box::from(None)))?
             .as_safe_string()?;

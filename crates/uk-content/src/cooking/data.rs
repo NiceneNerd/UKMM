@@ -1,12 +1,12 @@
 use anyhow::Context;
-use roead::byml::{map, Byml};
+use roead::byml::{Byml, map};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    Result, UKError,
     cooking::{recipe::Recipe, single_recipe::SingleRecipe, system::System},
     prelude::*,
     util::DeleteVec,
-    Result, UKError,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]

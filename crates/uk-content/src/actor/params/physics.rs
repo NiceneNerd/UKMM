@@ -7,9 +7,10 @@ use uk_content_derive::ParamData;
 use uk_util::OptionResultExt;
 
 use crate::{
+    Result, UKError,
     actor::{InfoSource, ParameterResource},
     prelude::*,
-    util, Result, UKError,
+    util,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, ParamData)]
@@ -356,13 +357,17 @@ impl TryFrom<&ParameterIO> for Physics {
     type Error = UKError;
 
     fn try_from(pio: &ParameterIO) -> Result<Self> {
-        let param_set = pio
-            .list("ParamSet")
-            .ok_or(UKError::MissingAampKey("Physics missing param set", Box::from(None)))?;
+        let param_set = pio.list("ParamSet").ok_or(UKError::MissingAampKey(
+            "Physics missing param set",
+            Box::from(None),
+        ))?;
         let header = param_set
             .objects
             .get(1258832850)
-            .ok_or(UKError::MissingAampKey("Physics missing header", Box::from(None)))?;
+            .ok_or(UKError::MissingAampKey(
+                "Physics missing header",
+                Box::from(None),
+            ))?;
         Ok(Self {
             ragdoll: header
                 .get("use_ragdoll")
