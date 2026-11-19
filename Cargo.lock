@@ -5871,7 +5871,6 @@ dependencies = [
  "smartstring",
  "thiserror 2.0.18",
  "uk-content-derive",
- "uk-localization",
  "uk-util",
 ]
 
