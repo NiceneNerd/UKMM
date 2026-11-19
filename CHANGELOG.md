@@ -14,11 +14,27 @@ Changes from the GUI refactor branch `gui2` (not yet released):
 - Enable/disable, reorder, option changes, send-to-profile, dev update, mod
   update, and uninstall now save the profile immediately, so the change
   survives a restart even if you never Apply.
+- Saving settings now wipes the old deploy output **before** saving and treats
+  a failed wipe as an error: if the old output could not be removed, the new
+  settings are not saved (previously the save silently continued with a stale
+  merged output left behind).
+- Changing the storage folder no longer moves existing mods/profiles; a
+  warning is logged instead.
+- The UI language moved out of `settings.yml` into the per-frontend UI state
+  file (`ui-egui.json` in the config folder; `settings.yml` is now format v2).
+  Existing settings are migrated automatically on first launch.
 
 **Fixed**
 
 - Deploying no longer discards the pending staged files from the Pending
   Changes tracking (deploy only copies the merged output; it does not merge).
+- The dump endianness for unpacked game dumps is now derived from the selected
+  platform (Wii U = big endian, Switch = little endian) instead of guessing
+  from the folder name, so a Switch dump under a folder named `content` is no
+  longer misdetected.
+- Startup no longer fails when a single mod archive is unreadable or a
+  profile's `profile.yml` is malformed; the affected entry is skipped with a
+  warning instead.
 
 ## [0.17.3] 2026-11-05
 

@@ -173,3 +173,45 @@ Still in the frontend (phase 4's work):
    `cargo check --workspace --all-targets` clean;
    `cargo tree -p uk-app` still free of egui/eframe/rfd/winit.
 4. `GUI_REF.md` §23.5 smoke checklist still passes.
+
+---
+
+## 10. Phase 4 outcome (2026-11-19)
+
+Landed as four commits on `gui2` (`7d32ccc`, `cbe68a3`, `4fdece6`, plus the
+plan doc itself):
+
+- **4a** `7d32ccc` — `uk-mod::unpack::read_thumbnail` / `ModReader::thumbnail` /
+  `Mod::thumbnail()`; `uk-app::host::shell` (`open_path`, `open_url`,
+  `launch_emulator`, `restart`); commands `LaunchEmulator`, `OpenFolder(FolderKind)`,
+  `RegisterUrlHandler`. The GUI's deploy tab, menus, `Mod_View`, one-click
+  button, restart, help links, and mod preview all go through `uk-app` now.
+  Defects fixed: **16** (emulator spawn out of render code), **29** (thumbnail
+  via uk-mod; cache stays hash-keyed).
+- **4b** `cbe68a3` — `uk-app::profile::ProfileService` (list + validated read);
+  `Snapshot.profiles: Vec<ProfileName>` rebuilt per publish; the profile combo
+  and Send-to menu read the snapshot. `delete_profile` orphan cleanup now
+  `log::warn!`s on failure. Defects fixed: **2, 3, 25**.
+- **4c/d/e** `4fdece6` — `uk-app::settings::{SettingsDraft, PlatformDraft,
+  DumpDraft}`; `Command::SaveSettings` + `Event::SettingsSaved { output_wiped,
+  pending_reset }` (validate-all-first, wipe-failure-aborts-save, reload,
+  pending reset). `settings.yml` gains `format_version` (v1 read compat, v2
+  written; legacy `lang` read-only); per-frontend `ui-egui.json` state file
+  with one-time migration from `ui.json`. `mods::Manager::init` skips
+  unreadable mod zips / malformed `profile.yml` with warnings. Defects fixed:
+  **5, 7, 9, 20, 37** (20 decided as warn-only, no storage migration).
+
+Verification: `cargo test -p uk-app` 98 passed (incl. new tests:
+`save_settings_validates_before_saving`, `save_settings_roundtrip_and_event`,
+`save_settings_wipe_failure_aborts_save`, settings-module endian/wipe/differs
+tests, `ProfileService` test); `cargo test -p uk-content` 193 passed;
+`cargo check --workspace --all-targets` clean; `cargo tree -p uk-app` has no
+egui/eframe/rfd/winit. (The 5 `uk-mod` fixture tests needing `test/wiiu.zip`
+and the `uk-manager` `bnp::test_convert` needing a real BNP remain
+developer-machine-only, as before — CI runs `uk-content` only.)
+
+Deviations from the §1 sketch, all recorded in §2: `ResetSettings` stayed
+frontend-local (view state); URL links are plain `host::open_url` calls, not
+commands; dump "changed" detection compares full dump dirs, not just
+`host_path` (the old comparison missed content-dir changes with equal host
+root).

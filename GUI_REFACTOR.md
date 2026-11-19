@@ -4,7 +4,7 @@ Companion to `GUI_REF.md` (the behavioural parity spec of the current egui front
 
 - **Parity spec:** `GUI_REF.md` — every GUI feature tagged `[UI-ONLY] / [APP] / [CORE] / [EGUI] / [HOST] / [GAP]`, a 39-item defect list (§22), and a suggested app-layer contract (§23). Every phase below is validated against it.
 - **Scope:** the working tree as of 2026-11-16, where phase 2 is already in progress (§1).
-- **Status (2026-11-19):** phases 1–3 have landed on branch `gui2` (@ `8d68071`, in sync with `origin/gui2`); phase 4 is next. The detailed per-phase working plans are held in the repo: `GUI_REFACTOR_PHASES12_PLAN.md` and `GUI_REFACTOR_PHASE3_PLAN.md` (the latter includes the phase-3 review outcome, §10).
+- **Status (2026-11-19):** phases 1–4 have landed on branch `gui2` (@ `4fdece6`, in sync with `origin/gui2`); the egui frontend is now a thin view over `uk-app` (`Session`/`Command`/`Event`/`Snapshot`) plus host commands. The detailed per-phase working plans are held in the repo: `GUI_REFACTOR_PHASES12_PLAN.md`, `GUI_REFACTOR_PHASE3_PLAN.md` (includes the phase-3 review outcome, §10), and `GUI_REFACTOR_PHASE4_PLAN.md` (includes the phase-4 outcome).
 
 ## 1. Where we are now — phase 2 status
 
