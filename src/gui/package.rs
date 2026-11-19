@@ -3,12 +3,11 @@ use std::{ops::DerefMut, path::PathBuf};
 use eframe::emath::Align;
 use parking_lot::Mutex;
 use rustc_hash::FxHashSet;
-use uk_localization::string_ext::LocString;
-use uk_manager::settings::Platform;
-use uk_mod::{
+use uk_app::model::{
     ExclusiveOptionGroup, Meta, ModCategory, ModOption, ModOptionGroup, ModPlatform,
-    MultipleOptionGroup, OptionGroup,
+    MultipleOptionGroup, OptionGroup, Platform,
 };
+use uk_localization::string_ext::LocString;
 use uk_ui::{
     egui::{self, Align2, Context, Id, Layout, Response, TextStyle, Ui},
     ext::UiExt,

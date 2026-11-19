@@ -1,8 +1,9 @@
 #![allow(unstable_name_collisions)]
-use uk_app::settings::{DumpDraft, PlatformDraft};
-use uk_content::constants::Language;
+use uk_app::{
+    model::{DeployConfig, Language, Platform},
+    settings::{DumpDraft, PlatformDraft},
+};
 use uk_localization::{LocLang, string_ext::LocString};
-use uk_manager::settings::{DeployConfig, Platform};
 use uk_ui::{
     egui::{self, Align, Button, Checkbox, InnerResponse, Layout, RichText, TextStyle, Ui},
     ext::UiExt,
@@ -43,21 +44,21 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             changed |= ui
                 .radio_value(
                     &mut config.method,
-                    uk_manager::settings::DeployMethod::Copy,
+                    uk_app::model::DeployMethod::Copy,
                     "Settings_Platform_Deploy_Method_Copy".localize(),
                 )
                 .changed();
             changed |= ui
                 .radio_value(
                     &mut config.method,
-                    uk_manager::settings::DeployMethod::HardLink,
+                    uk_app::model::DeployMethod::HardLink,
                     "Settings_Platform_Deploy_Method_HardLink".localize(),
                 )
                 .changed();
             changed |= ui
                 .radio_value(
                     &mut config.method,
-                    uk_manager::settings::DeployMethod::Symlink,
+                    uk_app::model::DeployMethod::Symlink,
                     "Settings_Platform_Deploy_Method_Symlink".localize(),
                 )
                 .changed();
@@ -71,7 +72,7 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             changed |= ui
                 .radio_value(
                     &mut config.layout,
-                    uk_manager::settings::DeployLayout::WithoutName,
+                    uk_app::model::DeployLayout::WithoutName,
                     match platform {
                         Platform::WiiU => {
                             "Settings_Platform_Deploy_Layout_WiiU_WithoutName".localize()
@@ -85,7 +86,7 @@ fn render_deploy_config(config: &mut DeployConfig, platform: Platform, ui: &mut 
             changed |= ui
                 .radio_value(
                     &mut config.layout,
-                    uk_manager::settings::DeployLayout::WithName,
+                    uk_app::model::DeployLayout::WithName,
                     match platform {
                         Platform::WiiU => {
                             "Settings_Platform_Deploy_Layout_WiiU_WithName".localize()

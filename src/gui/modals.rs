@@ -1,8 +1,7 @@
 use std::ops::DerefMut;
 
+use uk_app::model::{Meta, ModCategory, ModPlatform, Platform};
 use uk_localization::string_ext::LocString;
-use uk_manager::settings::Platform;
-use uk_mod::{Meta, ModCategory, ModPlatform};
 use uk_ui::egui::OutputCommand;
 use util::SmartStringWrapper;
 
@@ -150,7 +149,7 @@ impl App {
                     });
                     ui.add_space(8.);
                     if let Some(context) = err.chain().find_map(|e| {
-                        e.downcast_ref::<uk_content::UKError>()
+                        e.downcast_ref::<uk_app::model::UKError>()
                             .and_then(|e| e.context_data())
                     }) {
                         egui::CollapsingHeader::new("Error_Context".localize()).show(ui, |ui| {

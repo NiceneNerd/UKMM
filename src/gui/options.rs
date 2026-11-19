@@ -1,7 +1,9 @@
 use eframe::egui::Button;
-use uk_app::{Command, ModId, OptionsPrompt};
+use uk_app::{
+    Command, ModId, OptionsPrompt,
+    model::{ModOption, ModOptionGroup, OptionGroup},
+};
 use uk_localization::string_ext::LocString;
-use uk_mod::{ModOption, ModOptionGroup, OptionGroup};
 use uk_ui::{
     egui::{self, Align, Checkbox, Context, Layout, Vec2},
     visuals,

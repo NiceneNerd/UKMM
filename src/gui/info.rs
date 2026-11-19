@@ -6,9 +6,8 @@ use std::{
 use anyhow::Result;
 use parking_lot::{Mutex, RwLock};
 use rustc_hash::{FxHashMap, FxHasher};
+use uk_app::model::{Manifest, Mod};
 use uk_localization::string_ext::LocString;
-use uk_manager::mods::Mod;
-use uk_mod::Manifest;
 #[allow(deprecated)]
 use uk_ui::{
     PathNode,

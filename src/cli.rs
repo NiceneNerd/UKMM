@@ -6,8 +6,7 @@ use std::{
 
 use anyhow_ext::{Context, Result};
 use smartstring::alias::String;
-use uk_manager::{core, mods::LookupMod, settings::Platform};
-use uk_mod::Manifest;
+use uk_app::model::{LookupMod, Manager, Manifest, Platform};
 
 xflags::xflags! {
     src "./src/cli.rs"
@@ -140,14 +139,14 @@ macro_rules! input {
 
 #[derive(Debug)]
 pub struct Runner {
-    core: core::Manager,
+    core: Manager,
     cli:  Ukmm,
 }
 
 impl Runner {
     pub fn new(cli: Ukmm) -> Self {
         Self {
-            core: core::Manager::init().unwrap(),
+            core: Manager::init().unwrap(),
             cli,
         }
     }

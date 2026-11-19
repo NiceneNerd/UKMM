@@ -9,6 +9,7 @@ mod apply;
 pub mod error;
 pub mod host;
 pub mod import;
+pub mod model;
 pub mod open;
 pub mod options;
 pub mod order;

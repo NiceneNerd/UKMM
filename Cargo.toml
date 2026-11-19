@@ -46,13 +46,8 @@ image = { version = "0.25.10", features = ["jpeg", "png"] }
 mimalloc = { version = "0.1.52", default-features = false }
 rustls = "0.23.40"
 uk-app = { path = "crates/uk-app" }
-uk-content = { path = "crates/uk-content" }
 uk-localization = { path = "crates/uk-localization" }
-uk-manager = { path = "crates/uk-manager" }
-uk-mod = { path = "crates/uk-mod" }
-uk-reader = { path = "crates/uk-reader" }
 uk-ui = { path = "crates/uk-ui" }
-uk-util = { path = "crates/uk-util" }
 xflags = "0.3.2"
 
 [build-dependencies]

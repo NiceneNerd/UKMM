@@ -509,7 +509,7 @@ impl App {
     }
 
     fn render_mod_context_menu(
-        core: &uk_manager::core::Manager,
+        core: &uk_app::model::Manager,
         profiles: &[uk_app::ProfileName],
         enabled: bool,
         ui: &mut Ui,

@@ -1,9 +1,10 @@
 use smartstring::alias::String as SmartString;
 use strfmt::Format;
-use uk_app::{Command, ProfileService};
-use uk_content::util::HashMap;
+use uk_app::{
+    Command, ProfileService,
+    model::{HashMap, Profile as ProfileData},
+};
 use uk_localization::string_ext::LocString;
-use uk_manager::mods::Profile as ProfileData;
 use uk_ui::{
     egui::{self, Layout, TextStyle, text::LayoutJob},
     icons::IconButtonExt,
@@ -20,7 +21,7 @@ pub struct ProfileManagerState {
 }
 
 impl ProfileManagerState {
-    pub fn new(core: &uk_manager::core::Manager) -> Self {
+    pub fn new(core: &uk_app::model::Manager) -> Self {
         let mut state = Self::default();
         state.reload(core);
         state
@@ -28,7 +29,7 @@ impl ProfileManagerState {
 
     /// Re-reads every profile's data through the app-layer profile service
     /// (validated names, no raw fs in the frontend).
-    pub fn reload(&mut self, core: &uk_manager::core::Manager) {
+    pub fn reload(&mut self, core: &uk_app::model::Manager) {
         let settings = core.settings();
         let service = ProfileService::new(&settings);
         self.profiles = service

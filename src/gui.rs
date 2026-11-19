@@ -31,15 +31,10 @@ use serde::{Deserialize, Serialize};
 use uk_app::{
     Command, Event, ModId, ProfileName, Session, Snapshot,
     host::updates::VersionResponse,
+    model::{HashMap, Manager, OptionResultExt, Platform, Settings, pack::sanitise},
     view::{filter_entries, sort_entries},
 };
-use uk_content::util::HashMap;
 use uk_localization::{string_ext::LocString, *};
-use uk_manager::{
-    core::Manager,
-    settings::{Platform, Settings},
-};
-use uk_mod::pack::sanitise;
 pub use uk_ui::visuals;
 use uk_ui::{
     egui::{
@@ -50,7 +45,6 @@ use uk_ui::{
     ext::UiExt,
     icons::{Icon, IconButtonExt},
 };
-use uk_util::OptionResultExt;
 
 use self::package::ModPackerBuilder;
 use crate::gui::modals::MetaInputModal;
@@ -435,7 +429,7 @@ impl eframe::App for App {
             serde_json::to_string_pretty(&ui_state).unwrap(),
         )
         .unwrap_or(());
-        uk_manager::util::clear_temp();
+        uk_app::model::clear_temp();
     }
 }
 
