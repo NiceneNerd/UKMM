@@ -367,17 +367,19 @@ impl App {
                     ComboBox::from_id_salt("profiles")
                         .selected_text(&current_profile)
                         .show_ui(ui, |ui| {
-                            self.core.settings().profiles().for_each(|profile| {
+                            // The profile list comes from the snapshot, not a
+                            // per-frame fs read (GUI_REF §22.25).
+                            self.snap.profiles.iter().for_each(|profile| {
                                 if ui
                                     .selectable_label(
                                         profile.as_str() == current_profile,
                                         profile.as_str(),
                                     )
                                     .clicked()
-                                    && current_profile != profile
+                                    && current_profile != profile.as_str()
                                 {
                                     self.session.dispatch(Command::SwitchProfile(
-                                        ProfileName::from_existing(profile),
+                                        ProfileName::from_existing(profile.as_str()),
                                     ));
                                 }
                             });

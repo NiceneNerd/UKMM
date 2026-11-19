@@ -1,9 +1,6 @@
-use std::path::PathBuf;
-
-use fs_err as fs;
 use smartstring::alias::String as SmartString;
 use strfmt::Format;
-use uk_app::Command;
+use uk_app::{Command, ProfileService};
 use uk_content::util::HashMap;
 use uk_localization::string_ext::LocString;
 use uk_manager::mods::Profile as ProfileData;
@@ -16,44 +13,33 @@ use super::{App, Message};
 
 #[derive(Debug, Default)]
 pub struct ProfileManagerState {
-    pub dir: PathBuf,
     pub profiles: HashMap<SmartString, ProfileData>,
     pub selected: Option<SmartString>,
-    pub rename: Option<String>,
-    pub show: bool,
+    pub rename:   Option<String>,
+    pub show:     bool,
 }
 
 impl ProfileManagerState {
     pub fn new(core: &uk_manager::core::Manager) -> Self {
-        let settings = core.settings();
-        let dir = settings.profiles_dir();
-        let profiles = settings
-            .profiles()
-            .filter_map(|name| -> Option<(SmartString, ProfileData)> {
-                let path = dir.join(name.as_str()).join("profile.yml");
-                let text = fs::read_to_string(path).ok()?;
-                let data = serde_yaml::from_str(&text).ok()?;
-                Some((name, data))
-            })
-            .collect::<_>();
-        Self {
-            dir,
-            profiles,
-            selected: None,
-            rename: None,
-            show: false,
-        }
+        let mut state = Self::default();
+        state.reload(core);
+        state
     }
 
+    /// Re-reads every profile's data through the app-layer profile service
+    /// (validated names, no raw fs in the frontend).
     pub fn reload(&mut self, core: &uk_manager::core::Manager) {
         let settings = core.settings();
-        self.profiles = settings
-            .profiles()
-            .filter_map(|name| -> Option<(SmartString, ProfileData)> {
-                let path = self.dir.join(name.as_str()).join("profile.yml");
-                let text = fs::read_to_string(path).ok()?;
-                let data = serde_yaml::from_str(&text).ok()?;
-                Some((name, data))
+        let service = ProfileService::new(&settings);
+        self.profiles = service
+            .list()
+            .into_iter()
+            .filter_map(|name| {
+                service
+                    .read(&name)
+                    .ok()
+                    .flatten()
+                    .map(|data| (name.into_string().into(), data))
             })
             .collect::<_>();
     }

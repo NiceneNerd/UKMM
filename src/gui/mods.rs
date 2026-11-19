@@ -347,7 +347,9 @@ impl App {
             hover = hover || res.hovered();
             drag_started = drag_started || res.drag_started();
             res.context_menu(|ui| {
-                if let Some(action) = Self::render_mod_context_menu(&self.core, menu_enabled, ui) {
+                if let Some(action) =
+                    Self::render_mod_context_menu(&self.core, &self.snap.profiles, menu_enabled, ui)
+                {
                     ctx_action.replace(action);
                 }
             });
@@ -508,18 +510,18 @@ impl App {
 
     fn render_mod_context_menu(
         core: &uk_manager::core::Manager,
+        profiles: &[uk_app::ProfileName],
         enabled: bool,
         ui: &mut Ui,
     ) -> Option<ContextMenuMessage> {
         let mut result = None;
         ui.menu_button("Mod_Send".localize(), |ui| {
-            for profile in core
-                .settings()
-                .profiles()
-                .filter(|p| core.mod_manager().profile().key() != p)
+            for profile in profiles
+                .iter()
+                .filter(|p| core.mod_manager().profile().key() != p.as_str())
             {
                 if ui.button(profile.as_str()).clicked() {
-                    result = Some(ContextMenuMessage::CopyToProfile(profile));
+                    result = Some(ContextMenuMessage::CopyToProfile(profile.as_str().into()));
                     ui.close_kind(egui::UiKind::Menu)
                 }
             }

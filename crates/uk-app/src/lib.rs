@@ -25,7 +25,7 @@ pub use open::{Opened, open_mod};
 pub use options::required_satisfied;
 pub use order::move_selected;
 pub use package::{dev_update_mod, dev_update_mods, extract_mods, package_mod, parse_meta};
-pub use profile::ProfileName;
+pub use profile::{ProfileName, ProfileService};
 pub use session::{
     Command, Event, FolderKind, Inspection, InstallCandidate, JobId, MasterRef, ModEntry, ModId,
     OptionsPrompt, PendingSummary, Session, Snapshot,

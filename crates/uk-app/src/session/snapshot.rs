@@ -63,6 +63,9 @@ impl PendingSummary {
 pub struct Snapshot {
     pub revision: u64,
     pub profile: ProfileName,
+    /// All profiles on disk (for profile pickers); rebuilt per publish, not
+    /// per frame (GUI_REF §22.25).
+    pub profiles: Vec<ProfileName>,
     /// All mods of the current profile; vec order IS load order.
     pub entries: Vec<ModEntry>,
     pub pending: PendingSummary,

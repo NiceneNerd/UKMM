@@ -665,10 +665,18 @@ impl State {
         for (hash, path) in deleted_mods {
             if !assigned.contains(&hash) {
                 log::info!("Removing orphaned mod file {}", path.display());
-                if path.is_dir() {
-                    let _ = fs_err::remove_dir_all(&path);
+                // A failed cleanup must not fail the profile delete, but it
+                // must not be silent either (GUI_REF §22.3).
+                let result = if path.is_dir() {
+                    fs_err::remove_dir_all(&path)
                 } else {
-                    let _ = fs_err::remove_file(&path);
+                    fs_err::remove_file(&path)
+                };
+                if let Err(e) = result {
+                    log::warn!(
+                        "Failed to remove orphaned mod file {}: {e:?}",
+                        path.display()
+                    );
                 }
             }
         }

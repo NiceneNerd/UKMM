@@ -51,6 +51,7 @@ impl Session {
         let snap = Arc::new(RwLock::new(Arc::new(Snapshot {
             revision: 0,
             profile: ProfileName::from_existing("Default"),
+            profiles: vec![],
             entries: vec![],
             pending: PendingSummary::default(),
             busy: None,
@@ -197,9 +198,16 @@ impl State {
             .cloned()
             .map(|manifest| PendingSummary { manifest })
             .unwrap_or_default();
+        let profiles = self
+            .core
+            .settings()
+            .profiles()
+            .map(ProfileName::from_existing)
+            .collect();
         Snapshot {
             revision: self.revision,
             profile,
+            profiles,
             entries: self.mods.iter().map(ModEntry::from_mod).collect(),
             pending,
             busy: self.busy,
