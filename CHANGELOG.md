@@ -5,6 +5,21 @@ All notable changes to UKMM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Changes from the GUI refactor branch `gui2` (not yet released):
+
+**Changed**
+
+- Enable/disable, reorder, option changes, send-to-profile, dev update, mod
+  update, and uninstall now save the profile immediately, so the change
+  survives a restart even if you never Apply.
+
+**Fixed**
+
+- Deploying no longer discards the pending staged files from the Pending
+  Changes tracking (deploy only copies the merged output; it does not merge).
+
 ## [0.17.3] 2026-11-05
 
 **Fixed**

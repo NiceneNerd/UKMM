@@ -1510,6 +1510,11 @@ A replacement frontend is at parity when it can:
 13. Under a Name sort with an active filter, drag a row onto another row and verify the *clicked mod* moves to that mod's load-order position (not a display index), and that the Priority column shows load order.
 14. Switch profiles and verify the stale selection is cleared; update a selected mod and verify the selection follows the new mod id.
 
+> Status on `gui2` (2026-11-19): the replacement frontend implements items
+> 1–14, but the checklist has not been run manually yet. The `UKMM_TEST_DUMP`
+> end-to-end scenario is likewise written but pending a real game dump
+> (setup per `README.md`).
+
 ### 23.6 Deliberate deviations in the session frontend (`gui2` branch)
 
 The `uk_app::session` frontend intentionally changes three behaviours of the
@@ -1527,6 +1532,21 @@ old reducer; they are fixes, not regressions:
   left the core's `current_profile` pointing at the old name, so the next
   `profile()` call hit the "Invalid profile" panic path. The session teaches
   the core the new name (`add_profile`) and switches the core over.
+- **The startup update check runs as a background session job.** It answers
+  with the usual events but never sets `Snapshot::busy`, so the UI stays
+  interactive while GitHub answers (a partial step toward moving startup
+  work into a job; `Manager::init` at startup is still a phase-4 item).
+  HTTP calls now carry an overall timeout (10 s for API calls, 5 min for
+  downloads).
+
+### 23.7 Progress notes on `gui2` (2026-11-19)
+
+- The phase-3 review outcome (findings and their resolutions, accepted
+  trade-offs) is recorded in `GUI_REFACTOR_PHASE3_PLAN.md` §10.
+- Known accepted trade-off: `render_mod_row` clones the full `ModEntry` per
+  row per frame plus two O(n) scans per row (load-index lookup, selection
+  check). Accepted as fine at current mod counts; revisit only if large
+  profiles become slow.
 
 ---
 

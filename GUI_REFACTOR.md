@@ -4,8 +4,13 @@ Companion to `GUI_REF.md` (the behavioural parity spec of the current egui front
 
 - **Parity spec:** `GUI_REF.md` — every GUI feature tagged `[UI-ONLY] / [APP] / [CORE] / [EGUI] / [HOST] / [GAP]`, a 39-item defect list (§22), and a suggested app-layer contract (§23). Every phase below is validated against it.
 - **Scope:** the working tree as of 2026-11-16, where phase 2 is already in progress (§1).
+- **Status (2026-11-19):** phases 1–3 have landed on branch `gui2` (@ `8d68071`, in sync with `origin/gui2`); phase 4 is next. The detailed per-phase working plans are held in the repo: `GUI_REFACTOR_PHASES12_PLAN.md` and `GUI_REFACTOR_PHASE3_PLAN.md` (the latter includes the phase-3 review outcome, §10).
 
 ## 1. Where we are now — phase 2 status
+
+> Update 2026-11-19: phases 1–3 have since landed on `gui2` (see the Status
+> note in the header). This section is kept as the historical record of the
+> 2026-11-16 state.
 
 Already landed in the working tree:
 
@@ -197,7 +202,7 @@ Key properties:
 - Fix, or consciously defer with a regression test, the `GUI_REF.md` §22 "danger" items as tests land: display-index vs load-order mismatch, stale selection on profile switch, missing saves on AddToProfile/dev-update/mod-update, `dirty()` fallback/panic.
 - **Shippable when:** `cargo test` green on the pure pieces and the e2e scenario runs against a fixture, not the developer's real config.
 
-### Phase 2 — Extract `uk-app` mechanically (in progress)
+### Phase 2 — Extract `uk-app` mechanically ✅ landed on `gui2` (`58568de`, `80e39bb`, `ad73c75`)
 
 - ✅ `sniff`/`open`/`apply`/`package`/`import` moved; CLI decoupled from the GUI; BNP drift and error-string matching fixed.
 - Remaining:
@@ -207,7 +212,7 @@ Key properties:
   4. Verify against `GUI_REF.md` that no behaviour changed.
 - **Shippable when:** CLI and GUI both build on `uk-app` only; `src/gui/tasks.rs` is deleted; the `GUI_REF.md` checklist is still green.
 
-### Phase 3 — Move the staged state (the heart of the refactor)
+### Phase 3 — Move the staged state (the heart of the refactor) ✅ landed on `gui2` (`fafc18e`, `0c9ed3a`, `b58a9c6`, `8d68071`; review outcome in `GUI_REFACTOR_PHASE3_PLAN.md` §10)
 
 - Add `Session`, `Snapshot`, `Event`, `PendingChanges`, and the job queue (one mutating job at a time, progress events).
 - Split `gui::Message` into `UiMsg` + `Command`; `Error`/`Noop`/`ResetMods` become `Event`s; the frontend drains all events per frame.
@@ -218,6 +223,8 @@ Key properties:
 ### Phase 4 — Move the services, lowest risk first
 
 Order: profiles → settings drafts (+ wipe rule, endian fix, per-frontend state file, `LocLang` out of core) → import/migration → updater → one-click. Plus `ModReader::thumbnail()` in `uk-mod` and the single `Meta` constructor.
+
+Deferred from phase 3 (per `GUI_REFACTOR_PHASE3_PLAN.md` §0.5): GUI_REF §22 items **2, 3, 5, 7, 9, 16, 20, 29, 37** are deliberately reproduced for now and belong to phase 4; items **11–14, 17–19, 22–25, 27, 30, 33, 35** were out of scope for phase 3.
 
 - **Shippable when:** every behaviour in `GUI_REF.md` §16/§17/§20 is reproducible from `uk-app` alone; the egui frontend holds only view state.
 
@@ -259,6 +266,7 @@ Order: profiles → settings drafts (+ wipe rule, endian fix, per-frontend state
 
 ## 8. Decisions (locked)
 
+- Phase-specific locked decisions live with each phase's working plan (`GUI_REFACTOR_PHASES12_PLAN.md`, `GUI_REFACTOR_PHASE3_PLAN.md` §8). Notably, phase 3's save-semantics decision (mod actions save `profile.yml` immediately) is a user-visible change and is called out in `CHANGELOG.md` under `[Unreleased]`.
 - Serializable contract: derive serde on `Command`, `Event`, `Snapshot` now — keeps an out-of-process `ukmm serve` (web UI, TUI) possible later.
 - Typed errors: small `AppError` enum + `Other(anyhow::Error)` fallback; frontends localize. (Already landed for open via `OpenError`.)
 - `LocLang` moves out of core `Settings` into frontend state, behind a settings-format version bump.
