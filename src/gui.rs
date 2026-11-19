@@ -298,7 +298,9 @@ impl App {
         };
         app.refresh_visible();
         if check_updates {
-            app.session.dispatch(Command::CheckForUpdates);
+            // Background job: the update check must not grey out the UI
+            // (or block other commands) while GitHub answers.
+            app.session.dispatch_background(Command::CheckForUpdates);
         }
         app
     }
@@ -345,7 +347,15 @@ impl App {
                 .iter()
                 .filter_map(|f| f.path.clone())
                 .collect::<Vec<_>>();
-            if !paths.is_empty() {
+            if let [single] = paths.as_slice() {
+                // A single dropped file goes through the full inspection
+                // flow, so option groups and missing metadata get prompts
+                // (GUI_REF §9.3); batches auto-resolve defaults.
+                self.session.dispatch(Command::Open {
+                    path: single.clone(),
+                    meta: None,
+                });
+            } else if !paths.is_empty() {
                 self.session.dispatch(Command::InstallBatch {
                     paths,
                     replace: None,

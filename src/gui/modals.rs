@@ -33,14 +33,18 @@ impl MetaInputModal {
         self.meta.take()
     }
 
-    pub fn open(&mut self, path: PathBuf, platform: Platform) {
+    pub fn open(&mut self, path: PathBuf, platform: Platform, suggested_name: &str) {
         let mut meta = Meta::blank(ModPlatform::Specific(platform.into()));
-        meta.name = path
-            .file_stem()
-            .expect("Filepath has no file?")
-            .to_string_lossy()
-            .replace("_", " ")
-            .into();
+        // Prefill from the session's suggestion (the file stem); fall back
+        // to the stem ourselves if it was empty.
+        let name = if suggested_name.is_empty() {
+            path.file_stem()
+                .map(|stem| stem.to_string_lossy().into_owned())
+                .unwrap_or_default()
+        } else {
+            suggested_name.to_owned()
+        };
+        meta.name = name.replace('_', " ").into();
         self.meta = Some(meta);
         self.path = Some(path);
     }

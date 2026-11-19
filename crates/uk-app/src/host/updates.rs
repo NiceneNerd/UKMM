@@ -4,7 +4,10 @@ use anyhow_ext::{Context, Result};
 use serde::{Deserialize, Serialize};
 use uk_manager::{core::Manager, settings::UpdatePreference, util::get_temp_file};
 
-use crate::{error::AppError, host::http::http_get};
+use crate::{
+    error::AppError,
+    host::http::{API_TIMEOUT, http_get, http_get_with_timeout},
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VersionAsset {
@@ -46,7 +49,8 @@ pub enum ReleaseCheck {
 /// [`ReleaseCheck::None`], never an error.
 pub fn check_releases(core: &Manager) -> ReleaseCheck {
     let url = "https://api.github.com/repos/NiceneNerd/UKMM/releases?per_page=10";
-    let mut releases = match http_get(url).and_then(|bytes| {
+    // Small API call: never let a stuck request hold the session worker.
+    let mut releases = match http_get_with_timeout(url, API_TIMEOUT).and_then(|bytes| {
         serde_json::from_slice::<Vec<VersionResponse>>(&bytes)
             .context("Failed to parse GitHub response")
     }) {

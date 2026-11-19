@@ -214,10 +214,10 @@ impl State {
         self.refresh_mods();
         if updated {
             self.dirty_current_mut().extend(&dirty);
-        } else if let Some(mod_) = self.mods.iter().find(|m| m.hash() == id.0) {
-            if let Ok(manifest) = mod_.manifest() {
-                self.dirty_current_mut().extend(&manifest);
-            }
+        } else if let Some(mod_) = self.mods.iter().find(|m| m.hash() == id.0)
+            && let Ok(manifest) = mod_.manifest()
+        {
+            self.dirty_current_mut().extend(&manifest);
         }
         self.emit_pending();
         if updated {
@@ -584,6 +584,9 @@ impl State {
         if !dir.is_dir() {
             bail!("Profile {} does not exist", profile.as_str());
         }
+        // The profile may have appeared on disk after the core was built;
+        // teach the core about it so `get_profile` below cannot panic.
+        self.ensure_profile_known(&profile)?;
         // The deleted profile's mods, captured while it is still loadable.
         let deleted_mods: Vec<(usize, PathBuf)> = {
             let manager = core.mod_manager();

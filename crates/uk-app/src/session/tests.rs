@@ -929,6 +929,78 @@ fn switching_to_a_profile_created_outside_ukmm_works() {
     assert!(snapshot(&session).entries.is_empty());
 }
 
+#[test]
+fn deleting_a_profile_created_outside_ukmm_works() {
+    let (_dir, session) = temp_session();
+    let rx = session.subscribe();
+    // A profile directory the core never loaded (it appeared after startup):
+    // deleting it must not panic in `get_profile`.
+    let outside = session.core().settings().profiles_dir().join("Outside");
+    std::fs::create_dir_all(&outside).unwrap();
+
+    let (_, result) = run(
+        &session,
+        &rx,
+        Command::DeleteProfile(ProfileName::parse("Outside").unwrap()),
+    );
+    result.expect("delete succeeds");
+    assert!(!outside.exists());
+}
+
+#[test]
+fn a_panicking_job_yields_job_done_err_and_the_session_survives() {
+    let (_dir, session) = temp_session();
+    let rx = session.subscribe();
+    // A profile directory whose profile.yml cannot be parsed: loading it
+    // panics inside the core, which the worker must contain (plan §6.9).
+    let broken = session.core().settings().profiles_dir().join("Broken");
+    std::fs::create_dir_all(&broken).unwrap();
+    std::fs::write(broken.join("profile.yml"), "not: [valid").unwrap();
+
+    let (events, result) = run(
+        &session,
+        &rx,
+        Command::DeleteProfile(ProfileName::parse("Broken").unwrap()),
+    );
+    let error = result.expect_err("panicking job yields JobDone(Err)");
+    assert!(matches!(error, AppError::Other(_)), "{error}");
+    assert!(events.iter().any(|e| matches!(e, Event::Error(_))));
+
+    // The worker caught the panic: the session still answers commands.
+    let (_, result) = run(&session, &rx, Command::CancelPending);
+    result.expect("session responsive after a panic");
+    assert!(snapshot(&session).busy.is_none());
+}
+
+#[test]
+fn a_background_job_runs_without_setting_busy() {
+    let (_dir, session) = temp_session();
+    let rx = session.subscribe();
+    // OneClick with an empty URL fails fast, but a blocking job emits a
+    // Progress event first (the handler reads `busy` for progress); a
+    // background job must not.
+    let job = session.dispatch_background(Command::OneClick(String::new()));
+    let mut saw_progress = false;
+    loop {
+        let event = rx
+            .recv_timeout(Duration::from_secs(30))
+            .expect("session event");
+        if matches!(&event, Event::Progress { .. }) {
+            saw_progress = true;
+        }
+        if matches!(&event, Event::JobDone { job: j, .. } if *j == job) {
+            break;
+        }
+    }
+    assert!(!saw_progress, "background jobs do not report progress");
+    assert!(snapshot(&session).busy.is_none());
+
+    // The same command as a blocking job does report progress.
+    let (events, result) = run(&session, &rx, Command::OneClick(String::new()));
+    assert!(result.is_err());
+    assert!(events.iter().any(|e| matches!(e, Event::Progress { .. })));
+}
+
 /// The names of the files in a zip archive.
 fn zip_entries(path: &Path) -> Vec<String> {
     let file = std::fs::File::open(path).unwrap();

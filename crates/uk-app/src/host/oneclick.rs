@@ -7,7 +7,7 @@ use anyhow_ext::{Context, Result};
 use uk_manager::util::get_temp_file;
 use uk_mod::pack::sanitise;
 
-use crate::host::http::{http_get, http_redirect_location};
+use crate::host::http::{API_TIMEOUT, http_get, http_get_with_timeout, http_redirect_location};
 
 /// The local TCP interface used to forward one-click installs to a running
 /// instance.
@@ -57,7 +57,7 @@ pub fn start_listener() -> flume::Receiver<IpcMessage> {
                                     continue;
                                 }
                             };
-                            log::trace!("{:?}", &msg);
+                            log::trace!("{msg:?}");
                             let sent = ONECLICK_SENDER
                                 .get()
                                 .map(|sender| sender.send(msg))
@@ -92,9 +92,12 @@ fn mod_name_for(url: &str) -> String {
     parts.next();
     let cat = parts.next().unwrap_or_default().to_owned();
     let id = parts.next().unwrap_or_default().to_owned();
-    http_get(&format!(
-        "https://api.gamebanana.com/Core/Item/Data?itemtype={cat}&itemid={id}&fields=name"
-    ))
+    http_get_with_timeout(
+        &format!(
+            "https://api.gamebanana.com/Core/Item/Data?itemtype={cat}&itemid={id}&fields=name"
+        ),
+        API_TIMEOUT,
+    )
     .and_then(|data| Ok(serde_json::from_slice::<Vec<String>>(&data)?))
     .map(|mut res| sanitise(&res.remove(0)))
     .unwrap_or_else(|_| "oneclick_mod".into())
@@ -116,7 +119,7 @@ pub fn download_oneclick(url: &str) -> Result<(PathBuf, String)> {
         .path()
         .unwrap_or_default()
         .split('/')
-        .last()
+        .next_back()
         .map(|n| n.to_owned())
         .unwrap_or_else(|| format!("{mod_name}.bnp"));
     let data = http_get(&redir).with_context(|| format!("Failed to download mod from {redir}"))?;

@@ -1510,6 +1510,24 @@ A replacement frontend is at parity when it can:
 13. Under a Name sort with an active filter, drag a row onto another row and verify the *clicked mod* moves to that mod's load-order position (not a display index), and that the Priority column shows load order.
 14. Switch profiles and verify the stale selection is cleared; update a selected mod and verify the selection follows the new mod id.
 
+### 23.6 Deliberate deviations in the session frontend (`gui2` branch)
+
+The `uk_app::session` frontend intentionally changes three behaviours of the
+old reducer; they are fixes, not regressions:
+
+- **Deploy keeps the pending manifest.** The old `Deploy` ran
+  `ResetMods(None)`, clearing the current profile's dirty manifest — but
+  `deploy()` only copies the merged output, it does not merge, so the staged
+  files were silently lost from tracking. The session's `Deploy` leaves
+  pending untouched; `CancelPending` is the only way to drop staged files.
+- **Descending sorts are stable.** Ties now keep load order instead of
+  shuffling (the old `sort_by` was unstable). Priority-descending therefore
+  still reads as reverse load order.
+- **Renaming the active profile heals the core's profile map.** The old code
+  left the core's `current_profile` pointing at the old name, so the next
+  `profile()` call hit the "Invalid profile" panic path. The session teaches
+  the core the new name (`add_profile`) and switches the core over.
+
 ---
 
 ## Appendix A. User-Visible String Inventory (English keys)

@@ -69,8 +69,11 @@ impl App {
                         let picks = prompt.defaults().to_vec();
                         self.options_modal = Some(OptionsModal::Install { prompt, picks });
                     }
-                    Inspection::NeedsMeta { path, .. } => {
-                        self.meta_input.open(path, self.platform());
+                    Inspection::NeedsMeta {
+                        path,
+                        suggested_name,
+                    } => {
+                        self.meta_input.open(path, self.platform(), &suggested_name);
                     }
                     Inspection::WrongPlatform { mod_is, current } => {
                         self.error =
@@ -78,18 +81,16 @@ impl App {
                     }
                     Inspection::MissingMasters(masters) => {
                         // Advisory only: the install proceeds regardless.
-                        let names = masters
-                            .iter()
-                            .map(|m| format!("{} {}", m.name, m.version))
-                            .collect::<Vec<_>>()
-                            .join(", ");
-                        self.error = Some(
-                            uk_app::error::AppError::MissingMasters {
-                                name:    names,
-                                version: String::new(),
-                            }
-                            .into(),
-                        );
+                        // One clean error per missing master (GUI_REF §9.3).
+                        for master in masters {
+                            self.error = Some(
+                                uk_app::error::AppError::MissingMasters {
+                                    name:    master.name,
+                                    version: master.version,
+                                }
+                                .into(),
+                            );
+                        }
                     }
                 }
             }
@@ -292,10 +293,19 @@ impl App {
                     .pick_files()
                     .filter(|p| !p.is_empty())
                 {
-                    self.session.dispatch(Command::InstallBatch {
-                        paths,
-                        replace: None,
-                    });
+                    if let [single] = paths.as_slice() {
+                        // One picked file gets the full inspection flow
+                        // (options/meta prompts); batches use defaults.
+                        self.session.dispatch(Command::Open {
+                            path: single.clone(),
+                            meta: None,
+                        });
+                    } else {
+                        self.session.dispatch(Command::InstallBatch {
+                            paths,
+                            replace: None,
+                        });
+                    }
                 }
             }
             Message::CheckMeta => {

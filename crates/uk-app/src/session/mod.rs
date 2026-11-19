@@ -36,7 +36,7 @@ use crate::{error::AppError, profile::ProfileName};
 /// [`Snapshot`], subscribe to [`Event`]s.
 pub struct Session {
     core: Arc<Manager>,
-    tx: flume::Sender<(JobId, Command)>,
+    tx: flume::Sender<(JobId, Command, bool)>,
     subscribers: Arc<RwLock<Vec<flume::Sender<Event>>>>,
     snap: Arc<RwLock<Arc<Snapshot>>>,
     next_job: AtomicU64,
@@ -90,11 +90,23 @@ impl Session {
         rx
     }
 
-    /// Enqueues a command and returns its job id. If the worker has shut
-    /// down the command is silently dropped.
+    /// Enqueues a blocking command and returns its job id: while it runs,
+    /// [`Snapshot::busy`] is set and the frontend should show a busy state.
+    /// If the worker has shut down the command is silently dropped.
     pub fn dispatch(&self, cmd: Command) -> JobId {
+        self.dispatch_inner(cmd, false)
+    }
+
+    /// Enqueues a background command (e.g. a startup update check): it runs
+    /// like any other job — events, revision bumps, `JobDone` — but never
+    /// sets [`Snapshot::busy`], so the frontend stays interactive.
+    pub fn dispatch_background(&self, cmd: Command) -> JobId {
+        self.dispatch_inner(cmd, true)
+    }
+
+    fn dispatch_inner(&self, cmd: Command, background: bool) -> JobId {
         let job = JobId(self.next_job.fetch_add(1, Ordering::Relaxed));
-        let _ = self.tx.send((job, cmd));
+        let _ = self.tx.send((job, cmd, background));
         job
     }
 }
@@ -139,10 +151,12 @@ impl State {
         }
     }
 
-    fn run(mut self, rx: flume::Receiver<(JobId, Command)>) {
-        while let Ok((job, cmd)) = rx.recv() {
+    fn run(mut self, rx: flume::Receiver<(JobId, Command, bool)>) {
+        while let Ok((job, cmd, background)) = rx.recv() {
             self.emit(Event::JobStarted(job));
-            self.busy = Some(job);
+            if !background {
+                self.busy = Some(job);
+            }
             self.progress = None;
             self.publish();
             let result = std::panic::catch_unwind(AssertUnwindSafe(|| self.handle(cmd)))

@@ -66,7 +66,9 @@ pub struct Snapshot {
     /// All mods of the current profile; vec order IS load order.
     pub entries: Vec<ModEntry>,
     pub pending: PendingSummary,
-    /// The currently running mutating job, if any.
+    /// The currently running *blocking* job, if any. Background jobs
+    /// ([`Session::dispatch_background`](crate::session::Session::dispatch_background))
+    /// never set this.
     pub busy: Option<JobId>,
     /// Latest progress text of the running job (for busy overlays).
     pub progress: Option<String>,
