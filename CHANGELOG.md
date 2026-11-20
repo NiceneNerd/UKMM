@@ -9,28 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changes from the GUI refactor branch `gui2` (not yet released):
 
-**Changed**
-
-- Enable/disable, reorder, option changes, send-to-profile, dev update, mod
-  update, and uninstall now save the profile immediately, so the change
-  survives a restart even if you never Apply.
-- Saving settings now wipes the old deploy output **before** saving and treats
-  a failed wipe as an error: if the old output could not be removed, the new
-  settings are not saved (previously the save silently continued with a stale
-  merged output left behind).
-- Changing the storage folder no longer moves existing mods/profiles; a
-  warning is logged instead.
-- The UI language moved out of `settings.yml` into the per-frontend UI state
-  file (`ui-egui.json` in the config folder; `settings.yml` is now format v2).
-  Existing settings are migrated automatically on first launch.
-
-**Fixed**
-
-- Deploying no longer discards the pending staged files from the Pending
-  Changes tracking (deploy only copies the merged output; it does not merge).
-
 **Added**
 
+- Zoom setting (UI scale), for making the program bigger or smaller: zoom in
+  up to 2x, or out to 0.1x. It is applied on top of your monitor's scale
+  settings and stored in the per-frontend UI state (`ui-egui.json`), not in
+  `settings.yml`.
+  - Localization for this setting was machine-translated. It's probably
+    garbage. If you hate it, please help out by submitting a change to it.
 - `ukmm --json`: machine-readable output — every session event as one JSON
   line plus a snapshot line per revision (progress messages go to stderr).
 - New CLI subcommands covering the full session command surface: `list`,
@@ -45,15 +31,32 @@ Changes from the GUI refactor branch `gui2` (not yet released):
 
 **Changed**
 
+- Enable/disable, reorder, option changes, send-to-profile, dev update, mod
+  update, and uninstall now save the profile immediately, so the change
+  survives a restart even if you never Apply.
+- Saving settings now wipes the old deploy output **before** saving and treats
+  a failed wipe as an error: if the old output could not be removed, the new
+  settings are not saved (previously the save silently continued with a stale
+  merged output left behind).
+- Changing the storage folder no longer moves existing mods/profiles; a
+  warning is logged instead.
+- The UI language moved out of `settings.yml` into the per-frontend UI state
+  file (`ui-egui.json` in the config folder; `settings.yml` is now format v2).
+  Existing settings are migrated automatically on first launch.
 - The command-line interface was rewritten on the same application layer as
   the GUI (`uk-app`'s session), now living in the `uk-cli` crate; installing
   via CLI enables the mod and merges immediately, as before.
 - CLI mod indices (e.g. `ukmm uninstall 1`) are now 1-based, matching the
   numbering printed by `list` (previously the positional index was 0-based
   while the list was 1-based).
+- Changed scaling behavior: the app no longer forces a 1.0 scale on Wayland;
+  it now follows the desktop environment scale everywhere, with the zoom
+  setting applied on top.
 
 **Fixed**
 
+- Deploying no longer discards the pending staged files from the Pending
+  Changes tracking (deploy only copies the merged output; it does not merge).
 - Interactive CLI `uninstall` no longer applied an empty change set (the mod
   list was shadowed before use).
 - The dump endianness for unpacked game dumps is now derived from the selected
@@ -63,6 +66,10 @@ Changes from the GUI refactor branch `gui2` (not yet released):
 - Startup no longer fails when a single mod archive is unreadable or a
   profile's `profile.yml` is malformed; the affected entry is skipped with a
   warning instead.
+- Fixed game dump validation only checking the base game folder. UKMM now
+  fails to save your settings if any of the content/update/DLC paths is
+  wrong, not just the first one.
+
 
 ## [0.17.3] 2026-11-05
 

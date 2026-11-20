@@ -185,6 +185,8 @@
     "Settings_Sys7z_Desc": "Da impostazione predefinita, UKMM tenterà di usare il 7z del tuo sistema per estrarre i file 7-zip (come i BNPs). Altrimenti, cercherà di utilizzare un sistema di estrazione pre-installato ma più lento. Se hai errori relativi a 7z, disabilita questa opzione.",
     "Settings_Theme": "Tema",
     "Settings_Theme_Desc": "Tema dell'interfaccia utente",
+    "Settings_Zoom": "Scala dell'interfaccia utente",
+    "Settings_Zoom_Description": "Per impostazione predefinita, l'interfaccia di UKMM si adatta alla scala impostata per il monitor nel sistema operativo. Se per qualche motivo ciò non fosse sufficiente, puoi utilizzare questa impostazione per modificare ulteriormente la scala. Valori più elevati ingrandiscono l'interfaccia, mentre valori più bassi la rimpiccioliscono. Le modifiche vengono applicate al momento del salvataggio.",
     "Tab_Deploy": "Schieramento",
     "Tab_Info": "Informazioni",
     "Tab_Install": "Installa",

@@ -147,6 +147,14 @@ struct UiState {
     /// UI language: frontend state since settings format v2 (it used to live
     /// in core `settings.yml`).
     lang: LocLang,
+    /// UI zoom factor (1.0 = follow the OS/monitor scale). Frontend state,
+    /// like the language; applied via `egui_ctx.set_zoom_factor`.
+    #[serde(default = "default_zoom_factor")]
+    zoom_factor: f32,
+}
+
+fn default_zoom_factor() -> f32 {
+    1.0
 }
 
 impl Default for UiState {
@@ -157,6 +165,7 @@ impl Default for UiState {
             picker_state: FilePickerState::default(),
             tree: tabs::default_ui(),
             lang: LocLang::English,
+            zoom_factor: default_zoom_factor(),
         }
     }
 }
@@ -197,6 +206,8 @@ pub struct App {
     settings_draft: uk_app::settings::SettingsDraft,
     /// UI language (frontend state, persisted in `ui-egui.json`).
     lang: LocLang,
+    /// UI zoom factor (frontend state, persisted in `ui-egui.json`).
+    zoom_factor: f32,
     toasts: egui_notify::Toasts,
     theme: visuals::Theme,
     dock_style: uk_ui::egui_dock::Style,
@@ -209,15 +220,8 @@ impl App {
         cc: &eframe::CreationContext,
         ipc: Receiver<uk_app::host::oneclick::IpcMessage>,
     ) -> Self {
-        #[cfg(not(windows))]
-        if std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "wayland" {
-            cc.egui_ctx.set_pixels_per_point(
-                std::env::var("WINIT_X11_SCALE_FACTOR")
-                    .ok()
-                    .and_then(|v| v.parse().ok())
-                    .unwrap_or(1.0),
-            );
-        }
+        // Scaling follows the desktop environment in all DEs (no Wayland
+        // special case); the zoom factor is applied on top, below.
         uk_ui::icons::load_icons(&cc.egui_ctx);
         uk_ui::load_fonts(&cc.egui_ctx);
         let core = Arc::new(Manager::init().unwrap());
@@ -243,6 +247,7 @@ impl App {
                 }
             });
         ui_state.theme.set_theme(&cc.egui_ctx);
+        cc.egui_ctx.set_zoom_factor(ui_state.zoom_factor);
         let (send, recv) = flume::unbounded();
         // Bridge one-click IPC messages into the app message channel
         {
@@ -292,6 +297,7 @@ impl App {
             mod_list_filter: "".parse().unwrap(),
             settings_draft,
             lang: ui_state.lang,
+            zoom_factor: ui_state.zoom_factor,
             changelog,
             channel: (send, recv),
             closed_tabs: Default::default(),
@@ -423,6 +429,7 @@ impl eframe::App for App {
             list_state: std::mem::take(&mut self.list_state),
             tree: std::mem::replace(&mut self.tree.borrow_mut(), tabs::default_ui()),
             lang: self.lang,
+            zoom_factor: self.zoom_factor,
         };
         fs::write(
             Settings::frontend_state_file("egui"),

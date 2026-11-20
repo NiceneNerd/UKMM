@@ -273,3 +273,26 @@ Deferred from phase 3 (per `GUI_REFACTOR_PHASE3_PLAN.md` §0.5): GUI_REF §22 it
 - `InstallCandidate` is only constructible through `OptionsPrompt::resolve`; `ProfileName::parse` validates once at the boundary.
 - Sort and filter are pure helpers in `uk-app`, called by frontends.
 - One mutating job at a time, owned by `Session`; progress via events, not log scraping.
+
+## 9. Post-phase-6 sync with master (2026-11-20)
+
+`origin/master` was merged into `gui2` (one-way sync; merging gui2 back into
+master is not planned soon). Master had added a zoom/UI-scale setting stored
+in core `Settings` plus a game-dump validation fix and `Settings_Zoom`
+localization keys; the merge was conflict-free except in the rewritten GUI
+files and `CHANGELOG.md`, where gui2's versions were kept. Consequences:
+
+- The dump-validation fix (`uk-reader`'s `Unpacked`) and the 12-locale
+  `Settings_Zoom` keys landed as-is.
+- Master's zoom feature did **not** survive (it lived in the old monolithic
+  GUI and in core `Settings`). Per the locked decision below, zoom was
+  re-implemented as **egui frontend state**: `UiState::zoom_factor` in
+  `ui-egui.json`, applied via `egui_ctx.set_zoom_factor` at startup and from
+  the settings screen; the Wayland 1.0-scale special case was dropped in
+  favor of following the DE scale everywhere (master's behavior).
+
+### Locked: zoom is frontend-owned
+
+Zoom lives in `ui-egui.json` (`UiState`), not in core `Settings` and not in
+`SettingsDraft`. If a later frontend wants zoom, it can read the same file or
+keep its own; core stays zoom-agnostic.

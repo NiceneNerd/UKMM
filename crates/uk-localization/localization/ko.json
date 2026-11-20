@@ -203,6 +203,8 @@
 	"Settings_Sys7z_Desc": "기본적으로 UKMM 은 시스템 PATH 에 있는 7z 를 사용해 7-Zip 파일(BNP 등)을 압축 해제하려고 시도합니다.\n그렇지 않으면 더 느린 내장 7z 라이브러리를 사용합니다.\n7z 관련 오류가 발생하면 이 옵션을 비활성화해 보세요.",
 	"Settings_Theme": "테마",
 	"Settings_Theme_Desc": "사용자 인터페이스 테마",
+	"Settings_Zoom": "UI 크기",
+	"Settings_Zoom_Description": "기본적으로 UKMM의 UI는 운영체제의 모니터 배율 설정에 맞춰 조정됩니다. 어떤 이유로 이 설정이 충분하지 않다면, 이 옵션을 사용하여 UI 크기를 추가로 조절할 수 있습니다. 수치를 높이면 UI가 커지고, 낮추면 작아집니다. 설정값을 저장하면 즉시 적용됩니다.",
 	"Tab_Deploy": "배포",
 	"Tab_Info": "정보",
 	"Tab_Install": "설치",

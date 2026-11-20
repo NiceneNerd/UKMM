@@ -335,6 +335,27 @@ impl App {
                                             }
                                         });
                                 });
+                                name = "Settings_Zoom".localize();
+                                description = "Settings_Zoom_Description".localize();
+                                render_setting(&name, &description, ui, |ui| {
+                                    // UI zoom is frontend state (persisted in
+                                    // ui-egui.json), not core settings; applied
+                                    // immediately via the egui context.
+                                    if ui
+                                        .add(
+                                            egui::Slider::new(
+                                                &mut self.zoom_factor,
+                                                0.1_f32..=2.0_f32,
+                                            )
+                                            .update_while_editing(false)
+                                            .fixed_decimals(1)
+                                            .step_by(0.1),
+                                        )
+                                        .changed()
+                                    {
+                                        ui.ctx().set_zoom_factor(self.zoom_factor);
+                                    }
+                                });
                                 name = "Settings_Mode".localize();
                                 description = "Settings_Mode_Desc".localize();
                                 render_setting(&name, &description, ui, |ui| {

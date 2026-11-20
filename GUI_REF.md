@@ -1439,6 +1439,9 @@ This is not existing code; it is the minimum shape implied by the behaviours abo
 - Modal stack, confirmations, toasts.
 - Preview textures, markdown caches, collapsed-tree state.
 - UI language preview and frontend-local persistence.
+- UI zoom factor (`UiState::zoom_factor`, persisted in `ui-egui.json`,
+  applied via `egui_ctx.set_zoom_factor`; deliberately *not* part of core
+  `Settings` — a later frontend may choose its own zoom handling).
 - Keyboard/focus state.
 
 ### 23.3 Commands implied

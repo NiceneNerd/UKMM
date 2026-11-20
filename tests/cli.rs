@@ -4,7 +4,7 @@
 //! *real* game dump stays gated on `UKMM_TEST_DUMP` in `crates/uk-app/tests/e2e.rs`.
 
 use std::{
-    path::{Path, PathBuf},
+    path::PathBuf,
     process::{Command as Proc, Output},
     sync::Arc,
 };
