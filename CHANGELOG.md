@@ -28,6 +28,13 @@ Changes from the GUI refactor branch `gui2` (not yet released):
   `register-url`, `save-settings`.
 - `UKMM_CONFIG_DIR` environment variable to override the config folder
   (useful for tests and portable setups).
+- `ukmm options <index>` with no paths now lists the mod's option groups and
+  their paths (with the current selection marked); unknown option paths are
+  rejected with a list of the valid ones instead of being silently ignored.
+- `ukmm update-from` accepts `-m`/`--meta` for legacy update archives, and a
+  legacy archive now replaces the mod in place instead of installing a second
+  copy.
+- The user book now documents the command-line interface (`book/src/cli.md`).
 
 **Changed**
 

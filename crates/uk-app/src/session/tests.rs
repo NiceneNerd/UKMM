@@ -626,6 +626,7 @@ fn update_from_path_saves_the_profile() {
     let (events, result) = run(&session, &rx, Command::UpdateFromPath {
         id,
         path: new.clone(),
+        meta: None,
     });
     result.expect("update succeeds");
     let candidate = ready_candidate(&events);
@@ -893,6 +894,7 @@ fn update_from_path_replaces_the_installed_file() {
     let (events, result) = run(&session, &rx, Command::UpdateFromPath {
         id,
         path: new.clone(),
+        meta: None,
     });
     result.expect("update succeeds");
     let candidate = ready_candidate(&events);

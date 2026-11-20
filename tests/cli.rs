@@ -4,13 +4,17 @@
 //! *real* game dump stays gated on `UKMM_TEST_DUMP` in `crates/uk-app/tests/e2e.rs`.
 
 use std::{
-    path::PathBuf,
+    io::Write,
+    path::{Path, PathBuf},
     process::{Command as Proc, Output},
     sync::Arc,
 };
 
 use uk_app::{
-    model::{Language, Platform, PlatformSettings, Settings},
+    model::{
+        ExclusiveOptionGroup, Language, Manifest, Meta, ModOption, ModPlatform, OptionGroup,
+        Platform, PlatformSettings, Settings,
+    },
     testkit::{fake_dump, mod_zip_named},
 };
 use uk_reader::ResourceReader;
@@ -376,4 +380,166 @@ fn malformed_cli_invocation_exits_2_not_silent_gui() {
     // An unknown subcommand likewise.
     let out = ukmm(&fix, &["boguscmd"]);
     assert_eq!(out.status.code(), Some(2));
+}
+
+/// A mod zip with one exclusive option group (paths `opt-a` / `opt-b`).
+fn mod_zip_with_options(dir: &Path, file_name: &str) -> PathBuf {
+    let mut meta = Meta::blank(ModPlatform::Universal);
+    meta.name = "CLI Options Mod".into();
+    meta.options = vec![OptionGroup::Exclusive(ExclusiveOptionGroup {
+        name: "Texture".into(),
+        description: "Pick a texture".into(),
+        required: false,
+        default: None,
+        options: vec![
+            ModOption {
+                name: "A".into(),
+                description: "".into(),
+                path: "opt-a".into(),
+                requires: vec![],
+            },
+            ModOption {
+                name: "B".into(),
+                description: "".into(),
+                path: "opt-b".into(),
+                requires: vec![],
+            },
+        ],
+    })];
+    let path = dir.join(file_name);
+    let mut zip = zip::ZipWriter::new(std::fs::File::create(&path).unwrap());
+    let opts = zip::write::SimpleFileOptions::default();
+    zip.start_file("meta.yml", opts).unwrap();
+    zip.write_all(serde_yaml::to_string(&meta).unwrap().as_bytes())
+        .unwrap();
+    zip.start_file("manifest.yml", opts).unwrap();
+    zip.write_all(
+        serde_yaml::to_string(&Manifest::default())
+            .unwrap()
+            .as_bytes(),
+    )
+    .unwrap();
+    for opt in ["opt-a", "opt-b"] {
+        zip.start_file(format!("options/{opt}/manifest.yml"), opts)
+            .unwrap();
+        zip.write_all(
+            serde_yaml::to_string(&Manifest::default())
+                .unwrap()
+                .as_bytes(),
+        )
+        .unwrap();
+    }
+    zip.finish().unwrap();
+    path
+}
+
+/// A legacy mod zip: content but no meta.yml/manifest.yml.
+fn legacy_zip(dir: &Path, file_name: &str) -> PathBuf {
+    let path = dir.join(file_name);
+    let mut zip = zip::ZipWriter::new(std::fs::File::create(&path).unwrap());
+    let opts = zip::write::SimpleFileOptions::default();
+    zip.start_file("content/Map/MainField/A-1/A-1.00_Clustering.sblwp", opts)
+        .unwrap();
+    zip.write_all(b"legacy").unwrap();
+    zip.finish().unwrap();
+    path
+}
+
+#[test]
+fn options_discovery_and_pick_validation() {
+    let (fix, _a, _b) = fixture();
+    let dir = fix.config.parent().unwrap().to_path_buf();
+    let opt = mod_zip_with_options(&dir, "opt.zip");
+    let opt = opt.to_str().unwrap().to_string();
+    let out = ukmm(&fix, &["install", &opt]);
+    assert!(
+        out.status.success(),
+        "install failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    // Discovery: no picks -> lists the group and its paths, changes nothing.
+    let out = ukmm(&fix, &["options", "1"]);
+    assert!(
+        out.status.success(),
+        "options failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("Texture"), "{stdout}");
+    assert!(
+        stdout.contains("opt-a") && stdout.contains("opt-b"),
+        "{stdout}"
+    );
+
+    // Unknown pick -> error that lists the valid paths.
+    let out = ukmm(&fix, &["options", "1", "bogus"]);
+    assert!(!out.status.success(), "bogus pick should fail");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("Unknown option path"), "{stderr}");
+    assert!(stderr.contains("opt-a"), "{stderr}");
+
+    // Valid pick -> applied and merged; discovery marks it selected.
+    let out = ukmm(&fix, &["options", "1", "opt-b"]);
+    assert!(
+        out.status.success(),
+        "options failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let out = ukmm(&fix, &["options", "1"]);
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("* opt-b"), "{stdout}");
+}
+
+#[test]
+fn update_from_legacy_mod_with_meta_replaces_in_place() {
+    let (fix, a, _b) = fixture();
+    let dir = fix.config.parent().unwrap().to_path_buf();
+    let a = a.to_str().unwrap().to_string();
+    let out = ukmm(&fix, &["install", &a]);
+    assert!(
+        out.status.success(),
+        "install failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    // A legacy archive (no meta.yml) plus an explicit --meta file.
+    let legacy = legacy_zip(&dir, "update.zip");
+    let legacy = legacy.to_str().unwrap().to_string();
+    let mut m = Meta::blank(ModPlatform::Specific(uk_content::prelude::Endian::Big));
+    m.name = "Updated Mod Name".into();
+    m.version = "2.0.0".into();
+    let meta_file = dir.join("new-meta.yml");
+    std::fs::write(&meta_file, serde_yaml::to_string(&m).unwrap()).unwrap();
+    let meta_file = meta_file.to_str().unwrap().to_string();
+
+    let out = ukmm(&fix, &[
+        "--json",
+        "update-from",
+        "1",
+        &legacy,
+        "--meta",
+        &meta_file,
+    ]);
+    assert!(
+        out.status.success(),
+        "update-from failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.contains("\"Updated\""),
+        "no Updated event:\n{stdout}"
+    );
+
+    // The mod was replaced in place: still one entry, now with the new name.
+    let out = ukmm(&fix, &["list"]);
+    let list = String::from_utf8_lossy(&out.stdout);
+    assert!(list.contains("Updated Mod Name"), "{list}");
+    assert!(!list.contains("CLI Test Mod A"), "{list}");
+    assert_eq!(
+        list.lines().filter(|l| l.starts_with("1. ")).count(),
+        1,
+        "{list}"
+    );
 }

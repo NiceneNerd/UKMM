@@ -421,7 +421,11 @@ impl App {
                         .add_filter("All files (*.*)", &["*"])
                         .pick_file()
                     {
-                        self.session.dispatch(Command::UpdateFromPath { id, path });
+                        self.session.dispatch(Command::UpdateFromPath {
+                            id,
+                            path,
+                            meta: None,
+                        });
                     }
                 }
                 ContextMenuMessage::DevUpdate => {

@@ -139,6 +139,8 @@ xflags::xflags! {
             required index: usize
             /// Path to the new mod
             required path: PathBuf
+            /// Path to a meta file (meta.yml, info.json, or rules.txt) for legacy mods
+            optional -m, --meta meta: PathBuf
         }
         /// Repack installed mods in place from loose folders (dev)
         cmd dev-update {
@@ -368,6 +370,8 @@ pub struct ProfileDelete {
 pub struct UpdateFrom {
     pub index: usize,
     pub path:  PathBuf,
+
+    pub meta: Option<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -552,6 +556,7 @@ pub fn run(cli: Ukmm) -> Result<()> {
         json: cli.json,
         meta: None,
         last_installed: None,
+        pending_replace: None,
     }
     .run_subcommand(&cli.subcommand)
 }
@@ -565,6 +570,10 @@ pub struct Runner {
     /// The `--meta` file, used when a mod needs metadata (`NeedsMeta`).
     meta: Option<PathBuf>,
     last_installed: Option<ModId>,
+    /// Set while an `update-from` is in flight: if the archive turns out to
+    /// be a legacy mod (`NeedsMeta`), the re-inspect must keep the replace
+    /// target instead of installing a new mod.
+    pending_replace: Option<ModId>,
 }
 
 impl Runner {
@@ -663,24 +672,78 @@ impl Runner {
             }
             UkmmCmd::Options(Options { index, picks }) => {
                 let entry = self.entry(*index)?;
+                if picks.is_empty() {
+                    // Discovery mode: show the option groups, their paths, and
+                    // the current selection, without changing anything.
+                    if entry.meta.options.is_empty() {
+                        self.say("This mod has no options");
+                        return Ok(());
+                    }
+                    for group in &entry.meta.options {
+                        self.say(&format!(
+                            "{} (required: {})",
+                            group.name(),
+                            group.required()
+                        ));
+                        for o in group.options() {
+                            let selected = entry.options.iter().any(|e| e.path == o.path);
+                            self.say(&format!(
+                                "  {} {} - {}",
+                                if selected { "*" } else { " " },
+                                o.path.display(),
+                                o.name
+                            ));
+                        }
+                    }
+                    self.say("Change the selection with: ukmm options <index> <path>...");
+                    return Ok(());
+                }
+                // Every pick must be a known option path (exact match).
+                let all: Vec<_> = entry
+                    .meta
+                    .options
+                    .iter()
+                    .flat_map(|g| g.options().iter())
+                    .collect();
+                for p in picks {
+                    if !all.iter().any(|o| o.path.to_string_lossy() == *p) {
+                        let valid: Vec<String> = all
+                            .iter()
+                            .map(|o| format!("  {}", o.path.display()))
+                            .collect();
+                        anyhow_ext::bail!(
+                            "Unknown option path '{p}'. Available paths:\n{}",
+                            valid.join("\n")
+                        );
+                    }
+                }
                 let mut resolved = vec![];
                 for group in &entry.meta.options {
-                    let pick = picks.iter().find_map(|p| {
-                        group
-                            .options()
-                            .iter()
-                            .find(|o| o.path.to_string_lossy() == *p)
-                            .cloned()
-                    });
-                    match pick {
-                        Some(o) => resolved.push(o),
-                        None if group.required() => {
+                    let matches: Vec<_> = picks
+                        .iter()
+                        .filter_map(|p| {
+                            group
+                                .options()
+                                .iter()
+                                .find(|o| o.path.to_string_lossy() == *p)
+                        })
+                        .collect();
+                    match matches.as_slice() {
+                        [o] => resolved.push((*o).clone()),
+                        [] if group.required() => {
                             anyhow_ext::bail!(
                                 "Required option group '{}' has no pick",
                                 group.name()
                             );
                         }
-                        None => {}
+                        [] => {}
+                        _ => {
+                            anyhow_ext::bail!(
+                                "Option group '{}' takes exactly one pick, got {}",
+                                group.name(),
+                                matches.len()
+                            );
+                        }
                     }
                 }
                 self.exec(Command::SetOptions {
@@ -785,14 +848,19 @@ impl Runner {
             UkmmCmd::ProfileDelete(ProfileDelete { name }) => {
                 self.exec(Command::DeleteProfile(ProfileName::parse(name)?))
             }
-            UkmmCmd::UpdateFrom(UpdateFrom { index, path }) => {
+            UkmmCmd::UpdateFrom(UpdateFrom { index, path, meta }) => {
                 let id = self.entry_id(*index)?;
-                self.meta = None;
+                self.meta = meta.clone();
                 self.last_installed = None;
-                self.exec(Command::UpdateFromPath {
+                let meta_parsed = meta.as_ref().map(uk_app::parse_meta).transpose()?;
+                self.pending_replace = Some(id);
+                let result = self.exec(Command::UpdateFromPath {
                     id,
                     path: path.clone(),
-                })?;
+                    meta: meta_parsed,
+                });
+                self.pending_replace = None;
+                result?;
                 self.exec(Command::Apply)?;
                 self.say("Done!");
                 Ok(())
@@ -1072,13 +1140,24 @@ impl Runner {
                                         meta
                                     }
                                 };
-                                return self.exec_inner(
-                                    Command::Open {
-                                        path,
-                                        meta: Some(meta),
-                                    },
-                                    auto,
-                                );
+                                // An update-from on a legacy archive must
+                                // replace the mod, not install a second copy.
+                                let cmd = match self.pending_replace.take() {
+                                    Some(id) => {
+                                        Command::UpdateFromPath {
+                                            id,
+                                            path,
+                                            meta: Some(meta),
+                                        }
+                                    }
+                                    None => {
+                                        Command::Open {
+                                            path,
+                                            meta: Some(meta),
+                                        }
+                                    }
+                                };
+                                return self.exec_inner(cmd, auto);
                             }
                             Inspection::WrongPlatform { mod_is, current } => {
                                 anyhow_ext::bail!(

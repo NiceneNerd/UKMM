@@ -14,6 +14,7 @@
 - [Interface](interface.md)
 - [Using Mods](using-mods.md)
 - [Load Order](load-order.md)
+- [Command Line](cli.md)
 
 # General
 

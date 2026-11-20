@@ -164,6 +164,7 @@ pub enum Command {
     UpdateFromPath {
         id:   ModId,
         path: PathBuf,
+        meta: Option<Meta>,
     },
     /// Repack the given mods in place from loose folders (same order as `ids`).
     DevUpdate {
@@ -381,6 +382,7 @@ mod tests {
             Command::UpdateFromPath {
                 id,
                 path: PathBuf::from("/new.zip"),
+                meta: None,
             },
             Command::DevUpdate {
                 ids:     vec![id],

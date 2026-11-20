@@ -60,7 +60,7 @@ impl State {
             Command::DuplicateProfile(profile) => self.duplicate_profile(profile),
             Command::RenameProfile { from, to } => self.rename_profile(from, to),
             Command::DeleteProfile(profile) => self.delete_profile(profile),
-            Command::UpdateFromPath { id, path } => self.inspect_path(&path, None, Some(id)),
+            Command::UpdateFromPath { id, path, meta } => self.inspect_path(&path, meta, Some(id)),
             Command::DevUpdate { ids, folders } => self.dev_update(ids, folders),
             Command::Extract { ids, dest } => self.extract(ids, dest),
             Command::OneClick(url) => self.one_click(&url),

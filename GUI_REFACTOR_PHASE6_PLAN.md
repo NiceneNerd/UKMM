@@ -63,6 +63,18 @@ The post-phase review (findings F1–F9) produced one follow-up commit:
   (pre-edition-2024, deprecated action) to current nightly, matching
   `rust.yml`.
 
+## 3c. Backlog items F7/F8 (2026-11-20)
+
+- **F7 (option-path discovery):** `ukmm options <index>` with no picks lists the
+  mod's option groups, option paths, and current selection; with picks, unknown
+  paths are rejected with the valid ones listed, and multiple picks for one
+  (exclusive) group are an error. Covered by `tests/cli.rs`.
+- **F8 (`update-from` legacy meta):** `Command::UpdateFromPath` now carries
+  `meta: Option<Meta>`, `ukmm update-from` accepts `-m`/`--meta`, and a legacy
+  archive re-inspects *with the replace target* (the CLI tracks
+  `pending_replace`), so it replaces the mod instead of installing a duplicate.
+  Covered by `tests/cli.rs`.
+
 ## 4. Outcome (2026-11-19)
 
 - `uk-cli` depends only on `uk-app` + non-GUI crates; both `cargo tree` guards (uk-app, uk-cli) are green in CI (`pr.yml`, `rust.yml`).
