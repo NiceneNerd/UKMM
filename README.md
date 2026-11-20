@@ -43,7 +43,7 @@ Unlike BCML, building from source is easy.
 
 Requirements:
 
-- Recent Rust toolchain (MSRV 1.80)
+- Recent Rust toolchain (MSRV 1.88)
 - A compiler that supports C++17
 - Modern CMake (4+)
 

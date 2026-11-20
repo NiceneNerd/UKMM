@@ -6,7 +6,7 @@ authors = ["Caleb Smith <c.smith@tuta.io>", "Ginger Chody <chodness@gmail.com>"]
 edition = "2024"
 license = "GPL-3.0-or-later"
 version = { workspace = true }
-rust-version = "1.85"
+rust-version = "1.88"
 
 [package.metadata.wix]
 upgrade-guid = "0EC50392-193E-4A2B-9322-3CF045D8FCAE"
@@ -44,7 +44,7 @@ egui-notify = "0.21.0"
 egui_logger = "0.9.3"
 image = { version = "0.25.10", features = ["jpeg", "png"] }
 mimalloc = { version = "0.1.52", default-features = false }
-rustls = "0.23.40"
+rustls = "0.23.46"
 uk-app = { path = "crates/uk-app" }
 uk-localization = { path = "crates/uk-localization" }
 uk-ui = { path = "crates/uk-ui" }
@@ -119,7 +119,7 @@ thiserror = "2.0.18"
 typetag = "0.2.22"
 unrar = "0.5.8"
 xflags = "0.3.2"
-zip = { version = "9.0.0-pre2", default-features = false }
+zip = { version = "9.0.5", default-features = false }
 zstd = { version = "0.13.3", features = ["experimental"] }
 
 # Config for 'cargo dist'

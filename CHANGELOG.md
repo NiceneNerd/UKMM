@@ -69,6 +69,10 @@ Changes from the GUI refactor branch `gui2` (not yet released):
 - Fixed game dump validation only checking the base game folder. UKMM now
   fails to save your settings if any of the content/update/DLC paths is
   wrong, not just the first one.
+- Security: bumped `zip` to 9.0.5 (fixes RUSTSEC advisories affecting
+  <= 9.0.4, including a critical one) and `rustls` to 0.23.46. The minimum
+  supported Rust version is now 1.88 (required by zip 9.0.5); the README's
+  MSRV note was updated to match.
 
 
 ## [0.17.3] 2026-11-05
