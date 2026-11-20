@@ -5855,8 +5855,10 @@ version = "0.17.3"
 dependencies = [
  "anyhow_ext",
  "env_logger",
+ "fs-err",
  "log",
  "serde_json",
+ "serde_yaml 0.9.34+deprecated",
  "uk-app",
  "xflags",
 ]

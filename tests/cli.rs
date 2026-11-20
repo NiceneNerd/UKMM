@@ -147,6 +147,150 @@ fn json_install_enable_uninstall_profile_cycle() {
         settings_text.contains("current_mode: Switch"),
         "{settings_text}"
     );
+    let out = ukmm(&fix, &["--json", "mode", "WiiU"]);
+    assert!(out.status.success());
+}
+
+#[test]
+fn list_enable_disable_move_profiles() {
+    let (fix, a, b) = fixture();
+    let a = a.to_str().unwrap().to_string();
+    let b = b.to_str().unwrap().to_string();
+    for m in [&a, &b] {
+        let out = ukmm(&fix, &["install", m]);
+        assert!(
+            out.status.success(),
+            "install failed: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+
+    // list shows both mods; --json list emits a snapshot line
+    let out = ukmm(&fix, &["list"]);
+    assert!(out.status.success());
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("CLI Test Mod A"), "{stdout}");
+    assert!(stdout.contains("CLI Test Mod B"), "{stdout}");
+    let out = ukmm(&fix, &["--json", "list"]);
+    assert!(out.status.success());
+    assert_jsonl(&out, "list --json");
+    assert!(
+        String::from_utf8_lossy(&out.stdout).contains("\"entries\""),
+        "no entries in snapshot"
+    );
+
+    // disable/enable round-trip
+    let out = ukmm(&fix, &["disable", "1"]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let out = ukmm(&fix, &["list"]);
+    assert!(
+        String::from_utf8_lossy(&out.stdout).contains("[disabled]"),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let out = ukmm(&fix, &["enable", "1"]);
+    assert!(out.status.success());
+
+    // move mod 2 to position 1
+    let out = ukmm(&fix, &["move", "2", "1"]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let out = ukmm(&fix, &["list"]);
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let pos_b = stdout.find("CLI Test Mod B").unwrap();
+    let pos_a = stdout.find("CLI Test Mod A").unwrap();
+    assert!(pos_b < pos_a, "move did not reorder:\n{stdout}");
+
+    // profile lifecycle
+    let out = ukmm(&fix, &["profile-create", "Second"]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let out = ukmm(&fix, &["profile-switch", "Second"]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let out = ukmm(&fix, &["list"]);
+    assert!(
+        String::from_utf8_lossy(&out.stdout).contains("Profile: Second"),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let out = ukmm(&fix, &["profiles"]);
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.contains("Default") && stdout.contains("Second"),
+        "{stdout}"
+    );
+    // the active profile cannot be deleted — switch back first
+    let out = ukmm(&fix, &["profile-switch", "Default"]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let out = ukmm(&fix, &["profile-delete", "Second"]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let out = ukmm(&fix, &["profiles"]);
+    assert!(
+        !String::from_utf8_lossy(&out.stdout).contains("Second"),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+}
+
+#[test]
+fn parse_meta_and_open_report_inspection() {
+    let (fix, a, _b) = fixture();
+    let a = a.to_str().unwrap().to_string();
+    let meta_file = fix.config.parent().unwrap().join("meta.yml");
+    let mut m = uk_app::model::Meta::blank(uk_app::model::ModPlatform::Universal);
+    m.name = "Parsed Mod".into();
+    std::fs::write(&meta_file, serde_yaml::to_string(&m).unwrap()).unwrap();
+    let out = ukmm(&fix, &["--json", "parse-meta", meta_file.to_str().unwrap()]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_jsonl(&out, "parse-meta");
+    assert!(
+        String::from_utf8_lossy(&out.stdout).contains("PackageMeta"),
+        "no PackageMeta event"
+    );
+
+    // open reports Ready without installing
+    let out = ukmm(&fix, &["open", &a]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&out.stdout).contains("Ready to install"),
+        "{}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let out = ukmm(&fix, &["list"]);
+    assert!(
+        !String::from_utf8_lossy(&out.stdout).contains("CLI Test Mod A"),
+        "open must not install"
+    );
 }
 
 #[test]

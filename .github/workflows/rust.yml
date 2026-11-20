@@ -65,6 +65,8 @@ jobs:
       run: cargo +nightly test --package uk-app
     - name: Run CLI smoke test
       run: cargo +nightly test --test cli
+    - name: Run `uk-cli` command-coverage test
+      run: cargo +nightly test --package uk-cli
     - name: Check `uk-app` has no GUI dependencies
       run: |
         set -o pipefail
