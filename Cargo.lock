@@ -5850,6 +5850,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "uk-cli"
+version = "0.17.3"
+dependencies = [
+ "anyhow_ext",
+ "env_logger",
+ "log",
+ "uk-app",
+ "xflags",
+]
+
+[[package]]
 name = "uk-content"
 version = "0.17.3"
 dependencies = [
@@ -6048,10 +6059,10 @@ dependencies = [
  "smartstring",
  "strfmt",
  "uk-app",
+ "uk-cli",
  "uk-localization",
  "uk-ui",
  "winres",
- "xflags",
  "zip",
 ]
 

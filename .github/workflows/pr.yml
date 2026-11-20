@@ -34,6 +34,14 @@ jobs:
           cargo tree -p uk-app | grep -E 'egui|eframe|rfd|winit'
           exit 1
         fi
+    - name: Check `uk-cli` has no GUI dependencies
+      run: |
+        set -o pipefail
+        if cargo tree -p uk-cli | grep -Eq 'egui|eframe|rfd|winit|uk-ui'; then
+          echo "::error::uk-cli must be a toolkit-free frontend (no egui/eframe/rfd/winit/uk-ui)"
+          cargo tree -p uk-cli | grep -E 'egui|eframe|rfd|winit|uk-ui'
+          exit 1
+        fi
     - uses: LoliGothick/clippy-check@master
       name: Check clippy
       with:

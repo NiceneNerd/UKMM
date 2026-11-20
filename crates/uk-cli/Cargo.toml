@@ -1,0 +1,13 @@
+[package]
+name = "uk-cli"
+description = "Command-line frontend for UKMM, driven by uk-app's Session"
+edition = "2024"
+version.workspace = true
+license = "GPL-3.0-or-later"
+
+[dependencies]
+anyhow_ext = { workspace = true }
+env_logger = { workspace = true }
+log = { workspace = true }
+uk-app = { path = "../uk-app" }
+xflags = { workspace = true }

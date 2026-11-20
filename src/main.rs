@@ -10,12 +10,11 @@ use mimalloc::MiMalloc;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
-mod cli;
 mod gui;
 mod logger;
 
 use anyhow_ext::Result;
-use cli::Ukmm;
+use uk_cli::Ukmm;
 
 #[cfg(target_os = "windows")]
 #[link(name = "Kernel32")]
@@ -41,7 +40,7 @@ fn main() -> Result<()> {
 
     match Ukmm::from_env() {
         Ok(command) => {
-            cli::Runner::new(command).run()?;
+            uk_cli::run(command)?;
         }
         Err(e) => {
             if !e.is_help() {

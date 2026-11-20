@@ -22,7 +22,7 @@ anyhow = { workspace = true }
 anyhow_ext = { workspace = true }
 dirs2 = { workspace = true }
 eframe = { workspace = true, features = ["glow", "x11", "wayland"] }
-env_logger = "0.11.11"
+env_logger = { workspace = true }
 flume = { workspace = true }
 fs-err = { workspace = true }
 #jwalk = { workspace = true }
@@ -48,7 +48,7 @@ rustls = "0.23.40"
 uk-app = { path = "crates/uk-app" }
 uk-localization = { path = "crates/uk-localization" }
 uk-ui = { path = "crates/uk-ui" }
-xflags = "0.3.2"
+uk-cli = { path = "crates/uk-cli" }
 
 [build-dependencies]
 astrolabe = "0.5.4"
@@ -62,6 +62,7 @@ winres = "0.1.12"
 [workspace]
 members = [
     "crates/uk-app",
+    "crates/uk-cli",
     "crates/uk-content",
     "crates/uk-content-derive",
     "crates/uk-localization",
@@ -81,6 +82,7 @@ anyhow_ext = "0.2.1"
 dashmap = "7.0.0-rc2"
 dirs2 = "3.0.1"
 eframe = { version = "0.33.3", default-features = false }
+env_logger = "0.11.11"
 flume = "0.12.0"
 fs-err = "3.3.1"
 glob = "0.3.3"
@@ -111,6 +113,7 @@ strfmt = "0.2.5"
 thiserror = "2.0.18"
 typetag = "0.2.22"
 unrar = "0.5.8"
+xflags = "0.3.2"
 zip = { version = "9.0.0-pre2", default-features = false }
 zstd = { version = "0.13.3", features = ["experimental"] }
 
