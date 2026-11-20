@@ -4,7 +4,7 @@ Companion to `GUI_REF.md` (the behavioural parity spec of the current egui front
 
 - **Parity spec:** `GUI_REF.md` — every GUI feature tagged `[UI-ONLY] / [APP] / [CORE] / [EGUI] / [HOST] / [GAP]`, a 39-item defect list (§22), and a suggested app-layer contract (§23). Every phase below is validated against it.
 - **Scope:** the working tree as of 2026-11-16, where phase 2 is already in progress (§1).
-- **Status (2026-11-19):** phases 1–4 have landed on branch `gui2` (@ `4fdece6`, in sync with `origin/gui2`); the egui frontend is now a thin view over `uk-app` (`Session`/`Command`/`Event`/`Snapshot`) plus host commands. The detailed per-phase working plans are held in the repo: `GUI_REFACTOR_PHASES12_PLAN.md`, `GUI_REFACTOR_PHASE3_PLAN.md` (includes the phase-3 review outcome, §10), and `GUI_REFACTOR_PHASE4_PLAN.md` (includes the phase-4 outcome).
+- **Status (2026-11-19):** phases 1–5 have landed on branch `gui2` (@ `700358d`, unpushed); the egui frontend is now a thin view over `uk-app` (`Session`/`Command`/`Event`/`Snapshot`) plus host commands, and the layering is sealed: the binary crate depends only on `uk-app`/`uk-ui`/`uk-localization`, `uk-content` no longer depends on `uk-localization`, and `Manager`'s sub-manager guards are replaced by `with_*` closures. The detailed per-phase working plans are held in the repo: `GUI_REFACTOR_PHASES12_PLAN.md`, `GUI_REFACTOR_PHASE3_PLAN.md` (includes the phase-3 review outcome, §10), `GUI_REFACTOR_PHASE4_PLAN.md` (includes the phase-4 outcome, §11 review fixes), and `GUI_REFACTOR_PHASE5_PLAN.md` (includes the phase-5 outcome, §5).
 
 ## 1. Where we are now — phase 2 status
 
@@ -228,7 +228,7 @@ Deferred from phase 3 (per `GUI_REFACTOR_PHASE3_PLAN.md` §0.5): GUI_REF §22 it
 
 - **Shippable when:** every behaviour in `GUI_REF.md` §16/§17/§20 is reproducible from `uk-app` alone; the egui frontend holds only view state.
 
-### Phase 5 — Seal it
+### Phase 5 — Seal it ✅ landed on `gui2` (`e728ded`, `a43f04e`, `700358d`; outcome in `GUI_REFACTOR_PHASE5_PLAN.md` §5)
 
 - Replace `Manager`'s guard-returning accessors with methods; make `uk-manager` internals `pub(crate)`; re-export the data types frontends need (`Meta`, `ModCategory`, option groups) from `uk-app::model`; remove the `uk-content → uk-localization` dependency.
 - CI check: `cargo tree -p uk-app` contains no `egui`, `eframe`, `rfd`, `winit`.

@@ -108,3 +108,29 @@ Phase 5 scope from `GUI_REFACTOR.md` §4:
    nothing uses it.
 3. `uk-manager → uk-localization` (legacy `lang` field) stays until v1
    settings files are dropped; not part of this phase.
+
+## 5. Outcome (landed 2026-11-19, @ `e728ded` / `a43f04e` / `700358d`)
+
+- **5a** (`e728ded`): `uk-app::model` re-exports `Meta`, `ModCategory`,
+  `ModPlatform`, `ModOption(Group)`, `OptionGroup`, `Exclusive/MultipleOptionGroup`,
+  `Manifest`, `pack`, `Manager`, `Mod`, `Profile`, `LookupMod`, `Settings`,
+  `Platform`, `PlatformSettings`, `DeployConfig/Method/Layout`, `UpdatePreference`,
+  `clear_temp`, `Language`, `UKError`, `HashMap`, `OptionResultExt`. All `src/**`
+  imports go through `uk_app::model`; root `Cargo.toml` now lists only `uk-app`,
+  `uk-localization`, `uk-ui` as uk-* deps (`cargo tree -p ukmm --depth 1` confirms).
+- **5b** (`a43f04e`): the dead `From<Language> for LocLang` impl in
+  `uk-content/src/constants.rs` deleted (compiler-verified zero call sites) and the
+  `uk-localization` dep removed from `uk-content`; `cargo tree -p uk-content` is clean.
+  `uk-manager → uk-localization` stays for the legacy v1 `lang` field (locked decision 3).
+- **5c** (`700358d`): `Manager::mod_manager()/mod_manager_mut()/deploy_manager()`
+  replaced by `with_mod_manager` / `with_mod_manager_mut` / `with_deploy_manager`
+  closures; all ~30 call sites (uk-app handlers/apply/package/import, e2e test,
+  CLI, GUI tabs/mods/deploy) migrated. Sub-manager fields were already private;
+  `Mod::hash` already `pub(crate)`. `settings()/settings_mut()` deliberately kept
+  (locked decision 1).
+- **Verification:** `cargo check --workspace --all-targets` clean;
+  `cargo test -p uk-app` 99 passed, `cargo test -p uk-content` 193 passed;
+  `cargo +nightly fmt --all -- --check` clean;
+  `cargo tree -p uk-app` has zero egui/eframe/rfd/winit.
+- **Deviations:** none from §4 locked decisions. The settings format bump for the
+  `LocLang` move was already landed in phase 4 (format_version v2 + `ui-egui.json`).
