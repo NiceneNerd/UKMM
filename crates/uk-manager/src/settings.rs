@@ -309,7 +309,13 @@ impl Settings {
 
     pub fn config_dir() -> &'static Path {
         static PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-            if std::env::args().any(|a| a == "--portable") {
+            if let Ok(dir) = std::env::var("UKMM_CONFIG_DIR")
+                && !dir.is_empty()
+            {
+                // Explicit override (used by tests and CI fixtures); wins over
+                // everything else.
+                PathBuf::from(dir)
+            } else if std::env::args().any(|a| a == "--portable") {
                 std::env::current_exe()
                     .expect("No current executable???")
                     .parent()

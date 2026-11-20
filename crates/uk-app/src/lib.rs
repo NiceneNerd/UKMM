@@ -18,6 +18,8 @@ pub mod profile;
 pub mod session;
 pub mod settings;
 pub mod sniff;
+#[doc(hidden)]
+pub mod testkit;
 pub mod view;
 
 pub use apply::apply_changes;

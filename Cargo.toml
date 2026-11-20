@@ -50,6 +50,11 @@ uk-localization = { path = "crates/uk-localization" }
 uk-ui = { path = "crates/uk-ui" }
 uk-cli = { path = "crates/uk-cli" }
 
+[dev-dependencies]
+tempfile = "3.3"
+uk-content = { path = "crates/uk-content" }
+uk-reader = { path = "crates/uk-reader" }
+
 [build-dependencies]
 astrolabe = "0.5.4"
 

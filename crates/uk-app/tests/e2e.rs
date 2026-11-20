@@ -6,17 +6,13 @@
 //! mod → enable → reorder → apply (remerge) → deploy, and asserts the merged
 //! output.
 
-use std::{
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use uk_manager::{
     core::Manager,
     mods::LookupMod,
     settings::{DeployConfig, DeployLayout, DeployMethod, PlatformSettings},
 };
-use uk_mod::{Manifest, Meta, ModPlatform};
 use uk_reader::ResourceReader;
 
 fn dump_reader(dump: &Path) -> ResourceReader {
@@ -35,26 +31,7 @@ fn dump_reader(dump: &Path) -> ResourceReader {
     }
 }
 
-/// A UKMM mod zip with the given file name and mod name.
-fn mod_zip_named(dir: &Path, file_name: &str, mod_name: &str) -> PathBuf {
-    let mut meta = Meta::blank(ModPlatform::Universal);
-    meta.name = mod_name.into();
-    let path = dir.join(file_name);
-    let mut zip = zip::ZipWriter::new(std::fs::File::create(&path).unwrap());
-    let opts = zip::write::SimpleFileOptions::default();
-    zip.start_file("meta.yml", opts).unwrap();
-    zip.write_all(serde_yaml::to_string(&meta).unwrap().as_bytes())
-        .unwrap();
-    zip.start_file("manifest.yml", opts).unwrap();
-    zip.write_all(
-        serde_yaml::to_string(&Manifest::default())
-            .unwrap()
-            .as_bytes(),
-    )
-    .unwrap();
-    zip.finish().unwrap();
-    path
-}
+use uk_app::testkit::mod_zip_named;
 
 #[test]
 fn install_reorder_apply_deploy() {

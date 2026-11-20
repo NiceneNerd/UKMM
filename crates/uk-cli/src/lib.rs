@@ -28,6 +28,8 @@ xflags::xflags! {
         optional -p, --portable
         /// Automatically deploy after running command (redunant with `deploy` command)
         optional -D, --deploy
+        /// Emit session events and snapshots as JSON lines on stdout
+        optional -j, --json
         /// Install a mod
         cmd install {
             /// Path to the mod to install
@@ -72,6 +74,7 @@ pub struct Ukmm {
     pub debug: bool,
     pub portable: bool,
     pub deploy: bool,
+    pub json: bool,
     pub subcommand: UkmmCmd,
 }
 
@@ -146,6 +149,7 @@ pub fn run(cli: Ukmm) -> Result<()> {
     Runner {
         session,
         deploy_after: cli.deploy,
+        json: cli.json,
         meta: None,
         last_installed: None,
     }
@@ -155,6 +159,9 @@ pub fn run(cli: Ukmm) -> Result<()> {
 pub struct Runner {
     session: Session,
     deploy_after: bool,
+    /// `--json`: every event is printed as one JSON line, plus a
+    /// `{"snapshot": …}` line after each revision.
+    json: bool,
     /// The `--meta` file, used when a mod needs metadata (`NeedsMeta`).
     meta: Option<PathBuf>,
     last_installed: Option<ModId>,
@@ -169,6 +176,16 @@ impl Runner {
         Ok(())
     }
 
+    /// Human-readable progress output: stdout normally, stderr in `--json`
+    /// mode so stdout stays pure JSONL.
+    fn say(&self, msg: &str) {
+        if self.json {
+            eprintln!("{msg}");
+        } else {
+            println!("{msg}");
+        }
+    }
+
     fn do_subcommand(&mut self, sub: &UkmmCmd) -> Result<()> {
         match sub {
             UkmmCmd::Mode(Mode { platform }) => {
@@ -176,7 +193,7 @@ impl Runner {
                     .context("Failed to read the current settings")?;
                 draft.current_mode = *platform;
                 self.exec(Command::SaveSettings(draft))?;
-                println!("Mode changed to {platform:?}");
+                self.say(&format!("Mode changed to {platform:?}"));
             }
             UkmmCmd::Install(Install {
                 path,
@@ -184,7 +201,7 @@ impl Runner {
                 meta,
             }) => {
                 self.meta = meta.clone();
-                println!("Installing {}...", path.display());
+                self.say(&format!("Installing {}...", path.display()));
                 self.last_installed = None;
                 self.exec(Command::Open {
                     path: path.clone(),
@@ -205,17 +222,17 @@ impl Runner {
                     }
                 }
                 self.exec(Command::Apply)?;
-                println!("Done!");
+                self.say("Done!");
             }
             UkmmCmd::Package(pkg) => {
-                println!("Packaging mod...");
+                self.say("Packaging mod...");
                 let meta = uk_app::parse_meta(&pkg.meta)?;
                 self.exec(Command::Package {
                     source: pkg.path.clone(),
                     dest: pkg.output.clone(),
                     meta,
                 })?;
-                println!("Done!");
+                self.say("Done!");
             }
             UkmmCmd::Uninstall(Uninstall { index, profile }) => {
                 let ids = self.uninstall_ids(*index)?;
@@ -234,12 +251,12 @@ impl Runner {
                     self.exec(Command::Uninstall(ids))?;
                     self.exec(Command::Apply)?;
                 }
-                println!("Done!");
+                self.say("Done!");
             }
             UkmmCmd::Remerge(_) => {
-                println!("Remerging...");
+                self.say("Remerging...");
                 self.exec(Command::Remerge)?;
-                println!("Done!");
+                self.say("Done!");
             }
             UkmmCmd::Deploy(_) => self.deploy()?,
         }
@@ -255,21 +272,21 @@ impl Runner {
                 let entry = entries
                     .get(i.checked_sub(1).context("Mod index must be >= 1")?)
                     .with_context(|| format!("Mod {i} does not exist"))?;
-                println!("Removing mod {}...", entry.meta.name);
+                self.say(&format!("Removing mod {}...", entry.meta.name));
                 Ok(vec![entry.id])
             }
             None => {
-                println!("Installed mods:");
+                self.say("Installed mods:");
                 for (i, entry) in entries.iter().enumerate() {
-                    println!(
+                    self.say(&format!(
                         "{}. {} (v{}) by {}",
                         i + 1,
                         entry.meta.name,
                         entry.meta.version,
                         entry.meta.author
-                    );
+                    ));
                 }
-                print!("Enter mod(s) to uninstall, separated by commas: ");
+                self.say("Enter mod(s) to uninstall, separated by commas:");
                 stdout().flush()?;
                 let mut input = String::new();
                 stdin().read_line(&mut input)?;
@@ -282,7 +299,7 @@ impl Runner {
                     let entry = entries
                         .get(n.checked_sub(1).context("Mod index must be >= 1")?)
                         .with_context(|| format!("Mod {n} does not exist"))?;
-                    println!("Removing mod {}...", entry.meta.name);
+                    self.say(&format!("Removing mod {}...", entry.meta.name));
                     ids.push(entry.id);
                 }
                 Ok(ids)
@@ -293,11 +310,11 @@ impl Runner {
     fn deploy(&mut self) -> Result<()> {
         let pending = self.session.core().with_deploy_manager(|dm| dm.pending());
         if pending {
-            println!("Deploying changes...");
+            self.say("Deploying changes...");
             self.exec(Command::Deploy)?;
-            println!("Deployment complete");
+            self.say("Deployment complete");
         } else {
-            println!("No changes pending deployment");
+            self.say("No changes pending deployment");
         }
         Ok(())
     }
@@ -309,6 +326,13 @@ impl Runner {
         let job = self.session.dispatch(cmd);
         loop {
             let ev = rx.recv().context("The session worker stopped")?;
+            if self.json {
+                println!("{{\"event\":{}}}", serde_json::to_string(&ev)?);
+                if matches!(ev, Event::Revision(_)) {
+                    let snap = self.session.snapshot();
+                    println!("{{\"snapshot\":{}}}", serde_json::to_string(&*snap)?);
+                }
+            }
             match ev {
                 Event::Inspection(insp) => {
                     match insp {

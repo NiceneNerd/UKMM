@@ -212,3 +212,209 @@ pub enum Command {
     /// after the reload.
     SaveSettings(crate::settings::SettingsDraft),
 }
+
+impl Command {
+    /// The variant name. Exhaustive by construction: adding a variant without
+    /// a match arm here fails to compile, which is what forces frontends
+    /// (e.g. the CLI in `uk-cli`) to cover every command.
+    pub fn variant_name(&self) -> &'static str {
+        match self {
+            Self::Open { .. } => "Open",
+            Self::OneClick(_) => "OneClick",
+            Self::Install(_) => "Install",
+            Self::InstallBatch { .. } => "InstallBatch",
+            Self::SetEnabled { .. } => "SetEnabled",
+            Self::SetOptions { .. } => "SetOptions",
+            Self::MoveTo { .. } => "MoveTo",
+            Self::Apply => "Apply",
+            Self::CancelPending => "CancelPending",
+            Self::Deploy => "Deploy",
+            Self::Remerge => "Remerge",
+            Self::ResetPending => "ResetPending",
+            Self::Uninstall(_) => "Uninstall",
+            Self::AddToProfile { .. } => "AddToProfile",
+            Self::SwitchProfile(_) => "SwitchProfile",
+            Self::CreateProfile(_) => "CreateProfile",
+            Self::DuplicateProfile(_) => "DuplicateProfile",
+            Self::RenameProfile { .. } => "RenameProfile",
+            Self::DeleteProfile(_) => "DeleteProfile",
+            Self::UpdateFromPath { .. } => "UpdateFromPath",
+            Self::DevUpdate { .. } => "DevUpdate",
+            Self::Extract { .. } => "Extract",
+            Self::Reload => "Reload",
+            Self::ImportCemu(_) => "ImportCemu",
+            Self::MigrateBcml => "MigrateBcml",
+            Self::Package { .. } => "Package",
+            Self::ParseMeta(_) => "ParseMeta",
+            Self::CheckForUpdates => "CheckForUpdates",
+            Self::InstallUpdate(_) => "InstallUpdate",
+            Self::LaunchEmulator => "LaunchEmulator",
+            Self::OpenFolder(_) => "OpenFolder",
+            Self::RegisterUrlHandler => "RegisterUrlHandler",
+            Self::SaveSettings(_) => "SaveSettings",
+        }
+    }
+
+    /// All variant names, in declaration order.
+    pub fn variant_names() -> &'static [&'static str] {
+        &[
+            "Open",
+            "OneClick",
+            "Install",
+            "InstallBatch",
+            "SetEnabled",
+            "SetOptions",
+            "MoveTo",
+            "Apply",
+            "CancelPending",
+            "Deploy",
+            "Remerge",
+            "ResetPending",
+            "Uninstall",
+            "AddToProfile",
+            "SwitchProfile",
+            "CreateProfile",
+            "DuplicateProfile",
+            "RenameProfile",
+            "DeleteProfile",
+            "UpdateFromPath",
+            "DevUpdate",
+            "Extract",
+            "Reload",
+            "ImportCemu",
+            "MigrateBcml",
+            "Package",
+            "ParseMeta",
+            "CheckForUpdates",
+            "InstallUpdate",
+            "LaunchEmulator",
+            "OpenFolder",
+            "RegisterUrlHandler",
+            "SaveSettings",
+        ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use uk_manager::settings::Platform;
+    use uk_mod::ModPlatform;
+
+    use super::*;
+    use crate::{host::updates::VersionAsset, profile::ProfileName, settings::SettingsDraft};
+
+    fn sample_mod() -> Mod {
+        // `Mod::hash` is pub(crate) in uk-manager, so build one through serde.
+        serde_json::from_value(serde_json::json!({
+            "hash": "0",
+            "meta": Meta::blank(ModPlatform::Universal),
+            "enabled_options": [],
+            "path": "",
+            "enabled": false,
+        }))
+        .unwrap()
+    }
+
+    /// One instance of every variant, serde-round-tripped: this is what makes
+    /// `--json` output (and remote frontends) able to carry any command.
+    #[test]
+    fn every_variant_round_trips_through_serde() {
+        let id = ModId(42);
+        let profile = ProfileName::parse("Test").unwrap();
+        let version = VersionResponse {
+            body: "notes".into(),
+            name: "v1.0.0".into(),
+            tag_name: "v1.0.0".into(),
+            prerelease: false,
+            assets: vec![VersionAsset {
+                name: "ukmm.zip".into(),
+                browser_download_url: "https://example.invalid/ukmm.zip".into(),
+            }],
+        };
+        let draft = SettingsDraft {
+            current_mode: Platform::WiiU,
+            system_7z: true,
+            storage_dir: PathBuf::from("/tmp/ukmm"),
+            check_updates: Default::default(),
+            show_changelog: true,
+            wiiu: None,
+            switch: None,
+        };
+        let commands = vec![
+            Command::Open {
+                path: PathBuf::from("/mod.zip"),
+                meta: None,
+            },
+            Command::OneClick("bcml://example".into()),
+            Command::Install(InstallCandidate::ready(sample_mod(), None)),
+            Command::InstallBatch {
+                paths:   vec![PathBuf::from("/a.zip")],
+                replace: None,
+            },
+            Command::SetEnabled {
+                ids:     vec![id],
+                enabled: true,
+            },
+            Command::SetOptions { id, picks: vec![] },
+            Command::MoveTo {
+                ids:   vec![id],
+                index: 0,
+            },
+            Command::Apply,
+            Command::CancelPending,
+            Command::Deploy,
+            Command::Remerge,
+            Command::ResetPending,
+            Command::Uninstall(vec![id]),
+            Command::AddToProfile {
+                ids:     vec![id],
+                profile: profile.clone(),
+            },
+            Command::SwitchProfile(profile.clone()),
+            Command::CreateProfile(profile.clone()),
+            Command::DuplicateProfile(profile.clone()),
+            Command::RenameProfile {
+                from: profile.clone(),
+                to:   profile.clone(),
+            },
+            Command::DeleteProfile(profile.clone()),
+            Command::UpdateFromPath {
+                id,
+                path: PathBuf::from("/new.zip"),
+            },
+            Command::DevUpdate {
+                ids:     vec![id],
+                folders: vec![PathBuf::from("/src")],
+            },
+            Command::Extract {
+                ids:  vec![id],
+                dest: PathBuf::from("/out"),
+            },
+            Command::Reload,
+            Command::ImportCemu(PathBuf::from("/settings.xml")),
+            Command::MigrateBcml,
+            Command::Package {
+                source: PathBuf::from("/src"),
+                dest:   PathBuf::from("/out.zip"),
+                meta:   Meta::blank(ModPlatform::Universal),
+            },
+            Command::ParseMeta(PathBuf::from("/meta.yml")),
+            Command::CheckForUpdates,
+            Command::InstallUpdate(version),
+            Command::LaunchEmulator,
+            Command::OpenFolder(FolderKind::Config),
+            Command::RegisterUrlHandler,
+            Command::SaveSettings(draft),
+        ];
+        assert_eq!(commands.len(), Command::variant_names().len());
+        for cmd in commands {
+            let json = serde_json::to_string(&cmd).unwrap();
+            let back: Command = serde_json::from_str(&json).unwrap();
+            assert_eq!(
+                back.variant_name(),
+                cmd.variant_name(),
+                "round trip: {json}"
+            );
+        }
+    }
+}

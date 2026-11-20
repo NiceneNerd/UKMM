@@ -9,5 +9,6 @@ license = "GPL-3.0-or-later"
 anyhow_ext = { workspace = true }
 env_logger = { workspace = true }
 log = { workspace = true }
+serde_json = { workspace = true }
 uk-app = { path = "../uk-app" }
 xflags = { workspace = true }

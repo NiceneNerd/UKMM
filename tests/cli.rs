@@ -1,0 +1,199 @@
+//! Smoke test for the CLI frontend: runs the real `ukmm` binary against a
+//! fixture config (via `UKMM_CONFIG_DIR`) with a synthetic dump and generated
+//! mod zips, and asserts the `--json` output shape. Merge/deploy against a
+//! *real* game dump stays gated on `UKMM_TEST_DUMP` in `crates/uk-app/tests/e2e.rs`.
+
+use std::{
+    path::{Path, PathBuf},
+    process::{Command as Proc, Output},
+    sync::Arc,
+};
+
+use uk_app::{
+    model::{Language, Platform, PlatformSettings, Settings},
+    testkit::{fake_dump, mod_zip_named},
+};
+use uk_reader::ResourceReader;
+
+const BIN: &str = env!("CARGO_BIN_EXE_ukmm");
+
+struct Fixture {
+    _dir:   tempfile::TempDir,
+    config: PathBuf,
+}
+
+/// A temp config dir with a settings.yml pointing at a synthetic unpacked
+/// dump, plus two generated mod zips.
+fn fixture() -> (Fixture, PathBuf, PathBuf) {
+    let dir = tempfile::tempdir().unwrap();
+    let config = dir.path().join("config");
+    std::fs::create_dir_all(&config).unwrap();
+    let content = fake_dump(&dir.path().join("dump"));
+    let settings = Settings::load_from(&config.join("settings.yml"));
+    {
+        let mut s = settings.write();
+        s.current_mode = Platform::WiiU;
+        s.wiiu_config = Some(PlatformSettings {
+            language: Language::USen,
+            profile: "Default".into(),
+            dump: Arc::new(
+                ResourceReader::from_unpacked_dirs(
+                    Some(content),
+                    None::<PathBuf>,
+                    None::<PathBuf>,
+                    uk_content::prelude::Endian::Big,
+                )
+                .unwrap(),
+            ),
+            deploy_config: None,
+        });
+        s.save().unwrap();
+    }
+    let a = mod_zip_named(dir.path(), "a.zip", "CLI Test Mod A");
+    let b = mod_zip_named(dir.path(), "b.zip", "CLI Test Mod B");
+    (Fixture { _dir: dir, config }, a, b)
+}
+
+fn ukmm(fix: &Fixture, args: &[&str]) -> Output {
+    Proc::new(BIN)
+        .args(args)
+        .env("UKMM_CONFIG_DIR", &fix.config)
+        .output()
+        .expect("failed to run ukmm")
+}
+
+/// Every stdout line must be valid JSON with an `event` or `snapshot` key.
+fn assert_jsonl(out: &Output, ctx: &str) {
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        !stdout.trim().is_empty(),
+        "expected JSONL output for {ctx}, got none; stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    for line in stdout.lines() {
+        let v: serde_json::Value =
+            serde_json::from_str(line).unwrap_or_else(|e| panic!("bad JSONL line {line:?}: {e}"));
+        assert!(
+            v.get("event").is_some() || v.get("snapshot").is_some(),
+            "line has neither event nor snapshot: {line}"
+        );
+    }
+}
+
+#[test]
+fn json_install_enable_uninstall_profile_cycle() {
+    let (fix, a, b) = fixture();
+    let a = a.to_str().unwrap().to_string();
+    let b = b.to_str().unwrap().to_string();
+
+    // install a mod: JSONL on stdout, exit 0
+    let out = ukmm(&fix, &["--json", "install", &a]);
+    assert!(
+        out.status.success(),
+        "install failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_jsonl(&out, "install a");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.contains("\"Installed\""),
+        "no Installed event:\n{stdout}"
+    );
+
+    // install the second mod into a new profile
+    // `profile` is a positional (the `-p` short flag belongs to `--portable`)
+    let out = ukmm(&fix, &["--json", "install", &b, "Second"]);
+    assert!(
+        out.status.success(),
+        "install --profile failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_jsonl(&out, "install b --profile Second");
+
+    // the new profile exists on disk and holds only mod b
+    let profile_file = fix.config.join("data/wiiu/profiles/Second/profile.yml");
+    let profile_text = std::fs::read_to_string(&profile_file).expect("profile.yml missing");
+    assert!(profile_text.contains("CLI Test Mod B"), "{profile_text}");
+    assert!(!profile_text.contains("CLI Test Mod A"), "{profile_text}");
+
+    // uninstall mod 1 (1-based index) from the current profile
+    let out = ukmm(&fix, &["--json", "uninstall", "1"]);
+    assert!(
+        out.status.success(),
+        "uninstall failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_jsonl(&out, "uninstall 1");
+
+    // bad index fails with exit 1 (argument validation happens before any
+    // command is dispatched, so there is no event stream)
+    let out = ukmm(&fix, &["--json", "uninstall", "99"]);
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("does not exist"),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    // mode switch round-trips through settings.yml
+    let out = ukmm(&fix, &["--json", "mode", "Switch"]);
+    assert!(
+        out.status.success(),
+        "mode failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let settings_text = std::fs::read_to_string(fix.config.join("settings.yml")).unwrap();
+    assert!(
+        settings_text.contains("current_mode: Switch"),
+        "{settings_text}"
+    );
+}
+
+#[test]
+fn json_package_emits_packaged_event() {
+    let (fix, _a, _b) = fixture();
+    let src = fix.config.parent().unwrap().join("src");
+    // an empty content/ folder packages fine (non-mergeable files are rejected)
+    std::fs::create_dir_all(src.join("content")).unwrap();
+    let meta = fix.config.parent().unwrap().join("meta.yml");
+    let out_zip = fix.config.parent().unwrap().join("out.zip");
+    let mut m = uk_app::model::Meta::blank(uk_app::model::ModPlatform::Universal);
+    m.name = "Packed Mod".into();
+    std::fs::write(&meta, serde_yaml::to_string(&m).unwrap()).unwrap();
+    let out = ukmm(&fix, &[
+        "--json",
+        "package",
+        src.to_str().unwrap(),
+        out_zip.to_str().unwrap(),
+        meta.to_str().unwrap(),
+    ]);
+    assert!(
+        out.status.success(),
+        "package failed: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_jsonl(&out, "package");
+    assert!(out_zip.exists(), "no output zip");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        stdout.contains("\"Packaged\""),
+        "no Packaged event:\n{stdout}"
+    );
+}
+
+#[test]
+fn json_unknown_dump_error_is_json_and_nonzero() {
+    // A config with no dump configured: remerge must fail, exit 1, JSONL.
+    let dir = tempfile::tempdir().unwrap();
+    let config = dir.path().join("config");
+    std::fs::create_dir_all(&config).unwrap();
+    let fix = Fixture {
+        _dir:   dir,
+        config: config.clone(),
+    };
+    let out = ukmm(&fix, &["--json", "remerge"]);
+    assert!(!out.status.success());
+    assert_jsonl(&out, "remerge without dump");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("JobDone"), "no JobDone event:\n{stdout}");
+}
