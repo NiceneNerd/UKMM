@@ -1547,6 +1547,11 @@ old reducer; they are fixes, not regressions:
   row per frame plus two O(n) scans per row (load-index lookup, selection
   check). Accepted as fine at current mod counts; revisit only if large
   profiles become slow.
+- Phase 6 (2026-11-19): the CLI is now a second frontend over the same
+  contract — `crates/uk-cli` depends only on `uk-app` (CI-guarded via
+  `cargo tree -p uk-cli`), drives the `Session` with `Command`s, emits
+  `--json` Event/Snapshot lines, and `crates/uk-cli/tests/coverage.rs` forces
+  it to cover every `Command` variant. See `GUI_REFACTOR_PHASE6_PLAN.md`.
 
 ---
 

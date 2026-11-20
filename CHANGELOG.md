@@ -28,6 +28,31 @@ Changes from the GUI refactor branch `gui2` (not yet released):
 
 - Deploying no longer discards the pending staged files from the Pending
   Changes tracking (deploy only copies the merged output; it does not merge).
+
+**Added**
+
+- `ukmm --json`: machine-readable output — every session event as one JSON
+  line plus a snapshot line per revision (progress messages go to stderr).
+- New CLI subcommands covering the full session command surface: `list`,
+  `open`, `one-click`, `install-batch`, `enable`/`disable`, `options`, `move`,
+  `apply`, `cancel-pending`, `reset-pending`, `add-to-profile`, `profiles`,
+  `profile-switch`/`-create`/`-duplicate`/`-rename`/`-delete`, `update-from`,
+  `dev-update`, `extract`, `reload`, `import-cemu`, `migrate-bcml`,
+  `parse-meta`, `check-updates`, `launch-emulator`, `open-folder`,
+  `register-url`, `save-settings`.
+- `UKMM_CONFIG_DIR` environment variable to override the config folder
+  (useful for tests and portable setups).
+
+**Changed**
+
+- The command-line interface was rewritten on the same application layer as
+  the GUI (`uk-app`'s session), now living in the `uk-cli` crate; installing
+  via CLI enables the mod and merges immediately, as before.
+
+**Fixed**
+
+- Interactive CLI `uninstall` no longer applied an empty change set (the mod
+  list was shadowed before use).
 - The dump endianness for unpacked game dumps is now derived from the selected
   platform (Wii U = big endian, Switch = little endian) instead of guessing
   from the folder name, so a Switch dump under a folder named `content` is no
