@@ -36,6 +36,33 @@ Phase 6 scope from `GUI_REFACTOR.md` §4:
 - One-click IPC listener stays in the root `main.rs` GUI path; the `one-click` subcommand calls `uk_app::host::oneclick::oneclick` directly.
 - Pre-existing quirk observed but not changed: an xflags parse error falls into the GUI branch in `main.rs` (silent exit 0 on a headless machine). Out of scope for phase 6; worth a follow-up.
 
+## 3b. Review remediation (2026-11-20)
+
+The post-phase review (findings F1–F9) produced one follow-up commit:
+
+- **F1 (high):** staging subcommands (`enable`/`disable`/`options`/`move`,
+  and `add-to-profile` for the target profile) now merge in the same
+  invocation (`merge_staged`). The session's staged diff is in-memory only,
+  so a later `apply` in a new process would have silently merged nothing
+  (`deploy::apply(Some(empty))` is a no-op success).
+- **F2 (high):** `install <mod> <profile>` now installs *directly into* the
+  named profile (create → switch → install → apply → switch back), matching
+  the old CLI's `mods.add(path, Some(profile))` semantics, instead of
+  installing into the current profile and copying. Test asserts the current
+  profile's `profile.yml` is untouched.
+- **F3 (medium):** `main.rs` no longer falls through to the GUI on a malformed
+  CLI invocation — any arg naming a subcommand, or an opaque first arg (not
+  a flag / `bcml:` URL / existing path), prints the xflags error and exits 2.
+  `ukmm`, `ukmm --debug`, `ukmm <mod path>`, `ukmm bcml:…` still launch the
+  GUI/IPC path. Covered by a new `tests/cli.rs` case.
+- **F4:** CHANGELOG now notes the uninstall index is 1-based (was 0-based
+  against a 1-based list).
+- **F5/F6:** `open` exits 1 on `WrongPlatform`/`MissingMasters`; `move`
+  validates the 1-based target.
+- **F9:** `pr.yml` guard job bumped from the dead `nightly-2023-02-28` pin
+  (pre-edition-2024, deprecated action) to current nightly, matching
+  `rust.yml`.
+
 ## 4. Outcome (2026-11-19)
 
 - `uk-cli` depends only on `uk-app` + non-GUI crates; both `cargo tree` guards (uk-app, uk-cli) are green in CI (`pr.yml`, `rust.yml`).

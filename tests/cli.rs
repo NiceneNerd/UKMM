@@ -115,6 +115,12 @@ fn json_install_enable_uninstall_profile_cycle() {
     let profile_text = std::fs::read_to_string(&profile_file).expect("profile.yml missing");
     assert!(profile_text.contains("CLI Test Mod B"), "{profile_text}");
     assert!(!profile_text.contains("CLI Test Mod A"), "{profile_text}");
+    // ...and the current profile was left untouched (install-into-profile
+    // switches there instead of copying)
+    let default_file = fix.config.join("data/wiiu/profiles/Default/profile.yml");
+    let default_text = std::fs::read_to_string(&default_file).expect("profile.yml missing");
+    assert!(default_text.contains("CLI Test Mod A"), "{default_text}");
+    assert!(!default_text.contains("CLI Test Mod B"), "{default_text}");
 
     // uninstall mod 1 (1-based index) from the current profile
     let out = ukmm(&fix, &["--json", "uninstall", "1"]);
@@ -179,13 +185,20 @@ fn list_enable_disable_move_profiles() {
         "no entries in snapshot"
     );
 
-    // disable/enable round-trip
-    let out = ukmm(&fix, &["disable", "1"]);
+    // disable/enable round-trip; each stages + merges in one invocation.
+    // With --json, `disable 1` runs two jobs (SetEnabled, then Apply), both
+    // Ok — without the auto-apply there would be only one JobDone.
+    let out = ukmm(&fix, &["--json", "disable", "1"]);
     assert!(
         out.status.success(),
         "{}",
         String::from_utf8_lossy(&out.stderr)
     );
+    assert_jsonl(&out, "disable --json");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let job_dones = stdout.matches("\"JobDone\"").count();
+    assert_eq!(job_dones, 2, "expected SetEnabled + Apply jobs:\n{stdout}");
+    assert!(!stdout.contains("\"Err\""), "job failed:\n{stdout}");
     let out = ukmm(&fix, &["list"]);
     assert!(
         String::from_utf8_lossy(&out.stdout).contains("[disabled]"),
@@ -340,4 +353,27 @@ fn json_unknown_dump_error_is_json_and_nonzero() {
     assert_jsonl(&out, "remerge without dump");
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(stdout.contains("JobDone"), "no JobDone event:\n{stdout}");
+}
+
+#[test]
+fn malformed_cli_invocation_exits_2_not_silent_gui() {
+    let (fix, a, _b) = fixture();
+    let a = a.to_str().unwrap().to_string();
+    // A subcommand with a bad flag must exit 2 with the parse error, not fall
+    // through to the GUI (which would exit 0 on a headless machine).
+    let out = ukmm(&fix, &["install", &a, "--profile", "Second"]);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("unexpected flag"),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    // An unknown subcommand likewise.
+    let out = ukmm(&fix, &["boguscmd"]);
+    assert_eq!(out.status.code(), Some(2));
 }

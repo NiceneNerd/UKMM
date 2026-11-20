@@ -10,7 +10,7 @@
 
 use std::{
     io::{Write, stdin, stdout},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
 };
 
@@ -495,6 +495,49 @@ pub const COMMAND_COVERAGE: &[(&str, &str)] = &[
     ("SaveSettings", "save-settings"),
 ];
 
+/// All subcommand names. The root binary uses this to tell a malformed CLI
+/// invocation apart from a GUI/one-click launch (a parse error with a
+/// subcommand present must exit non-zero, not silently start the GUI).
+pub const SUBCOMMANDS: &[&str] = &[
+    "list",
+    "open",
+    "one-click",
+    "install",
+    "install-batch",
+    "enable",
+    "disable",
+    "options",
+    "move",
+    "apply",
+    "cancel-pending",
+    "deploy",
+    "remerge",
+    "reset-pending",
+    "uninstall",
+    "add-to-profile",
+    "profiles",
+    "profile-switch",
+    "profile-create",
+    "profile-duplicate",
+    "profile-rename",
+    "profile-delete",
+    "update-from",
+    "dev-update",
+    "extract",
+    "reload",
+    "import-cemu",
+    "migrate-bcml",
+    "package",
+    "parse-meta",
+    "check-updates",
+    "launch-emulator",
+    "open-folder",
+    "open-mod-folder",
+    "register-url",
+    "save-settings",
+    "mode",
+];
+
 /// Runs the CLI: builds the core manager + session and executes the subcommand.
 pub fn run(cli: Ukmm) -> Result<()> {
     if cli.debug {
@@ -547,13 +590,24 @@ impl Runner {
         match sub {
             UkmmCmd::List(_) => self.list(),
             UkmmCmd::Open(Open { path }) => {
-                self.exec_inner(
+                let events = self.exec_inner(
                     Command::Open {
                         path: path.clone(),
                         meta: None,
                     },
                     false,
                 )?;
+                if events.iter().any(|e| {
+                    matches!(
+                        e,
+                        Event::Inspection(Inspection::WrongPlatform { .. })
+                            | Event::Inspection(Inspection::MissingMasters(_))
+                    )
+                }) {
+                    anyhow_ext::bail!(
+                        "The mod cannot be installed with the current configuration (see above)"
+                    );
+                }
                 Ok(())
             }
             UkmmCmd::OneClick(OneClick { url }) => {
@@ -566,28 +620,22 @@ impl Runner {
                 meta,
             }) => {
                 self.meta = meta.clone();
-                self.say(&format!("Installing {}...", path.display()));
-                self.last_installed = None;
-                self.exec(Command::Open {
-                    path: path.clone(),
-                    meta: None,
-                })?;
-                let id = self.last_installed.context("The mod was not installed")?;
-                self.exec(Command::SetEnabled {
-                    ids:     vec![id],
-                    enabled: true,
-                })?;
-                if let Some(profile) = profile {
-                    let profile = ProfileName::parse(profile)?;
-                    if profile != self.session.snapshot().profile {
-                        self.exec(Command::AddToProfile {
-                            ids: vec![id],
-                            profile,
-                        })?;
+                let current = self.session.snapshot().profile.clone();
+                let target = profile.as_ref().map(ProfileName::parse).transpose()?;
+                match &target {
+                    // Install directly into the target profile (the old CLI
+                    // semantics): create it if needed, switch there, install +
+                    // merge, switch back. The current profile is untouched.
+                    Some(t) if *t != current => {
+                        if !self.session.snapshot().profiles.contains(t) {
+                            self.exec(Command::CreateProfile(t.clone()))?;
+                        }
+                        self.exec(Command::SwitchProfile(t.clone()))?;
+                        self.install_mod(path)?;
+                        self.exec(Command::SwitchProfile(current))?;
                     }
+                    _ => self.install_mod(path)?,
                 }
-                self.exec(Command::Apply)?;
-                self.say("Done!");
                 Ok(())
             }
             UkmmCmd::InstallBatch(InstallBatch { paths, replace }) => {
@@ -603,7 +651,7 @@ impl Runner {
             UkmmCmd::Enable(Enable { ids }) => {
                 let ids = self.ids(ids)?;
                 self.exec(Command::SetEnabled { ids, enabled: true })?;
-                Ok(())
+                self.merge_staged()
             }
             UkmmCmd::Disable(Disable { ids }) => {
                 let ids = self.ids(ids)?;
@@ -611,7 +659,7 @@ impl Runner {
                     ids,
                     enabled: false,
                 })?;
-                Ok(())
+                self.merge_staged()
             }
             UkmmCmd::Options(Options { index, picks }) => {
                 let entry = self.entry(*index)?;
@@ -639,15 +687,17 @@ impl Runner {
                     id:    entry.id,
                     picks: resolved,
                 })?;
-                Ok(())
+                self.merge_staged()
             }
             UkmmCmd::Move(Move { index, to }) => {
                 let ids = vec![self.entry_id(*index)?];
                 self.exec(Command::MoveTo {
                     ids,
-                    index: to.saturating_sub(1),
+                    index: to
+                        .checked_sub(1)
+                        .context("Target position must be >= 1 (1-based, as shown by `list`")?,
                 })?;
-                Ok(())
+                self.merge_staged()
             }
             UkmmCmd::Apply(_) => self.exec(Command::Apply),
             UkmmCmd::CancelPending(_) => self.exec(Command::CancelPending),
@@ -681,10 +731,19 @@ impl Runner {
             }
             UkmmCmd::AddToProfile(AddToProfile { profile, ids }) => {
                 let ids = self.ids(ids)?;
+                let target = ProfileName::parse(profile)?;
+                let current = self.session.snapshot().profile.clone();
                 self.exec(Command::AddToProfile {
                     ids,
-                    profile: ProfileName::parse(profile)?,
+                    profile: target.clone(),
                 })?;
+                if target != current {
+                    // The staged diff lives in the target profile; merge it
+                    // there before switching back.
+                    self.exec(Command::SwitchProfile(target))?;
+                    self.exec(Command::Apply)?;
+                    self.exec(Command::SwitchProfile(current))?;
+                }
                 Ok(())
             }
             UkmmCmd::Profiles(_) => {
@@ -836,6 +895,33 @@ impl Runner {
                 Ok(())
             }
         }
+    }
+
+    /// The install flow in the current profile: inspect, install, enable,
+    /// merge.
+    fn install_mod(&mut self, path: &Path) -> Result<()> {
+        self.say(&format!("Installing {}...", path.display()));
+        self.last_installed = None;
+        self.exec(Command::Open {
+            path: path.to_path_buf(),
+            meta: None,
+        })?;
+        let id = self.last_installed.context("The mod was not installed")?;
+        self.exec(Command::SetEnabled {
+            ids:     vec![id],
+            enabled: true,
+        })?;
+        self.exec(Command::Apply)?;
+        self.say("Done!");
+        Ok(())
+    }
+
+    /// Merges staged changes in the same invocation. One CLI call is one
+    /// transaction: the session's staged diff is in-memory only, so leaving
+    /// it unapplied would lose it when this process exits (a later `apply`
+    /// would silently merge nothing).
+    fn merge_staged(&mut self) -> Result<()> {
+        self.exec(Command::Apply)
     }
 
     fn list(&self) -> Result<()> {

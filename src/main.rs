@@ -44,6 +44,30 @@ fn main() -> Result<()> {
         }
         Err(e) => {
             if !e.is_help() {
+                // A malformed CLI invocation must not fall through to the GUI
+                // — on a headless machine that would exit 0 while doing
+                // nothing. That is any argument naming a subcommand that failed
+                // to parse, or a first argument that is neither a flag, a
+                // `bcml:` URL, nor an existing path (i.e. a typo'd command).
+                let args: Vec<std::ffi::OsString> = std::env::args_os().collect();
+                let cli_error = args
+                    .iter()
+                    .skip(1)
+                    .any(|a| uk_cli::SUBCOMMANDS.contains(&a.to_string_lossy().as_ref()))
+                    || match args.get(1) {
+                        Some(a) => {
+                            let s = a.to_string_lossy();
+                            !s.starts_with('-')
+                                && !s.starts_with("bcml:")
+                                && !std::path::Path::new(s.as_ref()).exists()
+                        }
+                        None => false,
+                    };
+                if cli_error {
+                    eprintln!("Error: {e}");
+                    eprintln!("Run `ukmm --help` for usage.");
+                    std::process::exit(2);
+                }
                 let ipc = uk_app::host::oneclick::start_listener();
                 if let Some(arg) = std::env::args().nth(1) {
                     if std::env::args().any(|a| a == "--debug") {

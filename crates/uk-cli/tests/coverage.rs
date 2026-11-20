@@ -25,3 +25,17 @@ fn every_command_variant_has_a_subcommand() {
         "COMMAND_COVERAGE names unknown variants: {stale:?}"
     );
 }
+
+#[test]
+fn subcommand_list_covers_the_coverage_table() {
+    // Every subcommand named in COMMAND_COVERAGE must be in SUBCOMMANDS (the
+    // list may additionally contain read-only subcommands like `list` that
+    // dispatch no Command, and aliases like `disable`).
+    for (_, sub) in uk_cli::COMMAND_COVERAGE {
+        let name = sub.split_whitespace().next().unwrap();
+        assert!(
+            uk_cli::SUBCOMMANDS.contains(&name),
+            "COMMAND_COVERAGE names subcommand '{name}' missing from SUBCOMMANDS"
+        );
+    }
+}

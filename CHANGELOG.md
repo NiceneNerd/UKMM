@@ -48,6 +48,9 @@ Changes from the GUI refactor branch `gui2` (not yet released):
 - The command-line interface was rewritten on the same application layer as
   the GUI (`uk-app`'s session), now living in the `uk-cli` crate; installing
   via CLI enables the mod and merges immediately, as before.
+- CLI mod indices (e.g. `ukmm uninstall 1`) are now 1-based, matching the
+  numbering printed by `list` (previously the positional index was 0-based
+  while the list was 1-based).
 
 **Fixed**
 
